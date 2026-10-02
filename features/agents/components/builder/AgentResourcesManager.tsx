@@ -1,6 +1,6 @@
 "use client";
 
-import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
+import { isSyntheticAgentId } from "@ai-matrx/chat/agents/redux/agent-definition/synthetic-id";
 import { UnsavedAgentAttachmentRow } from "./UnsavedAgentAttachmentRow";
 import { useEffect, useState } from "react";
 import { FileText, Layers, Loader2, Plus } from "lucide-react";
@@ -13,7 +13,7 @@ import {
 } from "@ai-matrx/design-system";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
-import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
+import { ResourceAttachmentTile } from "@ai-matrx/chat/agents/components/messages-display/user/ResourceAttachmentTile";
 import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";

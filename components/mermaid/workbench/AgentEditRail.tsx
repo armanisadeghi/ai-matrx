@@ -18,7 +18,7 @@ import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";
 
 import { StandaloneMermaidView } from "../MermaidView";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { useMermaidAgentEdit } from "../hooks/useMermaidAgentEdit";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

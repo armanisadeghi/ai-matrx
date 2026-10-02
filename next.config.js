@@ -412,7 +412,7 @@ const nextConfig = {
   // calls that throw `ReferenceError: React is not defined` in production.
   // - react-filerobot-image-editor: Image Studio Edit mode (Filerobot 5.0).
   // - @scaleflex/ui: Filerobot's underlying UI primitives (same pattern).
-  transpilePackages: ["react-filerobot-image-editor", "@scaleflex/ui"],
+  transpilePackages: ["@ai-matrx/chat", "react-filerobot-image-editor", "@scaleflex/ui"],
   typescript: {
     // RATIFIED (Arman, 2026-07-28, closing D64/D65): checks scream loud but
     // NEVER stop the build. Type errors are surfaced by the advisory release

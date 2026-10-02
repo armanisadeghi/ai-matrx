@@ -27,10 +27,10 @@ import { loadConversation } from "../load-conversation.thunk";
 
 const mockFetchBundle = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: { auth: { getUser: async () => ({ data: { user: null } }) } },
 }));
-jest.mock("@/utils/supabase/claimsUser", () => ({
+jest.mock("@host/utils/supabase/claimsUser", () => ({
   getClaimsUser: async () => ({ data: { user: null } }),
 }));
 jest.mock("../conversation-bundle", () => {
@@ -49,7 +49,7 @@ jest.mock(
       new Promise((resolve) => setTimeout(() => resolve({}), 0)),
   }),
 );
-jest.mock("@/features/code/redux/codeEditHistoryHydration", () => ({
+jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
   loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
 }));
 

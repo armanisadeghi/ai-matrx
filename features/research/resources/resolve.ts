@@ -23,7 +23,7 @@
  */
 
 import { estimateTokens, charsForTokenBudget } from "@/lib/tokens/estimate";
-import { createResourceReference } from "@/features/agents/agent-context/resource-reference";
+import { createResourceReference } from "@ai-matrx/chat/agents/agent-context/resource-reference";
 import {
   CATALOG,
   deriveAll,

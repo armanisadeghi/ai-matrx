@@ -24,7 +24,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { MAP_CURATION_MANDATE_KEY } from "@/features/marketing/seo/topical-map/mandateKeys";

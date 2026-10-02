@@ -19,7 +19,7 @@ import { SOURCE_FEATURES } from "@/types/python-generated/source-attribution";
 import {
   SURFACE_ROUTE_MAPPINGS,
   surfaceFromPathname,
-} from "@/features/surfaces/utils/route-to-surface";
+} from "@ai-matrx/chat/surfaces/utils/route-to-surface";
 import { ALL_MANIFESTS } from "@/features/surfaces/manifests/registry";
 import { STAFF_SURFACE_NAME } from "@/features/surfaces/manifests/staff.manifest";
 

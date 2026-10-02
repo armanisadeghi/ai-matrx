@@ -13,33 +13,33 @@
  */
 
 import { useMemo } from "react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
-import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
+import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
+import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
+import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
 import type {
   ContextObjectType,
   ContextPolicy,
-} from "@/features/agents/types/agent-api-types";
+} from "../../types/agent-api-types";
 import {
   CONTEXT_TYPE_ICON,
   FALLBACK_CONTEXT_ICON,
   CONTEXT_TYPE_CHIP_CLASS,
 } from "./contextPolicyIcons";
-import { AgentEditAccessBadge } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
+import { AgentEditAccessBadge } from "@host/features/agents/components/context-policies-management/AgentEditAccessControl";
 import {
   AGENT_EDIT_SAVE_SUMMARY,
   decodeAgentEditAccess,
-} from "@/features/agents/utils/agent-edit-access";
-import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
+} from "../../utils/agent-edit-access";
+import { docKindForContextKey } from "../../utils/workingDocumentContext";
 import { resolveContextEntryValue } from "./knownContextValues";
 import { ContextValueBody } from "./ContextValueBody";
 import {
   WorkingDocumentBody,
   buildWorkingDocumentDrawerItem,
 } from "../context-items/bodies/WorkingDocumentBody";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 interface ContextPolicyDetailSheetProps {
   open: boolean;

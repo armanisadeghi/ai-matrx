@@ -23,7 +23,7 @@ import {
   variableDefinitionsToKindFields,
 } from "../convert/kind-variable-bridge";
 import type { KindSchema } from "@ai-matrx/content-ir";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import fixture from "./variable-kind-bridge.generated.json";
 
 type Case = {

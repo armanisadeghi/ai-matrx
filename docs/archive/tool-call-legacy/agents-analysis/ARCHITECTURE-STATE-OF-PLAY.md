@@ -176,7 +176,7 @@ These are currently handled by the `ContentBlock` type in `content-splitter-v2.t
 
 The active Redux pipeline (`processStream` → `activeRequests` → `commitAssistantTurn` → `instanceConversationHistory`) was built independently. It uses:
 - `ContentBlockPayload` from `types/python-generated/stream-events.ts` (wire format)
-- `normalizeContentBlocks` from `features/agents/redux/execution-system/utils/normalize-content-blocks.ts`
+- `normalizeContentBlocks` from `packages/chat/src/agents/redux/execution-system/utils/normalize-content-blocks.ts`
 - Direct text accumulation (`textChunks.join("")`)
 
 It does NOT use:
@@ -667,7 +667,7 @@ This section maps every piece that exists, every piece that's missing, and the e
 |---|---|---|---|
 | Stream protocol types | `types/python-generated/stream-events.ts` | 16 event types, TypedStreamEvent union, type guards | Production, auto-generated |
 | NDJSON parser | `lib/api/stream-parser.ts` | Read-ahead queue, backpressure-safe | Production |
-| Event routing | `features/agents/redux/execution-system/thunks/process-stream.ts` | Routes all 16 event types | Production |
+| Event routing | `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts` | Routes all 16 event types | Production |
 | Canonical protocol types | `lib/chat-protocol/types.ts` | CanonicalMessage, CanonicalBlock union | Complete, unused by active pipeline |
 | Stream → Canonical | `lib/chat-protocol/from-stream.ts` | buildCanonicalBlocks() with correct interleaving | Complete, unused by active pipeline |
 | DB → Canonical | `lib/chat-protocol/from-db.ts` | buildCanonicalMessages() with V1/V2 support | Complete, unused by active pipeline |
@@ -925,19 +925,19 @@ On commit, the `RenderBlock[]` array is copied directly to the turn. **No lossy 
 | **Types** | `types/python-generated/stream-events.ts` | 16 event types, TypedStreamEvent union, type guards |
 | **Types** | `types/python-generated/content-blocks.ts` | BlockType enum (34 types), BlockDataTypeMap, ContentBlockPayload |
 | **Stream** | `lib/api/stream-parser.ts` | `parseNdjsonStream` read-ahead queue parser |
-| **Stream** | `features/agents/redux/execution-system/thunks/process-stream.ts` | Event routing loop, commit logic |
-| **Redux** | `features/agents/redux/execution-system/active-requests/active-requests.slice.ts` | Live streaming state |
+| **Stream** | `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts` | Event routing loop, commit logic |
+| **Redux** | `packages/chat/src/agents/redux/execution-system/active-requests/active-requests.slice.ts` | Live streaming state |
 | **Redux** | `features/agents/redux/execution-system/instance-conversation-history/instance-conversation-history.slice.ts` | Committed conversation turns |
 | **Redux** | `features/cx-conversation/redux/slice.ts` | Legacy `chatConversations` (System B) — to be removed |
 | **DB** | `features/cx-chat/redux/thunks.ts` | `fetchConversationHistory` — System A DB loading (should use from-db.ts) |
-| **Normalize** | `features/agents/redux/execution-system/utils/normalize-content-blocks.ts` | DbContentEntry → ContentBlockPayload (to be replaced by from-db.ts) |
+| **Normalize** | `packages/chat/src/agents/redux/execution-system/utils/normalize-content-blocks.ts` | DbContentEntry → ContentBlockPayload (to be replaced by from-db.ts) |
 | **Render** | `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx` | Block splitting + rendering orchestration |
 | **Render** | `components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx` | 40+ block type switch |
 | **Render** | `components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry.tsx` | Lazy-loaded block components |
 | **Render** | `components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts` | Markdown → render blocks parser |
 | **Demo (extract)** | `app/(public)/demos/api-tests/tool-testing/utils/stream-processing-beta/fold-stream-events.ts` | Complete event fold with tool mapping — should be extracted |
 | **Demo (extract)** | `app/(public)/demos/api-tests/tool-testing/utils/stream-processing-beta/build-tool-call-objects.ts` | Stream events → ToolCallObject[] — should be extracted |
-| **Orchestrator** | `features/cx-chat/components/ChatInstanceManager.tsx` | Instance creation + history load |
+| **Orchestrator** | `packages/chat/src/cx-chat/components/ChatInstanceManager.tsx` | Instance creation + history load |
 | **Display** | `features/agents/components/run/AgentConversationDisplay.tsx` | Turn list rendering |
 | **Display** | `features/agents/components/run/AgentAssistantMessage.tsx` | Single message rendering (streaming + committed) |
 | **Docs** | `features/agents/redux/execution-system/thunks/event-change-documentation.md` | V2 protocol reference |

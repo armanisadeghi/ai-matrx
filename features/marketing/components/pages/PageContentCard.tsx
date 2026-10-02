@@ -11,8 +11,8 @@ import { SectionCard } from "@/features/marketing/components/shared/MarketingUi"
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { MarketingPage } from "@/features/marketing/types";
 
 // Heavy previewer (react-markdown + KaTeX + Prism) — always code-split.

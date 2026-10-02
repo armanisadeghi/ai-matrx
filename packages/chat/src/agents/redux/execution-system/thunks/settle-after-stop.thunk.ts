@@ -22,20 +22,20 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { cancelAgentRunRequest } from "@/lib/api/matrx-transport";
-import { fetchOperationsByLink } from "@/features/agents/runtime-reconnect/api";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { cancelAgentRunRequest } from "@host/lib/api/matrx-transport";
+import { fetchOperationsByLink } from "../../../runtime-reconnect/api";
 import type {
   RuntimeOperationView,
   RuntimeOperationsByLinkResponse,
-} from "@/features/agents/runtime-reconnect/types";
+} from "../../../runtime-reconnect/types";
 import { resolveBackendForConversation } from "./resolve-base-url";
 import { loadConversation } from "./load-conversation.thunk";
 import { hasAbortController } from "./abort-registry";
 import { releaseStreamAnchors } from "../messages/messages.slice";
 import { extractFlatText } from "../messages/messages.selectors";
 import { selectAnswerText } from "../active-requests/active-requests.selectors";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 
 /** How long a Stop waits for the server to finish its in-flight call. */
 export const STOP_SETTLE_WINDOW_MS = 90_000;

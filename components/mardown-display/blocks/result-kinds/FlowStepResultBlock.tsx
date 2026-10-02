@@ -25,7 +25,7 @@ import React from "react";
 import { CircleCheck, CircleX, GitBranch, RefreshCw, Send } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
+import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 import {
   ChipRow,
   CountChip,

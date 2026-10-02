@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { FileChartColumn, Webhook } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useDriftAlerts } from "@/features/agents/hooks/useDriftAlerts";
-import { DriftSeverityBadge } from "@/features/agents/components/usages/DriftSeverityBadge";
+import { Button } from "@host/components/ui/button";
+import { cn } from "@host/lib/utils";
+import { useDriftAlerts } from "../../hooks/useDriftAlerts";
+import { DriftSeverityBadge } from "@host/features/agents/components/usages/DriftSeverityBadge";
 import {
   DRIFT_SEVERITY_META,
   sumSeverityCounts,
   worstSeverityFromCounts,
-} from "@/features/agents/components/usages/severity";
-import type { DriftSeverity } from "@/features/agents/redux/usages/usages.types";
-import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
+} from "@host/features/agents/components/usages/severity";
+import type { DriftSeverity } from "@host/features/agents/redux/usages/usages.types";
+import { HeaderActionsSlot } from "@host/features/shell/components/header/HeaderActionsSlot";
 
 const INFO_ONLY = new Set<DriftSeverity>(["info"]);
 

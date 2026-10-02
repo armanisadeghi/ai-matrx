@@ -13,12 +13,12 @@ import type {
   CustomDataBinding,
   VariableBinding,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+} from "../types/agent-definition.types";
+import type { AgentDefinitionMessage } from "../types/agent-message-types";
 import {
   extractAgentSystemInstruction,
   withAgentSystemInstruction,
-} from "@/features/agents/utils/agent-system-instruction";
+} from "./agent-system-instruction";
 
 export function isCustomDataBinding(
   binding: VariableBinding | null | undefined,

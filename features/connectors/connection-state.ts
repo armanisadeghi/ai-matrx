@@ -26,7 +26,7 @@
  * the server's own slug.
  */
 
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
 import type { components } from "@/types/python-generated/api-types";
 
 /** What a person may be told about one MCP server. Exactly three states. */

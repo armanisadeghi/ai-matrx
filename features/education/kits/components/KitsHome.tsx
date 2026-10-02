@@ -16,7 +16,7 @@ import { EducationToolHeader } from "@/features/education/components/EducationTo
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
 import { deleteKit, kitMembershipFingerprint, listKits, kitHref, renameKit, type StudyKit } from "../kitService";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationKitsScope,
   EDUCATION_KITS_SURFACE_NAME,
@@ -27,8 +27,8 @@ import {
   EducationCollectionSearch,
   filterEducationCollection,
 } from "@/features/education/components/EducationCollectionSearch";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseKitDeletes, parseKitUpdates } from "../kitWrites";
 
 function KitRow({ kit }: { kit: StudyKit }) {

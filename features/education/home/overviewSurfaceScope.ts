@@ -12,7 +12,7 @@ import {
   createEducationOverviewScope,
   type OverviewToolCount,
 } from "@/features/surfaces/manifests/education-overview.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { educationLibraryHref } from "../library/types";
 import { kitHref } from "../kits/kitService";
 import { missingFormatsFor } from "./nudges";

@@ -65,7 +65,7 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/messages/messages.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors",
   () => ({ selectMessageInterleavedContent: () => () => [] }),
 );
 
@@ -127,16 +127,16 @@ jest.mock(
   () => ({ InlineAssistantError: () => null }),
 );
 jest.mock(
-  "@/features/tool-call-visualization/components/AgentWorkGroup",
+  "@ai-matrx/chat/tool-call-visualization/components/AgentWorkGroup",
   () => ({
     AgentWorkGroup: ({ children }: { children: React.ReactNode }) => children,
   }),
 );
-jest.mock("@/features/tool-call-visualization/registry/registry", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/registry/registry", () => ({
   getToolDisplayMode: () => "auto",
 }));
 jest.mock(
-  "@/features/tool-call-visualization/components/LiveToolCallCard",
+  "@ai-matrx/chat/tool-call-visualization/components/LiveToolCallCard",
   () => ({ LiveToolCallCard: () => null }),
 );
 

@@ -30,7 +30,7 @@ import type {
   CxUserRequest,
   CxToolCall,
 } from "@/features/cx-dashboard/types/cxDashboardTypes";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,

@@ -16,15 +16,15 @@
 
 import { useEffect } from "react";
 import { FileText, NotebookPen } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   scratchScopeId,
   type WorkingDocumentKind,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   selectActiveScratchpadId,
   selectWorkingDocTitle,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import type { ContextDrawerItem, ContextItemBodyProps } from "../types";
 import { DocumentsWorkspace } from "../../working-document/documents-workspace/DocumentsWorkspace";
 

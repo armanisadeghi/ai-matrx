@@ -21,7 +21,7 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { foldDepthIntoRequest } from "./enhanceCard";
 import { coerceCards, setTitleOf } from "./coerce-card";

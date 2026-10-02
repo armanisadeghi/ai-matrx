@@ -1,15 +1,15 @@
 "use client";
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
+import { supabase } from "@host/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import type { AgentShortcut } from "../types";
 import { fetchFullShortcut } from "../thunks";
-import type { Database } from "@/types/database.types";
-import type { ValueMappingMap } from "@/features/surfaces/types";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import type { Database } from "@host/types/database.types";
+import type { ValueMappingMap } from "../../../../surfaces/types";
+import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 
 /**
  * Whitelist of `agx_shortcut` columns the RPC accepts in its `p_overrides`

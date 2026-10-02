@@ -21,7 +21,7 @@ import { createRoot, type Root } from "react-dom/client";
 import {
   createSandboxTestStore,
   SandboxStoreProvider,
-} from "@/test-utils/sandbox-store";
+} from "@host/test-utils/sandbox-store";
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
 
 /** The engineer's to-do list, as the box wrote it. */

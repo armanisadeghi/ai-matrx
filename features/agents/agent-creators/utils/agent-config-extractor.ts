@@ -10,7 +10,7 @@
  * future tool that produces agent config JSON.
  */
 
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { AgentBuilderConfig } from "../services/agentBuilderService";
 
 interface MessageEntry {

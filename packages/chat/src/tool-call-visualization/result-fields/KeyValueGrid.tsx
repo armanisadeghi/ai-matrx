@@ -35,7 +35,7 @@
  */
 
 import React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   detectResultShape,
   humanizeEnumValue,
@@ -51,8 +51,8 @@ import {
 } from "./document-presentation";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { KindValueNode } from "./KindValueNode";
-import { rootKindSlug } from "@/features/content-ir/surfaces/json-kind-signal";
-import { useReportKindAtRawRenderer } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
+import { rootKindSlug } from "@host/features/content-ir/surfaces/json-kind-signal";
+import { useReportKindAtRawRenderer } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
 export interface KeyValueGridProps {
   value: Record<string, unknown>;

@@ -84,7 +84,7 @@
       "lines": 239
     },
     {
-      "key": "matrx-frontend:features/cx-conversation/ChatDebugModal.tsx",
+      "key": "matrx-frontend:packages/chat/src/cx-conversation/ChatDebugModal.tsx",
       "findings": 1,
       "lines": 239
     },
@@ -164,7 +164,7 @@
       "lines": 207
     },
     {
-      "key": "matrx-frontend:features/cx-chat/hooks/useChatPersistence.ts",
+      "key": "matrx-frontend:packages/chat/src/cx-chat/hooks/useChatPersistence.ts",
       "findings": 1,
       "lines": 206
     },
@@ -214,7 +214,7 @@
       "lines": 194
     },
     {
-      "key": "matrx-frontend:features/cx-chat/components/variable-inputs/CheckboxGroupInput.tsx",
+      "key": "matrx-frontend:packages/chat/src/cx-chat/components/variable-inputs/CheckboxGroupInput.tsx",
       "findings": 1,
       "lines": 184
     },
@@ -446,7 +446,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-conversation/ChatDebugModal.tsx",
+      "file": "packages/chat/src/cx-conversation/ChatDebugModal.tsx",
       "line": 47,
       "column": 1,
       "symbol": "ChatDebugModal",
@@ -455,7 +455,7 @@
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 239 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/cx-conversation"
+      "feature": "packages/chat/src/cx-conversation"
     },
     {
       "repository": "matrx-frontend",
@@ -642,7 +642,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/cx-chat/hooks/useChatPersistence.ts",
+      "file": "packages/chat/src/cx-chat/hooks/useChatPersistence.ts",
       "line": 26,
       "column": 1,
       "symbol": "useChatPersistence",
@@ -740,7 +740,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-chat/components/variable-inputs/CheckboxGroupInput.tsx",
+      "file": "packages/chat/src/cx-chat/components/variable-inputs/CheckboxGroupInput.tsx",
       "line": 42,
       "column": 1,
       "symbol": "CheckboxGroupInput",
@@ -1062,7 +1062,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/hooks/message-crud/useMessageActions.ts",
+      "file": "packages/chat/src/agents/hooks/message-crud/useMessageActions.ts",
       "line": 65,
       "column": 1,
       "symbol": "useMessageActions",
@@ -1104,7 +1104,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-chat/components/variable-inputs/RadioGroupInput.tsx",
+      "file": "packages/chat/src/cx-chat/components/variable-inputs/RadioGroupInput.tsx",
       "line": 42,
       "column": 1,
       "symbol": "RadioGroupInput",
@@ -1118,7 +1118,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/components/unused/AgentSharedHeader.tsx",
+      "file": "packages/chat/src/agents/components/unused/AgentSharedHeader.tsx",
       "line": 50,
       "column": 1,
       "symbol": "AgentSharedHeader",
@@ -1188,7 +1188,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/cx-chat/hooks/useAgentBootstrap.ts",
+      "file": "packages/chat/src/cx-chat/hooks/useAgentBootstrap.ts",
       "line": 67,
       "column": 1,
       "symbol": "useAgentBootstrap",
@@ -1286,7 +1286,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/components/run/run-sidebar/AgentRunsSidebar.tsx",
+      "file": "packages/chat/src/agents/components/run/run-sidebar/AgentRunsSidebar.tsx",
       "line": 36,
       "column": 1,
       "symbol": "AgentRunsSidebar",
@@ -1314,7 +1314,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/cx-chat/hooks/useInstanceBootstrap.ts",
+      "file": "packages/chat/src/cx-chat/hooks/useInstanceBootstrap.ts",
       "line": 96,
       "column": 1,
       "symbol": "useInstanceBootstrap",
@@ -1412,7 +1412,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-chat/components/variable-inputs/SelectInput.tsx",
+      "file": "packages/chat/src/cx-chat/components/variable-inputs/SelectInput.tsx",
       "line": 42,
       "column": 1,
       "symbol": "SelectInput",
@@ -1888,7 +1888,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/components/agent-widgets/execution-gates/PreExecutionCard.tsx",
+      "file": "packages/chat/src/agents/components/agent-widgets/execution-gates/PreExecutionCard.tsx",
       "line": 15,
       "column": 1,
       "symbol": "PreExecutionCard",
@@ -1902,7 +1902,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/conversation/hooks/useAuthenticatedChatProps.ts",
+      "file": "packages/chat/src/conversation/hooks/useAuthenticatedChatProps.ts",
       "line": 65,
       "column": 1,
       "symbol": "useAuthenticatedChatProps",
@@ -1911,7 +1911,7 @@
       "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
       "intent": "an exported hook with 90 implementation line(s)",
       "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "features/conversation"
+      "feature": "packages/chat/src/conversation"
     },
     {
       "repository": "matrx-frontend",
@@ -1972,7 +1972,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-chat/components/variable-inputs/NumberInput.tsx",
+      "file": "packages/chat/src/cx-chat/components/variable-inputs/NumberInput.tsx",
       "line": 20,
       "column": 1,
       "symbol": "NumberInput",
@@ -1986,7 +1986,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/public-chat/components/AgentSelector.tsx",
+      "file": "packages/chat/src/public-chat/components/AgentSelector.tsx",
       "line": 155,
       "column": 1,
       "symbol": "AgentSelector",
@@ -1995,7 +1995,7 @@
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 88 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/public-chat"
+      "feature": "packages/chat/src/public-chat"
     },
     {
       "repository": "matrx-frontend",
@@ -2280,7 +2280,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/components/inputs/smart-input/ContextDocsMenu.tsx",
+      "file": "packages/chat/src/agents/components/inputs/smart-input/ContextDocsMenu.tsx",
       "line": 267,
       "column": 1,
       "symbol": "ContextDocsMenu",
@@ -2770,7 +2770,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/ui-first-tools/ui/lists/TaskPanelChip.tsx",
+      "file": "packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanelChip.tsx",
       "line": 36,
       "column": 1,
       "symbol": "TaskPanelChip",
@@ -2966,7 +2966,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-chat/components/ChatConversationSkeleton.tsx",
+      "file": "packages/chat/src/cx-chat/components/ChatConversationSkeleton.tsx",
       "line": 50,
       "column": 1,
       "symbol": "ChatConversationSkeleton",
@@ -2980,7 +2980,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-chat/components/variable-inputs/ToggleInput.tsx",
+      "file": "packages/chat/src/cx-chat/components/variable-inputs/ToggleInput.tsx",
       "line": 17,
       "column": 1,
       "symbol": "ToggleInput",
@@ -3008,7 +3008,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/conversation/hooks/usePublicChatProps.ts",
+      "file": "packages/chat/src/conversation/hooks/usePublicChatProps.ts",
       "line": 45,
       "column": 1,
       "symbol": "usePublicChatProps",
@@ -3017,7 +3017,7 @@
       "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
       "intent": "an exported hook with 50 implementation line(s)",
       "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "features/conversation"
+      "feature": "packages/chat/src/conversation"
     },
     {
       "repository": "matrx-frontend",
@@ -3274,7 +3274,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/hooks/useMcpTools.ts",
+      "file": "packages/chat/src/agents/hooks/useMcpTools.ts",
       "line": 52,
       "column": 1,
       "symbol": "useMcpServerTools",
@@ -3316,7 +3316,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/hooks/useMcpTools.ts",
+      "file": "packages/chat/src/agents/hooks/useMcpTools.ts",
       "line": 138,
       "column": 1,
       "symbol": "useDiscoverAgentMcpTools",
@@ -3512,7 +3512,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/hooks/useConversationPendingCalls.ts",
+      "file": "packages/chat/src/agents/hooks/useConversationPendingCalls.ts",
       "line": 39,
       "column": 1,
       "symbol": "useConversationPendingCalls",
@@ -3708,7 +3708,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-chat/components/variable-inputs/TextareaInput.tsx",
+      "file": "packages/chat/src/cx-chat/components/variable-inputs/TextareaInput.tsx",
       "line": 17,
       "column": 1,
       "symbol": "TextareaInput",
@@ -3848,7 +3848,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/tool-call-visualization/components/ToolTabBodies.tsx",
+      "file": "packages/chat/src/tool-call-visualization/components/ToolTabBodies.tsx",
       "line": 71,
       "column": 14,
       "symbol": "CopyButton",
@@ -4002,7 +4002,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/components/agent-widgets/chat-assistant/AssistantMessageCard.tsx",
+      "file": "packages/chat/src/agents/components/agent-widgets/chat-assistant/AssistantMessageCard.tsx",
       "line": 13,
       "column": 1,
       "symbol": "AssistantMessageCard",
@@ -4324,7 +4324,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-chat/components/ChatConversationSkeleton.tsx",
+      "file": "packages/chat/src/cx-chat/components/ChatConversationSkeleton.tsx",
       "line": 15,
       "column": 1,
       "symbol": "ConversationShellSkeleton",
@@ -4870,7 +4870,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/hooks/useMcpTools.ts",
+      "file": "packages/chat/src/agents/hooks/useMcpTools.ts",
       "line": 105,
       "column": 1,
       "symbol": "useMcpAllTools",
@@ -5318,7 +5318,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/components/run-controls/RunSettingsModal.tsx",
+      "file": "packages/chat/src/agents/components/run-controls/RunSettingsModal.tsx",
       "line": 15,
       "column": 1,
       "symbol": "RunSettingsModal",
@@ -5598,7 +5598,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/cx-chat/components/ChatPanelBackButton.tsx",
+      "file": "packages/chat/src/cx-chat/components/ChatPanelBackButton.tsx",
       "line": 14,
       "column": 1,
       "symbol": "ChatPanelBackButton",
@@ -6466,7 +6466,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/hooks/useMcpTools.ts",
+      "file": "packages/chat/src/agents/hooks/useMcpTools.ts",
       "line": 27,
       "column": 1,
       "symbol": "useMcpCatalog",
@@ -6830,7 +6830,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/components/agent-widgets/chat-assistant/StatusCard.tsx",
+      "file": "packages/chat/src/agents/components/agent-widgets/chat-assistant/StatusCard.tsx",
       "line": 18,
       "column": 1,
       "symbol": "StatusCard",
@@ -7026,7 +7026,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/components/agent-widgets/chat-assistant/UserMessageCard.tsx",
+      "file": "packages/chat/src/agents/components/agent-widgets/chat-assistant/UserMessageCard.tsx",
       "line": 8,
       "column": 1,
       "symbol": "UserMessageCard",
@@ -7040,7 +7040,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/hooks/useDesktopPresence.ts",
+      "file": "packages/chat/src/agents/hooks/useDesktopPresence.ts",
       "line": 24,
       "column": 1,
       "symbol": "useDesktopPresence",
@@ -7054,7 +7054,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/ui-first-tools/service/agent-task.service.ts",
+      "file": "packages/chat/src/agents/ui-first-tools/service/agent-task.service.ts",
       "line": 99,
       "column": 1,
       "symbol": "reorderTasks",
@@ -7502,7 +7502,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 31,
       "column": 1,
       "symbol": "listAgents",
@@ -7558,7 +7558,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/surfaces/runtime/surface-ui-state.ts",
+      "file": "packages/chat/src/surfaces/runtime/surface-ui-state.ts",
       "line": 158,
       "column": 1,
       "symbol": "useSurfaceUiState",
@@ -7586,7 +7586,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 82,
       "column": 1,
       "symbol": "listTools",
@@ -7600,7 +7600,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/ui-first-tools/service/agent-task.service.ts",
+      "file": "packages/chat/src/agents/ui-first-tools/service/agent-task.service.ts",
       "line": 116,
       "column": 1,
       "symbol": "clearCompletedTasks",
@@ -7992,7 +7992,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/ui-first-tools/service/agent-plan.service.ts",
+      "file": "packages/chat/src/agents/ui-first-tools/service/agent-plan.service.ts",
       "line": 41,
       "column": 1,
       "symbol": "listPlansForConversation",
@@ -8174,7 +8174,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 95,
       "column": 1,
       "symbol": "listSkills",
@@ -8188,7 +8188,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 118,
       "column": 1,
       "symbol": "updateAgent",
@@ -8314,7 +8314,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/surfaces/services/surface-bound-agents.service.ts",
+      "file": "packages/chat/src/surfaces/services/surface-bound-agents.service.ts",
       "line": 243,
       "column": 1,
       "symbol": "fetchSurfaceBoundAgentsGrouped",
@@ -8342,7 +8342,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/tool-call-visualization/result-fields/UrlChips.tsx",
+      "file": "packages/chat/src/tool-call-visualization/result-fields/UrlChips.tsx",
       "line": 66,
       "column": 14,
       "symbol": "UrlChips",
@@ -8538,7 +8538,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agents/components/model/AgentModelPanel.tsx",
+      "file": "packages/chat/src/agents/components/model/AgentModelPanel.tsx",
       "line": 10,
       "column": 1,
       "symbol": "AgentModelPanel",
@@ -8552,7 +8552,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 72,
       "column": 1,
       "symbol": "listModels",
@@ -8636,7 +8636,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/surfaces/services/surfaces.service.ts",
+      "file": "packages/chat/src/surfaces/services/surfaces.service.ts",
       "line": 301,
       "column": 1,
       "symbol": "bulkDeleteSurfaces",
@@ -8832,7 +8832,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 52,
       "column": 1,
       "symbol": "listVersions",
@@ -8846,7 +8846,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 61,
       "column": 1,
       "symbol": "getVersion",
@@ -9182,7 +9182,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/hooks/useBuilderContextSeed.ts",
+      "file": "packages/chat/src/agents/hooks/useBuilderContextSeed.ts",
       "line": 164,
       "column": 1,
       "symbol": "useClearBuilderContext",
@@ -9196,7 +9196,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/hooks/useShortcutTrigger.ts",
+      "file": "packages/chat/src/agents/hooks/useShortcutTrigger.ts",
       "line": 150,
       "column": 1,
       "symbol": "useShortcut",
@@ -9210,7 +9210,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/ui-first-tools/service/agent-plan.service.ts",
+      "file": "packages/chat/src/agents/ui-first-tools/service/agent-plan.service.ts",
       "line": 98,
       "column": 1,
       "symbol": "clearPlan",
@@ -9224,7 +9224,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/ui-first-tools/service/agent-task.service.ts",
+      "file": "packages/chat/src/agents/ui-first-tools/service/agent-task.service.ts",
       "line": 129,
       "column": 1,
       "symbol": "clearAllTasks",
@@ -9546,7 +9546,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 45,
       "column": 1,
       "symbol": "getAgent",
@@ -9602,7 +9602,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/tool-call-visualization/redux/hooks.ts",
+      "file": "packages/chat/src/tool-call-visualization/redux/hooks.ts",
       "line": 36,
       "column": 1,
       "symbol": "useToolLifecycle",
@@ -10106,7 +10106,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 108,
       "column": 1,
       "symbol": "createAgent",
@@ -10120,7 +10120,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 113,
       "column": 1,
       "symbol": "createStructuredAgent",
@@ -10134,7 +10134,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agents/services/agentService.ts",
+      "file": "packages/chat/src/agents/services/agentService.ts",
       "line": 129,
       "column": 1,
       "symbol": "validateSchema",
@@ -10442,7 +10442,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/tool-call-visualization/redux/hooks.ts",
+      "file": "packages/chat/src/tool-call-visualization/redux/hooks.ts",
       "line": 31,
       "column": 1,
       "symbol": "useToolCallIdsInOrder",

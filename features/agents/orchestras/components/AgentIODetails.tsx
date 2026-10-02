@@ -15,8 +15,8 @@ import {
   selectAgentVariableDefinitions,
   selectAgentOutputSchema,
   selectAgentReadyForBuilder,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { accentClasses } from "./accents";
 import type { OrchestraAccent } from "../constants";

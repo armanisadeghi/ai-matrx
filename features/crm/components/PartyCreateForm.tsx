@@ -13,13 +13,13 @@ import {
   selectOrganizationId,
   selectOrganizationName,
 } from "@/lib/redux/slices/appContextSlice";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   CRM_CREATE_PARTY_SURFACE_NAME,
   createCrmCreatePartyScope,
   crmCreatePartyManifest,
 } from "@/features/surfaces/manifests/crm-create-party.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   ensurePrimaryContactPoints,
   normalizeMediumValue,

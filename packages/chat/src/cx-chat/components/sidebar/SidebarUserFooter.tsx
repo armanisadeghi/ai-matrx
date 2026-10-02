@@ -6,10 +6,10 @@ import {
   selectUser,
   selectDisplayName,
   selectProfilePhoto,
-} from "@/lib/redux/slices/userSlice";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+} from "@host/lib/redux/slices/userSlice";
+import { Avatar, AvatarFallback, AvatarImage } from "@host/components/ui/avatar";
 import { LogIn, UserPlus, ChevronRight } from "lucide-react";
-import { useLoginHref } from "@/hooks/auth/useLoginHref";
+import { useLoginHref } from "@host/hooks/auth/useLoginHref";
 // THE package initials formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
 // LAST, so "Ana Maria Rivera" is AR — this surface previously took first +

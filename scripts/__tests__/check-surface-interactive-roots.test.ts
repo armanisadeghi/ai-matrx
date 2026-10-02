@@ -32,7 +32,7 @@ describe("P12 interactive-root classification", () => {
       "features/example/DetailsPanel.tsx",
       `
         import { Tabs as CanonicalTabs } from "@/components/ui/tabs";
-        import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+        import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
         export const DetailsPanel = () => (
           <SurfaceRuntimeProvider surfaceName="matrx-user/example" getScope={() => ({})}>
             <CanonicalTabs defaultValue="summary"><div /></CanonicalTabs>

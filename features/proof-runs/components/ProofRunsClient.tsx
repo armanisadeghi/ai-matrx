@@ -79,7 +79,7 @@ import {
 import { formatDurationMs, formatDurationSeconds } from "@ai-matrx/kit/format";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_PROOF_RUNS_SURFACE_NAME, createAdminProofRunsScope } from "@/features/surfaces/manifests/admin-proof-runs.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

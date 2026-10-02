@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
-import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { KindDetailData } from "@/features/content-ir/admin/kind-detail-types";
 import {
   loadKindVariants,

@@ -10,11 +10,11 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { getUserId } from "@/utils/auth/getUserId";
-import { supabase } from "@/utils/supabase/client";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { applyFavoritesFromUes } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import type { AppThunk, RootState } from "@/lib/redux/store";
+import { getUserId } from "@host/utils/auth/getUserId";
+import { supabase } from "@host/utils/supabase/client";
+import type { ConversationListItem } from "../conversation-list/conversation-list.types";
+import { applyFavoritesFromUes } from "../conversation-list/conversation-list.thunks";
+import type { AppThunk, RootState } from "@host/lib/redux/store";
 import {
   setScopeArchivedCount,
   setScopePageSuccess,
@@ -34,7 +34,7 @@ import {
   defaultScopeState,
   type SourceFacet,
 } from "./types";
-import { readListRpc } from "@/lib/entity-list/readListRpc";
+import { readListRpc } from "@host/lib/entity-list/readListRpc";
 
 export interface FetchConversationHistoryArgs {
   scopeId: string;

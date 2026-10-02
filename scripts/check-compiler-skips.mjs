@@ -40,7 +40,7 @@ import { Worker, isMainThread, parentPort, workerData } from "node:worker_thread
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const BASELINE = join(ROOT, "scripts/compiler-skips-baseline.json");
 const CACHE_DIR = join(ROOT, "node_modules/.cache/compiler-skips");
-const SCOPE = ["app/(core)", "features", "components"];
+const SCOPE = ["app/(core)", "features", "packages/chat/src", "components"];
 
 /**
  * THE DATA SURFACES (lane RENDER-2): the Sheet, its toolbar, its row, the /data-v2 route. They

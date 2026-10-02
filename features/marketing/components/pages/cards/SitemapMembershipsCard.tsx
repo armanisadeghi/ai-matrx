@@ -7,7 +7,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { usePageSitemapMemberships } from "@/features/marketing/data/hooks";
 import type { MarketingPage } from "@/features/marketing/types";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   formatDate,
   QueryError,

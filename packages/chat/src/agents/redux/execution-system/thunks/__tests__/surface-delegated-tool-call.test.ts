@@ -16,7 +16,7 @@
  */
 
 import type { WatchDesktopDelegationArgs } from "../watch-desktop-delegation.thunk";
-import type { PendingToolResult } from "@/features/agents/api/submit-tool-results";
+import type { PendingToolResult } from "../../../../api/submit-tool-results";
 import type { DesktopPresence } from "../../client-capabilities/desktop-presence";
 
 const mockPresence = jest.fn<Promise<DesktopPresence | null>, []>();
@@ -33,7 +33,7 @@ function mockExecutor(executor: string) {
 }
 
 jest.mock(
-  "@/features/agents/redux/execution-system/client-capabilities/desktop-presence",
+  "../../client-capabilities/desktop-presence",
   () => ({ getLiveDesktopInstance: () => mockPresence() }),
 );
 jest.mock("../watch-desktop-delegation.thunk", () => ({
@@ -42,7 +42,7 @@ jest.mock("../watch-desktop-delegation.thunk", () => ({
     return () => undefined;
   },
 }));
-jest.mock("@/features/agents/api/submit-tool-results", () => ({
+jest.mock("../../../../api/submit-tool-results", () => ({
   submitToolResult: (pending: PendingToolResult) => {
     mockSubmitted.push(pending);
     return () => undefined;
@@ -60,19 +60,19 @@ jest.mock("../dispatch-widget-action.thunk", () => ({
   dispatchWidgetAction: mockExecutor("widget"),
 }));
 jest.mock(
-  "@/features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk",
+  "../../../../ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk",
   () => ({ dispatchUiFirstTool: mockExecutor("uiFirst") }),
 );
 jest.mock(
-  "@/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk",
+  "@host/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk",
   () => ({ dispatchWarRoomTool: mockExecutor("warRoom") }),
 );
 jest.mock(
-  "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk",
+  "@host/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk",
   () => ({ dispatchWarRoomMasterTool: mockExecutor("warRoomMaster") }),
 );
 jest.mock(
-  "@/features/agents/scribe-tools/dispatcher/dispatch-scribe-tool.thunk",
+  "../../../../scribe-tools/dispatcher/dispatch-scribe-tool.thunk",
   () => ({ dispatchScribeTool: mockExecutor("scribe") }),
 );
 jest.mock("../dispatch-surface-client-tool.thunk", () => ({
@@ -86,7 +86,7 @@ jest.mock("../dispatch-matrx-extend-tool.thunk", () => ({
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
 import { createInstance } from "../../conversations/conversations.slice";
 import { createRequest } from "../../active-requests/active-requests.slice";
 import {

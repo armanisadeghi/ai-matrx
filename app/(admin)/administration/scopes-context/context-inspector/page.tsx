@@ -26,14 +26,14 @@ import {
   replaceAddressWithoutNavigating,
 } from "@/lib/url-state/addressWithoutNavigating";
 import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
-import { ContextInspector } from "@/features/agents/components/context-preview/inspector/ContextInspector";
+import { ContextInspector } from "@ai-matrx/chat/agents/components/context-preview/inspector/ContextInspector";
 import {
   agentSearch,
   parseAgent,
   parseSelection,
   selectionSearch,
   type InspectorSelection,
-} from "@/features/agents/components/context-preview/inspector/selection";
+} from "@ai-matrx/chat/agents/components/context-preview/inspector/selection";
 
 function InspectorFromAddress() {
   const params = useSearchParams();

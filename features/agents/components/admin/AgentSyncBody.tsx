@@ -19,18 +19,18 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
   fetchLinkedCounterpart,
   syncLinkedAgents,
   createPersonalCopy,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import type {
   AgentDefinition,
   LinkedAgentRef,
   LinkedCounterpartResult,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ConvertAgentToSystemBody } from "@/features/agents/components/admin/ConvertAgentToSystemBody";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -65,11 +65,11 @@ import Link from "next/link";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
-import { compareAgentDefinitions } from "@/features/agents/components/diff/compare-agent-definitions";
-import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
+import { AgentDiffViewer } from "@ai-matrx/chat/agents/components/diff/AgentDiffViewer";
+import { compareAgentDefinitions } from "@ai-matrx/chat/agents/components/diff/compare-agent-definitions";
+import { getAgentModeHref } from "@ai-matrx/chat/agents/components/shared/AgentModeController";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { fetchSavedAgentDefinition } from "@/features/agents/services/agent-definition-snapshot.service";
+import { fetchSavedAgentDefinition } from "@ai-matrx/chat/agents/services/agent-definition-snapshot.service";
 import type { DiffTemporalMetadata } from "@ai-matrx/diff/structural";
 import {
   deriveAgentFieldChangeMoments,

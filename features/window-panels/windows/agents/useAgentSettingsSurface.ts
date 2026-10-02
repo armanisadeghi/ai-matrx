@@ -41,14 +41,14 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import { useAppStore } from "@/lib/redux/hooks";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { createAgentSettingsScope } from "@/features/surfaces/manifests/agent-settings.manifest";
 import {
   selectAgentAccessResolved,
   selectAgentById,
   selectAgentIsReadOnly,
   selectAllAgentsArray,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectModelNameById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { agentOwnershipLabel } from "@/features/agents/components/settings/AgentSettingsForm";
 import { readAgentSettingsDraft } from "@/features/agents/components/settings/agentSettingsDraftRegistry";

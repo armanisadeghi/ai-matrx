@@ -12,7 +12,7 @@
 // because the validation happens at APPLY time, inside one synchronous
 // dispatch, not at peek time.
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { setUserInputText } from "./instance-user-input.slice";
 import {
   isComposerDraftTokenLive,

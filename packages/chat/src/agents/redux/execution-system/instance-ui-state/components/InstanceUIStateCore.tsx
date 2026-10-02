@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   Copy,
   Check,
@@ -10,7 +10,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectInstanceUIState } from "../instance-ui-state.selectors";
 import {
   selectInstanceAgentName,
@@ -19,7 +19,7 @@ import {
 import type {
   InstanceUIState,
   BuilderAdvancedSettings,
-} from "@/features/agents/types/instance.types";
+} from "../../../../types/instance.types";
 
 // ─── Copy helpers ─────────────────────────────────────────────────────────────
 

@@ -18,16 +18,16 @@ const launchAgent = jest.fn();
 const resumeConversation = jest.fn();
 let cacheOnly = true;
 
-jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({
+jest.mock("../../../agents/hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({ launchMandate, launchAgent }),
 }));
-jest.mock("@/features/agents/redux/execution-system/thunks/resume-conversation.thunk", () => ({
+jest.mock("../../../agents/redux/execution-system/thunks/resume-conversation.thunk", () => ({
   resumeConversation: (args: unknown) => {
     resumeConversation(args);
     return { type: "test/resume", args };
   },
 }));
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => () => ({ unwrap: () => Promise.resolve() }),
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
@@ -35,12 +35,12 @@ jest.mock("@/lib/redux/hooks", () => ({
       conversations: { byConversationId: new Proxy({}, { get: () => ({ cacheOnly }) }) },
     }),
 }));
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => "org-1",
   selectShouldPromptForOrganization: () => false,
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({ ensureOrganizationContext: jest.fn() }));
-jest.mock("@/lib/organization/selection-cancelled", () => ({ isOrganizationSelectionCancelled: () => false }));
+jest.mock("@host/lib/organization/organization-gate", () => ({ ensureOrganizationContext: jest.fn() }));
+jest.mock("@host/lib/organization/selection-cancelled", () => ({ isOrganizationSelectionCancelled: () => false }));
 
 import {
   addressWithConversation,

@@ -17,10 +17,10 @@ import {
   type LiveAgentCallTrace,
 } from "../utils/agent-call-trace";
 import { createSelector } from "@reduxjs/toolkit";
-import { blockMediaFileId } from "@/features/agents/redux/execution-system/utils/block-media-identity";
-import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
+import { blockMediaFileId } from "../utils/block-media-identity";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
 import { decisionAnswersText } from "@ai-matrx/agents/presentation/decision-answers";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   ActiveRequest,
   ExtractedJsonSnapshot,
@@ -30,7 +30,7 @@ import type {
   ReservationRecord,
   WorkflowNodeStreamEntry,
   RequestGenerationJob,
-} from "@/features/agents/types/request.types";
+} from "../../../types/request.types";
 import type {
   Phase,
   Operation,
@@ -64,16 +64,16 @@ import type {
   VideoOutputData,
   WorkflowStepData,
   ProviderRetryPayload,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 import type {
   OperationEntry,
   CompletedOperationEntry,
-} from "@/features/agents/types/request.types";
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+} from "../../../types/request.types";
+import type { CxToolCallRecord } from "../observability/observability.slice";
 import {
   readEnvelope,
   reconstructRegionValue,
-} from "@/features/content-ir/redux/render-block-envelope";
+} from "@host/features/content-ir/redux/render-block-envelope";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   buildLiveCitationIndex,
@@ -83,9 +83,9 @@ import {
   type LiveCitationEntry,
   type LiveCitationIndex,
   type MessageCitationSource,
-} from "@/features/agents/redux/execution-system/messages/message-citations";
-import { soleFence } from "@/lib/markdown/code-ranges";
-import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
+} from "../messages/message-citations";
+import { soleFence } from "@host/lib/markdown/code-ranges";
+import { stripThinkingStreaming } from "@host/components/content-refine/utils/stripThinking";
 
 /** Stable fallbacks — never inline `?? []` in selector outputs. */
 export const EMPTY_REQUEST_IDS: string[] = [];

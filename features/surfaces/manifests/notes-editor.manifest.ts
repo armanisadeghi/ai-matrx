@@ -43,7 +43,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import type { PermissionLevel } from "@/utils/permissions/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

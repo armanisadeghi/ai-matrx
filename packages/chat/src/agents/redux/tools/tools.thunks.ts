@@ -1,8 +1,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
+import { supabase } from "@host/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import type { DatabaseTool } from "@/utils/supabase/tools-service";
+import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import type { DatabaseTool } from "@host/utils/supabase/tools-service";
 
 type WithTools = {
   tools: { tools: DatabaseTool[]; status: string };

@@ -1,8 +1,8 @@
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+import type { AgentDefinitionMessage } from "../types/agent-message-types";
 import type {
   AgentDefinition,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
+} from "../types/agent-definition.types";
 
 export type SystemAgentAiExportMode = "basics" | "with-messages" | "full-json";
 

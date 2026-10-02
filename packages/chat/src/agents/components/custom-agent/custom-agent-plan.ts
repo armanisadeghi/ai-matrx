@@ -10,11 +10,11 @@
 // person explicitly mapped it there, and it lands in the composer where they
 // can edit it before sending.
 
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import type { AgentExecutionRuntime } from "@/features/agents/types/agent-execution-config.types";
-import type { ValueMappingMap } from "@/features/surfaces/types";
-import { humanizeName } from "@/features/agents/components/send-to-agent/send-to-agent-plan";
+import type { VariableDefinition } from "../../types/agent-definition.types";
+import type { ApplicationScope } from "../../types/scope.types";
+import type { AgentExecutionRuntime } from "../../types/agent-execution-config.types";
+import type { ValueMappingMap } from "../../../surfaces/types";
+import { humanizeName } from "../send-to-agent/send-to-agent-plan";
 
 /** A value the menu captured that the person can map onto an input. */
 export interface CustomAgentValueSource {

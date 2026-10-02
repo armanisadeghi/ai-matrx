@@ -9,21 +9,21 @@ import React, {
   type ErrorInfo,
 } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { useShortcutTrigger } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import {
   selectLatestAccumulatedText,
   selectLatestRequestId,
   selectIsStreaming,
   selectStreamPhase,
   type StreamPhase,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
   selectJsonExtractionRevision,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   extractAgentConfig,
   extractAgentName,
@@ -33,14 +33,14 @@ import {
   useAgentBuilder,
   type AgentOwner,
 } from "../services/agentBuilderService";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { resolvePreferredAuthoringModel } from "@/features/ai-models/preferredAuthoringModel";
-import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
-import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
+import { getSystemShortcut } from "@ai-matrx/chat/agents/constants/system-shortcuts";
+import { ensureShortcutLoaded } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import { useDebugContext } from "@/hooks/useDebugContext";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";

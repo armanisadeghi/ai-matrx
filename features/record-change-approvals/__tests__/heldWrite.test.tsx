@@ -16,7 +16,7 @@ import React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
@@ -29,10 +29,10 @@ jest.mock("@/components/loaders/ShimmerText", () => ({
   ShimmerText: ({ text }: { text: string }) => <span>{text}</span>,
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({ selectToolDisplayPreference: jest.fn() }),
 );
-jest.mock("@/features/tool-call-visualization/registry/registry", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/registry/registry", () => ({
   getInlineRenderer: jest.fn(() => () => <div data-testid="dataset-renderer">dataset body</div>),
   getToolDisplayName: jest.fn(() => "Dataset"),
   getToolPhaseLabel: jest.fn(
@@ -45,31 +45,31 @@ jest.mock("@/features/tool-call-visualization/registry/registry", () => ({
   getToolChrome: jest.fn(() => "line"),
   hasCustomRenderer: jest.fn(() => true),
 }));
-jest.mock("@/features/tool-call-visualization/renderers/_shared-entity/ToolGlyph", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/renderers/_shared-entity/ToolGlyph", () => ({
   ToolGlyph: () => <span />,
 }));
-jest.mock("@/features/tool-call-visualization/db-renderer/useDbToolMeta", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/db-renderer/useDbToolMeta", () => ({
   useDbToolRendererState: jest.fn(() => ({ meta: null, resolution: "custom" })),
 }));
-jest.mock("@/features/tool-call-visualization/db-renderer/toolRendererCache", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/db-renderer/toolRendererCache", () => ({
   prefetchToolRenderer: jest.fn(),
 }));
-jest.mock("@/features/tool-call-visualization/renderers/useAutoScrollOnStream", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/renderers/useAutoScrollOnStream", () => ({
   useAutoScrollOnStream: () => ({ current: null }),
 }));
-jest.mock("@/features/tool-call-visualization/components/toolCardUiSession", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/components/toolCardUiSession", () => ({
   getToolCardUserChoice: () => null,
   setToolCardUserChoice: jest.fn(),
   markToolCardLive: jest.fn(),
   wasToolCardLive: () => false,
 }));
-jest.mock("@/features/tool-call-visualization/components/ToolUpdatesOverlay", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/components/ToolUpdatesOverlay", () => ({
   ToolUpdatesOverlay: () => null,
 }));
-jest.mock("@/features/tool-call-visualization/registry/toolArtifact", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/registry/toolArtifact", () => ({
   getToolArtifact: () => null,
 }));
-jest.mock("@/features/tool-call-visualization/components/ArtifactResultBar", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/components/ArtifactResultBar", () => ({
   ArtifactResultBar: () => null,
 }));
 // The card's own doors are the store's; what is under test is THAT the shell
@@ -85,8 +85,8 @@ jest.mock("@/features/record-change-approvals/useHeldWriteTableName", () => ({
   useHeldWriteTableName: () => "Hygiene Recall Schedule",
 }));
 
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
-import { toolErrorLabel } from "@/features/tool-call-visualization/result-fields/ToolErrorCard";
+import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
+import { toolErrorLabel } from "@ai-matrx/chat/tool-call-visualization/result-fields/ToolErrorCard";
 import {
   heldWriteHeadline,
   readRecordChangeWait,

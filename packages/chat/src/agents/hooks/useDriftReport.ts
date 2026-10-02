@@ -5,15 +5,15 @@
 "use client";
 
 import { useEffect, useCallback, useMemo } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchAgentUsageReport } from "@/features/agents/redux/usages/usages.thunks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { fetchAgentUsageReport } from "@host/features/agents/redux/usages/usages.thunks";
 import {
   makeSelectReport,
   makeSelectReportSorted,
   makeSelectReportTotals,
   type ReportSortKey,
-} from "@/features/agents/redux/usages/usages.selectors";
-import type { UsageScope } from "@/features/agents/redux/usages/usages.slice";
+} from "@host/features/agents/redux/usages/usages.selectors";
+import type { UsageScope } from "@host/features/agents/redux/usages/usages.slice";
 
 export function useDriftReport(
   scope: UsageScope,

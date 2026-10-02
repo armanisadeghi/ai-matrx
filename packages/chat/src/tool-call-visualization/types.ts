@@ -22,8 +22,8 @@
 
 import type React from "react";
 import type { LucideIcon } from "lucide-react";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+import type { ToolLifecycleEntry } from "../agents/types/request.types";
+import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
 
 /** Accent palette for a tool's glossy glyph (see `ToolGlyph`). */
 export type ToolAccent =

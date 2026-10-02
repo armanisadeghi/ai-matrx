@@ -8,7 +8,7 @@ import { SelectInput } from "./SelectInput";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/components/ui/select", () => ({
+jest.mock("@host/components/ui/select", () => ({
   Select: ({
     children,
     onValueChange,
@@ -26,7 +26,7 @@ jest.mock("@/components/ui/select", () => ({
   SelectValue: () => null,
 }));
 
-jest.mock("@/components/official/ProTextarea", () => ({
+jest.mock("@host/components/official/ProTextarea", () => ({
   ProTextarea: () => null,
 }));
 

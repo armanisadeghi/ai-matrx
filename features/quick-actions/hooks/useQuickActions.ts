@@ -8,8 +8,8 @@ import {
   useOpenAgentRunWindow,
   type OpenAgentRunWindowOptions,
 } from "@/features/overlays/openers/agentRunWindow";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveMandate } from "@/features/mandates/service";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 
 export type OpenChatWindowOptions = Pick<
   OpenAgentRunWindowOptions,

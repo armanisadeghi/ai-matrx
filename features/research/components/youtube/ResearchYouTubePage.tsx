@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { removeRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { toast } from "@/lib/toast";
 import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
 import { marketingRoutes } from "@/features/marketing/lib/routes";

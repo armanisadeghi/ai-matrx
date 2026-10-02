@@ -30,8 +30,8 @@ import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Accordion } from "@/components/ui/accordion";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectWorkflowNodeStreams } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { WorkflowNodeStreamEntry } from "@/features/agents/types/request.types";
+import { selectWorkflowNodeStreams } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import type { WorkflowNodeStreamEntry } from "@ai-matrx/chat/agents/types/request.types";
 import {
   selectActiveRoleTab,
   selectRoomHydrated,

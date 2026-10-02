@@ -40,7 +40,7 @@ import {
   initialImageViewerTransform,
 } from "./imageViewerTransforms";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   IMAGE_VIEWER_SURFACE_NAME,
   createImageViewerScope,

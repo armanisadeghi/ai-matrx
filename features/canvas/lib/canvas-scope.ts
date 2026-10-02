@@ -17,7 +17,7 @@ import {
   createCanvasScope,
   type CanvasOpenItemSummary,
 } from "@/features/surfaces/manifests/canvas.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type {
   CanvasItem,
   CanvasRenderMode,

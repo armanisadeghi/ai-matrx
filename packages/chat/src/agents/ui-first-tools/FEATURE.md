@@ -167,13 +167,13 @@ This feature exists because:
 **Surface inclusion (server-resolved)**
 - Surface defaults include these tools on `matrx-user/chat`. The request
   declares `client.surface` (route →
-  surface via `features/surfaces/utils/route-to-surface.ts`) and aidream
+  surface via `packages/chat/src/surfaces/utils/route-to-surface.ts`) and aidream
   resolves it to this tool set. There is no client capability for this —
   surfaces are data, not capabilities.
 
 **Dispatcher**
 - `dispatcher/dispatch-ui-first-tool.thunk.ts` — wired into
-  `features/agents/redux/execution-system/thunks/process-stream.ts` to
+  `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts` to
   route `tool_delegated` events for UI-first tool names.
 
 ---
@@ -381,12 +381,12 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Related features
 
-- **Depends on:** `features/agents/redux/execution-system/` (client
+- **Depends on:** `packages/chat/src/agents/redux/execution-system/` (client
   capabilities registry, build-tool-injection, submit-tool-results,
   process-stream), `lib/redux/slices/appContextSlice.ts` (scope
   context), `features/scopes/` (closest-wins scope resolution).
 - **Depended on by:** the chat surface
-  (`features/agents/components/shared/AgentConversationColumn.tsx`),
+  (`packages/chat/src/agents/components/shared/AgentConversationColumn.tsx`),
   the new `/agent-lists` route.
 - **Mirror surface:** the matrx-extend Chrome extension at
   `/Users/armanisadeghi/code/matrx-extend/src/lib/tools/handlers/{user,lists}.ts`.
@@ -395,7 +395,7 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
-- `2026-10-01` — An anchored surface edit (`str_replace`) is reviewed as the lines it touched: `buildSurfaceWriteApprovalChange` diffs `proposal.patch` (before/after cut from the live text by the seam), so a one-word note edit shows a one-line diff, not the whole note. Guard: `features/surfaces/runtime/__tests__/note-content-one-word-patch.test.ts`.
+- `2026-10-01` — An anchored surface edit (`str_replace`) is reviewed as the lines it touched: `buildSurfaceWriteApprovalChange` diffs `proposal.patch` (before/after cut from the live text by the seam), so a one-word note edit shows a one-line diff, not the whole note. Guard: `packages/chat/src/surfaces/runtime/__tests__/note-content-one-word-patch.test.ts`.
 
 - `2026-09-22` — Removed the retired SMS exact-action card, parser, pending-ask state and delegated-call interception after the backend removed its confirmation endpoint. Ordinary client-tool questions, surface-edit approvals and Gmail review still use their existing paths.
 
@@ -634,7 +634,7 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 
 > **A client-answered call settles on the client (2026-09-30).** `submitToolResult`
-> calls `settleClientToolCall` (`features/agents/api/settle-client-tool-call.ts`), which
+> calls `settleClientToolCall` (`packages/chat/src/agents/api/settle-client-tool-call.ts`), which
 > marks the call terminal in BOTH `activeRequests.toolLifecycle` and
 > `observability.toolCalls` in the same tick it POSTs. The server sends no completion
 > event for a delegated call, so without this every card stayed "Working…". A

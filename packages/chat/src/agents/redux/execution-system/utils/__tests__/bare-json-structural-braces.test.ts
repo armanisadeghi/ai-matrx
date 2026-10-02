@@ -1,6 +1,6 @@
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { StreamBlockAccumulator } from "../stream-block-accumulator";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
 
 // 🚨 A PARTIAL MOCK OF A REAL MODULE IS A SUITE THAT DIES ON THE NEXT EXPORT
 // (DD-239). Replacing the whole capture store with `{ captureError }` killed
@@ -9,8 +9,8 @@ import type { RenderBlockPayload } from "@/types/python-generated/stream-events"
 // time — zero tests ran while the file still looked green in a list. Spread the
 // real module: only the export this suite observes is replaced, and a new
 // export can never silently take the suite down.
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 

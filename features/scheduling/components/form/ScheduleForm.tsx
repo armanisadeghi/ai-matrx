@@ -41,7 +41,7 @@ import type {
   TriggerConfig,
   TriggerType,
 } from "../../types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
 import { buildOpenScheduleValues } from "../../lib/schedules-scope";
 import { validateCron } from "@/lib/scheduler-client/next-due";

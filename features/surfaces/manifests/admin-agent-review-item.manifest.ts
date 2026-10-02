@@ -41,7 +41,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import type { ReviewTriage } from "@/features/admin/agent-review/triage";
 import type { ReviewStatus } from "@/features/admin/agent-review/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";

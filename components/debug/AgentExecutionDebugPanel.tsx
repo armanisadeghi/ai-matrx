@@ -28,7 +28,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectInstance,
   selectInstanceStatus,
-} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 
 // Conversation history
 import {
@@ -37,14 +37,14 @@ import {
   selectMessageCount,
   selectHasMessages,
   extractFlatText,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 
 // User input
 import {
   selectUserInputText,
   selectUserInputMessageParts,
   selectHasUserInput,
-} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 
 // Model overrides
 import {
@@ -52,7 +52,7 @@ import {
   selectSettingsOverridesForApi,
   selectHasOverrides,
   selectOverriddenKeys,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 
 // Variables
 import {
@@ -61,14 +61,14 @@ import {
   selectScopeVariableValues,
   selectResolvedVariables,
   selectMissingRequiredVariables,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 
 // Resources
 import {
   selectInstanceResources,
   selectReadyResources,
   selectPendingResources,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 
 // Aggregate / cross-cutting
 import {
@@ -86,14 +86,14 @@ import {
   selectAssembledRequest,
   selectPendingToolCallsForInstance,
   selectShouldShowVariables,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 
 // UI State
 import {
   selectInstanceUIState,
   selectDisplayMode,
   selectAutoRun,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentExecutionDebugPanelProps {

@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { useOpenAgentSkillsWindow } from "@/features/overlays/openers/agentSkillsWindow";
-import { selectAgentSkillConfig } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentSkillConfig } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { cn } from "@/lib/utils";
 
 interface AgentSkillsButtonProps {

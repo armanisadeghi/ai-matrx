@@ -16,7 +16,7 @@ import { SignupConversionModal } from "@/components/guest/SignupConversionModal"
 import { compileSlotComponent } from "../utils/compile-slot";
 import { AgentAppErrorBoundary } from "./AgentAppErrorBoundary";
 import MarkdownStream from "@/components/MarkdownStream";
-import PublicMessageOptionsMenu from "@/features/public-chat/components/PublicMessageOptionsMenu";
+import PublicMessageOptionsMenu from "@ai-matrx/chat/public-chat/components/PublicMessageOptionsMenu";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import type { PublicAgentApp } from "../types";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -24,22 +24,22 @@ import {
   recordRunOutcome,
   waitForRunOutcome,
 } from "../tracking/run-outcome";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import {
   selectResultText,
   selectRequest,
   selectPrimaryRequest,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
-import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { useWarmAgent } from "@ai-matrx/chat/agents/hooks/useWarmAgent";
 import { useAppHolder } from "@/features/agent-apps/lib/appHolder";
 import { AppWorkspaceGate } from "./AppWorkspaceGate";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { APP_RUN_ERROR_TITLE } from "./app-run-error";
 import { SHELL_REGISTRY } from "./shells";
 import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
 import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createPublicAgentAppScope } from "@/features/surfaces/manifests/public-agent-app.manifest";
 import type { AgentAppSurfaceBinding } from "@/features/agent-apps/surface/agent-app-surface";
 import {

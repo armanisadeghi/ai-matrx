@@ -5,7 +5,7 @@
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingRanksHubScope } from "@/features/surfaces/manifests/marketing-ranks-hub.manifest";
 import { RANK_HISTORY_DAYS } from "./cross-site-data";
 import { crossSiteRankListConfig } from "./cross-site-list-config";

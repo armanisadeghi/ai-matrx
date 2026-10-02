@@ -41,9 +41,9 @@
 | 5 | `lib/redux/app-builder/service/index.ts` | barrel | 13 | 6 | 4 |
 | 6 | `features/sharing/index.ts` | barrel | 10 | 17 | 6 |
 | 7 | `features/scopes/components/active-context/quick-pick/index.ts` | barrel | 8 | 12 | 1 |
-| 8 | `features/agents/redux/conversation-history/index.ts` | barrel | 6 | 20 | 4 |
+| 8 | `packages/chat/src/agents/redux/conversation-history/index.ts` | barrel | 6 | 20 | 4 |
 | 9 | `utils/logger/index.ts` | barrel | 6 | 12 | 8 |
-| 10 | `features/agents/components/run-controls/AdvancedRunSettings/algorithm/index.ts` | barrel | 4 | 19 | 2 |
+| 10 | `packages/chat/src/agents/components/run-controls/AdvancedRunSettings/algorithm/index.ts` | barrel | 4 | 19 | 2 |
 | 11 | `features/applet/runner/header/index.ts` | barrel | 4 | 9 | 7 |
 | 12 | `features/files/components/core/PdfAnnotationLayer/index.ts` | barrel | 4 | 3 | 1 |
 | 13 | `features/code/agent-context/index.ts` | barrel | 3 | 39 | 10 |
@@ -53,9 +53,9 @@
 | 17 | `features/code/editor/monaco-environments/index.ts` | barrel | 2 | 47 | 1 |
 | 18 | `lib/scheduler-client/index.ts` | barrel | 2 | 90 | 2 |
 | 19 | `packages/matrx-agents/src/adapters/index.ts` | barrel | 2 | 20 | 4 |
-| 20 | `features/agents/components/run-controls/AdvancedRunSettings/index.ts` | barrel | 1 | 39 | 3 |
+| 20 | `packages/chat/src/agents/components/run-controls/AdvancedRunSettings/index.ts` | barrel | 1 | 39 | 3 |
 | 21 | `features/pdf/components/viewer/annotation-layer/index.ts` | barrel | 1 | 11 | 3 |
-| 22 | `features/tool-call-visualization/renderers/get-user-lists/index.ts` | barrel | 1 | 3 | 2 |
+| 22 | `packages/chat/src/tool-call-visualization/renderers/get-user-lists/index.ts` | barrel | 1 | 3 | 2 |
 
 ---
 
@@ -328,8 +328,8 @@
 - `components/user-generated-table-data/TableListItem.tsx`
 - `features/agent-apps/components/agent-app-listings/AgentAppCard.tsx`
 - `features/content-templates/components/TemplateCard.tsx`
-- `features/cx-chat/components/ChatHeaderControls.tsx`
-- `features/cx-chat/components/SsrSidebarChats.tsx`
+- `packages/chat/src/cx-chat/components/ChatHeaderControls.tsx`
+- `packages/chat/src/cx-chat/components/SsrSidebarChats.tsx`
 - `features/messaging/actions/messageActionRegistry.tsx`
 - `features/scopes/components/associations/AttachedItemsSheet.tsx`
 - `features/sharing/components/AccessSummaryPanel.tsx`
@@ -359,7 +359,7 @@
 
 </details>
 
-### `features/agents/redux/conversation-history/index.ts`
+### `packages/chat/src/agents/redux/conversation-history/index.ts`
 
 - **Kind:** barrel
 - **Lines:** 20
@@ -369,11 +369,11 @@
 <details>
 <summary>Importers (6)</summary>
 
-- `features/agents/components/conversation-actions/conversationActionRegistry.tsx`
-- `features/agents/components/conversation-history/ConversationHistorySidebar.tsx`
-- `features/agents/components/conversation-history/ConversationSourceFilterTree.tsx`
+- `packages/chat/src/agents/components/conversation-actions/conversationActionRegistry.tsx`
+- `packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx`
+- `packages/chat/src/agents/components/conversation-history/ConversationSourceFilterTree.tsx`
 - `features/settings/tabs/ConversationFiltersTab.tsx`
-- `features/window-panels/windows/agents/ChatHistoryWindow.tsx`
+- `packages/chat/src/window-panels/windows/agents/ChatHistoryWindow.tsx`
 - `lib/redux/rootReducer.ts`
 
 </details>
@@ -414,7 +414,7 @@
 
 </details>
 
-### `features/agents/components/run-controls/AdvancedRunSettings/algorithm/index.ts`
+### `packages/chat/src/agents/components/run-controls/AdvancedRunSettings/algorithm/index.ts`
 
 - **Kind:** barrel
 - **Lines:** 19
@@ -425,9 +425,9 @@
 <summary>Importers (4)</summary>
 
 - `app/(dev)/demos/run-settings/advanced-run-settings-demo/page.tsx`
-- `features/agents/components/run-controls/AdvancedRunSettings/AdvancedRunSettings.tsx`
-- `features/agents/components/run-controls/AdvancedRunSettings/ComplexityBadge.tsx`
-- `features/agents/components/run-controls/AdvancedRunSettings/index.ts`
+- `packages/chat/src/agents/components/run-controls/AdvancedRunSettings/AdvancedRunSettings.tsx`
+- `packages/chat/src/agents/components/run-controls/AdvancedRunSettings/ComplexityBadge.tsx`
+- `packages/chat/src/agents/components/run-controls/AdvancedRunSettings/index.ts`
 
 </details>
 
@@ -792,7 +792,7 @@
 
 </details>
 
-### `features/agents/components/run-controls/AdvancedRunSettings/index.ts`
+### `packages/chat/src/agents/components/run-controls/AdvancedRunSettings/index.ts`
 
 - **Kind:** barrel
 - **Lines:** 39
@@ -820,7 +820,7 @@
 
 </details>
 
-### `features/tool-call-visualization/renderers/get-user-lists/index.ts`
+### `packages/chat/src/tool-call-visualization/renderers/get-user-lists/index.ts`
 
 - **Kind:** barrel
 - **Lines:** 3
@@ -830,7 +830,7 @@
 <details>
 <summary>Importers (1)</summary>
 
-- `features/tool-call-visualization/registry/registry.tsx`
+- `packages/chat/src/tool-call-visualization/registry/registry.tsx`
 
 </details>
 

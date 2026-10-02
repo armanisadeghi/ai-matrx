@@ -15,10 +15,10 @@ import type {
   BuilderAdvancedSettings,
   InstanceUIState,
   JsonExtractionConfig,
-} from "@/features/agents/types/instance.types";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
+} from "../../../types/instance.types";
+import type { ResultDisplayMode } from "../../../utils/run-ui-utils";
+import type { VariablesPanelStyle } from "../../../components/inputs/variable-input-variations/variable-input-options";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
 

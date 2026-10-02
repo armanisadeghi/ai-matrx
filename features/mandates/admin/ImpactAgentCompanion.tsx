@@ -21,8 +21,8 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, ExternalLink, FlaskConical, History, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import { AgentDiffViewer } from "@ai-matrx/chat/agents/components/diff/AgentDiffViewer";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { agentHref } from "./mandate-health";
 import { MandateTestBench } from "./MandateTestBench";
 import {

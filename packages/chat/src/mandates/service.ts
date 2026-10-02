@@ -55,32 +55,32 @@
  * breakage this system exists to surface.
  */
 
-import { createClient } from "@/utils/supabase/client";
-import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { isJsonObject } from "@/types/json";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
-import { apiGet, buildPath } from "@/lib/api/typed-client";
-import { BackendApiError } from "@/lib/api/errors";
+import { createClient } from "@host/utils/supabase/client";
+import { getClaimsUser } from "@host/utils/supabase/claimsUser";
+import { isJsonObject } from "@host/types/json";
+import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import type { FeLlmParams } from "../agents/types/agent-api-types";
+import { apiGet, buildPath } from "@host/lib/api/typed-client";
+import { BackendApiError } from "@host/lib/api/errors";
 import {
   peekSelectedOrganizationId,
   waitForOrganizationAdmission,
   type OrganizationAdmission,
-} from "@/lib/api/organization-admission";
-import type { components } from "@/types/python-generated/api-types";
+} from "@host/lib/api/organization-admission";
+import type { components } from "@host/types/python-generated/api-types";
 import { toLlmParams } from "./llm-params";
-import { invalidateMandateCatalogueCache } from "./catalogue";
+import { invalidateMandateCatalogueCache } from "@host/features/mandates/catalogue";
 import {
   missingRequiredVariables,
   missingVariablesMessage,
   parseMandateContract,
   type MandateContract,
-} from "./contract";
+} from "@host/features/mandates/contract";
 import {
   parseMandateWave1,
   type MandateWave1Fields,
-} from "./provision-shapes";
-import type { JsonObject } from "@/types/json";
+} from "@host/features/mandates/provision-shapes";
+import type { JsonObject } from "@host/types/json";
 import {
   MANDATE_HOLDER_COLUMNS,
   MANDATE_STORAGE_LABEL,
@@ -88,14 +88,14 @@ import {
   isFloatingMandate,
   mandateDefinitions,
   mandateTreatments,
-} from "@/lib/supabase/mandateStorage";
-import type { AnyMandateKey } from "./mandate-key";
+} from "@host/lib/supabase/mandateStorage";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 import {
   TREATMENT_TIER_WIDGET,
   parseTreatmentConfig,
   type BindingPresentation,
-} from "@/features/bindings/treatment-shape";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+} from "@host/features/bindings/treatment-shape";
+import { storedMandateKey } from "@host/features/mandates/mandate-key";
 
 export interface ResolvedMandate {
   mandateKey: AnyMandateKey;
@@ -974,4 +974,4 @@ export {
   missingRequiredVariables,
   missingVariablesMessage,
   type MandateContract,
-} from "./contract";
+} from "@host/features/mandates/contract";

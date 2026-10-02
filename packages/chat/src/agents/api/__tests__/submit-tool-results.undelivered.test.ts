@@ -25,16 +25,16 @@ const mockCallApi = jest.fn((config: unknown) => ({
   config,
 }));
 
-jest.mock("@/lib/api/call-api", () => ({
+jest.mock("@host/lib/api/call-api", () => ({
   callApi: mockCallApi,
 }));
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversations.slice",
+  "../../redux/execution-system/conversations/conversations.slice",
   () => ({
     setInstanceStatus: jest.fn((payload: unknown) => ({
       type: "conversations/setInstanceStatus",

@@ -6,7 +6,7 @@ import { studyMediaService } from "../service";
 jest.mock("@/features/files/api/files", () => ({ getFileMetadata: jest.fn(async () => ({ data: { id: "file-2", mime_type: "audio/wav" } })) }));
 jest.mock("@/utils/permissions/access", () => ({ getResourceAccess: jest.fn() }));
 jest.mock("../service", () => ({ studyMediaService: { updateVersioned: jest.fn() } }));
-jest.mock("@/features/surfaces/runtime/surface-writeback", () => ({ refuseSurfaceWrite: jest.fn() }));
+jest.mock("@ai-matrx/chat/surfaces/runtime/surface-writeback", () => ({ refuseSurfaceWrite: jest.fn() }));
 
 const row: StudyMediaRow = {
   audio_file_id: "file-1", audio_format: "overview", config: {}, created_at: "2026-09-27T00:00:00Z",

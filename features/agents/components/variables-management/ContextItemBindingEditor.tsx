@@ -18,12 +18,12 @@ import {
 import type {
   ContextItemBinding,
   VariableBinding,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   contextItemBindingOf,
   isCustomDataBinding,
   isEmptyBinding,
-} from "@/features/agents/utils/variable-binding";
+} from "@ai-matrx/chat/agents/utils/variable-binding";
 import { CustomDataBindingPicker } from "./custom-data/CustomDataBindingPicker";
 import { emptyCustomDataBinding } from "./custom-data/customDataBinding";
 

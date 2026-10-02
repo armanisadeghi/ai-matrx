@@ -10,7 +10,7 @@ import CreateAnnouncementDialog from '@/features/admin/users/components/CreateAn
 import CategoriesTab from './CategoriesTab';
 import { Button } from '@/components/ui/button';
 import { Plus, MessageSquare, Megaphone, ListOrdered, Tag } from 'lucide-react';
-import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import { SurfaceRuntimeProvider } from '@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext';
 import {
     ADMIN_FEEDBACK_SURFACE_NAME,
     createAdminFeedbackScope,

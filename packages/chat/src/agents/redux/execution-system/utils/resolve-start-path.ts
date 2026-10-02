@@ -22,8 +22,8 @@
 import {
   resolveEndpointPath,
   type EndpointOverrideConfig,
-} from "@/lib/api/resolve-endpoint-path";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+} from "@host/lib/api/resolve-endpoint-path";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export const AGENT_START_PATH_TEMPLATE = "/ai/agents/{agent_id}" as const;
 export const MANDATE_START_PATH_TEMPLATE = "/ai/mandates/{mandate_key}" as const;

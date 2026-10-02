@@ -4,7 +4,7 @@ import React from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import TablesLanding from "@/features/auth/components/module-landing/landings/TablesLanding";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-assistant/ScrollAssistantLauncher";
+import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
 
 // Generate metadata with automatic favicon for the Data/Tables route
 export const metadata = createRouteMetadata("/data", {

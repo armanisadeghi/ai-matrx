@@ -27,7 +27,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   LOOKUP_DESCRIPTION_MAX_CHARS,
   LOOKUP_NAME_MAX_CHARS,

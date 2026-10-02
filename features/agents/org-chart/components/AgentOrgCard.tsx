@@ -11,7 +11,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowUpRight, Copy, Loader2, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { AgentPeekButton } from "@/features/agents/orchestras/components/AgentPeekButton";
 import { accentClasses } from "@/features/agents/orchestras/components/accents";

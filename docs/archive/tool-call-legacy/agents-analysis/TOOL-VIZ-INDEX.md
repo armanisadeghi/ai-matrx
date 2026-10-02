@@ -23,7 +23,7 @@
 
 | File | Role |
 |------|------|
-| [`features/cx-chat/utils/cx-content-converter.ts`](../../features/cx-chat/utils/cx-content-converter.ts) | CX tables → display + `toolUpdates` |
+| [`packages/chat/src/cx-chat/utils/cx-content-converter.ts`](../../packages/chat/src/cx-chat/utils/cx-content-converter.ts) | CX tables → display + `toolUpdates` |
 | [`features/public-chat/utils/cx-content-converter.ts`](../../features/public-chat/utils/cx-content-converter.ts) | Same pattern, public-chat |
 
 ---
@@ -71,14 +71,14 @@ Same layout as `lib/tool-renderers`; **prefer `@/lib/tool-renderers`.** [`index.
 | File | Role |
 |------|------|
 | [`features/agents/components/run/AgentToolDisplay.tsx`](../agents/components/run/AgentToolDisplay.tsx) | `ToolLifecycleEntry[]` → `ToolCallObject[]` → `ToolCallVisualization` |
-| [`features/agents/redux/execution-system/active-requests/active-requests.selectors.ts`](../agents/redux/execution-system/active-requests/active-requests.selectors.ts) | Tool lifecycle state |
-| [`features/agents/types/request.types.ts`](../agents/types/request.types.ts) | `ToolLifecycleEntry` |
+| [`packages/chat/src/agents/redux/execution-system/active-requests/active-requests.selectors.ts`](../agents/redux/execution-system/active-requests/active-requests.selectors.ts) | Tool lifecycle state |
+| [`packages/chat/src/agents/types/request.types.ts`](../agents/types/request.types.ts) | `ToolLifecycleEntry` |
 
 ---
 
 ## Major consumers (wiring)
 
-- [`features/cx-conversation/AssistantMessage.tsx`](AssistantMessage.tsx)
+- [`packages/chat/src/cx-conversation/AssistantMessage.tsx`](AssistantMessage.tsx)
 - [`features/chat/components/response/assistant-message/stream/ChatStreamDisplay.tsx`](../../features/chat/components/response/assistant-message/stream/ChatStreamDisplay.tsx)
 - [`components/mardown-display/chat-markdown/StreamAwareChatMarkdown.tsx`](../../components/mardown-display/chat-markdown/StreamAwareChatMarkdown.tsx)
 - [`components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx`](../../components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx)

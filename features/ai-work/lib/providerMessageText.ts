@@ -1,4 +1,4 @@
-import { messagePartsFromPersistedContent } from "@/features/agents/redux/execution-system/messages/persisted-content-boundary";
+import { messagePartsFromPersistedContent } from "@ai-matrx/chat/agents/redux/execution-system/messages/persisted-content-boundary";
 
 export interface ProviderMessageDisplay {
   text: string;

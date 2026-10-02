@@ -23,20 +23,20 @@ import { createRoot, type Root } from "react-dom/client";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <div>{content}</div>,
 }));
-jest.mock("@/lib/scoped-config/sessionKnob", () => ({
+jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
   useSessionKnob: () => undefined,
   getSessionKnob: () => undefined,
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@host/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 jest.mock("../../db-renderer/toolRendererCache", () => ({
   getCachedToolRenderer: () => null,
   getCachedToolMeta: () => null,

@@ -25,26 +25,26 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { VoiceRelayBar } from "@/features/voice-agent/relay/VoiceRelayBar";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { VoiceRelayBar } from "@ai-matrx/chat/voice-agent/relay/VoiceRelayBar";
 import { InterviewOpening } from "../../record/InterviewOpening";
 import {
   INTERVIEW_HISTORY_MS,
   INTERVIEW_OPENING_MS,
   INTERVIEW_RESUME_MS,
 } from "../../record/openingRates";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
   setDisplayDescriptionOverride,
   setDisplayIconNameOverride,
   setDisplayNameOverride,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useMandate } from "@/features/mandates/useMandate";
-import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
+import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
+import { useConversationResume } from "@ai-matrx/chat/agents/hooks/useConversationResume";
 import { supabase } from "@/utils/supabase/client";
 import {
   associateInterviewWhenPersisted,
@@ -55,7 +55,7 @@ import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/
 import {
   missingRequiredVariables,
   missingVariablesMessage,
-} from "@/features/mandates/service";
+} from "@ai-matrx/chat/mandates/service";
 import { RULEBOOK_DOCUMENT_VARIABLE } from "@/features/masterwork/agent-context/rulebookDocument";
 import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
 import { declareBlankSlateInterview } from "@/features/masterwork/record/blankSlateLane";

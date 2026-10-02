@@ -72,7 +72,7 @@ const ROOT = resolve(__dirname, "..");
 const SCAN_DIRS = [
   "app",
   "components",
-  "features",
+  "features", "packages/chat/src",
   "lib",
   "hooks",
   "providers",

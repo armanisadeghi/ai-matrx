@@ -17,7 +17,7 @@ import {
   toggleOutputKind,
   toggleOutputType,
 } from "../composer/output-selection";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../../types/instance.types";
 
 const skill = (id: string, skillId: string, isActive = true): ShapeChipSkillSource => ({ id, skillId, isActive });
 

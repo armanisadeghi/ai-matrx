@@ -6,8 +6,8 @@
  * inline against those generated types.
  */
 
-import { supabase } from "@/utils/supabase/client";
-import type { Database } from "@/types/database.types";
+import { supabase } from "@host/utils/supabase/client";
+import type { Database } from "@host/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

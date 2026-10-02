@@ -21,7 +21,7 @@ import {
   type CrmRecordContactableSummary,
   type CrmRecordContactCandidateScope,
 } from "@/features/surfaces/manifests/crm-record.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { ContactCandidateView } from "../enrichment/service";
 import type { DealRow } from "../deals/types";
 import type { PlatformComment as Comment } from "@ai-matrx/associations";

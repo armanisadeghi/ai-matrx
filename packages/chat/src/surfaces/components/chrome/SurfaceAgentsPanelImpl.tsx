@@ -14,25 +14,25 @@
 
 import { useState } from "react";
 import { Braces, ChevronRight, ShieldCheck } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 
-import { useActivePageSurface } from "@/features/surfaces/runtime/useActivePageSurface";
-import { getRelatedSurfaces } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
-import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
-import { surfaceAcceptsAgentBindings } from "@/features/surfaces/manifests/registry";
-import { SurfaceMandatesSection } from "@/features/surfaces/components/chrome/SurfaceMandatesSection";
-import { SurfaceConversationsSection } from "@/features/surfaces/components/chrome/SurfaceConversationsSection";
-import { PageIntelligenceSection } from "@/features/surfaces/components/chrome/PageIntelligenceSection";
-import { Badge } from "@/components/ui/badge";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useActivePageSurface } from "../../runtime/useActivePageSurface";
+import { getRelatedSurfaces } from "../../runtime/fetchRelatedSurfaces";
+import { getSurfaceDisplayLabel } from "../../utils/surface-display";
+import { SurfaceBoundAgentsList } from "@host/features/surfaces/components/bind/SurfaceBoundAgentsList";
+import { surfaceAcceptsAgentBindings } from "@host/features/surfaces/manifests/registry";
+import { SurfaceMandatesSection } from "./SurfaceMandatesSection";
+import { SurfaceConversationsSection } from "./SurfaceConversationsSection";
+import { PageIntelligenceSection } from "./PageIntelligenceSection";
+import { Badge } from "@host/components/ui/badge";
+import { useAgentLauncher } from "../../../agents/hooks/useAgentLauncher";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
-import { useOpenSurfaceContextWindow } from "@/features/overlays/openers/surfaceContextWindow";
-import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
+import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectIsAdmin } from "@host/lib/redux/selectors/userSelectors";
+import { useOpenSurfaceContextWindow } from "@host/features/overlays/openers/surfaceContextWindow";
+import { useOpenSurfaceContextInspector } from "@host/features/overlays/openers/surfaceContextInspector";
 
 export interface SurfaceAgentsPanelImplProps {
   className?: string;

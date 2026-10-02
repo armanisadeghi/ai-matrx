@@ -30,7 +30,7 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import type { RenderBlockPayload } from "../../types/python-generated/stream-events";
-import { StreamBlockAccumulator } from "../../features/agents/redux/execution-system/utils/stream-block-accumulator";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { applyIrKindRoute } from "../../features/content-ir/react/kind-route";
 import { kindRegistry } from "../../features/content-ir/registry/kind-registry";
 import { componentRegistry } from "../../features/content-ir/registry/component-registry";

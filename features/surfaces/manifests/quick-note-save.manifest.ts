@@ -25,7 +25,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   NOTE_DRAFT_FIELDS,
   SAVE_MODES,

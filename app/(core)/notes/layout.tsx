@@ -18,7 +18,7 @@ import { NotesRouteBody } from "@/features/notes/components/NotesRouteBody";
 import NotesLanding from "@/features/auth/components/module-landing/landings/NotesLanding";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
-import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-assistant/ScrollAssistantLauncher";
+import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
 
 /** Read the persisted notes sidebar/main split so the first paint matches the
  *  user's last layout (no resize flash). Written client-side by NotesView. */

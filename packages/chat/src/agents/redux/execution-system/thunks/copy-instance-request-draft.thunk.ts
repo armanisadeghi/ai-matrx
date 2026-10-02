@@ -9,7 +9,7 @@
  * destination agent's base and its own launch defaults.
  */
 
-import type { AppThunk } from "@/lib/redux/store";
+import type { AppThunk } from "@host/lib/redux/store";
 import {
   setUserInputMessageParts,
   setUserInputText,

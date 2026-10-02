@@ -43,10 +43,10 @@ import {
   setResourcePreview,
   setResourceSource,
   setResourceStatus,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { patchWizardDraft, selectWizardDraft } from "@/lib/redux/slices/wizardDraftSlice";
-import { generateResourceId } from "@/features/agents/redux/execution-system/utils/ids";
-import type { ManagedResource } from "@/features/agents/types/instance.types";
+import { generateResourceId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
+import type { ManagedResource } from "@ai-matrx/chat/agents/types/instance.types";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 import { useSyncHydrated } from "@/lib/sync/useSyncHydrated";
 import { sourcesClient } from "./sourceSetApi";

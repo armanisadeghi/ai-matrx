@@ -12,11 +12,11 @@
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { Database, MapPin, Monitor, Smartphone, Timer } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   formatCacheAge,
   type SeoCollectionReceipt,
-} from "@/features/marketing/seo/rank/types";
+} from "@host/features/marketing/seo/rank/types";
 
 export interface RankRunArgs {
   keyword?: string;

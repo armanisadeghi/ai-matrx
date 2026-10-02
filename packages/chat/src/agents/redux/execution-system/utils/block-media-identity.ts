@@ -15,8 +15,8 @@
  * server side no longer hands out URLs, so the model has nothing to paste. This
  * makes that a STRUCTURAL guarantee rather than a bet on model behaviour.
  */
-import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { fileIdFromUserFilesUrl } from "@host/lib/media/durability";
+import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
 
 /**
  * Only media-bearing blocks participate. A `text` block that happens to contain

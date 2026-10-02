@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
-import { supabase } from "@/utils/supabase/client";
+} from "@host/components/ui/dropdown-menu";
+import { cn } from "@host/lib/utils";
+import { toast } from "@host/lib/toast";
+import { supabase } from "@host/utils/supabase/client";
 import {
   GitCompareArrows,
   ArrowRight,
@@ -20,9 +20,9 @@ import {
   ShieldAlert,
   AlertTriangle,
 } from "lucide-react";
-import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
-import { useSmartVersionFetch } from "@/features/agents/hooks/useSmartVersionFetch";
-import type { EnrichedVersion } from "@/features/agents/hooks/useSmartVersionFetch";
+import type { AgentVersionHistoryItem } from "../../redux/agent-definition/thunks";
+import { useSmartVersionFetch } from "../../hooks/useSmartVersionFetch";
+import type { EnrichedVersion } from "../../hooks/useSmartVersionFetch";
 import { formatChangeType } from "@ai-matrx/diff/structural";
 import { VersionIdBadge } from "./VersionIdBadge";
 import {
@@ -30,8 +30,8 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "@host/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface VersionHistoryTimelineProps {
   agentId: string;

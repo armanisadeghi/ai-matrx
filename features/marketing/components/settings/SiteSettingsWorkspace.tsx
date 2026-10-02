@@ -48,8 +48,8 @@ import { SiteStrategyCard } from "@/features/marketing/components/settings/SiteS
 import { CollectionStatusPanel } from "@/features/marketing/components/settings/CollectionStatusPanel";
 import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
 import { MoveSiteOrganizationCard } from "@/features/marketing/components/settings/MoveSiteOrganizationCard";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingSiteSettingsScope } from "@/features/surfaces/manifests/marketing-site-settings.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import {

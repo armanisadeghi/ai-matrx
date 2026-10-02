@@ -79,7 +79,7 @@ import {
   type MermaidThemePreference,
 } from "../types";
 import { createMermaidEditorScope } from "@/features/surfaces/manifests/mermaid-editor.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { MERMAID_SURFACE_NAME } from "../hooks/useMermaidAgentEdit";
 import { getFeaturedCatalogEntries } from "../catalog";
 import { CodeModePane } from "../code/CodeModePane";

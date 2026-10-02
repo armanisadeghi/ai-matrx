@@ -32,19 +32,19 @@ import {
   duplicateConversationVerb,
   openConversationRename,
   shareConversation,
-} from "@/features/agents/components/conversation-actions/conversation-verbs";
+} from "@ai-matrx/chat/agents/components/conversation-actions/conversation-verbs";
 import {
   getConversationViewState,
   setConversationFindOpen,
   setConversationPinnedOnly,
   subscribeConversationViewState,
-} from "@/features/agents/components/messages-display/conversation-tools/conversation-view-state";
+} from "@ai-matrx/chat/agents/components/messages-display/conversation-tools/conversation-view-state";
 import {
   isMessagePinned,
   subscribePinnedMessages,
-} from "@/features/agents/message-pins/pinned-messages-store";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { CONVERSATION_TRANSFER_ROWS } from "@/features/agents/conversation-export/conversation-transfer-rows";
+} from "@ai-matrx/chat/agents/message-pins/pinned-messages-store";
+import { selectConversationMessages } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { CONVERSATION_TRANSFER_ROWS } from "@ai-matrx/chat/agents/conversation-export/conversation-transfer-rows";
 
 function conversationOf(ctx: RichDocumentActionContext): string | null {
   return chatIds(ctx).conversationId;
@@ -207,7 +207,7 @@ CONVERSATION_TRANSFER_ROWS.forEach((row, i) => {
       const id = conversationOf(ctx);
       if (!id) return;
       const { runConversationTransfer } = await import(
-        "@/features/agents/conversation-export/conversation-transfer"
+        "@ai-matrx/chat/agents/conversation-export/conversation-transfer"
       );
       await runConversationTransfer({ dispatch: ctx.dispatch, getState: ctx.getState }, id, row);
     },

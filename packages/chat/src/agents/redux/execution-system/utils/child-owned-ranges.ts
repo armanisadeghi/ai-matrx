@@ -21,7 +21,7 @@ import type {
   CompletedOperationEntry,
   OperationEntry,
   TimelineEntry,
-} from "@/features/agents/types/request.types";
+} from "../../../types/request.types";
 
 export interface ChildOwnedRanges {
   /** Render blocks streamed inside an owned range. */

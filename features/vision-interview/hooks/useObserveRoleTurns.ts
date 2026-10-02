@@ -39,9 +39,9 @@
 
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectRequestStatus } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import type { RequestStatus } from "@/features/agents/types/request.types";
+import { selectRequestStatus } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectLatestRequestId } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import type { RequestStatus } from "@ai-matrx/chat/agents/types/request.types";
 import { observeRoleTurnCall } from "../roomApi";
 import type { RoleKey } from "../types";
 

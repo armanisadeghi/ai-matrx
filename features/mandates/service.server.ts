@@ -50,7 +50,7 @@ import { createClient } from "@/utils/supabase/server";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseMandateContract } from "./contract";
 import { parseMandateWave1 } from "./provision-shapes";
-import type { ResolvedMandate } from "./service";
+import type { ResolvedMandate } from "@ai-matrx/chat/mandates/service";
 import {
   MANDATE_STORAGE_LABEL,
   contractOfMandate,

@@ -9,11 +9,11 @@
 
 import { useEffect, useState } from "react";
 import { Eye, Loader2, RotateCw } from "lucide-react";
-import type { CustomDataBinding } from "@/features/agents/types/agent-definition.types";
+import type { CustomDataBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   previewVariableBinding,
   type VariableBindingPreview,
-} from "@/features/agents/services/variable-binding-preview.service";
+} from "@ai-matrx/chat/agents/services/variable-binding-preview.service";
 import { isCompleteBinding } from "./customDataBinding";
 import { useCustomDataOrganizationId } from "./CustomDataRecordsScope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

@@ -41,7 +41,7 @@ import { useEffect, useId, useRef, useCallback, useState } from "react";
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { connectCartesiaTts } from "@/lib/cartesia/connection";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ensureSurfaceConfig } from "@/features/surfaces/redux/surfaceConfigSlice";
+import { ensureSurfaceConfig } from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
 import {
   LISTENING_HOME_SURFACE,
   selectListeningEmotion,

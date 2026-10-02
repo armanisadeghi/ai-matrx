@@ -21,7 +21,7 @@ import type { FlashcardData } from "@/types/flashcards.types";
 import { addMessage } from "@/lib/redux/slices/flashcardChatSlice";
 import { selectActiveFlashcardChat } from "@/lib/redux/selectors/flashcardSelectors";
 import { helpLive } from "@/features/education/tutor/lanes/helpLive";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import { toast } from "@/lib/toast";
 
 export interface UseAiChat {

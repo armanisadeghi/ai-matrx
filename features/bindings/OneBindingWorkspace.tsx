@@ -52,32 +52,32 @@ import {
   resolveAgentVersionId,
   fetchAgentVersionSnapshot,
   fetchAgentExecutionMinimal,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentCustomExecutionPayload,
   selectAgentDescription,
   selectAgentExecutionPayload,
   selectAgentName,
   selectBuiltinAgents,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   initInstanceOverrides,
   updateBaseSettings,
   markRemoved,
   removeInstanceOverrides,
   setOverrides,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
   selectInstanceOverrideState,
   selectOverriddenKeys,
   selectSettingsOverridesForApi,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { buildInstanceBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/base-settings";
 import { useMandateAlchemyTabCapture } from "@/features/mandates/workspace/MandateAlchemy";
 import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
 import { fetchMandateLadder } from "@/features/mandates/workspace/useMandateLadder";
 import { inheritedModelOverrides, MODEL_OVERRIDE_SOURCE } from "./inherited-model-overrides";
-import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
+import { RunConfigOverrides } from "@ai-matrx/chat/agents/components/run-controls/RunConfigOverrides";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { agentHolderOfBinding } from "@/lib/supabase/mandateStorage";
 import { compareStoredContract } from "@/features/mandates/contract-compare";
@@ -85,7 +85,7 @@ import { defaultAnswerSettingsOf } from "./system-answer-record";
 import {
   fetchAgentOutputSchemas,
   missingOutputKeys,
-} from "@/features/mandates/output-contract";
+} from "@ai-matrx/chat/mandates/output-contract";
 import {
   bindingContractCheck,
   declaredOutputKind,
@@ -108,7 +108,7 @@ import {
 } from "@/features/surfaces/components/bind/BindingSuggestionsTab";
 import { GlobalBindAgentGuard } from "@/features/surfaces/components/bind/GlobalBindAgentGuard";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import type { WritePolicyMap } from "@/features/surfaces/types";
+import type { WritePolicyMap } from "@ai-matrx/chat/surfaces/types";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
 import type { ProvisionOffer } from "@/features/mandates/provisions";
 import {
@@ -163,7 +163,7 @@ import {
 } from "./offer-column-state";
 import { coverageLine, isFed, JOB_OVERRIDE_WORDS } from "./words";
 import { writeReportStillDescribesDraft } from "./write-report-life";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { BatchMode } from "./batch/BatchMode";
 import { unfedRequiredTargets } from "./batch/batch-model";
 import { ModeToggle, type BindingMode } from "./batch/ModeToggle";

@@ -21,15 +21,15 @@
  */
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 
-import { Button } from "@/components/ui/button";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
-import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { cn } from "@/lib/utils";
-import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { Button } from "@host/components/ui/button";
+import { useAgentLauncher } from "../../../agents/hooks/useAgentLauncher";
+import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";
+import { useSurfaceAgentRoles } from "../../hooks/useSurfaceConfig";
+import { useSurfaceRuntime } from "../../runtime/SurfaceRuntimeContext";
+import { cn } from "@host/lib/utils";
+import { AGENT_ICON } from "@host/components/icons/domain-icons";
 
 export function SurfaceRoleAgentButton({
   surfaceName,

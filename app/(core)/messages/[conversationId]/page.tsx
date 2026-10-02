@@ -19,7 +19,7 @@ import { closeMessaging } from "@/features/messaging/redux/messagingUiSlice";
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { MessagesThreadHeader } from "@/features/messaging/components/shell/MessagesThreadHeader";
 import { useMessagesSurfaceScope } from "@/features/messaging/lib/useMessagesSurfaceScope";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export default function ConversationPage() {

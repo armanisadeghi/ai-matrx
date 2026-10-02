@@ -7,7 +7,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { AgentShortcutsPanel } from "../AgentShortcutsPanel";
-import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
+import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 
 (
     globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -92,10 +92,10 @@ jest.mock("@/features/organizations/hooks", () => ({
         loading: false,
     }),
 }));
-jest.mock("@/features/agents/redux/agent-shortcuts/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-shortcuts/selectors", () => ({
     selectShortcutsByAgentId: jest.fn(() => shortcuts),
 }));
-jest.mock("@/features/agents/redux/agent-shortcut-categories/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors", () => ({
     selectCategoryById: jest.fn(() => null),
     // The panel resolves every row's category up front, so the row, the
     // copy-all payload, and the CSV export all share one projection.
@@ -108,7 +108,7 @@ jest.mock("@/lib/redux/hooks", () => ({
         sel({ userAuth: { id: "user-1", createdAt: null } }),
     useAppDispatch: () => jest.fn(),
 }));
-jest.mock("@/features/surfaces/utils/surface-display", () => ({
+jest.mock("@ai-matrx/chat/surfaces/utils/surface-display", () => ({
     getSurfaceDisplayLabel: (name: string) => name,
 }));
 

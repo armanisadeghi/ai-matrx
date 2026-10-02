@@ -1,4 +1,4 @@
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 // ONE Rulebook renderer — the surface's `content` and the bound
 // `rulebook_document` variable must never show two different Rulebooks.
 import { publishedToWebLabel } from "@/lib/row-access";

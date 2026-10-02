@@ -6,7 +6,7 @@
 // 400 ms. Run values are omitted until the build has produced them.
 
 import { createEducationStartScope } from "@/features/surfaces/manifests/education-start.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { CoverageDepth } from "@/features/education/convert/coverage";
 import type { TargetKind } from "@/features/education/convert/types";
 import { kitHref } from "@/features/education/kits/kitService";

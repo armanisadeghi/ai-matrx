@@ -7,7 +7,7 @@
  * simple text, it returns a single text block.
  */
 
-import type { CxContentBlock, CxTextContent } from '@/features/public-chat/types/cx-tables';
+import type { CxContentBlock, CxTextContent } from '../../public-chat/types/cx-tables';
 
 export function buildContentBlocksForSave(
     currentContent: string,

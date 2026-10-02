@@ -20,17 +20,17 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/design-system";
-import RichEditor from "@/components/rich-editor/RichEditor";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
-import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
+import RichEditor from "@host/components/rich-editor/RichEditor";
+import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { updateMessageRecord } from "../../../redux/execution-system/messages/messages.slice";
 import {
   fetchStoredAnswer,
   saveAnswerEdit,
-} from "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk";
-import { toast } from "@/lib/toast";
-import { rebaseEdit } from "@/features/agents/redux/execution-system/message-crud/answer-text-splice";
+} from "../../../redux/execution-system/message-crud/save-answer-edit.thunk";
+import { toast } from "@host/lib/toast";
+import { rebaseEdit } from "../../../redux/execution-system/message-crud/answer-text-splice";
 
 interface InPlaceAnswerEditorProps {
   conversationId: string;

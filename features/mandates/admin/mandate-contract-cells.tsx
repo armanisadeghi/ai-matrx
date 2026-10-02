@@ -15,7 +15,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import type { MandateRow } from "./mandate-health";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 
 /** A machine name as a person reads it (`prompt_config` → "Prompt Config").
  * Described inputs are already words and pass through. UX punch list

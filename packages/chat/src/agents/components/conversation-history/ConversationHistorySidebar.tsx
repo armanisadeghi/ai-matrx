@@ -42,13 +42,13 @@ import {
   StarOff,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   fetchConversationHistory,
   fetchSourceFacets,
   type FetchConversationHistoryArgs,
-} from "@/features/agents/redux/conversation-history/thunks";
+} from "../../redux/conversation-history/thunks";
 import {
   makeSelectConversationHistoryScope,
   makeSelectConversationHistoryStatus,
@@ -57,8 +57,8 @@ import {
   selectConversationLanes,
   selectSourceFacets,
   selectSourceFacetsStatus,
-} from "@/features/agents/redux/conversation-history/selectors";
-import { selectIsStreaming } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../../redux/conversation-history/selectors";
+import { selectIsStreaming } from "../../redux/execution-system/selectors/aggregate.selectors";
 import {
   seedScopeSourceFilter,
   setScopeAgentIds,
@@ -67,43 +67,43 @@ import {
   setScopeGrouping,
   setScopeSearch,
   setScopeSourceFilter,
-} from "@/features/agents/redux/conversation-history/slice";
+} from "../../redux/conversation-history/slice";
 import {
   EMPTY_SOURCE_KEY,
   featureLabel,
   originClassLabel,
   sourceKey,
-} from "@/features/agents/redux/conversation-history/source-registry";
+} from "../../redux/conversation-history/source-registry";
 import {
   rowMatchesArchiveView,
   type HistoryGrouping,
-} from "@/features/agents/redux/conversation-history/types";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { useSurfaceSourceFilter } from "@/features/agents/redux/conversation-history/useSurfaceSourceFilter";
+} from "../../redux/conversation-history/types";
+import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
+import { useSurfaceSourceFilter } from "../../redux/conversation-history/useSurfaceSourceFilter";
 import {
   renameConversation,
   setConversationFavorite,
-} from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+} from "../../redux/conversation-list/conversation-row-actions.thunks";
 import {
   buildConversationMenu,
   type ConversationMenuContext,
-} from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+} from "../conversation-actions/conversationActionRegistry";
+import { selectAgentById } from "../../redux/agent-definition/selectors";
+import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { AllLanesOffNotice } from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
-import { ItemRow } from "@/components/official/item/ItemRow";
-import { toast } from "@/lib/toast";
+import { ItemRow } from "@host/components/official/item/ItemRow";
+import { toast } from "@host/lib/toast";
 import {
   LoadingTapButton,
   RefreshCwTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { useConversationServerSearch } from "./useConversationServerSearch";
 import { ConversationSearchStatus } from "./ConversationSearchStatus";
-import { countConversationSearchCorpus } from "@/features/agents/redux/conversation-history/conversation-search";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { countConversationSearchCorpus } from "../../redux/conversation-history/conversation-search";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 
 export interface ConversationHistorySidebarProps {
   /** Unique scope key (same across mounts that should share state). */

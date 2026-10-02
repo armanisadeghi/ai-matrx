@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
 import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
 import type { MatcherProposal } from "@/features/marketing/seo/value-system/suggestions/proposal";

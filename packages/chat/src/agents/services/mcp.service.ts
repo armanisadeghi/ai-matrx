@@ -1,16 +1,16 @@
-import { supabase } from "@/utils/supabase/client";
-import type { McpTransport } from "@/features/agents/types/mcp.types";
+import { supabase } from "@host/utils/supabase/client";
+import type { McpTransport } from "../types/mcp.types";
 import {
   catalogEntryFromRpc,
   serverConfigFromRow,
-} from "@/features/agents/types/mcp.types";
+} from "../types/mcp.types";
 import type {
   McpCatalogEntry,
   McpServerConfigEntry,
-} from "@/features/agents/types/mcp.types";
-import { runWithSessionRetry } from "@/lib/supabase/authRetry";
-import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+} from "../types/mcp.types";
+import { runWithSessionRetry } from "@host/lib/supabase/authRetry";
+import { requireSelectedOrgId } from "@host/lib/organizations/activeOrg";
+import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
 
 // ---------------------------------------------------------------------------
 // Catalog

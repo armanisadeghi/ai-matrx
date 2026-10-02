@@ -22,17 +22,17 @@
 
 import React, { useMemo } from "react";
 import { GitBranch, Handshake, Inbox, ScrollText, TriangleAlert } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentCallChildStream } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useConversationTitle } from "@/features/agents/hooks/useConversationTitle";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import MarkdownStream from "@/components/MarkdownStream";
-import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
-import { cn } from "@/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentCallChildStream } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useConversationTitle } from "../../../agents/hooks/useConversationTitle";
+import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
+import { stripThinkingStreaming } from "@host/components/content-refine/utils/stripThinking";
+import { cn } from "@host/lib/utils";
 import type { ToolRendererProps } from "../../types";
 import { getCollabCallInfo, type CollabCallInfo } from "./collab";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const NO_CHILD_STREAM = () => null;
 

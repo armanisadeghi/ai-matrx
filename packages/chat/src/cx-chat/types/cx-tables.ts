@@ -5,8 +5,8 @@
  * Content-block helpers below are for parsing JSON columns in the UI.
  */
 
-import type { Database } from "@/types/database.types";
-import type { PermissionLevel } from "@/utils/permissions/levels";
+import type { Database } from "@host/types/database.types";
+import type { PermissionLevel } from "@host/utils/permissions/levels";
 
 type ChatSchema = Database["chat"];
 

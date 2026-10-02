@@ -139,7 +139,7 @@ import { GlobalAuthSync } from "@/features/auth/components/GlobalAuthSync";
 import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { ScopeMismatchDialogHost } from "@/components/dialogs/scope-mismatch/ScopeMismatchDialogHost";
-import { ConversationRenameDialogHost } from "@/features/agents/components/conversation-actions/rename/ConversationRenameDialogHost";
+import { ConversationRenameDialogHost } from "@ai-matrx/chat/agents/components/conversation-actions/rename/ConversationRenameDialogHost";
 import { GoogleOAuthRedirectNotice } from "@/providers/google-provider/GoogleOAuthRedirectNotice";
 import { SandboxLifecycleObserver } from "@/lib/sandbox/SandboxLifecycleObserver";
 import { SandboxLifecycleController } from "@/lib/sandbox/SandboxLifecycleController";

@@ -11,24 +11,24 @@ import React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let knob: unknown = true;
-jest.mock("@/lib/scoped-config/sessionKnob", () => ({
+jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
   useSessionKnob: () => knob,
   getSessionKnob: () => knob,
 }));
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: () => "default",
   useAppDispatch: () => jest.fn(),
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
+  "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({ selectToolDisplayPreference: jest.fn() }),
 );
-jest.mock("@/components/loaders/ShimmerText", () => ({
+jest.mock("@host/components/loaders/ShimmerText", () => ({
   ShimmerText: ({ text }: { text: string }) => <span>{text}</span>,
 }));
 jest.mock("../../registry/registry", () => ({ getToolDisplayName: () => "Context" }));

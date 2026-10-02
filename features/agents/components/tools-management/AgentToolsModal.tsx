@@ -32,11 +32,11 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectAgentTools,
   selectAgentDirtyFields,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { selectAllTools } from "@/features/agents/redux/tools/tools.selectors";
-import { resetAgentField } from "@/features/agents/redux/agent-definition/slice";
-import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
-import { hasField } from "@/features/agents/redux/shared/field-flags";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { selectAllTools } from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
+import { resetAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
+import { hasField } from "@ai-matrx/chat/agents/redux/shared/field-flags";
 
 interface AgentToolsModalProps {
   agentId: string;

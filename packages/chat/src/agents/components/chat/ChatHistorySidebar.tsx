@@ -17,8 +17,8 @@
  */
 
 import React from "react";
-import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import { ConversationHistorySidebar } from "../conversation-history/ConversationHistorySidebar";
+import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
 
 export interface ChatHistorySidebarProps {
   /** Unique scope key — shares fetched state across mounts with the same id. */

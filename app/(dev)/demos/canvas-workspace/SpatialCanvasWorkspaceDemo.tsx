@@ -11,9 +11,9 @@
  */
 
 import { type DemoKindExample, SpatialDemoBoard } from "@/features/spatial/demo/SpatialDemoBoard";
-import { ChatCanvasWorkspace } from "@/features/canvas/workspace/ChatCanvasWorkspace";
-import type { CanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies";
-import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
+import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
+import type { ComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";
 
 const BOARD_TITLE = "Spatial view demo board";
 

@@ -10,20 +10,20 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 
 | # | Type | Source | Status | Location | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | ImageBlock | stream-events | duplicate | `features/agents/types/message-types.ts:79` |  |
-| 2 | AudioBlock | stream-events | duplicate | `features/agents/types/message-types.ts:113` |  |
-| 3 | VideoBlock | stream-events | duplicate | `features/agents/types/message-types.ts:142` |  |
-| 4 | DocumentBlock | stream-events | duplicate | `features/agents/types/message-types.ts:174` |  |
-| 5 | PendingCallSummary | api-types | duplicate | `features/agents/api/fetch-pending-calls.ts:39` |  |
+| 1 | ImageBlock | stream-events | duplicate | `packages/chat/src/agents/types/message-types.ts:79` |  |
+| 2 | AudioBlock | stream-events | duplicate | `packages/chat/src/agents/types/message-types.ts:113` |  |
+| 3 | VideoBlock | stream-events | duplicate | `packages/chat/src/agents/types/message-types.ts:142` |  |
+| 4 | DocumentBlock | stream-events | duplicate | `packages/chat/src/agents/types/message-types.ts:174` |  |
+| 5 | PendingCallSummary | api-types | duplicate | `packages/chat/src/agents/api/fetch-pending-calls.ts:39` |  |
 | 6 | ValidationIssue | api-types | duplicate | `features/agents/components/settings-management/validation/types.ts:29` |  |
 | 7 | ValidationResult | api-types | duplicate | `features/agents/components/settings-management/validation/types.ts:39` |  |
 | 8 | JsonRpcResponse | api-types | duplicate | `features/agents/services/mcp-client/http-transport.ts:15` |  |
-| 9 | PicklistBinding | api-types | duplicate | `features/agents/types/agent-definition.types.ts:82` |  |
-| 10 | ContextItemBinding | api-types | duplicate | `features/agents/types/agent-definition.types.ts:150` |  |
-| 11 | ClientContext | api-types | duplicate | `features/agents/types/tool-injection.types.ts:111` |  |
-| 12 | ConversationRecord | api-types | duplicate | `features/agents/redux/execution-system/conversations/conversations.slice.ts:44` |  |
-| 13 | ValidationResult | api-types | duplicate | `features/agents/runtime/validation.ts:31` |  |
-| 14 | TimelineRenderBlock | stream-events | duplicate | `features/agents/types/request.types.ts:573` |  |
+| 9 | PicklistBinding | api-types | duplicate | `packages/chat/src/agents/types/agent-definition.types.ts:82` |  |
+| 10 | ContextItemBinding | api-types | duplicate | `packages/chat/src/agents/types/agent-definition.types.ts:150` |  |
+| 11 | ClientContext | api-types | duplicate | `packages/chat/src/agents/types/tool-injection.types.ts:111` |  |
+| 12 | ConversationRecord | api-types | duplicate | `packages/chat/src/agents/redux/execution-system/conversations/conversations.slice.ts:44` |  |
+| 13 | ValidationResult | api-types | duplicate | `packages/chat/src/agents/runtime/validation.ts:31` |  |
+| 14 | TimelineRenderBlock | stream-events | duplicate | `packages/chat/src/agents/types/request.types.ts:573` |  |
 | 15 | MediaRef | api-types | duplicate | `features/pdf-extractor/types.ts:43` |  |
 | 16 | PdfPageRange | api-types | duplicate | `features/pdf-extractor/types.ts:48` |  |
 | 17 | PdfCropBox | api-types | duplicate | `features/pdf-extractor/types.ts:51` |  |

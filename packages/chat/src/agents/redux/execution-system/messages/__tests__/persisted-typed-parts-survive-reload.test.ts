@@ -21,16 +21,16 @@ import {
   selectMessageInterleavedContent,
 } from "../messages.selectors";
 import { parsePersistedMessageContent } from "../persisted-content-boundary";
-import { normalizeMessagePart } from "@/features/agents/components/context-items/normalize";
-import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
-import { fromCxVideoPart } from "@/features/files/blocks/adapters/from-cx-av-part";
+import { normalizeMessagePart } from "../../../../components/context-items/normalize";
+import { fromCxMediaPart } from "@host/features/files/blocks/image/adapters/from-cx-media-part";
+import { fromCxVideoPart } from "@host/features/files/blocks/adapters/from-cx-av-part";
 import type { MessageRecord } from "../messages.slice";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   ImageMediaPart,
   MessagePart,
   VideoMediaPart,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 
 const DECISION_QUESTIONS = {
   type: "decision_questions",

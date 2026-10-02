@@ -17,7 +17,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   fetchSurfaceConfigBundle,
   resolveSurfaceConfig,
-} from "@/features/surfaces/services/surface-config.service";
+} from "@ai-matrx/chat/surfaces/services/surface-config.service";
 // NOTE: the surface name comes from the manifest, NOT useMermaidAgentEdit's
 // MERMAID_SURFACE_NAME re-export — importing that module would drag the whole
 // agent execution system into every consumer's chunk (chat MermaidBlock).

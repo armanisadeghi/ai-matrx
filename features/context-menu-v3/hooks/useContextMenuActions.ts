@@ -38,9 +38,9 @@ import {
 } from "lucide-react";
 import { CANONICAL_MENU_VERSION_V3 } from "../types";
 import type { ContextMenuExtraSection, ContextMenuExtraItem } from "../types";
-import { detectActiveSurface } from "@/features/surfaces/utils/route-to-surface";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
-import { getRelatedSurfaces } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
+import { detectActiveSurface } from "@ai-matrx/chat/surfaces/utils/route-to-surface";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import { getRelatedSurfaces } from "@ai-matrx/chat/surfaces/runtime/fetchRelatedSurfaces";
 import { useOpenSurfaceContextWindow } from "@/features/overlays/openers/surfaceContextWindow";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { getIconComponent } from "@ai-matrx/icons";
@@ -74,10 +74,10 @@ import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surf
 import { toast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { useSpeech } from "@/features/audio/service/useSpeech";
 import { primeAudioOutput } from "@/features/audio/unlock";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import { useOpenListenSummaryWindow } from "@/features/overlays/openers/listenSummaryWindow";
 import { LISTENING_HOME_SURFACE } from "@/features/audio/service/listeningConfig";
 import { insertTextAtCursor } from "@/utils/editor-text-insertion";
@@ -100,8 +100,8 @@ import {
   PLACEMENT_TYPES,
   PLACEMENT_TYPE_META,
 } from "@/features/agent-shortcuts/constants";
-import type { ResultDisplayMode } from "@/features/agents/types/instance.types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ResultDisplayMode } from "@ai-matrx/chat/agents/types/instance.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import {
   useUnifiedAgentContextMenu,
   type AgentMenuEntry,
@@ -110,13 +110,13 @@ import {
 import { buildAvailableKeys } from "../model/requirement-gate";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { BASELINE_VALUE_NAMES } from "@/features/surfaces/manifests/_baseline.manifest";
-import { useSurfaceConfig } from "@/features/surfaces/hooks/useSurfaceConfig";
-import type { MenuConfig } from "@/features/surfaces/config/namespace-registry";
-import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
+import { useSurfaceConfig } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
+import type { MenuConfig } from "@ai-matrx/chat/surfaces/config/namespace-registry";
+import { useSurfaceBoundAgents } from "@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents";
 import type {
   SurfaceBoundAgentEntry,
   SurfaceBoundAgentSection,
-} from "@/features/surfaces/services/surface-bound-agents.service";
+} from "@ai-matrx/chat/surfaces/services/surface-bound-agents.service";
 import { selectActiveScopeIds } from "@/features/scopes/redux/selectors/active-context";
 import {
   resolveApplicationScope,
@@ -126,7 +126,7 @@ import {
 } from "../value-resolution";
 import { spliceInputValue } from "../utils/selection-tracking";
 import { buildSelectionWriteBack } from "../utils/selection-write-back";
-import { registerLaunchWidgetHandle } from "@/features/agents/utils/launch-widget-handles";
+import { registerLaunchWidgetHandle } from "@ai-matrx/chat/agents/utils/launch-widget-handles";
 import {
   buildJsonMenuSection,
   type JsonMenuSection,

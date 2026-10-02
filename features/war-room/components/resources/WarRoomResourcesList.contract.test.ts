@@ -9,7 +9,7 @@ const resourcesSource = readFileSync(
 const conversationPickerSource = readFileSync(
   join(
     process.cwd(),
-    "features/agents/components/conversation-history/ConversationPickerWindow.tsx",
+    "packages/chat/src/agents/components/conversation-history/ConversationPickerWindow.tsx",
   ),
   "utf8",
 );
@@ -29,7 +29,7 @@ describe("war-room resource attach boundaries", () => {
       featureRegExp(/import\s+\{\s*WindowPanel\s*\}\s+from\s+["']@\/features\/window-panels\/WindowPanel["']/),
     );
     expect(conversationPickerSource).toContain(
-      'import("@/features/window-panels/WindowPanel")',
+      'import("@host/features/window-panels/WindowPanel")',
     );
     expect(conversationPickerSource).toContain("ssr: false");
   });

@@ -10,7 +10,7 @@
  *
  * These are the guards. Remove the `enabled` gate and the first two fail.
  */
-import { renderHook } from "@/test-utils/renderHook";
+import { renderHook } from "@host/test-utils/renderHook";
 
 const resolveMandate = jest.fn();
 

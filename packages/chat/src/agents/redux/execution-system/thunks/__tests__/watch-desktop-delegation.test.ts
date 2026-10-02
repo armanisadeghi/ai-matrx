@@ -19,9 +19,9 @@
  * Polling is timer-driven by design, so fake timers advance the 750ms poll.
  */
 
-import type { PendingCallSummary } from "@/features/agents/api/fetch-pending-calls";
+import type { PendingCallSummary } from "../../../../api/fetch-pending-calls";
 import type { CxToolCallRecord } from "../../observability/observability.slice";
-import type { InstanceStatus } from "@/features/agents/types/instance.types";
+import type { InstanceStatus } from "../../../../types/instance.types";
 
 type LedgerStep = PendingCallSummary[] | Error;
 type LoadStep = { fail: Error } | { toolCalls: CxToolCallRecord[] };
@@ -37,7 +37,7 @@ const mockResumes: Array<{ conversationId: string; userRequestId: string }> =
   [];
 const mockToastError = jest.fn();
 
-jest.mock("@/features/agents/api/fetch-pending-calls", () => ({
+jest.mock("../../../../api/fetch-pending-calls", () => ({
   fetchConversationPendingCallsStrict: () => async () => {
     mockCounts.ledgerReads += 1;
     const step = mockLedgerScript.shift() ?? mockLedgerDefault.value;
@@ -99,7 +99,7 @@ jest.mock("sonner", () => ({
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
 import {
   createInstance,
   destroyInstance,

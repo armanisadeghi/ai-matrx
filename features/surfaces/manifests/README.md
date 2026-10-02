@@ -22,7 +22,7 @@ This directory **owns the declarations**. The DB is a synced reflection. Admin U
      SurfaceScopePayload,
      SurfaceValue,
      SurfaceValueGroup,
-   } from "@/features/surfaces/types";
+   } from "@ai-matrx/chat/surfaces/types";
    import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
    const groups: SurfaceValueGroup[] = [
@@ -91,8 +91,8 @@ Delete the file and remove the import from `registry.ts`. The DB rows are NOT au
 
 ## See also
 
-- `features/surfaces/types.ts` — type definitions (`SurfaceManifest`, `SurfaceValue`, `SurfaceValueGroup`).
-- `features/surfaces/utils/surface-display.ts` — shared label seam.
+- `packages/chat/src/surfaces/types.ts` — type definitions (`SurfaceManifest`, `SurfaceValue`, `SurfaceValueGroup`).
+- `packages/chat/src/surfaces/utils/surface-display.ts` — shared label seam.
 - `features/surfaces/services/manifest-sync.service.ts` — diff + sync logic.
-- `features/surfaces/utils/value-mapping-resolver.ts` — runtime resolver.
+- `packages/chat/src/surfaces/utils/value-mapping-resolver.ts` — runtime resolver.
 - `features/scopes/FEATURE.md` — multi-scope binding contract.

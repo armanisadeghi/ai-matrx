@@ -42,9 +42,9 @@
 
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
-import { InfoHint } from "@/components/official/InfoHint";
-import { supabase } from "@/utils/supabase/client";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { InfoHint } from "@host/components/official/InfoHint";
+import { supabase } from "@host/utils/supabase/client";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 
 interface RoomNotice {
   inSharedRoom: boolean;

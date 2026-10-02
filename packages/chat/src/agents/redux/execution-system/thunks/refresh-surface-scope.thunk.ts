@@ -11,22 +11,22 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { toast } from "@/lib/toast";
-import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
-import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { toast } from "@host/lib/toast";
+import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
+import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
+import type { ApplicationScope } from "../../../types/scope.types";
 import {
   getSurfaceRuntimeForName,
   wasPageOwnConversationOf,
   wasSurfaceMountedThisSession,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { getManifest } from "@/features/surfaces/manifests/registry";
-import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
-import { withLiveSurfaceContext } from "@/features/surfaces/runtime/surface-chain";
-import { isPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
-import { alwaysOnSurfaceKeys } from "@/features/surfaces/utils/always-on-context";
+} from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { withBaselineScope } from "../../../../surfaces/utils/baseline-scope";
+import { withLiveSurfaceContext } from "../../../../surfaces/runtime/surface-chain";
+import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { withSurfaceDocumentEvidence } from "../../../../surfaces/utils/document-evidence";
+import { alwaysOnSurfaceKeys } from "../../../../surfaces/utils/always-on-context";
 import { replaceSurfaceVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import {
   replaceSurfaceContextEntries,

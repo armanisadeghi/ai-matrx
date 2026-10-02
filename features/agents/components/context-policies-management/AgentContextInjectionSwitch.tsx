@@ -39,9 +39,9 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentAutoContextDisabled,
   selectAgentContextPolicies,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentAutoContextDisabled } from "@/features/agents/redux/agent-definition/thunks";
-import { AutoInjectionSwitch } from "@/features/agents/components/shared/AutoInjectionSwitch";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentAutoContextDisabled } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { AutoInjectionSwitch } from "@ai-matrx/chat/agents/components/shared/AutoInjectionSwitch";
 
 interface AgentContextInjectionSwitchProps {
   agentId: string;

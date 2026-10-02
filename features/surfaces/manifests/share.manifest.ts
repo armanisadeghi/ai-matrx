@@ -18,7 +18,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 export const SHARE_SURFACE_NAME = "matrx-user/share";
 

@@ -41,7 +41,7 @@ import { cn } from "@/lib/utils";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MARKETING_BRAND_ASSETS_VIEWS,
   isMarketingBrandAssetsView,

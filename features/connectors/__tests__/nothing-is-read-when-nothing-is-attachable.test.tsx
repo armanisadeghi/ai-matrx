@@ -47,7 +47,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 // Retained so a REGRESSION to a message-count gate fails loudly here rather
 // than silently re-reading a real selector: the hook must not consult this.
 jest.mock(
-  "@/features/agents/redux/execution-system/messages/messages.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors",
   () => ({ selectMessageCount: () => () => messageCount }),
 );
 

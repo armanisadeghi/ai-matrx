@@ -3,7 +3,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const COMMERCE_LABEL_BATCH_SURFACE_NAME =

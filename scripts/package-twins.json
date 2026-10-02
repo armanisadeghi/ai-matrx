@@ -277,7 +277,7 @@
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/agents/components/chat/sandbox-insight/SandboxActivityFeed.tsx",
+          "file": "packages/chat/src/agents/components/chat/sandbox-insight/SandboxActivityFeed.tsx",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -385,7 +385,7 @@
           "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: `lagText` becomes formatDurationSeconds(seconds, { style: \"long\", round: \"nearest\" }) behind the existing `<= 600` guard (5400 s reads \"2 hours\" as before; 3 days reads \"3 days\" instead of \"72 hours\"). A debt, not an exemption."
         },
         {
-          "file": "features/agents/components/context-preview/ContextCompareView.tsx",
+          "file": "packages/chat/src/agents/components/context-preview/ContextCompareView.tsx",
           "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: the answer header's ` ${(duration_ms / 1000).toFixed(1)} s` becomes formatDurationMs(duration_ms, { style: \"compact\" }) (\"4.5s\", \"850ms\"). A debt, not an exemption."
         },
         {
@@ -794,23 +794,23 @@
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/agents/components/context-policies-display/contextPolicyPreview.ts",
+          "file": "packages/chat/src/agents/components/context-policies-display/contextPolicyPreview.ts",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/agents/components/context-preview/AttachedContextSection.tsx",
+          "file": "packages/chat/src/agents/components/context-preview/AttachedContextSection.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/agents/components/inputs/smart-input/ComposerDraftNotice.tsx",
+          "file": "packages/chat/src/agents/components/inputs/smart-input/ComposerDraftNotice.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/agents/components/observational-memory/components/MemoryStateInspector.tsx",
+          "file": "packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/agents/components/run-controls/panels/ModelContextPanel.tsx",
+          "file": "packages/chat/src/agents/components/run-controls/panels/ModelContextPanel.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -1570,55 +1570,55 @@
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/registry/registry.tsx",
+          "file": "packages/chat/src/tool-call-visualization/registry/registry.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/ctx/CtxItemCard.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/ctx/CtxItemCard.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/dataset/DatasetInline.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/dataset/DatasetInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/document-content/DocumentContentInline.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/document-content/DocumentContentInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/document/DocumentInline.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/document/DocumentInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/knowledge-browse/KnowledgeChunkInline.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeChunkInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/knowledge-browse/KnowledgeSourcesInline.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeSourcesInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/note/NoteToolInline.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/note/NoteToolInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/note/NoteToolOverlay.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/note/NoteToolOverlay.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/research/ResearchOverlay.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/scrape/ScrapeInline.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/scrape/ScrapeInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/scrape/ScrapeOverlay.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/scrape/ScrapeOverlay.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/result-fields/KeyValueGrid.tsx",
+          "file": "packages/chat/src/tool-call-visualization/result-fields/KeyValueGrid.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -1729,11 +1729,11 @@
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/agents/components/working-document/DocumentLinkPicker.tsx",
+          "file": "packages/chat/src/agents/components/working-document/DocumentLinkPicker.tsx",
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/agents/redux/conversation-history/selectors.ts",
+          "file": "packages/chat/src/agents/redux/conversation-history/selectors.ts",
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -1765,11 +1765,11 @@
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/surfaces/utils/surface-check-ledger.ts",
+          "file": "packages/chat/src/surfaces/utils/surface-check-ledger.ts",
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/tool-call-visualization/renderers/knowledge-browse/KnowledgeSourcesInline.tsx",
+          "file": "packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeSourcesInline.tsx",
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -1820,7 +1820,7 @@
       "allow": [
         {
           "file": "features/agent-comparison/components/RunsComparisonTable.tsx",
-          "reason": "NOT A SECOND NAME FOR THE EXPORT: `format` is the comparison table's per-row formatter SLOT (every row spec has one; twenty other rows put fmtTokens, fmtCost, fmtMs, etc. there), so `format: (v) => formatFileSize(v)` hides no call site from the input lane. The only values reaching it are `clientAccumulatedBytes` / `clientTotalPayloadBytes`, which features/agents/redux/execution-system/thunks/process-stream.ts measures as `new TextEncoder().encode(text).length` \u2014 true UTF-8 bytes, never a character count. The arrow exists because the slot's type is `(v, unit: CostUnit) => string`, which formatFileSize's options parameter cannot satisfy directly."
+          "reason": "NOT A SECOND NAME FOR THE EXPORT: `format` is the comparison table's per-row formatter SLOT (every row spec has one; twenty other rows put fmtTokens, fmtCost, fmtMs, etc. there), so `format: (v) => formatFileSize(v)` hides no call site from the input lane. The only values reaching it are `clientAccumulatedBytes` / `clientTotalPayloadBytes`, which packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts measures as `new TextEncoder().encode(text).length` \u2014 true UTF-8 bytes, never a character count. The arrow exists because the slot's type is `(v, unit: CostUnit) => string`, which formatFileSize's options parameter cannot satisfy directly."
         }
       ],
       "shapeAllow": [
@@ -2540,7 +2540,7 @@
           "reason": "IS the Badge primitive (a primary-tinted rounded-full pill with children). Not collapsible in this session: live surface, so the swap needs a visual check and a build."
         },
         {
-          "file": "features/window-panels/windows/agents/AgentDebugWindow.tsx",
+          "file": "packages/chat/src/window-panels/windows/agents/AgentDebugWindow.tsx",
           "reason": "IS the Badge primitive with a success/warn/error/info tone set @ai-matrx/design-system's Badge does not ship. Not collapsible in this session: it needs those package variants first, then a visual pass."
         }
       ]

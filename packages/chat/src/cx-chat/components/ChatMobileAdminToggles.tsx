@@ -5,21 +5,21 @@
 // Migrated to pure Redux: no context dependencies.
 
 import { Blocks, Camera } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { selectIsAdmin } from "@host/lib/redux/slices/userSlice";
 import {
   selectActiveServer,
   selectLoopbackTargetsAllowed,
   switchServer,
-} from "@/lib/redux/slices/apiConfigSlice";
+} from "@host/lib/redux/slices/apiConfigSlice";
 import {
   selectIsBlockMode,
   selectIsSnapshot,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   setUseBlockMode,
   setUseSnapshot,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
 export default function ChatMobileAdminToggles() {
   const dispatch = useAppDispatch();

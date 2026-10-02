@@ -16,7 +16,7 @@
  */
 
 import { createMarketingBrandAssetsScope } from "@/features/surfaces/manifests/marketing-brand-assets.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { BrandMediaStandards } from "@/features/marketing/lib/brand-media-standards";
 import type {
   ResearchImageRow,

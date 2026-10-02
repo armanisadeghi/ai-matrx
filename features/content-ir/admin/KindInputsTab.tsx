@@ -38,7 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
+import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
 import {
   kindFieldsToVariableDefinitions,
   variableDefinitionsToKindFields,

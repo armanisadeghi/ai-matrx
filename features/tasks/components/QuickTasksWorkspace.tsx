@@ -8,7 +8,7 @@ import {
 } from "@/features/agent-context/hooks/useNavTree";
 import { selectAllTasks } from "@/features/agent-context/redux/tasksSlice";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   QUICK_TASKS_SURFACE_NAME,
   type QuickTasksTaskDraft,

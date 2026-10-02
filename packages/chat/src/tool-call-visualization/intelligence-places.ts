@@ -5,14 +5,14 @@
 // features/mandates/feature-intelligence/__tests__/declared-places.test.ts.
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import type { FeaturePlaces } from "@/features/mandates/feature-intelligence/types";
+import type { FeaturePlaces } from "@host/features/mandates/feature-intelligence/types";
 
 const K = MANDATE_KEYS;
 
 export const TOOL_VIZ_PLACES: FeaturePlaces = {
   feature: "tool_viz",
   label: "Tool displays",
-  roots: ["features/tool-call-visualization"],
+  roots: ["features/tool-call-visualization", "packages/chat/src/tool-call-visualization"],
   places: [
     {
       id: "component-generator",

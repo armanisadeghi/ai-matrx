@@ -36,12 +36,12 @@
 
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { resolveMandate } from "@/features/mandates/service";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { executeInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   selectPrimaryRequest,
@@ -49,8 +49,8 @@ import {
   selectIsReasoningStreaming,
   selectRequestError,
   selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import type { AiPostProcessAgent } from "../ai-agents";
 import {
   cleanupOfferVariables,

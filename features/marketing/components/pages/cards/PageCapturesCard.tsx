@@ -32,7 +32,7 @@ import {
   pageCaptureRows,
 } from "@/features/marketing/lib/marketing-page-scope";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   formatDate,
   QueryError,

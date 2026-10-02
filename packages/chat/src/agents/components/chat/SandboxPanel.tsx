@@ -24,7 +24,7 @@ import {
   CheckTapButton,
   XTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { sandboxDisplayName } from "@/lib/sandbox/format";
+import { sandboxDisplayName } from "@host/lib/sandbox/format";
 import {
   Plus,
   Loader2,
@@ -35,38 +35,38 @@ import {
   Server,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
+import { toast } from "@host/lib/toast";
+import { Checkbox } from "@host/components/ui/checkbox";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
 import {
   selectConversationSandboxBinding,
   selectConversationIsEphemeral,
-} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { setConversationSandbox } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
-import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
-import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
-import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
+} from "../../redux/execution-system/conversations/conversations.selectors";
+import { setConversationSandbox } from "../../redux/conversation-list/conversation-row-actions.thunks";
+import { selectChatIncognitoActive } from "../../redux/chat/chat-incognito.slice";
+import { useSandboxInstances } from "@host/hooks/sandbox/use-sandbox";
+import { useComputeTargets } from "@host/hooks/sandbox/use-compute-targets";
+import { useVerifiedSandboxBinding } from "@host/hooks/sandbox/use-verified-binding";
 import {
   describeBoundTargetState,
   resolveBoundTargetView,
-} from "@/lib/sandbox/bound-target-view";
-import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
-import { resolveSandboxCreateDefaults, type SandboxCreateDefaults } from "@/lib/sandbox/sandbox-defaults";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { CloneRepoDialog } from "@/features/code/views/sandboxes/CloneRepoDialog";
+} from "@host/lib/sandbox/bound-target-view";
+import type { ComputeTarget } from "@host/hooks/sandbox/use-compute-targets";
+import { resolveSandboxCreateDefaults, type SandboxCreateDefaults } from "@host/lib/sandbox/sandbox-defaults";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { CloneRepoDialog } from "@host/features/code/views/sandboxes/CloneRepoDialog";
 import {
   getEffectiveStatus,
   statusPillClasses,
   STATUS_LABELS,
   ACTIVE_EFFECTIVE_STATUSES,
-} from "@/lib/sandbox/status";
-import { clearSandboxBindingCache } from "@/lib/sandbox/active-binding";
-import { resolveBindingScope } from "@/lib/sandbox/binding-scope";
-import type { SandboxInstance } from "@/types/sandbox";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+} from "@host/lib/sandbox/status";
+import { clearSandboxBindingCache } from "@host/lib/sandbox/active-binding";
+import { resolveBindingScope } from "@host/lib/sandbox/binding-scope";
+import type { SandboxInstance } from "@host/types/sandbox";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { ErrorNotice } from "@host/components/errors/ErrorNotice";
 
 interface SandboxPanelProps {
   conversationId: string | null;

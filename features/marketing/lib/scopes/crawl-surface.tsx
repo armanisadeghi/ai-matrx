@@ -14,7 +14,7 @@
  */
 
 import type { ReactNode } from "react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingCrawlScope } from "@/features/surfaces/manifests/marketing-crawl.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { formatDuration } from "@/features/marketing/components/shared/MarketingUi";

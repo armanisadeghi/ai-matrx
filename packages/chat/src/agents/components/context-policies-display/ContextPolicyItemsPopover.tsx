@@ -14,12 +14,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type {
   ContextObjectType,
   ContextPolicy,
-} from "@/features/agents/types/agent-api-types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+} from "../../types/agent-api-types";
+import type { InstanceContextEntry } from "../../types/instance.types";
 import { CONTEXT_TYPE_ICON, FALLBACK_CONTEXT_ICON } from "./contextPolicyIcons";
 import {
   CONTEXT_TYPE_TILE_LABEL,

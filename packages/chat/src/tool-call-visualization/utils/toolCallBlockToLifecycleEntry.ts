@@ -1,5 +1,5 @@
-import type { ToolCallBlock } from "@/lib/chat-protocol/types";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolCallBlock } from "@host/lib/chat-protocol/types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 /**
  * Map a canonical chat-protocol `ToolCallBlock` into the `ToolLifecycleEntry`

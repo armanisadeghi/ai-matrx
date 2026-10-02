@@ -22,8 +22,8 @@
  * settles. (D128)
  */
 
-import { startOAuthPopup } from "@/utils/oauth-popup";
-import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
+import { startOAuthPopup } from "@host/utils/oauth-popup";
+import { peekSelectedOrganizationId } from "@host/lib/api/organization-admission";
 
 export type McpOAuthOutcome =
   | { ok: true; serverId: string }

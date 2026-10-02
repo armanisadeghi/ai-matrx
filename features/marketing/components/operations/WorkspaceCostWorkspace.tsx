@@ -18,7 +18,7 @@
  */
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import { SeoSpendPanel } from "@/features/marketing/components/operations/SeoSpendPanel";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";

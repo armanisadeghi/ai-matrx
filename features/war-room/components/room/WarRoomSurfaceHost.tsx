@@ -16,7 +16,7 @@
 
 import type { ReactNode } from "react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildWarRoomRoomScope } from "@/features/war-room/lib/war-room-scope";
 import { selectOrderedGalleryThreadIds } from "@/features/war-room/redux/selectors";
 import { resolveStagedId, useRoomView } from "./roomViewContext";

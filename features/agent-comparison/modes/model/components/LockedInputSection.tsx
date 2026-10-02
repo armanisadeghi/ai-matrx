@@ -15,11 +15,11 @@ import {
   fetchAgentVersionHistory,
   fetchFullAgent,
   type AgentVersionHistoryItem,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentById,
   selectAgentName,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { SharedBattleInput } from "@/features/agent-comparison/shared/SharedBattleInput";
 import SearchableSelect from "@/components/matrx/SearchableSelect";

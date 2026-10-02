@@ -1,6 +1,6 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
-import { ChatIncognitoProvider } from "@/features/agents/components/chat/ChatIncognitoProvider";
-import { ChatIncognitoHeaderButton } from "@/features/agents/components/chat/ChatIncognitoHeaderButton";
+import { ChatIncognitoProvider } from "@ai-matrx/chat/agents/components/chat/ChatIncognitoProvider";
+import { ChatIncognitoHeaderButton } from "@ai-matrx/chat/agents/components/chat/ChatIncognitoHeaderButton";
 
 export const metadata = createRouteMetadata("/chat", {
   title: "Chat",

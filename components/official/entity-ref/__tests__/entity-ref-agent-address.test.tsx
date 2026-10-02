@@ -20,7 +20,7 @@ import { EntityRef } from "../EntityRef";
 import {
   __resetAgentAddressCache,
   seedAgentAddress,
-} from "@/features/agents/addressing/agentAddressCache";
+} from "@ai-matrx/chat/agents/addressing/agentAddressCache";
 
 jest.mock("@/utils/supabase/client", () => ({
   __esModule: true,

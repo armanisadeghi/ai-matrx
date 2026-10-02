@@ -13,7 +13,7 @@ import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { useAgents } from "../../hooks/useAgents";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
-import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinitionRecord } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 export function AgentsSection() {
   const dispatch = useAppDispatch();

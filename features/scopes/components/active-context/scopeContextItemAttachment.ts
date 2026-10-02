@@ -1,4 +1,4 @@
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import type { InstanceContextEntry } from "@ai-matrx/chat/agents/types/instance.types";
 import type { ContextItemRow, OrgNode } from "@/features/scopes/types";
 import { itemRef } from "./context-tree/model";
 

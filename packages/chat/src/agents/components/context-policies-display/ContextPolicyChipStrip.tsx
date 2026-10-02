@@ -12,14 +12,14 @@
  */
 
 import { useMemo } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
-import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
+import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
+import type { ContextPolicy } from "../../types/agent-api-types";
+import type { InstanceContextEntry } from "../../types/instance.types";
 import { ContextPolicyChip } from "./ContextPolicyChip";
 import { ContextPolicyItemsPopover } from "./ContextPolicyItemsPopover";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 interface ContextPolicyChipStripProps {
   conversationId: string;

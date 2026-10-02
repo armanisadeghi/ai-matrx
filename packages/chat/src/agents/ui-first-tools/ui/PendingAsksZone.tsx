@@ -21,8 +21,8 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, MessagesSquare } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   BottomSheet,
   BottomSheetBody,
@@ -36,7 +36,7 @@ import {
 import { AskCard } from "./AskCard";
 import { ApprovalCard } from "./ApprovalCard";
 import { BatchAskCard } from "./BatchAskCard";
-import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
+import { GmailReviewCard } from "@host/features/google-workspace/agent/GmailReviewCard";
 
 interface PendingAsksZoneProps {
   conversationId: string;

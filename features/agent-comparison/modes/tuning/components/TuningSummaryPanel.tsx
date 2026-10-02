@@ -20,7 +20,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentSettings,
   selectAgentModelId,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 

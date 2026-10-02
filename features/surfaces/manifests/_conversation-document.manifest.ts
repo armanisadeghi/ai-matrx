@@ -27,7 +27,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 /**
  * Canonical grouping, shared by BOTH document surfaces so the two can never

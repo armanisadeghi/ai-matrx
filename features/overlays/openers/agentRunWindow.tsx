@@ -16,7 +16,7 @@ import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const OVERLAY_ID = "agentRunWindow" as const;

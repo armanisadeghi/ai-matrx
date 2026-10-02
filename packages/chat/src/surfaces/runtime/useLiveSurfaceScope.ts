@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceRuntime } from "./SurfaceRuntimeContext";
 
 export type LiveSurfaceScopeStatus =
   "live" | "snapshot" | "unavailable" | "error";

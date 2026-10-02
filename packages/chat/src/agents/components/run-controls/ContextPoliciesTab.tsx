@@ -22,27 +22,27 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, Pencil, Check, X, RefreshCw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   ContextObjectType,
   ContextPolicy,
-} from "@/features/agents/types/agent-api-types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
+} from "../../types/agent-api-types";
+import type { InstanceContextEntry } from "../../types/instance.types";
+import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
 import {
   setContextEntry,
   removeContextEntry,
   clearInstanceContext,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "../../redux/execution-system/instance-context/instance-context.slice";
 import {
   writeBuilderContextEntry,
   deleteBuilderContextEntry,
   clearBuilderContext,
-} from "@/features/agents/hooks/useBuilderContextSeed";
-import { cn } from "@/lib/utils";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "../../hooks/useBuilderContextSeed";
+import { cn } from "@host/lib/utils";
+import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 // =============================================================================
 // Selectors

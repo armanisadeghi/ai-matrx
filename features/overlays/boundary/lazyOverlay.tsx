@@ -42,7 +42,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { OverlayErrorBoundary } from "@/features/overlays/boundary/OverlayErrorBoundary";
 import { OverlayLoadingFallback } from "@/features/overlays/boundary/OverlayLoadingFallback";
-import { SurfaceLayerBoundary } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceLayerBoundary } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 /** How long an overlay's dynamic import may hang before we treat it as failed. */
 export const OVERLAY_LOAD_TIMEOUT_MS = 12_000;

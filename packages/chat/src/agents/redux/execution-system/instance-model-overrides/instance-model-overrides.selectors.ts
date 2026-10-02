@@ -7,12 +7,12 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { InstanceModelOverrideState } from "@/features/agents/types/instance.types";
+import type { RootState } from "@host/lib/redux/store";
+import type { InstanceModelOverrideState } from "../../../types/instance.types";
 import type {
   LLMParams,
   FeLlmParams,
-} from "@/features/agents/types/agent-api-types";
+} from "../../../types/agent-api-types";
 
 /**
  * Raw override state for an instance.

@@ -1,15 +1,15 @@
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 import { initUrlHydration } from "../url-sync/initUrlHydration";
 import { getHydrator } from "../url-sync/UrlPanelRegistry";
 import { PANEL_KEY_ALIASES } from "../url-sync/panelKeyAliases";
-import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { agentPanelUrlArgs } from "../windows/agents/agentPanelSurfaceAddress";
+import { patchConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { agentPanelUrlArgs } from "@ai-matrx/chat/window-panels/windows/agents/agentPanelSurfaceAddress";
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/load-conversation.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk",
   () => ({
     loadConversation: jest.fn((args: { conversationId: string }) => ({
       type: "test/loadConversation",
@@ -19,10 +19,10 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight",
+  "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight",
   () => ({ followWhatIsStillInFlight: jest.fn() }),
 );
-import { followWhatIsStillInFlight } from "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight";
+import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
 
 function hydrate(
   typeKey: string,

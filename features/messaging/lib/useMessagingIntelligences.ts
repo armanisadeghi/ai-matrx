@@ -33,7 +33,7 @@ import type {
   MessagingAgentIdentity,
   MessagingAgents,
 } from "@ai-matrx/messaging/react";
-import { useMandateSet } from "@/features/mandates/useMandateSet";
+import { useMandateSet } from "@ai-matrx/chat/mandates/useMandateSet";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
 import {
   MESSAGING_AI_KNOB_FEATURE,
@@ -75,7 +75,7 @@ function toWireOverrides(
     console.warn(
       `[messaging] mandate ${mandateKey} binding carries non-scalar ` +
         `config_overrides keys that were not sent: ${dropped.join(", ")}. ` +
-        "Extend features/mandates/llm-params.ts, or apply them server-side.",
+        "Extend packages/chat/src/mandates/llm-params.ts, or apply them server-side.",
     );
   }
   return Object.keys(out).length > 0 ? out : null;

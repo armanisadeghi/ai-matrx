@@ -9,7 +9,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { PARTY_KINDS } from "@/features/crm/types";
 
 export const CRM_CREATE_PARTY_SURFACE_NAME = "matrx-user/crm-create-party";

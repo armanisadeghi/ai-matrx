@@ -11,8 +11,8 @@
 //
 // SoR: common-docs/systems/agents/voice/STATE.md
 
-import { ChatRoomClient } from "@/features/agents/components/chat/ChatRoomClient";
-import { chatRouteSurfaceKey } from "@/features/agents/components/chat/begin-fresh-chat";
+import { ChatRoomClient } from "../../agents/components/chat/ChatRoomClient";
+import { chatRouteSurfaceKey } from "../../agents/components/chat/begin-fresh-chat";
 import { VoiceRelayDock } from "./VoiceRelayDock";
 
 /** Registered `source_feature` — this is the voice-agent product surface. */

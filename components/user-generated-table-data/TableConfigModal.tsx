@@ -79,8 +79,8 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   SurfaceLayerBoundary,
   SurfaceRuntimeProvider,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { SURFACE_LAYER_ATTRIBUTE } from "@/features/surfaces/runtime/window-forms";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { SURFACE_LAYER_ATTRIBUTE } from "@ai-matrx/chat/surfaces/runtime/window-forms";
 import {
   createTableSettingsScope,
   TABLE_SETTINGS_SURFACE_NAME,

@@ -18,12 +18,12 @@
 
 import React, { useMemo } from "react";
 import { Handshake } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   extractFlatText,
   selectMessageById,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+} from "../../../redux/execution-system/messages/messages.selectors";
+import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 
 interface CollabNoteMessageProps {
   conversationId: string;

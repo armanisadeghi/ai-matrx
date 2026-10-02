@@ -29,7 +29,7 @@ import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis"
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
 import { useFile } from "@/features/files/handler/hooks/useFile";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createAnalysisStudioScope } from "@/features/surfaces/manifests/analysis-studio.manifest";
 import { buildAnalysisStudioWriteHandlers } from "./analysis-studio-write-handlers";
 import { ThumbnailStrip } from "./ThumbnailStrip";

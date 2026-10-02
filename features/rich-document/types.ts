@@ -9,7 +9,7 @@
 // See `features/rich-document/FEATURE.md` for the full architecture and the
 // per-source action compatibility matrix.
 
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import type { LucideIcon } from "lucide-react";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Note } from "@/features/notes/types";

@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { ExecutionInstance } from "@/features/agents/types/instance.types";
+import type { RootState } from "@host/lib/redux/store";
+import type { ExecutionInstance } from "../../../types/instance.types";
 import type { ConversationRecord } from "./conversations.slice";
 
 const EMPTY_INSTANCES: ConversationRecord[] = [];

@@ -22,8 +22,8 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   SurfaceValue,
-} from "@/features/surfaces/types";
-import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
+} from "../types";
+import type { SurfaceWithStats } from "../services/surfaces.service";
 
 export interface SurfacesCatalogSliceState {
   list: SurfaceWithStats[];

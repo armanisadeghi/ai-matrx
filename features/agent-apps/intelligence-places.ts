@@ -31,7 +31,7 @@ export const AGENT_APPS_PLACES: FeaturePlaces = {
       ],
       sources: [
         "features/agent-apps/hooks/useAutoCreateApp.ts",
-        "features/agents/constants/system-agent-registry.ts",
+        "packages/chat/src/agents/constants/system-agent-registry.ts",
       ],
     },
     {

@@ -18,8 +18,8 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
-import { StructuredDocumentPresentationProvider } from "@/features/tool-call-visualization/result-fields/document-presentation";
-import { fieldLabelsFromJsonSchema } from "@/features/tool-call-visualization/result-fields/schema-labels";
+import { StructuredDocumentPresentationProvider } from "@ai-matrx/chat/tool-call-visualization/result-fields/document-presentation";
+import { fieldLabelsFromJsonSchema } from "@ai-matrx/chat/tool-call-visualization/result-fields/schema-labels";
 
 import records from "./fixtures/masterwork-run-records.json";
 

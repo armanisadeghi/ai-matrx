@@ -18,7 +18,7 @@ import { Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { KindRequestDialog } from "@/features/content-ir/react/actions/KindRequestDialog";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { podcastService } from "@/features/podcasts/service";
 import { topicFromIdea } from "@/features/podcasts/generator/topic-idea";

@@ -44,7 +44,7 @@ jest.mock("@ai-matrx/tap-target/buttons", () => ({
   ChevronLeftTapButton: () => null,
 }));
 
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 

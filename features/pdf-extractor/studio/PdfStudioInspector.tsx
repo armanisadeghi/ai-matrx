@@ -37,8 +37,8 @@ import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
 import { buildPdfExtractorScope } from "@/features/pdf-extractor/lib/pdf-extractor-scope";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
-import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useSurfaceBoundAgents } from "@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 
 import { PDF_EXTRACTOR_SURFACE_NAME as PDF_EXTRACTOR_SURFACE } from "@/features/surfaces/manifests/pdf-extractor.manifest";

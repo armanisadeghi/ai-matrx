@@ -10,7 +10,7 @@ jest.mock("@/lib/python-client", () => ({ postJson: (...args: unknown[]) => post
 import { configureStore } from "@reduxjs/toolkit";
 import { createSourceRef, createSourceSet } from "@ai-matrx/agents/sources";
 import { createSourceSetController } from "@ai-matrx/agents/sources/runtime";
-import instanceResources from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import instanceResources from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import wizardDraft from "@/lib/redux/slices/wizardDraftSlice";
 import type { AppStore } from "@/lib/redux/store";
 import { reduxSourceSetAdapter, sourceSurfaceKey } from "../useSourceSet";

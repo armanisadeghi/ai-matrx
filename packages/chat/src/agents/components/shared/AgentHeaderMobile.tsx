@@ -3,8 +3,8 @@
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Check, MoreHorizontal, Pencil, Play, Webhook } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentIsDirty } from "@/features/agents/redux/agent-definition/selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentIsDirty } from "../../redux/agent-definition/selectors";
 import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
@@ -19,16 +19,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@host/components/ui/alert-dialog";
 import {
   BottomSheet,
   BottomSheetHeader,
   BottomSheetBody,
 } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { usePhonePageActions } from "@/features/shell/components/header/phone-page-actions";
-import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
+import { cn } from "@host/lib/utils";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { usePhonePageActions } from "@host/features/shell/components/header/phone-page-actions";
+import { HeaderActionsSlot } from "@host/features/shell/components/header/HeaderActionsSlot";
 import { AgentOptionsMenu } from "./AgentOptionsMenu";
 import { AgentSaveTapButton } from "./AgentSaveTapButton";
 import {

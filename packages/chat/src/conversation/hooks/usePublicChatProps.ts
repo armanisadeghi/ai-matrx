@@ -16,8 +16,8 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import type { UnifiedChatWrapperProps } from '@/features/cx-conversation/UnifiedChatWrapper';
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { UnifiedChatWrapperProps } from '../../cx-conversation/UnifiedChatWrapper';
+import type { VariableDefinition } from "../../agents/types/agent-definition.types";
 
 export interface PublicChatPropsConfig {
     /** Agent/prompt ID (from URL or context) */

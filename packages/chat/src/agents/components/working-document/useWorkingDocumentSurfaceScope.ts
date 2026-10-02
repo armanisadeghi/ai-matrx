@@ -15,10 +15,10 @@
 import { useCallback } from "react";
 import type { RefObject } from "react";
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { selectScopeSelectionsContext } from "@/lib/redux/slices/appContextSlice";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import type { SurfaceScopePayload } from "../../../surfaces/types";
+import { selectInstanceContextEntries } from "../../redux/execution-system/instance-context/instance-context.selectors";
+import { selectScopeSelectionsContext } from "@host/lib/redux/slices/appContextSlice";
 import {
   selectWorkingDocBinding,
   selectWorkingDocConflict,
@@ -27,9 +27,9 @@ import {
   selectWorkingDocSaving,
   selectWorkingDocTitle,
   selectWorkingDocVersion,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+} from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { getWorkingDocViewState } from "./workingDocumentViewStore";
-import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import type { WorkingDocumentKind } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   buildConversationDocumentContextData,
   type WorkingDocumentSurfaceContext,

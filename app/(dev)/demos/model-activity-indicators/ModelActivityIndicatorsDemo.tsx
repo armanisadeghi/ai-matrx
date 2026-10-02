@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AgentPlanningIndicator } from "@/features/agents/components/shared/AgentPlanningIndicator";
-import { AgentStatusIndicator } from "@/features/agents/components/run/AgentStatusIndicator";
+import { AgentPlanningIndicator } from "@ai-matrx/chat/agents/components/shared/AgentPlanningIndicator";
+import { AgentStatusIndicator } from "@ai-matrx/chat/agents/components/run/AgentStatusIndicator";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import MatxRouteLoader from "@/components/loaders/route-loading";
 import MatxLoader from "@/components/loaders/MatxLoader";

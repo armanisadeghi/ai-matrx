@@ -16,8 +16,8 @@ import { dictionaryService } from "@/features/dictionary/service/dictionaryServi
 import { buildConsumption } from "@/features/dictionary/utils/format";
 import {
   ensureSurfaceFeatureLoaded,
-} from "@/features/surfaces/redux/userStateSlice";
-import { DEFAULT_SURFACE_KEY } from "@/features/surfaces/user-state/service";
+} from "@ai-matrx/chat/surfaces/redux/userStateSlice";
+import { DEFAULT_SURFACE_KEY } from "@ai-matrx/chat/surfaces/user-state/service";
 import {
   DEFAULT_DICT_SELECTION,
   type DictConsumption,

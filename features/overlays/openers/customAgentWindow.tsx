@@ -18,7 +18,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   registerCustomAgentSession,
   type CustomAgentSession,
-} from "@/features/agents/components/custom-agent/session";
+} from "@ai-matrx/chat/agents/components/custom-agent/session";
 
 const OVERLAY_ID = "customAgentWindow" as const;
 

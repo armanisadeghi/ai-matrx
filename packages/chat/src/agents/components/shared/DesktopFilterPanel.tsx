@@ -9,13 +9,13 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type { AgentTab } from "@ai-matrx/agents/catalog";
 
 // Prompt-filter types inlined here so this component has no dependency on

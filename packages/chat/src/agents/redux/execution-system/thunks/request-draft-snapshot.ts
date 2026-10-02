@@ -20,15 +20,15 @@
  * Stored files are saved by their permanent file id.
  */
 
-import type { AppThunk, RootState } from "@/lib/redux/store";
-import { isSignedUrl } from "@/lib/media/signed-url";
+import type { AppThunk, RootState } from "@host/lib/redux/store";
+import { isSignedUrl } from "@host/lib/media/signed-url";
 import type {
   BuilderAdvancedSettings,
   InstanceContextEntry,
   ResourceBlockType,
   ResourceOptions,
-} from "@/features/agents/types/instance.types";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+} from "../../../types/instance.types";
+import type { MessagePart } from "@host/types/python-generated/stream-events";
 import {
   setUserInputMessageParts,
   setUserInputText,

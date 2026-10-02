@@ -10,7 +10,7 @@ import Link from "next/link";
 import { ListChecks } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentMessages } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { agentAsksDecisions } from "../queue";
 import { reviewAnswersHref } from "../service";
 

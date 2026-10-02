@@ -2,7 +2,7 @@
  * Utility functions for handling agent variables.
  */
 
-import { readPicklistSelection } from "@/features/matrx-envelope/referenceFence";
+import { readPicklistSelection } from "@host/features/matrx-envelope/referenceFence";
 import { isAutoAssignValue } from "./auto-assignment";
 
 /**

@@ -25,10 +25,10 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
-import type { ResultDisplayMode } from "@/features/agents/types/instance.types";
-import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { SourceFeature } from "../../../types/instance.types";
+import type { ResultDisplayMode } from "../../../types/instance.types";
+import { reconnectServerOperation } from "../../../runtime-reconnect/reconnect-server-operation.thunk";
 import { createManualInstance } from "./create-instance.thunk";
 import { loadConversation } from "./load-conversation.thunk";
 import { surfaceColdPendingCalls } from "./surface-cold-pending-calls.thunk";

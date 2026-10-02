@@ -7,23 +7,23 @@
  * registry keys are omitted; a failed load reports only `load_state`.
  */
 
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import type { SurfaceScopePayload } from "../types";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
 import {
   createAdminUiSurfacesScope,
   type UiSurfaceScopeEntry,
   type UiSurfacesFilterScope,
   type UiSurfacesRegistryCounts,
-} from "@/features/surfaces/manifests/admin-ui-surfaces.manifest";
+} from "@host/features/surfaces/manifests/admin-ui-surfaces.manifest";
 import {
   readinessBucketOf,
   tierFor,
   type SurfaceWithStats,
-} from "@/features/surfaces/services/surfaces.service";
-import { surfaceCheckState } from "@/features/surfaces/utils/surface-check-ledger";
-import type { SurfacesFilterState } from "@/features/surfaces/components/SurfacesFilterBar";
-import { xmlElement, xmlList } from "@/features/surfaces/runtime/context-bundle";
-import type { NewSurfaceDraftScope } from "@/features/surfaces/components/NewSurfaceDialog";
+} from "../services/surfaces.service";
+import { surfaceCheckState } from "../utils/surface-check-ledger";
+import type { SurfacesFilterState } from "@host/features/surfaces/components/SurfacesFilterBar";
+import { xmlElement, xmlList } from "../runtime/context-bundle";
+import type { NewSurfaceDraftScope } from "@host/features/surfaces/components/NewSurfaceDialog";
 
 /** How many rows `surface_list` carries up front (~4,000 chars). */
 export const SURFACE_LIST_MAX_ROWS = 40;

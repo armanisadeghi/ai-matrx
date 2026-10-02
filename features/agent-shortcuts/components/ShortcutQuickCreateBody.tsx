@@ -38,12 +38,12 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { cn } from "@/lib/utils";
-import type { ResultDisplayMode } from "@/features/agents/types/instance.types";
+import type { ResultDisplayMode } from "@ai-matrx/chat/agents/types/instance.types";
 import {
   VARIABLE_PANEL_STYLE_OPTIONS,
   type VariablesPanelStyle,
-} from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { ShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
+} from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
+import type { ShortcutContext } from "@ai-matrx/chat/agents/utils/shortcut-context-utils";
 import { RESULT_DISPLAY_OPTIONS } from "../constants";
 import { AgentVersionPicker } from "./AgentVersionPicker";
 import { DefaultVariableValuesEditor } from "./DefaultVariableValuesEditor";

@@ -1,10 +1,10 @@
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
   // the real store so a new export can never take this suite down at import.
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import { SurfaceRegistrationError } from "../surface-registration-error";
 
 describe("missing surface registration diagnostics", () => {
@@ -54,7 +54,7 @@ import {
   isCapturedSurfaceRegistrationError,
   serializeSurfaceBindingError,
 } from "../surface-registration-error";
-import { reduxErrorCaptureMiddleware } from "@/lib/diagnostics/reduxErrorCaptureMiddleware";
+import { reduxErrorCaptureMiddleware } from "@host/lib/diagnostics/reduxErrorCaptureMiddleware";
 
 it("preserves the capture receipt through a real RTK rejection without recapturing in middleware", async () => {
   jest.mocked(captureError).mockReset();

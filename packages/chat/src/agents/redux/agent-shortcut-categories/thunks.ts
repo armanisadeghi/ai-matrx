@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { assignField } from "../shared/field-flags";
 import {
   buildScopeQueryString,
@@ -30,11 +30,11 @@ import type {
   UpdateCategoryPatch,
 } from "./types";
 import { selectCategoryById } from "./selectors";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
-import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
-import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { resolveShortcutWriteScope } from "@host/features/agent-shortcuts/resolveShortcutWriteScope";
+import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
+import { requireSelectedOrgId } from "@host/lib/organizations/activeOrg";
+import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 

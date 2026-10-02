@@ -1,8 +1,8 @@
-import { supabase } from "@/utils/supabase/client";
+import { supabase } from "@host/utils/supabase/client";
 import {
   parseUiGates,
   type UiGates,
-} from "@/lib/redux/slices/agent-settings/ui-gates";
+} from "@host/lib/redux/slices/agent-settings/ui-gates";
 
 interface InputCapabilitiesSnapshotRef {
   agentId: string;

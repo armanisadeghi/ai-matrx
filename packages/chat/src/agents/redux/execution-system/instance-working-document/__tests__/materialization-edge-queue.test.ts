@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 
-import { createSlimRootReducer } from "@/lib/redux/rootReducer";
-import { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
+import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { setUserAuth } from "@host/lib/redux/slices/userAuthSlice";
 import {
   confirmServerSync,
   createInstance,

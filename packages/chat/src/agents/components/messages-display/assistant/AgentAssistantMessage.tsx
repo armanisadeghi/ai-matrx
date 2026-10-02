@@ -38,14 +38,14 @@ import {
   useEffect,
   useRef,
 } from "react";
-import MarkdownStream from "@/components/MarkdownStream";
-import { RecordAnnotations } from "@/features/rich-document/annotations/RecordAnnotations";
-import { annotationRecordOf } from "@/features/rich-document/annotations/record-of-source";
-import type { AnnotationSource } from "@/features/rich-document/annotations/types";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { PrefillNote } from "@/features/agents/message-flags/PrefillNote";
-import { StoppedNote } from "@/features/agents/message-flags/StoppedNote";
-import { useDebugContext } from "@/hooks/useDebugContext";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { RecordAnnotations } from "@host/features/rich-document/annotations/RecordAnnotations";
+import { annotationRecordOf } from "@host/features/rich-document/annotations/record-of-source";
+import type { AnnotationSource } from "@host/features/rich-document/annotations/types";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { PrefillNote } from "../../../message-flags/PrefillNote";
+import { StoppedNote } from "../../../message-flags/StoppedNote";
+import { useDebugContext } from "@host/hooks/useDebugContext";
 import {
   selectErrorIsFatal,
   selectRequestError,
@@ -57,9 +57,9 @@ import {
   selectLiveCitationSources,
   selectVisibleWarnings,
   selectRequestAwaitingPerson,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { selectBufferStream } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../../../redux/execution-system/active-requests/active-requests.selectors";
+import { selectBufferStream } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectStreamPhase } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import {
   selectMessageById,
   extractFlatText,
@@ -68,17 +68,17 @@ import {
   extractRecordError,
   selectIsLatestAssistantMessage,
   persistedBodyBlocks,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "../../../redux/execution-system/messages/messages.selectors";
 import {
   isAttachmentMessagePart,
   isInlineAssistantMedia,
-} from "@/features/agents/components/context-items/normalize";
+} from "../../context-items/normalize";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
 import {
   buildMessageCitationIndex,
   type MessageCitationSource,
-} from "@/features/agents/redux/execution-system/messages/message-citations";
-import { MessageCitationsProvider } from "@/components/mardown-display/chat-markdown/citations/MessageCitationsContext";
+} from "../../../redux/execution-system/messages/message-citations";
+import { MessageCitationsProvider } from "@host/components/mardown-display/chat-markdown/citations/MessageCitationsContext";
 import { MessageSourcesRow } from "../citations/MessageSourcesRow";
 import { AssistantError } from "../../run/AssistantError";
 import { friendlyStreamError } from "../../run/friendlyStreamError";
@@ -89,29 +89,29 @@ import {
   AssistantMessageFooter,
 } from "./AssistantMessageFooter";
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
-import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectHasActivePendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
+import { selectInstanceStatus } from "../../../redux/execution-system/conversations/conversations.selectors";
+import { selectHasActivePendingAsk } from "../../../ui-first-tools/redux/pending-asks.slice";
 import {
   countPersonVisibleParts,
   isAnswerlessTurn,
   turnIsStillOpen,
 } from "./answerless-turn";
-import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
-import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
+import { retryConversationTurn } from "../../../redux/execution-system/message-crud/retry-turn.thunk";
+import { commitInlineContentEdit } from "../../../redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { InPlaceAnswerEditor } from "./InPlaceAnswerEditor";
-import { toast } from "@/lib/toast";
-import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
-import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
+import { toast } from "@host/lib/toast";
+import { useDomCapturePrint } from "../../../../conversation/hooks/useDomCapturePrint";
+import { MessageFilesStrip } from "@host/features/code/views/history/MessageFilesStrip";
 import { ProviderRetryCard, shouldShowProviderRetry } from "./ProviderRetryCard";
 import {
   sendProviderRetryControl,
   type ProviderRetryControlAction,
-} from "@/features/agents/redux/execution-system/thunks/provider-retry-control.thunk";
+} from "../../../redux/execution-system/thunks/provider-retry-control.thunk";
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
-} from "@/features/war-room/utils/renderPathTrace";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "@host/features/war-room/utils/renderPathTrace";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const _NO_LIVE_SOURCES: MessageCitationSource[] = [];
 const _selectNoLiveSources = () => _NO_LIVE_SOURCES;

@@ -77,8 +77,8 @@ import { ScheduleCascadePanel } from "./ScheduleCascadePanel";
 import { RunHistoryPanel } from "./RunHistoryPanel";
 import { extractErrorMessage } from "@/utils/errors";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
-import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import {
   buildRunConsoleScope,
   runConsoleSurfaceName,

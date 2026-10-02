@@ -8,14 +8,14 @@
  * while still preserving JSON-safe extension fields allowed by Python.
  */
 
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "../../types/agent-definition.types";
 import type {
   ContextObjectType,
   ContextPolicy,
   ContextPolicyPersist,
-} from "@/features/agents/types/agent-api-types";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { JsonValue } from "@/types/json";
+} from "../../types/agent-api-types";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import type { JsonValue } from "@host/types/json";
 
 interface ParseContext {
   agentId?: string;

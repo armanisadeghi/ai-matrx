@@ -29,7 +29,7 @@ import {
   toggleDebugMode,
   selectIsDebugMode,
 } from "@/lib/redux/preferences/adminDebugSlice";
-import { chatConversationsActions } from "../_legacy-stubs";
+import { chatConversationsActions } from "@ai-matrx/chat/cx-chat/_legacy-stubs";
 import {
   selectShowDebugInfo,
   selectShowSystemMessages,
@@ -37,7 +37,7 @@ import {
   selectSession,
   selectMessages,
   selectResources,
-} from "../_legacy-stubs";
+} from "@ai-matrx/chat/cx-chat/_legacy-stubs";
 
 interface ChatDebugModalProps {
   sessionId: string;

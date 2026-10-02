@@ -22,14 +22,14 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   TimelineEntry,
   ReservationRecord,
-} from "@/features/agents/types/request.types";
+} from "../../../types/request.types";
 import type {
   Phase,
   WarningPayload,
   InfoPayload,
   CompletionPayload,
-} from "@/types/python-generated/stream-events";
-import type { Json } from "@/types/database.types";
+} from "@host/types/python-generated/stream-events";
+import type { Json } from "@host/types/database.types";
 
 // =============================================================================
 // DB-faithful record shapes — mirror the Supabase Row types

@@ -8,9 +8,9 @@
  * Route: /demos/tool-viz/knowledge-tools   (dev profile only)
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { KnowledgeBrowseInline } from "@/features/tool-call-visualization/renderers/knowledge-browse/KnowledgeBrowseInline";
-import { DocumentContentInline } from "@/features/tool-call-visualization/renderers/document-content/DocumentContentInline";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
+import { KnowledgeBrowseInline } from "@ai-matrx/chat/tool-call-visualization/renderers/knowledge-browse/KnowledgeBrowseInline";
+import { DocumentContentInline } from "@ai-matrx/chat/tool-call-visualization/renderers/document-content/DocumentContentInline";
 
 function entry(
   toolName: string,

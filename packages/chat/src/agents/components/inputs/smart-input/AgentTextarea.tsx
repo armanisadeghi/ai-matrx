@@ -23,38 +23,38 @@ import React, {
   useCallback,
 } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectUserInputText,
   selectInputCharCount,
   selectSubmissionPhase,
-} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+} from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
   selectSubmitOnEnter,
   selectInputPlaceholder,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   selectComposerHasSomethingToSend,
   selectIsExecuting,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
+} from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@/components/official/composer/composerSubmit";
+} from "@host/components/official/composer/composerSubmit";
 import { readVerticalChrome, snapToLineGrid } from "./textarea-line-grid";
-import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
-import { useInstanceInputUndoRedo } from "@/features/agents/hooks/useInstanceInputUndoRedo";
+import { usePasteImageResource } from "../resources/usePasteImageResource";
+import { useInstanceInputUndoRedo } from "../../../hooks/useInstanceInputUndoRedo";
 import { ComposerDraftNotice } from "./ComposerDraftNotice";
 // Lightweight shell (static); the menu body lazy-loads on first open.
-import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { EditableContextMenu } from "@host/features/context-menu-v3/EditableContextMenu";
 import type { ComposerTextMenu } from "./composer/composer-types";
 import {
   smartExecute,
   interruptAndSend,
-} from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+} from "../../../redux/execution-system/thunks/smart-execute.thunk";
+import { selectUserVariableValues } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 
 // ── Props ────────────────────────────────────────────────────────────────────
 

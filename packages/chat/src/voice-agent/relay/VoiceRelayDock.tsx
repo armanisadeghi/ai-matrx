@@ -14,21 +14,21 @@
 //
 // SoR: common-docs/systems/agents/voice/STATE.md
 
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectVoiceVoiceId } from "../state/selectors";
 import { LiveVoiceDoor } from "../components/LiveVoiceDoor";
 import { AudioLines } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useMandate } from "@/features/mandates/useMandate";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import { Button } from "@host/components/ui/button";
+import { useMandate } from "../../mandates/useMandate";
+import type { SourceFeature } from "@host/types/python-generated/source-attribution";
 import { VoiceRelayPanel } from "./VoiceRelayPanel";
 import {
   useVoiceRelaySession,
   VOICE_COMMUNICATOR_MANDATE_KEY,
 } from "./useVoiceRelaySession";
 import type { QuestionPacing } from "./types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@host/lib/text/asClause";
 
 export interface VoiceRelayDockProps {
   /** The brain — the agent this conversation belongs to. */

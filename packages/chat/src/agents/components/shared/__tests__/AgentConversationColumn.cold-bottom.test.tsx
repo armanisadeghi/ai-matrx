@@ -5,20 +5,20 @@ import { configureStore } from "@reduxjs/toolkit";
 import messages, {
   hydrateMessages,
   type MessageRecord,
-} from "@/features/agents/redux/execution-system/messages/messages.slice";
-import conversations from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import creatorDebug from "@/lib/redux/preferences/creatorDebugSlice";
+} from "../../../redux/execution-system/messages/messages.slice";
+import conversations from "../../../redux/execution-system/conversations/conversations.slice";
+import creatorDebug from "@host/lib/redux/preferences/creatorDebugSlice";
 // The column's header carries `TranscriptIntegrityCopyButton` since 35ea1916b5
 // (2026-09-18), and that button asks `selectIsSuperAdmin` — i.e. `state.userAuth`.
 // A store without the slice made the selector read `undefined.adminLevel` and the
 // whole column threw at render. The real store always carries it (rootReducer.ts),
 // so the seat mounts the real reducer rather than stubbing the selector.
-import userAuth from "@/lib/redux/slices/userAuthSlice";
-import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
+import userAuth from "@host/lib/redux/slices/userAuthSlice";
+import { loadOlderMessages } from "../../../redux/execution-system/thunks/load-older-messages.thunk";
 import { AgentConversationColumn } from "../AgentConversationColumn";
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk",
+  "../../../redux/execution-system/thunks/load-older-messages.thunk",
   () => ({
     loadOlderMessages: jest.fn(() => ({ type: "test/history-request" })),
   }),
@@ -30,14 +30,14 @@ jest.mock("../../messages-display/AgentConversationDisplay", () => ({
 jest.mock("../../inputs/smart-input/SmartAgentInput", () => ({
   SmartAgentInput: () => <textarea aria-label="Message" />,
 }));
-jest.mock("@/features/agents/runtime-reconnect/ServerOperationBanner", () => ({
+jest.mock("../../../runtime-reconnect/ServerOperationBanner", () => ({
   ServerOperationBanner: () => null,
 }));
-jest.mock("@/features/agents/ui-first-tools/ui/PendingAsksZone", () => ({
+jest.mock("../../../ui-first-tools/ui/PendingAsksZone", () => ({
   PendingAsksZone: () => null,
 }));
 jest.mock(
-  "@/features/matrx-envelope/components/ProposedDirectivesZone",
+  "@host/features/matrx-envelope/components/ProposedDirectivesZone",
   () => ({
     ProposedDirectivesZone: () => null,
   }),

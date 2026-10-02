@@ -15,7 +15,7 @@
 import { FileText } from "lucide-react";
 
 import { AnimatedDiffReveal } from "@ai-matrx/diff/react";
-import type { LiveWorkingDocPatch } from "@/features/agents/redux/execution-system/instance-working-document/useLiveWorkingDocPatch";
+import type { LiveWorkingDocPatch } from "../../redux/execution-system/instance-working-document/useLiveWorkingDocPatch";
 
 interface WorkingDocumentAgentDiffProps {
   livePatch: LiveWorkingDocPatch;

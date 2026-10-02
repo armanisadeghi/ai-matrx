@@ -3,10 +3,10 @@
 import React, { useMemo } from "react";
 import { List, CheckSquare, Lock, Globe, Users, Search, ChevronRight, ExternalLink } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
+import { useOpenStructuredListManagerV2Window } from "@host/features/overlays/openers/structuredListManagerV2Window";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface UserList {
     id: string;

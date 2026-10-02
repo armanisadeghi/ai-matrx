@@ -95,9 +95,9 @@ Key facts:
 ```1:37:app/(dev)/demos/chat/c/[conversationId]/page.tsx
 // app/(dev)/demos/chat/c/[conversationId]/page.tsx — Active conversation view.
 
-import ChatHeaderControls from "@/features/cx-chat/components/ChatHeaderControls";
-import { ChatInstanceManager } from "@/features/cx-chat/components/ChatInstanceManager";
-import { DEFAULT_AGENT_ID } from "@/features/cx-chat/components/agent/local-agents";
+import ChatHeaderControls from "@ai-matrx/chat/cx-chat/components/ChatHeaderControls";
+import { ChatInstanceManager } from "@ai-matrx/chat/cx-chat/components/ChatInstanceManager";
+import { DEFAULT_AGENT_ID } from "@ai-matrx/chat/cx-chat/components/agent/local-agents";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
 
 export default async function ConversationPage({
@@ -138,7 +138,7 @@ This **server component** does two things:
 
 ### `ChatInstanceManager` Orchestrates the Instance + History Load
 
-```60:121:features/cx-chat/components/ChatInstanceManager.tsx
+```60:121:packages/chat/src/cx-chat/components/ChatInstanceManager.tsx
   useEffect(() => {
     const key = `${agentId}::${urlConversationId ?? ""}`;
     if (key === lastKey.current) return;
@@ -373,7 +373,7 @@ export function canonicalToLegacy(msg: CanonicalMessage): LegacyChatMessage {
 
 For DB-loaded content, the actual conversion is **not** in `adapters.ts`. Instead there are **two separate converters** depending on which system loads the data:
 
-- **SSR chat (agent execution system)**: `normalizeContentBlocks` in `features/agents/redux/execution-system/utils/normalize-content-blocks.ts` — converts raw DB `CxContentBlock` objects into `ContentBlockPayload[]` (the streaming protocol shape)
+- **SSR chat (agent execution system)**: `normalizeContentBlocks` in `packages/chat/src/agents/redux/execution-system/utils/normalize-content-blocks.ts` — converts raw DB `CxContentBlock` objects into `ContentBlockPayload[]` (the streaming protocol shape)
 - **Public chat / cx-conversation system**: `processDbMessagesForDisplay` in `features/public-chat/utils/cx-content-converter.ts` — converts raw `CxMessage[]` + `CxToolCall[]` into `ProcessedChatMessage[]` with flat markdown `content` + `ToolCallObject[]` tool updates
 
 ---
@@ -398,7 +398,7 @@ The SSR chat system does a **lean query** (messages only, specific columns), whi
 
 When you click a conversation in the sidebar:
 
-```180:189:features/cx-chat/components/ChatSidebarClient.tsx
+```180:189:packages/chat/src/cx-chat/components/ChatSidebarClient.tsx
   const handleSelectChat = useCallback(
     (id: string) => {
       closeMobilePanel();

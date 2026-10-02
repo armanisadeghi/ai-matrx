@@ -1,29 +1,29 @@
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "../../../../resources/types";
 
-jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/toast", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: jest.fn(),
   useAppStore: jest.fn(),
 }));
-jest.mock("@/features/agents/redux/execution-system/instance-resources/instance-resources.slice", () => ({
+jest.mock("../../../../redux/execution-system/instance-resources/instance-resources.slice", () => ({
   addResource: jest.fn(),
   setResourcePreview: jest.fn(),
 }));
-jest.mock("@/features/agents/redux/execution-system/conversations/conversations.selectors", () => ({
+jest.mock("../../../../redux/execution-system/conversations/conversations.selectors", () => ({
   selectIsCacheOnly: jest.fn(),
 }));
-jest.mock("@/features/agents/redux/execution-system/instance-resources/resource-source", () => ({
+jest.mock("../../../../redux/execution-system/instance-resources/resource-source", () => ({
   refineBlockType: jest.fn(),
   resourceDataToSource: jest.fn(),
 }));
-jest.mock("@/features/agents/redux/execution-system/instance-resources/editable-resource-types", () => ({
+jest.mock("../../../../redux/execution-system/instance-resources/editable-resource-types", () => ({
   isEditableCapableBlockType: jest.fn(() => false),
 }));
 // W5 swap: durable edges ride the @ai-matrx/associations host store.
-jest.mock("@/features/scopes/host/associationsStore", () => ({
+jest.mock("@host/features/scopes/host/associationsStore", () => ({
   getAssociationsStore: jest.fn(),
 }));
-jest.mock("@/features/agents/components/inputs/resources/attached-documents", () => ({
+jest.mock("../attached-documents", () => ({
   cleanDocumentLabel: jest.fn(),
   documentAttachLabelFromState: jest.fn(),
 }));

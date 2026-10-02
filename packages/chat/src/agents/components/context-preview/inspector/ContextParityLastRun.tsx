@@ -17,12 +17,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
+import { usePageCaptureContribution } from "@host/components/agent-copy/page-capture/usePageCapture";
 import { ShieldCheck, ShieldAlert } from "lucide-react";
 
-import { supabase } from "@/utils/supabase/client";
-import { schedulerDb } from "@/utils/supabase/schedulerDb";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { supabase } from "@host/utils/supabase/client";
+import { schedulerDb } from "@host/utils/supabase/schedulerDb";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /** Seeded by matrx-frontend/migrations/campaign/paritynightly_*.sql. */
 export const CONTEXT_PARITY_TASK_ID = "a7c1e2d3-0000-4e5f-9a00-000000000973";

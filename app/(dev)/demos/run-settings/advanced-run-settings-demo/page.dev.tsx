@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { AdvancedRunSettings } from '@/features/agents/components/run-controls/AdvancedRunSettings/AdvancedRunSettings';
+import { AdvancedRunSettings } from '@ai-matrx/chat/agents/components/run-controls/AdvancedRunSettings/AdvancedRunSettings';
 import {
   DEFAULT_ADVANCED_RUN_SETTINGS,
   type AdvancedRunSettingsValue,
-} from '@/features/agents/components/run-controls/AdvancedRunSettings/constants';
-import { runAlgorithm } from '@/features/agents/components/run-controls/AdvancedRunSettings/algorithm';
+} from '@ai-matrx/chat/agents/components/run-controls/AdvancedRunSettings/constants';
+import { runAlgorithm } from '@ai-matrx/chat/agents/components/run-controls/AdvancedRunSettings/algorithm';
 
 export default function AdvancedRunSettingsDemoPage() {
   const [value, setValue] = useState<AdvancedRunSettingsValue>(

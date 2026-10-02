@@ -1,23 +1,23 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import MarkdownStream from "@/components/MarkdownStream";
-import { Button } from "@/components/ui/button";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { Button } from "@host/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+} from "@host/components/ui/select";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   clearAssistantMarkdownDrafts,
   selectAgentAssistantMarkdownDraftState,
   type AgentAssistantMarkdownDraftEntry,
-} from "@/features/agents/redux/agent-assistant-markdown-draft.slice";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+} from "../../../agents/redux/agent-assistant-markdown-draft.slice";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 
 interface AgentAssistantMarkdownDebugWindowProps {
   isOpen: boolean;

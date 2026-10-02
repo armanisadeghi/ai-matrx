@@ -20,7 +20,7 @@ import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount"
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTreeFetchedAt } from "@/features/scopes/redux/selectors/tree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createScopesScope,
   SCOPES_SURFACE_NAME,

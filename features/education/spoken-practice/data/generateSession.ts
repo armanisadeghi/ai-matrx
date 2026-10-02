@@ -9,7 +9,7 @@ import {
   livePosture,
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { TrustConfidence } from "@/features/education/trust/types";
 import { SPOKEN_PRACTICE_MANDATES } from "../mandates";
 import type {

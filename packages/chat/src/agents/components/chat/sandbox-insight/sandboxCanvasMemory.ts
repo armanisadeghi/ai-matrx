@@ -15,7 +15,7 @@
 import {
   createCanvasRevealMemory,
   type CanvasRevealMemory,
-} from "@/features/canvas/revealMemory";
+} from "@host/features/canvas/revealMemory";
 
 export type SandboxCanvasMemory = CanvasRevealMemory;
 

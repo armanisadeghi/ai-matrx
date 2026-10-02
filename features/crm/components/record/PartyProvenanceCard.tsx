@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { recordToast, toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { updateParty } from "../../service";
 import { platformWord } from "../../reachability";

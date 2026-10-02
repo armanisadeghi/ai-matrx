@@ -46,37 +46,37 @@ import {
   X,
 } from "lucide-react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { useMediaQueryState } from "@/hooks/use-media-query";
-import { MatrxFloatingFrame } from "@/components/matrx/resizable/MatrxFloatingFrame";
-import { DockedSidePanel } from "@/components/official/side-panel/DockedSidePanel";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { useMediaQueryState } from "@host/hooks/use-media-query";
+import { MatrxFloatingFrame } from "@host/components/matrx/resizable/MatrxFloatingFrame";
+import { DockedSidePanel } from "@host/components/official/side-panel/DockedSidePanel";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from "@/components/ui/drawer";
+} from "@host/components/ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { EntityCommentPopover } from "@/components/comments/EntityCommentPopover";
-import { ShareButton } from "@/features/sharing/components/ShareButton";
-import type { ResourceType } from "@/utils/permissions/types";
-import { HeaderControlSet } from "@/features/shell/components/header/HeaderControlSet";
-import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
-import { ComposerModeSwitch } from "@/features/agents/components/inputs/smart-input/composer/ComposerModeSwitch";
-import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
-import { COMPOSER_KNOBS } from "@/features/agents/components/inputs/smart-input/composer/composer-mode-cookie";
-import type { AttachedContextRailItem } from "@/features/agents/components/inputs/smart-input/ConversationContextRail";
-import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { ShellChromeMode, useShellCanvasFullScreen } from "@/features/shell/components/ShellChromeMode";
-import { registerInPlaceChatHost } from "@/features/agents/components/chat/in-place-chat-host";
-import { openShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
-import { pushFullScreenLayer } from "@/features/shell/canvas-chrome/open-layer";
+} from "@host/components/ui/dropdown-menu";
+import { EntityCommentPopover } from "@host/components/comments/EntityCommentPopover";
+import { ShareButton } from "@host/features/sharing/components/ShareButton";
+import type { ResourceType } from "@host/utils/permissions/types";
+import { HeaderControlSet } from "@host/features/shell/components/header/HeaderControlSet";
+import { selectIsAuthenticated } from "@host/lib/redux/selectors/userSelectors";
+import { ComposerModeSwitch } from "../../agents/components/inputs/smart-input/composer/ComposerModeSwitch";
+import type { ComposerMode } from "../../agents/components/inputs/smart-input/composer/composer-types";
+import { COMPOSER_KNOBS } from "../../agents/components/inputs/smart-input/composer/composer-mode-cookie";
+import type { AttachedContextRailItem } from "../../agents/components/inputs/smart-input/ConversationContextRail";
+import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { ShellChromeMode, useShellCanvasFullScreen } from "@host/features/shell/components/ShellChromeMode";
+import { registerInPlaceChatHost } from "../../agents/components/chat/in-place-chat-host";
+import { openShellMobileMenu } from "@host/features/shell/utils/closeShellMobileMenu";
+import { pushFullScreenLayer } from "@host/features/shell/canvas-chrome/open-layer";
 import { CanvasChatColumn, type CanvasContextEntry } from "./CanvasChatColumn";
 import {
   CanvasPropertiesPanel,

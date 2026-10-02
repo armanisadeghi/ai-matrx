@@ -15,12 +15,12 @@
  */
 
 import { useState } from "react";
-import { callApi } from "@/lib/api/call-api";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { callApi } from "@host/lib/api/call-api";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { toast } from "@host/lib/toast";
+import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
+import { WORKFLOWS_APP_URL } from "@host/features/shell/constants/nav-data";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export interface WorkflowStarterResult {
   workflow_id: string;

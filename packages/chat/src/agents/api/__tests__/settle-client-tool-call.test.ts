@@ -12,10 +12,10 @@
  * from the dispatcher. Red against the pre-fix funnel, which touched neither.
  */
 
-jest.mock("@/lib/api/call-api", () => ({
+jest.mock("@host/lib/api/call-api", () => ({
   callApi: jest.fn(() => ({ type: "test/noop" })),
 }));
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
 
@@ -23,11 +23,11 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import activeRequestsReducer, {
   createRequest,
   upsertToolLifecycle,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+} from "../../redux/execution-system/active-requests/active-requests.slice";
 import observabilityReducer, {
   upsertToolCall,
   type CxToolCallRecord,
-} from "@/features/agents/redux/execution-system/observability/observability.slice";
+} from "../../redux/execution-system/observability/observability.slice";
 import { settleClientToolCall } from "../settle-client-tool-call";
 import {
   submitToolResult,

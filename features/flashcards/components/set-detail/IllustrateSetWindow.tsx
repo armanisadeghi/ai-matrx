@@ -37,7 +37,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { LiveRunProgress } from "@/features/agents/components/live-run/LiveRunProgress";
+import { LiveRunProgress } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 import { cn } from "@/lib/utils";
 import {

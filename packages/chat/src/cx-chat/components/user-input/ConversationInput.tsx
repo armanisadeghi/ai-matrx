@@ -7,7 +7,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { useDebugContext } from "@/hooks/useDebugContext";
+import { useDebugContext } from "@host/hooks/useDebugContext";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
@@ -20,7 +20,7 @@ import { ResponseModeButtons, BackToStartButton } from "./InpuControlButtons";
 
 const GuidedVariableInputs = dynamic(
   () =>
-    import("@/features/cx-chat/components/user-input/GuidedVariableInputs").then(
+    import("./GuidedVariableInputs").then(
       (m) => ({ default: m.GuidedVariableInputs }),
     ),
   { ssr: false },
@@ -28,7 +28,7 @@ const GuidedVariableInputs = dynamic(
 
 const StackedVariableInputs = dynamic(
   () =>
-    import("@/features/cx-chat/components/user-input/StackedVariableInputs").then(
+    import("./StackedVariableInputs").then(
       (m) => ({ default: m.StackedVariableInputs }),
     ),
   { ssr: false },
@@ -36,45 +36,45 @@ const StackedVariableInputs = dynamic(
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import { InputActionButtons } from "./InputActionButtons";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectIsSuperAdminDebugger } from "@/lib/redux/slices/userSlice";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
 // Instance-system state
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { selectUserInputText } from "../../../agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserInputText } from "../../../agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectInstanceResources } from "../../../agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import {
   addResource,
   removeResource,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { fileIdToMediaRef } from "@/features/files/redux/converters";
+} from "../../../agents/redux/execution-system/instance-resources/instance-resources.slice";
+import { fileIdToMediaRef } from "@host/features/files/redux/converters";
 import {
   selectIsExecuting,
   selectShouldShowVariables,
   selectLatestRequestStatus,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { ResourceChips } from "@/features/agents/resources/ResourceChips";
-import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
-import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
-import { PlusAttachMenu } from "@/features/agents/components/inputs/smart-input/PlusAttachMenu";
-import { toast } from "@/lib/toast";
+} from "../../../agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectCurrentSettings } from "../../../agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { setOverrides } from "../../../agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { smartExecute } from "../../../agents/redux/execution-system/thunks/smart-execute.thunk";
+import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { selectIsDebugMode } from "@host/lib/redux/preferences/adminDebugSlice";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { ResourceChips } from "../../../agents/resources/ResourceChips";
+import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";
+import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
+import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
+import { RunControlsMenu } from "../../../agents/components/inputs/smart-input/RunControlsMenu";
+import { PlusAttachMenu } from "../../../agents/components/inputs/smart-input/PlusAttachMenu";
+import { toast } from "@host/lib/toast";
 import type {
   ManagedResource,
   ResourceBlockType,
-} from "@/features/agents/types/instance.types";
-import type { Resource } from "@/features/agents/resources/types";
-import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
+} from "../../../agents/types/instance.types";
+import type { Resource } from "../../../agents/resources/types";
+import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@/components/official/composer/composerSubmit";
+} from "@host/components/official/composer/composerSubmit";
 
 /** Map user-upload MIME to API content-block type (see ResourceBlockType). */
 function uploadMimeToBlockType(mime: string): ResourceBlockType {

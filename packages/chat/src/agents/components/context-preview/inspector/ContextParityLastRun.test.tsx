@@ -9,8 +9,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 const maybeSingle = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
-jest.mock("@/utils/supabase/schedulerDb", () => ({
+jest.mock("@host/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("@host/utils/supabase/schedulerDb", () => ({
   schedulerDb: () => ({
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
   }),

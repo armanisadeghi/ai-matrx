@@ -23,7 +23,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import type { PronunciationAssessment } from "@/features/flashcards/fast-fire/agents/grading-core";

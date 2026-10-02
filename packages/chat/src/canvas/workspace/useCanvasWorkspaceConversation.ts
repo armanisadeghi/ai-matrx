@@ -34,20 +34,20 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "../../agents/components/chat/chat-quick-actions.config";
+import { resumeConversation } from "../../agents/redux/execution-system/thunks/resume-conversation.thunk";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectOrganizationId,
   selectShouldPromptForOrganization,
-} from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+} from "@host/lib/redux/slices/appContextSlice";
+import { ensureOrganizationContext } from "@host/lib/organization/organization-gate";
+import { isOrganizationSelectionCancelled } from "@host/lib/organization/selection-cancelled";
+import { selectIsCacheOnly } from "../../agents/redux/execution-system/conversations/conversations.selectors";
+import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
 import { describeLaunchError } from "./describe-launch-error";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export type CanvasWorkspaceConversation =
   | { state: "opening"; purpose: "new" | "open" }

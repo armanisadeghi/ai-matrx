@@ -19,7 +19,7 @@ import {
 } from "@ai-matrx/design-system/data-table";
 
 import { createDrillExplorerSurfaceScope } from "@/features/surfaces/manifests/admin-ai-usage.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 /** How many outermost groups the scope carries (the answer's first rows; the rest are its total). */
 export const DRILL_SCOPE_ROWS = 50;

@@ -30,7 +30,7 @@ let searchParamValue: string | null = null;
 jest.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: () => searchParamValue }),
 }));
-jest.mock("@/features/mandates/useMandate", () => ({
+jest.mock("@ai-matrx/chat/mandates/useMandate", () => ({
   useMandate: () => mandateState,
 }));
 jest.mock("@/lib/redux/hooks", () => ({

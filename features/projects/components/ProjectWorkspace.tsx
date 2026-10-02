@@ -62,7 +62,7 @@ import {
 } from "@/features/projects/agent-context/buildProjectsContextData";
 import { buildProjectWriteHandlers } from "@/features/projects/agent-context/projectWriteHandlers";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ProjectContextPicker } from "@/features/projects/components/ProjectContextSection";
 import { AssociationCardGrid } from "@ai-matrx/associations/react";
 import { PrimaryEntityProvider } from "@ai-matrx/associations/react";

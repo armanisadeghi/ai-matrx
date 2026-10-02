@@ -15,13 +15,13 @@
  *  - Every branch is reachable and documented.
  */
 
-import type { MediaRef } from "@/features/files/types";
+import type { MediaRef } from "@host/features/files/types";
 import {
     fileNameFromUrl,
     recognizeOurFileUrl,
-} from "@/lib/media/our-file-sources";
+} from "@host/lib/media/our-file-sources";
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
-import { findTableStart } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { findTableStart } from "@host/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
     firstKindSlug,
@@ -29,7 +29,7 @@ import {
     markdownCarriesKind,
     rootKindSlug,
     valueCarriesKind,
-} from "@/features/content-ir/surfaces/json-kind-signal";
+} from "@host/features/content-ir/surfaces/json-kind-signal";
 
 const hasMarkdownTable = (value: string): boolean => findTableStart(value.split("\n")) !== -1;
 

@@ -15,7 +15,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { patchConversation } from "../conversations/conversations.slice";
 import { replaceSurfaceVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { replaceSurfaceContextEntries } from "../instance-context/instance-context.slice";

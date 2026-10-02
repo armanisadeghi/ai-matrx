@@ -2,7 +2,7 @@ import {
   messageStillHasFence,
   rewriteAllMatchingFences,
 } from "@/features/canvas/materialization/attachBlockFenceRewrite";
-import type { CxTextContent } from "@/features/public-chat/types/cx-tables";
+import type { CxTextContent } from "@ai-matrx/chat/public-chat/types/cx-tables";
 
 const BODY = "console.log(1)";
 const FENCE = "```ts\n" + BODY + "\n```";

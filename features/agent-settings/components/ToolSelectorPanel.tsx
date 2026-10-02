@@ -18,9 +18,9 @@ import { formatText } from "@ai-matrx/kit/text-case";
 import { mapIcon } from "@/utils/icons/icon-mapper";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
-import { supportsTools } from "@/features/agents/hooks/useModelControls";
-import { selectAgentTools } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentTools } from "@/features/agents/redux/agent-definition/slice";
+import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";
+import { selectAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 
 interface AvailableTool {
   name: string;

@@ -59,7 +59,7 @@
 
 import { resolve } from "node:path";
 
-import { buildSurfaceWriteApprovalChange } from "../features/agents/redux/execution-system/thunks/surface-write-approval-change";
+import { buildSurfaceWriteApprovalChange } from "@ai-matrx/chat/agents/redux/execution-system/thunks/surface-write-approval-change";
 import { isGeneratedKindSlug } from "../features/content-ir/kinds/generated/kinds.generated";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
@@ -392,7 +392,7 @@ async function main(): Promise<void> {
     console.error(`  [${f.rule}] ${f.where}: ${f.message}`);
   }
   console.error(
-    "\nThe seam is `buildSurfaceWriteApprovalChange` (features/agents/redux/execution-system/thunks/). A structured value travels as data and the card renders it through the kind pipeline; it is never stringified.",
+    "\nThe seam is `buildSurfaceWriteApprovalChange` (packages/chat/src/agents/redux/execution-system/thunks/). A structured value travels as data and the card renders it through the kind pipeline; it is never stringified.",
   );
   exitAfterDrain(1);
 }

@@ -9,7 +9,7 @@
  */
 import { SourceSpliceError } from "@ai-matrx/content-ir/source";
 import { agentRunResult } from "@/components/official/proTextareaAgentActions";
-import { textInputVariable } from "@/features/agents/utils/text-input-variable";
+import { textInputVariable } from "@ai-matrx/chat/agents/utils/text-input-variable";
 import { explainSpliceRefusal } from "../../review/proposedEdit";
 
 const DOC = "Steady power is critical for the new terminals.";
@@ -44,7 +44,7 @@ test("F7: a splice refusal reads as a sentence, never offsets or function names"
 
 test("r4: the result handed on is the COMMITTED final answer — a code fence keeps its opening line", async () => {
   const { selectLatestAnswerText } = await import(
-    "@/features/agents/redux/execution-system/messages/messages.selectors"
+    "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors"
   );
   const answer = "Restart it:\n\n```bash\nsudo systemctl restart pos-paymentd\n```";
   const state = {

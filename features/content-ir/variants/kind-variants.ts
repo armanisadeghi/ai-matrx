@@ -27,8 +27,8 @@ import {
   VARIABLE_COMPONENT_TYPES,
   type VariableComponentType,
   type VariableCustomComponent,
-} from "@/features/agents/types/agent-definition.types";
-import { getComponentTypeMeta } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { getComponentTypeMeta } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
 import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 
 // ---------------------------------------------------------------------------

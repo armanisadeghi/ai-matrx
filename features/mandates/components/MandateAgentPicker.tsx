@@ -46,15 +46,15 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   fetchAgentExecutionMinimal,
   fetchAgentsListFull,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentExecutionPayload,
   selectOwnedAgents,
   selectSharedWithMeAgents,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
 import {
   fetchMandatePickerData,
   parseMandateContract,

@@ -22,9 +22,9 @@
 // below are its list, not a second opinion.
 
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { WritePolicyMap } from "@/features/surfaces/types";
+import type { ResultDisplayMode } from "@ai-matrx/chat/agents/utils/run-ui-utils";
+import type { VariablesPanelStyle } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
+import type { WritePolicyMap } from "@ai-matrx/chat/surfaces/types";
 
 /** The tier every treatment in the platform carries today. */
 export const TREATMENT_TIER_WIDGET = "widget";

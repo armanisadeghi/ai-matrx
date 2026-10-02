@@ -29,7 +29,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { PreviewPane } from "@/features/files/components/surfaces/PreviewPane";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import { getFileFromState } from "@/features/files/redux/selectors";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   FILE_PREVIEW_SURFACE_NAME,
   createFilePreviewScope,

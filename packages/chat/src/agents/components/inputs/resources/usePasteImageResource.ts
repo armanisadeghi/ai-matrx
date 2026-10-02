@@ -18,26 +18,26 @@
  */
 
 import { useEffect, useRef } from "react";
-import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
-import { normalize } from "@/features/files/handler/input/normalize";
+import { toast } from "@host/lib/toast";
+import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
+import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
+import { normalize } from "@host/features/files/handler/input/normalize";
 import {
   addResource,
   removeResource,
   setResourceStatus,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { generateResourceId } from "@/features/agents/redux/execution-system/utils/ids";
+} from "../../../redux/execution-system/instance-resources/instance-resources.slice";
+import { generateResourceId } from "../../../redux/execution-system/utils/ids";
 import {
   ensureExecutionOrganization,
   requireExecutionOrganizationId,
-} from "@/features/agents/redux/execution-system/utils/required-organization";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { isUploadCancelledError } from "@/features/files/handler/errors";
-import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
-import { revokeTrackedObjectUrl } from "@/lib/media/object-url-registry";
-import type { ResourceBlockType } from "@/features/agents/types/instance.types";
+} from "../../../redux/execution-system/utils/required-organization";
+import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
+import { isUploadCancelledError } from "@host/features/files/handler/errors";
+import { useAttachResource } from "./attach-resource";
+import { revokeTrackedObjectUrl } from "@host/lib/media/object-url-registry";
+import type { ResourceBlockType } from "../../../types/instance.types";
 
 export interface UsePasteImageResourceOptions {
   /** Logical top-level Files folder. */

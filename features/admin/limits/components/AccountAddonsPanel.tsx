@@ -61,7 +61,7 @@ import { cn } from "@/lib/utils";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_LIMITS_SURFACE_NAME,
   createAdminLimitsScope,

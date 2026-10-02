@@ -14,7 +14,7 @@
 // the page renders — metrics via React Query (cached, no double fetch), pins
 // via Redux, and the Discover rotation lifted and passed down as props.
 
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createDashboardScope } from "@/features/surfaces/manifests/dashboard.manifest";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { usePinned } from "@/components/favorites/usePinned";

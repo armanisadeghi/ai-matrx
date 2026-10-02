@@ -18,7 +18,7 @@
 import { z } from "zod";
 
 import { compareTool, type FieldSchema } from "@/scripts/check-tool-db-drift";
-import { userArgsSchema } from "@/features/agents/ui-first-tools/tools/schemas";
+import { userArgsSchema } from "@ai-matrx/chat/agents/ui-first-tools/tools/schemas";
 
 /** Exactly what Zod serializes today — the DB row that matches code 1:1. */
 function fullUserRow(): Record<string, FieldSchema> {

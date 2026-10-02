@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarClock, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { StudyPlanner } from "../../components/StudyPlanner";
 import { studyService } from "../../service/studyService";
 import type { StudyGoalRow } from "../../types";

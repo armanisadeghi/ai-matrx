@@ -7,7 +7,7 @@
  */
 
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { normalizeJsonRegion } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";

@@ -47,7 +47,7 @@ import {
 } from "@ai-matrx/kit/format";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { useAdminCost } from "@/components/cost/useAdminCost";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,

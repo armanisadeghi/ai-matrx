@@ -21,16 +21,16 @@ import { useToast } from "@/components/ui/use-toast";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { DEFAULT_AGENT_EXECUTION_CONFIG } from "@/features/agents/types/agent-execution-config.types";
-import type { ResultDisplayMode } from "@/features/agents/types/instance.types";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { DEFAULT_AGENT_EXECUTION_CONFIG } from "@ai-matrx/chat/agents/types/agent-execution-config.types";
+import type { ResultDisplayMode } from "@ai-matrx/chat/agents/types/instance.types";
+import type { VariablesPanelStyle } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   isValidShortcutContext,
   type ShortcutContext,
-} from "@/features/agents/utils/shortcut-context-utils";
+} from "@ai-matrx/chat/agents/utils/shortcut-context-utils";
 import type { AgentScope } from "../constants";
 import { PLACEMENT_TYPES } from "../constants";
 import { useAgentShortcuts } from "./useAgentShortcuts";

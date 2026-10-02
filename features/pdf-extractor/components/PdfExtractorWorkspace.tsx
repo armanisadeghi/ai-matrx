@@ -43,7 +43,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 // Legacy openFilePreview removed in Phase 11 — we just open the source URL
 // in a new tab now (signed / share URLs are browser-loadable directly).
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { useToastManager } from "@/hooks/useToastManager";
 import { GitBranch, Wrench, Columns2, Database } from "lucide-react";
 import {
@@ -61,7 +61,7 @@ import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { CopyPagesOverlay } from "./CopyPagesOverlay";
 import { buildPdfExtractorScope } from "@/features/pdf-extractor/lib/pdf-extractor-scope";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
-import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
+import { useSurfaceBoundAgents } from "@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents";
 import { useFile } from "@/features/files/handler/hooks/useFile";
 
 import { PDF_EXTRACTOR_SURFACE_NAME as PDF_EXTRACTOR_SURFACE } from "@/features/surfaces/manifests/pdf-extractor.manifest";

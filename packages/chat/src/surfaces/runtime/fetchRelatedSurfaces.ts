@@ -12,8 +12,8 @@ import {
   getManifest,
   getSurfaceAncestry,
   getSurfaceChildren,
-} from "@/features/surfaces/manifests/registry";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+} from "@host/features/surfaces/manifests/registry";
+import { getSurfaceDisplayLabel } from "../utils/surface-display";
 
 export interface RelatedSurfaceRef {
   name: string;

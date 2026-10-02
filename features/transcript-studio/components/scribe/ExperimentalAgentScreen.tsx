@@ -25,8 +25,8 @@ import { Keyboard, Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { useGlobalRecording } from "@/providers/GlobalRecordingProvider";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import {

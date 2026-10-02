@@ -6,7 +6,7 @@ import {
 import { parseUpdateSuggestionsValue } from "../suggestionsSurface";
 import type { DeckSuggestionRow, PublicDeck } from "../types";
 
-jest.mock("@/features/surfaces/runtime/surface-writeback", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/surface-writeback", () => ({
   refuseSurfaceWrite: (m: string) => {
     throw new Error(m);
   },

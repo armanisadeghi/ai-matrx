@@ -42,14 +42,14 @@ import {
   X,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
-import { useSkills } from "@/features/skills/hooks/useSkills";
-import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
+import { cn } from "@host/lib/utils";
+import { ErrorNotice } from "@host/components/errors/ErrorNotice";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../../types/instance.types";
+import { useSkills } from "@host/features/skills/hooks/useSkills";
+import { useClippedContentGuard } from "@host/lib/layout/useClippedContentGuard";
 import { ComposerMenuDivider, ComposerMenuHelp, ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
 import { composerPillClass } from "./ComposerAgentPill";
 import type { ComposerSize } from "./composer-types";

@@ -32,19 +32,19 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-import conversations from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import conversationFocus from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import messages from "@/features/agents/redux/execution-system/messages/messages.slice";
-import instanceUserInput from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import instanceUIState from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import conversations from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import conversationFocus from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import messages from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import instanceUserInput from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import instanceUIState from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import instanceResources, {
   addResource,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import activeRequests, {
   createRequest,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import { createInstanceFull } from "@/features/agents/redux/execution-system/create-instance-full";
-import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
+import { createInstanceFull } from "@ai-matrx/chat/agents/redux/execution-system/create-instance-full";
+import type { ManagedAgentOptions } from "@ai-matrx/chat/agents/types/instance.types";
 import { useAiWorkRun, type AiWorkRun } from "../useAiWorkRun";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -74,7 +74,7 @@ function snapshot(state: AnyState, conversationId: string, text?: string) {
 }
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk",
   () => ({
     launchAgentExecution:
       (payload: ManagedAgentOptions) =>
@@ -99,7 +99,7 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/smart-execute.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk",
   () => ({
     smartExecute:
       ({ conversationId }: { conversationId: string }) =>
@@ -112,7 +112,7 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/launch-conversation.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-conversation.thunk",
   () => ({ invocationToManagedOptions: (x: unknown) => x }),
 );
 

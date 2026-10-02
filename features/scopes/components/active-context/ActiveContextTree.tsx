@@ -27,11 +27,11 @@ import {
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+import { selectInstanceContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.selectors";
 import {
   removeContextEntry,
   setContextEntry,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { cn } from "@/lib/utils";
 import { ContextTree } from "./context-tree/ContextTree";
 import { useContextTreeData } from "./context-tree/shared";

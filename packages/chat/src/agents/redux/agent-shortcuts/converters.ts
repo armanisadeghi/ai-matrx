@@ -24,32 +24,32 @@
  *            llm_overrides
  */
 
-import type { Database } from "@/types/database.types";
+import type { Database } from "@host/types/database.types";
 import type { AgentShortcut } from "./types";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { ShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
-import type { JsonExtractionConfig } from "@/features/agents/types/instance.types";
+import type { ResultDisplayMode } from "../../utils/run-ui-utils";
+import type { ShortcutContext } from "../../utils/shortcut-context-utils";
+import type { VariablesPanelStyle } from "../../components/inputs/variable-input-variations/variable-input-options";
+import type { LLMParams } from "../../types/agent-api-types";
+import type { JsonExtractionConfig } from "../../types/instance.types";
 import {
   type AgentExecutionConfig,
   DEFAULT_AGENT_EXECUTION_CONFIG,
-} from "@/features/agents/types/agent-execution-config.types";
+} from "../../types/agent-execution-config.types";
 import {
   isValueMappingMap,
   sanitizeWritePolicyMap,
   type ValueMappingMap,
   type WritePolicyMap,
-} from "@/features/surfaces/types";
+} from "../../../surfaces/types";
 import {
   mandateIdOfShortcutRow,
   mandateKeyOfShortcutRow,
   writePoliciesOfShortcutRow,
   SHORTCUT_WRITE_POLICIES_ON_TREATMENT,
-} from "@/lib/supabase/shortcutStorage";
+} from "@host/lib/supabase/shortcutStorage";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
 // to store in a mapping, for every system that stores one.
-import { assertMappingsAreAnswerable } from "@/features/mandates/provision-shapes";
+import { assertMappingsAreAnswerable } from "@host/features/mandates/provision-shapes";
 
 // ---------------------------------------------------------------------------
 // Supabase row types

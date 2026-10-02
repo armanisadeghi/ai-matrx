@@ -18,7 +18,7 @@ import { EntityRef } from "../EntityRef";
 import {
   __resetAgentAddressCache,
   seedAgentAddress,
-} from "@/features/agents/addressing/agentAddressCache";
+} from "@ai-matrx/chat/agents/addressing/agentAddressCache";
 
 const AGENT_ID = "aaaaaaaa-1111-2222-3333-444444444444";
 

@@ -38,8 +38,8 @@ import type {
   StudyClass,
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { SURFACE_LAYER_ATTRIBUTE } from "@/features/surfaces/runtime/window-forms";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { SURFACE_LAYER_ATTRIBUTE } from "@ai-matrx/chat/surfaces/runtime/window-forms";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import type { NewClassDraftScope } from "@/features/surfaces/manifests/education-classes.manifest";
 import { makeExamId, parseNewClassDraftValue } from "../classAgentWrites";

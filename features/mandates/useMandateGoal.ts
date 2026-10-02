@@ -27,7 +27,7 @@ import {
   type MandateCatalogueEntry,
 } from "./catalogue";
 import { resolveMandateGoal, type MandateGoalSource } from "./goal";
-import { onMandateCacheInvalidated } from "./service";
+import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 
 export interface MandateGoalState {
   /** The goal to print, or null when BOTH readers came back empty. */

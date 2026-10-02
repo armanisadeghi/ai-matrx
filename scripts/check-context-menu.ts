@@ -153,7 +153,7 @@ interface Finding {
 // Scanning
 // ---------------------------------------------------------------------------
 
-const SCAN = ["app/**/*.tsx", "components/**/*.tsx", "features/**/*.tsx", "lib/**/*.tsx"];
+const SCAN = ["app/**/*.tsx", "components/**/*.tsx", "features/**/*.tsx", "packages/chat/src/**/*.tsx", "lib/**/*.tsx"];
 
 /**
  * Never candidates. Each carries its reason — an allowlist without a reason is
@@ -268,7 +268,7 @@ const IS_BESPOKE = /onContextMenu\s*=/;
 function classify(path: string, src: string): Population | null {
   if (path.startsWith("features/overlays/") && /export\s+(default\s+)?function/.test(src))
     return "overlays";
-  if (featureRegExp(/^features\/window-panels\/windows\/.*Window\.tsx$/).test(path)) return "windows";
+  if (featureRegExp(/^(?:features|packages\/chat\/src)\/window-panels\/windows\/.*Window\.tsx$/).test(path)) return "windows";
   if (IS_TABLE.test(src)) return "tables";
   if (IS_EDITABLE.test(src))
     return isContentSurface(path, src) ? "editables" : "form-fields";
@@ -522,8 +522,8 @@ function attributionFindings(files: Map<string, string>): Finding[] {
 function namingFindings(): Finding[] {
   const out: Finding[] = [];
   const SECTION_SCAN = [
-    "features/**/*.ts",
-    "features/**/*.tsx",
+    "features/**/*.ts", "packages/chat/src/**/*.ts",
+    "features/**/*.tsx", "packages/chat/src/**/*.tsx",
     "app/**/*.ts",
     "app/**/*.tsx",
     "components/**/*.tsx",
@@ -955,8 +955,8 @@ function gradeItem(
 function deadItemFindings(): Finding[] {
   const out: Finding[] = [];
   const SCAN_ITEMS = [
-    "features/**/*.ts",
-    "features/**/*.tsx",
+    "features/**/*.ts", "packages/chat/src/**/*.ts",
+    "features/**/*.tsx", "packages/chat/src/**/*.tsx",
     "app/**/*.ts",
     "app/**/*.tsx",
     "components/**/*.ts",

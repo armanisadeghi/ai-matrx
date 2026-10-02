@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import { SurfaceRuntimeProvider } from '@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext';
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
 import {
     RefreshCw, Check, Copy, ExternalLink, ChevronDown, ChevronUp,
@@ -29,8 +29,8 @@ import {
     fetchTemplates, updateTemplateAgentConfig, resolveBuiltinNames,
 } from './service';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { selectBuiltinAgents } from '@/features/agents/redux/agent-definition/selectors';
-import { fetchAgentsListFull } from '@/features/agents/redux/agent-definition/thunks';
+import { selectBuiltinAgents } from '@ai-matrx/chat/agents/redux/agent-definition/selectors';
+import { fetchAgentsListFull } from '@ai-matrx/chat/agents/redux/agent-definition/thunks';
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";

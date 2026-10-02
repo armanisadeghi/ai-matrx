@@ -5,7 +5,7 @@
 // apply target when the text can be saved back. Only the session id travels
 // through overlay data; the window releases the session when it closes.
 
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "../../types/scope.types";
 import type { CustomAgentValueSource } from "./custom-agent-plan";
 
 export interface CustomAgentSession {

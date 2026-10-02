@@ -30,7 +30,7 @@ import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMand
 import type { OfferedValue } from "@/features/mandates/provision-shapes";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { buildHolderDraftBrief } from "./holder-draft-brief";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { HolderDraft } from "./ScopeHolderBar";
 import {
   RequestAccess,

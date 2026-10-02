@@ -31,7 +31,7 @@
 // prep_user_message, first_show_info_text, truncate_audio_for_testing.
 
 import { useState } from "react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createPodcastStudioScope } from "@/features/surfaces/manifests/podcast-studio.manifest";
 import {
   AudioLines,

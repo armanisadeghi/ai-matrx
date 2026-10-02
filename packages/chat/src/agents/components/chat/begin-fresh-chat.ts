@@ -2,14 +2,14 @@
 
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import type { AppDispatch } from "@/lib/redux/store";
-import type { RootState } from "@/lib/redux/store";
-import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import { resolveMandate } from "@/features/mandates/service";
+import type { AppDispatch } from "@host/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
+import { clearFocus } from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
+import { resolveMandate } from "../../../mandates/service";
 import {
   bumpFreshSession,
   stageDraftHandoff,
-} from "@/features/agents/redux/chat/chat-route.slice";
+} from "../../redux/chat/chat-route.slice";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 
 /** Derive the active conversation + active agent from the chat URL. */

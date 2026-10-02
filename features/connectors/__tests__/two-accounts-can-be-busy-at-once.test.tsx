@@ -62,7 +62,7 @@ jest.mock("@/features/scopes/redux/selectors/tree", () => ({
   selectOrganizationsList: () => [],
 }));
 
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   useSurfaceScopeContribution: () => {},
 }));
 

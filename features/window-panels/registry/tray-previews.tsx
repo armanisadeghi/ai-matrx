@@ -18,8 +18,8 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Activity } from "lucide-react";
 import type { TrayPreviewContext } from "./windowRegistryTypes";
 import ErrorInspectorTrayChip from "@/features/admin/error-inspector/ErrorInspectorTrayChip";
-import { useLiveRunStatus } from "@/features/agents/components/live-run/useLiveRunStatus";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { useLiveRunStatus } from "@ai-matrx/chat/agents/components/live-run/useLiveRunStatus";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { TrayStatusChip } from "../WindowTray/TrayStatusChip";
 
 function LiveRunTrayPreview({ data }: { data: Record<string, unknown> }) {

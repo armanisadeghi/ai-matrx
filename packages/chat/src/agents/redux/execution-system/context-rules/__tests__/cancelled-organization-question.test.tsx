@@ -41,31 +41,31 @@ function table() {
   });
   return builder;
 }
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: { schema: () => ({ from: () => table() }) },
 }));
-jest.mock("@/utils/auth/getUserId", () => ({
-  ...jest.requireActual("@/utils/auth/getUserId"),
+jest.mock("@host/utils/auth/getUserId", () => ({
+  ...jest.requireActual("@host/utils/auth/getUserId"),
   requireUserId: () => PERSON,
 }));
-jest.mock("@/features/organizations/service", () => ({
+jest.mock("@host/features/organizations/service", () => ({
   getUserOrganizations: () => new Promise(() => {}),
 }));
-jest.mock("@/features/scopes/service/scopesService", () => ({
+jest.mock("@host/features/scopes/service/scopesService", () => ({
   scopesService: { getScopeTree: jest.fn() },
 }));
 
 // eslint-disable-next-line no-restricted-syntax -- the real Surface A slice, as the gate dialog's own test uses it
-import appContext from "@/lib/redux/slices/appContextSlice";
-import userAuth, { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
-import scopesTree, { scopesActions } from "@/features/scopes/redux/scopesSlice";
-import { setStoreSingleton } from "@/lib/redux/store-singleton";
-import { settleOrganizationSelection } from "@/lib/organization/organization-gate";
-import { surfaceUserStateReducer } from "@/features/surfaces/redux/userStateSlice";
+import appContext from "@host/lib/redux/slices/appContextSlice";
+import userAuth, { setUserAuth } from "@host/lib/redux/slices/userAuthSlice";
+import scopesTree, { scopesActions } from "@host/features/scopes/redux/scopesSlice";
+import { setStoreSingleton } from "@host/lib/redux/store-singleton";
+import { settleOrganizationSelection } from "@host/lib/organization/organization-gate";
+import { surfaceUserStateReducer } from "../../../../../surfaces/redux/userStateSlice";
 import { ContextRulesChip } from "@ai-matrx/agents/context/react";
 import { resolveContextRow } from "@ai-matrx/agents/context";
-import { OrganizationGateDialog } from "@/features/organizations/gate/OrganizationGateDialog";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { OrganizationGateDialog } from "@host/features/organizations/gate/OrganizationGateDialog";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { saveContextRule, selectSavedContextRuleRows } from "../context-rules.thunks";
 
 function Table() {

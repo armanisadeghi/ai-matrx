@@ -14,8 +14,8 @@ import { ViewId, getViewSelectOptions } from "./custom-views/view-registry";
 import { processMarkdownForRendering } from "./markdown-processor-util";
 import { AstNode } from "./processors/types";
 import { PROCESSOR_CONFIG_TYPE_MAP } from "./processors/processor-registry";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarkdownEditorScope } from "@/features/surfaces/manifests/markdown-editor.manifest";
 
 

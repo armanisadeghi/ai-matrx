@@ -27,7 +27,7 @@ const loadConversation = jest.fn((args: { conversationId: string }) => ({
   args,
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/load-conversation.thunk",
+  "../../redux/execution-system/thunks/load-conversation.thunk",
   () => ({ loadConversation: (args: { conversationId: string }) => loadConversation(args) }),
 );
 const followWhatIsStillInFlight = jest.fn();
@@ -64,9 +64,9 @@ describe("rereadAndFollow — the one door after an answer", () => {
 });
 
 describe("every answer door goes through the one door", () => {
-  const root = path.resolve(__dirname, "../../../..");
+  const root = path.resolve(__dirname, "../../../../../..");
   const doors = execSync(
-    "git grep -l '<ActionRequestInlineAnswer' -- 'features/**/*.tsx' 'app/**/*.tsx'",
+    "git grep -l '<ActionRequestInlineAnswer' -- 'features/**/*.tsx' 'packages/chat/src/**/*.tsx' 'app/**/*.tsx'",
     { cwd: root, encoding: "utf8" },
   )
     .split("\n")
@@ -79,14 +79,14 @@ describe("every answer door goes through the one door", () => {
     expect(doors).toEqual(
       expect.arrayContaining([
         "features/action-requests/components/ParkedOnPersonCard.tsx",
-        "features/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
+        "packages/chat/src/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
       ]),
     );
   });
 
   it.each([
     "features/action-requests/components/ParkedOnPersonCard.tsx",
-    "features/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
+    "packages/chat/src/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
   ])("%s re-reads only through rereadAndFollow", (file) => {
     const source = readFileSync(path.join(root, file), "utf8");
     expect(source).toMatch(/\brereadAndFollow\(/);

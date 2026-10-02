@@ -38,7 +38,7 @@ import { createContentPlanNodeScope } from "@/features/surfaces/manifests/conten
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -92,7 +92,7 @@ import {
   readBriefDraft,
   useBriefWriter,
 } from "../hooks/useBriefWriter";
-import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
+import { RunSetWindowController } from "@ai-matrx/chat/agents/components/live-run/RunSetDisplay";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import { useNodeReality } from "../hooks/useNodeReality";
 import {

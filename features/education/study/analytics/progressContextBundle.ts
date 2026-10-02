@@ -14,7 +14,7 @@ import {
   xmlElement,
   xmlList,
   xmlText,
-} from "@/features/surfaces/runtime/context-bundle";
+} from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import type { StudyAnalytics } from "./computeAnalytics";
 import type { NarrativeReport } from "./narrative";
 import type { LearningGainReport } from "../learning-gain/types";

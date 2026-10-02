@@ -15,14 +15,14 @@ import {
   DEFAULT_CONTROL_BINDABLE_POLICY,
 } from "../control-variables";
 import { orderVariablesForForm } from "@ai-matrx/agents";
-import type { ControlDefinition } from "@/features/agents/hooks/useModelControls";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { ControlDefinition } from "../../hooks/useModelControls";
+import type { VariableDefinition } from "../../types/agent-definition.types";
 import reducer, {
   createInstanceFullPayloadForTest,
-} from "@/features/agents/components/messages-display/user/__tests__/host-wired-values.harness";
-import { initInstanceVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
-import { resolveVariablesForRequest } from "@/features/agents/redux/execution-system/instance-variable-values/resolve-variables-for-request";
+} from "../../components/messages-display/user/__tests__/host-wired-values.harness";
+import { initInstanceVariables } from "../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectVisibleInputDefinitions } from "../../redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { resolveVariablesForRequest } from "../../redux/execution-system/instance-variable-values/resolve-variables-for-request";
 
 // Real catalog shapes (gpt-image-2 / a TTS model / a chat model), as
 // resolveModelControls normalizes them.

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentSettingsForm } from "@/features/agents/components/settings/AgentSettingsForm";
 import {
@@ -11,14 +11,14 @@ import {
   AgentTabs,
 } from "@/features/agents/components/settings/AgentSettingsWorkspace";
 import { SurfaceAgentBindPanel } from "@/features/surfaces/components/bind/SurfaceAgentBindPanel";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { AGENT_SETTINGS_SURFACE_NAME } from "@/features/agents/constants/agent-settings-surface";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { AGENT_SETTINGS_SURFACE_NAME } from "@ai-matrx/chat/agents/constants/agent-settings-surface";
 import { useAgentSettingsSurface } from "./useAgentSettingsSurface";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 type PanelView = "info" | "surface";

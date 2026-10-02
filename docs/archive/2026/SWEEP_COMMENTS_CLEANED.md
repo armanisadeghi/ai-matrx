@@ -52,9 +52,9 @@ and is correctly cited where it still appears — those are not stale.
 - `features/scraper/FEATURE.md` — transcripts "Hooks" line rewritten.
 - `features/transcripts/README.md` — removed the now-nonexistent
   `useSignedUrl.ts` row from the dir-tree diagram.
-- `features/conversation/DEPENDENCIES.md` — file-upload dep updated.
-- `features/conversation/CONVERSATION_SYSTEM.md` — hook table row updated.
-- `features/cx-conversation/DEPENDENCIES.md` — file-upload dep updated.
+- `packages/chat/src/conversation/DEPENDENCIES.md` — file-upload dep updated.
+- `packages/chat/src/conversation/CONVERSATION_SYSTEM.md` — hook table row updated.
+- `packages/chat/src/cx-conversation/DEPENDENCIES.md` — file-upload dep updated.
 - `components/image/ImageManager.tsx` — `legacyPropsToFolderPath` JSDoc no
   routes folder inputs through `composeUploadFolderPath()`.
 

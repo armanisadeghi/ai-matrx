@@ -20,8 +20,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   extractInspectableText,
   selectMessageById,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { selectInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import {
   Check,
   Copy,

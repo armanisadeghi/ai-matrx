@@ -14,7 +14,7 @@
 // notice below rather than silently running some other agent.
 
 import { AlertTriangle } from "lucide-react";
-import { VoiceAgentSurface } from "@/features/voice-agent/components/VoiceAgentSurface";
+import { VoiceAgentSurface } from "@ai-matrx/chat/voice-agent/components/VoiceAgentSurface";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

@@ -16,7 +16,7 @@
  * comes back), and that a missing session still fails loudly and clearly.
  */
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     auth: {
       getSession: jest.fn(),
@@ -24,13 +24,13 @@ jest.mock("@/utils/supabase/client", () => ({
   },
 }));
 
-jest.mock("@/lib/redux/store-singleton", () => ({
+jest.mock("@host/lib/redux/store-singleton", () => ({
   // No store at all — the same as "no organization selected anywhere".
   getStore: () => null,
 }));
 
-import { supabase } from "@/utils/supabase/client";
-import { createGoogleRealtimeClient } from "@/features/voice-agent/transport/googleRealtimeClient";
+import { supabase } from "@host/utils/supabase/client";
+import { createGoogleRealtimeClient } from "./googleRealtimeClient";
 
 const getSessionMock = jest.mocked(supabase.auth.getSession);
 

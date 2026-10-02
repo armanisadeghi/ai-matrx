@@ -9,10 +9,10 @@
  * they rendered blank). Only the instance create must precede the load.
  */
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
+import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
+import { createManualInstance } from "../../redux/execution-system/thunks/create-instance.thunk";
 
 export async function hydrateConversationForReading(
   dispatch: AppDispatch,

@@ -18,8 +18,8 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { InstanceModelOverrideState } from "@/features/agents/types/instance.types";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { InstanceModelOverrideState } from "../../../types/instance.types";
+import type { FeLlmParams } from "../../../types/agent-api-types";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
 

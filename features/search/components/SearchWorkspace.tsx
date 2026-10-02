@@ -21,7 +21,7 @@ import { AlertTriangle, RotateCcw, Search } from "lucide-react";
 import Link from "next/link";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { Button } from "@/components/ui/button";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createSearchScope } from "@/features/surfaces/manifests/search.manifest";
 import { useKindSearch } from "../hooks/useKindSearch";
 import { buildSearchHref, SEARCH_RESULT_COUNT } from "../search-url";

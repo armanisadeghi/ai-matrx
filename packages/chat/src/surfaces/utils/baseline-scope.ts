@@ -32,8 +32,8 @@
  * reintroduce the blind-binding regression this floor exists to kill.
  */
 
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import { BASELINE_VALUE_NAMES } from "../manifests/_baseline.manifest";
+import type { ApplicationScope } from "../../agents/types/scope.types";
+import { BASELINE_VALUE_NAMES } from "@host/features/surfaces/manifests/_baseline.manifest";
 
 /**
  * Return a copy of `scope` with every generic baseline key guaranteed present.

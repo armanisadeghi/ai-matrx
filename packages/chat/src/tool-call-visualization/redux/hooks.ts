@@ -6,8 +6,8 @@
  * without touching every consumer.
  */
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import {
   selectOrderedToolLifecycles,
   selectToolCallIdsInOrder,

@@ -187,7 +187,7 @@ import {
   MandateOrganizationUnresolvedError,
   invalidateMandateCache,
   resolveMandate,
-} from "../service";
+} from "@ai-matrx/chat/mandates/service";
 import { mandateOrgSwitchCacheMiddleware } from "../redux/org-switch-cache-middleware";
 import { withClaims } from "@/test-utils/supabase-auth";
 

@@ -1,5 +1,5 @@
 "use client";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 /**
  * features/surfaces/runtime/surface-mandates.ts

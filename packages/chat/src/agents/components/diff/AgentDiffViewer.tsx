@@ -14,8 +14,8 @@ import type {
   DiffTemporalMetadata,
   ViewMode,
 } from "@ai-matrx/diff/structural";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import { useDiffEnrichment } from "@/features/agents/hooks/useDiffEnrichment";
+import type { AgentDefinition } from "../../types/agent-definition.types";
+import { useDiffEnrichment } from "../../hooks/useDiffEnrichment";
 import { compareAgentDefinitions } from "./compare-agent-definitions";
 
 import { MessagesAdapter } from "./adapters/MessagesAdapter";

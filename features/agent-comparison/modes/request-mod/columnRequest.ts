@@ -7,7 +7,7 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
-import { captureRequestDraft } from "@/features/agents/redux/execution-system/thunks/request-draft-snapshot";
+import { captureRequestDraft } from "@ai-matrx/chat/agents/redux/execution-system/thunks/request-draft-snapshot";
 import type { RequestModColumn, RequestModColumnRequest } from "./types";
 
 /** What the column's composer holds right now. */

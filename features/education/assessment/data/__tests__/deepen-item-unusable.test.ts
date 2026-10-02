@@ -3,10 +3,10 @@
  * answer instead of a bare "couldn't deepen this question".
  */
 import { deepenItem } from "../deepenItem";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { runHeadlessAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 
-jest.mock("@/features/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
-  ...jest.requireActual("@/features/agents/redux/execution-system/thunks/run-headless-agent-json"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json"),
   runHeadlessAgentJson: jest.fn(),
 }));
 

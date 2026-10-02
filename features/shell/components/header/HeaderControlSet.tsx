@@ -1,5 +1,5 @@
 import { CanvasShellHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle";
-import { SurfaceAgentsHeaderButton } from "@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton";
+import { SurfaceAgentsHeaderButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceAgentsHeaderButton";
 import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
 import { MessagesHeaderButton } from "@/features/messaging/components/shell/MessagesHeaderButton";
 import { CommandBarHeaderButton } from "@/features/knowledge/command-bar/OpenCommandBarButtons";

@@ -38,12 +38,12 @@ import {
   type CodeSelectionRange,
 } from "./buildCodeWorkspaceContextData";
 import { createCodeEditorExtraSections } from "./codeEditorExtraSections";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/utils/scope-mapping";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 interface CodeWorkspaceContextMenuProps {
   children: React.ReactNode;

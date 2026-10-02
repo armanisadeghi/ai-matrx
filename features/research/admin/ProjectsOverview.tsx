@@ -12,7 +12,7 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_KNOWLEDGE_SURFACE_NAME,
   createAdminKnowledgeScope,

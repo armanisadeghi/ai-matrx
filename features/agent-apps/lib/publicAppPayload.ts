@@ -27,9 +27,9 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   mergePartialAgent,
   setAgentFetchStatus,
-} from "@/features/agents/redux/agent-definition/slice";
-import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
-import type { AgentExecutionFull } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { selectAgentCustomExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import type { AgentExecutionFull } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 

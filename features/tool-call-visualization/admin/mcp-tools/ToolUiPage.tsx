@@ -11,7 +11,7 @@ import { ToolUiComponentGenerator } from "@/features/tool-call-visualization/adm
 import { ToolUiComponentEditor } from "@/features/tool-call-visualization/admin/ToolUiComponentEditor";
 import { ToolComponentPreview } from "@/features/tool-call-visualization/admin/mcp-tools/ToolComponentPreview";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { invalidateToolRenderer } from "@/features/tool-call-visualization/db-renderer/toolRendererCache";
+import { invalidateToolRenderer } from "@ai-matrx/chat/tool-call-visualization/db-renderer/toolRendererCache";
 import type { Database } from "@/types/database.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

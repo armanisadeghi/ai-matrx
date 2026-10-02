@@ -25,17 +25,17 @@ import {
   selectAgentCustomTools,
   selectAgentMcpServers,
   selectAgentMessages,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { decisionToolsNotice } from "@/features/agents/decision-questions/compatibility";
-import { setAgentTools } from "@/features/agents/redux/agent-definition/slice";
+import { setAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import {
   selectAllTools,
   selectToolIdentityMap,
-} from "@/features/agents/redux/tools/tools.selectors";
+} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
 import {
   fetchAvailableTools,
   fetchToolById,
-} from "@/features/agents/redux/tools/tools.thunks";
+} from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
 
 interface AgentToolsRowProps {

@@ -44,12 +44,12 @@
 
 import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import React, { Fragment } from "react";
-import { ReferenceRoleCaption } from "@/features/agents/image-roles/ReferenceRoleCaption";
+import { ReferenceRoleCaption } from "@ai-matrx/chat/agents/image-roles/ReferenceRoleCaption";
 import { DecisionQuestionsTranscriptView } from "@/features/agents/decision-questions/DecisionQuestionsTranscriptView";
-import { SpeechScriptTranscriptView } from "@/features/agents/speech-script/SpeechScriptTranscriptView";
+import { SpeechScriptTranscriptView } from "@ai-matrx/chat/agents/speech-script/SpeechScriptTranscriptView";
 import { BlockComponents } from "./BlockComponentRegistry";
 import { InlineStatusIndicator } from "../internal-handlers/InlineStatusIndicator";
-import { EXPERT_WORKING_LABEL } from "@/features/agents/components/shared/transcript-audience";
+import { EXPERT_WORKING_LABEL } from "@ai-matrx/chat/agents/components/shared/transcript-audience";
 import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
 import { InlineCodeSnippet } from "../InlineCodeSnippet";
 import type {

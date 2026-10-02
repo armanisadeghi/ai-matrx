@@ -35,7 +35,7 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { createMarketingAuthorityScope } from "@/features/surfaces/manifests/marketing-authority.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";

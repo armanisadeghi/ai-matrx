@@ -34,7 +34,7 @@ import {
   getToolCardUserChoice,
   setToolCardUserChoice,
 } from "./toolCardUiSession";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import { groupCloudBrowserTurnFragments } from "../grouping/groupCloudBrowserRuns";
 
 export interface AgentWorkGroupRegistration {

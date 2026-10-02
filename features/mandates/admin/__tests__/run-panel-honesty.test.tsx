@@ -83,16 +83,16 @@ jest.mock("../service", () => ({
   fetchVersionVariableDefinitions: () => Promise.resolve([]),
   saveAdHocResultAsExemplar: () => Promise.resolve(undefined),
 }));
-jest.mock("@/features/mandates/service", () => ({
+jest.mock("@ai-matrx/chat/mandates/service", () => ({
   resolveMandate: () => Promise.resolve(null),
 }));
-jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({ launchMandate: () => Promise.resolve(undefined) }),
 }));
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentExecutionMinimal: () => ({ type: "noop" }),
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectAgentExecutionPayload: () => null,
 }));
 
@@ -102,7 +102,7 @@ jest.mock("../bench-output-preview", () => ({
   OutputPreview: ({ output }: { output: string }) => <div>{output}</div>,
 }));
 jest.mock(
-  "@/features/agents/components/inputs/input-components/VariableInputComponent",
+  "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent",
   () => ({ VariableInputComponent: () => <div /> }),
 );
 jest.mock("@/features/agents/components/samples/AgentSamplesManager", () => ({

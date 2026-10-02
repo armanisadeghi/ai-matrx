@@ -4,9 +4,9 @@
  * key "__item" ({ itemType, identity, values }); a bare key still reads the
  * screen value of that name, and an item key never falls back to it.
  */
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
+import type { ApplicationScope } from "../../../agents/types/scope.types";
+import type { VariableDefinition } from "../../../agents/types/agent-definition.types";
+import { resolveValueMappings } from "../value-mapping-resolver";
 
 const variables = [{ name: "row_status" }, { name: "page_status" }] as unknown as VariableDefinition[];
 
@@ -55,7 +55,7 @@ describe("value mappings accept dotted item keys", () => {
 
 describe("binding editors list item values under their dotted key", () => {
   it("qualifies a DB value row by its item_type", async () => {
-    const { bindingKeyOfValueRow } = await import("@/features/surfaces/services/surfaces.service");
+    const { bindingKeyOfValueRow } = await import("../../services/surfaces.service");
     expect(bindingKeyOfValueRow({ name: "status", item_type: "table_row" })).toBe("table_row.status");
     expect(bindingKeyOfValueRow({ name: "status", item_type: "" })).toBe("status");
     expect(bindingKeyOfValueRow({ name: "status" })).toBe("status");

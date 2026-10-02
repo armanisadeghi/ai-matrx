@@ -2,7 +2,7 @@ import {
   PropertyRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { RebindVariableImpact } from "./rebind-impact";
 import type { MandateVariableVerdict } from "./service";
 

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ExternalLink } from "lucide-react";
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
+import type { ContextObjectType } from "../../types/agent-api-types";
 import {
   KnownContextDetail,
   KnownTextContextDetail,
@@ -16,14 +16,14 @@ import {
   classifyContextValue,
   unwrapRichContextValue,
 } from "./contextValueUtils";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 // FRAGMENTATION LAW: this surface is always beneath an existing ssr:false
 // boundary — wrapping MarkdownStream (itself already a dynamic front door) and
 // JsonInspector in MORE dynamics was stacked-boundary fragmentation. Static
 // imports of the front doors keep exactly one boundary per heavy graph.
-import MarkdownStream from "@/components/MarkdownStream";
-import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 
 interface ContextValueBodyProps {
   type: ContextObjectType;

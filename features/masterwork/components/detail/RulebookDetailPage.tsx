@@ -64,7 +64,7 @@ import {
   SurfaceRuntimeProvider,
   useSurfaceClientTools,
   useSurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { fetchAssistLaunch, MASTERWORK_RULEBOOK_SURFACE } from "../../assists";
 import {
   getRulebook,

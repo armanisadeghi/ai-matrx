@@ -33,8 +33,8 @@
 
 import type { ReactNode } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_SYSTEM_AGENTS_SURFACE_NAME,
   createAdminSystemAgentsScope,

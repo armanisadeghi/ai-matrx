@@ -19,26 +19,26 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectAutoRun,
   selectAllowChat,
   selectNeedsPreExecutionInput,
   selectShouldShowInput,
   selectShowVariablePanel,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectHasUserInput } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import { isExecutionClaimed } from "@/features/agents/redux/execution-system/thunks/submit-claims";
+} from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectInstanceStatus } from "../../redux/execution-system/conversations/conversations.selectors";
+import { selectIsExecuting } from "../../redux/execution-system/selectors/aggregate.selectors";
+import { selectHasUserInput } from "../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { executeInstance } from "../../redux/execution-system/thunks/execute-instance.thunk";
+import { isExecutionClaimed } from "../../redux/execution-system/thunks/submit-claims";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { PreExecutionAgentInput } from "../inputs/PreExecutionAgentInput";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
-import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
-import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
-import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
+import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components/ProposedDirectivesZone";
+import { PendingAsksZone } from "../../ui-first-tools/ui/PendingAsksZone";
+import { ServerOperationBanner } from "../../runtime-reconnect/ServerOperationBanner";
 
 interface AgentRunnerProps {
   conversationId: string;

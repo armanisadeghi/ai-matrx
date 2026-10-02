@@ -12,33 +12,33 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("@/lib/api/call-api", () => ({ callApi: jest.fn() }));
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/api/call-api", () => ({ callApi: jest.fn() }));
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => (thunk: unknown) => thunk,
   useAppSelector: (selector: (state: unknown) => unknown) => selector(undefined),
 }));
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
   selectScopeSelectionsContext: () => ({}),
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversations.selectors",
+  "../../redux/execution-system/conversations/conversations.selectors",
   () => ({
     selectConversationScopeIds: () => () => ({ organizationId: undefined }),
   }),
 );
 // THE markdown renderer a chat answer goes through, stood in so the test can see what it is handed.
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: (props: { content?: string }) => <div data-markdown-stream>{props.content}</div>,
 }));
-jest.mock("@/lib/api/run-wait", () => ({
+jest.mock("@host/lib/api/run-wait", () => ({
   resolveRunWait: jest.fn(async () => ({ firstResponseMs: 120_000 })),
 }));
-jest.mock("@/lib/api/organization-admission", () => ({
+jest.mock("@host/lib/api/organization-admission", () => ({
   peekSelectedOrganizationId: () => null,
 }));
-jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7" }));
-jest.mock("@/components/matrx/buttons/InlineCopyButton", () => ({
+jest.mock("@host/utils/auth/getUserId", () => ({ getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7" }));
+jest.mock("@host/components/matrx/buttons/InlineCopyButton", () => ({
   InlineCopyButton: () => null,
 }));
 // THE platform diff viewer, stood in so the test can read exactly what it is asked to diff.
@@ -60,14 +60,14 @@ jest.mock("@ai-matrx/agents/catalog/react", () => ({
     </button>
   ),
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("../../redux/agent-definition/selectors", () => ({
   selectAllAgents: () => ({ [INTAKE_AGENT]: { name: "Client Intake Reviewer" } }),
 }));
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+jest.mock("../../redux/agent-definition/thunks", () => ({
   fetchAgentsList: () => ({ type: "agents/list" }),
 }));
 
-import { callApi } from "@/lib/api/call-api";
+import { callApi } from "@host/lib/api/call-api";
 import { ContextCompareView, focusLines } from "./ContextCompareView";
 
 (

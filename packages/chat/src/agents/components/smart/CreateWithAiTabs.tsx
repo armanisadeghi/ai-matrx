@@ -27,12 +27,12 @@
 
 import React, { useState, useEffect } from "react";
 import { Cpu, PencilLine, type LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import { cn } from "@host/lib/utils";
+import type { SourceFeature } from "../../types/instance.types";
 import {
   isProjectCreateFlow,
   logProjectCreateAiStage,
-} from "@/features/projects/debug/projectCreateAiDebug";
+} from "@host/features/projects/debug/projectCreateAiDebug";
 import { AgentRunWrapper } from "./AgentRunWrapper";
 
 export type CreateWithAiMode = string;

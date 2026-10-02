@@ -24,9 +24,9 @@ import {
   extractFlatText,
   selectMessageById,
   selectOrderedMessageIds,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
-import { hasConvertibleContent } from "@/features/agents/components/messages-display/message-options/convertibleContent";
+import { hasConvertibleContent } from "@ai-matrx/chat/agents/components/messages-display/message-options/convertibleContent";
 import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,

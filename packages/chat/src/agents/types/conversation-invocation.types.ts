@@ -15,7 +15,7 @@
  */
 
 import type { LLMParams } from "./agent-api-types";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
+import type { ApplicationScope } from "../utils/scope-mapping";
 import type {
   BuilderAdvancedSettings,
   InstanceOrigin,

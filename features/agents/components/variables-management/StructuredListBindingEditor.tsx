@@ -16,7 +16,7 @@ import {
   getStructuredListForSelection,
 } from "@/features/user-lists/service";
 import type { UserList } from "@/features/user-lists/types";
-import type { StructuredListBinding } from "@/features/agents/types/agent-definition.types";
+import type { StructuredListBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 interface StructuredListBindingEditorProps {
   binding: StructuredListBinding | undefined;

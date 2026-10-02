@@ -17,27 +17,27 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentName } from "../../redux/agent-definition/selectors";
+import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
+import { useAgentLauncher } from "../../hooks/useAgentLauncher";
+import { useWidgetHandle } from "../../hooks/useWidgetHandle";
 import {
   selectLatestAccumulatedText,
   selectLatestRequestStatus,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "../../redux/execution-system/selectors/aggregate.selectors";
+import { useRetainLatestRequestForViewer } from "../../redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+} from "@host/components/ui/dialog";
+import { Button } from "@host/components/ui/button";
+import { Badge } from "@host/components/ui/badge";
+import { Textarea } from "@host/components/ui/textarea";
+import { ScrollArea } from "@host/components/ui/scroll-area";
+import { Separator } from "@host/components/ui/separator";
 import {
   Play,
   Copy,
@@ -49,10 +49,10 @@ import {
   ArrowDownFromLine,
   X,
 } from "lucide-react";
-import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
-import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
-import { toast } from "@/lib/toast";
-import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import type { VariablesPanelStyle } from "../../types/instance.types";
+import type { ApiEndpointMode } from "../../types/instance.types";
+import { toast } from "@host/lib/toast";
+import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
 
 interface AgentExecutionTestModalProps {
   surfaceKey: string;

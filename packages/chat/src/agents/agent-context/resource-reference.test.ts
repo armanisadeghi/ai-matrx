@@ -6,7 +6,7 @@ import {
 import {
   buildCustomComponent,
   extractEffectiveValues,
-} from "@/features/agents/utils/variable-customcomponent";
+} from "../utils/variable-customcomponent";
 
 describe("agent resource reference", () => {
   it("keeps the default reference minimal", () => {

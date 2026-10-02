@@ -5,7 +5,7 @@
  * Client components should call these through API routes.
  */
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@host/utils/supabase/server";
 import type {
   CxConversation,
   CxConversationInsert,
@@ -16,7 +16,7 @@ import type {
   CxToolCall,
   CxConversationWithMessages,
 } from "../types/cx-tables";
-import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@host/utils/supabase/writeOne";
 
 type CxDatabaseClient = Awaited<ReturnType<typeof createClient>>;
 

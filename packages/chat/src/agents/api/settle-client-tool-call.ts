@@ -33,12 +33,12 @@
 
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import { upsertToolLifecycle } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import type { RootState } from "@host/lib/redux/store";
+import { upsertToolLifecycle } from "../redux/execution-system/active-requests/active-requests.slice";
 import {
   patchToolCall,
   type CxToolCallRecord,
-} from "@/features/agents/redux/execution-system/observability/observability.slice";
+} from "../redux/execution-system/observability/observability.slice";
 
 export interface SettledToolAnswer {
   conversationId: string;

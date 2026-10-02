@@ -16,10 +16,10 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
-import { hydrateConversationForReading } from "@/features/agents/components/messages-display/hydrateConversationForReading";
-import { loadFullConversationHistory } from "@/features/agents/conversation-export/load-full-history";
-import { setVisibleGroupLimit } from "@/features/agents/redux/execution-system/messages/messages.slice";
+import { AgentConversationDisplay } from "@ai-matrx/chat/agents/components/messages-display/AgentConversationDisplay";
+import { hydrateConversationForReading } from "@ai-matrx/chat/agents/components/messages-display/hydrateConversationForReading";
+import { loadFullConversationHistory } from "@ai-matrx/chat/agents/conversation-export/load-full-history";
+import { setVisibleGroupLimit } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import { findMessageGroup } from "./embedFor";
 import { asClause } from "@/lib/text/asClause";
 

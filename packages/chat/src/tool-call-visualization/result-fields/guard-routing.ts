@@ -17,7 +17,7 @@
  * (`ON_SCREEN_ERROR_TYPE`, `DECLINED_ERROR_TYPE`); keep them in lockstep.
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 export const ON_SCREEN_ERROR_TYPE = "record_on_screen";
 export const DECLINED_ERROR_TYPE = "person_declined_this_change";

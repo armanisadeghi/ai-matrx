@@ -105,19 +105,19 @@ describe("agent shortcut writer wiring", () => {
       "resolveShortcutWriteScope({",
     ],
     [
-      "features/agents/redux/agent-shortcuts/thunks.ts",
+      "packages/chat/src/agents/redux/agent-shortcuts/thunks.ts",
       "ensureOrgId(shortcutData.organizationId)",
     ],
     [
-      "features/agents/redux/agent-shortcuts/thunks/createShortcutFromAgentSurface.thunk.ts",
+      "packages/chat/src/agents/redux/agent-shortcuts/thunks/createShortcutFromAgentSurface.thunk.ts",
       "ensureOrgId(args.organizationId)",
     ],
     [
-      "features/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk.ts",
+      "packages/chat/src/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk.ts",
       "resolveShortcutWriteScope({",
     ],
     [
-      "features/agents/redux/agent-shortcut-categories/thunks.ts",
+      "packages/chat/src/agents/redux/agent-shortcut-categories/thunks.ts",
       "resolveShortcutWriteScope({",
     ],
     [

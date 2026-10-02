@@ -42,8 +42,8 @@ import {
   useAppStore,
 } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
+import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useConversationMaterialized } from "@ai-matrx/chat/agents/hooks/useConversationMaterialized";
 import { useStudioAssistant } from "@/features/transcript-studio/hooks/useStudioAssistant";
 import { fetchStudioDocumentsThunk } from "@/features/transcript-studio/redux/thunks";
 import { selectActiveAssistantAgentId } from "@/features/transcript-studio/redux/selectors";
@@ -71,20 +71,20 @@ import {
   buildThreadSessionTranscriptEntries,
   THREAD_SESSION_TRANSCRIPT_KEY_RE,
 } from "@/features/war-room/service/warRoomAgentContext";
-import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+import { removeContextEntry } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import { selectInstanceContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { prefetchThreadFileSignals } from "@/features/war-room/service/prefetchThreadFileSignals";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { WAR_ROOM_THREAD_AGENT_MANDATE } from "@/features/war-room/constants";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
-import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import { setClientTools } from "@ai-matrx/chat/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 import { WAR_ROOM_TOOL_NAMES } from "@/features/agents/war-room-tools/tools/names";
 import {
   registerWarRoomThreadTarget,
   clearWarRoomThreadTarget,
 } from "@/features/agents/war-room-tools/thread-target-registry";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildWarRoomThreadScope } from "@/features/war-room/lib/war-room-scope";
 import { useWarRoomThreadWriteHandlers } from "./useWarRoomThreadWriteHandlers";
 

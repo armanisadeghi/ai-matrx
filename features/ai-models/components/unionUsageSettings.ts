@@ -1,4 +1,4 @@
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { ModelUsageResult } from "../types";
 
 const IDENTITY_KEYS = new Set(["model", "model_id"]);

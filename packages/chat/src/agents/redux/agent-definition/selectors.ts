@@ -1,7 +1,7 @@
 "use client";
 
 import { createSelector } from "reselect";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   AgentDefinition,
   AgentDefinitionRecord,

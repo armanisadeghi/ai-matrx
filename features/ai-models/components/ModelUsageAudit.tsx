@@ -18,7 +18,7 @@ import Link from "next/link";
 import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
 import { ModelSettingsReviewDialog } from "./ModelSettingsReviewDialog";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
 import { usageSettingsList } from "./unionUsageSettings";
 import { cn } from "@/lib/utils";

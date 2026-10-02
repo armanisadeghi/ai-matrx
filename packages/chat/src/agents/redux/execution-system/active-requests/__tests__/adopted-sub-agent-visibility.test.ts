@@ -32,8 +32,8 @@ import activeRequestsReducer, {
 } from "../active-requests.slice";
 import { selectUnifiedSlots } from "../active-requests.selectors";
 import { StreamBlockAccumulator } from "../../utils/stream-block-accumulator";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
-import type { UntypedDataPayload } from "@/types/python-generated/stream-events";
+import type { ActiveRequest } from "../../../../types/request.types";
+import type { UntypedDataPayload } from "@host/types/python-generated/stream-events";
 
 type AnyState = Parameters<ReturnType<typeof selectUnifiedSlots>>[0];
 

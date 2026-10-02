@@ -10,20 +10,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Building2, RotateCcw } from "lucide-react";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { useCanvasWorkspaceConversation } from "@/features/canvas/workspace/useCanvasWorkspaceConversation";
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import { ComposerModeSwitch } from "@/features/agents/components/inputs/smart-input/composer/ComposerModeSwitch";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useCanvasWorkspaceConversation } from "@ai-matrx/chat/canvas/workspace/useCanvasWorkspaceConversation";
+import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
+import { ComposerModeSwitch } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/ComposerModeSwitch";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
 import {
   ComposerGreeting,
   ComposerQuickActions,
-} from "@/features/agents/components/inputs/smart-input/composer/ComposerSplash";
-import { COMPOSER_KNOBS } from "@/features/agents/components/inputs/smart-input/composer/composer-mode-cookie";
+} from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/ComposerSplash";
+import { COMPOSER_KNOBS } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode-cookie";
 import type {
   ComposerMode,
   ComposerSize,
-} from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+} from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { cn } from "@/lib/utils";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";

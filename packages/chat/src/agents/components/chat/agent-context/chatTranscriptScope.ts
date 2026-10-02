@@ -17,7 +17,7 @@
  * has not loaded.
  */
 
-import { CHAT_TRANSCRIPT_TOOL_EXCERPT_MAX } from "@/features/surfaces/manifests/chat.manifest";
+import { CHAT_TRANSCRIPT_TOOL_EXCERPT_MAX } from "@host/features/surfaces/manifests/chat.manifest";
 
 /** Longest excerpt of a tool call's arguments or result, in characters. */
 export const CHAT_TOOL_EXCERPT_MAX = CHAT_TRANSCRIPT_TOOL_EXCERPT_MAX;

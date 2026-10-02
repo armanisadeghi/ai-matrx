@@ -15,7 +15,7 @@ import { ExternalLink, FileText, Network, Play, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";

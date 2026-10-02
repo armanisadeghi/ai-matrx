@@ -19,7 +19,7 @@ import {
   AdminSectionShell,
   type AdminSectionTab,
 } from "@/features/admin/components/AdminSectionShell";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_SCHEDULING_SURFACE_NAME } from "@/features/surfaces/manifests/admin-scheduling.manifest";
 import { buildAdminSchedulingScope } from "@/features/scheduling/lib/admin-scheduling-scope";
 

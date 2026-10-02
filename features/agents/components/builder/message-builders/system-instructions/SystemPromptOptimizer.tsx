@@ -12,17 +12,17 @@
 
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
-import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
-import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { useShortcutTrigger } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
+import { getSystemShortcut } from "@ai-matrx/chat/agents/constants/system-shortcuts";
+import { ensureShortcutLoaded } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import {
   selectLatestAccumulatedText,
   selectIsStreaming,
   selectStreamPhase,
   type StreamPhase,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useRetainLatestRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   Dialog,
   DialogContent,

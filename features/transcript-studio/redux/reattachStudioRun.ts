@@ -42,12 +42,12 @@
  */
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { selectLatestAnswerDocumentText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { selectLatestAnswerDocumentText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
-import { selectAnswerDocumentText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
+import { selectAnswerDocumentText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectLatestRequestId } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { reconnectServerOperation } from "@ai-matrx/chat/agents/runtime-reconnect/reconnect-server-operation.thunk";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { finalizeAgentRun } from "../service/studioService";
 import type { AgentRun } from "../types";

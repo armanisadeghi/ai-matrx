@@ -1,13 +1,13 @@
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import {
   parseAgentContextPolicies,
   parseAgentSettings,
 } from "../parse-settings-context";
 
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
   // the real store so a new export can never take this suite down at import.
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 

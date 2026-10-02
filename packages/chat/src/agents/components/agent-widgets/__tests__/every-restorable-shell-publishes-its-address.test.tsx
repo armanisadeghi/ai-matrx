@@ -8,12 +8,12 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DISPLAY_MODE_TO_OVERLAY_ID } from "@/features/agents/redux/execution-system/display-mode-overlay";
-import { resolveAgentPanelDisplayMode } from "@/features/window-panels/url-sync/initUrlHydration";
+import { DISPLAY_MODE_TO_OVERLAY_ID } from "../../../redux/execution-system/display-mode-overlay";
+import { resolveAgentPanelDisplayMode } from "@host/features/window-panels/url-sync/initUrlHydration";
 
-jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
+jest.mock("@host/lib/redux/hooks", () => ({ useAppSelector: () => null }));
 const useUrlSync = jest.fn();
-jest.mock("@/features/window-panels/url-sync/useUrlSync", () => ({
+jest.mock("@host/features/window-panels/url-sync/useUrlSync", () => ({
   useUrlSync: (...a: unknown[]) => useUrlSync(...a),
 }));
 

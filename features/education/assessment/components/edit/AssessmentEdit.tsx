@@ -30,13 +30,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
+import { useFloatingRunWindow } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { useAccess } from "@/utils/permissions/access";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
 import { assessmentService } from "../../data/assessmentService";
 import { deepenItem, deeperThan } from "../../data/deepenItem";

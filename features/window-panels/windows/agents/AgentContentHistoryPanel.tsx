@@ -11,17 +11,17 @@ import {
   SquareStack,
 } from "lucide-react";
 import { ItemRow } from "@/components/official/item/ItemRow";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
+import { renameConversation } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import { makeSelectAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchAgentConversations } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.thunks";
+import { makeSelectAgentConversations } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.selectors";
+import type { ConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
+import { AgentConversationDisplay } from "@ai-matrx/chat/agents/components/messages-display/AgentConversationDisplay";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
 import type { RootState } from "@/lib/redux/store";
 import {
   ResizableHandle,

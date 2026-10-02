@@ -6,22 +6,22 @@
  * never recovers a guessed shape with `as string[]` or `as MessagePart`.
  */
 
-import type { ManagedResource } from "@/features/agents/types/instance.types";
-import type { DataRef } from "@/features/agents/types/message-types";
+import type { ManagedResource } from "../../types/instance.types";
+import type { DataRef } from "../../types/message-types";
 import {
   isMessagePart,
   type MessagePart,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 import {
   isPreFetchedUrl,
   readWebpageInputs,
   webpageTitle,
   webpageUrl,
-} from "@/features/resource-manager/webpage/webpage-snapshot";
+} from "@host/features/resource-manager/webpage/webpage-snapshot";
 import { resolveContextItemDef } from "./registry";
 import { hasContextItemDef } from "./context-item-block-types";
 import { referenceRoleCaption } from "@ai-matrx/agents";
-import type { FileIdentityHint, Visibility } from "@/features/files/types";
+import type { FileIdentityHint, Visibility } from "@host/features/files/types";
 import type {
   ContextBookmark,
   ContextDrawerItem,

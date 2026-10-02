@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "../types";
 import { SurfaceRuntimeProvider } from "./SurfaceRuntimeContext";
 
 export function StaticSurfaceRuntimeProvider({

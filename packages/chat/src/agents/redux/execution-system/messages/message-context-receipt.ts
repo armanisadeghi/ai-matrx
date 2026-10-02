@@ -15,7 +15,7 @@
  * show another turn's receipt; without a persisted receipt it has none.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import {
   receiptRowToResolved as packageReceiptRowToResolved,
   type ContextReceiptMismatch,
@@ -25,9 +25,9 @@ import {
 import type {
   ContextReceiptData,
   ContextReceiptRow,
-} from "@/types/python-generated/stream-events";
-import type { Json } from "@/types/database.types";
-import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
+} from "@host/types/python-generated/stream-events";
+import type { Json } from "@host/types/database.types";
+import { contextEntryLabel } from "../../../components/context-policies-display/contextEntryLabel";
 import {
   sentWithRequest,
   type ModelContext,

@@ -8,21 +8,21 @@ import {
   Filter,
   Info,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
-import { SerpSearchChrome } from "@/features/marketing/seo/serp/SerpSearchChrome";
+import { Button } from "@host/components/ui/button";
+import { Badge } from "@host/components/ui/badge";
+import { cn } from "@host/lib/utils";
+import { SerpResult } from "@host/features/marketing/seo/serp/SerpResult";
+import { SerpSearchChrome } from "@host/features/marketing/seo/serp/SerpSearchChrome";
 import {
   SerpFieldBars,
   type SerpFieldMetrics,
-} from "@/features/marketing/seo/serp/SerpValidation";
+} from "@host/features/marketing/seo/serp/SerpValidation";
 import {
   TITLE_LIMITS,
   DESCRIPTION_LIMITS,
-} from "@/features/marketing/seo/serp/metrics";
-import type { SerpEntry } from "@/features/marketing/seo/serp/types";
-import { ApplyMetaToPage } from "@/features/marketing/seo/serp/ApplyMetaToPage";
+} from "@host/features/marketing/seo/serp/metrics";
+import type { SerpEntry } from "@host/features/marketing/seo/serp/types";
+import { ApplyMetaToPage } from "@host/features/marketing/seo/serp/ApplyMetaToPage";
 
 /**
  * Shared overlay renderer for every SEO meta check — the agent's results

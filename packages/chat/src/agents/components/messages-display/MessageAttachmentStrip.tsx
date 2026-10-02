@@ -1,14 +1,14 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
-import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
-import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
-import { normalizeMessagePart } from "@/features/agents/components/context-items/normalize";
-import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
+import { cn } from "@host/lib/utils";
+import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
+import { ContextItemDrawer } from "../context-items/ContextItemDrawer";
+import { useContextItemDrawer } from "../context-items/useContextItemDrawer";
+import { normalizeMessagePart } from "../context-items/normalize";
+import { BlockHoverPreview } from "@host/features/agents/components/previews/BlockHoverPreview";
 import { ResourceAttachmentTile } from "./user/ResourceAttachmentTile";
-import type { MessagePart } from "@/types/python-generated/stream-events";
-import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
+import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { ContextDrawerItem } from "../context-items/types";
 
 interface MessageAttachmentStripProps {
   conversationId: string;

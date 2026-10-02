@@ -14,8 +14,8 @@
  * Guard: `__tests__/continuation-body.test.ts`.
  */
 
-import type { ConversationContinueRequest } from "@/features/agents/types/agent-api-types";
-import type { AssembledAgentStartRequest } from "@/features/agents/types/request.types";
+import type { ConversationContinueRequest } from "../../../types/agent-api-types";
+import type { AssembledAgentStartRequest } from "../../../types/request.types";
 
 type ContinueKey = keyof ConversationContinueRequest;
 

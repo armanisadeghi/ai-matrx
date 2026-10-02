@@ -7,8 +7,8 @@
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import type { DemoKindExample } from "@/features/spatial/demo/SpatialDemoBoard";
-import { readCanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies.server";
-import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
 import { SpatialCanvasWorkspaceDemo } from "../canvas-workspace/SpatialCanvasWorkspaceDemo";
 
 /** The workspace id (its chat surface key and cookies). */

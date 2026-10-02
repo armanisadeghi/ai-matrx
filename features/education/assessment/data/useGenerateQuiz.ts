@@ -15,7 +15,7 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { NewAssessmentItemInput, QuestionType, Depth } from "./types";
 

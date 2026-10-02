@@ -21,8 +21,8 @@ import {
   CollapsibleTextGroupControls,
 } from "@/components/official/CollapsibleText";
 import type { PlatformComment as Comment } from "@ai-matrx/associations";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { formatRelativeTime } from "@/utils/datetime";
 import { SectionCard, SectionEmpty } from "./SectionCard";
 import { CrmRecordCopyButtons } from "./CrmRecordCopyButtons";

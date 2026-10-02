@@ -32,7 +32,7 @@ Returns `{ saveFullContent, forkAtThisMessage, editAndResubmit, deleteConversati
 ## Re-render safety
 
 Every CRUD path respects the re-render contract documented in
-`features/agents/redux/execution-system/messages/RE-RENDER-CONTRACT.md`.
+`packages/chat/src/agents/redux/execution-system/messages/RE-RENDER-CONTRACT.md`.
 Key rules:
 
 - `editMessage` patches `content` (and `status` on the owning message) via

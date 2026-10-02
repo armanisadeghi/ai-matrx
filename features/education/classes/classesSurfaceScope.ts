@@ -12,7 +12,7 @@ import {
   type JoinedClassScopeEntry,
   type NewClassDraftScope,
 } from "@/features/surfaces/manifests/education-classes.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { MyClass, StudyClass } from "./types";
 import { nextExamDate } from "./settings";
 

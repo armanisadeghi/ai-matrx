@@ -16,7 +16,7 @@ import { useAppStore } from "@/lib/redux/hooks";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
 import {
   selectNodeAggregatePhases,

@@ -1,7 +1,7 @@
 import { join } from "path";
 import { scanRoutes } from "@/utils/route-discovery";
 import { AdminRoutesDirectory } from "@/features/admin/components/AdminRoutesDirectory";
-import { StaticSurfaceRuntimeProvider } from "@/features/surfaces/runtime/StaticSurfaceRuntimeProvider";
+import { StaticSurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/StaticSurfaceRuntimeProvider";
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 
 export default async function AllRoutesPage() {

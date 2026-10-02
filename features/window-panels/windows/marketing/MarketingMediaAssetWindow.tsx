@@ -60,7 +60,7 @@ import {
   type BrandAssetKind,
 } from "@/features/marketing/types";
 import { emitMarketingMediaAssetWindowEvent } from "@/features/overlays/callbacks/marketingMediaAssetWindow";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   IMAGE_VIEWER_SURFACE_NAME,
   createImageViewerScope,

@@ -18,15 +18,15 @@
 
 import { createElement, useState } from "react";
 import { ChevronLeft, ChevronRight, Send } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { addResource } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { toast } from "@/lib/toast-service";
+import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { addResource } from "../../redux/execution-system/instance-resources/instance-resources.slice";
+import { toast } from "@host/lib/toast-service";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@host/components/ui/tooltip";
 import {
   resolveContextItemBody,
   resolveContextItemFooter,

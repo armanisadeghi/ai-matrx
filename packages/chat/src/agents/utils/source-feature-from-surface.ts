@@ -7,7 +7,7 @@
 import {
   isSourceFeature,
   type SourceFeature,
-} from "@/types/python-generated/source-attribution";
+} from "@host/types/python-generated/source-attribution";
 
 const SURFACE_SLUG_TO_FEATURE: Record<string, SourceFeature> = {
   chat: "chat",

@@ -28,7 +28,7 @@ import { HandHelping } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { rereadAndFollow } from "@/features/agents/runtime-reconnect/reread-and-follow";
+import { rereadAndFollow } from "@ai-matrx/chat/agents/runtime-reconnect/reread-and-follow";
 import { ActionRequestInlineAnswer } from "@/features/action-requests/components/ActionRequestInlineAnswer";
 import { usePendingActionRequest } from "@/features/action-requests/hooks/usePendingActionRequest";
 import { fetchPendingActionRequests } from "@/features/action-requests/self-service";

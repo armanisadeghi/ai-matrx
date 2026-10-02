@@ -5,8 +5,8 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   addEditorErrorResource,
   editorErrorDedupeKey,
-} from "@/features/agents/utils/add-editor-resources";
-import type { EditorErrorSource } from "@/features/agents/utils/editor-resource-xml";
+} from "@ai-matrx/chat/agents/utils/add-editor-resources";
+import type { EditorErrorSource } from "@ai-matrx/chat/agents/utils/editor-resource-xml";
 import type { StandaloneCodeEditor } from "../editor/MonacoEditor";
 import type { EditorFile } from "../types";
 import type { EditorDiagnostic } from "../redux/diagnosticsSlice";

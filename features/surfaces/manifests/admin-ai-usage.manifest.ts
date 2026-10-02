@@ -14,7 +14,7 @@
  * with the same contract.
  */
 
-import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup } from "@/features/surfaces/types";
+import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
 
 export const ADMIN_AI_USAGE_SURFACE_NAME = "matrx-admin/ai-usage";
 

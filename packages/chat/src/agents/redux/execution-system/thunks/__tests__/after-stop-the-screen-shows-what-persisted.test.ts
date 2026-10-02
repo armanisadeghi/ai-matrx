@@ -19,17 +19,17 @@ import {
   type ThunkDispatch,
   type UnknownAction,
 } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import messagesReducer, {
   hydrateMessages,
   reserveMessage,
   type MessageRecord,
 } from "../../messages/messages.slice";
-import type { RuntimeOperationsByLinkResponse } from "@/features/agents/runtime-reconnect/types";
+import type { RuntimeOperationsByLinkResponse } from "../../../../runtime-reconnect/types";
 import {
   clearCapturedErrors,
   getSnapshot,
-} from "@/lib/diagnostics/errorCaptureStore";
+} from "@host/lib/diagnostics/errorCaptureStore";
 
 const CONV = "e2acdae2-eb77-4c99-9511-f3d591d4841c";
 const SERVER_REQ = "4ac2df1c-2085-45f2-ada8-b039e5374d19";
@@ -45,10 +45,10 @@ const cancelAgentRunRequest = jest.fn((requestId: string) => async () => ({
   requestId,
 }));
 
-jest.mock("@/features/agents/runtime-reconnect/api", () => ({
+jest.mock("../../../../runtime-reconnect/api", () => ({
   fetchOperationsByLink: (...a: unknown[]) => fetchOperationsByLink(...(a as [])),
 }));
-jest.mock("@/lib/api/matrx-transport", () => ({
+jest.mock("@host/lib/api/matrx-transport", () => ({
   cancelAgentRunRequest: (id: string) => cancelAgentRunRequest(id),
 }));
 jest.mock("../resolve-base-url", () => ({

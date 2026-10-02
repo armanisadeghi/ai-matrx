@@ -11,8 +11,8 @@ import {
 } from "@/lib/api/errors";
 import { isErrorEvent, type TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
-import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { removeRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { reputationKeys } from "@/features/marketing/data/reputation-hooks";
 import type { ReputationBrief } from "@/features/marketing/data/reputation-types";
 

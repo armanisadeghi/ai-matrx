@@ -26,8 +26,8 @@ if (typeof g.TextEncoder !== "function") g.TextEncoder = NodeTextEncoder;
 if (typeof g.TextDecoder !== "function") g.TextDecoder = NodeTextDecoder;
 
 const cancelCalls: unknown[][] = [];
-jest.mock("@/lib/api/matrx-transport", () => {
-  const actual = jest.requireActual("@/lib/api/matrx-transport");
+jest.mock("@host/lib/api/matrx-transport", () => {
+  const actual = jest.requireActual("@host/lib/api/matrx-transport");
   return {
     ...actual,
     cancelAgentRunRequest: (...args: unknown[]) => {
@@ -43,7 +43,7 @@ jest.mock("../settle-after-stop.thunk", () => ({
 import { processStream } from "../process-stream";
 import { cancelExecution } from "../smart-execute.thunk";
 import { registerAbortController } from "../abort-registry";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 jest.useFakeTimers();
 

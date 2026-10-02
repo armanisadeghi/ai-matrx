@@ -11,11 +11,11 @@
  * `./register-all.ts` for its registration side-effect.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   ClientCapabilityName,
   ClientCapabilityPayloads,
-} from "@/features/agents/types/tool-injection.types";
+} from "../../../types/tool-injection.types";
 
 export interface ClientCapabilityProvider<
   TName extends ClientCapabilityName = ClientCapabilityName,

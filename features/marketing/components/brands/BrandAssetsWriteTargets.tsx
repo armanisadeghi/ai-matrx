@@ -20,7 +20,7 @@
  * core is shared, not copied.
  */
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { MARKETING_BRAND_ASSETS_SURFACE_NAME } from "@/features/marketing/lib/scopes/brand-assets-scope";
 import {
   validateMediaOrderWrite,

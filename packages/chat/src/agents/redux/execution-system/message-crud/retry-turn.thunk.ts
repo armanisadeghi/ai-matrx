@@ -35,11 +35,11 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   parseMessageContent,
   type MessagePart,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 import { removeMessage } from "../messages/messages.slice";
 import {
   setUserInputText,

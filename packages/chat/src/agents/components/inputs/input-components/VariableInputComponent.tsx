@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { variableValueToInputText } from "@/features/agents/utils/variable-utils";
-import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
+import { variableValueToInputText } from "../../../utils/variable-utils";
+import { readStructuredList } from "../../../utils/variable-customcomponent";
 import { ToggleInput } from "./ToggleInput";
 import { RadioGroupInput } from "./RadioGroupInput";
 import { CheckboxGroupInput } from "./CheckboxGroupInput";
@@ -25,19 +25,19 @@ import { CurrencyVariableInput } from "./CurrencyVariableInput";
 import {
   isMediaVariableType,
   type VariableCustomComponent,
-} from "@/features/agents/types/agent-definition.types";
+} from "../../../types/agent-definition.types";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { Label } from "@/components/ui/label";
+import { Label } from "@host/components/ui/label";
 import { useContainerWidth } from "./useContainerColumns";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import { Dices } from "lucide-react";
 import { IMAGE_ROLE_META } from "@ai-matrx/agents";
-import { choiceControlFor } from "@/features/agents/utils/choice-rule";
+import { choiceControlFor } from "../../../utils/choice-rule";
 import {
   isAutoAssignValue,
   RANDOM_AUTO_ASSIGN_VALUE,
   supportsRandomAssignment,
-} from "@/features/agents/utils/auto-assignment";
+} from "../../../utils/auto-assignment";
 
 interface VariableInputComponentProps {
   /**

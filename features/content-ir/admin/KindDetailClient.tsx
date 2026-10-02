@@ -33,7 +33,7 @@ import KindSchemaTab from "@/features/content-ir/admin/KindSchemaTab";
 import KindAssetsTab from "@/features/content-ir/admin/KindAssetsTab";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
 import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { buildAdminKindDetailScope } from "@/features/content-ir/admin/kind-registry-scope";
 import { ReadFailure } from "@/components/read-state/ReadFailure";

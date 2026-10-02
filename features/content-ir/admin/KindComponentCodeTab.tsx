@@ -30,7 +30,7 @@ import type {
   KindDetailData,
   KindExampleListItem,
 } from "@/features/content-ir/admin/kind-detail-types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { buildAdminKindDetailScope } from "@/features/content-ir/admin/kind-registry-scope";
 import SandboxAuthoringRules from "@/features/content-ir/studio/components/SandboxAuthoringRules";

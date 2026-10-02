@@ -3,14 +3,14 @@ import type {
   ContextPolicy,
   CustomToolDefinition,
   LLMParams,
-} from "@/features/agents/types/agent-api-types";
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
-import type { OutputSchema } from "@/features/agents/types/json-schema";
-import type { DbRpcRow } from "@/types/supabase-rpc";
-import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
-import type { SkillConfig } from "@/features/skills/types";
-import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
-import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-directives.types";
+} from "./agent-api-types";
+import type { AgentDefinitionMessage } from "./agent-message-types";
+import type { OutputSchema } from "./json-schema";
+import type { DbRpcRow } from "@host/types/supabase-rpc";
+import type { FieldFlags } from "../redux/shared/field-flags";
+import type { SkillConfig } from "@host/features/skills/types";
+import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import type { MatrxDirectivesConfig } from "./matrx-directives.types";
 
 export type AgentType = "user" | "builtin";
 

@@ -14,11 +14,11 @@
 
 import liveEvent from "./fixtures/gemini-live-media-block-event.json";
 import persistedPart from "./fixtures/gemini-persisted-audio-part.json";
-import { fromMediaBlock, type WireMediaBlock } from "@/features/files/blocks/adapters/from-media-block";
-import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
-import { withPerformedScript } from "@/features/agents/speech-script/types";
-import { readPerformedScript } from "@/components/mardown-display/blocks/audio/SpeechScriptPanel";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import { fromMediaBlock, type WireMediaBlock } from "@host/features/files/blocks/adapters/from-media-block";
+import { normalizeContentBlocks } from "../../redux/execution-system/utils/normalize-content-blocks";
+import { withPerformedScript } from "../types";
+import { readPerformedScript } from "@host/components/mardown-display/blocks/audio/SpeechScriptPanel";
+import type { MessagePart } from "@host/types/python-generated/stream-events";
 
 /** Exactly the data process-stream.ts dispatches for a live audio media_block. */
 function liveBlockData(): Record<string, unknown> {

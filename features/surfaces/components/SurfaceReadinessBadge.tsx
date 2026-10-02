@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   readinessBucketOf,
   type SurfaceReadinessBucket,
-} from "@/features/surfaces/services/surfaces.service";
-import type { UiSurfaceRow } from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
+import type { UiSurfaceRow } from "@ai-matrx/chat/surfaces/services/surfaces.service";
 
 /**
  * Presentation config for each readiness bucket. Semantic-token accents via

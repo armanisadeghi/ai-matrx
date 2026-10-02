@@ -15,7 +15,7 @@ import { useState } from "react";
 import { ChevronDown, GripVertical, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { accentClasses } from "./accents";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";

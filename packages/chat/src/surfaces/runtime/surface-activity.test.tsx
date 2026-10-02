@@ -4,7 +4,7 @@
  * same-name registrations are a coin flip (FOUND_DEFECTS D194), and an agent's
  * write would land in whichever copy mounted last.
  */
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: (name: string) =>
     name === "matrx-user/test-note"
       ? {
@@ -35,7 +35,7 @@ jest.mock("@/features/surfaces/manifests/registry", () => ({
       : undefined,
   getAllManifests: () => [],
 }));
-jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
+jest.mock("@host/lib/toast", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
 
 import { act, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";

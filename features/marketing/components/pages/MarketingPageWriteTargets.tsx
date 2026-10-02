@@ -27,8 +27,8 @@
 import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { publishSurfaceUiState } from "@ai-matrx/chat/surfaces/runtime/surface-ui-state";
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
 import {
   updatePageDesiredValues,

@@ -26,7 +26,7 @@ jest.mock("uuid", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/client-capabilities/desktop-presence",
+  "../../client-capabilities/desktop-presence",
   () => ({
     getLiveDesktopInstance: jest.fn().mockResolvedValue(null),
   }),
@@ -38,9 +38,9 @@ const AGENT_ID = "mandate-agent-1";
 const __requiredVariables: string[] = [];
 let __autoRun: boolean | null = null;
 let __presentation:
-  import("@/features/bindings/treatment-shape").BindingPresentation | null =
+  import("@host/features/bindings/treatment-shape").BindingPresentation | null =
   null;
-jest.mock("@/features/mandates/service", () => ({
+jest.mock("../../../../../mandates/service", () => ({
   resolveMandate: jest.fn(async (mandateKey: string) => ({
     mandateKey,
     agentId: AGENT_ID,
@@ -63,8 +63,8 @@ jest.mock("@/features/mandates/service", () => ({
     supplied: unknown,
   ) => {
     const contract = jest.requireActual<
-      typeof import("@/features/mandates/contract")
-    >("@/features/mandates/contract");
+      typeof import("@host/features/mandates/contract")
+    >("@host/features/mandates/contract");
     const missing = contract.missingRequiredVariables(
       mandate.contract as never,
       supplied as never,
@@ -77,18 +77,18 @@ jest.mock("@/features/mandates/service", () => ({
   },
 }));
 
-import { defaultPresentation } from "@/features/bindings/treatment-shape";
+import { defaultPresentation } from "@host/features/bindings/treatment-shape";
 // HELD AND SET: with no organization selected, the launch asks through the one
 // gate (ensureOrgId) — mocked here so the answer is a fact of the test.
 const mockEnsureOrgId = jest.fn(async () => "org-picked-by-the-person");
-jest.mock("@/lib/organizations/ensureOrgId", () => ({
+jest.mock("@host/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: () => mockEnsureOrgId(),
 }));
 
 import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import { launchAgentExecution } from "../launch-agent-execution.thunk";
 import { assembleRequest } from "../execute-instance.thunk";
-import { resolveMandate } from "@/features/mandates/service";
+import { resolveMandate } from "../../../../../mandates/service";
 import conversationsReducer from "../../conversations/conversations.slice";
 import conversationFocusReducer from "../../conversation-focus/conversation-focus.slice";
 import instanceModelOverridesReducer from "../../instance-model-overrides/instance-model-overrides.slice";
@@ -99,14 +99,14 @@ import instanceUserInputReducer from "../../instance-user-input/instance-user-in
 import instanceClientToolsReducer from "../../instance-client-tools/instance-client-tools.slice";
 import instanceUIStateReducer from "../../instance-ui-state/instance-ui-state.slice";
 import messagesReducer from "../../messages/messages.slice";
-import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
-import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
-import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice";
-import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
-import appContextReducer from "@/lib/redux/slices/appContextSlice";
-import overlayReducer from "@/lib/redux/slices/overlaySlice";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import creatorDebugReducer from "@host/lib/redux/preferences/creatorDebugSlice";
+import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
+import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
+import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
+import appContextReducer from "@host/lib/redux/slices/appContextSlice";
+import overlayReducer from "@host/lib/redux/slices/overlaySlice";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { storedMandateKey } from "@host/features/mandates/mandate-key";
 
 // Fully-loaded agent record: Step 0.5's readiness check passes so the thunk
 // never reaches the network. `_loadedFields` mirrors the FieldFlags shape.

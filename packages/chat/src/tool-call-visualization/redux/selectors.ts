@@ -11,14 +11,14 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { RootState } from "@host/lib/redux/store";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import {
   selectAllToolLifecycles as selectAllToolLifecyclesBase,
   selectToolCallIdsInOrder as selectToolCallIdsInOrderBase,
   selectToolLifecycle as selectToolLifecycleBase,
   selectToolLifecycleMap as selectToolLifecycleMapBase,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "../../agents/redux/execution-system/active-requests/active-requests.selectors";
 
 // Re-export the canonical per-call and per-request selectors under the
 // tool-call-visualization namespace.

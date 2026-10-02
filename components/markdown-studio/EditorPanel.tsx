@@ -14,7 +14,7 @@ import { toast } from "@/lib/toast";
 import { BlockStatsCard } from "./BlockStatsCard";
 import { runV2Parser } from "@/components/admin/markdown-tester/utils/run-v2-parser";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { SourceEditor } from "@/components/rich-editor/source/SourceEditor";
 import type { EditorViewHandle } from "@/components/rich-editor/visual/VisualEditor";
 import type { RichShellActions } from "@/components/rich-editor/visual/shortcut-handlers";

@@ -62,7 +62,7 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { formatCount, formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNow } from "@/hooks/useNow";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_REPORTING_SURFACE_NAME,
   createAdminReportingScope,

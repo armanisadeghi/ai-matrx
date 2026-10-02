@@ -5,7 +5,7 @@ import {
     updateCxConversation,
     deleteCxConversation,
     loadFullConversation,
-} from '@/features/public-chat/services/cx-chat';
+} from '@ai-matrx/chat/public-chat/services/cx-chat';
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 

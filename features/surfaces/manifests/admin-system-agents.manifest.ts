@@ -45,14 +45,14 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   AGENT_CATEGORY_MAX_CHARS,
   AGENT_DESCRIPTION_MAX_CHARS,
   AGENT_NAME_MAX_CHARS,
   AGENT_TAGS_MAX_COUNT,
   AGENT_TAG_MAX_CHARS,
-} from "@/features/agents/constants/agent-identity-metadata";
+} from "@ai-matrx/chat/agents/constants/agent-identity-metadata";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const ADMIN_SYSTEM_AGENTS_SURFACE_NAME = "matrx-admin/system-agents";

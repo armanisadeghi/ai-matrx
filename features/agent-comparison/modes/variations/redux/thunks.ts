@@ -20,17 +20,17 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   createInstance,
   destroyInstance,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { copyInstanceRequestDraft } from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { copyInstanceRequestDraft } from "@ai-matrx/chat/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   fetchFullAgent,
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
   createAgent,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   removeAgent,
   setAgentField,
@@ -41,8 +41,8 @@ import {
   setAgentTools,
   setAgentCustomTools,
   setAgentMcpServers,
-} from "@/features/agents/redux/agent-definition/slice";
-import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,
@@ -56,7 +56,7 @@ import {
   type BattleSubmitResult,
 } from "@/features/agent-comparison/shared/battlePersistence";
 import { forkAgentForVariant } from "@/features/agent-comparison/shared/forkAgentForVariant";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   addVariationColumn,
   removeVariationColumn,

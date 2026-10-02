@@ -45,7 +45,7 @@ import type {
   SurfaceManifest,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [

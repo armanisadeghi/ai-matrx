@@ -7,7 +7,7 @@ import type {
   CxMessageInsert,
   CxContentBlock,
   CxMessageRole,
-} from "@/features/cx-chat/types/cx-tables";
+} from "../types/cx-tables";
 
 /** Minimal chat message shape used by saveMessages */
 interface ChatMessage {

@@ -7,7 +7,7 @@ import { PanelControlProvider } from "@/features/resizable-panels/PanelControlPr
 import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { SurfacesAgentHeaderControls } from "./SurfacesAgentHeaderControls";
 import { SurfacesListColumn } from "./columns/SurfacesListColumn";
 import { AgentColumn } from "./columns/AgentColumn";

@@ -1,19 +1,19 @@
 import type {
   ContextPolicy,
   LLMParams,
-} from "@/features/agents/types/agent-api-types";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { ShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { JsonExtractionConfig } from "@/features/agents/types/instance.types";
-import type { Database } from "@/types/database.types";
-import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
+} from "../../types/agent-api-types";
+import type { VariableDefinition } from "../../types/agent-definition.types";
+import type { ResultDisplayMode } from "../../utils/run-ui-utils";
+import type { ShortcutContext } from "../../utils/shortcut-context-utils";
+import type { VariablesPanelStyle } from "../../components/inputs/variable-input-variations/variable-input-options";
+import type { JsonExtractionConfig } from "../../types/instance.types";
+import type { Database } from "@host/types/database.types";
+import type { FieldFlags } from "../shared/field-flags";
 import type {
   ValueMappingMap,
   WritePolicyMap,
-} from "@/features/surfaces/types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+} from "../../../surfaces/types";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export type { ResultDisplayMode, ShortcutContext };
 

@@ -23,7 +23,7 @@
 // added later should not have to remember any of this.
 
 import { WorkingNotice } from "@/lib/progress/WorkingNotice";
-import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
+import { ChatRoomSkeleton } from "@ai-matrx/chat/agents/components/chat/ChatRoomSkeleton";
 
 export function InterviewOpening({
   doing,

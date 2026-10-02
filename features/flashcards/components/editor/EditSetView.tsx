@@ -58,7 +58,7 @@ import { CardTrustFooter } from "@/features/education/trust/components/CardTrust
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationFlashcardEditorScope,
   type FlashcardEditorCard,

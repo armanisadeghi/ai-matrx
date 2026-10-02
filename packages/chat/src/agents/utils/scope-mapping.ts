@@ -15,23 +15,23 @@
  *                       and the surface's always-on values (W-31).
  */
 
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "../types/agent-definition.types";
 import type {
   ContextPolicy,
   ContextObjectType,
-} from "@/features/agents/types/agent-api-types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+} from "../types/agent-api-types";
+import type { InstanceContextEntry } from "../types/instance.types";
+import type { ApplicationScope } from "../types/scope.types";
+import type { ValueMappingMap } from "../../surfaces/types";
 import {
   resolveValueMappings,
   type PendingPrompt,
-} from "@/features/surfaces/utils/value-mapping-resolver";
-import { assertNativeContextValue } from "@/features/surfaces/utils/context-value-contract";
+} from "../../surfaces/utils/value-mapping-resolver";
+import { assertNativeContextValue } from "../../surfaces/utils/context-value-contract";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-export type { ApplicationScope } from "@/features/agents/types/scope.types";
-export type { PendingPrompt } from "@/features/surfaces/utils/value-mapping-resolver";
+export type { ApplicationScope } from "../types/scope.types";
+export type { PendingPrompt } from "../../surfaces/utils/value-mapping-resolver";
 
 export interface ScopeMappingResult {
   variableValues: Record<string, unknown>;

@@ -9,11 +9,11 @@ import reducer, {
   consumePerTurnContext,
   setContextEntries,
 } from "../instance-context.slice";
-import { QUOTED_PASSAGES_CONTEXT_KEY } from "@/features/rich-document/actions/handlers/ask";
+import { QUOTED_PASSAGES_CONTEXT_KEY } from "@host/features/rich-document/actions/handlers/ask";
 import * as fs from "fs";
 import * as path from "path";
 
-jest.mock("@/features/rich-document/actions/provider", () => ({ registerAction: () => {} }));
+jest.mock("@host/features/rich-document/actions/provider", () => ({ registerAction: () => {} }));
 
 describe("per-turn context", () => {
   it("the quote key is a per-turn key", () => {

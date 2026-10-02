@@ -21,7 +21,7 @@ import {
   type PracticePromptScopeEntry,
   type PracticeResultScopeEntry,
 } from "@/features/surfaces/manifests/education-practice-oral.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { SpokenGrade } from "@/features/flashcards/fast-fire/agents/grading-core";
 import type { ReviewSessionResult } from "@/features/education/tutor/lanes/reviewSession";
 import { readPracticeSetupSnapshot } from "./setupSnapshot";

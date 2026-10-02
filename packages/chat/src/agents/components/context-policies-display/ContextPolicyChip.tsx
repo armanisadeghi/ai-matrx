@@ -11,8 +11,8 @@ import { useMemo, useState } from "react";
 import type {
   ContextObjectType,
   ContextPolicy,
-} from "@/features/agents/types/agent-api-types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+} from "../../types/agent-api-types";
+import type { InstanceContextEntry } from "../../types/instance.types";
 import { CONTEXT_TYPE_ICON, FALLBACK_CONTEXT_ICON } from "./contextPolicyIcons";
 import { CONTEXT_TYPE_TILE_LABEL } from "./contextPolicyTile.theme";
 import { contextPolicyEntryPreview } from "./contextPolicyPreview";

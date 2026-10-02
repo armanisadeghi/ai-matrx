@@ -17,9 +17,9 @@
 import { useEffect, useMemo } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
-import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { buildBindingTargets } from "@ai-matrx/chat/surfaces/utils/buildBindingTargets";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import { useServedRunForm } from "@/features/workflow-runtime/served-form/useServedRunForm";
 

@@ -6,16 +6,16 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   CHAT_DRAFT_WRITE_MODES,
   CHAT_INPUT_DRAFT_MAX,
   isChatDraftWriteMode,
 } from "@/features/surfaces/manifests/chat.manifest";
-import { createAgentRunVariableValuesHandler } from "@/features/agents/components/run/agent-run-variable-write";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { createAgentRunVariableValuesHandler } from "@ai-matrx/chat/agents/components/run/agent-run-variable-write";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { isJsonObject } from "@/types/json";
 import type { RootState } from "@/lib/redux/store";
 import {

@@ -7,8 +7,8 @@ import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectLiveAgents } from "@/features/agents/redux/agent-definition/selectors";
-import { selectMcpCatalog } from "@/features/agents/redux/mcp/mcp.slice";
+import { selectLiveAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { selectMcpCatalog } from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
 import { selectSkillsCount } from "@/features/skills/redux/skillsSelectors";
 import {
   selectRenderDefinitionsCount,

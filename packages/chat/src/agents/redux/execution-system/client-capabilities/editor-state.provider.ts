@@ -9,7 +9,7 @@
  * request envelope entirely (no false declaration for non-editor surfaces).
  */
 
-import { selectEditorState } from "../../../../code-editor/redux/editor-state.slice";
+import { selectEditorState } from "@host/features/code-editor/redux/editor-state.slice";
 import { registerClientCapability } from "./registry";
 
 registerClientCapability({

@@ -34,11 +34,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { RecordChatContext } from "@ai-matrx/records-ui";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
-import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";

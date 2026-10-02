@@ -11,32 +11,32 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { FileText, Layers } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
-import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
+import { selectSubmissionPhase } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   removeResource,
   updateResourceOptions,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
-import { selectShowAttachments } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import type { ManagedResource } from "@/features/agents/types/instance.types";
-import type { ResourceEditableState } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
-import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
-import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
-import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
-import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
-import { normalizeResource } from "@/features/agents/components/context-items/normalize";
-import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
-import { MediaAttachmentThumbnail } from "@/features/files/components/inline/MediaAttachmentThumbnail";
-import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
-import { revokeTrackedObjectUrl } from "@/lib/media/object-url-registry";
+} from "../../../redux/execution-system/instance-resources/instance-resources.slice";
+import { isEditableCapableBlockType } from "../../../redux/execution-system/instance-resources/editable-resource-types";
+import { selectShowAttachments } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import type { ManagedResource } from "../../../types/instance.types";
+import type { ResourceEditableState } from "../../messages-display/user/ResourceAttachmentTile";
+import { BlockHoverPreview } from "@host/features/agents/components/previews/BlockHoverPreview";
+import { ResourceAttachmentTile } from "../../messages-display/user/ResourceAttachmentTile";
+import { ContextItemDrawer } from "../../context-items/ContextItemDrawer";
+import { useContextItemDrawer } from "../../context-items/useContextItemDrawer";
+import { normalizeResource } from "../../context-items/normalize";
+import type { ContextDrawerItem } from "../../context-items/types";
+import { MediaAttachmentThumbnail } from "@host/features/files/components/inline/MediaAttachmentThumbnail";
+import { parseReferenceFence } from "@host/features/matrx-envelope/referenceFence";
+import { revokeTrackedObjectUrl } from "@host/lib/media/object-url-registry";
 
-import { resolveContextItemDef } from "@/features/agents/components/context-items/registry";
+import { resolveContextItemDef } from "../../context-items/registry";
 import {
   AttachedDocumentChip,
   type AttachedDocumentSettings,
-} from "@/features/agents/components/inputs/resources/AttachedDocumentChip";
+} from "./AttachedDocumentChip";
 
 function getBlockTypeDisplay(blockType: ManagedResource["blockType"]) {
   const def = resolveContextItemDef(blockType);

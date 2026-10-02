@@ -52,7 +52,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 const ROOT = path.resolve(__dirname, "..");
 
 /** Scanned roots — product code only. */
-const SCAN_DIRS = ["features", "components", "app", "lib", "hooks", "utils", "actions"];
+const SCAN_DIRS = ["features", "packages/chat/src", "components", "app", "lib", "hooks", "utils", "actions"];
 
 /** Demo routes are sample code, not the platform (same carve-out as check:hardcoded-prompts). */
 const EXCLUDE = [/^app\/\(dev\)\//];
@@ -106,7 +106,7 @@ const BLESSED: Record<string, string> = {
     "not an instance — a SCHEMA field census: inferLoadingSlug skips the declared `__kind` " +
     "property when counting a kind SCHEMA's fields to pick a loading skeleton; the marker " +
     "is identity, never a shape signal, and only a slug leaves.",
-  "features/agents/redux/execution-system/utils/build-tool-injection.ts":
+  "packages/chat/src/agents/redux/execution-system/utils/build-tool-injection.ts":
     "not an instance — door 1 (THE AGENT PROMPT), schema side: the value contract is " +
     "described as PROSE in a tool description the model reads; the write seam accepts the " +
     "marker either way. No payload is reduced.",

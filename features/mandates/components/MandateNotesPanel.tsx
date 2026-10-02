@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   MANDATE_NOTE_KINDS,
   MANDATE_NOTE_KIND_LABELS,
@@ -31,7 +31,7 @@ import {
   type MandateNote,
   type MandateNoteKind,
 } from "../notes";
-import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
+import { useAgentNames } from "@ai-matrx/chat/surfaces/hooks/useAgentNames";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   PropertyRow,

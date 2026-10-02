@@ -10,17 +10,17 @@
  * selectors, hooks, or utility pipelines without pulling in store context.
  */
 
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import type { CxToolCallRecord } from "../../agents/redux/execution-system/observability/observability.slice";
 import type {
   ToolCallParkedOn,
   ToolLifecycleEntry,
-} from "@/features/agents/types/request.types";
-import type { ToolEventPayload } from "@/types/python-generated/stream-events";
-import { humanizeKind } from "@/features/content-ir/kinds/kind-markdown-utils";
+} from "../../agents/types/request.types";
+import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
+import { humanizeKind } from "@host/features/content-ir/kinds/kind-markdown-utils";
 import {
   firstKindSlug,
   jsonKindSignal,
-} from "@/features/content-ir/surfaces/json-kind-signal";
+} from "@host/features/content-ir/surfaces/json-kind-signal";
 import { displayNameFromToolEvents } from "./toolDisplayName";
 
 function parseOutput(raw: string | null): unknown {

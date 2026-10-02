@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 import {
   RESULT_DISPLAY_META,
   type ResultDisplayMode,
-} from "@/features/agents/utils/run-ui-utils";
+} from "@ai-matrx/chat/agents/utils/run-ui-utils";
 import type {
   TreatmentFieldDef,
   TreatmentValue,

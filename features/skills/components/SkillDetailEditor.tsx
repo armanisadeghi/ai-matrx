@@ -25,7 +25,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { ConnectionsSkillsDraftSnapshot } from "@/features/surfaces/manifests/connections-skills.manifest";
 
 import { useSkill } from "../hooks/useSkill";

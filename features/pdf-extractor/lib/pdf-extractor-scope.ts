@@ -15,7 +15,7 @@ import {
   createPdfExtractorScope,
   type PdfExtractorScopeKind,
 } from "@/features/surfaces/manifests/pdf-extractor.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 export interface PdfExtractorScopeInput {
   /** Always-available primitives. */

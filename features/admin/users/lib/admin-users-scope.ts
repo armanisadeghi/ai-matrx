@@ -44,7 +44,7 @@ import {
   type AdminUsersRosterHealth,
   type AdminUsersRosterSampleEntry,
 } from "@/features/surfaces/manifests/admin-users.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { AdminUserRow } from "../types";
 
 /** Admin level key used for accounts that have none. */

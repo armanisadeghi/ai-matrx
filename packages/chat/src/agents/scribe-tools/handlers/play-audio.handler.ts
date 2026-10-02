@@ -13,8 +13,8 @@
  */
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { requestScribeAudioSeek } from "@/features/transcript-studio/state/scribeAudioBus";
-import type { RootState } from "@/lib/redux/store";
+import { requestScribeAudioSeek } from "@host/features/transcript-studio/state/scribeAudioBus";
+import type { RootState } from "@host/lib/redux/store";
 import type { ScribeToolHandler, ScribeToolResultBase } from "./types";
 import type { ScribePlayAudioArgs } from "../tools/schemas";
 

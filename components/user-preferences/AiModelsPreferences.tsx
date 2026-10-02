@@ -44,7 +44,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import {
   useSurfaceScopeContribution,
   useSurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 type ShowFilter = "all" | "shown" | "hidden";
 type ModelType = "text" | "speech_to_text" | "voice" | "image";

@@ -37,7 +37,7 @@
 // AND materializes all three, so the stand-in is DELETED, not disabled: no
 // flag, no dead branch, no second path.
 
-import type { ValueMapping } from "@/features/surfaces/types";
+import type { ValueMapping } from "@ai-matrx/chat/surfaces/types";
 import {
   type ConsumptionEntry,
   type ConsumptionMap,

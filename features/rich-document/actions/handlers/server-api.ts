@@ -57,7 +57,7 @@ registerAction({
     const { conversationId, messageId } = ctx.source;
     try {
       const { forkConversationServer } = await import(
-        "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk"
       );
       const result = await ctx
         .dispatch(
@@ -69,7 +69,7 @@ registerAction({
         .unwrap();
       if (ctx.surfaceKey && result?.conversationId) {
         const { promptForkOutcome } = await import(
-          "@/features/agents/components/messages-display/message-options/promptForkOutcome"
+          "@ai-matrx/chat/agents/components/messages-display/message-options/promptForkOutcome"
         );
         await promptForkOutcome({
           dispatch: ctx.dispatch,
@@ -99,7 +99,7 @@ registerAction({
     const { conversationId, messageId } = ctx.source;
     try {
       const { forkConversationServer } = await import(
-        "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk"
       );
       const result = await ctx
         .dispatch(
@@ -111,7 +111,7 @@ registerAction({
         .unwrap();
       if (ctx.surfaceKey && result?.conversationId) {
         const { promptForkOutcome } = await import(
-          "@/features/agents/components/messages-display/message-options/promptForkOutcome"
+          "@ai-matrx/chat/agents/components/messages-display/message-options/promptForkOutcome"
         );
         await promptForkOutcome({
           dispatch: ctx.dispatch,
@@ -141,7 +141,7 @@ registerAction({
     const { conversationId, messageId } = ctx.source;
     try {
       const { hideMessages } = await import(
-        "@/features/agents/redux/execution-system/message-crud/server/hide-messages.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/hide-messages.thunk"
       );
       await ctx
         .dispatch(
@@ -185,7 +185,7 @@ registerAction({
       });
       if (!ok) return;
       const { batchDeleteMessages } = await import(
-        "@/features/agents/redux/execution-system/message-crud/server/batch-delete-messages.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/batch-delete-messages.thunk"
       );
       await ctx
         .dispatch(
@@ -229,7 +229,7 @@ registerAction({
       });
       if (!ok) return;
       const { batchDeleteMessages } = await import(
-        "@/features/agents/redux/execution-system/message-crud/server/batch-delete-messages.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/batch-delete-messages.thunk"
       );
       await ctx
         .dispatch(
@@ -262,7 +262,7 @@ registerAction({
     const { conversationId, messageId } = ctx.source;
     try {
       const { batchDeleteMessages } = await import(
-        "@/features/agents/redux/execution-system/message-crud/server/batch-delete-messages.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/batch-delete-messages.thunk"
       );
       const result = await ctx
         .dispatch(
@@ -321,7 +321,7 @@ registerAction({
         }
         try {
           const { replaceMessages } = await import(
-            "@/features/agents/redux/execution-system/message-crud/server/replace-messages.thunk"
+            "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/replace-messages.thunk"
           );
           await ctx
             .dispatch(
@@ -384,7 +384,7 @@ registerAction({
     if (!anchor) return;
     try {
       const { restoreCompaction } = await import(
-        "@/features/agents/redux/execution-system/message-crud/server/restore-compaction.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/restore-compaction.thunk"
       );
       await ctx
         .dispatch(

@@ -39,7 +39,7 @@ import "server-only";
 
 import { resolveMandateServer } from "@/features/mandates/service.server";
 import type { AnyMandateKey } from "./mandate-key";
-import type { ResolvedMandate } from "./service";
+import type { ResolvedMandate } from "@ai-matrx/chat/mandates/service";
 
 /**
  * How long a first-paint seed may take before the page paints without it.

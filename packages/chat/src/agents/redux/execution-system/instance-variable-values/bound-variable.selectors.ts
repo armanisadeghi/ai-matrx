@@ -15,15 +15,15 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { selectAllContextItems } from "@/features/scopes/redux/contextItemCatalog";
-import type { ContextItem } from "@/features/scopes/redux/contextItemCatalog";
+import type { RootState } from "@host/lib/redux/store";
+import type { VariableDefinition } from "../../../types/agent-definition.types";
+import { selectAllContextItems } from "@host/features/scopes/redux/contextItemCatalog";
+import type { ContextItem } from "@host/features/scopes/redux/contextItemCatalog";
 import { orderVariablesForForm } from "@ai-matrx/agents";
 import {
   contextItemBindingOf,
   isCustomDataBinding,
-} from "@/features/agents/utils/variable-binding";
+} from "../../../utils/variable-binding";
 
 const EMPTY_DEFS: VariableDefinition[] = [];
 

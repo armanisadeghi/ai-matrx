@@ -23,7 +23,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   CRM_CHASEBOX_SURFACE_NAME,
   createCrmChaseboxScope,

@@ -40,7 +40,7 @@ import dagre from "dagre";
 import { Network, Webhook, GitFork, CircleDot, LayoutGrid, Loader2, PanelRight, ChevronDown, ChevronUp, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   addAgentToOrchestra,
   removeAgentFromOrchestra,

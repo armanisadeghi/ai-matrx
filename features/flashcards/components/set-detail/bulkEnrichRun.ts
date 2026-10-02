@@ -43,7 +43,7 @@ import { useCallback, useRef, useState } from "react";
 
 import type { Depth } from "@/features/education/assessment/data/types";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import { enrichAndSaveCard } from "../../data/enrichCardLane";
 import { cardHasDetailLayers } from "../../data/cardDetailLayers";
 import type { EnrichedDetail } from "../../data/enhanceCard";

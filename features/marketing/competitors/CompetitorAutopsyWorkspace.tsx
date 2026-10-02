@@ -47,9 +47,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingCompetitorsScope } from "@/features/surfaces/manifests/marketing-competitors.manifest";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";

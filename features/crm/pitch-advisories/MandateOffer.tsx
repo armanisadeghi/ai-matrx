@@ -11,7 +11,7 @@ import { useState } from "react";
 import { isMandateKey, type MandateKey } from "@ai-matrx/agents/mandates";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { resolveMandate } from "@/features/mandates/service";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import type { AdvisoryOffer } from "./service";
 

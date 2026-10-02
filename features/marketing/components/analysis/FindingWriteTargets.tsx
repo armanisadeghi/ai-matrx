@@ -24,7 +24,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { MarketingFinding } from "@/features/marketing/data/analysis-types";
 import {
   ACKNOWLEDGEABLE_FROM_STATUSES,

@@ -10,9 +10,9 @@ import { RotateCcw, Plus, X } from "lucide-react";
 import {
   setStructuredInstruction,
   resetStructuredInstruction,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectStructuredInstruction } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import type { SystemInstruction } from "@/features/agents/types/agent-api-types";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectStructuredInstruction } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import type { SystemInstruction } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface SystemInstructionEditorProps {

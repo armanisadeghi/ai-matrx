@@ -1,5 +1,5 @@
 import { mapScopeToInstance } from "../scope-mapping";
-import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
+import { resolveValueMappings } from "../../../surfaces/utils/value-mapping-resolver";
 
 describe("surface context value contract", () => {
   it.each([

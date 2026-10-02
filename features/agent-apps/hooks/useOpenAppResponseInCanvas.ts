@@ -13,7 +13,7 @@ import { useAppStore } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
-import { selectLatestAssistantMessageId } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectLatestAssistantMessageId } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { responseCanvasTarget } from "../utils/response-canvas-target";
 
 export function useOpenAppResponseInCanvas() {

@@ -6,7 +6,7 @@ import { AgentSaveStatus } from "./AgentSaveStatus";
 import { AgentOptionsMenu } from "./AgentOptionsMenu";
 import { AgentReferenceCopyButton } from "./AgentReferenceCopyButton";
 import { AgentHeaderMobile } from "./AgentHeaderMobile";
-import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
+import { ReviewAnswersLink } from "@host/features/agents/decision-review/components/ReviewAnswersLink";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 interface AgentHeaderProps {

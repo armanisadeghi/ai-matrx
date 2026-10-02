@@ -4,11 +4,11 @@
  * RED on the old tree: `onUnusable` did not exist and the sentence was dropped.
  */
 import { enrichCard, expandCard } from "../enhanceCard";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { runHeadlessAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { CardWithDetails } from "../types";
 
-jest.mock("@/features/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
-  ...jest.requireActual("@/features/agents/redux/execution-system/thunks/run-headless-agent-json"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json"),
   runHeadlessAgentJson: jest.fn(),
 }));
 

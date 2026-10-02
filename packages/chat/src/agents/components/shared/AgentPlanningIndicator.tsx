@@ -8,7 +8,7 @@
  * and begin processing.
  */
 
-import { ShimmerText } from "@/components/loaders/ShimmerText";
+import { ShimmerText } from "@host/components/loaders/ShimmerText";
 
 interface AgentPlanningIndicatorProps {
   compact?: boolean;

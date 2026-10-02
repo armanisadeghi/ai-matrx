@@ -19,29 +19,29 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
 // The canonical "this read failed — try again" primitive (docs/reuse-first.md).
 // A transcript that could not be read is exactly its `hasData={false}` case.
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@host/components/official/stale-data/StaleDataNotice";
 import {
   selectConversationMessages,
   selectMessagesHydrationFailure,
   selectVisibleMessageGroupLimit,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "../../redux/execution-system/messages/messages.selectors";
 import {
   selectStreamPhase,
   selectLatestRequestId,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../../redux/execution-system/selectors/aggregate.selectors";
 import { AgentUserMessage } from "./user/AgentUserMessage";
 import { CollabNoteMessage } from "./user/CollabNoteMessage";
 // Universal v3 context menu — the SAME menu everywhere. ONE read-only instance
 // serves the whole transcript: `resolveContextOnOpen` resolves the per-message /
 // per-block context from cheap DOM tags (`data-message-id`, `data-mtx-ctx`) on
 // right-click, so blocks stay free (just tags) instead of mounting a menu each.
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { resolveMarkdownContext } from "@/features/context-menu-v3/utils/resolveMarkdownContext";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { resolveMarkdownContext } from "@host/features/context-menu-v3/utils/resolveMarkdownContext";
 import {
   applyAnchoredDisplayGroupWindow,
   type DisplayGroupWindowAnchor,
@@ -52,7 +52,7 @@ import {
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
-} from "@/features/war-room/utils/renderPathTrace";
+} from "@host/features/war-room/utils/renderPathTrace";
 // STATIC (2026-07-28, fragmentation campaign): these three render together on
 // every transcript, so their former per-component dynamic(ssr:false)
 // boundaries multiplied chunk groups across every consuming context for zero
@@ -64,14 +64,14 @@ import {
 import { AssistantTurnGroup } from "./assistant/AssistantTurnGroup";
 import { AgentAssistantMessage } from "./assistant/AgentAssistantMessage";
 import { AgentEmptyMessageDisplay } from "./assistant/AgentEmptyMessageDisplay";
-import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
-import { ExampleTurnsGroup } from "@/features/agents/message-flags/ExampleTurnsGroup";
+import { ErrorBoundaryWithCapture } from "@host/lib/error-boundary/ErrorBoundaryWithCapture";
+import { ExampleTurnsGroup } from "../../message-flags/ExampleTurnsGroup";
 import { Pin } from "lucide-react";
 import {
   hydratePinnedMessages,
   usePendingPinMessageIds,
   usePinnedMessageIds,
-} from "@/features/agents/message-pins/pinned-messages-store";
+} from "../../message-pins/pinned-messages-store";
 import { ConversationFindBar } from "./conversation-tools/ConversationFindBar";
 import {
   setConversationFindOpen,
@@ -81,7 +81,7 @@ import {
 import { FollowUpSuggestions } from "./conversation-tools/FollowUpSuggestions";
 import { groupMessageIds, groupsToRender } from "./conversation-tools/pinned-filter";
 import type { FindHistoryState } from "./conversation-tools/find-in-conversation";
-import { loadFullConversationHistory } from "@/features/agents/conversation-export/load-full-history";
+import { loadFullConversationHistory } from "../../conversation-export/load-full-history";
 import { useMessageListInteractions } from "./conversation-tools/useMessageListInteractions";
 
 interface AgentConversationDisplayProps {

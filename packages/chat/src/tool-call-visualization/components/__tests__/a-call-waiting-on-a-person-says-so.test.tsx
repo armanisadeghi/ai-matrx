@@ -13,34 +13,34 @@ import React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let suspended: string[] | undefined;
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   // The suspension selector is tagged; every other selector reads "default".
   useAppSelector: (sel: { suspendedFor?: string }) =>
     sel?.suspendedFor ? suspended : "default",
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/active-requests/active-requests.selectors",
+  "../../../agents/redux/execution-system/active-requests/active-requests.selectors",
   () => ({
     selectSuspendedCallIds: (requestId: string) =>
       Object.assign(() => undefined, { suspendedFor: requestId }),
   }),
 );
-jest.mock("@/lib/redux/slices/overlaySlice", () => ({ openOverlay: jest.fn() }));
-jest.mock("@/components/loaders/ShimmerText", () => ({
+jest.mock("@host/lib/redux/slices/overlaySlice", () => ({ openOverlay: jest.fn() }));
+jest.mock("@host/components/loaders/ShimmerText", () => ({
   ShimmerText: ({ text }: { text: string }) => <span data-testid="shimmer">{text}</span>,
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
+  "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({ selectToolDisplayPreference: jest.fn() }),
 );
 jest.mock(
-  "@/features/agents/redux/execution-system/observability/observability.selectors",
+  "../../../agents/redux/execution-system/observability/observability.selectors",
   () => ({ selectCorrectedToolCallIds: () => () => new Set<string>() }),
 );
 jest.mock("../../registry/registry", () => ({
@@ -73,7 +73,7 @@ jest.mock("../../result-fields/ToolErrorCard", () => ({ ToolErrorCard: () => <di
 jest.mock("../ToolUpdatesOverlay", () => ({ ToolUpdatesOverlay: () => null }));
 jest.mock("../../registry/toolArtifact", () => ({ getToolArtifact: () => null }));
 jest.mock("../ArtifactResultBar", () => ({ ArtifactResultBar: () => null }));
-jest.mock("@/features/action-requests/components/ParkedOnPersonCard", () => ({
+jest.mock("@host/features/action-requests/components/ParkedOnPersonCard", () => ({
   ParkedOnPersonCard: ({ actionRequestId }: { actionRequestId: string | null }) => (
     <div data-testid="parked-ask">{actionRequestId ?? "newest-open-ask"}</div>
   ),

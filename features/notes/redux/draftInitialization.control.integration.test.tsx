@@ -45,7 +45,7 @@ jest.mock("@/features/overlays/openers/noteKnowledgePanel", () => ({
 jest.mock("@/features/audio/service/useSpeech", () => ({
   useSpeech: () => ({ speak: jest.fn(), isSpeaking: false, stop: jest.fn() }),
 }));
-jest.mock("@/features/surfaces/hooks/useSurfaceBoundAgents", () => ({
+jest.mock("@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents", () => ({
   useSurfaceBoundAgents: () => ({ sections: [], loading: false, error: null, hasAgents: false, refresh: jest.fn() }),
 }));
 jest.mock("../components/RenameFolderDialog", () => ({ RenameFolderDialog: () => null }));
@@ -101,8 +101,8 @@ import { NotesWindow } from "@/features/window-panels/windows/notes/NotesWindow"
 import { NoteContentEditor } from "../components/NoteContentEditor";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
-import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice";
-import agentShortcutCategoryReducer from "@/features/agents/redux/agent-shortcut-categories/slice";
+import agentShortcutReducer from "@ai-matrx/chat/agents/redux/agent-shortcuts/slice";
+import agentShortcutCategoryReducer from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/slice";
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import diffCompareReducer from "@/lib/redux/slices/diffCompareSlice";
 import adminDebugReducer from "@/lib/redux/preferences/adminDebugSlice";

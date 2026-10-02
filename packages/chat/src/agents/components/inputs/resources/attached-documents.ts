@@ -1,9 +1,9 @@
 "use client";
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { useEffect, useState } from "react";
-import { useFile } from "@/features/files/handler/hooks/useFile";
-import { fileHandler } from "@/features/files/handler/handler";
+import { useFile } from "@host/features/files/handler/hooks/useFile";
+import { fileHandler } from "@host/features/files/handler/handler";
 
 /**
  * attached-documents — the shared vocabulary for a document attached to a chat.
@@ -23,10 +23,10 @@ import { fileHandler } from "@/features/files/handler/handler";
  * thunks / `useContainerLinks` — never a bespoke edge write.
  */
 
-import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
-import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
-import type { Json } from "@/types/database.types";
-import { normalizeResourceFamilyPolicy } from "@/features/agents/components/inputs/resources/resource-family-policy";
+import type { DocumentRepresentation } from "../../../types/instance.types";
+import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
+import type { Json } from "@host/types/database.types";
+import { normalizeResourceFamilyPolicy } from "./resource-family-policy";
 
 /**
  * Canonical `file` plus the legacy `processed_document` token retained for

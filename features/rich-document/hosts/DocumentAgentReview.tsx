@@ -40,7 +40,7 @@ import {
   PRO_TEXTAREA_HELP_DEFAULT_MANDATE_KEY,
   type ProTextareaAgentActionId,
 } from "@/components/official/proTextareaAgentActions";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import { CLEANUP_SURFACE_NAME } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
 import { getErrorMessage } from "../actions/utils";
 import {

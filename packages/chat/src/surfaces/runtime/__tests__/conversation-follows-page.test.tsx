@@ -19,14 +19,14 @@ let state: Record<string, unknown> = {};
 let activePage: string | null = null;
 let ownConversation = false;
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => (action: unknown) => {
     dispatched.push(action as { type: string });
     return action;
   },
   useAppSelector: (selector: (s: unknown) => unknown) => selector(state),
 }));
-jest.mock("@/features/agents/redux/execution-system/thunks/refresh-surface-scope.thunk", () => ({
+jest.mock("../../../agents/redux/execution-system/thunks/refresh-surface-scope.thunk", () => ({
   refreshSurfaceScope: (arg: { conversationId: string }) => ({ type: "refreshSurfaceScope", payload: arg }),
 }));
 jest.mock("../useActivePageSurface", () => ({
@@ -36,7 +36,7 @@ jest.mock("../SurfaceRuntimeContext", () => ({
   isPageOwnConversation: () => ownConversation,
   useIsPageOwnConversation: () => ownConversation,
 }));
-jest.mock("@/features/surfaces/utils/surface-display", () => ({
+jest.mock("../../utils/surface-display", () => ({
   getSurfaceDisplayLabel: (n: string) => n,
 }));
 

@@ -12,8 +12,8 @@
 // Only launch handles are released; a surface's own handle id is a no-op.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/rootReducer";
-import { releaseLaunchWidgetHandle } from "@/features/agents/utils/launch-widget-handles";
+import type { RootState } from "@host/lib/redux/rootReducer";
+import { releaseLaunchWidgetHandle } from "../../../utils/launch-widget-handles";
 import {
   destroyInstance,
   destroyInstancesForAgent,

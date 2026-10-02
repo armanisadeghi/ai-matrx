@@ -40,20 +40,20 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import {
   initInstanceOverrides,
   setOverrides,
   markRemoved,
   removeInstanceOverrides,
   resetOverride,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+} from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
   selectInstanceOverrideState,
   selectSettingsOverridesForApi,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { Label } from "@/components/ui/label";
+} from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { Label } from "@host/components/ui/label";
 import {
   DEFAULT_MODEL_EMPTY_CHOICE_LABEL,
   RunConfigOverrides,

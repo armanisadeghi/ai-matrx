@@ -28,10 +28,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import type { OutputSchema } from "@/features/agents/types/json-schema";
+import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 
 interface ApplySchemaDialogProps {
   open: boolean;

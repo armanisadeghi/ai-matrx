@@ -1,6 +1,6 @@
 "use client";
 
-import { AgentGateBody } from "@/features/agents/components/agent-widgets/execution-gates/AgentGateInput";
+import { AgentGateBody } from "@ai-matrx/chat/agents/components/agent-widgets/execution-gates/AgentGateInput";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 

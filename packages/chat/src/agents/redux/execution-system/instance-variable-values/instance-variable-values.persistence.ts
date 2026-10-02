@@ -33,9 +33,9 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { supabase } from "@host/utils/supabase/client";
+import { tryWriteOne } from "@host/utils/supabase/writeOne";
 import { waitForConversationPersisted } from "../conversations/conversation-persistence";
 
 interface ThunkApi {

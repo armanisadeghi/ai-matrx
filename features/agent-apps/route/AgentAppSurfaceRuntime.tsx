@@ -40,13 +40,13 @@ import {
 import {
   selectPrimaryRequest,
   selectResultText,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectLatestAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { requestFailure } from "@/features/agent-apps/tracking/run-outcome";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
 import { publishedToWebLabel } from "@/lib/row-access";
 

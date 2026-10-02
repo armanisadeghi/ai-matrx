@@ -8,7 +8,7 @@
  * and `validate_consumption_map` reads on the server.
  */
 
-import type { ValueMapping } from "@/features/surfaces/types";
+import type { ValueMapping } from "@ai-matrx/chat/surfaces/types";
 import type {
   ConsumptionMap,
   OfferedValue,

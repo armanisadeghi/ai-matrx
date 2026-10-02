@@ -17,7 +17,7 @@ import {
 import { getHydrator } from "../url-sync/UrlPanelRegistry";
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/load-conversation.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk",
   () => ({
     loadConversation: jest.fn((args: unknown) => ({
       type: "test/loadConversation",
@@ -26,7 +26,7 @@ jest.mock(
   }),
 );
 jest.mock(
-  "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight",
+  "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight",
   () => ({ followWhatIsStillInFlight: jest.fn() }),
 );
 

@@ -97,21 +97,21 @@ import { ActiveContextPanel } from "@/features/scopes/components/active-context/
 import { ActiveScopeChips } from "@/features/scopes/components/active-context/ActiveScopeChips";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { setBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import { createRagSearchScope } from "@/features/surfaces/manifests/rag-search.manifest";
 import {
   buildRagSearchContextData,
   RAG_SEARCH_CONTEXT_MENU_PROPS,
 } from "@/features/rag/agent-context/buildRagSearchContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   FILTERABLE_SOURCE_KIND_ENUM_TEXT,
   MULTI_QUERY_MAX,

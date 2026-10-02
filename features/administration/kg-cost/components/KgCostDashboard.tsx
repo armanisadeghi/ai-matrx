@@ -24,7 +24,7 @@ import { useAdminCost } from "@/components/cost/useAdminCost";
 import { splitAdminCostColumns } from "@/components/cost/adminCostColumns";
 import { useEffect, useState } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import {
   RefreshCw,

@@ -12,10 +12,10 @@ jest.mock("uuid", () => ({
 }));
 
 import { makeSelectAssembledRequest } from "../aggregate.selectors";
-import appContextReducer from "@/lib/redux/slices/appContextSlice";
-import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
-import type { DirectiveApplyPolicy } from "@/lib/redux/preferences/userPreferencesSlice";
-import type { RootState } from "@/lib/redux/store";
+import appContextReducer from "@host/lib/redux/slices/appContextSlice";
+import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
+import type { DirectiveApplyPolicy } from "@host/lib/redux/preferences/userPreferencesSlice";
+import type { RootState } from "@host/lib/redux/store";
 
 const CONVERSATION_ID = "conversation-1";
 

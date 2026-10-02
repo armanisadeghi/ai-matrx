@@ -8,10 +8,10 @@
 // builder's voice, so the door says so instead of pretending the person's
 // choice applies.
 
-import { SettingDoor } from "@/features/settings/doors/SettingDoor";
-import { VOICE_SETTING_DOORS } from "@/features/settings/tabs/voices/voiceSettingDoors";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { voiceDisplayName } from "@/lib/voices/voiceSets";
+import { SettingDoor } from "@host/features/settings/doors/SettingDoor";
+import { VOICE_SETTING_DOORS } from "@host/features/settings/tabs/voices/voiceSettingDoors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { voiceDisplayName } from "@host/lib/voices/voiceSets";
 
 export function LiveVoiceDoor({
   voiceId,

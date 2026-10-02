@@ -11,10 +11,10 @@ import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationSummariesScope } from "@/features/surfaces/manifests/education-summaries.manifest";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseCreateSummaries, parseSummaryIds, parseStudySummary, parseUpdateSummaries } from "../summaryWrites";
 
 const SURFACE_NAME = "matrx-user/education-summaries";

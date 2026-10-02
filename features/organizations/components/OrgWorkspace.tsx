@@ -80,7 +80,7 @@ import { OrgShareReviewCard } from "@/features/organizations/components/OrgShare
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ORGANIZATIONS_SURFACE_NAME,
   createOrganizationsScope,

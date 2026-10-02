@@ -56,7 +56,7 @@ import {
   deleteApp,
   setAgentAppPublication,
 } from "@/features/agents/redux/agent-apps/thunks";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { AGENT_APPS_SURFACE_NAME } from "@/features/surfaces/manifests/agent-apps.manifest";
 import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -64,7 +64,7 @@ import {
   validateAppCategory,
   validateAppTags,
 } from "./agent-app-entity-writes";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AgentAppSettingsContentProps {

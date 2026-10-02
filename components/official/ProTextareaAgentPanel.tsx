@@ -18,30 +18,30 @@ import {
   AgentListDropdown,
   AgentListInlinePicker,
 } from "@ai-matrx/agents/catalog/react";
-import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorkingDocument";
+import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { useConversationDocumentsBridge } from "@ai-matrx/chat/agents/hooks/useWorkingDocument";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { textInputVariable } from "@/features/agents/utils/text-input-variable";
-import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { setHostVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectWorkingDocContent } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { textInputVariable } from "@ai-matrx/chat/agents/utils/text-input-variable";
+import { selectInstanceVariableDefinitions } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { setHostVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectLatestAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { selectInstanceStatus } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectWorkingDocContent } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   setWorkingDocContent,
   setWorkingDocEnabled,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   setShowFreeformInput,
   setShowAttachments,
   setShowMicrophone,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import type { SessionContextItem } from "@/features/transcript-studio/types";

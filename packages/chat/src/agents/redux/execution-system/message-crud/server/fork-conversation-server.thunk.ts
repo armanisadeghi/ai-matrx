@@ -19,11 +19,11 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   callConversationFork,
   type ConversationForkBody,
-} from "@/lib/api/call-api";
+} from "@host/lib/api/call-api";
 import { loadConversation } from "../../thunks/load-conversation.thunk";
 import { setFocus } from "../../conversation-focus/conversation-focus.slice";
 import { markCacheBypass } from "../cache-bypass.slice";

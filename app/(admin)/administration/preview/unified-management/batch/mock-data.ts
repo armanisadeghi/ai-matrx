@@ -13,7 +13,7 @@
  * All data here is fabricated for the preview. No network, no Redux, no writes.
  */
 
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+import type { ResultDisplayMode } from "@ai-matrx/chat/agents/utils/run-ui-utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Known values — UUID-identified, kind-typed, key-labeled slots.

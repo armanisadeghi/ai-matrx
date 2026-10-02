@@ -26,7 +26,7 @@ import {
   selectAgentTools,
   selectAgentCustomTools,
   selectAgentMcpServers,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { renameToolsColumn } from "../redux/slice";
 import { removeColumnFromToolsBattle } from "../redux/thunks";

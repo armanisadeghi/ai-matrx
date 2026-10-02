@@ -29,7 +29,7 @@ import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
 import { CreateShowDialog } from "@/features/podcasts/generator/components/CreateShowDialog";
 import { UploadEpisodeDialog } from "@/features/podcasts/studio/components/UploadEpisodeDialog";
 import { RunsManageView } from "@/features/podcasts/studio/components/RunsManageView";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createPodcastScope,
   podcastEpisodeEntry,

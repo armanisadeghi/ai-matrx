@@ -19,11 +19,11 @@ import {
 import {
   ResponseModeButtons,
   BackToStartButton,
-} from "@/features/public-chat/components/AgentSelector";
+} from "../public-chat/components/AgentSelector";
 
 const GuidedVariableInputs = dynamic(
   () =>
-    import("@/features/public-chat/components/GuidedVariableInputs").then(
+    import("../public-chat/components/GuidedVariableInputs").then(
       (m) => ({ default: m.GuidedVariableInputs }),
     ),
   { ssr: false },
@@ -31,7 +31,7 @@ const GuidedVariableInputs = dynamic(
 
 const PublicVariableInputs = dynamic(
   () =>
-    import("@/features/public-chat/components/PublicVariableInputs").then(
+    import("../public-chat/components/PublicVariableInputs").then(
       (m) => ({ default: m.PublicVariableInputs }),
     ),
   { ssr: false },
@@ -51,7 +51,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import { chatConversationsActions } from "./_legacy-stubs";
 import { sendMessage } from "./_legacy-stubs";
 import {
@@ -64,27 +64,27 @@ import {
   selectUIState,
   selectShowDebugInfo,
 } from "./_legacy-stubs";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { selectIsSuperAdminDebugger } from "@/lib/redux/slices/userSlice";
+import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
 import { selectActiveChatAgent } from "./_legacy-stubs";
-import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
-import { ResourceChips } from "@/features/agents/resources/ResourceChips";
-import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
-import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
-import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { toast } from "@/lib/toast";
-import type { Resource } from "@/features/agents/resources/types";
-import type { ConversationResource } from "@/features/cx-chat/types/conversation";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
+import { selectIsDebugMode } from "@host/lib/redux/preferences/adminDebugSlice";
+import { ResourceChips } from "../agents/resources/ResourceChips";
+import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
+import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
+import { useRecordAndTranscribe } from "@host/features/audio/hooks/useRecordAndTranscribe";
+import { TranscriptionLoader } from "@host/features/audio/components/TranscriptionLoader";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { toast } from "@host/lib/toast";
+import type { Resource } from "../agents/resources/types";
+import type { ConversationResource } from "../cx-chat/types/conversation";
+import type { LLMParams } from "../agents/types/agent-api-types";
+import type { VariableDefinition } from "../agents/types/agent-definition.types";
+import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@/components/official/composer/composerSubmit";
+} from "@host/components/official/composer/composerSubmit";
 // PromptSettings / PromptVariable replaced with agents equivalents.
 // PromptSettings was @/features/prompts/types/core — model_id added as it isn't in LLMParams.
 type PromptSettings = LLMParams & { model_id?: string };

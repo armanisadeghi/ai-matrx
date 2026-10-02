@@ -111,7 +111,7 @@ The controller does NOT live under `window-panels/`. It renders dialogs, sheets,
 ```tsx
 // top of file
 const AgentRunWindow = dynamic(
-  () => import("@/features/window-panels/windows/agents/AgentRunWindow"),
+  () => import("@ai-matrx/chat/window-panels/windows/agents/AgentRunWindow"),
   { ssr: false },
 );
 

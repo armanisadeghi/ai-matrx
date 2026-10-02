@@ -31,7 +31,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   duplicateAgent,
   duplicateAgentVersion,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 
 export interface CopyMandateAgentSource {
   /** The caller's current override agent (fork THIS master when set). */

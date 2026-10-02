@@ -52,9 +52,9 @@ import { useToolComponentAgent } from "./hooks/useToolComponentAgent";
 import type {
   ToolLifecycleEntry,
   ToolLifecycleStatus,
-} from "@/features/agents/types/request.types";
+} from "@ai-matrx/chat/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ReadFailure } from "@/components/read-state/ReadFailure";

@@ -19,7 +19,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { TASK_LABELS } from "@/features/tasks/constants/labels";
 import type { TaskPriorityValue } from "@/features/tasks/constants/priority";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";

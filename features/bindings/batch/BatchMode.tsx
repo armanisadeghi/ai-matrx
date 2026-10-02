@@ -34,7 +34,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { isJsonObject, type JsonObject } from "@/types/json";
-import type { ValueMapping } from "@/features/surfaces/types";
+import type { ValueMapping } from "@ai-matrx/chat/surfaces/types";
 import {
   contractOfMandate,
   type MandateBindingRow,
@@ -45,7 +45,7 @@ import { compareStoredContract } from "@/features/mandates/contract-compare";
 import {
   fetchAgentOutputSchemas,
   missingOutputKeys,
-} from "@/features/mandates/output-contract";
+} from "@ai-matrx/chat/mandates/output-contract";
 import {
   parseBindingWave1,
   parseMandateWave1,

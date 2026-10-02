@@ -22,13 +22,13 @@ import {
 import {
   planManifestSync,
   toPackageResolved,
-} from "@/features/surfaces/declare/surface-declare";
+} from "@ai-matrx/chat/surfaces/declare/surface-declare";
 import {
   emitSurfaceSyncSql,
   readSurfaceGuide,
   surfaceGuideSourceHash,
 } from "./emit-surface-sync-sql";
-import { surfaceGuideSkillId } from "@/features/surfaces/utils/surface-guide";
+import { surfaceGuideSkillId } from "@ai-matrx/chat/surfaces/utils/surface-guide";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
 import {
   CHILD_TABLES,

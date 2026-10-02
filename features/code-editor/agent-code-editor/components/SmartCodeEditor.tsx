@@ -47,17 +47,17 @@ import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createSmartCodeEditorScope,
   smartCodeEditorManifest,
 } from "@/features/surfaces/manifests/smart-code-editor.manifest";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useMandateSet } from "@/features/mandates/useMandateSet";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { useMandateSet } from "@ai-matrx/chat/mandates/useMandateSet";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -331,7 +331,7 @@ export function SmartCodeEditor({
         label: f.name,
       }));
     if (entries.length === 0) return;
-    import("@/features/agents/redux/execution-system/instance-context/instance-context.slice").then(
+    import("@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice").then(
       ({ setContextEntries }) => {
         dispatch(
           setContextEntries({ conversationId: activeConversationId, entries }),

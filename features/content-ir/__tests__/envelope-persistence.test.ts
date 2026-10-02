@@ -20,12 +20,12 @@ import type {
   MessagePart,
   RenderBlockPayload,
 } from "@/types/python-generated/stream-events";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
-import { assembleMessageParts } from "@/features/agents/redux/execution-system/utils/assemble-cx-content-blocks";
-import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
+import { assembleMessageParts } from "@ai-matrx/chat/agents/redux/execution-system/utils/assemble-cx-content-blocks";
+import { normalizeContentBlocks } from "@ai-matrx/chat/agents/redux/execution-system/utils/normalize-content-blocks";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
-import type { CxTextContent } from "@/features/public-chat/types/cx-tables";
+import type { ActiveRequest } from "@ai-matrx/chat/agents/types/request.types";
+import type { CxTextContent } from "@ai-matrx/chat/public-chat/types/cx-tables";
 import {
   clearCapturedErrors,
   getSnapshot,

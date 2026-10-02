@@ -16,7 +16,7 @@
 import { AlertTriangle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { ConsumptionEntry } from "@/features/mandates/provision-shapes";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import { feedSentence, isFed } from "./words";

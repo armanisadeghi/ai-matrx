@@ -11,9 +11,9 @@
  * agent's persisted skill_config.
  */
 
-import type { RootState } from "@/lib/redux/store";
-import { selectAgentSkillConfig } from "@/features/agents/redux/agent-definition/selectors";
-import type { SkillConfig } from "@/features/skills/types";
+import type { RootState } from "@host/lib/redux/store";
+import { selectAgentSkillConfig } from "../../agent-definition/selectors";
+import type { SkillConfig } from "@host/features/skills/types";
 
 export function buildSkillConfigForRequest(
   agentSkillConfig: SkillConfig,

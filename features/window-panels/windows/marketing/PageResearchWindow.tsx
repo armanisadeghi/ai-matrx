@@ -61,11 +61,11 @@ import {
   type PageResearchPageContext,
   type PageResearchRunSummary,
 } from "@/features/surfaces/manifests/page-research.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   getSurfaceDisplayLabel,
   surfaceValueLabels,
-} from "@/features/surfaces/utils/surface-display";
+} from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";

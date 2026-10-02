@@ -10,8 +10,8 @@ import {
 import {
   fetchUserShortcuts,
   listNonGlobalShortcutsForAdmin,
-} from "@/features/agents/redux/agent-shortcuts/thunks";
-import type { UserShortcutItem } from "@/features/agents/redux/agent-shortcuts/types";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
+import type { UserShortcutItem } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import { useAgentShortcuts } from "./useAgentShortcuts";
 import type { AgentShortcutCategory } from "../types";
 import type {

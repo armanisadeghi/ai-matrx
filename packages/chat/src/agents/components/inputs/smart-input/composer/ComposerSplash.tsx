@@ -22,11 +22,11 @@ import {
 } from "react";
 import { ChevronRight } from "lucide-react";
 import { isMandateKey, type MandateKey } from "@ai-matrx/agents/mandates";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveUserName } from "@/lib/redux/selectors/userSelectors";
-import { useMandateSet } from "@/features/mandates/useMandateSet";
-import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { cn } from "@/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectActiveUserName } from "@host/lib/redux/selectors/userSelectors";
+import { useMandateSet } from "../../../../../mandates/useMandateSet";
+import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { cn } from "@host/lib/utils";
 import { COMPOSER_KNOBS } from "./composer-mode-cookie";
 
 function timeOfDayGreeting(hour: number): string {

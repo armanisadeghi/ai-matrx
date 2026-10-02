@@ -26,7 +26,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { TASK_STATUSES } from "@/features/tasks/constants/status";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";

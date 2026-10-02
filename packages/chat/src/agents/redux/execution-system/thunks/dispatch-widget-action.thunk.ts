@@ -17,17 +17,17 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import { callbackManager } from "@/utils/callbackManager";
-import { extractErrorMessage } from "@/utils/errors";
+import type { RootState } from "@host/lib/redux/store";
+import { callbackManager } from "@host/utils/callbackManager";
+import { extractErrorMessage } from "@host/utils/errors";
 import {
   WIDGET_TOOL_NAME_TO_HANDLE_METHOD,
   type WidgetActionName,
   type WidgetActionResult,
   type WidgetHandle,
-} from "@/features/agents/types/widget-handle.types";
+} from "../../../types/widget-handle.types";
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
-import { submitToolResult } from "@/features/agents/api/submit-tool-results";
+import { submitToolResult } from "../../../api/submit-tool-results";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
 
 export interface DispatchWidgetActionPayload {

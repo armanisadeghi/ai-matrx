@@ -13,7 +13,7 @@
  */
 
 import { createKeywordResearchScope } from "@/features/surfaces/manifests/keyword-research.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { ResearchRunState } from "@/features/marketing/seo/keyword-research/useKeywordResearch";
 import type {
   KeywordMarketRow,

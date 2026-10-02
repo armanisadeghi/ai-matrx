@@ -5,13 +5,13 @@
 const getSession = jest.fn();
 const getState = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => {
+jest.mock("@host/utils/supabase/client", () => {
   const client = {
     auth: { getSession: (...args: unknown[]) => getSession(...args) },
   };
   return { createClient: () => client, supabase: client };
 });
-jest.mock("@/lib/redux/store-singleton", () => ({
+jest.mock("@host/lib/redux/store-singleton", () => ({
   getStoreSingleton: () => ({ getState }),
 }));
 
@@ -22,7 +22,7 @@ import {
   organizationHeaderOf,
   resetGate,
   selectOrganization,
-} from "@/lib/organization/__tests__/gate-harness";
+} from "@host/lib/organization/__tests__/gate-harness";
 import {
   discoverMcpServerTools,
   invokeMcpServerTool,

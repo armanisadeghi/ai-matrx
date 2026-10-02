@@ -81,7 +81,7 @@ jest.mock("../data", () => ({
 jest.mock("@/features/crm/compliance/service", () => ({
   checkSendEligibility: async () => ({ allowed: true, blocks: [] }),
 }));
-jest.mock("@/features/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
+jest.mock("@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
   registerAskResolver: () => undefined,
   resolveAskByCallId: () => undefined,
   cancelAskByCallId: () => undefined,

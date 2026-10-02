@@ -32,7 +32,7 @@ import {
   useSurfaceClientTools,
   type SurfaceClientToolHandlers,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   FILE_SURFACE_NAME,
   FILE_SURFACE_TABS,

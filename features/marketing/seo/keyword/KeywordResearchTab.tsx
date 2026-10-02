@@ -41,9 +41,9 @@ import SavedResearchFeed from "@/features/marketing/seo/keyword-research/compone
 import {
   RunSetDisplay,
   useRunSet,
-} from "@/features/agents/components/live-run/RunSetDisplay";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+} from "@ai-matrx/chat/agents/components/live-run/RunSetDisplay";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { publishSurfaceUiState } from "@ai-matrx/chat/surfaces/runtime/surface-ui-state";
 import type {
   KeywordSelectionUiState,
   KeywordSelectionWrite,

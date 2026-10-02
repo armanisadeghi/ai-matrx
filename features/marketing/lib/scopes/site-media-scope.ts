@@ -15,7 +15,7 @@
  */
 
 import { createMarketingSiteMediaScope } from "@/features/surfaces/manifests/marketing-site-media.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { MarketingSiteBaseValues } from "@/features/marketing/lib/scopes/site-surface-base";
 import {
   buildSnapshotMediaAssets,

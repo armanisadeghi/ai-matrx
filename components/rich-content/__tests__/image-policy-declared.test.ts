@@ -18,7 +18,7 @@ import path from "node:path";
 import ts from "typescript";
 
 const ROOT = path.resolve(__dirname, "../../..");
-const DIRS = ["app", "features", "components", "lib", "providers"];
+const DIRS = ["app", "features", "packages/chat/src", "components", "lib", "providers"];
 const ENTRIES = new Set([
   "RichDocument",
   "MarkdownStream",

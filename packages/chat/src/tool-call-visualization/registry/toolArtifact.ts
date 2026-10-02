@@ -14,7 +14,7 @@
  * branch here + one entry in the bar's `KIND_META`.
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import { getArg, resultAsObject } from "../renderers/_shared";
 
 export type ToolArtifactKind = "working_document" | "note";

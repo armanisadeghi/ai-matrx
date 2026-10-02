@@ -21,7 +21,7 @@ import {
   shortcutSeedForMapping,
 } from "@/features/agent-shortcuts/draft-seed";
 import type { RichDocumentActionContext } from "../../types";
-import { buildValueSources } from "@/features/agents/components/custom-agent/custom-agent-plan";
+import { buildValueSources } from "@ai-matrx/chat/agents/components/custom-agent/custom-agent-plan";
 import {
   applyTargetForConversation,
   canApplyBack,

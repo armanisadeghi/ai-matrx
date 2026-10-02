@@ -9,7 +9,7 @@ jest.mock("@/lib/api/call-api", () => ({
   callApi: jest.fn((config: unknown) => config),
 }));
 
-jest.mock("../service", () => ({
+jest.mock("@ai-matrx/chat/mandates/service", () => ({
   invalidateMandateCache: jest.fn(),
 }));
 

@@ -12,7 +12,7 @@ jest.mock("@/features/canvas/services/canvasArtifactService", () => ({
   },
 }));
 
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
+import type { CxContentBlock } from "@ai-matrx/chat/public-chat/types/cx-tables";
 import { materializeBlocks } from "../materializeBlocks";
 
 describe("materializeBlocks conversation identity", () => {

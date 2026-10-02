@@ -104,7 +104,7 @@ jest.mock("@/utils/supabase/client", () => ({
   }),
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream",
   () => ({
     adoptForeignStream: jest.fn((options) => options),
   }),

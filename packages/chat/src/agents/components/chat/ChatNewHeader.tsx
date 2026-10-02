@@ -12,8 +12,8 @@
 
 import { ChatRunHeader } from "./ChatRunHeader";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
-import { useMandate } from "@/features/mandates/useMandate";
-import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+import { useMandate } from "../../../mandates/useMandate";
+import type { ComposerMode } from "../inputs/smart-input/composer/composer-types";
 
 export function ChatNewHeader({
   agentId,

@@ -42,7 +42,7 @@
 
 import Dexie, { type Table } from "dexie";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 
 export const STUDY_OFFLINE_DB = "matrx-study-offline";
 export const STUDY_OFFLINE_SCHEMA_VERSION = 2;

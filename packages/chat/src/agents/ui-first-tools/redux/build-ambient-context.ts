@@ -16,7 +16,7 @@
  * Returned dict is merged into `payload.context` in `executeInstance`.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import {
   selectOrganizationId,
   selectOrganizationName,
@@ -25,7 +25,7 @@ import {
   selectTaskId,
   selectTaskName,
   selectScopeSelectionsContext,
-} from "@/lib/redux/slices/appContextSlice";
+} from "@host/lib/redux/slices/appContextSlice";
 
 interface AmbientContextSnapshot {
   user: {

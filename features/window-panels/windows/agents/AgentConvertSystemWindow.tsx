@@ -15,17 +15,17 @@
 
 import { Link2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
+import { AgentComingSoonContent } from "@ai-matrx/chat/agents/components/coming-soon/AgentComingSoonContent";
 import { AgentSyncBody } from "@/features/agents/components/admin/AgentSyncBody";
 import {
   agentDefaultHolder,
   putMandateDefaultHolder,
 } from "@/features/mandates/overrides";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 interface AgentConvertSystemWindowProps {

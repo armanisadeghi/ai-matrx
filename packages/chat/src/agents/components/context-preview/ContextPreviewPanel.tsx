@@ -22,26 +22,26 @@
 
 import { useMemo, useState } from "react";
 import { AlertTriangle, Braces, FileCode2, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
-import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { Button } from "@host/components/ui/button";
+import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   CONTEXT_PREVIEW_SURFACE_NAME,
   createContextPreviewScope,
   type AttachedContextEntrySummary,
-} from "@/features/surfaces/manifests/context-preview.manifest";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { selectInstanceClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.selectors";
+} from "@host/features/surfaces/manifests/context-preview.manifest";
+import { selectInstanceContextEntries } from "../../redux/execution-system/instance-context/instance-context.selectors";
+import { selectInstanceClientTools } from "../../redux/execution-system/instance-client-tools/instance-client-tools.selectors";
 import {
   selectIsMemoryEnabledForConversation,
   selectMemoryModelForConversation,
   selectMemoryScopeForConversation,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
-import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
-import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
+} from "../../redux/execution-system/observational-memory/observational-memory.selectors";
+import { useActiveContextLayerItems } from "../context-items/useActiveContextLayerItems";
+import { docKindForContextKey } from "../../utils/workingDocumentContext";
 import {
   useContextPreview,
   type ContextPreviewResponse,
@@ -49,13 +49,13 @@ import {
 } from "./useContextPreview";
 import { AttachedContextSection } from "./AttachedContextSection";
 import { ContextCompareView } from "./ContextCompareView";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { contextEntryLabel } from "../context-policies-display/contextEntryLabel";
 import {
   MessageContextReceiptTable,
   receiptSummary,
-} from "@/features/agents/components/context-policies-display/MessageContextReceipt";
-import { isContextReceiptData } from "@/features/agents/redux/execution-system/messages/message-context-receipt";
+} from "../context-policies-display/MessageContextReceipt";
+import { isContextReceiptData } from "../../redux/execution-system/messages/message-context-receipt";
 
 type View = "resolved" | "compare" | "attached";
 

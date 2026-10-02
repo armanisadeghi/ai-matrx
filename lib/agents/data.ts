@@ -5,12 +5,12 @@ import { notFound } from "next/navigation";
 import {
   dbRowToAgentDefinition,
   versionSnapshotRowToAgentDefinition,
-} from "@/features/agents/redux/agent-definition/converters";
-import { parseAgentVersionSnapshot } from "@/features/agents/redux/agent-definition/parse-output-snapshot";
+} from "@ai-matrx/chat/agents/redux/agent-definition/converters";
+import { parseAgentVersionSnapshot } from "@ai-matrx/chat/agents/redux/agent-definition/parse-output-snapshot";
 import type {
   AgentDefinition,
   AgentListRow,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { AgentAppSummary, AppStatus } from "@/features/agent-apps/types";
 
 /**

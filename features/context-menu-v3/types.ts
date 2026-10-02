@@ -17,9 +17,9 @@
 
 import type React from "react";
 import type { LucideIcon } from "lucide-react";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
-import type { Scope } from "@/features/agents/redux/shared/scope";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
+import type { Scope } from "@ai-matrx/chat/agents/redux/shared/scope";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import type { ContentSource } from "@/features/rich-document/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import type { ResourceType } from "@/utils/permissions/types";

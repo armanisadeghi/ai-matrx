@@ -51,48 +51,48 @@ import {
   Wrench,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
-import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
-import { useRunControlCounts } from "@/features/resource-manager/resource-picker/useRunControlCounts";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
+import type { ResourcePickerViewId } from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
+import { useRunControlCounts } from "@host/features/resource-manager/resource-picker/useRunControlCounts";
 import {
   useAttachResource,
   useDetachResource,
-} from "@/features/agents/components/inputs/resources/attach-resource";
-import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
-import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
-import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectIsMemoryEnabledForConversation } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
+} from "../../resources/attach-resource";
+import { selectAttachmentCapabilities } from "../../../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
+import { selectWorkingDocEnabled } from "../../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { setConversationDocumentEnabledThunk } from "../../../../redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { setScratchpadGateThunk } from "../../../../redux/execution-system/instance-working-document/scratchpad.thunks";
+import { selectAgentIdFromInstance } from "../../../../redux/execution-system/conversations/conversations.selectors";
+import { selectIsMemoryEnabledForConversation } from "../../../../redux/execution-system/observational-memory/observational-memory.selectors";
 import {
   selectBuilderAdvancedSettings,
   selectMemoryToggleRequest,
   selectAutoClearConversation,
   selectSubmitOnEnter,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectShouldShowAutoClearToggle } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+} from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectShouldShowAutoClearToggle } from "../../../../redux/execution-system/selectors/aggregate.selectors";
+import { setAutoClearMode } from "../../../../redux/execution-system/thunks/create-instance.thunk";
 import { ComposerConnectorsPanel } from "./ComposerConnectorsPanel";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectUserInputText } from "../../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   clearMemoryToggleRequest,
   requestMemoryToggle,
   setBuilderAdvancedSettings,
   setSubmitOnEnter,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { prependTemplateToDraft } from "@/features/message-templates/utils/prepend-template-to-draft";
-import { SmartInputMessageTemplatePicker } from "@/features/message-templates/components/SmartInputMessageTemplatePicker";
-import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
-import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
-import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
-import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
+} from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../../types/instance.types";
+import { setUserInputText } from "../../../../redux/execution-system/instance-user-input/instance-user-input.slice";
+import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";
+import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
+import { useOpenContextPreviewPanel } from "@host/features/overlays/openers/contextPreviewPanel";
+import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
+import { ActiveContextTree } from "@host/features/scopes/components/active-context/ActiveContextTree";
 import { useComputeTargetActions } from "../use-compute-target-actions";
-import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
+import type { ComputeTarget } from "@host/hooks/sandbox/use-compute-targets";
 import { useSandboxBindingBlocked } from "../use-compute-target-actions";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "../../../../resources/types";
 import {
   COMPOSER_MENU_NO_ENTRANCE,
   ignoreOwnWrapper,
@@ -106,10 +106,10 @@ import {
 import { ComposerOutputPanel } from "./ComposerOutput";
 import { composerShows, metaRowHoldsScopeAndOutput } from "./composer-mode-visibility";
 import type { ComposerMode, ComposerSize } from "./composer-types";
-import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
-import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
-import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
-import { RunInputCapabilities } from "@/features/agents/components/run-controls/RunInputCapabilities";
+import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
+import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
+import { RunConfigOverrides } from "../../../run-controls/RunConfigOverrides";
+import { RunInputCapabilities } from "../../../run-controls/RunInputCapabilities";
 
 /** Picker cascades need a definite height for their internal scroll chains. */
 const PICKER_PANEL = "w-[380px] h-[min(70dvh,520px)] p-0";

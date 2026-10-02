@@ -1,5 +1,5 @@
 import { surfaceFromPathname } from "./route-to-surface";
-import { getRawManifest } from "@/features/surfaces/manifests/registry";
+import { getRawManifest } from "@host/features/surfaces/manifests/registry";
 
 const F = "a73adb06-c2ca-42df-a7af-86edb71db385";
 

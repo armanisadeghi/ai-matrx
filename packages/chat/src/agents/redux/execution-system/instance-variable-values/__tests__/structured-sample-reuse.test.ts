@@ -3,7 +3,7 @@ import reducer, {
   setUserVariableValues,
 } from "../instance-variable-values.slice";
 import { resolveVariablesForRequest } from "../resolve-variables-for-request";
-import { variableValueToInputText } from "@/features/agents/utils/variable-utils";
+import { variableValueToInputText } from "../../../../utils/variable-utils";
 
 it("keeps loaded sample objects and arrays intact through variable state and request resolution", () => {
   const conversationId = "structured-sample-reuse";

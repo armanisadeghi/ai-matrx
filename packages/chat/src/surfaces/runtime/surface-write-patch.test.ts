@@ -15,7 +15,7 @@ import {
   isSurfaceWritePatch,
   resolveSurfaceWritePatch,
   surfacePatchContractLine,
-} from "@/features/surfaces/runtime/surface-write-patch";
+} from "./surface-write-patch";
 
 const PROMPT = [
   "You are a careful assistant.",

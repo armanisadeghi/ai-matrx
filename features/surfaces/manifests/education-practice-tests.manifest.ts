@@ -5,7 +5,7 @@
  * `matrx-user/education-assessment`.
  */
 
-import type { SurfaceManifest } from "@/features/surfaces/types";
+import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import { buildAssessmentListManifest } from "./_assessment-list.manifest";
 
 export const educationPracticeTestsManifest: SurfaceManifest = buildAssessmentListManifest({

@@ -14,10 +14,10 @@
 import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { getAgentListSeed } from "@/lib/agents/data";
-import { AgentListHydrator } from "@/features/agents/route/AgentListHydrator";
+import { AgentListHydrator } from "@ai-matrx/chat/agents/route/AgentListHydrator";
 import { AgentsGrid } from "@/features/agents/components/agent-listings/AgentsGrid";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListHeader";
+import { AgentsListHeader } from "@ai-matrx/chat/agents/components/shell/AgentsListHeader";
 
 export default async function AgentsClassicGalleryPage() {
   const { isAuthenticated } = await getSessionVerdict();

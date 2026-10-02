@@ -40,7 +40,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_SERVER_LOGS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-server-logs.manifest";
 import { buildAdminServerLogsScope } from "@/features/server-logs/server-logs-scope";
 import {

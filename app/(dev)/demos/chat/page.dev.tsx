@@ -1,13 +1,13 @@
 // app/(dev)/demos/chat/page.tsx — Root chat route (default agent welcome screen).
 
-import ChatHeaderControls from "@/features/cx-chat/components/ChatHeaderControls";
-import ChatWelcomeServer from "@/features/cx-chat/components/ChatWelcomeServer";
+import ChatHeaderControls from "@ai-matrx/chat/cx-chat/components/ChatHeaderControls";
+import ChatWelcomeServer from "@ai-matrx/chat/cx-chat/components/ChatWelcomeServer";
 import {
   CX_DEFAULT_MANDATE_KEY,
   getDefaultAgent,
   resolveAgentForSSR,
-} from "@/features/cx-chat/components/agent/agents";
-import { FastPathMandateGuard } from "@/features/mandates/FastPathMandateGuard";
+} from "@ai-matrx/chat/cx-chat/components/agent/agents";
+import { FastPathMandateGuard } from "@ai-matrx/chat/mandates/FastPathMandateGuard";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { warmAgent } from "@/lib/api/warm-helpers";

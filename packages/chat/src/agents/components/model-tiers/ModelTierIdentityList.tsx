@@ -1,7 +1,7 @@
 "use client";
 
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
-import { cn } from "@/lib/utils";
+import { AiModelRef } from "@host/components/official/entity-ref/AiIdentityRef";
+import { cn } from "@host/lib/utils";
 
 interface ModelTierIdentity {
   key: string;

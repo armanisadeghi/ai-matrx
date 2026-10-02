@@ -12,9 +12,9 @@ import {
   SYSTEM_AGENT_BASE_PATH,
   agentPathFor,
   type AgentAddressViewer,
-} from "@/features/agents/addressing/agentAddress";
+} from "@ai-matrx/chat/agents/addressing/agentAddress";
 import { parseMandateContract } from "@/features/mandates/overrides";
-import { missingOutputKeys } from "@/features/mandates/output-contract";
+import { missingOutputKeys } from "@ai-matrx/chat/mandates/output-contract";
 import {
   unmetContractChecks,
   type ContractMismatch,

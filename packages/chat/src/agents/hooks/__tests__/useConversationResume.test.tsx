@@ -27,15 +27,15 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-import messages from "@/features/agents/redux/execution-system/messages/messages.slice";
-import conversations from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import messages from "../../redux/execution-system/messages/messages.slice";
+import conversations from "../../redux/execution-system/conversations/conversations.slice";
 import { useConversationResume } from "../useConversationResume";
 
 // `mock`-prefixed so the hoisted jest.mock factories below may close over it.
 const mockLoadCalls: { conversationId: string; aborted: boolean }[] = [];
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/create-instance.thunk",
+  "../../redux/execution-system/thunks/create-instance.thunk",
   () => {
     const { createAsyncThunk } = jest.requireActual("@reduxjs/toolkit");
     return {
@@ -50,11 +50,11 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/load-conversation.thunk",
+  "../../redux/execution-system/thunks/load-conversation.thunk",
   () => {
     const { createAsyncThunk } = jest.requireActual("@reduxjs/toolkit");
     const slice = jest.requireActual(
-      "@/features/agents/redux/execution-system/messages/messages.slice",
+      "../../redux/execution-system/messages/messages.slice",
     );
     return {
       loadConversation: createAsyncThunk(
@@ -105,13 +105,13 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk",
+  "../../redux/execution-system/thunks/surface-cold-pending-calls.thunk",
   () => ({
     surfaceColdPendingCalls: () => ({ type: "test/surfaceColdPendingCalls" }),
   }),
 );
 jest.mock(
-  "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk",
+  "../../runtime-reconnect/reconnect-server-operation.thunk",
   () => ({
     reconnectServerOperation: () => ({ type: "test/reconnectServerOperation" }),
   }),

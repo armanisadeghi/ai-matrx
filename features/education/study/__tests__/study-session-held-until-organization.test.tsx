@@ -387,7 +387,7 @@ describe("census: every study-session starter is gated", () => {
 
   it("no file opens a study session without being a gated starter", () => {
     const out = execSync(
-      "git grep -l 'studyService.createSession(' -- 'features/*.ts' 'features/*.tsx' 'app/*.ts' 'app/*.tsx' 'components/*.ts' 'components/*.tsx'",
+      "git grep -l 'studyService.createSession(' -- 'features/*.ts' 'packages/chat/src/*.ts' 'features/*.tsx' 'packages/chat/src/*.tsx' 'app/*.ts' 'app/*.tsx' 'components/*.ts' 'components/*.tsx'",
       { cwd: root, encoding: "utf8" },
     );
     const starters = out

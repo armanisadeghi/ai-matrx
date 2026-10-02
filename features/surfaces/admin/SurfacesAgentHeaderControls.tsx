@@ -7,7 +7,7 @@ import {
   ShieldCheckTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
-import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
+import { AgentHeader } from "@ai-matrx/chat/agents/components/shared/AgentHeader";
 
 /**
  * Shell header for `/agents/[id]/surfaces` (and the admin twin).

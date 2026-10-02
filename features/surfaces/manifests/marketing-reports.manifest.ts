@@ -3,7 +3,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 export const MARKETING_REPORTS_LABEL = "Marketing Reports";
 export const MARKETING_REPORTS_GROUP_LABELS = {

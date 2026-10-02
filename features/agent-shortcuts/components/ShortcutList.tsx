@@ -41,7 +41,7 @@ import type {
   AgentShortcutRecord,
   ScopeProps,
 } from "../types";
-import { isValidShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
+import { isValidShortcutContext } from "@ai-matrx/chat/agents/utils/shortcut-context-utils";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { agentShortcutRecordSummary } from "../format";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";

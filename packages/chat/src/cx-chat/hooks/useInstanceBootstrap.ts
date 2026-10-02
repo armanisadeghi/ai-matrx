@@ -44,18 +44,18 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   initializeChatAgents,
   isChatListStale,
   fetchAgentExecutionMinimal,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { toast } from "@/lib/toast";
-import { DEFAULT_AGENT_ID } from "@/features/cx-chat/components/agent/local-agents";
-import type { RootState } from "@/lib/redux/store";
-import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+} from "../../agents/redux/agent-definition/thunks";
+import { launchAgentExecution } from "../../agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { loadConversation } from "../../agents/redux/execution-system/thunks/load-conversation.thunk";
+import { toast } from "@host/lib/toast";
+import { DEFAULT_AGENT_ID } from "../components/agent/local-agents";
+import type { RootState } from "@host/lib/redux/store";
+import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
 
 // ── URL parsing ───────────────────────────────────────────────────────────────
 

@@ -24,7 +24,7 @@
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { useMemo, type RefObject } from "react";
 
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 import { normalizeCellValue } from "../components/EditableCell";
 import { isComputedColumn } from "@ai-matrx/design-system/formulas";

@@ -26,7 +26,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 
-import type { LiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
+import type { LiveRunProgressState } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 

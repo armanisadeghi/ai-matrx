@@ -8,7 +8,7 @@ import { Copy, FileText, Brain } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { registerAction } from "../provider";
-import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { getErrorMessage, contentForDestination } from "../utils";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 

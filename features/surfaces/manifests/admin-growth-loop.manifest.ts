@@ -27,7 +27,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 export const ADMIN_GROWTH_LOOP_SURFACE_NAME = "matrx-admin/growth-loop";
 

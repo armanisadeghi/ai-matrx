@@ -25,7 +25,7 @@ import {
   Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDate } from "@/features/tool-call-visualization/renderers/search/parseSearch";
+import { formatDate } from "@ai-matrx/chat/tool-call-visualization/renderers/search/parseSearch";
 import {
   dateLine,
   formatDurationSeconds,

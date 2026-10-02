@@ -140,7 +140,7 @@ async function waitForRead(
 
 async function loadPipeline() {
   const { StreamBlockAccumulator } = await import(
-    "@/features/agents/redux/execution-system/utils/stream-block-accumulator"
+    "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator"
   );
   const { memoizedRegionEnvelope } = await import(
     "../registry/region-envelope-memo"

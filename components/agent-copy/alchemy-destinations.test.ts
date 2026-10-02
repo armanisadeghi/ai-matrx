@@ -2,15 +2,15 @@ jest.mock("@/lib/redux/slices/userSlice", () => ({ selectUserId: (state: { userI
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: (state: { organizationId?: string }) => state.organizationId }));
 jest.mock("@/lib/redux/slices/overlaySlice", () => ({ openOverlay: (payload: unknown) => ({ type: "overlay/open", payload }) }));
 jest.mock("@/features/tasks/redux/taskUiSlice", () => ({ setPendingSource: (payload: unknown) => ({ type: "task/pending", payload }) }));
-jest.mock("@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice", () => ({ clearFocus: (payload: unknown) => ({ type: "focus/clear", payload }) }));
-jest.mock("@/features/agents/redux/chat/chat-route.slice", () => ({ bumpFreshSession: () => ({ type: "chat/bump" }) }));
-jest.mock("@/features/agents/components/chat/begin-fresh-chat", () => ({ chatRouteSurfaceKey: (id: string) => `surface:${id}` }));
-jest.mock("@/features/agents/components/chat/chat-quick-actions.config", () => ({ DEFAULT_NEW_CHAT_MANDATE_KEY: "default-mandate" }));
-jest.mock("@/features/mandates/service", () => ({ resolveMandate: jest.fn() }));
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice", () => ({ clearFocus: (payload: unknown) => ({ type: "focus/clear", payload }) }));
+jest.mock("@ai-matrx/chat/agents/redux/chat/chat-route.slice", () => ({ bumpFreshSession: () => ({ type: "chat/bump" }) }));
+jest.mock("@ai-matrx/chat/agents/components/chat/begin-fresh-chat", () => ({ chatRouteSurfaceKey: (id: string) => `surface:${id}` }));
+jest.mock("@ai-matrx/chat/agents/components/chat/chat-quick-actions.config", () => ({ DEFAULT_NEW_CHAT_MANDATE_KEY: "default-mandate" }));
+jest.mock("@ai-matrx/chat/mandates/service", () => ({ resolveMandate: jest.fn() }));
 jest.mock("@/features/data-tables/export-targets", () => ({ pushMarkdownToDocument: jest.fn(), pushTableToWorkbook: jest.fn() }));
 
-import { consumeChatDraftTransfer } from "@/features/agents/components/chat/chat-draft-transfer";
-import { resolveMandate } from "@/features/mandates/service";
+import { consumeChatDraftTransfer } from "@ai-matrx/chat/agents/components/chat/chat-draft-transfer";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { pushMarkdownToDocument } from "@/features/data-tables/export-targets";
 import { createAlchemyDestinationPorts } from "./alchemy-destinations";
 

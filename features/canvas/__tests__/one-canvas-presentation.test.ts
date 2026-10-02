@@ -106,7 +106,7 @@ describe("the canvas has exactly one presentation", () => {
   });
 
   it("the chat route mounts no canvas presentation — same component tree as every other route", () => {
-    const chat = read("features/agents/components/chat/ChatRoomClient.tsx");
+    const chat = read("packages/chat/src/agents/components/chat/ChatRoomClient.tsx");
     // It may open things INTO the canvas (the headless openers) but it may not
     // present the canvas itself.
     expect(chat).not.toMatch(/<Canvas(Dock|SideSheet|Surface|Pane)\b/);

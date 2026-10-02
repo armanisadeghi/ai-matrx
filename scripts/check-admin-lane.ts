@@ -84,7 +84,7 @@ const IDENTITY_ALLOWED = new Set([
   "providers/LoopbackApiAccessSync.tsx",
 ]);
 
-const SCAN_DIRS = ["app", "components", "features", "hooks", "lib", "utils", "providers", "actions"];
+const SCAN_DIRS = ["app", "components", "features", "packages/chat/src", "hooks", "lib", "utils", "providers", "actions"];
 const SKIP_DIR_NAMES = new Set(["node_modules", ".next", "__tests__", "__mocks__"]);
 
 const ADMIN_RPC =

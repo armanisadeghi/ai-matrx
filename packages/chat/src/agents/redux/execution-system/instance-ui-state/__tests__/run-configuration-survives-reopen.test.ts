@@ -22,7 +22,7 @@ const row: { id: string; version: number; metadata: Record<string, unknown> } = 
 };
 const updates: unknown[] = [];
 
-jest.mock("@/utils/supabase/client", () => {
+jest.mock("@host/utils/supabase/client", () => {
   const chain = (op: "select" | "update", patch?: Record<string, unknown>) => {
     const filters: Record<string, unknown> = {};
     const api = {

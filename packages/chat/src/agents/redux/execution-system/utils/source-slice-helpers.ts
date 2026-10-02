@@ -11,7 +11,7 @@
  */
 
 import type { Draft, PayloadAction } from "@reduxjs/toolkit";
-import type { SourceSliceState } from "@/features/agents/types/common.types";
+import type { SourceSliceState } from "../../../types/common.types";
 
 /**
  * Creates the initial state for a source slice.

@@ -5,9 +5,9 @@
  * conversation. Mirrors the "Session" tab in the Creator Run Panel.
  */
 
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { useCostDisplay } from "@host/components/cost/useCostDisplay";
 import { useMemo } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   EmptyStats,
   StatRow,

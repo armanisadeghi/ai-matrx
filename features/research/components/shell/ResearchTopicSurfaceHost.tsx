@@ -23,7 +23,7 @@ import {
   RESEARCH_CONTEXT_MENU_PROPS,
 } from "@/features/research/agent-context/buildResearchContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 export function ResearchTopicSurfaceHost({
   activeView,

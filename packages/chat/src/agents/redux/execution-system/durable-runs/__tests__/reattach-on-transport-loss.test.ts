@@ -10,7 +10,7 @@
  *     reattach can never rejoin into a dead surface or a superseded run.
  */
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { info: jest.fn(), error: jest.fn(), success: jest.fn() },
 }));
 

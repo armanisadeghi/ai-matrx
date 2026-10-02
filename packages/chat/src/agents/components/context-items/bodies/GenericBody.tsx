@@ -11,8 +11,8 @@
  */
 
 import type { ContextItemBodyProps } from "../types";
-import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
+import { hasKindKey } from "@host/features/content-ir/surfaces/json-kind-signal";
 
 function carriesKind(value: unknown): boolean {
   try {

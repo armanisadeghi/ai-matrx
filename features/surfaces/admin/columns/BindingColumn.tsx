@@ -10,7 +10,7 @@ import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import {
   isCapturedSurfaceRegistrationError,
   isSurfaceRegistrationError,
-} from "@/features/surfaces/services/surface-registration-error";
+} from "@ai-matrx/chat/surfaces/services/surface-registration-error";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   AGENT_SCOPES,
@@ -18,9 +18,9 @@ import {
 } from "@/features/agent-shortcuts/constants";
 import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import { SurfaceVariableBindingList } from "./SurfaceVariableBinding";
-import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+import { buildBindingTargets } from "@ai-matrx/chat/surfaces/utils/buildBindingTargets";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
-import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
+import type { SurfaceValue, ValueMapping } from "@ai-matrx/chat/surfaces/types";
 
 /** Re-export for existing admin callers. */
 export { buildBindingTargets };
@@ -37,17 +37,17 @@ import {
   loadSurfaceValues,
   upsertAgentSurfaceBindingThunk,
   deleteAgentSurfaceBindingThunk,
-} from "@/features/surfaces/redux/thunks";
+} from "@ai-matrx/chat/surfaces/redux/thunks";
 import {
   makeSelectBindingsForAgent,
   makeSelectSurfaceValues,
   makeSelectSurfaceValuesStatus,
   selectAllSurfaces,
-} from "@/features/surfaces/redux/selectors";
-import type { ValueMappingMap } from "@/features/surfaces/types";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
+import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 
 /**
@@ -171,7 +171,7 @@ interface BindingFormProps {
   agent: AgentDefinition;
   surfaceName: string;
   existing:
-    | import("@/features/surfaces/services/bind-agent-to-surface.service").AgentSurfaceBinding
+    | import("@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service").AgentSurfaceBinding
     | null;
   /**
    * Mappings to seed the form with when creating a new binding. Sourced
@@ -469,7 +469,7 @@ function BindingFormLayout({
 }: {
   surfaceName: string;
   existing:
-    | import("@/features/surfaces/services/bind-agent-to-surface.service").AgentSurfaceBinding
+    | import("@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service").AgentSurfaceBinding
     | null;
   busy: boolean;
   onSave: () => void;

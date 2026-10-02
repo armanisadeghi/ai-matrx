@@ -41,7 +41,7 @@ import {
   sanitizeSettings,
 } from "./internal-utils";
 import { isJsonArray, isJsonObject } from "@/types/json";
-import { VARIABLE_COMPONENT_TYPES } from "@/features/agents/types/agent-definition.types";
+import { VARIABLE_COMPONENT_TYPES } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 // ── Initial State ──────────────────────────────────────────────────────────────
 

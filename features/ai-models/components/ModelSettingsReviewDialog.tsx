@@ -35,14 +35,14 @@ import {
   initInstanceOverrides,
   removeInstanceOverrides,
   updateBaseSettings,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
   selectInstanceOverrideState,
   selectSettingsOverridesForApi,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { RunConfigOverrides } from "@ai-matrx/chat/agents/components/run-controls/RunConfigOverrides";
 import { ReplaceFailureBanner } from "@/components/official/error-detail/ReplaceFailureBanner";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { selectAllModels } from "@/features/ai-models/redux/modelRegistrySlice";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
 import { suggestSettingSwaps } from "./suggestSettingSwaps";

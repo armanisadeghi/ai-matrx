@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import type { WidgetHandle } from "@/features/agents/types/widget-handle.types";
+import type { WidgetHandle } from "@ai-matrx/chat/agents/types/widget-handle.types";
 export type CallbackContext = Record<string, unknown>;
 export interface ProgressInfo {
   progress?: number;

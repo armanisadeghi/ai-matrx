@@ -15,20 +15,20 @@
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 
-jest.mock("@/lib/api/call-api", () => ({ callApi: jest.fn() }));
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/api/call-api", () => ({ callApi: jest.fn() }));
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => (thunk: unknown) => thunk,
   useAppSelector: (selector: (state: unknown) => unknown) => selector(undefined),
 }));
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
   selectScopeSelectionsContext: () => ({}),
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversations.selectors",
+  "../../redux/execution-system/conversations/conversations.selectors",
   () => ({ selectConversationScopeIds: () => () => ({ organizationId: undefined }) }),
 );
 
-import { callApi } from "@/lib/api/call-api";
+import { callApi } from "@host/lib/api/call-api";
 import { useContextPreview } from "./useContextPreview";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

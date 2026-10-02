@@ -8,7 +8,7 @@ import {
   selectProjects,
 } from "@/features/tasks/redux/selectors";
 import { selectSearchQuery } from "@/features/tasks/redux/taskUiSlice";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 const SURFACE_NAME = "matrx-user/tasks";

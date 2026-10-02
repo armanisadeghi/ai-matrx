@@ -24,7 +24,7 @@ import {
   AGENT_EDIT_SAVE_MODES,
   type AgentEditAccess,
   type AgentEditAccessValue,
-} from "@/features/agents/utils/agent-edit-access";
+} from "@ai-matrx/chat/agents/utils/agent-edit-access";
 
 const ACCESS_ICON = { read_only: Lock, editable: PencilLine } as const;
 

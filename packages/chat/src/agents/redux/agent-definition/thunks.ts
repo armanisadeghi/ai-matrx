@@ -41,38 +41,38 @@
 
 import { agentNotReadableError } from "./agent-not-readable";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
+import { supabase } from "@host/utils/supabase/client";
+import { tryWriteOne, writeOneRow } from "@host/utils/supabase/writeOne";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
-import { getAgentCatalog } from "@/lib/agents/catalog";
-import { runWithSessionRetry } from "@/lib/supabase/authRetry";
+import { getAgentCatalog } from "@host/lib/agents/catalog";
+import { runWithSessionRetry } from "@host/lib/supabase/authRetry";
 import { pgErrorToError } from "@ai-matrx/data";
 import { agentNameTakenError } from "./agentNameTaken";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { withRetry } from "@ai-matrx/data/net";
 import { ConnectTimeoutError } from "@ai-matrx/data/net";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { Database } from "@/types/database.types";
-import type { DbRpcRow } from "@/types/supabase-rpc";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { Database } from "@host/types/database.types";
+import type { DbRpcRow } from "@host/types/supabase-rpc";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import {
   selectModelById,
   type AIModelRecord,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@host/features/ai-models/redux/modelRegistrySlice";
 import {
   resolveModelControls,
   supportsTools,
-} from "@/features/agents/hooks/useModelControls";
+} from "../../hooks/useModelControls";
 import {
   compareAgentSyncSnapshots,
   type AgentSyncComparison,
-} from "@/features/agents/sync/compare";
+} from "@host/features/agents/sync/compare";
 import {
   AGENT_SYNC_SNAPSHOT_SELECT,
   toAgentSyncSnapshot,
-} from "@/features/agents/sync/sync-fields";
+} from "@host/features/agents/sync/sync-fields";
 import type {
   AgentDefinition,
   AgentListRow,
@@ -90,9 +90,9 @@ import { isSyntheticAgentId } from "./synthetic-id";
 import {
   readFavoriteIds,
   writeFavorite,
-} from "@/features/scopes/service/favoriteOverlay";
+} from "@host/features/scopes/service/favoriteOverlay";
 import { parseAgentVersionSnapshot } from "./parse-output-snapshot";
-import { assignField } from "@/features/agents/redux/shared/field-flags";
+import { assignField } from "../shared/field-flags";
 import {
   upsertAgent,
   mergePartialAgent,

@@ -39,7 +39,7 @@ import {
   SCRAPER_CONTEXT_MENU_PROPS,
 } from "@/features/scraper/agent-context/buildScraperContextData";
 import { buildScraperWriteHandlers } from "@/features/scraper/agent-context/scraperWriteHandlers";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createScraperExtraSections } from "@/features/scraper/agent-context/scraperExtraSections";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { useScraperKeywordSearchForm } from "@/features/scraper/hooks/useScraperKeywordSearchForm";

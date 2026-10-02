@@ -7,18 +7,18 @@
  */
 
 import { ChevronDown, ExternalLink, PencilLine, Plus } from "lucide-react";
-import AppLink from "@/components/navigation/AppLink";
+import AppLink from "@host/components/navigation/AppLink";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectConversationListItemById } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import { conversationRenameOpener } from "@/features/agents/components/conversation-actions/rename/conversationRenameOpener";
+} from "@host/components/ui/dropdown-menu";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectConversationTitle } from "../../agents/redux/execution-system/conversations/conversations.selectors";
+import { selectConversationListItemById } from "../../agents/redux/conversation-list/conversation-list.selectors";
+import { conversationRenameOpener } from "../../agents/components/conversation-actions/rename/conversationRenameOpener";
 
 /** The chat's real title (null until it has one) — the conversation's, else its list row's. */
 function useChatRealTitle(conversationId: string | null): string | null {

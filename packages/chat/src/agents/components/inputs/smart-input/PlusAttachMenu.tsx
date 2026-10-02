@@ -29,40 +29,40 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { Switch } from "@/components/ui/switch";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
-import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
-import { ResourcePickerSubViewHeader } from "@/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
-import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
-import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
-import { RunInputCapabilities } from "@/features/agents/components/run-controls/RunInputCapabilities";
+import { Switch } from "@host/components/ui/switch";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
+import type { ResourcePickerViewId } from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
+import { ResourcePickerSubViewHeader } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
+import { QuickRunModelSelect } from "../../run-controls/RunModelPicker";
+import { RunConfigOverrides } from "../../run-controls/RunConfigOverrides";
+import { RunInputCapabilities } from "../../run-controls/RunInputCapabilities";
 import {
   useAttachResource,
   useDetachResource,
-} from "@/features/agents/components/inputs/resources/attach-resource";
-import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
-import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
-import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
-import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
-import { selectAutoClearConversation } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectShouldShowAutoClearToggle } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { ContextLensBar } from "@/features/scopes/components/active-context/ContextLensBar";
-import { ComputeLensBar } from "@/features/agents/components/inputs/smart-input/ComputeLensBar";
-import { useSandboxBindingBlocked } from "@/features/agents/components/inputs/smart-input/use-compute-target-actions";
-import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
-import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
-import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorkingDocument";
-import { selectIsManualExecutionMode } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { cn } from "@/lib/utils";
-import type { Resource } from "@/features/agents/resources/types";
-import { SmartInputMessageTemplatePicker } from "@/features/message-templates/components/SmartInputMessageTemplatePicker";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { prependTemplateToDraft } from "@/features/message-templates/utils/prepend-template-to-draft";
+} from "../resources/attach-resource";
+import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { selectAttachmentCapabilities } from "../../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
+import { selectWorkingDocEnabled } from "../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { setConversationDocumentEnabledThunk } from "../../../redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { setScratchpadGateThunk } from "../../../redux/execution-system/instance-working-document/scratchpad.thunks";
+import { selectAutoClearConversation } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectShouldShowAutoClearToggle } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { setAutoClearMode } from "../../../redux/execution-system/thunks/create-instance.thunk";
+import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
+import { ContextLensBar } from "@host/features/scopes/components/active-context/ContextLensBar";
+import { ComputeLensBar } from "./ComputeLensBar";
+import { useSandboxBindingBlocked } from "./use-compute-target-actions";
+import { useOpenContextPreviewPanel } from "@host/features/overlays/openers/contextPreviewPanel";
+import { selectIsOverlayOpen } from "@host/lib/redux/slices/overlaySlice";
+import { useConversationDocumentsBridge } from "../../../hooks/useWorkingDocument";
+import { selectIsManualExecutionMode } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { cn } from "@host/lib/utils";
+import type { Resource } from "../../../resources/types";
+import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
+import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
+import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";
 
 const MANUAL_MODE_SETTINGS_HINT =
   "Per-run settings are edited in the builder panel during test runs";

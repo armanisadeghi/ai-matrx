@@ -28,9 +28,9 @@
 // sent conversation has a server row and is loaded, never relaunched.
 // ============================================================================
 
-import { DRAFT_TTL_MS } from "@/lib/drafts/useTextDraft";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { DRAFT_TTL_MS } from "@host/lib/drafts/useTextDraft";
+import type { ResultDisplayMode } from "../../../utils/run-ui-utils";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 const PREFIX = "matrx.unsent-launch.";
 

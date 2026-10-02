@@ -61,7 +61,7 @@ import {
   fetchFileBlob,
   fetchFileBlobUrl,
 } from "@/features/files/hooks/useFileBlob";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 
 import { CameraCapture } from "@ai-matrx/capture/react";
 import type { CaptureMediaItem } from "@ai-matrx/capture/react";

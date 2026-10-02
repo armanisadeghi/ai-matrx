@@ -69,14 +69,14 @@ Slice/selectors/thunks/converters/realtime-middleware. Selectors and converters 
 | Importing file | Imported names | Recommendation |
 | --- | --- | --- |
 | `features/image-manager/components/StudioLibraryTab.tsx` | `ensureFolderPath` (thunks) | MIGRATE — expose `ensureFolderPath` via public index, or wrap into a handler op. |
-| `features/cx-chat/components/user-input/ConversationInput.tsx` | `fileIdToMediaRef` (converters) | MIGRATE to public index (already re-exported there — just change the import path). |
+| `packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx` | `fileIdToMediaRef` (converters) | MIGRATE to public index (already re-exported there — just change the import path). |
 | `features/resource-manager/resource-picker/FilesResourcePicker.tsx` | (multiple selectors) | REPLACE with `useCloudTree`/`useFolderContents` from public index. |
 | `features/tasks/services/taskService.ts` | thunks (×2) — `ensureFolderPath` and others | MIGRATE — handler-side facade for folder ensure / upload. |
 | `features/whatsapp-clone/hooks/useWhatsAppMedia.ts` | selectors + `loadUserFileTree` | REPLACE with public hooks. |
 | `features/code/hooks/useOpenCloudFile.ts` | `getFileFromState` (selectors) | REPLACE with `useFile({kind:'file_id'})`. |
 | `features/code/views/explorer/CloudFilesExplorer.tsx` | slice actions + `selectTreeStatus` | MIGRATE — narrow public hooks for explorer state. |
 | `features/code/views/explorer/ExplorerPanel.tsx` | `loadUserFileTree` (thunks) | MIGRATE — expose `loadUserFileTree` (or a hook wrapper) on the public index. |
-| `features/agents/components/inputs/smart-input/AgentTextarea.tsx` | `fileIdToMediaRef` | MIGRATE — switch to public index. |
+| `packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx` | `fileIdToMediaRef` | MIGRATE — switch to public index. |
 | `features/rag/components/search/RagSearchHits.tsx` | `selectAllFilesMap` | REPLACE — RAG hits shouldn't be reading the full files map. Use a per-id `useFile` lookup. |
 | `features/rag/components/data-stores/CldFilePicker.tsx` | `selectAllFilesArray` | REPLACE with `useCloudTree` / `useFolderContents`. |
 | `features/audio/services/audioFallbackUpload.ts` | thunks | REPLACE with handler. |
@@ -105,19 +105,19 @@ Mostly `handler/hooks/useFileUpload` (19 occurrences), then `handler/types` (9),
 | --- | --- | --- |
 | `app/(authenticated)/(admin-auth)/administration/users/feedback/components/FeedbackDetailDialog.tsx` | `useFileUpload`, `imageViewUrl` from `handler/utils/python-base` | MIGRATE `useFileUpload` to public index. `imageViewUrl` needs to be re-exported (or replaced with `useFileSrc`). |
 | `features/pdf-demo/components/PdfSourcePicker.tsx` | `useFileUpload` | MIGRATE to public index. |
-| `features/cx-chat/components/user-input/ConversationInput.tsx` | `useFileUpload` | MIGRATE. |
+| `packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx` | `useFileUpload` | MIGRATE. |
 | `features/agent-apps/components/inputs/AgentAppImageField.tsx` | `useFileUpload` | MIGRATE. |
-| `features/cx-conversation/ConversationInput.tsx` | `useFileUpload` | MIGRATE. |
+| `packages/chat/src/cx-conversation/ConversationInput.tsx` | `useFileUpload` | MIGRATE. |
 | `features/resource-manager/resource-picker/UploadResourcePicker.tsx` | `useFileUpload` | MIGRATE. |
 | `features/transcripts/components/TranscriptViewer.tsx` | `useFileSrc`, `FileSource` (type) | MIGRATE — both re-exported via public index. |
 | `features/transcripts/service/audioStorageService.ts` | `fileHandler` | MIGRATE — `fileHandler` is the canonical re-export. |
 | `features/public-chat/components/ChatInputWithControls.tsx` | `useFileUpload`, `NormalizedFile` (type) | MIGRATE. |
 | `features/public-chat/components/resource-picker/PublicUploadResourcePicker.tsx` | `useFileUpload`, `NormalizedFile` | MIGRATE. |
 | `features/whatsapp-clone/modals/media/MediaTab.tsx` | `useFileSrc` | MIGRATE. |
-| `features/agents/components/notifications/ImageArrivalPeek.tsx` | `useFileAs`, `FileSource` | MIGRATE — both re-exported. |
-| `features/agents/components/inputs/input-components/MediaVariableInput.tsx` | `useFileUpload`, `useFileSrc` | MIGRATE. |
-| `features/agents/components/inputs/smart-input/AgentTextarea.tsx` | `useFileUpload` | MIGRATE. |
-| `features/agents/redux/execution-system/instance-resources/resource-source.ts` | `preferIdentityLocator` (from `handler/utils/prefer-locator`), `FileSource`, `NormalizedFile`, `normalize` (from `handler/input/normalize`) | MIGRATE — `FileSource`/`NormalizedFile` via public index. `preferIdentityLocator` and `normalize` are internal utilities; either expose narrow `fileHandler.normalize()` / `fileHandler.preferIdentityLocator()` on the facade, or REPLACE the call sites with the higher-level `fileHandler` ops. |
+| `packages/chat/src/agents/components/notifications/ImageArrivalPeek.tsx` | `useFileAs`, `FileSource` | MIGRATE — both re-exported. |
+| `packages/chat/src/agents/components/inputs/input-components/MediaVariableInput.tsx` | `useFileUpload`, `useFileSrc` | MIGRATE. |
+| `packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx` | `useFileUpload` | MIGRATE. |
+| `packages/chat/src/agents/redux/execution-system/instance-resources/resource-source.ts` | `preferIdentityLocator` (from `handler/utils/prefer-locator`), `FileSource`, `NormalizedFile`, `normalize` (from `handler/input/normalize`) | MIGRATE — `FileSource`/`NormalizedFile` via public index. `preferIdentityLocator` and `normalize` are internal utilities; either expose narrow `fileHandler.normalize()` / `fileHandler.preferIdentityLocator()` on the facade, or REPLACE the call sites with the higher-level `fileHandler` ops. |
 | `features/code-files/service/s3Service.ts` | `fileHandler` | MIGRATE. |
 | `features/window-panels/windows/FeedbackWindow.tsx` | `useFileUpload` | MIGRATE. |
 | `features/prompts/components/PromptInput.tsx` | `useFileUpload` | MIGRATE. |
@@ -163,8 +163,8 @@ Two big buckets: (1) `components/surfaces/PageShell` — used by every `app/(a)/
 | `features/tasks/components/TaskAttachmentsPanel.tsx` | `openFilePicker` (from `CloudFilesPickerHost`) | MIGRATE — `openFilePicker` opener should be on the public index. |
 | `features/code/views/explorer/CloudFilesExplorer.tsx` | `FileTree` | MIGRATE — promote `FileTree` to the public index (it's clearly a public composition primitive). |
 | `features/code/editor/CloudFilePreviewer.tsx` | `FilePreview` | MIGRATE — already on public index. |
-| `features/agents/components/messages-display/user/AgentUserMessage.tsx` | `FileResourceChip` | MIGRATE — needs to be added to public index. |
-| `features/agents/components/inputs/resources/SmartAgentResourceChips.tsx` | `FileResourceChip` | MIGRATE — same. |
+| `packages/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx` | `FileResourceChip` | MIGRATE — needs to be added to public index. |
+| `packages/chat/src/agents/components/inputs/resources/SmartAgentResourceChips.tsx` | `FileResourceChip` | MIGRATE — same. |
 | `features/window-panels/windows/cloud-files/FilePreviewWindow.tsx` | `PreviewPane` | MIGRATE — promote `PreviewPane` to public index. |
 | `features/window-panels/windows/cloud-files/CloudFilesWindow.tsx` | `WindowPanelShell` (multiple) | MIGRATE — promote `WindowPanelShell` to public index (it composes the files window). |
 | `features/file-analysis/studio/StudioShell.tsx` | `PdfRegion`, `AnnotationLayerMode` (types) | MIGRATE — promote `PdfAnnotationLayer` types to public index. |
@@ -198,8 +198,8 @@ Direct imports of the single types file. Every symbol consumed (`AssetPreset`, `
 | `features/resource-manager/resource-picker/FilesResourcePicker.tsx` | (multiple) | MIGRATE. |
 | `features/whatsapp-clone/hooks/useWhatsAppMedia.ts` | `CloudFileRecord` | MIGRATE. |
 | `features/agents/components/settings-management/AgentSettingMediaPicker.tsx` | `MediaRef` | MIGRATE. |
-| `features/agents/redux/execution-system/instance-resources/instance-resources.selectors.ts` | `MediaRef` | MIGRATE. |
-| `features/agents/redux/execution-system/instance-resources/resource-source.ts` | `MediaRef` | MIGRATE. |
+| `packages/chat/src/agents/redux/execution-system/instance-resources/instance-resources.selectors.ts` | `MediaRef` | MIGRATE. |
+| `packages/chat/src/agents/redux/execution-system/instance-resources/resource-source.ts` | `MediaRef` | MIGRATE. |
 | `features/rag/components/data-stores/CldFilePicker.tsx` | `CloudFileRecord` | MIGRATE. |
 | `features/window-panels/windows/image/ImageUploaderWindow.tsx` | `AssetPreset` | MIGRATE. |
 | `features/window-panels/windows/image/callbacks.ts` | `AssetPreset` | MIGRATE. |

@@ -6,22 +6,22 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAccessToken,
   selectAuthReady,
   selectUserId,
-} from "@/lib/redux/selectors/userSelectors";
+} from "@host/lib/redux/selectors/userSelectors";
 import {
   dismissDriftAlert,
   fetchDriftAlerts,
   markDriftAlertViewed,
-} from "@/features/agents/redux/usages/usages.thunks";
+} from "@host/features/agents/redux/usages/usages.thunks";
 import {
   selectActiveBannerAlerts,
   selectDriftAlertsStatus,
-} from "@/features/agents/redux/usages/usages.selectors";
-import type { DriftAlertRow } from "@/features/agents/redux/usages/usages.types";
+} from "@host/features/agents/redux/usages/usages.selectors";
+import type { DriftAlertRow } from "@host/features/agents/redux/usages/usages.types";
 
 export function useDriftAlerts() {
   const dispatch = useAppDispatch();

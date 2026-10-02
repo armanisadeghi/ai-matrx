@@ -64,7 +64,7 @@ import { createContentPlanEntitiesScope } from "@/features/surfaces/manifests/co
 import {
   SurfaceRuntimeProvider,
   useSurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -97,7 +97,7 @@ import {
   PLAN_ENTITY_ROSTER_KIND,
   entityRosterValue,
 } from "../setup/kind-values";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
 import {
   PLAN_ENTITY_TYPES,

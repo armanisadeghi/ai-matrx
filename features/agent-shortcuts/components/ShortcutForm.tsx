@@ -78,14 +78,14 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
   selectBuiltinAgents,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchAgentExecutionMinimal,
   fetchAgentsListFull,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { StoredModelOverridesField } from "@/features/agents/components/run-controls/StoredModelOverridesField";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { StoredModelOverridesField } from "@ai-matrx/chat/agents/components/run-controls/StoredModelOverridesField";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type {
   AgentScope,
   AgentShortcut,

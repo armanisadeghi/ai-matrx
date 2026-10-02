@@ -82,7 +82,7 @@ import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const REPO_ROOT = resolve(__dirname, "..");
-const SCANNED_DIRS = ["features", "app"] as const;
+const SCANNED_DIRS = ["features", "packages/chat/src", "app"] as const;
 const BANNED = ["confirm", "alert", "prompt"] as const;
 type Banned = (typeof BANNED)[number];
 

@@ -34,7 +34,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 // The tutor style VOCABULARY, from the feature's dependency-free canonical
 // module — the SAME constants the settings panel renders as the learner's
 // options and the write handlers validate against. Spelled into the target

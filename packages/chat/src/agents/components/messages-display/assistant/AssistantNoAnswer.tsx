@@ -2,8 +2,8 @@
 
 import { CircleSlash, Loader2 } from "lucide-react";
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 
 /**
  * The words for a turn that finished and produced no answer. The decision of

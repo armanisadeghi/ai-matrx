@@ -29,8 +29,8 @@ import React from "react";
 import { CircleX, Layers, List } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
+import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
+import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   CountChip,

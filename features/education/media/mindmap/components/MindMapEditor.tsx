@@ -12,9 +12,9 @@ import { toast } from "@/lib/toast";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { blankMindMap, parseCreateMindMaps, parseMindMap, parseMindMapIds, parseUpdateMindMaps, trustAfterMindMapEdit, type MindMapEnvelope } from "../mindMapWrites";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
 
 const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;

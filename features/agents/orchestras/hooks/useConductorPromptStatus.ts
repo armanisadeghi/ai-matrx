@@ -12,8 +12,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentReadyForBuilder,
   selectAgentSystemMessage,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AVAILABLE_AGENTS_RE } from "../conductor/constants";
 
 const UUID_RE =

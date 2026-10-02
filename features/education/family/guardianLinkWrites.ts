@@ -1,5 +1,5 @@
-import { collectionWriteHandlers, collectProblems, readCollectionList, repeatsProblem } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers, collectProblems, readCollectionList, repeatsProblem } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { familyService } from "./familyService";
 import type { GuardianLinkView } from "./types";
 

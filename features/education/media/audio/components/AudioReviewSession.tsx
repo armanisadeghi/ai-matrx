@@ -41,8 +41,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useLiveRunHandle } from "@/features/agents/hooks/useLiveRunHandle";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useLiveRunHandle } from "@ai-matrx/chat/agents/hooks/useLiveRunHandle";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import {
   startContinuousCapture,

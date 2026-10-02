@@ -8,8 +8,8 @@
 // first with `note` dropped from the reader: a `propose`-mode upsert rendered
 // as if it had written.
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { DOCUMENTED_MAP_TREE } from "@/features/marketing/seo/topical-map/proposals/__fixtures__/mapTopicProposalDocumented";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
+import { DOCUMENTED_MAP_TREE } from "@host/features/marketing/seo/topical-map/proposals/__fixtures__/mapTopicProposalDocumented";
 
 import { TOPICAL_MAP_ACTION_LABELS, readTopicalMapResult, topicalMapActionOf } from "./topicalMapResult";
 

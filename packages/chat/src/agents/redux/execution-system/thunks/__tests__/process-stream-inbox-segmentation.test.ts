@@ -14,9 +14,9 @@ import messagesReducer from "../../messages/messages.slice";
 import {
   buildDisplayEntries,
   groupDisplayEntries,
-} from "@/features/agents/components/messages-display/display-groups";
+} from "../../../../components/messages-display/display-groups";
 import { processStream } from "../process-stream";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;

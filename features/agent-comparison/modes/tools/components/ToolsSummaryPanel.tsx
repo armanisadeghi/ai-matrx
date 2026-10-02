@@ -22,12 +22,12 @@ import {
   selectAgentTools,
   selectAgentCustomTools,
   selectAgentMcpServers,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   selectAllTools,
   selectToolsReady,
-} from "@/features/agents/redux/tools/tools.selectors";
-import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
+} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
+import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 

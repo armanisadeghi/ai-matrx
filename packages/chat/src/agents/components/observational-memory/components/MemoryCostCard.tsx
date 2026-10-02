@@ -17,24 +17,24 @@
 
 import React, { useCallback, useEffect } from "react";
 import { Gauge, RefreshCw, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectMemoryCostFetchState,
   selectMemoryCostSummary,
   selectMemoryCounters,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
-import { fetchMemoryCost } from "@/features/agents/redux/execution-system/observational-memory/fetch-memory-cost.thunk";
+} from "../../../redux/execution-system/observational-memory/observational-memory.selectors";
+import { fetchMemoryCost } from "../../../redux/execution-system/observational-memory/fetch-memory-cost.thunk";
 import { formatCostUsd, formatTokens } from "./format";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import type { components } from "@/types/python-generated/api-types";
+import { useCostDisplay } from "@host/components/cost/useCostDisplay";
+import type { components } from "@host/types/python-generated/api-types";
 import {
   MOBILE_TABLE,
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "@host/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 type MemoryCostByEventType = components["schemas"]["MemoryCostByEventType"];
 

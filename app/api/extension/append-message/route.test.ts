@@ -37,7 +37,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type {
   CxConversation,
   CxMessage,
-} from "@/features/public-chat/types/cx-tables";
+} from "@ai-matrx/chat/public-chat/types/cx-tables";
 import type { Database } from "@/types/database.types";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 

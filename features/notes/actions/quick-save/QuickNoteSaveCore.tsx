@@ -37,7 +37,7 @@ import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerW
 import type { Note } from "@/features/notes/types";
 import { useQuickNoteSave } from "./useQuickNoteSave";
 import { NOTE_DRAFT_FIELDS } from "./quickNoteSaveVocabulary";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CreateFolderDialog } from "@/features/notes/components/CreateFolderDialog";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 

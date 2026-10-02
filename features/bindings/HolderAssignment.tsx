@@ -73,7 +73,7 @@ import type { AgentTab } from "@ai-matrx/agents/catalog";
 import {
   fetchAgentVersionHistory,
   type AgentVersionHistoryItem,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/WorkflowListDropdown";
 import { listWorkflowVersionChoices, type WorkflowVersionChoice } from "./workflow-versions";
 import type { HolderDraft } from "./ScopeHolderBar";

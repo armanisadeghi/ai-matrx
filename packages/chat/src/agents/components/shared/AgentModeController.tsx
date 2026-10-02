@@ -15,9 +15,9 @@ import {
   Telescope,
   Zap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentIsDirty } from "@/features/agents/redux/agent-definition/selectors";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentIsDirty } from "../../redux/agent-definition/selectors";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,15 +27,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@host/components/ui/alert-dialog";
 import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,
-} from "@/features/shell/components/header/navItemClasses";
+} from "@host/features/shell/components/header/navItemClasses";
 import {
   NavItemTooltip,
   NavTooltipProvider,
-} from "@/features/shell/components/header/NavItemTooltip";
+} from "@host/features/shell/components/header/NavItemTooltip";
 
 export type AgentPageMode =
   | "view"

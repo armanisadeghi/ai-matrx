@@ -1,10 +1,10 @@
 "use client";
 
-import { useFileNode } from "@/features/files/hooks/useFileNode";
-import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
-import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
-import { normalizeSourceName } from "@/features/rag/components/hit-card/adapters";
-import type { RagHitView } from "@/features/rag/components/hit-card/types";
+import { useFileNode } from "@host/features/files/hooks/useFileNode";
+import { useOpenCitation } from "@host/features/rag/components/source-inspector/useOpenCitation";
+import { RagHitCard } from "@host/features/rag/components/hit-card/RagHitCard";
+import { normalizeSourceName } from "@host/features/rag/components/hit-card/adapters";
+import type { RagHitView } from "@host/features/rag/components/hit-card/types";
 import { hrefForNormalized, type NormalizedHit } from "./parseRag";
 
 /**

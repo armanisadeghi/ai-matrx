@@ -16,7 +16,7 @@
 // It is a pure function so the gate can be proven, and so the sentences are
 // read once rather than rewritten per screen.
 
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 import {
   valueMappingsProblems,
   type PreflightTarget,

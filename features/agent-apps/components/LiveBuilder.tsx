@@ -38,10 +38,10 @@ import { toast } from "@/lib/toast-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
-import { destroyInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectFocusedConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { destroyInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 // Alias these — local useState setters in this component share these names.
 import {
   setVariablesPanelStyle as setVariablesPanelStyleAction,
@@ -59,7 +59,7 @@ import {
   setShowUserMessageOptions as setShowUserMessageOptionsAction,
   setShowAssistantMessageOptions as setShowAssistantMessageOptionsAction,
   setInputPlaceholder as setInputPlaceholderAction,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { AgentAppChatShell } from "./shells/AgentAppChatShell";
 import { AgentAppFormToResultShell } from "./shells/AgentAppFormToResultShell";
 import { AgentAppWidgetShell } from "./shells/AgentAppWidgetShell";

@@ -5,8 +5,8 @@
 import type { Metadata } from "next";
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/server";
-import { readCanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies.server";
-import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
 import { KindsCanvasWorkspaceDemo, type DemoKindRow } from "./KindsCanvasWorkspaceDemo";
 
 const WORKSPACE_ID = "demo-registered-shapes";

@@ -26,7 +26,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   DISCOVERY_KIND_POOL_PROSE,
   LABEL_REQUIRED_KIND,

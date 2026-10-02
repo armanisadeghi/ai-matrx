@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, X } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectPreExecutionMessage } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectInstanceAgentName } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectHasUserInput } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { setPreExecutionSatisfied } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { selectPreExecutionMessage } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectInstanceAgentName } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectHasUserInput } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setPreExecutionSatisfied } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { destroyInstanceIfAllowed } from "../../../redux/execution-system/conversations/conversations.thunks";
 import { SmartAgentInput } from "../../inputs/smart-input/SmartAgentInput";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 // ─── Pre-execution compact card (portalled, no WindowPanel) ──────────────────
 

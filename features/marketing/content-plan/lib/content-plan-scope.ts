@@ -16,7 +16,7 @@ import type {
   AssociationEdge,
 } from "@/features/scopes/types";
 import { createContentPlanScope } from "@/features/surfaces/manifests/content-plan.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 import type { PlanView } from "../hooks/usePlanWorkspaceParams";
 import type { PlanEntityRow, PlanNodeRow, PlanProfileRow } from "../types";

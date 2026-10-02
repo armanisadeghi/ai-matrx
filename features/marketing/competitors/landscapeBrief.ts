@@ -10,7 +10,7 @@
  */
 
 import { callApi } from "@/lib/api/call-api";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import {
   describeBackendFailure,
   parseCallApiError,

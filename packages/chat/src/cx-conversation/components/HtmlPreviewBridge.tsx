@@ -1,25 +1,25 @@
 "use client";
 
 import React, { useEffect, useCallback, useRef } from "react";
-import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
 import {
   disposeFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,
-} from "@/features/overlays/callbacks/fullScreenEditor";
-import { selectUser } from "@/lib/redux/slices/userSlice";
-import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
-import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPreviewFullScreenEditor";
-import { fetchArtifactsForMessageThunk } from "@/lib/redux/thunks/artifactThunks";
-import { selectHtmlPageArtifactForMessage } from "@/lib/redux/selectors/artifactSelectors";
-import { setActivePageId } from "@/lib/redux/slices/htmlPagesSlice";
-import { updateArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
-import { registerArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
+} from "@host/features/overlays/callbacks/fullScreenEditor";
+import { selectUser } from "@host/lib/redux/slices/userSlice";
+import { useHtmlPreviewState } from "@host/features/html-pages/hooks/useHtmlPreviewState";
+import HtmlPreviewFullScreenEditor from "@host/features/html-pages/components/HtmlPreviewFullScreenEditor";
+import { fetchArtifactsForMessageThunk } from "@host/lib/redux/thunks/artifactThunks";
+import { selectHtmlPageArtifactForMessage } from "@host/lib/redux/selectors/artifactSelectors";
+import { setActivePageId } from "@host/lib/redux/slices/htmlPagesSlice";
+import { updateArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
+import { registerArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
 import {
   selectOrganizationId,
   selectTaskId,
-} from "@/lib/redux/slices/appContextSlice";
-import { toast } from "@/lib/toast";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+} from "@host/lib/redux/slices/appContextSlice";
+import { toast } from "@host/lib/toast";
+import { presentOrganizationRefusal } from "@host/lib/organizations/organizationRefusalToast";
 
 interface HtmlPreviewBridgeProps {
   content: string;
@@ -243,7 +243,7 @@ export function HtmlPreviewBridge({
       // The preview opened on the message's DISPLAY text: splice only the
       // changed span into the stored row (RC-B5), never the display text.
       const { saveMessageDisplayEdit } =
-        await import("@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk");
+        await import("../../agents/redux/execution-system/message-crud/save-answer-edit.thunk");
       await saveMessageDisplayEdit(dispatch, store.getState, {
         conversationId,
         messageId,

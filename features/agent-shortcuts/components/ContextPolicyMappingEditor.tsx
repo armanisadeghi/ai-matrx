@@ -18,7 +18,7 @@ import {
   SCOPE_LEVEL_META,
   type ScopeLevel,
 } from "../constants";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
 
 export interface ContextPolicyMappingEditorProps {
   /**

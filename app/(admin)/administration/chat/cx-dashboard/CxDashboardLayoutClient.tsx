@@ -11,7 +11,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { CxDashboardErrorBoundary } from "@/features/cx-dashboard/components/CxDashboardErrorBoundary";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,

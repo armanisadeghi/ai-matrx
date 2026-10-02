@@ -36,8 +36,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRoleAgentButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

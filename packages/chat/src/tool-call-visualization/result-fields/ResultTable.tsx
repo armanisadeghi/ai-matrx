@@ -17,7 +17,7 @@
 
 import React from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type { TableColumn } from "./shape";
 import {
     detectResultShape,
@@ -31,7 +31,7 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
+} from "@host/components/official/mobile-table/mobileTable";
 
 export interface ResultTableProps {
     rows: Array<Record<string, unknown>>;

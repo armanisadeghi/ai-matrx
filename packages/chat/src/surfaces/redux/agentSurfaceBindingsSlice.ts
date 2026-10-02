@@ -15,7 +15,7 @@
 "use client";
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
+import type { AgentSurfaceBinding } from "../services/bind-agent-to-surface.service";
 
 export interface AgentSurfaceBindingsSliceState {
   byId: Record<string, AgentSurfaceBinding>;

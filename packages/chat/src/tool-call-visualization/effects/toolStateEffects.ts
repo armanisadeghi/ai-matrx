@@ -33,16 +33,16 @@
  * its own `context_changed` re-read; the scratchpad is agent-readonly.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import {
   refreshNoteContent,
   fetchNotesList,
-} from "@/features/notes/redux/thunks";
-import { loadProjectsWithTasks } from "@/features/tasks/redux/thunks";
+} from "@host/features/notes/redux/thunks";
+import { loadProjectsWithTasks } from "@host/features/tasks/redux/thunks";
 import {
   INVALIDATION_KEYS,
   fireInvalidation,
-} from "@/lib/invalidation/invalidation-registry";
+} from "@host/lib/invalidation/invalidation-registry";
 
 /** The stream processor's dispatch is intentionally loose — it forwards
  *  actions AND thunks. This structural type matches what it actually is. */

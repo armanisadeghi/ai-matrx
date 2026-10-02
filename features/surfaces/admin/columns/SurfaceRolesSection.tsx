@@ -13,12 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   useSurfaceAgentRoles,
   type RoleView,
-} from "@/features/surfaces/hooks/useSurfaceConfig";
-import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
+} from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
+import { useAgentNames } from "@ai-matrx/chat/surfaces/hooks/useAgentNames";
 
 type MeAgentMode = "exclude" | "roster" | "default";
 

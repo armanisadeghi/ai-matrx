@@ -10,7 +10,7 @@ import {
   type ClassHubContentEntry,
   type ClassHubView,
 } from "@/features/surfaces/manifests/education-class.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { daysUntil } from "./settings";
 import type { UseClassAccessReturn } from "./hooks/useClassAccess";
 import type { UseClassAssignmentsReturn } from "./hooks/useClassAssignments";

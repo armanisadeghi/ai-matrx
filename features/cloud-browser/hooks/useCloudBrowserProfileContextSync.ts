@@ -22,7 +22,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   removeContextEntry,
   setContextEntries,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 
 /** The one context key this surface owns. */
 export const CLOUD_BROWSER_PROFILE_CONTEXT_KEY = "cloud_browser_profile";

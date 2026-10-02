@@ -12,10 +12,10 @@
  */
 
 import type { ResolvedContextRow } from "@ai-matrx/agents/context";
-import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
-import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
+import { useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
+import { useContainerLinks } from "@host/features/scopes/hooks/useContainerLinks";
 import { attachmentContextKey } from "@ai-matrx/agents/context";
 import {
   DOCUMENT_ATTACHMENT_PREFIXES,
@@ -24,15 +24,15 @@ import {
   reconcileDurableAttachments,
   selectDisplayContextRows,
   type DurableAttachment,
-} from "@/features/agents/redux/execution-system/context-rules/request-context";
-import { selectConversationAttachmentsEntry } from "@/features/connectors/redux/attachments.slice";
-import type { RootState } from "@/lib/redux/store";
+} from "../../../redux/execution-system/context-rules/request-context";
+import { selectConversationAttachmentsEntry } from "@host/features/connectors/redux/attachments.slice";
+import type { RootState } from "@host/lib/redux/store";
 import {
   ATTACHED_DOCUMENT_TOKENS,
   attachedDocumentFileId,
   resolveAttachedDocumentDisplayName,
   useAttachedDocumentFileNames,
-} from "@/features/agents/components/inputs/resources/attached-documents";
+} from "../resources/attached-documents";
 
 export function useConversationDisplayRows(
   conversationId: string,

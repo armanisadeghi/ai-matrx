@@ -9,7 +9,7 @@
 import type {
   CxContentBlock,
   CxTextContent,
-} from "@/features/public-chat/types/cx-tables";
+} from "@ai-matrx/chat/public-chat/types/cx-tables";
 
 function isTextBlock(b: CxContentBlock): b is CxTextContent {
   return b.type === "text";

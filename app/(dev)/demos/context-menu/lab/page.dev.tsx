@@ -102,16 +102,16 @@ import {
   selectTaskId,
   selectTaskName,
 } from "@/lib/redux/slices/appContextSlice";
-import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
-import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
+import { selectAllShortcutsArray } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
+import { selectAllCategoriesArray } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
 import { selectAllContentBlocksArray } from "@/features/agent-connections/redux/skl/content-block-compat";
-import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
-import { resolveRowScope } from "@/features/agents/redux/shared/scope";
-import type { Scope, ScopeRef } from "@/features/agents/redux/shared/scope";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import { fetchUnifiedMenu } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
+import { resolveRowScope } from "@ai-matrx/chat/agents/redux/shared/scope";
+import type { Scope, ScopeRef } from "@ai-matrx/chat/agents/redux/shared/scope";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import { useUnifiedAgentContextMenu } from "@/features/context-menu-v3/hooks/useUnifiedAgentContextMenu";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
-import type { SurfaceManifest } from "@/features/surfaces/types";
+import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import { supabase } from "@/utils/supabase/client";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";

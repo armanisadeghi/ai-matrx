@@ -48,7 +48,7 @@ import type {
   ConvertSource,
   TargetKind,
 } from "./types";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 
 export interface SegmentedGenerateArgs<T> {
   ctx: ConvertContext;

@@ -12,7 +12,7 @@ import {
   groupDisplayEntries,
   isCollabNoteRecord,
 } from "../display-groups";
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
+import type { MessageRecord } from "../../../redux/execution-system/messages/messages.slice";
 
 function msg(over: Partial<MessageRecord>): MessageRecord {
   return {

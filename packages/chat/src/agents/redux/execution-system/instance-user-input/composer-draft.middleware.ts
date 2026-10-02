@@ -17,7 +17,7 @@
 // the default must not depend on a backfill.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/rootReducer";
+import type { RootState } from "@host/lib/redux/rootReducer";
 import {
   clearUserInput,
   markInputPersisted,

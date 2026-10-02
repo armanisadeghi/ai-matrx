@@ -1,9 +1,9 @@
-import type { RootState } from "@/lib/redux/store";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { RootState } from "@host/lib/redux/store";
+import type { MessagePart } from "@host/types/python-generated/stream-events";
 import type {
   InputSubmissionPhase,
   PreSendState,
-} from "@/features/agents/types/instance.types";
+} from "../../../types/instance.types";
 
 const EMPTY_USER_VALUES: Record<string, unknown> = Object.freeze({});
 

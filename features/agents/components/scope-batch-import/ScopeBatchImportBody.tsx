@@ -52,27 +52,27 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   selectAgentContextPolicies,
   selectAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   setAgentContextPolicies,
   setAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/slice";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   buildContextPolicyFromItem,
   buildVariableFromItem,
   suggestKeyFromContextItem,
   uniquifyKey,
-} from "@/features/agents/utils/context-item-policy-mapping";
+} from "@ai-matrx/chat/agents/utils/context-item-policy-mapping";
 import { AgentEditAccessToggle } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
 import {
   applyAgentEditAccess,
   decodeAgentEditAccess,
   SCOPE_ITEM_DEFAULT_SAVE_MODE,
   type AgentEditAccess,
-} from "@/features/agents/utils/agent-edit-access";
-import { contextItemBindingOf } from "@/features/agents/utils/variable-binding";
+} from "@ai-matrx/chat/agents/utils/agent-edit-access";
+import { contextItemBindingOf } from "@ai-matrx/chat/agents/utils/variable-binding";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { InfoHint } from "@/components/official/InfoHint";
 

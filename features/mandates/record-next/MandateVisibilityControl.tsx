@@ -19,7 +19,7 @@ import { useState } from "react";
 import { Globe, Lock, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
-import { invalidateMandateCache } from "@/features/mandates/service";
+import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMandateWorkspaceData";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";

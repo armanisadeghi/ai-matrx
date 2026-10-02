@@ -11,7 +11,7 @@ import {
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { BoundColumn } from "@/features/agent-comparison/shared/BoundColumn";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import type { ConversationBattleFork } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

@@ -42,18 +42,18 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { executeInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   selectAnswerText,
   selectRequestError,
   selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { resolveMandate } from "@/features/mandates/service";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import {
   allInOneOfferValues,

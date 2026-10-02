@@ -29,8 +29,8 @@ import {
   RetryTapButton,
   StopTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { cancelExecution } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { cancelExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { APP_RUN_ERROR_TITLE } from "@/features/agent-apps/components/app-run-error";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useApiAuth } from "@/hooks/useApiAuth";
@@ -39,7 +39,7 @@ import { GuestLimitWarning } from "@/components/guest/GuestLimitWarning";
 import { SignupConversionModal } from "@/components/guest/SignupConversionModal";
 import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
 import { AgentAppErrorBoundary } from "@/features/agent-apps/components/AgentAppErrorBoundary";
-import PublicMessageOptionsMenu from "@/features/public-chat/components/PublicMessageOptionsMenu";
+import PublicMessageOptionsMenu from "@ai-matrx/chat/public-chat/components/PublicMessageOptionsMenu";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import type { UseAgentAppReturn } from "@/features/agent-apps/hooks/useAgentApp";
@@ -51,7 +51,7 @@ import {
   waitForRunOutcome,
 } from "@/features/agent-apps/tracking/run-outcome";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
+import { useWarmAgent } from "@ai-matrx/chat/agents/hooks/useWarmAgent";
 import type {
   AgentAppShellConfigCommon,
   PublicAgentApp,

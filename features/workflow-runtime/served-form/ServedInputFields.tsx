@@ -41,7 +41,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronDown, Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
+import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
 import {
   componentForInputOptions,
   resolveVariantComponent,

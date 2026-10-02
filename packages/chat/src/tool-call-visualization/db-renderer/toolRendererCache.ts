@@ -13,11 +13,11 @@
  */
 import type React from "react";
 
-import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
+import { compileSlotComponent } from "@host/features/agent-apps/utils/compile-slot";
 import {
   INVALIDATION_KEYS,
   registerInvalidationCallback,
-} from "@/lib/invalidation/invalidation-registry";
+} from "@host/lib/invalidation/invalidation-registry";
 import type { ToolRendererProps } from "../types";
 import { fetchToolRendererRow } from "./fetchToolRendererRow";
 import { compileToolRenderer } from "./compileToolRenderer";

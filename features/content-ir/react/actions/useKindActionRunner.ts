@@ -26,7 +26,7 @@ import { useCallback, useRef } from "react";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   getKindAction,

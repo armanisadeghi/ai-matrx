@@ -52,7 +52,7 @@ import {
 } from "@/lib/organization/organization-gate";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
-import { selectRequestCarriesKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectRequestCarriesKindEnvelope } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 
 import type { Rect } from "@/features/spatial/engine/camera";
 import type { PaceTier } from "@/features/spatial/engine/lod";
@@ -81,7 +81,7 @@ import { TextTileBody } from "@/features/spatial/tiles/TextTileBody";
 import { NoteItemBody } from "@/features/spatial/items/NoteItemBody";
 import { entityId, noteSeedEdit } from "@/features/spatial/items/work-sources";
 import type { NodeSource } from "@/features/spatial/board/document";
-import { SurfaceActivity } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceActivity } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useIsEditing } from "@/features/spatial/engine/react";
 import { SpatialBoardSurface } from "@/features/spatial/components/SpatialBoardSurface";
 import type {

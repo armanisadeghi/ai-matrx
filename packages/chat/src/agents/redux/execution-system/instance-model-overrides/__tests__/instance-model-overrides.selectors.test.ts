@@ -11,7 +11,7 @@ import {
   selectSettingsForChatApi,
   selectSettingsOverridesForApi,
 } from "../instance-model-overrides.selectors";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import reducer, {
   initInstanceOverrides,
   replaceOverrides,

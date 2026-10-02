@@ -9,8 +9,8 @@ import {
   describeSetting,
   parseSettingsDocument,
 } from "../settings-document";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ControlDefinition } from "@/features/agents/hooks/useModelControls";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { ControlDefinition } from "@ai-matrx/chat/agents/hooks/useModelControls";
 
 const QUALITY: ControlDefinition = {
   type: "enum",

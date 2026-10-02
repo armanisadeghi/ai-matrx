@@ -1,4 +1,4 @@
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 /**
  * Returns the "input" conversation id for a surface — the one bound to the

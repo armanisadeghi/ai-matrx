@@ -7,7 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 let mockPhase = "complete";
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: (selector: string) => {
     if (selector === "phase") return mockPhase;
     if (selector === "limit") return null;
@@ -21,7 +21,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/messages/messages.selectors",
+  "../../../redux/execution-system/messages/messages.selectors",
   () => ({
     selectConversationMessages: () => "messages",
     selectMessagesHydrationFailure: () => "hydrationFailure",
@@ -30,7 +30,7 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/selectors/aggregate.selectors",
+  "../../../redux/execution-system/selectors/aggregate.selectors",
   () => ({
     selectStreamPhase: () => "phase",
     selectLatestRequestId: () => "request",
@@ -69,7 +69,7 @@ jest.mock("../assistant/AgentEmptyMessageDisplay", () => ({
   AgentEmptyMessageDisplay: () => null,
 }));
 
-jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
+jest.mock("@host/features/context-menu-v3/NonEditableContextMenu", () => ({
   NonEditableContextMenu: ({
     suppressed,
     children,
@@ -83,16 +83,16 @@ jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
   ),
 }));
 
-jest.mock("@/features/context-menu-v3/utils/resolveMarkdownContext", () => ({
+jest.mock("@host/features/context-menu-v3/utils/resolveMarkdownContext", () => ({
   resolveMarkdownContext: jest.fn(),
 }));
 
-jest.mock("@/features/war-room/utils/renderPathTrace", () => ({
+jest.mock("@host/features/war-room/utils/renderPathTrace", () => ({
   isWarRoomThreadAgentSurface: () => false,
   traceWarRoomRenderPath: jest.fn(),
 }));
 
-jest.mock("@/lib/error-boundary/ErrorBoundaryWithCapture", () => ({
+jest.mock("@host/lib/error-boundary/ErrorBoundaryWithCapture", () => ({
   ErrorBoundaryWithCapture: ({ children }: { children: React.ReactNode }) =>
     children,
 }));

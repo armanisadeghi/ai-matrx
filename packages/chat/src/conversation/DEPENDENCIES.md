@@ -2,20 +2,20 @@
 
 > **Last updated:** 2026-03-17
 >
-> Catalogs every import from outside `features/conversation/`, `components/conversation/`,
+> Catalogs every import from outside `packages/chat/src/conversation/`, `components/conversation/`,
 > and `lib/redux/chatConversations/`. Use this to assess coupling and plan internalization.
 
 ---
 
 ## Internalized (no longer external)
 
-These were previously external but have been copied into `features/conversation/`:
+These were previously external but have been copied into `packages/chat/src/conversation/`:
 
 | What | Original Location | New Location |
 |------|-------------------|--------------|
-| `parseResourcesFromMessage`, `messageContainsResources`, `extractMessageWithoutResources` | `@/features/prompts/utils/resource-parsing` | `features/conversation/utils/resource-parsing.ts` |
-| `printMarkdownContent` | `@/features/chat/utils/markdown-print-utils` | `features/conversation/utils/markdown-print.ts` |
-| `useDomCapturePrint` | `@/features/chat/hooks/useDomCapturePrint` | `features/conversation/hooks/useDomCapturePrint.ts` |
+| `parseResourcesFromMessage`, `messageContainsResources`, `extractMessageWithoutResources` | `@/features/prompts/utils/resource-parsing` | `packages/chat/src/conversation/utils/resource-parsing.ts` |
+| `printMarkdownContent` | `@/features/chat/utils/markdown-print-utils` | `packages/chat/src/conversation/utils/markdown-print.ts` |
+| `useDomCapturePrint` | `@/features/chat/hooks/useDomCapturePrint` | `packages/chat/src/conversation/hooks/useDomCapturePrint.ts` |
 
 ---
 
@@ -39,7 +39,7 @@ Project-wide utilities with stable interfaces. No action needed.
 | `ENDPOINTS`, `BACKEND_URLS` | sendMessage thunk | `@/lib/api/endpoints` |
 | `buildCanonicalBlocks`, `extractPersistableToolBlocks` | sendMessage thunk, StreamingContentBlocks | `@/lib/chat-protocol` |
 | `ToolCallVisualization`, renderer registry, `ToolRendererProps` | StreamingContentBlocks, AssistantMessage | `@/features/tool-call-visualization` |
-| `ToolLifecycleEntry` type | StreamingContentBlocks (mapping from `ToolCallBlock`) | `@/features/agents/types/request.types` |
+| `ToolLifecycleEntry` type | StreamingContentBlocks (mapping from `ToolCallBlock`) | `@ai-matrx/chat/agents/types/request.types` |
 | `cn` | shared UI | `@/lib/utils` |
 | `StreamEvent` / `ToolEventPayload` types | StreamingContentBlocks, sendMessage thunk | `@/types/python-generated/stream-events` |
 | `Button`, `Textarea`, etc. | Multiple | `@/components/ui/*` |

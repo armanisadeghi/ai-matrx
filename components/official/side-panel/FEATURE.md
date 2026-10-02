@@ -31,7 +31,7 @@ is a layout change, not a slide).
   cookie `side-panel:<panelId>:width`.
 - `side-panel-width.server.ts` — `readSidePanelWidth(panelId, sizes)` for the first paint.
 
-**Consumers:** `features/canvas/workspace/ChatCanvasWorkspace.tsx` (nav, docked chat, properties).
+**Consumers:** `packages/chat/src/canvas/workspace/ChatCanvasWorkspace.tsx` (nav, docked chat, properties).
 
 ---
 

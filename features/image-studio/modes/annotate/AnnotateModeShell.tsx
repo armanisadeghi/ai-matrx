@@ -24,7 +24,7 @@ import { toast } from "@/lib/toast";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { Button } from "@/components/ui/button";
 import { useImageSource } from "../shared/use-image-source";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   IMAGE_ANNOTATE_SURFACE_NAME,
   createImageAnnotateScope,

@@ -23,12 +23,12 @@
  * `features/agents/FEATURE.md`.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type { MatrxTransport } from "@ai-matrx/agents/matrx";
 import {
   createMatrxTransportFromTarget,
   type MatrxTransportOptions,
-} from "@/lib/api/matrx-transport";
+} from "@host/lib/api/matrx-transport";
 import { resolveBackendForConversation } from "./resolve-base-url";
 
 /**

@@ -23,14 +23,14 @@
 
 import { useCallback } from "react";
 
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   offerCanvasItem,
   openCanvas,
   type CanvasContent,
-} from "@/features/canvas/redux/canvasSlice";
-import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
-import { keepLiveSourceReachable } from "@/features/canvas/liveSourceReachability";
+} from "@host/features/canvas/redux/canvasSlice";
+import { useCanvasOpenGuard } from "@host/features/canvas/hooks/useCanvasOpenGuard";
+import { keepLiveSourceReachable } from "@host/features/canvas/liveSourceReachability";
 
 export interface OpenSandboxCanvasOptions {
   /** The box to show — `sandbox_instances.id`. */

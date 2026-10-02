@@ -19,13 +19,13 @@ import { createRoot } from "react-dom/client";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const launchMandate = jest.fn(async () => ({ conversationId: "fresh-conv" }));
-jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({ launchMandate }),
 }));
 
 const resumeCalls: unknown[] = [];
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/resume-conversation.thunk",
   () => ({
     resumeConversation: (args: unknown) => {
       resumeCalls.push(args);
@@ -53,37 +53,37 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (sel: (s: unknown) => unknown) => sel({}),
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/selectors/aggregate.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors",
   () => ({
     selectIsExecuting: () => () => executing,
   }),
 );
 jest.mock(
-  "@/features/agents/redux/execution-system/messages/messages.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors",
   () => ({
     selectMessageCount: () => () => messageCount,
   }),
 );
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-context/instance-context.slice",
+  "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice",
   () => ({
     setContextEntries: (p: unknown) => ({ type: "ctx", p }),
   }),
 );
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice",
+  "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice",
   () => ({
     setUserInputText: (p: unknown) => ({ type: "input", p }),
   }),
 );
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/smart-execute.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk",
   () => ({
     smartExecute: (p: unknown) => ({ type: "exec", p }),
   }),
 );
 jest.mock(
-  "@/features/agents/components/shared/AgentConversationColumn",
+  "@ai-matrx/chat/agents/components/shared/AgentConversationColumn",
   () => ({
     AgentConversationColumn: ({
       conversationId,

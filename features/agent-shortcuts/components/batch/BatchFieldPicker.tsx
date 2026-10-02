@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import type { AgentShortcut } from "@/features/agent-shortcuts/types";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
-import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
+import type { SurfaceValue, ValueMapping } from "@ai-matrx/chat/surfaces/types";
 import { ScalarValueControl } from "./BatchFieldControls";
 import { InlineBindingEditor } from "./BatchBindingCell";
 import {

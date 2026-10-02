@@ -21,12 +21,12 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   callHideMessages,
   type HideMessagesResult,
   type MessageSelector,
-} from "@/lib/api/call-api";
+} from "@host/lib/api/call-api";
 import { loadConversation } from "../../thunks/load-conversation.thunk";
 import { markCacheBypass } from "../cache-bypass.slice";
 import { invalidateConversationCache } from "../invalidate-conversation-cache.thunk";

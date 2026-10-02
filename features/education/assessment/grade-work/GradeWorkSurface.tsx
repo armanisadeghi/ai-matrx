@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationGradeWorkScope } from "@/features/surfaces/manifests/education-grade-work.manifest";
 import { HandwrittenWorkInput } from "../components/HandwrittenWorkInput";
 import { StepBreakdown } from "../components/StepBreakdown";

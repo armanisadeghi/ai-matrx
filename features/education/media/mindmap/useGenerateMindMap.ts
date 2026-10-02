@@ -12,7 +12,7 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
+import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { EDU_MEDIA_MANDATES } from "./mandates";
 
 const EXTRACTION_TIMEOUT_MS = 90_000;

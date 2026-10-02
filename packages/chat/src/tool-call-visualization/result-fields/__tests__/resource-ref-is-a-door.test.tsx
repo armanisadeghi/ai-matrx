@@ -23,15 +23,15 @@ import { createRoot, type Root } from "react-dom/client";
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () =>
-    jest.requireActual("@/components/markdown-core/MarkdownCoreImpl").default,
+    jest.requireActual("@host/components/markdown-core/MarkdownCoreImpl").default,
 }));
 const mockCaptureError = jest.fn();
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: (input: unknown) => mockCaptureError(input),
 }));
 const mockFetchTitles = jest.fn();
-jest.mock("@/features/scopes/service/entityTitles", () => ({
+jest.mock("@host/features/scopes/service/entityTitles", () => ({
   getCachedEntityTitle: () => null,
   entityTitleFallback: (token: string) => (token === "note" ? "Note" : "Record"),
   fetchEntityTitles: (token: string, ids: string[]) => mockFetchTitles(token, ids),
@@ -40,7 +40,7 @@ jest.mock("@/features/scopes/service/entityTitles", () => ({
 import { KeyValueGrid } from "../KeyValueGrid";
 import { ResultValue } from "../ResultValue";
 import { detectResultShape } from "../shape";
-import { resetKindAtRawRendererReports } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
+import { resetKindAtRawRendererReports } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
 const NOTE_ID = "59678b3b-3620-442d-872b-0331ac74a1cf";
 const REF = { __kind: "resource_ref", resource_type: "note", resource_id: NOTE_ID };

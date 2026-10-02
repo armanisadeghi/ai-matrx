@@ -4,7 +4,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   REPUTATION_CASE_USER_SETTABLE_STATUSES,
   REPUTATION_RULING_NOTE_MAX_LENGTH,

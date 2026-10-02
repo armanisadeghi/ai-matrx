@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { Users, LogIn, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationGameScope } from "@/features/surfaces/manifests/education-game.manifest";
 import { ENGAGE_ROUTES } from "../constants";
 import { StreakCard } from "./streak/StreakCard";

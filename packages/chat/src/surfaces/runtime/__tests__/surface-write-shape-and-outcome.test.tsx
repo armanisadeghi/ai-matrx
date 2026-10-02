@@ -21,20 +21,20 @@ const mockToastSuccess = jest.fn();
 const mockCaptureError = jest.fn();
 const mockGetManifest = jest.fn();
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: mockToastError, success: mockToastSuccess },
 }));
 
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: mockCaptureError,
 }));
 
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
 
-import { renderHook } from "@/test-utils/renderHook";
+import { renderHook } from "@host/test-utils/renderHook";
 import {
   applySurfaceWrite,
   coerceDeclaredValueType,
@@ -45,7 +45,7 @@ import {
   useSurfaceWriteHandlers,
   type SurfaceWriteHandlers,
 } from "../SurfaceRuntimeContext";
-import type { SurfaceWriteTarget } from "@/features/surfaces/types";
+import type { SurfaceWriteTarget } from "../../types";
 
 const SURFACE = "matrx-user/shape-test";
 

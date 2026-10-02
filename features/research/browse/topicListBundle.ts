@@ -9,7 +9,7 @@
 // never mistaken for the end. `total` is the true number of matching topics
 // across every page, `on_page` the rows the person has on screen.
 
-import { xmlAttrs, xmlElement, xmlText } from "@/features/surfaces/runtime/context-bundle";
+import { xmlAttrs, xmlElement, xmlText } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import type { ResearchTopicListRow } from "./types";
 
 /**

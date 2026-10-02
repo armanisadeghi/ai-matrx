@@ -11,7 +11,7 @@
  * webpages, the live working document (already re-sent every turn), etc.
  */
 
-import type { ResourceBlockType } from "@/features/agents/types/instance.types";
+import type { ResourceBlockType } from "../../types/instance.types";
 import type { ContextDrawerItem } from "./types";
 
 export interface ReattachSpec {

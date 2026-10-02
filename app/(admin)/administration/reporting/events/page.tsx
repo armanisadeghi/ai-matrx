@@ -31,7 +31,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { crossDeploymentHref } from "@/lib/deployment/surfaces";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_REPORTING_SURFACE_NAME,
   createAdminReportingScope,

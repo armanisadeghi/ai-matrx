@@ -6,7 +6,7 @@ import {
   getAllDisplayTypes,
   getDisplayMeta,
   type ResultDisplayMode,
-} from "@/features/agents/utils/run-ui-utils";
+} from "@ai-matrx/chat/agents/utils/run-ui-utils";
 
 /**
  * Widget picker — the same grid of options as `AgentWidgetInvokerTester`,

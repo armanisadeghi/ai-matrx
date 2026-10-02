@@ -59,7 +59,7 @@ import {
   buildSandboxCanvasContent,
   decideSandboxCanvasAction,
   sandboxCanvasSourceId,
-} from "@/features/agents/components/chat/sandbox-insight/useOpenSandboxCanvas";
+} from "@ai-matrx/chat/agents/components/chat/sandbox-insight/useOpenSandboxCanvas";
 import { buildDocumentCanvasContent } from "@/features/data-tables/hooks/useOpenDocumentCanvas";
 import { CanvasNavigation } from "@/features/canvas/core/CanvasNavigation";
 

@@ -42,7 +42,7 @@ import { PLACEMENT_TYPES, getPlacementTypeMeta } from "../constants";
 import {
   isValidShortcutContext,
   type ShortcutContext,
-} from "@/features/agents/utils/shortcut-context-utils";
+} from "@ai-matrx/chat/agents/utils/shortcut-context-utils";
 import type {
   AgentShortcutCategory,
   CategoryFormData,

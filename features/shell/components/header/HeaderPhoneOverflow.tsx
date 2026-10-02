@@ -48,7 +48,7 @@ import { useOpenBarOrGate } from "@/features/knowledge/command-bar/OpenCommandBa
 import {
   AGENTS_AUTH_GATE,
   SurfaceAgentsPanelImpl,
-} from "@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton";
+} from "@ai-matrx/chat/surfaces/components/chrome/SurfaceAgentsHeaderButton";
 import { useCanvasHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle";
 import { INBOX_AUTH_GATE } from "@/features/notifications/components/InboxHeaderButton";
 import {

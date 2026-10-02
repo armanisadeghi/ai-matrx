@@ -40,7 +40,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { CONCEPT_KINDS } from "@/features/transcript-studio/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

@@ -43,7 +43,7 @@ import {
   type FieldSchema,
   type KindSchema,
 } from "@ai-matrx/content-ir";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 // ---------------------------------------------------------------------------
 // Pairing — field key ⇄ derived variable

@@ -21,11 +21,11 @@ import {
   applyOwnedAgentToolDelta,
   fetchAgentExecutionFull,
   isAvailableToolModel,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentById,
   selectAgentReadyForCustomExecution,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchModelById,
   selectModelById,
@@ -35,13 +35,13 @@ import {
 import {
   resolveModelControls,
   supportsTools,
-} from "@/features/agents/hooks/useModelControls";
-import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
+} from "@ai-matrx/chat/agents/hooks/useModelControls";
+import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import {
   selectAllTools,
   selectToolsError,
   selectToolsStatus,
-} from "@/features/agents/redux/tools/tools.selectors";
+} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The authenticated AI Dream MCP resource server, not the outbound MCP catalog. */

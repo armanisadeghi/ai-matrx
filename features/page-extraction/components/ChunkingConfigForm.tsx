@@ -49,8 +49,8 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   clearDraft,
   clearRun,
@@ -66,7 +66,7 @@ import {
   selectIsRunInFlightForFile,
   selectSelectedJobForFile,
 } from "@/features/page-extraction/redux/selectors";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   PDF_EXTRACTOR_WRITE_TARGETS,
   pdfExtractorManifest,

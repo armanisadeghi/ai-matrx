@@ -38,7 +38,7 @@ import {
   type TaskLabel,
 } from "@/features/tasks/constants/labels";
 import { TASK_STATUSES } from "@/features/tasks/constants/status";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,

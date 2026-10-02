@@ -13,7 +13,7 @@
  * the model sees).
  */
 
-import type { ToolSpecInline } from "@/features/agents/types/tool-injection.types";
+import type { ToolSpecInline } from "../../types/tool-injection.types";
 import { SCRIBE_TOOL_NAMES, type ScribeToolName } from "./names";
 
 const DEFS: Record<ScribeToolName, ToolSpecInline> = {

@@ -50,7 +50,7 @@ import type {
 } from "@/features/messaging/types";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import { getResourceIcon } from "@/features/sharing/resourceIcons";
-import { EntityCard } from "@/features/tool-call-visualization/renderers/_shared-entity/EntityCard";
+import { EntityCard } from "@ai-matrx/chat/tool-call-visualization/renderers/_shared-entity/EntityCard";
 import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
 import { ResourceActionRequestButtons } from "@/features/access-gate/components/ResourceActionRequestButtons";
 import { isJsonObject } from "@/types/json";

@@ -1,4 +1,4 @@
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { resultAsObject, getArg } from "../_shared";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 

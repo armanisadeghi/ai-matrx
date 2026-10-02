@@ -35,7 +35,7 @@ import {
   type StudioConceptItemValue,
   type StudioSegmentValue,
 } from "@/features/surfaces/manifests/transcript-studio.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   selectCleanedSegments,
   selectRawSegments,

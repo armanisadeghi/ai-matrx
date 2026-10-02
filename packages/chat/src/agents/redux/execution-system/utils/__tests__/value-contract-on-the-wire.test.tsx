@@ -28,7 +28,7 @@
 const mockGetKindInputContractBySlug = jest.fn();
 
 jest.mock(
-  "@/features/content-ir/registry/schema-source-kind-tables",
+  "@host/features/content-ir/registry/schema-source-kind-tables",
   () => ({
     getKindInputContractBySlug: (slug: string) =>
       mockGetKindInputContractBySlug(slug),
@@ -38,11 +38,11 @@ jest.mock(
 // The capability providers register a large client module graph this decision
 // does not touch (same treatment as structured-output-write-tool-guard).
 jest.mock(
-  "@/features/agents/redux/execution-system/client-capabilities/register-all",
+  "../../client-capabilities/register-all",
   () => ({}),
 );
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => ({
@@ -54,17 +54,17 @@ jest.mock("@/utils/supabase/client", () => ({
 
 import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import { buildToolInjection } from "../build-tool-injection";
-import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
-import { masterworkRulebookManifest } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
+import { kindValidator } from "@host/features/content-ir/registry/kind-schema-source";
+import { masterworkRulebookManifest } from "@host/features/surfaces/manifests/masterwork-rulebook.manifest";
 import {
   masterworkRuleDraftKindSchema,
   MASTERWORK_RULE_DRAFT_KIND,
-} from "@/features/content-ir/kinds/masterwork-rule-draft";
-import { registerSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { invalidateOutputSchemaCache } from "@/features/mandates/output-contract";
-import { resetMandateCatalogueCache } from "@/features/mandates/catalogue";
-import type { RootState } from "@/lib/redux/store";
-import type { ToolInjectionResult } from "@/features/agents/types/tool-injection.types";
+} from "@host/features/content-ir/kinds/masterwork-rule-draft";
+import { registerSurfaceRuntime } from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { invalidateOutputSchemaCache } from "../../../../../mandates/output-contract";
+import { resetMandateCatalogueCache } from "@host/features/mandates/catalogue";
+import type { RootState } from "@host/lib/redux/store";
+import type { ToolInjectionResult } from "../../../../types/tool-injection.types";
 
 const SURFACE = masterworkRulebookManifest.surfaceName;
 

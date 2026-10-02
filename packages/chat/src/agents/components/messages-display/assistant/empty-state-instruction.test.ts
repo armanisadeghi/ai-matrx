@@ -67,8 +67,8 @@ describe("emptyStateInstruction", () => {
 // `variablesPanelStyle: "hidden"` (SmartAgentVariables renders null), so a
 // "Show Form Inputs" press flipped `showVariablePanel` and brought the
 // sentence back over a chat box with nothing in it.
-import { selectIsVariableFormShown } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import type { RootState } from "@/lib/redux/store";
+import { selectIsVariableFormShown } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import type { RootState } from "@host/lib/redux/store";
 
 function stateWith(ui: Record<string, unknown>): RootState {
   return {

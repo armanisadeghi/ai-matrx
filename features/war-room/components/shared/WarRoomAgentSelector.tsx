@@ -15,8 +15,8 @@
 import { useEffect } from "react";
 import { Webhook } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { initializeChatAgents } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 
 interface WarRoomAgentSelectorProps {

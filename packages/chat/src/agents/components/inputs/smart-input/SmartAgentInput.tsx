@@ -17,16 +17,16 @@
  */
 
 import React, { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setVariablesPanelStyle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { setVariablesPanelStyle } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { SmartAgentInputStacked } from "./SmartAgentInputStacked";
 import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
 import { InboxQueueStrip } from "./InboxQueueStrip";
-import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
+import type { VariablesPanelStyle } from "../../../types/instance.types";
 import type { AttachedContextRailItem } from "./ConversationContextRail";
 import type { ComposerPresentation } from "./composer/composer-types";
-import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
-import { selectViewerCanReply } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
+import { selectViewerCanReply } from "../../../redux/execution-system/conversations/conversations.selectors";
 import { ViewOnlyComposerBar } from "./ViewOnlyComposerBar";
 
 export interface SmartAgentInputSurfaceValueAnchors {

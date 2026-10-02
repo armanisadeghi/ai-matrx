@@ -16,18 +16,18 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceOverrideState } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   resetOverride,
   setOverrides,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { useModelFull } from "@/features/ai-models/hooks/useModels";
-import { resolveModelControls } from "@/features/agents/hooks/useModelControls";
+} from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { useModelFull } from "@host/features/ai-models/hooks/useModels";
+import { resolveModelControls } from "../../../../hooks/useModelControls";
 import { ComposerMenuDivider, ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
 import { composerPillClass } from "./ComposerAgentPill";
 import type { ComposerSize } from "./composer-types";
-import { REASONING_EFFORT_OPTIONS } from "@/types/python-generated/llm-enums";
+import { REASONING_EFFORT_OPTIONS } from "@host/types/python-generated/llm-enums";
 
 type ReasoningEffort = (typeof REASONING_EFFORT_OPTIONS)[number];
 

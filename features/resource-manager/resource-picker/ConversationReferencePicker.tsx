@@ -23,7 +23,7 @@ import { Input } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type { RootState } from "@/lib/redux/store";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { usePickerInputFocus } from "./usePickerInputFocus";

@@ -30,7 +30,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import type { GradeStep } from "@/features/education/trust/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

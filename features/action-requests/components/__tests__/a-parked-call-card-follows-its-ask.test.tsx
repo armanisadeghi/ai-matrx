@@ -17,11 +17,11 @@ import { createRoot, type Root } from "react-dom/client";
 
 const dispatch = jest.fn(() => ({ unwrap: () => Promise.resolve() }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch }));
-jest.mock("@/features/agents/redux/execution-system/thunks/load-conversation.thunk", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk", () => ({
   loadConversation: (arg: { conversationId: string }) => ({ type: "load", ...arg }),
 }));
 const follow = jest.fn();
-jest.mock("@/features/agents/runtime-reconnect/follow-what-is-still-in-flight", () => ({
+jest.mock("@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight", () => ({
   followWhatIsStillInFlight: (...args: unknown[]) => follow(...args),
 }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));

@@ -36,7 +36,7 @@ test("the data assistant is limited to its natural-height routes", async () => {
   const [layout, launcher] = await Promise.all([
     source("app/(core)/data/layout.tsx"),
     source(
-      "features/agents/components/ambient-assistant/ScrollAssistantLauncher.tsx",
+      "packages/chat/src/agents/components/ambient-assistant/ScrollAssistantLauncher.tsx",
     ),
   ]);
 

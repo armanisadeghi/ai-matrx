@@ -1,11 +1,11 @@
 // app/(dev)/demos/chat/c/[conversationId]/page.tsx — Active conversation view.
 
-import ChatHeaderControls from "@/features/cx-chat/components/ChatHeaderControls";
-import { ChatInstanceManager } from "@/features/cx-chat/components/ChatInstanceManager";
-import { DEFAULT_AGENT_ID } from "@/features/cx-chat/components/agent/local-agents";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import ChatHeaderControls from "@ai-matrx/chat/cx-chat/components/ChatHeaderControls";
+import { ChatInstanceManager } from "@ai-matrx/chat/cx-chat/components/ChatInstanceManager";
+import { DEFAULT_AGENT_ID } from "@ai-matrx/chat/cx-chat/components/agent/local-agents";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
-import { FastPathMandateGuard } from "@/features/mandates/FastPathMandateGuard";
+import { FastPathMandateGuard } from "@ai-matrx/chat/mandates/FastPathMandateGuard";
 
 export default async function ConversationPage({
   params,

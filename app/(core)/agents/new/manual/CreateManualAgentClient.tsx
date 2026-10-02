@@ -27,7 +27,7 @@ import { AlertTriangle } from "lucide-react";
 import { createAgentFromSeed } from "@/lib/agents/actions";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { BLANK_AGENT_SEED } from "@/features/agents/constants/blank-agent";
+import { BLANK_AGENT_SEED } from "@ai-matrx/chat/agents/constants/blank-agent";
 import { DesktopBuilderSkeleton } from "@/features/agents/components/builder/AgentBuilderSkeletons";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";

@@ -9,13 +9,13 @@
 
 import { FLASHCARDS_PLACES } from "@/features/flashcards/data/intelligence-places";
 import { RESEARCH_PLACES } from "@/features/research/components/intelligence/places";
-import { CHAT_PLACES } from "@/features/agents/components/chat/intelligence-places";
+import { CHAT_PLACES } from "@ai-matrx/chat/agents/components/chat/intelligence-places";
 import { NOTES_PLACES } from "@/features/notes/intelligence-places";
 import { DATA_PLACES } from "@/features/data-tables/intelligence-places";
 import { SMS_PLACES } from "@/features/sms/intelligence-places";
 import { WAR_ROOM_PLACES } from "@/features/war-room/intelligence-places";
 import { SCRAPER_PLACES } from "@/features/scraper/intelligence-places";
-import { VOICE_PLACES } from "@/features/voice-agent/intelligence-places";
+import { VOICE_PLACES } from "@ai-matrx/chat/voice-agent/intelligence-places";
 import { TRANSCRIPT_STUDIO_PLACES } from "@/features/transcript-studio/intelligence-places";
 import { CRM_PLACES } from "@/features/crm/intelligence-places";
 import { CONTENT_PLAN_PLACES } from "@/features/marketing/content-plan/intelligence-places";
@@ -35,10 +35,10 @@ import { AGENT_APPS_PLACES } from "@/features/agent-apps/intelligence-places";
 import { CODE_EDITOR_PLACES } from "@/features/code-editor/intelligence-places";
 import { MESSAGING_PLACES } from "@/features/messaging/intelligence-places";
 import { CONVERSATION_PLACES } from "@/features/ai-work/intelligence-places";
-import { AMBIENT_PLACES } from "@/features/agents/components/ambient-assistant/intelligence-places";
+import { AMBIENT_PLACES } from "@ai-matrx/chat/agents/components/ambient-assistant/intelligence-places";
 import { ALCHEMY_PLACES } from "@/components/agent-copy/intelligence-places";
 import { DICTIONARY_PLACES } from "@/features/dictionary/intelligence-places";
-import { TOOL_VIZ_PLACES } from "@/features/tool-call-visualization/intelligence-places";
+import { TOOL_VIZ_PLACES } from "@ai-matrx/chat/tool-call-visualization/intelligence-places";
 import { ORCHESTRAS_PLACES } from "@/features/agents/orchestras/intelligence-places";
 import { WORKFLOW_PLACES } from "@/features/workflow-runtime/intelligence-places";
 import { GROWTH_LOOP_PLACES } from "@/features/growth-loop/intelligence-places";

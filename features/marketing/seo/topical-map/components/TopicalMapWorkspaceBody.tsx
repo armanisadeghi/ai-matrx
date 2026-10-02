@@ -23,7 +23,7 @@
 
 import { useEffect } from "react";
 
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingTopicalMapScope } from "@/features/surfaces/manifests/marketing-topical-map.manifest";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 

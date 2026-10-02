@@ -128,7 +128,7 @@ const SEED_MARKERS = [
 function isExcluded(file: string): boolean {
   const p = file.replace(/\\/g, "/");
   if (/(\.test\.|\.spec\.|__tests__|\/__mocks__\/)/.test(p)) return true;
-  if (p.includes("/features/surfaces/runtime/")) return true;
+  if (p.includes("/packages/chat/src/surfaces/runtime/")) return true;
   if (p.includes("/scripts/")) return true;
   return false;
 }
@@ -158,7 +158,7 @@ function walk(dir: string, out: string[]): void {
 
 function seedFiles(): string[] {
   const all: string[] = [];
-  for (const top of ["app", "components", "features", "hooks", "lib", "utils"]) {
+  for (const top of ["app", "components", "features", "packages/chat/src", "hooks", "lib", "utils"]) {
     const dir = join(ROOT, top);
     if (existsSync(dir) && statSync(dir).isDirectory()) walk(dir, all);
   }
@@ -930,7 +930,7 @@ function resolveHandlerKeys(node: ts.Node, file: string, depth = 0): KeyResult {
 /* ───────────────────── collectionWriteHandlers(spec) keys ─────────────────── */
 
 /**
- * `collectionWriteHandlers` (features/surfaces/runtime/collection-write-targets.ts)
+ * `collectionWriteHandlers` (packages/chat/src/surfaces/runtime/collection-write-targets.ts)
  * builds its keys from a template — `out[\`create_${spec.plural}\`] = …` inside
  * `if (spec.create)`. Before 2026-09-27 this guard read the builder's BODY, could
  * not settle the template, and so reported every page that uses the builder
@@ -944,7 +944,7 @@ function resolveHandlerKeys(node: ts.Node, file: string, depth = 0): KeyResult {
  * call site's spec cannot be read (a spread, a prop, a non-literal plural), the
  * registration is UNRESOLVED — never credited.
  */
-const COLLECTION_MODULE = resolve(ROOT, "features/surfaces/runtime/collection-write-targets.ts");
+const COLLECTION_MODULE = resolve(ROOT, "packages/chat/src/surfaces/runtime/collection-write-targets.ts");
 const COLLECTION_BUILDER = "collectionWriteHandlers";
 
 type KeyTemplate = { parts: (string | { prop: string })[]; guard: string | null };
@@ -1805,7 +1805,7 @@ function runSelfTest(): number {
     // the call's spec: the right plural, only the operations present. Before
     // 2026-09-27 every page using the builder was reported unhandled.
     const IMPORT_BUILDER =
-      'import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";';
+      'import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";';
     const op = "{ parse: () => [], run: async () => ({ id: \"1\", name: \"x\" }), nameOf: () => \"x\" }";
     // (1) The page wires only GADGETS; the manifest declares a WIDGETS delete.
     const gadgetsFile = join(dir, "planted-collection-gadgets.tsx");

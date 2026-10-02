@@ -28,7 +28,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   DEFAULT_CATEGORIES,
   VALUE_TYPE_CONFIG,

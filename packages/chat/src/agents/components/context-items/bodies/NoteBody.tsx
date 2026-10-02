@@ -10,27 +10,27 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { Folder, ExternalLink } from "lucide-react";
-import { NoteContentEditor } from "@/features/notes/components/NoteContentEditor";
-import { NoteViewControls } from "@/features/notes/components/NoteViewControls";
-import { NoteVersionHistory } from "@/features/notes/components/NoteVersionHistory";
-import { NotesInstanceProvider } from "@/features/notes/context/NotesInstanceContext";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { NoteContentEditor } from "@host/features/notes/components/NoteContentEditor";
+import { NoteViewControls } from "@host/features/notes/components/NoteViewControls";
+import { NoteVersionHistory } from "@host/features/notes/components/NoteVersionHistory";
+import { NotesInstanceProvider } from "@host/features/notes/context/NotesInstanceContext";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectNoteById,
   selectNoteContentLoadStatus,
   selectInstanceHistoryOpen,
-} from "@/features/notes/redux/selectors";
-import { setInstanceHistoryOpen } from "@/features/notes/redux/slice";
-import { useEmbeddedNoteInstance } from "@/features/notes/hooks/useEmbeddedNoteInstance";
-import { fetchNoteContent } from "@/features/notes/redux/thunks";
+} from "@host/features/notes/redux/selectors";
+import { setInstanceHistoryOpen } from "@host/features/notes/redux/slice";
+import { useEmbeddedNoteInstance } from "@host/features/notes/hooks/useEmbeddedNoteInstance";
+import { fetchNoteContent } from "@host/features/notes/redux/thunks";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@host/components/ui/tooltip";
 import type { ContextItemBodyProps } from "../types";
 import { ResourceSnapshotView } from "./ResourceSnapshotView";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 
 function notesDrawerInstanceId(noteId: string): string {
   return `ctx-drawer:${noteId}`;

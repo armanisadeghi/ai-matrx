@@ -15,7 +15,7 @@
 //     `EducationHome` — the surface that already loads it — publishes into,
 //     so the hub never fetches the study spine twice.
 
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationScope,
   type EducationAxisSummary,

@@ -28,7 +28,7 @@ import {
   type CanonicalBlockIR,
 } from "@ai-matrx/content-ir";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";

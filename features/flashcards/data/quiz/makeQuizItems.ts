@@ -14,7 +14,7 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { FC_MANDATES } from "../mandates";
 import { QUIZ_ITEMS_KEY } from "./buildQuizQuestions";
 

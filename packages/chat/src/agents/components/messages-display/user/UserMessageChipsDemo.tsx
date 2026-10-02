@@ -17,19 +17,19 @@ import {
   Music,
   FileText,
 } from "lucide-react";
-import { Youtube } from "@/components/icons/brand-icons";
-import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { Youtube } from "@host/components/icons/brand-icons";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   initInstanceContext,
   setContextEntry,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
-import { ContextPolicyChip } from "@/features/agents/components/context-policies-display/ContextPolicyChip";
-import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
+} from "../../../redux/execution-system/instance-context/instance-context.slice";
+import { ContextPolicyChipStrip } from "../../context-policies-display/ContextPolicyChipStrip";
+import { ContextPolicyChip } from "../../context-policies-display/ContextPolicyChip";
+import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
 import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { MessagePart } from "@host/types/python-generated/stream-events";
 import {
   DEMO_CONV_MULTI,
   DEMO_CONV_SINGLE,
@@ -50,8 +50,8 @@ import {
   initInstanceResources,
   addResource,
   setResourcePreview,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { initInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "../../../redux/execution-system/instance-resources/instance-resources.slice";
+import { initInstanceUIState } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
 const ATTACHMENT_ICONS: Record<
   string,

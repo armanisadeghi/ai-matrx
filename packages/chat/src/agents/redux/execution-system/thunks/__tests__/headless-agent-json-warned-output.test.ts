@@ -14,19 +14,19 @@
  */
 
 import { failWarnedOutputMissingKeys } from "../run-headless-agent-json";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { resolveMandate } from "@/features/mandates/service";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { resolveMandate } from "../../../../../mandates/service";
 
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 
-jest.mock("@/features/mandates/service", () => ({
+jest.mock("../../../../../mandates/service", () => ({
   resolveMandate: jest.fn(),
 }));
 
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("../../../agent-definition/selectors", () => ({
   selectAgentName: (_state: unknown, id: string) => (id === "agent-quiz" ? "Quiz Maker" : undefined),
 }));
 

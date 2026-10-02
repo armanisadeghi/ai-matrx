@@ -25,11 +25,11 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import { extractErrorMessage } from "@/utils/errors";
-import { submitToolResult } from "@/features/agents/api/submit-tool-results";
+import type { RootState } from "@host/lib/redux/store";
+import { extractErrorMessage } from "@host/utils/errors";
+import { submitToolResult } from "../../../api/submit-tool-results";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
-import { executeSurfaceClientTool } from "@/features/surfaces/runtime/surface-client-tools";
+import { executeSurfaceClientTool } from "../../../../surfaces/runtime/surface-client-tools";
 import { createSurfaceToolCall } from "./surface-tool-call";
 
 export interface DispatchSurfaceClientToolPayload {

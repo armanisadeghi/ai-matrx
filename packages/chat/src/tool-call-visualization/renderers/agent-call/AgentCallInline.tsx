@@ -2,14 +2,14 @@
 
 import { useMemo } from "react";
 import { Aperture, ImageIcon } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentCallChildStream } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentCallChildStream } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 
 import type { ToolRendererProps } from "../../types";
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { isImageGenerationAgentCall } from "./agentCallKind";
-import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
 import { isCollaborationAgentCall, readAgentCallAnswer } from "./collab";
 import { CollabCallCard } from "./CollabCallCard";
 import { ImageGenerationResult } from "./ImageGenerationResult";

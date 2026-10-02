@@ -19,7 +19,7 @@ import type { RootState } from "@/lib/redux/store";
 import type {
   ApprovalChange,
   ApprovalFieldDiff,
-} from "@/features/agents/ui-first-tools/ui/approval-types";
+} from "@ai-matrx/chat/agents/ui-first-tools/ui/approval-types";
 import type { WarRoomToolName } from "../tools/names";
 import {
   selectActiveNoteId,

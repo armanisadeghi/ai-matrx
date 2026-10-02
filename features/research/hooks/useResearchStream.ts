@@ -19,7 +19,7 @@ import {
   isTypedDataEvent,
 } from "@/types/python-generated/stream-events";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import type {
   ResearchStreamStep,
   ResearchDataEvent,

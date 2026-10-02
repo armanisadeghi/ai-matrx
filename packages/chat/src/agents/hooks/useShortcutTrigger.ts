@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { launchAgentExecution } from "../redux/execution-system/thunks/launch-agent-execution.thunk";
 import type {
   JsonExtractionConfig,
   ManagedAgentOptions,
   SourceFeature,
-} from "@/features/agents/types/instance.types";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
+} from "../types/instance.types";
+import type { ApplicationScope } from "../utils/scope-mapping";
 
 /**
  * Options accepted by `useShortcutTrigger()` and `useShortcut()`.
@@ -44,7 +44,7 @@ export interface TriggerShortcutOptions {
    * config. Keys here win over the stored `AgentExecutionConfig`.
    */
   config?: Partial<
-    import("@/features/agents/types/agent-execution-config.types").AgentExecutionConfig
+    import("../types/agent-execution-config.types").AgentExecutionConfig
   >;
 
   /**
@@ -60,7 +60,7 @@ export interface TriggerShortcutOptions {
    * if you want to bypass the convenience param.
    */
   runtime?: Omit<
-    import("@/features/agents/types/agent-execution-config.types").AgentExecutionRuntime,
+    import("../types/agent-execution-config.types").AgentExecutionRuntime,
     "applicationScope"
   > & { applicationScope?: ApplicationScope };
 

@@ -5,7 +5,7 @@
 // second version of the ledger.
 
 import { createAdminBillingSpendScope } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { BatchSavingsSummary } from "@/features/batch-savings/types";
 
 import type { SpendPopoverKnobsState } from "./useSpendPopoverKnobs";

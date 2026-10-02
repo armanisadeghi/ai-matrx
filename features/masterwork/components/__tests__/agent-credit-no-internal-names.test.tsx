@@ -45,7 +45,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 // The label read is a courtesy, not a gate: this suite deliberately lets it
 // fail, because the name the chip paints with NO label at all is the one that
 // must still be words. A derived name is the floor, not the happy path.
-jest.mock("@/features/mandates/service", () => ({
+jest.mock("@ai-matrx/chat/mandates/service", () => ({
   fetchMandateIdentities: async () => {
     throw new Error("no database in this suite");
   },

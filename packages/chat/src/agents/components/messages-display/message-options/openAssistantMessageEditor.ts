@@ -9,8 +9,8 @@
  * THE ONE editor, in place (`InPlaceAnswerEditor`, splice-safe save).
  */
 
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { AppDispatch } from "@/lib/redux/store";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import type { AppDispatch } from "@host/lib/redux/store";
 
 export interface OpenStructuredRawViewerArgs {
   /** Pretty-printed JSON of the stored payload (extractInspectableText). */

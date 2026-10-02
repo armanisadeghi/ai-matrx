@@ -53,9 +53,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
-import { useMandate } from "../useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useMandateInputSurface } from "../input-surface";
-import { planInvocation, type KnownValues } from "../invoke/supplied-values";
+import { planInvocation, type KnownValues } from "@ai-matrx/chat/mandates/invoke/supplied-values";
 import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,

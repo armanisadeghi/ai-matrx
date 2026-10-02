@@ -12,12 +12,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { DEFAULT_SURFACE_KEY } from "@/features/surfaces/user-state/service";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { DEFAULT_SURFACE_KEY } from "./service";
 import {
   ensureSurfaceFeatureLoaded,
   saveSurfaceState,
-} from "@/features/surfaces/redux/userStateSlice";
+} from "../redux/userStateSlice";
 
 const SAVE_DEBOUNCE_MS = 600;
 

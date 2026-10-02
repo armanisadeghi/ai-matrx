@@ -14,9 +14,9 @@ import messagesReducer, {
 import { extractFlatText } from "../../messages/messages.selectors";
 import { processStream } from "../process-stream";
 import { refetchSingleMessage } from "../../message-crud/refetch-single-message.thunk";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
-jest.mock("@/utils/supabase/client", () => {
+jest.mock("@host/utils/supabase/client", () => {
   const mockQuery = {
     eq: jest.fn(),
     is: jest.fn(),
@@ -34,7 +34,7 @@ jest.mock("@/utils/supabase/client", () => {
   };
 });
 
-const { mockQuery } = jest.requireMock("@/utils/supabase/client") as {
+const { mockQuery } = jest.requireMock("@host/utils/supabase/client") as {
   mockQuery: {
     eq: jest.Mock;
     is: jest.Mock;

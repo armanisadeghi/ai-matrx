@@ -34,7 +34,7 @@ import type {
   SurfaceValue,
   ValueMapping,
   ValueMappingMap,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**

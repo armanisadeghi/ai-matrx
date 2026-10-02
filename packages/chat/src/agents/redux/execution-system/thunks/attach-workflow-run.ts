@@ -21,7 +21,7 @@
  * accumulators, not identities of the run. The run's identity is its `run_id`.
  */
 
-import type { AppThunk } from "@/lib/redux/store";
+import type { AppThunk } from "@host/lib/redux/store";
 import { createRequest } from "../active-requests/active-requests.slice";
 import { generateConversationId, generateRequestId } from "../utils/ids";
 import {

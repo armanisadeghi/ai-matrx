@@ -17,16 +17,16 @@
  * useHeadlessAgentJson).
  */
 
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import { formatVariableDisplayName } from "../../agents/utils/variable-utils";
+import type { AgentDefinition } from "../../agents/types/agent-definition.types";
 import type {
   SurfaceValue,
   SurfaceWriteTarget,
   ValueMapping,
   ValueMappingMap,
   WritePolicyMap,
-} from "@/features/surfaces/types";
-import { isSurfaceWritePolicy } from "@/features/surfaces/types";
+} from "../types";
+import { isSurfaceWritePolicy } from "../types";
 
 // ---------------------------------------------------------------------------
 // Payload building

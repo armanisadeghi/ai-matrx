@@ -25,7 +25,7 @@ import {
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationMemoryScope,
   type MemoryLibraryEntry,
@@ -33,8 +33,8 @@ import {
 import { authenticatedStudyMediaLoadKey } from "@/features/education/media/authLoad";
 import { useStudyMediaLibrary } from "@/features/education/media/useStudyMediaLibrary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseCreateMemoryAids, parseMemoryIds, parseUpdateMemoryAids } from "../memoryWrites";
 import { studyMediaService } from "@/features/education/media/service";
 import {

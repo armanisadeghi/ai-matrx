@@ -1,6 +1,6 @@
 import { getAgent } from "@/lib/agents/data";
-import { AgentViewContent } from "@/features/agents/route/AgentViewContent";
-import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
+import { AgentViewContent } from "@ai-matrx/chat/agents/route/AgentViewContent";
+import { AgentHeader } from "@ai-matrx/chat/agents/components/shared/AgentHeader";
 import { SystemAgentWriteTargets } from "@/features/agents/components/admin/SystemAgentWriteTargets";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";

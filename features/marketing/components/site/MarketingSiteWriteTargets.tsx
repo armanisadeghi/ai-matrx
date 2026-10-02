@@ -21,7 +21,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { MARKETING_SITE_SURFACE_NAME } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useUpdateSiteIdentity } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";

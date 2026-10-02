@@ -16,7 +16,7 @@ import type { RootState } from "@/lib/redux/store";
 import type {
   CompletedOperationEntry,
   OperationEntry,
-} from "@/features/agents/types/request.types";
+} from "@ai-matrx/chat/agents/types/request.types";
 
 export type SubAgentRunState = "running" | "done" | "failed";
 

@@ -11,7 +11,7 @@
  * `@register_writeback("canvas_item")` handler → `cx_canvas_save_user_version`.
  */
 
-import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { isMaterializedArtifactId } from "@host/features/canvas/artifact-types/artifactId";
 
 export const CANVAS_ITEM_SOURCE_KIND = "canvas_item";
 

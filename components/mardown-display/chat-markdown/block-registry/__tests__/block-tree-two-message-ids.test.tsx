@@ -20,7 +20,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({
     selectHideReasoning: () => false,
     selectHideToolResults: () => false,

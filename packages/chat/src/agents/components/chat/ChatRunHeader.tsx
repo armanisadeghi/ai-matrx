@@ -6,13 +6,13 @@
 // the page passes the route's active agent; the live name comes from Redux.
 
 import { useRouter } from "next/navigation";
-import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { selectAgentName } from "../../redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
+import { ActiveContextLensChip } from "@host/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
-import { ComposerModeSwitch } from "@/features/agents/components/inputs/smart-input/composer/ComposerModeSwitch";
-import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+import { ComposerModeSwitch } from "../inputs/smart-input/composer/ComposerModeSwitch";
+import type { ComposerMode } from "../inputs/smart-input/composer/composer-types";
 import { ConversationRecordsChip } from "./ConversationRecordsChip";
 import { ConversationAttachmentsChip } from "./ConversationAttachmentsChip";
 import { ConversationRoomNotice } from "./ConversationRoomNotice";
@@ -21,7 +21,7 @@ import {
   interceptChatAgentLink,
   stageChatAgentSwitch,
 } from "./begin-fresh-chat";
-import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
+import { HeaderActionsSlot } from "@host/features/shell/components/header/HeaderActionsSlot";
 
 interface ChatRunHeaderProps {
   /**

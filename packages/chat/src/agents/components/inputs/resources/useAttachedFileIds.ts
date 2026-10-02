@@ -13,13 +13,13 @@
  * second tick tried to attach it again (PB-04 real-test friction).
  */
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
-import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
-import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
+import { useContainerLinks } from "@host/features/scopes/hooks/useContainerLinks";
+import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
 import { parseAttachedDocumentMetadata } from "./attached-documents";
-import type { ManagedResource } from "@/features/agents/types/instance.types";
+import type { ManagedResource } from "../../../types/instance.types";
 
 function fileIdOf(value: unknown): string | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;

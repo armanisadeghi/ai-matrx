@@ -17,7 +17,7 @@ import {
   truncateId,
   computeDuration,
 } from "@/features/cx-dashboard/utils/format";
-import { originClassLabel } from "@/features/agents/redux/conversation-history/source-registry";
+import { originClassLabel } from "@ai-matrx/chat/agents/redux/conversation-history/source-registry";
 import { exportToJSON } from "@/features/cx-dashboard/utils/export";
 import type {
   CxUserRequest,
@@ -38,7 +38,7 @@ import {
   CheckCircle,
   Info,
 } from "lucide-react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,

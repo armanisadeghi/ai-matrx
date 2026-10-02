@@ -1,8 +1,8 @@
-import { toast } from "@/lib/toast";
-import { PRINT_BLOCKED_TOAST } from "@/lib/print/print-outcome-toast";
+import { toast } from "@host/lib/toast";
+import { PRINT_BLOCKED_TOAST } from "@host/lib/print/print-outcome-toast";
 import { printMarkdownContent } from "./markdown-print";
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
     toast: {
         info: jest.fn(),
     },
@@ -59,7 +59,7 @@ describe("printMarkdownContent — blocked Chat popup", () => {
 describe("printMarkdownContent — diagrams print as pictures (verifier round 2)", () => {
     it("draws each mermaid fence and writes it into the print window as an image", async () => {
         jest.resetModules();
-        jest.doMock("@/components/mermaid/print-render", () => ({
+        jest.doMock("@host/components/mermaid/print-render", () => ({
             drawMermaidForPrint: async () => ({
                 pictures: new Map([["flowchart LR\n  A --> B", '<svg xmlns="http://www.w3.org/2000/svg"></svg>']]),
                 failed: 0,

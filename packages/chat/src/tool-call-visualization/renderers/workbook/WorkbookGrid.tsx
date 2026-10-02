@@ -1,9 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   MOBILE_TABLE,
-} from "@/components/official/mobile-table/mobileTable";
+} from "@host/components/official/mobile-table/mobileTable";
 
 /**
  * Light read-only grid for a workbook sheet's raw cell values. Used by the

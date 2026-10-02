@@ -3,7 +3,7 @@ import {
   ListLevelProblem,
   readCollectionList,
   repeatsProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import type { OwnedEducationNoteScopeEntry } from "@/features/surfaces/manifests/education-notes.manifest";
 
 function record(

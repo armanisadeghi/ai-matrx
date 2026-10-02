@@ -3,7 +3,7 @@ import {
   collectProblems,
   readCollectionList,
   repeatsProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 
 const MAX_KITS_PER_WRITE = 25;
 

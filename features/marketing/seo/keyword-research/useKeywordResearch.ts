@@ -13,16 +13,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
-import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { removeRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   addRunToSet,
   clearRunSet,
-} from "@/features/agents/redux/execution-system/run-sets/run-sets.thunks";
+} from "@ai-matrx/chat/agents/redux/execution-system/run-sets/run-sets.thunks";
 import {
   createTransportLossReattacher,
   type TransportLossReattacher,
-} from "@/features/agents/redux/execution-system/durable-runs/reattach-on-transport-loss";
+} from "@ai-matrx/chat/agents/redux/execution-system/durable-runs/reattach-on-transport-loss";
 import {
   describeBackendFailure,
   isStreamTransportLost,

@@ -15,17 +15,17 @@
  */
 
 import { RotateCcw } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { selectAgentModelId } from "@/features/agents/redux/agent-definition/selectors";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { selectAgentModelId } from "../../redux/agent-definition/selectors";
+import { selectAgentIdFromInstance } from "../../redux/execution-system/conversations/conversations.selectors";
+import { selectInstanceOverrideState } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   setOverrides,
   resetOverride,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { selectIsManualExecutionMode } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { selectIsManualExecutionMode } from "../../redux/execution-system/selectors/aggregate.selectors";
 
 const MANUAL_MODE_MODEL_HINT =
   "Model is edited in the builder panel during test runs";

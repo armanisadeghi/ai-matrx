@@ -26,11 +26,11 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { supabase } from "@host/utils/supabase/client";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { messageRowToRecord } from "../thunks/conversation-bundle";
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@host/lib/ids/durable-record-id";
 
 interface RefetchSingleMessageArgs {
   conversationId: string;

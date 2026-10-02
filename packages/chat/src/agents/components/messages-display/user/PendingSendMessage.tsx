@@ -16,12 +16,12 @@
 
 import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, RotateCcw, X } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectPreSend } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { setPreSend } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectPreSend } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setPreSend } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
+import { smartExecute } from "../../../redux/execution-system/thunks/smart-execute.thunk";
+import { Button } from "@host/components/ui/button";
+import { cn } from "@host/lib/utils";
 
 /**
  * A preparation that finishes faster than this never draws (no flash before

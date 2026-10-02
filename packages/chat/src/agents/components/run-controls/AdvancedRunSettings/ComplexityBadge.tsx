@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@host/lib/utils';
 import type { AlgorithmResult, ComplexityBand } from './algorithm';
 
 const BAND_DOT: Record<ComplexityBand, string> = {

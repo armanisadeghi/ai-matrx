@@ -26,7 +26,7 @@ import { outreachListMenuTarget, useCrmRowMenu } from "../crm-row-actions";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatRelativeTime } from "@/utils/datetime";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import {
   CRM_OUTREACH_LISTS_SURFACE_NAME,

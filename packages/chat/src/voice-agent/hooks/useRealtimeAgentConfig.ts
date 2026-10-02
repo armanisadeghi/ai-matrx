@@ -28,7 +28,7 @@
 // `postJson` here.
 
 import { useEffect, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import { applyAgentConfig } from "../state/voiceAgentSlice";
 import { useRealtimeHolderModel } from "../realtimeModel";
 import type { RealtimeToolSet, ResolvedRealtimeTool } from "../types";
@@ -82,7 +82,7 @@ export async function resolveRealtimeTools(
 ): Promise<ResolveRealtimeToolsResult> {
   try {
     const send =
-      post ?? (await import("@/lib/python-client")).postJson;
+      post ?? (await import("@host/lib/python-client")).postJson;
     const { data } = await send<RealtimeToolsResponse, RealtimeToolsRequest>(
       REALTIME_TOOLS_PATH(agentId),
       body,

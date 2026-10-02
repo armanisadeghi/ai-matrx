@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useMemo, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { selectInstanceVariableDefinitions } from "../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   mergeScopeVariableValues,
@@ -26,25 +26,25 @@ import {
   selectActiveOrganizationId,
   selectActiveScopeIds,
   selectActiveScopeIdsByType,
-} from "@/features/scopes/redux/selectors/active-context";
-import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
-import { makeSelectResolvedContext } from "@/features/scopes/redux/selectors/resolved-context";
-import { makeSelectScopeTypeLabelMapForOrg } from "@/features/scopes/redux/selectors/tree";
+} from "@host/features/scopes/redux/selectors/active-context";
+import { ensureContextValues } from "@host/features/scopes/redux/thunks/ensureContextValues";
+import { makeSelectResolvedContext } from "@host/features/scopes/redux/selectors/resolved-context";
+import { makeSelectScopeTypeLabelMapForOrg } from "@host/features/scopes/redux/selectors/tree";
 import {
   listScopeTypeItems,
   selectAllContextItems,
   selectLoadedCatalogTypeIds,
-} from "@/features/scopes/redux/contextItemCatalog";
+} from "@host/features/scopes/redux/contextItemCatalog";
 import type {
   ContextItemBinding,
   VariableCustomComponent,
-} from "@/features/agents/types/agent-definition.types";
-import type { ResolvedValue } from "@/features/scopes/types";
-import { contextItemBindingOf } from "@/features/agents/utils/variable-binding";
+} from "../types/agent-definition.types";
+import type { ResolvedValue } from "@host/features/scopes/types";
+import { contextItemBindingOf } from "../utils/variable-binding";
 import {
   referenceConfigFromItem,
   type ReferenceItemConfig,
-} from "@/features/scopes/utils/referenceCell";
+} from "@host/features/scopes/utils/referenceCell";
 
 export interface BoundVarInfo {
   name: string;

@@ -1,23 +1,23 @@
-import type { RootState } from "@/lib/redux/store";
-import { adminLaneHeadersFor, adminLaneOrganizationId } from "@/lib/api/admin-lane";
+import type { RootState } from "@host/lib/redux/store";
+import { adminLaneHeadersFor, adminLaneOrganizationId } from "@host/lib/api/admin-lane";
 import {
   selectResolvedBaseUrl,
   selectActiveServer,
-} from "@/lib/redux/slices/apiConfigSlice";
+} from "@host/lib/redux/slices/apiConfigSlice";
 import {
   selectAccessToken,
   selectFingerprintId,
-} from "@/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+} from "@host/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
   resolveAgentSandboxRef,
   getEffectiveSandboxRef,
-} from "@/lib/sandbox/active-binding";
+} from "@host/lib/sandbox/active-binding";
 import {
   discoverLocalEngine,
   getCachedLocalEngine,
   supportsLocalAgentExecution,
-} from "@/lib/local-engine/discovery";
+} from "@host/lib/local-engine/discovery";
 
 export type BackendChannel =
   "global" | "override" | "ec2-dedicated" | "local-runtime";

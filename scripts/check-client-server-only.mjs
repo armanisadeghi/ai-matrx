@@ -167,7 +167,7 @@ if (process.argv.includes("--self-test")) {
 
 const root = process.cwd();
 const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-const findings = scan(root, listFiles(root, args.length ? args : ["app", "components", "features", "lib", "hooks", "providers", "utils"]));
+const findings = scan(root, listFiles(root, args.length ? args : ["app", "components", "features", "packages/chat/src", "lib", "hooks", "providers", "utils"]));
 for (const f of findings) console.log(`ERROR ${f}`);
 console.log(findings.length ? `\n${findings.length} client → server-only value import(s).` : "Client/server-only boundary OK.");
 process.exit(findings.length ? 1 : 0);

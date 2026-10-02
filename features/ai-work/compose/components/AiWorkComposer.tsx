@@ -53,18 +53,18 @@ import { useAiWorkRun } from "../useAiWorkRun";
 import {
   ConversationContextChip,
   useConversationContextChipShown,
-} from "@/features/agents/components/inputs/smart-input/ConversationContextChip";
-import { ContextRulesPanel } from "@/features/agents/components/context-policies-display/ContextRulesPanel";
+} from "@ai-matrx/chat/agents/components/inputs/smart-input/ConversationContextChip";
+import { ContextRulesPanel } from "@ai-matrx/chat/agents/components/context-policies-display/ContextRulesPanel";
 import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { RunSkillPicker } from "@/features/agents/components/inputs/smart-input/RunSkillPicker";
-import { SmartAgentResourcePickerButton } from "@/features/agents/components/inputs/resources/SmartAgentResourcePickerButton";
-import { SmartAgentResourceChips } from "@/features/agents/components/inputs/resources/SmartAgentResourceChips";
-import { AttachedDocumentChips } from "@/features/agents/components/inputs/resources/AttachedDocumentChips";
+import { RunSkillPicker } from "@ai-matrx/chat/agents/components/inputs/smart-input/RunSkillPicker";
+import { SmartAgentResourcePickerButton } from "@ai-matrx/chat/agents/components/inputs/resources/SmartAgentResourcePickerButton";
+import { SmartAgentResourceChips } from "@ai-matrx/chat/agents/components/inputs/resources/SmartAgentResourceChips";
+import { AttachedDocumentChips } from "@ai-matrx/chat/agents/components/inputs/resources/AttachedDocumentChips";
 import { ContextLensBar } from "@/features/scopes/components/active-context/ContextLensBar";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { readTypedRefusal } from "@/features/access-gate/service/serverRefusal";

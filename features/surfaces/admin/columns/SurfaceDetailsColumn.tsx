@@ -15,17 +15,17 @@ import {
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { loadSurfaceValues } from "@/features/surfaces/redux/thunks";
+import { loadSurfaceValues } from "@ai-matrx/chat/surfaces/redux/thunks";
 import {
   makeSelectSurfaceValues,
   makeSelectSurfaceValuesError,
   makeSelectSurfaceValuesStatus,
   selectAllSurfaces,
-} from "@/features/surfaces/redux/selectors";
-import type { SurfaceValue } from "@/features/surfaces/types";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
+import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 import { SurfaceRolesSection } from "./SurfaceRolesSection";
 import { ReadFailure } from "@/components/read-state/ReadFailure";

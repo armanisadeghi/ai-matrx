@@ -15,7 +15,7 @@
  * the two paths cannot drift.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type { MessageRecord } from "../messages/messages.slice";
 import {
   extractContentBlocks,

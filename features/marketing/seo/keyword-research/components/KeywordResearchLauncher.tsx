@@ -32,7 +32,7 @@ import {
 } from "../useSavedKeywordResearch";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import SavedResearchFeed from "./SavedResearchFeed";
 import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
 import {

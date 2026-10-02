@@ -4,13 +4,13 @@ import { useCallback } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectAgentMessages } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
+import { selectAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import type {
   AgentDefinitionMessage,
   TextBlock,
   PrimingMessageRole,
-} from "@/features/agents/types/agent-message-types";
+} from "@ai-matrx/chat/agents/types/agent-message-types";
 
 interface AddMessageButtonsProps {
   agentId: string;

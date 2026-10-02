@@ -15,7 +15,7 @@ import { useRef, useState, type ReactNode } from "react";
 import type { GridContextSnapshot } from "./recordStoreTableScope";
 import { useRecordsClient } from "@ai-matrx/records/react";
 
-import { SurfaceRuntimeProvider, type SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider, type SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildDataTablesScope } from "@/features/data-tables/agent-context/buildDataTablesScope";
 
 import { isWorkedOut, scopeInputFromGrid } from "./recordStoreTableScope";

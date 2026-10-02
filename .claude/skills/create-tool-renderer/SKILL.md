@@ -10,9 +10,9 @@ Make a tool call render as a first-class, beautiful surface instead of the gener
 | Path | When | Where the code lives |
 |---|---|---|
 | **A — DB renderer (default, ~90%)** | Any tool. Author once, renders everywhere, no repo deploy. | `tool_ui` table (runtime-compiled) |
-| **B — Hardcoded renderer (escape hatch, ~10%)** | A genuinely interactive/heavy widget that needs full repo imports. | `features/tool-call-visualization/renderers/` + registry |
+| **B — Hardcoded renderer (escape hatch, ~10%)** | A genuinely interactive/heavy widget that needs full repo imports. | `packages/chat/src/tool-call-visualization/renderers/` + registry |
 
-**Resolution order: in-code registry → DB renderer → generic.** A DB renderer only renders for a tool with NO in-code registry entry. Architecture: [`features/tool-call-visualization/FEATURE.md`](../../../features/tool-call-visualization/FEATURE.md).
+**Resolution order: in-code registry → DB renderer → generic.** A DB renderer only renders for a tool with NO in-code registry entry. Architecture: [`packages/chat/src/tool-call-visualization/FEATURE.md`](../../../packages/chat/src/tool-call-visualization/FEATURE.md).
 
 ## Cardinal rule: HIDE NOTHING
 
@@ -53,7 +53,7 @@ Before writing any UI, classify the tool's result. This decision is the design:
 
 ## The contract (BOTH paths)
 
-A renderer is a React component taking `ToolRendererProps` (from `@/features/tool-call-visualization/types`):
+A renderer is a React component taking `ToolRendererProps` (from `@ai-matrx/chat/tool-call-visualization/types`):
 
 ```tsx
 interface ToolRendererProps {
@@ -67,7 +67,7 @@ interface ToolRendererProps {
 }
 ```
 
-`entry` is the data (from `@/features/agents/types/request.types`): `toolName` (registry key), `status` (`started|progress|step|result_preview|completed|error`), `arguments` (input), `result` (final output — object, JSON string, or null), `latestMessage`, `errorMessage`, `events`. **Terminal = `status === "completed" || "error"`.** Drive UI from `entry.status`, never from array shape — a running tool with no result yet is valid.
+`entry` is the data (from `@ai-matrx/chat/agents/types/request.types`): `toolName` (registry key), `status` (`started|progress|step|result_preview|completed|error`), `arguments` (input), `result` (final output — object, JSON string, or null), `latestMessage`, `errorMessage`, `events`. **Terminal = `status === "completed" || "error"`.** Drive UI from `entry.status`, never from array shape — a running tool with no result yet is valid.
 
 **The shell owns the collapsed row** (label from `tool_ui.display_name` / registry, subtitle, chevron, overlay/window buttons). Your component renders **only the expanded body** — no duplicate title row, no green-check/red-X status icons (state is conveyed by tense + shimmer on the row).
 
@@ -156,13 +156,13 @@ A DB renderer is **fully self-describing**: `display_name` → label, `header_su
 Only when the tool needs full repo imports or heavy interactivity. Full power, but ships in the bundle and needs a deploy.
 
 ```
-features/tool-call-visualization/renderers/<kebab-tool-name>/
+packages/chat/src/tool-call-visualization/renderers/<kebab-tool-name>/
 ├── <Tool>Inline.tsx    # required — "use client"; ToolRendererProps
 ├── <Tool>Overlay.tsx   # optional — defaults to Inline
 └── index.ts            # barrel
 ```
 
-Here you CAN import the shared helpers from `@/features/tool-call-visualization/renderers/_shared` (`resultAsObject`, `collectMessages`, `filterStepEvents`, `getArg`, `isTerminal`, `isSuccess`) and anything else in the repo. Register in `features/tool-call-visualization/registry/registry.tsx`:
+Here you CAN import the shared helpers from `@ai-matrx/chat/tool-call-visualization/renderers/_shared` (`resultAsObject`, `collectMessages`, `filterStepEvents`, `getArg`, `isTerminal`, `isSuccess`) and anything else in the repo. Register in `packages/chat/src/tool-call-visualization/registry/registry.tsx`:
 
 ```tsx
 import { ToolInline, ToolOverlay } from "../renderers/<tool-name>";

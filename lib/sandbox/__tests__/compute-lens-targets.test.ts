@@ -4,7 +4,7 @@
  * so it is named on first paint and stays named while it is asleep.
  */
 
-import { pickComputeLensTargets } from "@/features/agents/components/inputs/smart-input/use-compute-target-actions";
+import { pickComputeLensTargets } from "@ai-matrx/chat/agents/components/inputs/smart-input/use-compute-target-actions";
 import type { ComputeTarget } from "@/app/api/compute-targets/route";
 
 const target = (over: Partial<ComputeTarget>): ComputeTarget =>

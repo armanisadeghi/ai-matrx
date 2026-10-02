@@ -9,14 +9,14 @@
 const setPinned = jest.fn();
 const getBulk = jest.fn();
 
-jest.mock("@/features/scopes/service/favoritesService", () => ({
+jest.mock("@host/features/scopes/service/favoritesService", () => ({
   favoritesService: {
     setPinned: (...a: unknown[]) => setPinned(...a),
     getBulk: (...a: unknown[]) => getBulk(...a),
   },
 }));
 const toastError = jest.fn();
-jest.mock("@/lib/toast", () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn() } }));
+jest.mock("@host/lib/toast", () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn() } }));
 
 import {
   MESSAGE_PIN_ENTITY_TYPE,

@@ -9,8 +9,8 @@
  *     depends on an agent's mapping (`document-evidence.ts`).
  */
 
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import type { ApplicationScope } from "../../agents/types/scope.types";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
 import { ATTACHED_DOCUMENT_KEY_PREFIX } from "./document-evidence";
 
 export function alwaysOnSurfaceKeys(

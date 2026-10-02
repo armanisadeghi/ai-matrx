@@ -11,7 +11,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import type { PartyListFilters, PartyListRow } from "@/features/crm/types";
 import {
   DATE_BUCKET_ENUM_TEXT,

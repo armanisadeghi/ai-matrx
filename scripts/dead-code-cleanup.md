@@ -643,7 +643,7 @@ features/notes              (18)
 components/advanced-image-editor (17)
 components/applet           (17)
 components/layout           (16)
-features/cx-conversation    (14)
+packages/chat/src/cx-conversation    (14)
 ... and more
 ```
 

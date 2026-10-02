@@ -26,12 +26,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { AlertCircle, ExternalLink, Loader2, Lock, Pencil, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@host/components/ui/tooltip";
 import {
   Popover,
   PopoverAnchor,

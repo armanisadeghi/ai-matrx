@@ -19,18 +19,18 @@ import type { RootState } from "@/lib/redux/store";
 import {
   extractFlatText,
   selectConversationMessages,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import {
   selectLatestAnswerText,
   selectLatestError,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   addUsageTotals,
   getUserRequestResult,
   type MutableTotals,
-} from "@/features/agents/components/run-controls/panels/shared";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+} from "@ai-matrx/chat/agents/components/run-controls/panels/shared";
+import type { ActiveRequest } from "@ai-matrx/chat/agents/types/request.types";
+import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { RESPONSE_FEEDBACK_METRICS } from "./feedbackMetrics";
 import { columnRequestToSave } from "../modes/request-mod/columnRequest";
 import { blindAnonLabel } from "./blind";

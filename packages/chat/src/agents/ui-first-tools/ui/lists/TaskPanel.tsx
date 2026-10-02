@@ -10,8 +10,8 @@
  * no `window.confirm`).
  */
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@host/components/read-state/ReadGate";
+import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
 import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
@@ -23,12 +23,12 @@ import {
   Plus,
   ChevronRight,
 } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Button } from "@/components/ui/button";
+import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
+import { Button } from "@host/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { Checkbox } from "@host/components/ui/checkbox";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAgentListsError,
   selectAgentListsStatus,
@@ -36,8 +36,8 @@ import {
   selectAgentTasks,
   selectUserTodosForConversation,
 } from "../../redux/agent-lists.selectors";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { StaleDataNotice } from "@host/components/official/stale-data/StaleDataNotice";
 import {
   hydrateAgentLists,
   subscribeAgentLists,
@@ -59,8 +59,8 @@ import {
   removeUserTodo,
 } from "../../service/user-todo.service";
 import { setPlanStatus } from "../../service/agent-plan.service";
-import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { confirm as confirmDialog } from "@host/components/dialogs/confirm/ConfirmDialogHost";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 
 interface TaskPanelProps {
   conversationId: string;

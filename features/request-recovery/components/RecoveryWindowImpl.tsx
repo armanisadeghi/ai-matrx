@@ -46,7 +46,7 @@ import {
   extractVariables,
   formatPayloadJson,
 } from "../utils/formatRecoveryDisplay";
-import { formatVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
+import { formatVariableDisplayLines } from "@ai-matrx/chat/agents/utils/variable-display-lines";
 import { toast } from "@/lib/toast";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

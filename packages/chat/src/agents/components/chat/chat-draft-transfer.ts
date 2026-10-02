@@ -18,7 +18,7 @@
  * meant for me" before applying.
  */
 
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "../../resources/types";
 
 const STORAGE_KEY = "matrx:chat-draft-transfer";
 

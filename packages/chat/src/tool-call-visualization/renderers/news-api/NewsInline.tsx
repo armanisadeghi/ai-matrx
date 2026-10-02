@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { Newspaper, Calendar, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import { getArg, resultAsObject, isTerminal } from "../_shared";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface NewsArticle {
     source: { id: string | null; name: string };

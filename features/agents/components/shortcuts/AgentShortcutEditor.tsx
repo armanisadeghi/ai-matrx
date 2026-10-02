@@ -24,9 +24,9 @@ import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShor
 import { ShortcutForm } from "@/features/agent-shortcuts/components/ShortcutForm";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
-import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { selectShortcutById } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
+import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import type { AgentScope } from "@/features/agent-shortcuts/constants";
 import type { ShortcutFormData } from "@/features/agent-shortcuts/types";
 

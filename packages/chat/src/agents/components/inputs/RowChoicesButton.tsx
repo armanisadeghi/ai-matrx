@@ -22,8 +22,8 @@ import {
   CommandGroup,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
+} from "@host/components/ui/command";
+import { cn } from "@host/lib/utils";
 import { toggleMultiValue, type RowChoices } from "./collapsed-row";
 
 interface RowChoicesButtonProps extends RowChoices {

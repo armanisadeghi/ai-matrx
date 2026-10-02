@@ -22,9 +22,9 @@ import { ArrowRight, Compass, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import type { PrPlayView } from "@/features/content-ir/kinds/pr-play-menu";
 
 const EFFORT_LABEL: Record<"one_or_two_moves" | "program", string> = {

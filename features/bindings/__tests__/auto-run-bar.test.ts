@@ -12,7 +12,7 @@
  * `mandate.binding.auto_run` existed, and it is the one the server re-checks.
  */
 
-import { evaluateBindingAutoRun } from "@/features/surfaces/utils/binding-auto-run";
+import { evaluateBindingAutoRun } from "@ai-matrx/chat/surfaces/utils/binding-auto-run";
 import {
   autoRunMappingsFor,
   autoRunSentence,

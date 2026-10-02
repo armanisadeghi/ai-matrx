@@ -9,16 +9,16 @@
  */
 
 import { useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { setUserVariableValue } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+} from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import type { VariableDefinition } from "../../../types/agent-definition.types";
 import { ChevronDown, ChevronRight, Minus, Plus, Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { AppDispatch } from "@/lib/redux/store";
+import { Button } from "@host/components/ui/button";
+import type { AppDispatch } from "@host/lib/redux/store";
 
 interface ChatAssistantVariableInputsProps {
   conversationId: string;

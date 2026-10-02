@@ -5,7 +5,7 @@ import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 
 interface ResourcePickerWindowProps {

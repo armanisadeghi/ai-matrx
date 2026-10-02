@@ -27,8 +27,8 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { supabase } from "@host/utils/supabase/client";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   removeMessage,
   updateMessageRecord,
@@ -39,7 +39,7 @@ import { invalidateConversationCache } from "./invalidate-conversation-cache.thu
 import { selectToolCallsForMessage } from "../observability/observability.selectors";
 import { patchToolCall } from "../observability/observability.slice";
 import { loadConversation } from "../thunks/load-conversation.thunk";
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@host/lib/ids/durable-record-id";
 
 interface DeleteMessageArgs {
   conversationId: string;

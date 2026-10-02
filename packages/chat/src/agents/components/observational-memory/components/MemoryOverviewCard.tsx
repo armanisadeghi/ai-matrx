@@ -18,15 +18,15 @@ import {
   PowerOff,
   User,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectMemoryDegraded,
   selectMemoryLastError,
   selectMemoryMetadata,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
+} from "../../../redux/execution-system/observational-memory/observational-memory.selectors";
 import { formatDateTime, formatRelativeTime } from "./format";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface MemoryOverviewCardProps {
   conversationId: string;

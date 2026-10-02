@@ -23,19 +23,19 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Copy, Check } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   ContextObjectType,
   ContextPolicy,
-} from "@/features/agents/types/agent-api-types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { UserInputPart } from "@/features/agents/types/request.types";
-import { makeSelectAssembledRequest } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../../types/agent-api-types";
+import type { InstanceContextEntry } from "../../types/instance.types";
+import type { UserInputPart } from "../../types/request.types";
+import { makeSelectAssembledRequest } from "../../redux/execution-system/selectors/aggregate.selectors";
 import {
   selectAgentContextPolicies,
   selectAgentMessages,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../../redux/agent-definition/selectors";
 import {
   IMAGE_ROLE_META,
   isReferenceRole,
@@ -44,7 +44,7 @@ import {
 } from "@ai-matrx/agents";
 import { EmptyStats, StatRow, StatSection } from "./panels/shared";
 import { TYPE_COLORS } from "./ContextPoliciesTab";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 // =============================================================================
 // Selectors

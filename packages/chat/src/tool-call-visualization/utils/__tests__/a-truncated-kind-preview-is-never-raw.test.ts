@@ -10,7 +10,7 @@
  *
  * RED BEFORE GREEN: before the fix `result` was the raw preview string.
  */
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import type { CxToolCallRecord } from "../../../agents/redux/execution-system/observability/observability.slice";
 
 import { persistedToolEntry } from "../cxToolCallToLifecycleEntry";
 

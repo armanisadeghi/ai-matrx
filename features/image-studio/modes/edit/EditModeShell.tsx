@@ -65,7 +65,7 @@ import { FileVersionsList } from "@/features/files/components/core/FileVersions/
 import { addAssetVariants } from "@/features/files/api/assets";
 import type { AssetPreset } from "@/features/files/types";
 import { useImageSource } from "../shared/use-image-source";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   IMAGE_EDIT_SURFACE_NAME,
   createImageEditScope,

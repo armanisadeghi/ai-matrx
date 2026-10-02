@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@host/components/ui/label';
+import { Checkbox } from '@host/components/ui/checkbox';
+import { Textarea } from '@host/components/ui/textarea';
 
 interface CheckboxGroupInputProps {
   value: string;

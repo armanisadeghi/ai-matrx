@@ -1,7 +1,7 @@
 import React from "react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@host/components/ui/checkbox";
 import { calcCols } from "./useContainerColumns";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProTextarea } from "@host/components/official/ProTextarea";
 import { focusWithoutScroll } from "./focusWithoutScroll";
 
 interface CheckboxGroupInputProps {

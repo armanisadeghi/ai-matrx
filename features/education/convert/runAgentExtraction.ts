@@ -6,9 +6,9 @@
 // Kept as a named seam because the converter contract wants a THROWING
 // `{ value, requestId, conversationId }` result with a live-UI handle.
 
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { runHeadlessAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
 
 export interface RunAgentExtractionOpts {
@@ -96,7 +96,7 @@ export async function runAgentExtraction(
     if (!conversationId) return;
     const id = conversationId;
     void import(
-      "@/features/agents/redux/execution-system/thunks/smart-execute.thunk"
+      "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk"
     ).then(({ cancelExecution }) => dispatch(cancelExecution(id)));
   };
   let rejectAborted: (reason: Error) => void = () => {};

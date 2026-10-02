@@ -17,7 +17,7 @@ import {
   fetchSurfaceConfigBundle,
   resolveSurfaceConfig,
   type ResolvedSurfaceConfig,
-} from "@/features/surfaces/services/surface-config.service";
+} from "../services/surface-config.service";
 
 export type SurfaceConfigStatus = "idle" | "loading" | "ready" | "error";
 

@@ -8,17 +8,17 @@
  */
 
 import { resolveContextRow } from "@ai-matrx/agents/context";
-import type { ContextReceiptData } from "@/types/python-generated/stream-events";
-import type { RootState } from "@/lib/redux/store";
+import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
+import type { RootState } from "@host/lib/redux/store";
 
 const captured: Array<{ code?: string; message?: string; details?: string }> = [];
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   captureError: (input: { code?: string; message?: string; details?: string }) => {
     captured.push(input);
     return "id";
   },
 }));
-jest.mock("@/lib/toast", () => ({ toast: { warning: jest.fn(), error: jest.fn() } }));
+jest.mock("@host/lib/toast", () => ({ toast: { warning: jest.fn(), error: jest.fn() } }));
 
 import { recordContextReceipt } from "../receipt-check";
 

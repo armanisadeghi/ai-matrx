@@ -12,7 +12,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { hydrateMessages } from "../messages/messages.slice";
 import { hydrateObservability } from "../observability/observability.slice";
 import {

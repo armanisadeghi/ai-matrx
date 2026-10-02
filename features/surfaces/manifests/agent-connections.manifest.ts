@@ -24,7 +24,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const AGENT_CONNECTIONS_SURFACE_NAME = "matrx-user/agent-connections";

@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CURRENCY_CODES } from "@/features/agents/components/inputs/input-components/CurrencyVariableInput";
+import { CURRENCY_CODES } from "@ai-matrx/chat/agents/components/inputs/input-components/CurrencyVariableInput";
 import { searchPartiesByName } from "../../service";
 import type { PartyRef } from "../../types";
 import { createDeal } from "../../deals/service";

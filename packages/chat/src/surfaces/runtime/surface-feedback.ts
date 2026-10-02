@@ -18,10 +18,10 @@
  * feedback window uses), filed in the organization the person is acting in.
  */
 
-import { submitFeedback } from "@/actions/feedback.actions";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import type { CreateFeedbackInput, FeedbackType } from "@/types/feedback.types";
-import type { SurfaceWriteTarget } from "@/features/surfaces/types";
+import { submitFeedback } from "@host/actions/feedback.actions";
+import { getStoreSingleton } from "@host/lib/redux/store-singleton";
+import type { CreateFeedbackInput, FeedbackType } from "@host/types/feedback.types";
+import type { SurfaceWriteTarget } from "../types";
 import type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
 
 export const SURFACE_FEEDBACK_TARGET_NAME = "surface_feedback";

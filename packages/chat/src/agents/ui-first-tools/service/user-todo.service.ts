@@ -3,8 +3,8 @@
  */
 
 import { db } from "./supabase-typed";
-import { writeOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { writeOne } from "@host/utils/supabase/writeOne";
+import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import type { CxUserTodoRow } from "../tools/types";
 
 export interface CreateUserTodoInput {

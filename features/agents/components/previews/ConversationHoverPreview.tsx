@@ -18,9 +18,9 @@ import {
 } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { selectMessageCount } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import {
   CircuitBoard,
   Check,

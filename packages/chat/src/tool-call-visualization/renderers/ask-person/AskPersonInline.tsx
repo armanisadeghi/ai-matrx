@@ -23,17 +23,17 @@
 import React from "react";
 import { HandHelping } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { rereadAndFollow } from "@/features/agents/runtime-reconnect/reread-and-follow";
-import { ActionRequestInlineAnswer } from "@/features/action-requests/components/ActionRequestInlineAnswer";
-import { usePendingActionRequest } from "@/features/action-requests/hooks/usePendingActionRequest";
+import { Button } from "@host/components/ui/button";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { rereadAndFollow } from "../../../agents/runtime-reconnect/reread-and-follow";
+import { ActionRequestInlineAnswer } from "@host/features/action-requests/components/ActionRequestInlineAnswer";
+import { usePendingActionRequest } from "@host/features/action-requests/hooks/usePendingActionRequest";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const ASK_PERSON_TINT = "text-amber-600 dark:text-amber-400";
 

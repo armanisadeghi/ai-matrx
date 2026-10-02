@@ -45,18 +45,18 @@ import {
   removeRequest,
   setRequestStatus,
   upsertRenderBlock,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import {
   prepareInboundRenderBlock,
   type PartialKindGate,
-} from "@/features/agents/redux/execution-system/utils/inbound-render-block";
+} from "@ai-matrx/chat/agents/redux/execution-system/utils/inbound-render-block";
 import { makePartialKindStalenessGate } from "@ai-matrx/content-ir/wire";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import {
   generateConversationId,
   generateRequestId,
-} from "@/features/agents/redux/execution-system/utils/ids";
+} from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
 
 import { registerLane, releaseLane } from "./workflow-runs.slice";
 

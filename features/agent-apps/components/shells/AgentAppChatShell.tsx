@@ -13,17 +13,17 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
-import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
-import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
+import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
+import { ConversationHistorySidebar } from "@ai-matrx/chat/agents/components/conversation-history/ConversationHistorySidebar";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { destroyInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { destroyInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { clearFocus } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import {
   setDisplayNameOverride,
   setDisplayDescriptionOverride,
   setDisplayIconNameOverride,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Button } from "@/components/ui/button";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import type {

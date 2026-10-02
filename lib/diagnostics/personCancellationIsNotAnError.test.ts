@@ -18,7 +18,7 @@ import {
   executionRejectionMeta,
   serializeExecutionRejection,
 } from "@/lib/diagnostics/executionRejectionMeta";
-import { StreamCancelledError } from "@/features/agents/redux/execution-system/thunks/run-ai-stream";
+import { StreamCancelledError } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-ai-stream";
 import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 
 const CONVERSATION = "e2acdae2-eb77-4c99-9511-f3d591d4841c";
@@ -97,7 +97,7 @@ describe("every 'Cancelled' rejection names its cause", () => {
   const path = require("node:path") as typeof import("node:path");
   const dir = path.join(
     process.cwd(),
-    "features/agents/redux/execution-system/thunks",
+    "packages/chat/src/agents/redux/execution-system/thunks",
   );
   const sites = fs
     .readdirSync(dir)

@@ -14,7 +14,7 @@ import {
   livePosture,
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { EDU_MEMORY_MANDATES } from "../mandates";
 import {
   coerceMemoryHint,

@@ -9,7 +9,7 @@
 
 import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
 import { isCoverageDepth, type CoverageDepth } from "@/features/education/convert/coverage";
-import { ProblemList } from "@/features/surfaces/runtime/collection-write-targets";
+import { ProblemList } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type AgentInputMode = "paste" | "link" | "files";

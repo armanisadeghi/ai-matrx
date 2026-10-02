@@ -18,12 +18,12 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { isCustomDataBinding } from "@/features/agents/utils/variable-binding";
-import type { CustomDataBinding } from "@/features/agents/types/agent-definition.types";
-import { CustomDataBindingSummary } from "@/features/agents/components/variables-management/custom-data/CustomDataBindingSummary";
-import { CustomDataBindingPreview } from "@/features/agents/components/variables-management/custom-data/CustomDataBindingPreview";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceVariableDefinitions } from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { isCustomDataBinding } from "../../utils/variable-binding";
+import type { CustomDataBinding } from "../../types/agent-definition.types";
+import { CustomDataBindingSummary } from "@host/features/agents/components/variables-management/custom-data/CustomDataBindingSummary";
+import { CustomDataBindingPreview } from "@host/features/agents/components/variables-management/custom-data/CustomDataBindingPreview";
 
 export function DataBoundVariableChips({
   conversationId,

@@ -1,8 +1,8 @@
 "use client";
 
 import { PanelRight, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@host/components/ui/button";
+import { cn } from "@host/lib/utils";
 
 /**
  * The shared "take it further" action pair for entity tool renderers:

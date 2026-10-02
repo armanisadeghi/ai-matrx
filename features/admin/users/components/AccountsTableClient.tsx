@@ -57,7 +57,7 @@ import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-eng
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_USERS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-users.manifest";
 import { buildAdminUsersScope } from "../lib/admin-users-scope";
 import { AdminUserRef } from "./AdminUserRef";

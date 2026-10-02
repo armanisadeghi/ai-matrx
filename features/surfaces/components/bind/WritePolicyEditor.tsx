@@ -42,7 +42,7 @@ import type {
   SurfaceWritePolicy,
   SurfaceWriteTarget,
   WritePolicyMap,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 const DEFAULT_SEGMENT = "default";
 

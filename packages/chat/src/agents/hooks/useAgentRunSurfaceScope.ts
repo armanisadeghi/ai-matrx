@@ -16,10 +16,10 @@
 
 import { useCallback } from "react";
 
-import { useAppStore } from "@/lib/redux/hooks";
-import { createAgentRunScope } from "@/features/surfaces/manifests/agent-run.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import { extractAgentSystemInstruction } from "@/features/agents/utils/agent-system-instruction";
+import { useAppStore } from "@host/lib/redux/hooks";
+import { createAgentRunScope } from "@host/features/surfaces/manifests/agent-run.manifest";
+import type { SurfaceScopePayload } from "../../surfaces/types";
+import { extractAgentSystemInstruction } from "../utils/agent-system-instruction";
 import {
   selectAgentDefinition,
   selectAgentDescription,
@@ -29,17 +29,17 @@ import {
   selectAgentTools,
   selectAgentVariableDefinitions,
   selectAgentVersion,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../redux/agent-definition/selectors";
 import {
   extractFlatText,
   selectConversationMessages,
   selectConversationTitle,
   selectMessageCount,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+} from "../redux/execution-system/messages/messages.selectors";
+import { selectInstance } from "../redux/execution-system/conversations/conversations.selectors";
+import { selectUserInputText } from "../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectResolvedVariables } from "../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectInstanceContextEntries } from "../redux/execution-system/instance-context/instance-context.selectors";
 import {
   selectIsExecuting,
   selectIsStreaming,
@@ -48,7 +48,7 @@ import {
   selectLatestCompletion,
   selectLatestError,
   selectLatestToolLifecycles,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../redux/execution-system/selectors/aggregate.selectors";
 
 export interface AgentRunSurfaceScopeArgs {
   agentId: string;

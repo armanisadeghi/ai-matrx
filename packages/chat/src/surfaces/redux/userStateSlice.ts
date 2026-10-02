@@ -6,12 +6,12 @@
 // in-flight dedup on the loader thunk.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { AppThunk } from "@/lib/redux/store";
-import { requireUserId } from "@/utils/auth/getUserId";
+import type { AppThunk } from "@host/lib/redux/store";
+import { requireUserId } from "@host/utils/auth/getUserId";
 import {
   surfaceUserStateService,
   type SurfaceStateRows,
-} from "@/features/surfaces/user-state/service";
+} from "../user-state/service";
 
 type LoadStatus = "idle" | "loading" | "ready" | "error";
 

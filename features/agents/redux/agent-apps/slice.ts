@@ -18,7 +18,7 @@ import {
   fieldFlagsSize,
   hasField,
   removeField,
-} from "../shared/field-flags";
+} from "@ai-matrx/chat/agents/redux/shared/field-flags";
 
 // ---------------------------------------------------------------------------
 // Helpers

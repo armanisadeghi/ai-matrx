@@ -40,7 +40,7 @@ export const CONTENT_ROOTS = [
   "components/mardown-display",
   "features/canvas/artifact-types",
   "features/rich-document",
-  "features/tool-call-visualization",
+  "features/tool-call-visualization", "packages/chat/src/tool-call-visualization",
   "features/content-ir",
   "components/selection-toolbar",
 ];
@@ -134,7 +134,7 @@ export function judge(files: ReadonlyMap<string, string>): Finding[] {
 }
 
 function tree(): Map<string, string> {
-  const listed = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "components", "features", "app", "lib"], {
+  const listed = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "components", "features", "packages/chat/src", "app", "lib"], {
     cwd: REPO,
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,

@@ -17,8 +17,8 @@ import {
   fetchConversationBundle,
   type CxMessageRow,
   type CxToolCallRow,
-} from "@/features/agents/redux/execution-system/thunks/conversation-bundle";
-import { parsePersistedMessageContent } from "@/features/agents/redux/execution-system/messages/persisted-content-boundary";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/conversation-bundle";
+import { parsePersistedMessageContent } from "@ai-matrx/chat/agents/redux/execution-system/messages/persisted-content-boundary";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 
 // ── shapes ──────────────────────────────────────────────────────────────────

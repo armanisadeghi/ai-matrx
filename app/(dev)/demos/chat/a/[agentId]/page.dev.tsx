@@ -1,8 +1,8 @@
 // app/(dev)/demos/chat/a/[agentId]/page.tsx — Agent welcome screen.
 
-import ChatHeaderControls from "@/features/cx-chat/components/ChatHeaderControls";
-import ChatWelcomeServer from "@/features/cx-chat/components/ChatWelcomeServer";
-import { resolveAgentForSSR } from "@/features/cx-chat/components/agent/agents";
+import ChatHeaderControls from "@ai-matrx/chat/cx-chat/components/ChatHeaderControls";
+import ChatWelcomeServer from "@ai-matrx/chat/cx-chat/components/ChatWelcomeServer";
+import { resolveAgentForSSR } from "@ai-matrx/chat/cx-chat/components/agent/agents";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { warmAgent } from "@/lib/api/warm-helpers";
 

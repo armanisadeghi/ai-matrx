@@ -26,7 +26,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
 

@@ -13,11 +13,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
+import { supabase } from "@host/utils/supabase/client";
 import { db } from "../../service/supabase-typed";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { cn } from "@host/lib/utils";
 import {
   upsertPlan,
   upsertTask,

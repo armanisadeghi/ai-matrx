@@ -50,7 +50,7 @@ import {
   countWords,
   wordsLabel,
 } from "../format";
-import type { StoredUserMessage } from "@/features/agents/utils/human-authored-text";
+import type { StoredUserMessage } from "@ai-matrx/chat/agents/utils/human-authored-text";
 
 /**
  * The Masterwork Scout's own seeded opening turn, verbatim from

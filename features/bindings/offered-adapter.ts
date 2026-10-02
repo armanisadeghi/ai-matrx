@@ -12,7 +12,7 @@
 //
 // PURE on purpose: jest holds it (`__tests__/offered-adapter.test.ts`).
 
-import type { SurfaceValue, SurfaceValueType } from "@/features/surfaces/types";
+import type { SurfaceValue, SurfaceValueType } from "@ai-matrx/chat/surfaces/types";
 import {
   GENERIC_VALUE_KINDS,
   MEDIA_VALUE_KINDS,
@@ -20,7 +20,7 @@ import {
   kindPhrase,
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 
 /**
  * Kind slug → the row picker's logical type. Anything that is not a known

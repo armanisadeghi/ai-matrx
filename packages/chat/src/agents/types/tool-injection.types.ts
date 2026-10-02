@@ -15,7 +15,7 @@
  * registry, collects active capabilities, and emits the envelope.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@host/types/python-generated/api-types";
 import type { IdeState } from "./agent-api-types";
 
 // =============================================================================

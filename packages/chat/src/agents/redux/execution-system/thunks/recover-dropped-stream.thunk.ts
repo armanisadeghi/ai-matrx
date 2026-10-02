@@ -27,10 +27,10 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { toast } from "@/lib/toast";
-import type { AppDispatch } from "@/lib/redux/store";
-import type { RootState } from "@/lib/redux/store";
-import { supabase } from "@/utils/supabase/client";
+import { toast } from "@host/lib/toast";
+import type { AppDispatch } from "@host/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
+import { supabase } from "@host/utils/supabase/client";
 import { loadConversation } from "./load-conversation.thunk";
 import { setRequestStatus } from "../active-requests/active-requests.slice";
 import { setInstanceStatus } from "../conversations/conversations.slice";

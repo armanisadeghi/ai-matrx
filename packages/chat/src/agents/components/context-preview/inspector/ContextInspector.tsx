@@ -30,19 +30,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MillerColumnsCore } from "@/features/scopes/components/active-context/miller-columns/MillerColumns";
+import { Alert, AlertDescription } from "@host/components/ui/alert";
+import { MillerColumnsCore } from "@host/features/scopes/components/active-context/miller-columns/MillerColumns";
 import {
   drillPathForScope,
   useDrillPathEngine,
   useUniverse,
   type DrillPath,
-} from "@/features/scopes/components/active-context/quick-pick/engine";
-import { scopesService } from "@/features/scopes/service/scopesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "@/features/scopes/types";
-import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
-import { adminPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
+} from "@host/features/scopes/components/active-context/quick-pick/engine";
+import { scopesService } from "@host/features/scopes/service/scopesService";
+import { isScopesRpcErr } from "@host/features/scopes/types";
+import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "@host/features/scopes/types";
+import { usePageCapture } from "@host/components/agent-copy/page-capture/usePageCapture";
+import { adminPageCapture } from "@host/components/agent-copy/page-capture/pageCapture";
 import { ContextCompareView, type CompareTab } from "../ContextCompareView";
 import { previewRequest, type InspectorSelection } from "./selection";
 

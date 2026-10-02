@@ -36,13 +36,13 @@ jest.mock("@/utils/supabase/webDb", () => ({
 
 import { configureStore } from "@reduxjs/toolkit";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
-import { mergePartialAgent } from "@/features/agents/redux/agent-definition/slice";
-import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { mergePartialAgent } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   agentDefinitionToUpdate,
   dbRowToAgentDefinition,
-} from "@/features/agents/redux/agent-definition/converters";
+} from "@ai-matrx/chat/agents/redux/agent-definition/converters";
 import { fetchAgentBrowsePage } from "../service";
 
 const A = "11111111-1111-4111-8111-111111111111";

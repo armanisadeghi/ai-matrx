@@ -1,5 +1,5 @@
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
+import type { AgentDefinition } from "../../agents/types/agent-definition.types";
+import type { BindingTarget } from "@host/features/surfaces/admin/columns/SurfaceVariableBinding";
 
 /**
  * Build the list of agent variables + context policies that a surface binding

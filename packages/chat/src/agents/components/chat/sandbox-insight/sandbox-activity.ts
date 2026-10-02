@@ -12,8 +12,8 @@
  * No React, no Redux: this file is the unit under test.
  */
 
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { CxToolCallRecord } from "../../../redux/execution-system/observability/observability.slice";
+import type { ToolLifecycleEntry } from "../../../types/request.types";
 
 /**
  * Tools that act INSIDE the bound box. Anything else the agent does (a web

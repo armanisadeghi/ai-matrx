@@ -8,7 +8,7 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
 

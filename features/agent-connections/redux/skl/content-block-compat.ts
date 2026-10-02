@@ -18,7 +18,7 @@ import {
   matchesScope,
   type Scope,
   type ScopeRef,
-} from "@/features/agents/redux/shared/scope";
+} from "@ai-matrx/chat/agents/redux/shared/scope";
 import { selectAllRenderDefinitions } from "./selectors";
 import type { SklRenderDefinition } from "./types";
 

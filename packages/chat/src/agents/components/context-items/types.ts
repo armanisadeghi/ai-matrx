@@ -13,13 +13,13 @@
  */
 
 import type { ComponentType } from "react";
-import type { DataRef } from "@/features/agents/types/message-types";
-import type { FileIdentityHint } from "@/features/files/types";
+import type { DataRef } from "../../types/message-types";
+import type { FileIdentityHint } from "@host/features/files/types";
 import type {
   ListInputPart,
   PreFetchedUrl,
   TableInputPart,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 
 export type ContextBookmark =
   | NonNullable<TableInputPart["bookmarks"]>[number]

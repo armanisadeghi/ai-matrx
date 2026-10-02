@@ -18,7 +18,7 @@
 | `listManagerWindow` | `windows/ListManagerWindow.tsx` | `@/features/user-lists/components/ListManagerFloatingWorkspace` | `useOpenListManagerWindow()` | 356 |
 | `picklistManagerV1Window` | `windows/PicklistManagerV1Window.tsx` | `@/features/udt-picklist/PicklistManagerV1Client` → `PicklistManagerV1` (47 KB) | `useOpenPicklistManagerV1Window({forcedListId})` | 366 |
 | `picklistManagerV2Window` | `windows/PicklistManagerV2Window.tsx` | `@/features/udt-picklist/PicklistManagerV2` (38 KB) | `useOpenPicklistManagerV2Window({forcedListId})` | 377 |
-| `workingDocumentWindow` | `windows/WorkingDocumentWindow.tsx` | `@/features/agents/components/working-document/WorkingDocumentPanel` | `useOpenWorkingDocumentWindow()` | 1120 |
+| `workingDocumentWindow` | `windows/WorkingDocumentWindow.tsx` | `@ai-matrx/chat/agents/components/working-document/WorkingDocumentPanel` | `useOpenWorkingDocumentWindow()` | 1120 |
 
 > **No `picklistManagerV3Window`.** A third picklist core exists (`udt-picklist/picklist-manager-v3.tsx`, 52 KB Notion-style + `PicklistManagerV3Client`) and is live at the `/lists/v3` route, but it has **no window panel and no opener** — out of scope as a panel, but it is the heaviest leg of the picklist-duplication problem (see findings).
 

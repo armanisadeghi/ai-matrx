@@ -50,7 +50,7 @@ jest.mock("@/utils/supabase/client", () => {
   };
 });
 
-import { invalidateMandateCache, resolveMandate, resolveMandateHolder } from "../service";
+import { invalidateMandateCache, resolveMandate, resolveMandateHolder } from "@ai-matrx/chat/mandates/service";
 
 function workflowVerdict(pin: { id: string; n: number } | null) {
   return {

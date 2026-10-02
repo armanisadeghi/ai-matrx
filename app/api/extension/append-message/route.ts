@@ -27,8 +27,8 @@ import { z } from "zod";
 import {
   createCxMessage,
   getCxConversation,
-} from "@/features/public-chat/services/cx-chat";
-import type { CxMessageInsert } from "@/features/public-chat/types/cx-tables";
+} from "@ai-matrx/chat/public-chat/services/cx-chat";
+import type { CxMessageInsert } from "@ai-matrx/chat/public-chat/types/cx-tables";
 import type { Database } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/server";
 import { requireEnv } from "@/utils/supabase/env";

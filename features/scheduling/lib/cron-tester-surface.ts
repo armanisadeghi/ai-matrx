@@ -26,8 +26,8 @@ import {
   createAdminSchedulingScope,
   ADMIN_SCHEDULING_SURFACE_NAME,
 } from "@/features/surfaces/manifests/admin-scheduling.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { validateCron } from "@/lib/scheduler-client/next-due";
 
 export { ADMIN_SCHEDULING_SURFACE_NAME };

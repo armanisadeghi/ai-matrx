@@ -53,8 +53,8 @@ import { Database, EyeOff, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
+import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
+import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   LeftoverFields,

@@ -8,7 +8,7 @@
  * Plain module: the server reader and the client writer both import it.
  */
 
-import type { SidePanelSizes } from "@/components/official/side-panel/side-panel-width";
+import type { SidePanelSizes } from "@host/components/official/side-panel/side-panel-width";
 
 export type CanvasChatPlacement = "side" | "floating";
 

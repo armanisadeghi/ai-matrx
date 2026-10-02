@@ -30,7 +30,7 @@
 import type {
   WorkingDocumentBinding,
   WorkingDocumentKind,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+} from "../redux/execution-system/instance-working-document/instance-working-document.slice";
 
 export const WORKING_DOCUMENT_CONTEXT_KEY = "working_document";
 

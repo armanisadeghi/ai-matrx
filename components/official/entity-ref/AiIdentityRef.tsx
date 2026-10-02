@@ -20,11 +20,11 @@ import {
   selectModelIdentityLookupStatus,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { toolHref } from "@/features/tool-registry/doors";
-import { fetchToolById } from "@/features/agents/redux/tools/tools.thunks";
+import { fetchToolById } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import {
   makeSelectToolById,
   selectToolLookupStatus,
-} from "@/features/agents/redux/tools/tools.selectors";
+} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { formatText } from "@ai-matrx/kit/text-case";

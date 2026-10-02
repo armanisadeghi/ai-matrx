@@ -23,7 +23,7 @@ jest.mock("uuid", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/client-capabilities/desktop-presence",
+  "../../client-capabilities/desktop-presence",
   () => ({
     getLiveDesktopInstance: jest.fn().mockResolvedValue(null),
   }),
@@ -31,16 +31,16 @@ jest.mock(
 
 import { assembleManualRequest } from "../execute-manual-instance.thunk";
 import { assembleRequest } from "../execute-instance.thunk";
-import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
-import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
-import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice";
-import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
-import appContextReducer from "@/lib/redux/slices/appContextSlice";
-import type { RootState } from "@/lib/redux/store";
+import creatorDebugReducer from "@host/lib/redux/preferences/creatorDebugSlice";
+import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
+import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
+import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
+import appContextReducer from "@host/lib/redux/slices/appContextSlice";
+import type { RootState } from "@host/lib/redux/store";
 import {
   DEFAULT_BUILDER_ADVANCED_SETTINGS,
   type ManagedResource,
-} from "@/features/agents/types/instance.types";
+} from "../../../../types/instance.types";
 
 // ---------------------------------------------------------------------------
 // State fixtures
@@ -648,7 +648,7 @@ describe("assembleManualRequest — live read contract", () => {
 // setting and never as a marker object.
 // ---------------------------------------------------------------------------
 
-import { buildSettingsDocument } from "@/features/agents/components/settings-management/settings-document";
+import { buildSettingsDocument } from "@host/features/agents/components/settings-management/settings-document";
 
 describe("assembleManualRequest — sends what the settings views show", () => {
   const variableDefinitions = [

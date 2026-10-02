@@ -3,11 +3,11 @@
  * chosen enrich agent's unusable answer instead of a bare failed-card count.
  */
 import { generateHelperAudio } from "../generateHelperAudio.thunk";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { runHeadlessAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 
-jest.mock("@/features/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
-  ...jest.requireActual("@/features/agents/redux/execution-system/thunks/run-headless-agent-json"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json"),
   runHeadlessAgentJson: jest.fn(),
 }));
 

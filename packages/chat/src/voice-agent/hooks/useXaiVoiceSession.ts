@@ -24,10 +24,10 @@
 import {
   ensureOrganizationContext,
   OrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
+} from "@host/lib/organization/organization-gate";
 import { useCallback, useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
 import {
   addLatencySample,
   appendAssistantTurn,
@@ -63,13 +63,13 @@ import {
   buildResponseCreate,
   buildSessionUpdate,
 } from "../transport/clientEvents";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import {
   selectActiveOrganizationId,
   selectActiveProjectId,
   selectActiveTaskId,
   selectActiveScopeIds,
-} from "@/features/scopes/redux/selectors/active-context";
+} from "@host/features/scopes/redux/selectors/active-context";
 import type { RealtimeToolContextEnvelope } from "../services/realtimeToolService";
 import {
   buildResolvedToolMap,

@@ -1,5 +1,5 @@
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { AgentDefinitionDataIssue } from "@/features/agents/types/agent-definition.types";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import type { AgentDefinitionDataIssue } from "../../types/agent-definition.types";
 
 export interface AgentDataReadContext {
   agentId?: string;

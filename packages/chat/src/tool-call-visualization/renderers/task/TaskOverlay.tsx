@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import TaskEditor from "@/features/tasks/components/TaskEditor";
+import TaskEditor from "@host/features/tasks/components/TaskEditor";
 import type { ToolRendererProps } from "../../types";
 import { parseSingleTask } from "./parseTask";
 

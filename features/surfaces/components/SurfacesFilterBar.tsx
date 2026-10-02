@@ -16,9 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { SurfaceReadinessBucket } from "@/features/surfaces/services/surfaces.service";
+import type { SurfaceReadinessBucket } from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import { READINESS_META } from "@/features/surfaces/components/SurfaceReadinessBadge";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 
 export type StatusFilter = "all" | "active" | "inactive";
 export type ManifestFilter = "all" | "with_manifest" | "without_manifest";

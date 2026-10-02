@@ -60,7 +60,7 @@ import {
   MARKETING_REPORTS_GROUP_LABELS,
   MARKETING_REPORTS_LABEL,
 } from "@/features/surfaces/manifests/marketing-reports.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";

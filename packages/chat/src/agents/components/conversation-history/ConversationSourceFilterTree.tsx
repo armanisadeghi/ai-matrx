@@ -36,8 +36,8 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   Popover,
   PopoverContent,
@@ -47,16 +47,16 @@ import {
 import {
   fetchConversationHistory,
   fetchSourceFacets,
-} from "@/features/agents/redux/conversation-history/thunks";
-import { setScopeSourceFilter } from "@/features/agents/redux/conversation-history/slice";
+} from "../../redux/conversation-history/thunks";
+import { setScopeSourceFilter } from "../../redux/conversation-history/slice";
 import {
   makeSelectConversationHistoryScope,
   selectConversationLanes,
   selectSourceFacets,
   selectSourceFacetsStatus,
   selectSourceFacetsError,
-} from "@/features/agents/redux/conversation-history/selectors";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+} from "../../redux/conversation-history/selectors";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import {
   EMPTY_SOURCE_KEY,
   FEATURE_GROUPS,
@@ -69,9 +69,9 @@ import {
   groupIdForFeature,
   sourceKey,
   type SurfaceFilterPref,
-} from "@/features/agents/redux/conversation-history/source-registry";
-import { SOURCE_APP } from "@/features/agents/types/instance.types";
-import type { SourceFacet } from "@/features/agents/redux/conversation-history/types";
+} from "../../redux/conversation-history/source-registry";
+import { SOURCE_APP } from "../../types/instance.types";
+import type { SourceFacet } from "../../redux/conversation-history/types";
 import {
   ConversationLaneToggles,
   useSetConversationLanes,
@@ -79,7 +79,7 @@ import {
 import {
   DEFAULT_CONVERSATION_LANES,
   normalizeLanes,
-} from "@/features/agents/redux/conversation-history/lanes";
+} from "../../redux/conversation-history/lanes";
 
 // ── Tree model ───────────────────────────────────────────────────────────────
 

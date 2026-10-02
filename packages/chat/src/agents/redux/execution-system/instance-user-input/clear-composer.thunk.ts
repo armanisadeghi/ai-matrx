@@ -23,7 +23,7 @@
 //   • "clear"   → `clearUserInput` (stream-success / send-failure sites): wipes
 //                 the just-sent text + returns submissionPhase to "idle".
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   clearUserInput,
   markInputPersisted,

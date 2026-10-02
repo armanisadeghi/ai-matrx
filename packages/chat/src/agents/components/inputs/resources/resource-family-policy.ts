@@ -1,7 +1,7 @@
 import type {
   VariableResourceContextConfig,
   VariableResourcePromotion,
-} from "@/features/agents/types/agent-definition.types";
+} from "../../../types/agent-definition.types";
 
 export const MAX_RESOURCE_PROMOTIONS = 3;
 export const DEFAULT_PROMOTION_CHARS = 5_000;

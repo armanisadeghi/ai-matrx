@@ -67,9 +67,9 @@ the `tool.definition` rows); code location is deliberately not stored in the DB.
 ## Writing a widget
 
 ```tsx
-import { useWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import type { WidgetHandle } from "@/features/agents/types/widget-handle.types";
+import { useWidgetHandle } from "@ai-matrx/chat/agents/hooks/useWidgetHandle";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import type { WidgetHandle } from "@ai-matrx/chat/agents/types/widget-handle.types";
 
 function MyNoteEditor({ noteId }: { noteId: string }) {
   const [content, setContent] = useState("");

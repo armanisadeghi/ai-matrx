@@ -13,10 +13,10 @@
  * text-style inputs routed through VariableInputComponent.
  */
 
-import { datetimeLocalValue } from "@/lib/dates/datetimeLocalValue";
+import { datetimeLocalValue } from "@host/lib/dates/datetimeLocalValue";
 import { Input } from "@ai-matrx/design-system";
-import { ProTextarea } from "@/components/official/ProTextarea";
-import { cn } from "@/lib/utils";
+import { ProTextarea } from "@host/components/official/ProTextarea";
+import { cn } from "@host/lib/utils";
 
 export type ScalarInputKind =
   | "datetime"

@@ -1,6 +1,6 @@
 import React from "react";
-import { Switch } from "@/components/ui/switch";
-import LightSwitchToggle from "@/components/matrx/LightSwitchToggle";
+import { Switch } from "@host/components/ui/switch";
+import LightSwitchToggle from "@host/components/matrx/LightSwitchToggle";
 
 interface ToggleInputProps {
   value: string;

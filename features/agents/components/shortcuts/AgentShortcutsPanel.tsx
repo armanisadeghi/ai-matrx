@@ -42,10 +42,10 @@ import { LinkAgentToShortcutModal } from "@/features/agent-shortcuts/components/
 import type { AgentScope } from "@/features/agent-shortcuts/constants";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectShortcutsByAgentId } from "@/features/agents/redux/agent-shortcuts/selectors";
-import { selectAllCategoriesMap } from "@/features/agents/redux/agent-shortcut-categories/selectors";
-import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { selectShortcutsByAgentId } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
+import { selectAllCategoriesMap } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
+import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {

@@ -17,14 +17,14 @@
 
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 import {
   fetchConversationPendingCalls,
   fetchConversationPendingCallsStrict,
-} from "@/features/agents/api/fetch-pending-calls";
+} from "../../../api/fetch-pending-calls";
 import { surfaceDelegatedToolCall } from "./surface-delegated-tool-call.thunk";
-import { selectActivePendingAsksForConversation } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
+import { selectActivePendingAsksForConversation } from "../../../ui-first-tools/redux/pending-asks.slice";
 
 /** Returns the number of pending calls surfaced (0 when there are none). */
 export const surfaceColdPendingCalls = (

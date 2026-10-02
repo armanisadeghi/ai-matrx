@@ -33,13 +33,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { setClientTools } from "@ai-matrx/chat/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useMandate } from "@/features/mandates/useMandate";
+import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { WAR_ROOM_ROOM_AGENT_MANDATE } from "@/features/war-room/constants";
 import {
   selectActiveConversationIdForRoom,
@@ -54,7 +54,7 @@ import {
   materializeConversationEdge,
   pruneContainerPhantomConversations,
 } from "@/features/war-room/redux/thunks";
-import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
+import { useConversationMaterialized } from "@ai-matrx/chat/agents/hooks/useConversationMaterialized";
 import { roomRef } from "@/features/war-room/types";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import {

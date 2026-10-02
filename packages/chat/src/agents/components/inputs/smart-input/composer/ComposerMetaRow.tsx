@@ -10,13 +10,13 @@
  * is no separate run-approval pill.
  */
 
-import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
+import { ActiveContextLensChip } from "@host/features/scopes/components/active-context/ActiveContextLensChip";
 import { ComposerAgentPill } from "./ComposerAgentPill";
 import { ComposerEffortPill } from "./ComposerEffortPill";
 import { ComposerOutputPill } from "./ComposerOutput";
 import { composerShows } from "./composer-mode-visibility";
 import { COMPOSER_ROW_CLASS } from "./composer-chip";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type { ComposerPresentation } from "./composer-types";
 import { useEffectiveModelId } from "./useComposerAgent";
 

@@ -10,7 +10,7 @@
 
 import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { supabase } from "@/utils/supabase/client";
-import { convertCxContentToDisplay } from "@/features/cx-chat/utils/cx-content-converter";
+import { convertCxContentToDisplay } from "@ai-matrx/chat/cx-chat/utils/cx-content-converter";
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 
 const MAX_NAME_LENGTH = 120;

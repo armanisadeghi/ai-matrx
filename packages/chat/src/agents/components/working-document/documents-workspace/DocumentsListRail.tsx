@@ -10,11 +10,11 @@
  */
 
 import { useEffect, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   scratchScopeId,
   setWorkingDocTitle,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   FileText,
   Loader2,
@@ -25,15 +25,15 @@ import {
   Search,
   Unlink,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { ItemRow } from "@/components/official/item/ItemRow";
+import { cn } from "@host/lib/utils";
+import { ItemRow } from "@host/components/official/item/ItemRow";
 import {
   listRecentUserDocuments,
   updateCxWorkingDocumentTitle,
   type CxWorkingDocumentSummary,
   type WorkingDocumentKind,
-} from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "../../../redux/execution-system/instance-working-document/cx-working-document.service";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 export interface DocumentsRailSelection {
   conversationId: string;

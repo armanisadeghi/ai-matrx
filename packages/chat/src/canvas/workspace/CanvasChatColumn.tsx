@@ -20,22 +20,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Building2, RotateCcw } from "lucide-react";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import type { AttachedContextRailItem } from "@/features/agents/components/inputs/smart-input/ConversationContextRail";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { Button } from "@/components/ui/button";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { cn } from "@/lib/utils";
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
+import { AgentConversationColumn } from "../../agents/components/shared/AgentConversationColumn";
+import type { AttachedContextRailItem } from "../../agents/components/inputs/smart-input/ConversationContextRail";
+import { setContextEntries } from "../../agents/redux/execution-system/instance-context/instance-context.slice";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { Button } from "@host/components/ui/button";
+import { ErrorNotice } from "@host/components/errors/ErrorNotice";
+import { cn } from "@host/lib/utils";
+import type { ContextObjectType } from "../../agents/types/agent-api-types";
 import type { CanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
-import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
+import { useComposerMode } from "../../agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import type {
   ComposerAgentControl,
   ComposerMode,
   ComposerPresentation,
-} from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+} from "../../agents/components/inputs/smart-input/composer/composer-types";
 
 /** What a host hands the workspace: its canvas as ONE context entry. */
 export interface CanvasContextEntry {

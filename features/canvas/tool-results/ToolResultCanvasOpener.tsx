@@ -30,10 +30,10 @@ import {
   selectCurrentItemId,
 } from "@/features/canvas/redux/canvasSlice";
 import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
-import { selectToolCallsForConversation } from "@/features/agents/redux/execution-system/observability/observability.selectors";
-import { selectLiveToolLifecycleByConversation } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { cxToolCallToLifecycleEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { selectToolCallsForConversation } from "@ai-matrx/chat/agents/redux/execution-system/observability/observability.selectors";
+import { selectLiveToolLifecycleByConversation } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { cxToolCallToLifecycleEntry } from "@ai-matrx/chat/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
+import type { CxToolCallRecord } from "@ai-matrx/chat/agents/redux/execution-system/observability/observability.slice";
 import { createCanvasRevealMemory } from "@/features/canvas/revealMemory";
 import {
   readToolResultCanvasOffer,

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Brain, Check, FileCode2, Square, SquareCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setEditorContextDisabledTabs } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { setEditorContextDisabledTabs } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectCodeTabs, selectActiveTabId } from "../redux/tabsSlice";
 import type { RootState } from "@/lib/redux/store";
 

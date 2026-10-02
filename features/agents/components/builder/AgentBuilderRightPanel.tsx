@@ -11,17 +11,17 @@
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useBuilderContextSeed } from "@/features/agents/hooks/useBuilderContextSeed";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { useBuilderContextSeed } from "@ai-matrx/chat/agents/hooks/useBuilderContextSeed";
 import {
   registerSurface,
   unregisterSurface,
-} from "@/features/agents/redux/surfaces/surfaces.slice";
-import { AgentConversationColumn } from "../shared/AgentConversationColumn";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
-import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
+} from "@ai-matrx/chat/agents/redux/surfaces/surfaces.slice";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { AgentSamplesLauncher } from "../samples/AgentSamplesLauncher";
-import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
+import type { ConversationInvocation } from "@ai-matrx/chat/agents/types/conversation-invocation.types";
 
 interface AgentBuilderRightPanelProps {
   agentId: string;

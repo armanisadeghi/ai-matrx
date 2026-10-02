@@ -54,7 +54,7 @@ import { SshAccessPanel } from "@/components/sandbox/ssh-access-panel";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createSandboxesScope } from "@/features/surfaces/manifests/sandboxes.manifest";
 import {
   sandboxDisplayName,

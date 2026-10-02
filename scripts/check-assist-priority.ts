@@ -34,7 +34,7 @@ const NC = "\x1b[0m";
 /** Any file that emits an assist. Producers are named by convention. */
 function candidateFiles(): string[] {
   const out = execSync(
-    "git grep -l -E 'emitAssist|EmitAssistInput' -- 'features/**/*.ts' 'features/**/*.tsx' || true",
+    "git grep -l -E 'emitAssist|EmitAssistInput' -- 'features/**/*.ts' 'packages/chat/src/**/*.ts' 'features/**/*.tsx' 'packages/chat/src/**/*.tsx' || true",
     { encoding: "utf8" },
   );
   return out.split("\n").filter(Boolean);

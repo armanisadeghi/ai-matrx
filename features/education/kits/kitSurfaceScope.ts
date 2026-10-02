@@ -9,7 +9,7 @@ import type { GeneratedArtifact } from "@/features/education/convert/lineage";
 import type { TargetKind } from "@/features/education/convert/types";
 import type { LibraryRowStats } from "@/features/education/library/types";
 import { createEducationKitsScope } from "@/features/surfaces/manifests/education-kits.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { kitArtifactKey, kitMembershipFingerprint, type KitArtifactStats, type StudyKit } from "./kitService";
 
 export interface StudyStage {

@@ -35,7 +35,7 @@ import { fetchBatchSavings } from "@/features/batch-savings/service";
 import { orgFilterPatch, readOrgFilter } from "@/lib/entity-list/orgFilterUrl";
 import { spendAddressToUsage } from "@/features/admin/usage-drill/usageLinks";
 import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
-import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 import { EstimatedCostPanel } from "./explorer/EstimatedCostPanel";

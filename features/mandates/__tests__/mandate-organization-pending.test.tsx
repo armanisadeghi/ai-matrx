@@ -25,16 +25,16 @@
 import React, { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { MandateOrganizationUnresolvedError } from "../service";
-import { useMandate } from "../useMandate";
+import { MandateOrganizationUnresolvedError } from "@ai-matrx/chat/mandates/service";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
 
 const resolveMandate = jest.fn();
 
-jest.mock("../service", () => {
-  const actual = jest.requireActual("../service");
+jest.mock("@ai-matrx/chat/mandates/service", () => {
+  const actual = jest.requireActual("@ai-matrx/chat/mandates/service");
   return {
     ...actual,
     resolveMandate: (...args: unknown[]) => resolveMandate(...args),

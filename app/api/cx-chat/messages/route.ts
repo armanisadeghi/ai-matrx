@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { bulkCreateCxMessages, createCxMessage } from '@/features/public-chat/services/cx-chat';
-import type { CxMessageInsert } from '@/features/public-chat/types/cx-tables';
+import { bulkCreateCxMessages, createCxMessage } from '@ai-matrx/chat/public-chat/services/cx-chat';
+import type { CxMessageInsert } from '@ai-matrx/chat/public-chat/types/cx-tables';
 
 /**
  * POST /api/cx-chat/messages

@@ -48,7 +48,7 @@ import {
   childConversationIdFromResult,
   persistedAgentCallTrace,
 } from "../../utils/agent-call-trace";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const REQ = "req_compass_dispatch";
 const PARENT_CALL = "toolu_dispatch_to_lane_planner";

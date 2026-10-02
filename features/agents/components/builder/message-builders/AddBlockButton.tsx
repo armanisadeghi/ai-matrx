@@ -40,7 +40,7 @@ import { Upload } from "lucide-react";
 import { useOpenImageUploaderWindow } from "@/features/overlays/openers/imageUploaderWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { MediaVariableInput } from "@/features/agents/components/inputs/input-components/MediaVariableInput";
+import { MediaVariableInput } from "@ai-matrx/chat/agents/components/inputs/input-components/MediaVariableInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { InfoHint } from "@/components/official/InfoHint";
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
@@ -68,10 +68,10 @@ import {
   newSpeechScriptPart,
   readTurns,
   speechScriptCompatibility,
-} from "@/features/agents/speech-script/types";
+} from "@ai-matrx/chat/agents/speech-script/types";
 import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
-import { ImageRoleSelector } from "@/features/agents/image-roles/ImageRoleSelector";
-import { useImageRoleLimits } from "@/features/agents/image-roles/useImageRoleLimits";
+import { ImageRoleSelector } from "@ai-matrx/chat/agents/image-roles/ImageRoleSelector";
+import { useImageRoleLimits } from "@ai-matrx/chat/agents/image-roles/useImageRoleLimits";
 import {
   imageRoleVerdict,
   isReferenceRole,

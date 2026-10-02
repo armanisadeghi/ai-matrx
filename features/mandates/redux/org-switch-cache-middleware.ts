@@ -34,7 +34,7 @@
 import type { Middleware } from "@reduxjs/toolkit";
 
 import { REHYDRATE_ACTION_TYPE } from "@/lib/sync/engine/rehydrate";
-import { dropMandateCacheForOrgSwitch } from "@/features/mandates/service";
+import { dropMandateCacheForOrgSwitch } from "@ai-matrx/chat/mandates/service";
 
 /**
  * Actions that can change `appContext.organization_id`. Listed explicitly so an

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { publishPlanSetupDraft } from "../plannerSnapshot";
 import type { PlanInput, Weekday } from "../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";

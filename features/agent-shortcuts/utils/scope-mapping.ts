@@ -28,7 +28,7 @@
  * allocation-light and synchronous. Avoid throwing.
  */
 
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 /**
  * Keys of the shortcut's `scope_mappings` JSON column.

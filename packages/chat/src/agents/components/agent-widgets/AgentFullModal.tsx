@@ -1,8 +1,8 @@
 "use client";
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { Dialog, DialogContent } from "@host/components/ui/dialog";
 import { AgentRunner } from "../smart/AgentRunner";
 import { useAgentShellAddress } from "./useAgentShellAddress";
 

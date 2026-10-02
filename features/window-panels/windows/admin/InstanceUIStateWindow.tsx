@@ -18,14 +18,14 @@
 import { useCallback, useState } from "react";
 import { LayoutDashboard, X, Code2, Copy, Check } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { InstanceUIStateList } from "@/features/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateList";
-import { InstanceUIStateCore } from "@/features/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateCore";
+import { InstanceUIStateList } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateList";
+import { InstanceUIStateCore } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateCore";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectFullInstanceUIStateSlice,
   selectInstanceTitle,
   selectAllUIStateConversationIds,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { cn } from "@/lib/utils";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { formatJson } from "@/utils/json/json-cleaner-utility";

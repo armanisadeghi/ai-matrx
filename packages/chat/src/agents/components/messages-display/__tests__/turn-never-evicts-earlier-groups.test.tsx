@@ -46,20 +46,20 @@ jest.mock("../assistant/AssistantTurnGroup", () => ({
 jest.mock("../assistant/AgentEmptyMessageDisplay", () => ({
   AgentEmptyMessageDisplay: () => null,
 }));
-jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
+jest.mock("@host/features/context-menu-v3/NonEditableContextMenu", () => ({
   NonEditableContextMenu: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
 }));
-jest.mock("@/features/context-menu-v3/utils/resolveMarkdownContext", () => ({
+jest.mock("@host/features/context-menu-v3/utils/resolveMarkdownContext", () => ({
   resolveMarkdownContext: jest.fn(),
 }));
-jest.mock("@/features/war-room/utils/renderPathTrace", () => ({
+jest.mock("@host/features/war-room/utils/renderPathTrace", () => ({
   isWarRoomThreadAgentSurface: () => false,
   traceWarRoomRenderPath: jest.fn(),
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/load-conversation.thunk",
+  "../../../redux/execution-system/thunks/load-conversation.thunk",
   () => ({ loadConversation: jest.fn(() => ({ type: "test/load" })) }),
 );
 
@@ -70,9 +70,9 @@ import messages, {
   setVisibleGroupLimit,
   updateMessageRecord,
   type MessageRecord,
-} from "@/features/agents/redux/execution-system/messages/messages.slice";
-import conversations from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import activeRequests from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+} from "../../../redux/execution-system/messages/messages.slice";
+import conversations from "../../../redux/execution-system/conversations/conversations.slice";
+import activeRequests from "../../../redux/execution-system/active-requests/active-requests.slice";
 import { AgentConversationDisplay } from "../AgentConversationDisplay";
 
 const CONV = "5e4d3c2b-1a09-4f8e-9d7c-6b5a4f3e2d1c";

@@ -30,18 +30,18 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: () => undefined,
   useAppDispatch: () => jest.fn(),
 }));
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@host/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 
-jest.mock("@/features/agents/hooks/useMcpTools", () => ({
+jest.mock("../../../../hooks/useMcpTools", () => ({
   useMcpCatalog: () => ({ serverStates: [] }),
 }));
 
-jest.mock("@/features/overlays/openers/runControlsWindow", () => ({
+jest.mock("@host/features/overlays/openers/runControlsWindow", () => ({
   useOpenRunControlsWindow: () => jest.fn(),
 }));
 
@@ -53,7 +53,7 @@ jest.mock("../composer/ComposerConnectorsPanel", () => ({ ComposerConnectorsPane
 
 // The account-wide source, made unmistakable. If the rail ever reaches for it
 // again — by this name or any other — the assertions below fail.
-jest.mock("@/features/connectors/ChatConnectorStrip", () => ({
+jest.mock("@host/features/connectors/ChatConnectorStrip", () => ({
   ChatConnectorStrip: () =>
     React.createElement("div", null, "ACCOUNT-WIDE: Firecrawl Documentation"),
 }));

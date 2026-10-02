@@ -17,7 +17,7 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { ReviewResult } from "@/features/flashcards/types";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";

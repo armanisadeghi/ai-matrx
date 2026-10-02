@@ -32,7 +32,7 @@ jest.mock("@/lib/sandbox/active-binding", () => ({
   clearSandboxBindingCache: jest.fn(),
 }));
 
-import { refreshConversationSandboxBinding } from "@/features/agents/redux/execution-system/thunks/refresh-conversation-binding.thunk";
+import { refreshConversationSandboxBinding } from "@ai-matrx/chat/agents/redux/execution-system/thunks/refresh-conversation-binding.thunk";
 import type { RootState } from "@/lib/redux/store";
 
 const CONVERSATION_ID = "bb458c1e-3222-4c16-9d29-77c48b186a02";

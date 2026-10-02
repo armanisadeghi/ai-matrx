@@ -4,9 +4,9 @@ import { DynamicIcon } from "@ai-matrx/icons";
 import {
   getAllDisplayTypes,
   getDisplayMeta,
-} from "@/features/agents/utils/run-ui-utils";
-import { useAgentLauncherTester } from "@/features/agents/hooks/useAgentLauncherTester";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+} from "../../utils/run-ui-utils";
+import { useAgentLauncherTester } from "../../hooks/useAgentLauncherTester";
+import type { SourceFeature } from "../../types/instance.types";
 import { TesterSettingsPanel } from "./TesterSettingsPanel";
 
 // =============================================================================

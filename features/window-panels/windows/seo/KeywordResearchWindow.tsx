@@ -35,12 +35,12 @@ import type {
   KeywordWithMarket,
 } from "@/features/marketing/seo/keyword-research/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   buildKeywordResearchWindowScope,
   KEYWORD_RESEARCH_WINDOW_SURFACE_NAME,
 } from "@/features/surfaces/manifests/keyword-research-window.manifest";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**

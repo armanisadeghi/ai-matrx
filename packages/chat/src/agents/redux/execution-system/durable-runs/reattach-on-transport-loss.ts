@@ -42,7 +42,7 @@
  * ```
  */
 
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 
 export interface TransportLossReattacherConfig {
   /**

@@ -23,12 +23,12 @@ import { useEffect, useMemo } from "react";
 import { createSelector } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
-import { fetchAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import { conversationListCacheKey } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import { fetchAgentConversations } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.thunks";
+import { conversationListCacheKey } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
 import type {
   ConversationListItem,
   ConversationListLoadStatus,
-} from "@/features/agents/redux/conversation-list/conversation-list.types";
+} from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
 
 // Stable empty references so selectors returning "nothing" don't churn.
 const EMPTY_IDS: string[] = [];

@@ -1,4 +1,4 @@
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 /**
  * Classifies an agent-to-agent call from its declared input contract.

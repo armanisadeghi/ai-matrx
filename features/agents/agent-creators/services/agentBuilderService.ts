@@ -4,8 +4,8 @@ import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import type { Database } from "@/types/database.types";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { DEFAULT_AGENT_MODEL_ID } from "@/features/agents/constants/blank-agent";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { DEFAULT_AGENT_MODEL_ID } from "@ai-matrx/chat/agents/constants/blank-agent";
 import { stripNullish } from "@/utils/supabase/payload";
 // The ONE write-organization resolver (explicit value → the org the user
 // SELECTED → refuse). `agent.definition` is org-scoped and its sibling write

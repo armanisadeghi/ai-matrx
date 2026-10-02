@@ -9,7 +9,7 @@
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type { CloudFileRecord } from "@/features/files/types";
 import { isImageMime, resolveMime } from "@/features/files/utils/file-types";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 
 type FilterableCloudImage = Pick<
   CloudFileRecord,

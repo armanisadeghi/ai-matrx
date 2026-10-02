@@ -4,7 +4,7 @@
  * not a generic `{ content, context }` blob.
  */
 
-import { buildAgentBuilderContextData } from "@/features/agents/agent-context/buildAgentBuilderContextData";
+import { buildAgentBuilderContextData } from "@ai-matrx/chat/agents/agent-context/buildAgentBuilderContextData";
 import { buildCodeWorkspaceContextData } from "@/features/code/agent-context/buildCodeWorkspaceContextData";
 import { buildNotesEditorContextData } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import {
@@ -27,7 +27,7 @@ import {
   DEMO_NOTE_RECORD,
   DEMO_NOTES_MAP,
 } from "./notes-demo";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 
 export interface LabSurfacePreset {
   sourceFeature: SourceFeature;

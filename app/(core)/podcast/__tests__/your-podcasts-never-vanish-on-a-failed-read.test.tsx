@@ -13,7 +13,7 @@ jest.mock("@/components/ui/button", () => ({ Button: ({ children }: { children: 
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "user-1" }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
 jest.mock("@/features/podcasts/hooks/useMyPodcasts", () => ({ useMyPodcasts: () => mockLibrary }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 jest.mock("@/features/surfaces/manifests/podcast.manifest", () => ({

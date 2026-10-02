@@ -18,9 +18,9 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import MarkdownStream from "@/components/MarkdownStream";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { publishSurfaceUiState } from "@ai-matrx/chat/surfaces/runtime/surface-ui-state";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import {
   CHECKUP_DECISION_UI_STATE_KEY,

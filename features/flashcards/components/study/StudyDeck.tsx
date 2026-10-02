@@ -102,7 +102,7 @@ import {
 import { microCoach } from "@/features/education/tutor/lanes/microCoach";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { BatchReviewBlock } from "@/features/education/study/components/BatchReviewBlock";
-import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
+import { useFloatingRunWindow } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import {
   buildRecentSessionContext,
   buildRemainingCardFronts,

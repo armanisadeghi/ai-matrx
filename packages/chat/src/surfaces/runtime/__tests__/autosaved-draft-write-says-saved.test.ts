@@ -13,9 +13,9 @@
  * follow the target's declared persistence, never the bare `mode: "draft"`.
  */
 import { surfaceWriteToolOutput } from "../surface-write-tool-output";
-import { notesEditorManifest } from "../../manifests/notes-editor.manifest";
+import { notesEditorManifest } from "@host/features/surfaces/manifests/notes-editor.manifest";
 import type { SurfaceWriteTarget } from "../../types";
-import { buildSurfaceWriteApprovalChange } from "@/features/agents/redux/execution-system/thunks/surface-write-approval-change";
+import { buildSurfaceWriteApprovalChange } from "../../../agents/redux/execution-system/thunks/surface-write-approval-change";
 import type { SurfaceWriteApprovalProposal } from "../surface-writeback";
 
 function targetNamed(name: string): SurfaceWriteTarget {

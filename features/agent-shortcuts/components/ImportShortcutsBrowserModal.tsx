@@ -39,7 +39,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
-import type { AdminNonGlobalShortcutRow } from "@/features/agents/redux/agent-shortcuts/thunks";
+import type { AdminNonGlobalShortcutRow } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 type ScopeFilter = "all" | "user" | "organization" | "project" | "task";

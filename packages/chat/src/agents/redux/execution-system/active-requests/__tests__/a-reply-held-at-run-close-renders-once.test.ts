@@ -33,7 +33,7 @@ import { assembleMessageParts } from "../../utils/assemble-cx-content-blocks";
 import type {
   ActiveRequest,
   TimelineEntry,
-} from "@/features/agents/types/request.types";
+} from "../../../../types/request.types";
 
 type AnyState = Parameters<ReturnType<typeof selectUnifiedSlots>>[0];
 

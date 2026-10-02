@@ -5,21 +5,21 @@
 // features/mandates/feature-intelligence/__tests__/declared-places.test.ts.
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import type { FeaturePlaces } from "@/features/mandates/feature-intelligence/types";
+import type { FeaturePlaces } from "@host/features/mandates/feature-intelligence/types";
 
 const K = MANDATE_KEYS;
 
 export const AMBIENT_PLACES: FeaturePlaces = {
   feature: "ambient",
   label: "Ambient assistant",
-  roots: ["features/agents/components/ambient-assistant"],
+  roots: ["packages/chat/src/agents/components/ambient-assistant"],
   places: [
     {
       id: "page-guidance",
       label: "Any page",
       trigger: "The page assistant (where a module has none of its own)",
       mandateKeys: [K.ambient__page_guidance],
-      sources: ["features/agents/components/ambient-assistant/ambientAssistantMandates.ts"],
+      sources: ["packages/chat/src/agents/components/ambient-assistant/ambientAssistantMandates.ts"],
     },
     {
       id: "listen",

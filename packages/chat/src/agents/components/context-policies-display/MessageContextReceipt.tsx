@@ -17,8 +17,8 @@ import { Boxes, TriangleAlert } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { ContextRulesTable } from "@ai-matrx/agents/context/react";
 import type { ContextReceiptMismatch } from "@ai-matrx/agents/context";
-import type { ContextReceiptData } from "@/types/python-generated/stream-events";
-import { receiptRowToResolved } from "@/features/agents/redux/execution-system/messages/message-context-receipt";
+import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
+import { receiptRowToResolved } from "../../redux/execution-system/messages/message-context-receipt";
 import { ContextPolicyTile } from "./ContextPolicyTile";
 
 const NO_CHANGE = () => {};

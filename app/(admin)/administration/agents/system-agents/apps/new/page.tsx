@@ -19,8 +19,8 @@ import {
   selectBuiltinAgents,
   selectAgentsSliceStatus,
   selectAgentsSliceError,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchAgentsList } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { CreateAgentAppForm } from "@/features/agent-apps/components/CreateAgentAppForm";
 import type { CreateAgentAppInput } from "@/features/agent-apps/types";

@@ -33,12 +33,12 @@
  * Canonical doc for controls as variables: common-docs/systems/agents/typed-messages/FEATURE.md.
  */
 
-import type { ControlDefinition } from "@/features/agents/hooks/useModelControls";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { ControlDefinition } from "@ai-matrx/chat/agents/hooks/useModelControls";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   deriveControlComponent,
   findControlVariable,
-} from "@/features/agents/utils/control-variables";
+} from "@ai-matrx/chat/agents/utils/control-variables";
 import { isControlVariable } from "@ai-matrx/agents";
 
 /** The marker key that says "this setting is a run input". */

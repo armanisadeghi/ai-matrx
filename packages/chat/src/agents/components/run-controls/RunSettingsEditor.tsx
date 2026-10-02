@@ -11,39 +11,39 @@
 
 import { useState } from "react";
 import { Brain, FileText, PanelRight } from "lucide-react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { CHAT_CONTEXT_MENU_PROPS } from "@/features/agents/components/chat/agent-context/buildChatContextData";
-import { buildRunControlsApplicationScope } from "@/features/agents/components/chat/agent-context/buildChatRunConfiguration";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { ProInput } from "@/components/official/ProInput";
-import { ProTextarea } from "@/components/official/ProTextarea";
-import { Separator } from "@/components/ui/separator";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { CHAT_CONTEXT_MENU_PROPS } from "../chat/agent-context/buildChatContextData";
+import { buildRunControlsApplicationScope } from "../chat/agent-context/buildChatRunConfiguration";
+import { cn } from "@host/lib/utils";
+import { Button } from "@host/components/ui/button";
+import { Switch } from "@host/components/ui/switch";
+import { Label } from "@host/components/ui/label";
+import { ProInput } from "@host/components/official/ProInput";
+import { ProTextarea } from "@host/components/official/ProTextarea";
+import { Separator } from "@host/components/ui/separator";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
-import type { DirectiveApplyPolicy } from "@/lib/redux/preferences/userPreferencesSlice";
+} from "@host/components/ui/select";
+import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
+import type { DirectiveApplyPolicy } from "@host/lib/redux/preferences/userPreferencesSlice";
 import {
   requestMemoryToggle,
   setBuilderAdvancedSettings,
   setReuseConversationId,
   setUseBlockMode,
   setUseSnapshot,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
   selectBuilderAdvancedSettings,
   selectIsBlockMode,
   selectIsSnapshot,
   selectReuseConversationId,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+} from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectIsSuperAdmin } from "@host/lib/redux/slices/userSlice";
 import {
   clearApiOverrides,
   selectAiApiVersion,
@@ -52,20 +52,20 @@ import {
   setAiApiVersion,
   setApiVersion,
   setPathOverride,
-} from "@/lib/redux/slices/apiConfigSlice";
-import { ENDPOINTS } from "@/lib/api/endpoints";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
-import { parseRequestOverrides } from "@/features/agents/redux/execution-system/utils/request-overrides";
+} from "@host/lib/redux/slices/apiConfigSlice";
+import { ENDPOINTS } from "@host/lib/api/endpoints";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../types/instance.types";
+import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
-import { SystemInstructionModal } from "../builder/message-builders/system-instructions/SystemInstructionModal";
-import { useOpenSystemInstructionWindow } from "@/features/overlays/openers/systemInstructionWindow";
-import { NumberStepper } from "@/components/official-candidate/NumberStepper";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { SystemInstructionModal } from "@host/features/agents/components/builder/message-builders/system-instructions/SystemInstructionModal";
+import { useOpenSystemInstructionWindow } from "@host/features/overlays/openers/systemInstructionWindow";
+import { NumberStepper } from "@host/components/official-candidate/NumberStepper";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
 import {
   selectIsMemoryEnabledForConversation,
   selectMemoryDegraded,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "../../redux/execution-system/observational-memory/observational-memory.selectors";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface RunSettingsEditorProps {
   conversationId: string;

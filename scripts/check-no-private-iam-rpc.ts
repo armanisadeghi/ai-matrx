@@ -16,7 +16,7 @@ const SCAN_DIRS = [
   "actions",
   "app",
   "components",
-  "features",
+  "features", "packages/chat/src",
   "hooks",
   "lib",
   "providers",

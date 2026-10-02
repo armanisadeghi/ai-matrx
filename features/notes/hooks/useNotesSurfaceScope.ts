@@ -28,7 +28,7 @@ import { useCallback } from "react";
 import type { RefObject } from "react";
 
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   selectAllFolders,
   selectFindReplaceState,

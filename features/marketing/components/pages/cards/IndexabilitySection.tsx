@@ -8,7 +8,7 @@ import type {
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { evaluatePageIndexability } from "@/features/marketing/lib/marketing-page-scope";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { type IndexabilityEvaluation } from "@/features/marketing/seo/audit/indexability";
 import { evaluateUrlQuality } from "@/features/marketing/seo/audit/url-quality";
 import { AuditIssueList } from "@/features/marketing/seo/audit/AuditIssueList";

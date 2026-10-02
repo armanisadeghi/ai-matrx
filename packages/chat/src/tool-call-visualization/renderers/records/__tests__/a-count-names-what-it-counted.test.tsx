@@ -8,7 +8,7 @@ import { expect, it, jest } from "@jest/globals";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
 import { RecordsInline } from "../RecordsInline";
 

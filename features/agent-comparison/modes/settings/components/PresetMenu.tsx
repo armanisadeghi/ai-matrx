@@ -18,7 +18,7 @@
 import { Zap, ChevronDown } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { setOverrides } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,9 +30,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   destroyInstance,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
 import {
   addSettingsColumn,
   setSettingsColumns,

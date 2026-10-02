@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAgentById,
   selectAgentDefinition,
@@ -18,30 +18,30 @@ import {
   selectAgentMcpServers,
   selectAgentOutputSchema,
   selectAgentChangeNote,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../redux/agent-definition/selectors";
 import {
   fetchAgentVersionHistory,
   fetchFullAgent,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { selectCategoryById } from "@/features/agents/redux/agent-shortcut-categories/selectors";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+} from "../redux/agent-definition/thunks";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { selectCategoryById } from "../redux/agent-shortcut-categories/selectors";
+import { selectIsSuperAdmin } from "@host/lib/redux/slices/userSlice";
 import {
   selectModelLabelById,
   fetchModelOptions,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@host/features/ai-models/redux/modelRegistrySlice";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
-import { supabase } from "@/utils/supabase/client";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@host/utils/supabase/client";
+import { Badge } from "@host/components/ui/badge";
+import { Button } from "@host/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@host/components/ui/card";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+} from "@host/components/ui/alert";
+import { Separator } from "@host/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@host/components/ui/toggle-group";
 import {
   Webhook,
   MessageSquare,
@@ -63,25 +63,25 @@ import {
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
-import { RichDocument } from "@/features/rich-document/RichDocument";
-import type { ContentSource } from "@/features/rich-document/types";
-import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { toast } from "@host/lib/toast";
+import { cn } from "@host/lib/utils";
+import type { AgentDefinitionMessage } from "../types/agent-message-types";
+import { RichDocument } from "@host/features/rich-document/RichDocument";
+import type { ContentSource } from "@host/features/rich-document/types";
+import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 import {
   AiModelRef,
   AiToolRef,
-} from "@/components/official/entity-ref/AiIdentityRef";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import MarkdownStream from "@/components/MarkdownStream";
-import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { agentDefinitionSummary } from "@/features/agents/format";
-import { agentHref } from "@/features/agents/browse/agentPaths";
-import { buildSystemAgentAiPayload } from "@/features/agents/route/buildSystemAgentAiPayload";
-import { useAgentAddressViewer } from "@/features/agents/addressing/useAgentHref";
-import { asClause } from "@/lib/text/asClause";
+} from "@host/components/official/entity-ref/AiIdentityRef";
+import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { AccessSummaryPanel } from "@host/features/sharing/components/AccessSummaryPanel";
+import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { agentDefinitionSummary } from "../format";
+import { agentHref } from "@host/features/agents/browse/agentPaths";
+import { buildSystemAgentAiPayload } from "./buildSystemAgentAiPayload";
+import { useAgentAddressViewer } from "../addressing/useAgentHref";
+import { asClause } from "@host/lib/text/asClause";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";

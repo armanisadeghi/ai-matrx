@@ -17,41 +17,41 @@ import {
   NotebookPen,
   PanelRight,
 } from "lucide-react";
-import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";
+import { useOpenWorkingDocumentPanel } from "@host/features/overlays/openers/workingDocumentPanel";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useDialogContainer } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useDialogContainer } from "@host/components/ui/dialog";
+import { Switch } from "@host/components/ui/switch";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { useIsMobile } from "@host/hooks/use-mobile";
 import {
   BottomSheet,
   BottomSheetHeader,
   BottomSheetBody,
 } from "@ai-matrx/design-system";
 import { INPUT_BUTTON_IDLE_TINT } from "./InputActionButtons";
-import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
-import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
+import { ActiveContextTree } from "@host/features/scopes/components/active-context/ActiveContextTree";
+import { selectHasActiveContext } from "@host/features/scopes/redux/selectors/active-context";
 import {
   selectActiveScratchpadId,
   selectWorkingDocContent,
   selectWorkingDocEnabled,
   selectWorkingDocTitle,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   setConversationDocumentEnabledThunk,
   linkConversationDocumentThunk,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
-import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { setScratchpadGateThunk } from "../../../redux/execution-system/instance-working-document/scratchpad.thunks";
 import {
   scratchScopeId,
   type WorkingDocumentKind,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import { DocumentLinkPicker } from "@/features/agents/components/working-document/DocumentLinkPicker";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.slice";
+import { DocumentLinkPicker } from "../../working-document/DocumentLinkPicker";
 
 interface ContextDocsMenuProps {
   conversationId: string;

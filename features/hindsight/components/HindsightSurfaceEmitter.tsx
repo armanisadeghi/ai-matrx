@@ -20,7 +20,7 @@
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_HINDSIGHT_SURFACE_NAME,
   createAdminHindsightScope,

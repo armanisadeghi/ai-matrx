@@ -9,7 +9,7 @@
  * call sites.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type { ConversationListItem } from "./conversation-list.types";
 import { conversationListCacheKey } from "./conversation-list.types";
 import { upsertConversationInCaches } from "./conversation-list.slice";

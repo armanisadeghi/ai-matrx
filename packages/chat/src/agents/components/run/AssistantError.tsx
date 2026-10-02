@@ -18,7 +18,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertCircle, RotateCw, Loader2, ArrowRight } from "lucide-react";
 import { bindingUnresolvedFailure } from "./friendlyStreamError";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /**
  * Structured backend refusals that have a ONE-CLICK way forward. A failure the

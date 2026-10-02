@@ -57,7 +57,7 @@ import {
   recordedCapabilityLabels,
   workspaceName,
 } from "@/features/ai-work/lib/codingSessionPresentation";
-import { appLabel } from "@/features/agents/redux/conversation-history/source-registry";
+import { appLabel } from "@ai-matrx/chat/agents/redux/conversation-history/source-registry";
 import type { ProviderConversation } from "@/features/ai-work/service/providerConversation";
 import { CloudSyncTruthPanel } from "./CloudSyncTruthPanel";
 import { ContinueOnMyMacPanel } from "./ContinueOnMyMacPanel";

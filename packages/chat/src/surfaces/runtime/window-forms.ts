@@ -31,7 +31,7 @@
  */
 
 import { refuseSurfaceWrite } from "./surface-writeback";
-import type { SurfaceWriteTarget } from "@/features/surfaces/types";
+import type { SurfaceWriteTarget } from "../types";
 
 export const WINDOW_FORM_TARGET_NAME = "window_form_fields";
 

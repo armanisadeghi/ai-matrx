@@ -31,7 +31,7 @@ jest.mock("../SmartInputFileDropTarget", () => ({
 jest.mock("../../resources/SmartAgentResourceChips", () => ({ SmartAgentResourceChips: () => null }));
 jest.mock("../../resources/AttachedDocumentChips", () => ({ AttachedDocumentChips: () => null }));
 jest.mock("../../variable-input-variations/SmartAgentVariables", () => ({ SmartAgentVariables: () => null }));
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => () => undefined,
   // showFreeformInput true, not executing, resources resolved.
   useAppSelector: () => true,

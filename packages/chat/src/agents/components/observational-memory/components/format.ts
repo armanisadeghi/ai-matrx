@@ -5,10 +5,10 @@
  * prettified rounding — fractional cents and exact token counts matter.
  */
 
-import { parseTimestamp } from "@/utils/datetime";
+import { parseTimestamp } from "@host/utils/datetime";
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
-import { currentCostUnit } from "@/components/cost/costUnit";
+import { currentPointsRate } from "@host/components/cost/pointsRate";
+import { currentCostUnit } from "@host/components/cost/costUnit";
 // `formatDurationMs` used to be re-implemented here, under the package's own
 // name (census H1). It is now imported straight from `@ai-matrx/kit/format` by
 // its callers; the one display change is that seconds under ten keep one

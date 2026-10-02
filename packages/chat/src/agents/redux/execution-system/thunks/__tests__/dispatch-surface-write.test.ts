@@ -17,38 +17,38 @@ const mockSubmitToolResult = jest.fn((payload: unknown) => ({
 const mockRequestInlineApproval = jest.fn();
 const mockGetManifest = jest.fn();
 
-jest.mock("@/features/agents/api/submit-tool-results", () => ({
+jest.mock("../../../../api/submit-tool-results", () => ({
   submitToolResult: (payload: unknown) => mockSubmitToolResult(payload),
 }));
-jest.mock("@/features/agents/ui-first-tools/redux/request-approval", () => ({
+jest.mock("../../../../ui-first-tools/redux/request-approval", () => ({
   requestInlineApproval: (args: unknown) => mockRequestInlineApproval(args),
 }));
-jest.mock("@/features/surfaces/hooks/useAgentNames", () => ({
+jest.mock("../../../../../surfaces/hooks/useAgentNames", () => ({
   resolveAgentName: async () => "Class builder",
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("../../../agent-definition/selectors", () => ({
   selectAgentById: () => undefined,
 }));
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 
 import { dispatchSurfaceWrite } from "../dispatch-surface-write.thunk";
-import { surfaceWriteFailureSentence } from "@/features/surfaces/runtime/surface-write-tool-output";
-import { nonErrorOutputReadsAsFailure } from "@/features/agents/api/person-declined-tool-output";
+import { surfaceWriteFailureSentence } from "../../../../../surfaces/runtime/surface-write-tool-output";
+import { nonErrorOutputReadsAsFailure } from "../../../../api/person-declined-tool-output";
 import {
   registerSurfaceRuntime,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceWriteTarget } from "@/features/surfaces/types";
-import type { RootState } from "@/lib/redux/store";
+} from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteTarget } from "../../../../../surfaces/types";
+import type { RootState } from "@host/lib/redux/store";
 
 const createClasses = {
   name: "create_classes",

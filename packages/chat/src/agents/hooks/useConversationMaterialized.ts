@@ -32,10 +32,10 @@
  */
 
 import { useEffect, useSyncExternalStore } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { selectPrimaryRequest } from "../redux/execution-system/active-requests/active-requests.selectors";
+import { waitForConversationPersisted } from "../redux/execution-system/conversations/conversation-persistence";
 
 /**
  * User-scoped ids proven to have a readable committed `chat.conversation` row.

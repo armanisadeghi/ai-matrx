@@ -69,16 +69,16 @@ Scope: inline **Action Bar** + **⋯ Message options** menu on committed, non-fa
 
 | File                                                                                   | Role                                                        |
 | -------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `features/agents/components/messages-display/assistant/AgentAssistantMessage.tsx`      | Message shell; passes `onFullPrint`, retry, provider retry  |
+| `packages/chat/src/agents/components/messages-display/assistant/AgentAssistantMessage.tsx`      | Message shell; passes `onFullPrint`, retry, provider retry  |
 | `features/agents/components/messages-display/assistant/AssistantActionBar.tsx`         | Inline bar + menu host + delete/edit-history dialogs        |
 | `features/agents/components/messages-display/message-options/MessageOptionsMenu.tsx`   | Overflow menu shell; creator/admin detection                |
 | `features/agents/components/messages-display/message-options/messageActionRegistry.ts` | All menu item factories                                     |
 | `features/window-panels/windows/notes/QuickNoteSaveWindow.tsx`                         | Save-as-Note window panel (`90vw` × `85dvh`)                |
 | `components/branding/RouteFaviconIcon.tsx`                                             | Route letter badge icons (Notes = amber N)                  |
-| `features/agents/redux/execution-system/messages/messages.selectors.ts`                | `extractFlatText` — answer-only by default; strips thinking |
-| `features/agents/components/messages-display/message-options/DeleteMessageDialog.tsx`  | Delete vs fork-without                                      |
-| `features/agents/components/messages-display/message-options/EditHistoryDialog.tsx`    | Version list, compare, restore                              |
-| `features/agents/components/messages-display/message-options/promptForkOutcome.ts`     | Post-fork Stay / Go modal                                   |
+| `packages/chat/src/agents/redux/execution-system/messages/messages.selectors.ts`                | `extractFlatText` — answer-only by default; strips thinking |
+| `packages/chat/src/agents/components/messages-display/message-options/DeleteMessageDialog.tsx`  | Delete vs fork-without                                      |
+| `packages/chat/src/agents/components/messages-display/message-options/EditHistoryDialog.tsx`    | Version list, compare, restore                              |
+| `packages/chat/src/agents/components/messages-display/message-options/promptForkOutcome.ts`     | Post-fork Stay / Go modal                                   |
 | `features/overlays/OverlayController.tsx`                                              | Renders overlays opened from actions                        |
 | `.claude/skills/message-actions-overlay-system/SKILL.md`                               | Overlay wiring docs                                         |
 
@@ -108,8 +108,8 @@ Scope: inline **Action Bar** + **⋯ Message options** menu on committed, non-fa
 **New primitives (use these for every subsequent action fix):**
 
 - `components/content-refine/` — `useRefinableContent` (strip-thinking + start/end trim + edit-override transform pipeline) + `RefinableContentEditor` (view-mode toggle, strip/copy/reset-trim toolbar, trim sliders, char badge, `NoteEditorCore` body). Extracted from the quick-note-save flow; `useQuickNoteSave` and `TaskQuickCreateCore` both consume it. The old `quick-save/utils/stripThinking|trimContent` moved to `components/content-refine/utils/` (all imports repointed).
-- `features/agents/utils/conversation-message-title.ts` — `buildConversationMessageTitle(title, position)` → `"{conversation title} Message {n}"`. Replaces `buildChatSaveNoteName` (deleted). EVERY "create something from a message" action derives its title here, never from raw content.
-- `features/agents/components/messages-display/message-options/buildTaskSeedFromMessage.ts` — the one task-seed builder (menu action + post-auth resume both use it); also exports `buildMessagePreviewLabel` (cleanMarkdown → collapse whitespace → slice) for association labels.
+- `packages/chat/src/agents/utils/conversation-message-title.ts` — `buildConversationMessageTitle(title, position)` → `"{conversation title} Message {n}"`. Replaces `buildChatSaveNoteName` (deleted). EVERY "create something from a message" action derives its title here, never from raw content.
+- `packages/chat/src/agents/components/messages-display/message-options/buildTaskSeedFromMessage.ts` — the one task-seed builder (menu action + post-auth resume both use it); also exports `buildMessagePreviewLabel` (cleanMarkdown → collapse whitespace → slice) for association labels.
 - `MessageActionContext.turnContent` — aggregated whole-turn text, threaded from `AssistantActionBar` (`aggregatedContent`) through `MessageOptionsMenu`. Consumption actions (Copy ×3, Save as Note, Save to Scratch/Code/File/Document, Create task, Email, Print, Copy HTML) use `turnContent ?? content`; write-back actions (Edit content, HTML preview save) stay on single-message `content`. Kills the "menu silently drops earlier iterations" bug.
 
 **Create-task specifics fixed:** title from conversation label; conversation edge labeled with the real conversation title (was message-preview); hierarchy ensure-fetch on mount (`useEnsureHierarchyLoaded`) so Project dropdown is never empty; window resized 720×560 → `90vw × 85dvh`; description gets the full refine toolkit. Still to verify live: post-save "Window" panel behavior (wiring looks correct — seeds `quickTasksWindowSlice` then opens `quickTasksWindow`).

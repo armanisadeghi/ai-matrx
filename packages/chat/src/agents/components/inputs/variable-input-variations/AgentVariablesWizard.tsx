@@ -13,18 +13,18 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronsRight, ChevronRight } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
-import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+} from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { selectShouldShowVariables } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { setUserVariableValue } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   selectShowVariablePanel,
   selectVariableInputStyle,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { VariableInputComponent } from "../input-components/VariableInputComponent";
 import { BoundVariableChips } from "../BoundVariableChips";
 import { formatText } from "@ai-matrx/kit/text-case";

@@ -36,8 +36,8 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createAgentAdvancedEditorScope } from "@/features/surfaces/manifests/agent-advanced-editor.manifest";
 import {
   selectAgentAccessResolved,
@@ -54,16 +54,16 @@ import {
   selectAgentSystemMessage,
   selectAgentTags,
   selectAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   setAgentField,
   setAgentMessages,
   setAgentOutputSchema,
-} from "@/features/agents/redux/agent-definition/slice";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import {
   extractAgentSystemInstruction,
   withAgentSystemInstruction,
-} from "@/features/agents/utils/agent-system-instruction";
+} from "@ai-matrx/chat/agents/utils/agent-system-instruction";
 import type { RootState } from "@/lib/redux/store";
 import type { AgentContentTab } from "./agent-content.types";
 import {

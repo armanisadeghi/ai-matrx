@@ -7,7 +7,7 @@
 // draft is NOT being kept). Everything else says nothing at all.
 
 import { RotateCcw, TriangleAlert } from "lucide-react";
-import { useComposerDraftRestore } from "@/features/agents/redux/execution-system/instance-user-input/useComposerDraftRestore";
+import { useComposerDraftRestore } from "../../../redux/execution-system/instance-user-input/useComposerDraftRestore";
 
 /** Long enough that losing it on a reload would actually hurt. */
 const SILENCE_BELOW_CHARS = 120;

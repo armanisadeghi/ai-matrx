@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readAllRows } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 
 /**
  * The signed-in admin's OWN client (`await createClient()`), never the

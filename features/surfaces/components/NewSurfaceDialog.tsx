@@ -23,10 +23,10 @@ import { toast, recordToast } from "@/lib/toast";
 import {
   createSurface,
   SURFACE_TIERS,
-} from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { SURFACE_LAYER_ATTRIBUTE } from "@/features/surfaces/runtime/window-forms";
-import type { NewSurfaceDraftFields } from "@/features/surfaces/lib/ui-surfaces-agent-writes";
+import { SURFACE_LAYER_ATTRIBUTE } from "@ai-matrx/chat/surfaces/runtime/window-forms";
+import type { NewSurfaceDraftFields } from "@ai-matrx/chat/surfaces/lib/ui-surfaces-agent-writes";
 
 /** The dialog's live values — the `new_surface_draft` read twin. */
 export interface NewSurfaceDraftScope {

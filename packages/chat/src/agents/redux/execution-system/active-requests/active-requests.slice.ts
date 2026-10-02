@@ -24,7 +24,7 @@
  *   end                → status change only
  */
 
-import { displayNameFromToolData } from "@/features/tool-call-visualization/utils/toolDisplayName";
+import { displayNameFromToolData } from "../../../../tool-call-visualization/utils/toolDisplayName";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   ActiveRequest,
@@ -41,7 +41,7 @@ import type {
   RawStreamEvent,
   ReservationRecord,
   ReservationStatus,
-} from "@/features/agents/types/request.types";
+} from "../../../types/request.types";
 import type {
   Phase,
   Operation,
@@ -55,8 +55,8 @@ import type {
   ToolEventPayload,
   ErrorPayload,
   ProviderRetryPayload,
-} from "@/types/python-generated/stream-events";
-import type { LiveCitationEntry } from "@/features/agents/redux/execution-system/messages/message-citations";
+} from "@host/types/python-generated/stream-events";
+import type { LiveCitationEntry } from "../messages/message-citations";
 import { generateRequestId } from "../utils/ids";
 import { destroyInstance } from "../conversations/conversations.slice";
 

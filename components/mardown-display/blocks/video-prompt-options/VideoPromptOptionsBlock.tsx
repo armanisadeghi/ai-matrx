@@ -24,7 +24,7 @@ import type {
   VideoPromptOptionsData,
   VideoPromptVariationData,
 } from "@/features/content-ir/kinds/video-prompt-options";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 
 export interface VideoPromptOptionsBlockProps {
   serverData?: unknown;

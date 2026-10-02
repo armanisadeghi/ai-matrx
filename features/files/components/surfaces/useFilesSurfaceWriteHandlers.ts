@@ -29,7 +29,7 @@
 "use client";
 
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   setActiveFileId,
   setActiveFolderId,

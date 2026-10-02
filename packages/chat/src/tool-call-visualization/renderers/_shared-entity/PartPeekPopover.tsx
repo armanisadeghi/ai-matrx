@@ -4,8 +4,8 @@ import {
   HoverCard,
   HoverCardTrigger,
   HoverCardContent,
-} from "@/components/ui/hover-card";
-import { cn } from "@/lib/utils";
+} from "@host/components/ui/hover-card";
+import { cn } from "@host/lib/utils";
 
 /**
  * A delicate hover "peek" for an individual listed part inside an entity card —

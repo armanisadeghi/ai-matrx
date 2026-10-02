@@ -6,7 +6,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { PartyCreateForm } from "@/features/crm/components/PartyCreateForm";
 import type { PartyKind } from "@/features/crm/types";
 import { CRM_CREATE_PARTY_SURFACE_NAME } from "@/features/surfaces/manifests/crm-create-party.manifest";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 
 export interface CrmCreatePartyWindowProps {

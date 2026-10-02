@@ -28,7 +28,7 @@ import {
   selectAuthReady,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
-import { onMandateCacheInvalidated } from "@/features/mandates/service";
+import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { memberMandateListConfig } from "./listConfig";
 import { newSoftMandateHref } from "./routes";
 import { createMandateMemberService } from "./service";

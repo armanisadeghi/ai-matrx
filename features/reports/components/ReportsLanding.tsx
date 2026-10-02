@@ -13,7 +13,7 @@ import {
   shellIconComponents,
 } from "@/features/shell/shellIconMap";
 import { REPORTS } from "@/features/reports/registry";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_REPORTING_SURFACE_NAME,
   createAdminReportingScope,

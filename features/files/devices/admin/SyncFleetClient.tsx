@@ -18,7 +18,7 @@ import { Badge } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_SYNC_FLEET_SURFACE_NAME, createAdminSyncFleetScope } from "@/features/surfaces/manifests/admin-sync-fleet.manifest";
 
 import { cn } from "@/lib/utils";

@@ -18,7 +18,7 @@ import {
   parseMapperResult,
   suggestionsToMappings,
   describeSuggestion,
-} from "@/features/surfaces/utils/binding-suggestions";
+} from "@ai-matrx/chat/surfaces/utils/binding-suggestions";
 import { applySuggestions, sourcesFor } from "@/features/bindings/consumption-writer";
 import type { OfferedValue } from "@/features/mandates/provision-shapes";
 

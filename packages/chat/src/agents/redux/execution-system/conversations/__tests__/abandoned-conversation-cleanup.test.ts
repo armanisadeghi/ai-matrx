@@ -1,4 +1,4 @@
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { destroyInstance } from "../conversations.slice";
 import { destroyInstanceIfAbandoned } from "../conversations.thunks";
 

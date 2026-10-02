@@ -97,13 +97,13 @@ Each message (`ConversationMessage`) stores: `id`, `role`, `content`, `status`, 
 
 ## SLICE 3: `activeRequests` (Streaming/Request Lifecycle)
 
-**File:** `features/agents/redux/execution-system/active-requests/active-requests.slice.ts`
+**File:** `packages/chat/src/agents/redux/execution-system/active-requests/active-requests.slice.ts`
 
 **Key:** `requestId` (per API call), indexed by `conversationId`
 
 **State interface:**
 
-```56:59:features/agents/redux/execution-system/active-requests/active-requests.slice.ts
+```56:59:packages/chat/src/agents/redux/execution-system/active-requests/active-requests.slice.ts
 export interface ActiveRequestsState {
   byRequestId: Record<string, ActiveRequest>;
   byConversationId: Record<string, string[]>;
@@ -207,7 +207,7 @@ Each instance: `content`, `messageId`, `sessionId`, `conversationId`, `rawConten
 
 ## SLICE 8: `agentAssistantMarkdownDraft` (Markdown Edit Drafts)
 
-**File:** `features/agents/redux/agent-assistant-markdown-draft.slice.ts`
+**File:** `packages/chat/src/agents/redux/agent-assistant-markdown-draft.slice.ts`
 
 **Key:** `{conversationId}::{messageKey}`
 
@@ -217,7 +217,7 @@ Each instance: `content`, `messageId`, `sessionId`, `conversationId`, `rawConten
 
 ## SLICE 9: `instanceUserInput` (User Input Drafts — Agent System)
 
-**File:** `features/agents/redux/execution-system/instance-user-input/instance-user-input.slice.ts`
+**File:** `packages/chat/src/agents/redux/execution-system/instance-user-input/instance-user-input.slice.ts`
 
 **Key:** `conversationId`
 
@@ -227,7 +227,7 @@ Each instance: `content`, `messageId`, `sessionId`, `conversationId`, `rawConten
 
 ## SLICE 10: `conversationFocus` (Surface Focus Registry)
 
-**File:** `features/agents/redux/execution-system/conversation-focus/conversation-focus.slice.ts`
+**File:** `packages/chat/src/agents/redux/execution-system/conversation-focus/conversation-focus.slice.ts`
 
 **Key:** `surfaceKey` (e.g. `"agent-builder"`, `"overlay:<id>"`)
 
@@ -237,7 +237,7 @@ Each instance: `content`, `messageId`, `sessionId`, `conversationId`, `rawConten
 
 ## SLICE 11: `instanceUIState` (Agent Instance Display Config)
 
-**File:** `features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`
+**File:** `packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`
 
 **Key:** `conversationId`
 

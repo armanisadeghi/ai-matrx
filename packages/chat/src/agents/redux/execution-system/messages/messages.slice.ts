@@ -27,14 +27,14 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
-import type { Json } from "@/types/database.types";
-import type { MessageRole } from "@/features/agents/types/agent-message-types";
+import type { Json } from "@host/types/database.types";
+import type { MessageRole } from "../../../types/agent-message-types";
 import type {
   ContextReceiptData,
   MessagePart,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 import { setContextReceipt } from "../instance-context/instance-context.slice";
-import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import type { ApiEndpointMode } from "../../../types/instance.types";
 import { recordTranscriptEvent, shortId } from "./transcript-journal";
 
 // =============================================================================

@@ -11,13 +11,13 @@
  */
 
 import { useEffect, useState } from "react";
-import { ShimmerText } from "@/components/loaders/ShimmerText";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { ShimmerText } from "@host/components/loaders/ShimmerText";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectRequestGenerationJob,
   selectRequestStartedAt,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { runJobLabel } from "@/lib/api/run-wait";
+} from "../../redux/execution-system/active-requests/active-requests.selectors";
+import { runJobLabel } from "@host/lib/api/run-wait";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export function RunJobWorkingLine({

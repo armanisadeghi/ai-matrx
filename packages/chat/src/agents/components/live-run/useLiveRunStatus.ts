@@ -1,17 +1,17 @@
 "use client";
 
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectCurrentPhase,
   selectRequestError,
   selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "../../redux/execution-system/active-requests/active-requests.selectors";
 import {
   selectLatestRequestId,
   selectStreamPhase,
   type StreamPhase,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import type { RequestStatus } from "@/features/agents/types/request.types";
+} from "../../redux/execution-system/selectors/aggregate.selectors";
+import type { RequestStatus } from "../../types/request.types";
 
 const ACTIVE_STREAM_PHASES: ReadonlySet<StreamPhase> = new Set([
   "connecting",

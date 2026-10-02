@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type { ToolAccent } from "../../types";
 
 /**

@@ -1,4 +1,4 @@
-import type { WelcomeAgent } from "@/features/cx-chat/components/ChatWelcomeServer";
+import type { WelcomeAgent } from "../ChatWelcomeServer";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**

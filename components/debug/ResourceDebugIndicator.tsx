@@ -15,12 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { makeSelectAssembledRequest } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import type { AssembledAgentStartRequest } from "@/features/agents/types/request.types";
+import { selectInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectInstanceResources } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { makeSelectAssembledRequest } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import type { AssembledAgentStartRequest } from "@ai-matrx/chat/agents/types/request.types";
 import { toast } from "@/lib/toast";
 
 interface ResourceDebugIndicatorProps {

@@ -18,14 +18,14 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { selectConversationExists } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import ChatWelcomeClient from "@/features/cx-chat/components/ChatWelcomeClient";
-import ChatConversationClient from "@/features/cx-chat/components/core/ChatConversationClient";
-import type { RootState } from "@/lib/redux/store";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { fetchAgentExecutionMinimal } from "../../agents/redux/agent-definition/thunks";
+import { createManualInstance } from "../../agents/redux/execution-system/thunks/create-instance.thunk";
+import { loadConversation } from "../../agents/redux/execution-system/thunks/load-conversation.thunk";
+import { selectConversationExists } from "../../agents/redux/execution-system/selectors/aggregate.selectors";
+import ChatWelcomeClient from "./ChatWelcomeClient";
+import ChatConversationClient from "./core/ChatConversationClient";
+import type { RootState } from "@host/lib/redux/store";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 

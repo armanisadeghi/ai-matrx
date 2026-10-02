@@ -15,13 +15,13 @@
  */
 
 import { useCallback, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   ensureSurfaceConfig,
   invalidateSurfaceConfig,
   selectSurfaceConfigEntry,
   type SurfaceConfigStatus,
-} from "@/features/surfaces/redux/surfaceConfigSlice";
+} from "../redux/surfaceConfigSlice";
 import {
   setRoleSelection,
   deleteRolePref,
@@ -29,8 +29,8 @@ import {
   type ResolvedRole,
   type ResolvedSurfaceConfig,
   type TierSelectionPref,
-} from "@/features/surfaces/services/surface-config.service";
-import { getNamespaceHandler } from "@/features/surfaces/config/namespace-registry";
+} from "../services/surface-config.service";
+import { getNamespaceHandler } from "../config/namespace-registry";
 
 export interface UseSurfaceConfigResult {
   status: SurfaceConfigStatus;

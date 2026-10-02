@@ -27,7 +27,7 @@ import { toast } from "@/lib/toast";
 import {
   useSurfaceRuntimeRegistration,
   useSurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME,
   createAdminAgentReviewItemScope,

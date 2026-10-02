@@ -34,7 +34,7 @@ import {
   Users,
 } from "lucide-react";
 
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";

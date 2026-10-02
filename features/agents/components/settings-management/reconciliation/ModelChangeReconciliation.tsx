@@ -38,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import {
   applyReconciliation,
   type ModelChangePlan,

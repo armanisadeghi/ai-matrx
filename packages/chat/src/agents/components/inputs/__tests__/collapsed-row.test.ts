@@ -9,7 +9,7 @@ import {
   collapsedRowKind,
   toggleMultiValue,
 } from "../collapsed-row";
-import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import type { VariableCustomComponent } from "../../../types/agent-definition.types";
 
 describe("collapsedRowKind", () => {
   it("every typed variable is a one-line text box, choice types included", () => {

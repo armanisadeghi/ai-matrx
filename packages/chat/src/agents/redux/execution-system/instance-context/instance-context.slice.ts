@@ -11,9 +11,9 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import isEqual from "lodash/isEqual";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
-import type { ContextReceiptData } from "@/types/python-generated/stream-events";
+import type { InstanceContextEntry } from "../../../types/instance.types";
+import type { ContextObjectType } from "../../../types/agent-api-types";
+import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 import type {
   ContextReceiptMismatch,
   ResolvedContextRow,

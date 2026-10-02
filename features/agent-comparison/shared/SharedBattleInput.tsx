@@ -7,8 +7,8 @@
  * copies its complete request draft into each result column before launch.
  */
 
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import type { SmartAgentInputSurfaceValueAnchors } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
+import type { SmartAgentInputSurfaceValueAnchors } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectMountedBattleSetId } from "./activeBattleColumns";
 

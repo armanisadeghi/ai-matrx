@@ -19,7 +19,7 @@ import {
   createRunConsoleScope,
   type RunConsoleScopeValues,
 } from "@/features/surfaces/manifests/_run-console.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { ConsoleEngine } from "./engines";
 import type {
   ConsoleSiteRow,

@@ -36,7 +36,7 @@ import {
   friendlyStreamError,
   looksLikeDeveloperTalk,
   GENERIC_FAILURE,
-} from "@/features/agents/components/run/friendlyStreamError";
+} from "@ai-matrx/chat/agents/components/run/friendlyStreamError";
 import { reloadResumeVerdict } from "../hooks/reloadResume";
 import { roleBinding, roomMayClaimMaterialization } from "../types";
 

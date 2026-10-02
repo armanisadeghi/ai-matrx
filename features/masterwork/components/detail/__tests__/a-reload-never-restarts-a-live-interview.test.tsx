@@ -47,7 +47,7 @@ let orgState: {
 /** Every call the panel made for the history, so a retry is provable. */
 let historyCalls: number;
 
-jest.mock("@/features/mandates/useMandate", () => ({
+jest.mock("@ai-matrx/chat/mandates/useMandate", () => ({
   useMandate: () => mandateState,
 }));
 

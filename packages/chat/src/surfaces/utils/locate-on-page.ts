@@ -10,7 +10,7 @@
  * itself is the shared `flashAttention` cue, not a local ring.
  */
 
-import { flashAttention } from "@/lib/dom/flash-attention";
+import { flashAttention } from "@host/lib/dom/flash-attention";
 
 /* Chrome's smooth scroll is rAF-driven and finishes well inside this window for
    any realistic distance; the check below therefore never fires for a user. It

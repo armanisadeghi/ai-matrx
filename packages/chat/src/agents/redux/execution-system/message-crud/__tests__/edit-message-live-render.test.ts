@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
 import { createRequest } from "../../active-requests/active-requests.slice";
 import {
   hydrateMessages,
@@ -9,7 +9,7 @@ import { editMessage } from "../edit-message.thunk";
 
 const rpcReturns = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     rpc: jest.fn(() => ({ returns: rpcReturns })),
     // Module-load only: war-room/service.ts binds `workspaceDb(supabase)` when the

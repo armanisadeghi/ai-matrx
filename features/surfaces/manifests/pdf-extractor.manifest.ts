@@ -34,7 +34,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   MAX_CHUNK_SIZE,
   MIN_CHUNK_SIZE,

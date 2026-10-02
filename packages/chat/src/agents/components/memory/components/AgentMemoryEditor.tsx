@@ -10,8 +10,8 @@
  * mirrors the current importance score at the top so it's never hidden.
  */
 
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "@host/components/ui/badge";
+import { cn } from "@host/lib/utils";
 import {
   importanceScore,
   importanceTier,

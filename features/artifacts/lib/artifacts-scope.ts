@@ -15,7 +15,7 @@ import {
   createArtifactsScope,
   type ArtifactListRow,
 } from "@/features/surfaces/manifests/artifacts.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type {
   ArtifactStatus,
   ArtifactType,

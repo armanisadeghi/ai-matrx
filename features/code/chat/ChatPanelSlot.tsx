@@ -5,8 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PanelRight, PanelRightOpen, Plus, Settings2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { AgentRunnerPage } from "@/features/agents/components/run/AgentRunnerPage";
-import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { AgentRunnerPage } from "@ai-matrx/chat/agents/components/run/AgentRunnerPage";
+import { selectFocusedConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import {
   selectFarRightOpen,
   selectCodeWorkspaceFreshSessionNonce,
@@ -22,12 +22,12 @@ import {
   selectActiveSandboxId,
   selectActiveSandboxProxyUrl,
 } from "../redux/codeWorkspaceSlice";
-import { setResponseDensity } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { setResponseDensity } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
   beginFreshCodeChat,
   codeWorkspaceSurfaceKey,
 } from "./begin-fresh-code-chat";
-import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { clearFocus } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface ChatPanelSlotProps {

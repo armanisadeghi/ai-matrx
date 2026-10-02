@@ -44,8 +44,8 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { resolveMandate } from "@/features/mandates/service";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import {
   WAR_ROOM_AUDIO_SOURCE,
   WAR_ROOM_ROOM_AGENT_MANDATE,

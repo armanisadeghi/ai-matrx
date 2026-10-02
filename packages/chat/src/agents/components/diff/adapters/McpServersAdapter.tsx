@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { Server } from "lucide-react";
 import type {
   FieldAdapter,

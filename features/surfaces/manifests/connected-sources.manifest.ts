@@ -34,7 +34,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const CONNECTED_SOURCES_SURFACE_NAME = "matrx-user/connected-sources";

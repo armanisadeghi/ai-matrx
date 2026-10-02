@@ -30,7 +30,7 @@ import {
   CITATION_MARKER_RE,
   type NormalizedCitation,
 } from "../../messages/message-citations";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 function makeStore() {
   return configureStore({

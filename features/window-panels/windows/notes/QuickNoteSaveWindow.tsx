@@ -8,7 +8,7 @@ import {
 } from "@/features/notes/actions/quick-save/QuickNoteSaveCore";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import type { Note } from "@/features/notes/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   QUICK_NOTE_SAVE_SURFACE_NAME,
   createQuickNoteSaveScope,

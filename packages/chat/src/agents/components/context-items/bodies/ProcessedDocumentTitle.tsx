@@ -13,11 +13,11 @@
  * same lexical search its own bar used to.
  */
 
-import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { renameFile } from "@/features/files/redux/thunks";
-import { useAttachedDocumentDisplayName } from "@/features/agents/components/inputs/resources/attached-documents";
-import { PdfNamedSurfaceSwitcher } from "@/features/pdf/components/PdfNamedSurfaceSwitcher";
+import { toast } from "@host/lib/toast";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { renameFile } from "@host/features/files/redux/thunks";
+import { useAttachedDocumentDisplayName } from "../../inputs/resources/attached-documents";
+import { PdfNamedSurfaceSwitcher } from "@host/features/pdf/components/PdfNamedSurfaceSwitcher";
 import type { ContextItemTitleProps } from "../types";
 
 export function ProcessedDocumentTitle({

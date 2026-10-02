@@ -30,7 +30,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 // The composer / title write vocabulary, from `chat.manifest.ts` — ONE
 // definition, deliberately shared rather than re-declared. This surface's
 // composer is not merely similar to chat's: it is the SAME `instanceUserInput`

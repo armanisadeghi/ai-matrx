@@ -186,7 +186,7 @@ jest.mock("next/navigation", () => ({
 // `conversationFocus` off an empty state. Replaced at the hook, so the page
 // still renders its real button and every records door is still called for
 // real.
-jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({
     launchMandate: jest.fn(),
     launchAgent: jest.fn(),

@@ -17,7 +17,7 @@ import {
   getLiveDesktopInstance,
   subscribeDesktopPresence,
   type DesktopPresence,
-} from "@/features/agents/redux/execution-system/client-capabilities/desktop-presence";
+} from "../redux/execution-system/client-capabilities/desktop-presence";
 
 const POLL_MS = 60_000;
 

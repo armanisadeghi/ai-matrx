@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MarkdownStream from "@/components/MarkdownStream";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

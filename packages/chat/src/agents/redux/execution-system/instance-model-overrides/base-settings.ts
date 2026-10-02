@@ -1,4 +1,4 @@
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "../../../types/agent-api-types";
 
 /**
  * Build an instance's `baseSettings` snapshot: the agent's settings PLUS its

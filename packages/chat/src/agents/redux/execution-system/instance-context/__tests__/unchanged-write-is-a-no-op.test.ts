@@ -16,8 +16,8 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import type { RootState } from "@host/lib/redux/store";
+import type { InstanceContextEntry } from "../../../../types/instance.types";
 import instanceContextReducer, {
   replaceSurfaceContextEntries,
   setContextEntries,

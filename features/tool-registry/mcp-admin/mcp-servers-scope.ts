@@ -23,7 +23,7 @@ import {
   type AdminMcpServerToolRow,
   type AdminMcpTestResultSummary,
 } from "@/features/surfaces/manifests/admin-mcp-servers.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { McpServerDraft } from "@/features/tool-registry/mcp-admin/components/AddMcpServerDialog";
 import type { ServerToolRow } from "@/features/tool-registry/mcp-admin/format";
 import {

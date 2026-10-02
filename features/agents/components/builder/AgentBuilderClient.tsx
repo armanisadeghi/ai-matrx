@@ -3,16 +3,16 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
-import { useAgentAutoSave } from "@/features/agents/hooks/useAgentAutoSave";
-import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
-import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
-import { useAgentBuilderWriteHandlers } from "@/features/agents/hooks/useAgentBuilderWriteHandlers";
-import { AGENT_BUILDER_CONTEXT_MENU_PROPS } from "@/features/agents/agent-context/buildAgentBuilderContextData";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { selectAgentReadyForBuilder } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { useAgentAutoSave } from "@ai-matrx/chat/agents/hooks/useAgentAutoSave";
+import { useCreatorOwnershipSync } from "@ai-matrx/chat/agents/hooks/useCreatorOwnershipSync";
+import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
+import { useAgentBuilderWriteHandlers } from "@ai-matrx/chat/agents/hooks/useAgentBuilderWriteHandlers";
+import { AGENT_BUILDER_CONTEXT_MENU_PROPS } from "@ai-matrx/chat/agents/agent-context/buildAgentBuilderContextData";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileBuilderSkeleton } from "./AgentBuilderSkeletons";
-import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
+import { DebugSessionActivator } from "@ai-matrx/chat/agents/components/debug/DebugSessionActivator";
 
 const AgentBuilderMobile = dynamic(
   () =>

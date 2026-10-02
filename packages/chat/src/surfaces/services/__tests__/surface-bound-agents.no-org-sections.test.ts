@@ -3,7 +3,7 @@
 // section, each carrying its organization as a label.
 const inQuery = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     schema: () => ({
       from: () => ({
@@ -12,7 +12,7 @@ jest.mock("@/utils/supabase/client", () => ({
     }),
   },
 }));
-jest.mock("@/lib/api/adminDoor", () => ({ adminDoorOpen: () => false }));
+jest.mock("@host/lib/api/adminDoor", () => ({ adminDoorOpen: () => false }));
 
 import { fetchSurfaceMenuAgentsGrouped } from "../surface-bound-agents.service";
 

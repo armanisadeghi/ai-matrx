@@ -34,7 +34,7 @@
  */
 
 import { readMatrxSseStream } from "@ai-matrx/agents/stream/sse";
-import type { AppThunk } from "@/lib/redux/store";
+import type { AppThunk } from "@host/lib/redux/store";
 import {
   appendWorkflowNodeStream,
   settleWorkflowNodeStream,

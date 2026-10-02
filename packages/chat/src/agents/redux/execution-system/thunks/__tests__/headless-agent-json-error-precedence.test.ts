@@ -11,7 +11,7 @@
  */
 
 import { adoptHeadlessAgentJson } from "../run-headless-agent-json";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 
 const REQUEST_ID = "req-1";
 const CONVERSATION_ID = "conv-1";
@@ -19,7 +19,7 @@ const PROVIDER_MESSAGE =
   "Google rejected the request: Thinking level MINIMAL is not supported for this model.";
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversations.thunks",
+  "../../conversations/conversations.thunks",
   () => ({ destroyInstanceIfAllowed: () => ({ type: "noop" }) }),
 );
 
@@ -30,8 +30,8 @@ jest.mock(
 // time — zero tests ran while the file still looked green in a list. Spread the
 // real module: only the export this suite observes is replaced, and a new
 // export can never silently take the suite down.
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 

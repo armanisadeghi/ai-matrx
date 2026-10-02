@@ -15,8 +15,8 @@ import {
 import {
   xmlElement,
   xmlText,
-} from "@/features/surfaces/runtime/context-bundle";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/runtime/context-bundle";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { mergeFieldsIn } from "./merge-fields";
 import {
   readMessageTemplateMetadata,

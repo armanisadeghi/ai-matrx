@@ -24,7 +24,7 @@ import dynamic from "next/dynamic";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { TapTargetButton } from "@ai-matrx/tap-target";
-import { isScratchScope } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import { isScratchScope } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {
@@ -55,7 +55,7 @@ const CodePreviewCanvas = dynamic(
 const SandboxCanvasBody = dynamic(
   () =>
     import(
-      "@/features/agents/components/chat/sandbox-insight/SandboxCanvasBody"
+      "@ai-matrx/chat/agents/components/chat/sandbox-insight/SandboxCanvasBody"
     ).then((m) => ({ default: m.SandboxCanvasBody })),
   { ssr: false },
 );
@@ -96,7 +96,7 @@ const CodeEditErrorCanvas = dynamic(
 // strip + list + editor.
 const DocumentsWorkspace = dynamic(
   () =>
-    import("@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace").then(
+    import("@ai-matrx/chat/agents/components/working-document/documents-workspace/DocumentsWorkspace").then(
       (m) => ({ default: m.DocumentsWorkspace }),
     ),
   { ssr: false },
@@ -106,7 +106,7 @@ const DocumentsWorkspace = dynamic(
 // rationale as the workspace above.
 const WorkingDocumentPanel = dynamic(
   () =>
-    import("@/features/agents/components/working-document/WorkingDocumentPanel").then(
+    import("@ai-matrx/chat/agents/components/working-document/WorkingDocumentPanel").then(
       (m) => ({ default: m.WorkingDocumentPanel }),
     ),
   { ssr: false },

@@ -15,7 +15,7 @@
 import type {
   OmittedAttachment,
   RequestDraftSnapshot,
-} from "@/features/agents/redux/execution-system/thunks/request-draft-snapshot";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/request-draft-snapshot";
 
 /**
  * The request a column last sent (or was saved with). The column's composer

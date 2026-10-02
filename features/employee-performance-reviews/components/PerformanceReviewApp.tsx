@@ -29,7 +29,7 @@ import { toast } from "@/lib/toast";
 import { captureElementsToPDF } from "@ai-matrx/print/pdf";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { jsonExportItem } from "@/components/agent-copy/export";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   organizationPerformanceReviewsManifest,
   performanceReviewRatingSurfaceName,
@@ -38,7 +38,7 @@ import {
 import {
   surfaceGroupLabels,
   surfaceValueLabels,
-} from "@/features/surfaces/utils/surface-display";
+} from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { buildPerformanceReviewSurfaceScope } from "@/features/employee-performance-reviews/surface-scope";
 import {
   buildPerformanceReviewQuestionsPayload,

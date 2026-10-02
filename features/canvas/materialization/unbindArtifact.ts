@@ -35,7 +35,7 @@
 import type {
   CxContentBlock,
   CxTextContent,
-} from "@/features/public-chat/types/cx-tables";
+} from "@ai-matrx/chat/public-chat/types/cx-tables";
 import { exportArtifactMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import {
   canvasArtifactService,

@@ -13,7 +13,7 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 import { studyService } from "../service/studyService";
 import { STUDY_MANDATES } from "../planner/mandates";
 import type { StudyAnalytics } from "./computeAnalytics";

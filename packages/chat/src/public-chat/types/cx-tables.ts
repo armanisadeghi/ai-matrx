@@ -5,7 +5,7 @@
  * Content-block helpers below are for parsing JSON columns in the UI.
  */
 
-import type { Database } from "@/types/database.types";
+import type { Database } from "@host/types/database.types";
 import type {
   AudioMediaPart,
   DecisionAnswersPart,
@@ -13,8 +13,8 @@ import type {
   ImageMediaPart,
   VideoMediaPart,
   YouTubeMediaPart,
-} from "@/types/python-generated/stream-events";
-import type { PermissionLevel } from "@/utils/permissions/levels";
+} from "@host/types/python-generated/stream-events";
+import type { PermissionLevel } from "@host/utils/permissions/levels";
 
 type ChatSchema = Database["chat"];
 

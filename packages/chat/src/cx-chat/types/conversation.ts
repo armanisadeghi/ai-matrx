@@ -9,15 +9,15 @@
  * - streamEvents per message enables both normal NDJSON and block-mode streaming
  */
 
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
-import type { LLMParams } from "@/lib/api/types";
-import type { Json } from "@/types/database.types";
+import type { TypedStreamEvent } from "@host/types/python-generated/stream-events";
+import type { LLMParams } from "@host/lib/api/types";
+import type { Json } from "@host/types/database.types";
 import type {
   CxToolCall,
   CxContentBlock,
   CxContentHistoryEntry,
 } from "./cx-tables";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "../../agents/types/agent-definition.types";
 
 // ============================================================================
 // MESSAGE TYPES

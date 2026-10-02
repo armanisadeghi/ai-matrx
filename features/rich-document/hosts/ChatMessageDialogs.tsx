@@ -12,9 +12,9 @@ import * as React from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
-import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { DeleteMessageDialog } from "@/features/agents/components/messages-display/message-options/DeleteMessageDialog";
-import { EditHistoryDialog } from "@/features/agents/components/messages-display/message-options/EditHistoryDialog";
+import { selectMessagePosition } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { DeleteMessageDialog } from "@ai-matrx/chat/agents/components/messages-display/message-options/DeleteMessageDialog";
+import { EditHistoryDialog } from "@ai-matrx/chat/agents/components/messages-display/message-options/EditHistoryDialog";
 
 function errorText(error: unknown): string {
   if (error instanceof Error) return error.message || "Save failed";
@@ -53,7 +53,7 @@ export function ChatMessageDialogs({
   const confirmDelete = async () => {
     try {
       const { deleteMessage } = await import(
-        "@/features/agents/redux/execution-system/message-crud/delete-message.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/delete-message.thunk"
       );
       await dispatch(deleteMessage({ conversationId, messageId })).unwrap();
       toast.success("Message deleted");
@@ -68,10 +68,10 @@ export function ChatMessageDialogs({
   const confirmDeleteFork = async () => {
     try {
       const { forkConversation } = await import(
-        "@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/fork-conversation.thunk"
       );
       const { deleteMessage } = await import(
-        "@/features/agents/redux/execution-system/message-crud/delete-message.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/delete-message.thunk"
       );
       const forkResult = await dispatch(
         forkConversation({
@@ -92,7 +92,7 @@ export function ChatMessageDialogs({
       }
       if (surfaceKey) {
         const { requestSurfaceNavigation } = await import(
-          "@/features/agents/redux/surfaces/request-surface-navigation.thunk"
+          "@ai-matrx/chat/agents/redux/surfaces/request-surface-navigation.thunk"
         );
         await dispatch(
           requestSurfaceNavigation({

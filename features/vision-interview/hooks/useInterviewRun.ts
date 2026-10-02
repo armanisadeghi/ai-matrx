@@ -32,16 +32,16 @@ import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { runScope } from "@/features/workflow-runtime/runOrganization";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
-import { createRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { createRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   generateConversationId,
   generateRequestId,
-} from "@/features/agents/redux/execution-system/utils/ids";
+} from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
 import {
   followWorkflowRunStream,
   type WorkflowRunWireEvent,
-} from "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/follow-workflow-run-stream";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { isTransportFailure } from "@ai-matrx/data/net";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";

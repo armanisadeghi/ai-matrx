@@ -53,7 +53,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
 import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
 import {

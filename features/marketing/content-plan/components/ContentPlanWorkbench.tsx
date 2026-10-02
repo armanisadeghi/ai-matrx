@@ -37,7 +37,7 @@ import type { AssociationEdge } from "@/features/scopes/types";
 import {
   SurfaceRuntimeProvider,
   useSurfaceClientTools,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -89,7 +89,7 @@ import {
 } from "../hooks/usePlanWorkspaceParams";
 import { PlanAssistStrip } from "./PlanAssistStrip";
 import { PlanDriftBar } from "./PlanDriftBar";
-import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
+import { RunSetWindowController } from "@ai-matrx/chat/agents/components/live-run/RunSetDisplay";
 import { PlanDriftSheet, type DriftFilter } from "./PlanDriftSheet";
 import { PlanToolbar } from "./PlanToolbar";
 import { usePlanDrift } from "../hooks/usePlanDrift";

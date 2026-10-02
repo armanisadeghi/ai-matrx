@@ -22,7 +22,7 @@ import { makeStore } from "@/lib/redux/store";
 import {
   createInstance,
   patchConversation,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
   getConversationSandboxBinding,
@@ -31,7 +31,7 @@ import {
   getActiveSandboxBinding,
   type SandboxBindingPayload,
 } from "../active-binding";
-import { ensureSandboxOrDecide } from "@/features/agents/redux/execution-system/thunks/sandbox-gate.thunk";
+import { ensureSandboxOrDecide } from "@ai-matrx/chat/agents/redux/execution-system/thunks/sandbox-gate.thunk";
 import { openSandboxGate } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 
 jest.mock("@/components/dialogs/sandbox-gate/SandboxGateHost", () => ({

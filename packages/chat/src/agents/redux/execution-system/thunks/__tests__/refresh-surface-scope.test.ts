@@ -8,13 +8,13 @@
 jest.mock("uuid", () => ({ v4: () => "uuid-stub" }));
 
 const mockFetchSurfaceBindingLayers = jest.fn();
-jest.mock("@/features/surfaces/services/bind-agent-to-surface.service", () => ({
+jest.mock("../../../../../surfaces/services/bind-agent-to-surface.service", () => ({
   fetchSurfaceBindingLayers: (...args: unknown[]) =>
     mockFetchSurfaceBindingLayers(...args),
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import conversationsReducer, {
   createInstance,
   patchConversation,
@@ -28,7 +28,7 @@ import instanceContextReducer, {
 import instanceUIStateReducer, {
   initInstanceUIState,
 } from "../../instance-ui-state/instance-ui-state.slice";
-import { registerSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { registerSurfaceRuntime } from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
 import { refreshSurfaceScope } from "../refresh-surface-scope.thunk";
 
 const CONVERSATION_ID = "conversation-1";
@@ -314,7 +314,7 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
       1,
     );
     // The page registers → the platform learns it owns this conversation.
-    const { isPageOwnConversation } = await import("@/features/surfaces/runtime/SurfaceRuntimeContext");
+    const { isPageOwnConversation } = await import("../../../../../surfaces/runtime/SurfaceRuntimeContext");
     expect(isPageOwnConversation(CONVERSATION_ID)).toBe(true);
     newChatPage();
 

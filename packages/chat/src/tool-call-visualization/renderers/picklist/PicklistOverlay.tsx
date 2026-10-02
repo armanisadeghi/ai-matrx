@@ -2,14 +2,14 @@
 
 import { useMemo } from "react";
 import { Loader2, AlertTriangle, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
+import { Button } from "@host/components/ui/button";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { ListDetailClient } from "@host/features/user-lists/components/ListDetailClient";
 import type { ToolRendererProps } from "../../types";
 import { parsePicklist } from "./parsePicklist";
 import { usePicklistDetail } from "./usePicklistDetail";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /**
  * Overlay renderer for the `picklist` tool — the full interactive list editor

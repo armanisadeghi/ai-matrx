@@ -12,7 +12,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
 import { toast } from "@/lib/toast";
 import {

@@ -29,8 +29,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
-import { submitToolResult } from "@/features/agents/api/submit-tool-results";
-import { upsertToolLifecycle } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { submitToolResult } from "@ai-matrx/chat/agents/api/submit-tool-results";
+import { upsertToolLifecycle } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { getWarRoomMasterToolEntry } from "../tools/registry";
 import { isWarRoomMasterToolName } from "../tools/names";
 

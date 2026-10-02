@@ -26,16 +26,16 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectFirstMessageId,
   selectHasMoreOlderMessages,
   selectIsLoadingOlderMessages,
   selectVisibleMessageGroupLimit,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectLoadedDisplayGroupCount } from "@/features/agents/components/messages-display/display-groups";
-import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
-import { revealOlderGroups } from "@/features/agents/redux/execution-system/messages/messages.slice";
+} from "../../redux/execution-system/messages/messages.selectors";
+import { selectLoadedDisplayGroupCount } from "../messages-display/display-groups";
+import { loadOlderMessages } from "../../redux/execution-system/thunks/load-older-messages.thunk";
+import { revealOlderGroups } from "../../redux/execution-system/messages/messages.slice";
 
 const PREFETCH_BAND_PX = 200;
 

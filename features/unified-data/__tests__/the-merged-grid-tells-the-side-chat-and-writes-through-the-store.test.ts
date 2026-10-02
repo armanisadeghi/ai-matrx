@@ -20,7 +20,7 @@ import { buildDataTablesScope } from "@/features/data-tables/agent-context/build
 import { scopeInputFromGrid } from "../grid-agent-context/recordStoreTableScope";
 import { recordStoreWriteHandlers } from "../grid-agent-context/RecordStoreTableSurface";
 import { recordsCleanText } from "../recordsCleanText";
-import type { SurfaceWriteApply, SurfaceWriteHandler } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteApply, SurfaceWriteHandler } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 /** A handler is a plain apply function or `{ validate?, apply }` (7abe79cd12) — call its apply. */
 function applyOf(h: SurfaceWriteHandler | undefined): SurfaceWriteApply {
@@ -29,7 +29,7 @@ function applyOf(h: SurfaceWriteHandler | undefined): SurfaceWriteApply {
 }
 
 jest.mock("@/components/official/icons/IconInputWithValidation.dynamic", () => ({ IconInputCompact: () => null }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({ SurfaceRuntimeProvider: () => null }));
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({ SurfaceRuntimeProvider: () => null }));
 jest.mock("@ai-matrx/records/react", () => ({ useRecordsClient: () => null }));
 
 const TABLE = "60f2f9f7-2f0a-4fba-a419-3e88b7f8e7fa";

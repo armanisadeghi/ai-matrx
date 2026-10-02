@@ -195,7 +195,7 @@ export const EDUCATION_PLACES: FeaturePlaces = {
       trigger: "Floating page assistant",
       urlPattern: "/education",
       mandateKeys: [K.education__page_guidance, ...GUIDANCE],
-      sources: ["features/agents/components/ambient-assistant/ambientAssistantMandates.ts"],
+      sources: ["packages/chat/src/agents/components/ambient-assistant/ambientAssistantMandates.ts"],
     },
   ],
 };

@@ -66,7 +66,7 @@ import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import {
   isCapturedSurfaceRegistrationError,
   isSurfaceRegistrationError,
-} from "@/features/surfaces/services/surface-registration-error";
+} from "@ai-matrx/chat/surfaces/services/surface-registration-error";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -82,16 +82,16 @@ import {
   ValueMappingEditor,
   type MappingTarget,
 } from "@/features/surfaces/components/ValueMappingEditor";
-import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
-import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import type { SurfaceValue, ValueMappingMap } from "@/features/surfaces/types";
+import type { SurfaceWithStats } from "@ai-matrx/chat/surfaces/services/surfaces.service";
+import type { AgentSurfaceBinding } from "@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service";
+import type { SurfaceValue, ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 import {
   loadSurfaces,
   loadSurfaceValues,
   loadBindingsForAgent,
   upsertAgentSurfaceBindingThunk,
   deleteAgentSurfaceBindingThunk,
-} from "@/features/surfaces/redux/thunks";
+} from "@ai-matrx/chat/surfaces/redux/thunks";
 import {
   makeSelectBindingsForAgent,
   makeSelectBindingsErrorForAgent,
@@ -101,16 +101,16 @@ import {
   selectSurfacesStatus,
   makeSelectSurfaceValues,
   makeSelectSurfaceValuesStatus,
-} from "@/features/surfaces/redux/selectors";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import type { EntityType } from "@/features/scopes/types";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { useMandateSet } from "@/features/mandates/useMandateSet";
+import { useMandateSet } from "@ai-matrx/chat/mandates/useMandateSet";
 import { mandateRoute } from "@/features/mandates/browse/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

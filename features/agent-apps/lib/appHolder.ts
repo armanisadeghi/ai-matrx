@@ -53,9 +53,9 @@ import {
 
 import { useMemo } from "react";
 
-import { useMandate } from "@/features/mandates/useMandate";
-import type { ResolvedMandate } from "@/features/mandates/service";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
+import type { ResolvedMandate } from "@ai-matrx/chat/mandates/service";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/slices/userSlice";
 

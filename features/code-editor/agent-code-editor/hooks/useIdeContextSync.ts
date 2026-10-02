@@ -20,7 +20,7 @@
 
 import { useEffect, useRef } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { setEditorState } from "@/features/code-editor/redux/editor-state.slice";
 import type { CodeContextInput } from "../types";
 import {

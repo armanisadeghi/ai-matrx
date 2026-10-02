@@ -1,4 +1,4 @@
-import { toLlmParams } from "../llm-params";
+import { toLlmParams } from "@ai-matrx/chat/mandates/llm-params";
 import { REASONING_SUMMARY_OPTIONS } from "@/types/python-generated/llm-enums";
 
 describe("mandate config projection", () => {

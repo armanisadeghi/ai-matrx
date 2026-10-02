@@ -9,9 +9,9 @@ import type {
   EntityListSurface,
   EntityListSurfaceController,
 } from "@/lib/entity-list/components/EntityListPage";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { makeScope } from "@/lib/list-scope/types";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import {
   RESEARCH_TOPICS_SURFACE_NAME,
   createResearchTopicsScope,

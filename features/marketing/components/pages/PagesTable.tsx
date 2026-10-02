@@ -27,7 +27,7 @@ import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilld
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingSitePagesScope } from "@/features/surfaces/manifests/marketing-site-pages.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";

@@ -8,7 +8,7 @@
 import {
   readCollectionList,
   refuseRepeats,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import type { ResearchTopicListRow } from "./types";
 
 const AUTONOMY = ["auto", "semi", "manual"] as const;

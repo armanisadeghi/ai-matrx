@@ -15,7 +15,7 @@
  */
 
 import { createContext, useContext, type ReactNode } from "react";
-import type { MessageCitationSource } from "@/features/agents/redux/execution-system/messages/message-citations";
+import type { MessageCitationSource } from "@ai-matrx/chat/agents/redux/execution-system/messages/message-citations";
 
 const EMPTY_SOURCES: MessageCitationSource[] = [];
 

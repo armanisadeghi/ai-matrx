@@ -19,13 +19,13 @@ import {
   FileText,
   BookOpenText,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import type { ToolRendererProps } from "../../types";
 import { getFaviconUrl } from "../search/parseSearch";
 import { parseScrape } from "./parseScrape";
-import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { AGENT_ICON } from "@host/components/icons/domain-icons";
 
 const Favicon: React.FC<{ url: string; className?: string }> = ({
     url,

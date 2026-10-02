@@ -10,7 +10,7 @@ import type { KindActionContext } from "../react/actions/kind-action-registry";
 import { getKindAction } from "../react/actions/kind-action-registry";
 
 const listLiveWriteTargets = jest.fn();
-jest.mock("@/features/surfaces/runtime/surface-writeback", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/surface-writeback", () => ({
   listLiveWriteTargets: () => listLiveWriteTargets(),
 }));
 

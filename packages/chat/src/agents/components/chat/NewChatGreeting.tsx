@@ -1,17 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppStore } from "@host/lib/redux/hooks";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";
-import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { ConnectorPromptHost } from "@host/features/connectors/ConnectorPromptHost";
+import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import {
   ComposerGreeting,
   ComposerQuickActions,
-} from "@/features/agents/components/inputs/smart-input/composer/ComposerSplash";
-import type { ComposerPresentation } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
-import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+} from "../inputs/smart-input/composer/ComposerSplash";
+import type { ComposerPresentation } from "../inputs/smart-input/composer/composer-types";
+import { IntelligenceIndicator } from "@host/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 interface NewChatGreetingProps {
   /** Default-agent conversation bound to the splash composer — same Redux

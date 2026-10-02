@@ -26,7 +26,7 @@ These are stable, project-wide utilities. No action needed.
 | `@/lib/api/endpoints` (ENDPOINTS, BACKEND_URLS) | sendMessage thunk | OWNED |
 | `@/lib/chat-protocol` (extractPersistableToolBlocks, buildCanonicalBlocks) | sendMessage thunk, StreamingContentBlocks | OWNED |
 | `@/features/tool-call-visualization` (ToolCallVisualization shell, renderer registry, ToolRendererProps) | AssistantMessage, StreamingContentBlocks | OWNED |
-| `@/features/agents/types/request.types` (ToolLifecycleEntry) | StreamingContentBlocks (maps ToolCallBlock → ToolLifecycleEntry) | OWNED |
+| `@ai-matrx/chat/agents/types/request.types` (ToolLifecycleEntry) | StreamingContentBlocks (maps ToolCallBlock → ToolLifecycleEntry) | OWNED |
 | `@/lib/utils` (cn) | Shared UI | SHARED |
 | `@/types/python-generated/stream-events` (TypedStreamEvent, ToolEventPayload) | Multiple | OWNED |
 | `@/components/ui/*` (Button, etc.) | Multiple | SHARED |
@@ -108,7 +108,7 @@ fully self-contained, these are the ones to internalize.
 
 ## Tool rendering (delegated)
 
-Tool-call rendering is owned entirely by `@/features/tool-call-visualization`. Conversation surfaces import the `ToolCallVisualization` shell and hand it a `ToolLifecycleEntry` (from `@/features/agents/types/request.types`).
+Tool-call rendering is owned entirely by `@/features/tool-call-visualization`. Conversation surfaces import the `ToolCallVisualization` shell and hand it a `ToolLifecycleEntry` (from `@ai-matrx/chat/agents/types/request.types`).
 
 ---
 

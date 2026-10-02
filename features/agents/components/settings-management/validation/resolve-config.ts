@@ -4,7 +4,7 @@ import {
   ControlDefinition,
   NormalizedControls,
 } from "@/lib/redux/slices/agent-settings/types";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import { UI_GATE_KEYS } from "@/lib/redux/slices/agent-settings/ui-gates";
 

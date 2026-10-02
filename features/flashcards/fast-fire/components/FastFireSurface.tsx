@@ -20,7 +20,7 @@ import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Button } from "@/components/ui/button";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildFastFireSurfaceScope } from "../fastfire-surface-scope";
 import { openSetup, resetFastFire, updateConfig } from "../redux/fastFireSlice";
 import { parseDrillConfigPatch } from "../drill-config";
@@ -36,7 +36,7 @@ import { FastFireLiveCard } from "./FastFireLiveCard";
 import { FastFireScoreboard } from "./FastFireScoreboard";
 import { FastFireTimesUp } from "./FastFireTimesUp";
 import { useFastFireLocalQaAudioFixture } from "../qa/useFastFireLocalQaAudioFixture";
-import { useSuppressAmbientAssistant } from "@/features/agents/components/ambient-assistant/ambientAssistantSuppression";
+import { useSuppressAmbientAssistant } from "@ai-matrx/chat/agents/components/ambient-assistant/ambientAssistantSuppression";
 
 const FLASHCARDS_HOME = "/education/flashcards";
 

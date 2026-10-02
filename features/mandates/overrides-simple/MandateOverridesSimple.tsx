@@ -34,11 +34,11 @@ import {
   fetchAgentExecutionFull,
   fetchAgentVersionSnapshot,
   resolveAgentVersionId,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentCustomExecutionPayload,
   selectBuiltinAgents,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   initInstanceOverrides,
   markRemoved,
@@ -46,18 +46,18 @@ import {
   replaceOverrides,
   resetOverride,
   setOverrides,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
   selectInstanceOverrideState,
   selectSettingsOverridesForApi,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { buildInstanceBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/base-settings";
 import {
   fetchModelById,
   selectAllModels,
   selectModelFullyLoaded,
 } from "@/features/ai-models/redux/modelRegistrySlice";
-import { useModelControls } from "@/features/agents/hooks/useModelControls";
+import { useModelControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { buildSettingsRows } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types";
 import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";

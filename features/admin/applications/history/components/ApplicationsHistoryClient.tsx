@@ -36,7 +36,7 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import { buildApplicationsTimeline } from "@/features/admin/applications/history/buildTimeline";
 import type { ApplicationsHistoryEntry } from "@/features/admin/applications/history/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_APPLICATIONS_SURFACE_NAME,
   createAdminApplicationsScope,

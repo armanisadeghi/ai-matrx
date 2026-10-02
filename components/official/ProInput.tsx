@@ -101,7 +101,7 @@ import {
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { CLEANUP_SURFACE_NAME } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ProTextAgentActionPopoverBody } from "./ProTextAgentActionPopoverBody";

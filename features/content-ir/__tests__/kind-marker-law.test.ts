@@ -11,7 +11,7 @@
  */
 
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import {
   IR_ENVELOPE_KEY,
   KIND_KEY,

@@ -26,19 +26,19 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-import mcpReducer from "@/features/agents/redux/mcp/mcp.slice";
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+import mcpReducer from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
 
 const mockPersistMcpManualCredentials = jest.fn();
 const mockFetchMcpServerConfigs = jest.fn();
 
-jest.mock("@/features/agents/services/mcp-connections.service", () => ({
-  ...jest.requireActual("@/features/agents/services/mcp-connections.service"),
+jest.mock("@ai-matrx/chat/agents/services/mcp-connections.service", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/services/mcp-connections.service"),
   persistMcpManualCredentials: (...args: unknown[]) =>
     mockPersistMcpManualCredentials(...args),
 }));
-jest.mock("@/features/agents/services/mcp.service", () => ({
-  ...jest.requireActual("@/features/agents/services/mcp.service"),
+jest.mock("@ai-matrx/chat/agents/services/mcp.service", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/services/mcp.service"),
   fetchMcpServerConfigs: (...args: unknown[]) =>
     mockFetchMcpServerConfigs(...args),
 }));

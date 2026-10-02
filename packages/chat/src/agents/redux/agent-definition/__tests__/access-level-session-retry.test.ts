@@ -1,14 +1,14 @@
 const rpc = jest.fn();
 const getSession = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpc(...args),
     auth: { getSession: (...args: unknown[]) => getSession(...args) },
   },
 }));
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { fetchAgentAccessLevel } from "../thunks";
 
 describe("fetchAgentAccessLevel session boundary", () => {

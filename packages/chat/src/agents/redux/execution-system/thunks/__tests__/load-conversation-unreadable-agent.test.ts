@@ -17,10 +17,10 @@ import { loadConversation } from "../load-conversation.thunk";
 
 const mockFetchBundle = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: { auth: { getUser: async () => ({ data: { user: null } }) } },
 }));
-jest.mock("@/utils/supabase/claimsUser", () => ({
+jest.mock("@host/utils/supabase/claimsUser", () => ({
   getClaimsUser: async () => ({ data: { user: null } }),
 }));
 jest.mock("../conversation-bundle", () => {
@@ -43,8 +43,8 @@ jest.mock(
   }),
 );
 const mockToastInfo = jest.fn();
-jest.mock("@/lib/toast", () => ({ toast: { info: (...a: unknown[]) => mockToastInfo(...a) } }));
-jest.mock("@/features/code/redux/codeEditHistoryHydration", () => ({
+jest.mock("@host/lib/toast", () => ({ toast: { info: (...a: unknown[]) => mockToastInfo(...a) } }));
+jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
   loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
 }));
 

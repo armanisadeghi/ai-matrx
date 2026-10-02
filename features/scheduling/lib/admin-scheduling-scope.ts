@@ -38,7 +38,7 @@ import {
   type AdminSchedulingScopeValues,
   type AdminSchedulingTab,
 } from "@/features/surfaces/manifests/admin-scheduling.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 /** Everything a tab may publish — `active_tab` is the shell's to derive. */
 export type AdminSchedulingScopeSlice = Omit<

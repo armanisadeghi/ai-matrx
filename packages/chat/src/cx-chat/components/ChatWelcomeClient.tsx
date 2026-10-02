@@ -12,17 +12,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectIsAuthenticated } from "@/lib/redux/slices/userSlice";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { selectLatestConversationId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import { setInputPlaceholder } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { selectIsAuthenticated } from "@host/lib/redux/slices/userSlice";
+import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
+import { selectLatestConversationId } from "../../agents/redux/execution-system/selectors/aggregate.selectors";
+import { SmartAgentInput } from "../../agents/components/inputs/smart-input/SmartAgentInput";
+import { setInputPlaceholder } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { pushAppHref, replaceAppHref } from "@host/lib/deployment/navigate";
 
 const AgentPickerSheet = dynamic(
   () =>
-    import("@/features/cx-chat/components/agent/AgentPickerSheet").then(
+    import("./agent/AgentPickerSheet").then(
       (m) => ({ default: m.AgentPickerSheet }),
     ),
   { ssr: false },

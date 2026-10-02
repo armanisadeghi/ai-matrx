@@ -52,7 +52,7 @@ jest.mock("@/components/official/CollapsibleText", () => ({
   ),
   CollapsibleTextGroupControls: () => null,
 }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   useSurfaceWriteHandlers: () => undefined,
 }));
 jest.mock("@/features/overlays/openers/gmailComposeWindow", () => ({

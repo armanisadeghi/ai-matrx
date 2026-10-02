@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMicVAD, utils } from "@ricky0123/vad-react";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { acquireMicStream, releaseMicStream } from "@ai-matrx/browser-audio/core";
 import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
 import type { PlaybackSessionHandle } from "@/features/audio/session/types";

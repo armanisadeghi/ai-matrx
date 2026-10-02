@@ -16,7 +16,7 @@
 // out of the /war-room/all bundle.
 
 import { Radar, Loader2 } from "lucide-react";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
 import { useMasterAgent } from "@/features/war-room/hooks/useMasterAgent";
 import { WarRoomAgentSelector } from "@/features/war-room/components/shared/WarRoomAgentSelector";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";

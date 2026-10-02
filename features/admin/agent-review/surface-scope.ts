@@ -21,7 +21,7 @@ import {
   type AdminAgentReviewSampleEntry,
   type AdminAgentReviewVocabulary,
 } from "@/features/surfaces/manifests/admin-agent-review.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { ReviewRegistry } from "@/features/admin/agent-review/registry";
 import {
   parseReviewMetadata,

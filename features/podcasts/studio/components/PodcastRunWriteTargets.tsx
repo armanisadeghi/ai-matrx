@@ -25,8 +25,8 @@
  */
 
 import { useEffect } from "react";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { publishSurfaceUiState } from "@ai-matrx/chat/surfaces/runtime/surface-ui-state";
 import { EPISODE_TITLE_UI_STATE_KEY } from "@/features/content-ir/kinds/episode-title-options";
 import type { EpisodeTitleUiState } from "@/components/mardown-display/blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import type { UseStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";

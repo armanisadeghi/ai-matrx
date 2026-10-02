@@ -24,7 +24,7 @@ import { useEffect, useRef } from "react";
 
 import { isJsonObject } from "@/types/json";
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_AGENT_REVIEW_SURFACE_NAME } from "@/features/surfaces/manifests/admin-agent-review.manifest";
 import {
   loadReviewQueueItem,

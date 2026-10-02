@@ -16,7 +16,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 export const IMAGE_VIEWER_SURFACE_NAME = "matrx-user/image-viewer";
 

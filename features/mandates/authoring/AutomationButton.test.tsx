@@ -40,12 +40,12 @@ import {
 import { KIND_CONVERTER_MANDATE_KEY } from "./constants";
 import { CHOOSE_WORKSPACE_LINE } from "./AutomationButton";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
-import { useMandate, type MandateState } from "../useMandate";
+import { useMandate, type MandateState } from "@ai-matrx/chat/mandates/useMandate";
 
 jest.mock("@/lib/toast", () => ({
   toast: { error: jest.fn(), info: jest.fn() },
 }));
-jest.mock("../useMandate", () => ({ useMandate: jest.fn() }));
+jest.mock("@ai-matrx/chat/mandates/useMandate", () => ({ useMandate: jest.fn() }));
 jest.mock("@/lib/organization/organization-gate", () => ({
   ensureOrganizationContext: jest.fn(() => Promise.resolve("org-1")),
   isOrganizationSelectionCancelled: jest.fn(() => false),

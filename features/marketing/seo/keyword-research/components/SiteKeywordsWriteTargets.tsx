@@ -24,7 +24,7 @@
  * runtime turns that into the loud toast + captured error.
  */
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { addPageSupportingKeywords } from "@/features/marketing/data/page-keywords";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import {

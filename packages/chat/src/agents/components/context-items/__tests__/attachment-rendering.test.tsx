@@ -1,7 +1,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ContextDrawerItem } from "../types";
-import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
+import type { PreFetchedUrl } from "@host/types/python-generated/stream-events";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -10,7 +10,7 @@ import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
 const openAt = jest.fn();
 const fileResourceChipProps = jest.fn();
 
-jest.mock("@/features/agents/components/context-items/registry", () => ({
+jest.mock("../registry", () => ({
   resolveContextItemDef: (blockType: string) => ({
     typeLabel: blockType === "input_webpage" ? "Webpage" : "Attachment",
     icon: () => null,
@@ -19,13 +19,13 @@ jest.mock("@/features/agents/components/context-items/registry", () => ({
   }),
 }));
 
-jest.mock("@/features/scraper/parts/ScrapedContentPretty", () => ({
+jest.mock("@host/features/scraper/parts/ScrapedContentPretty", () => ({
   ScrapedContentPretty: ({ markdown }: { markdown: string }) => (
     <article data-testid="saved-webpage-text">{markdown}</article>
   ),
 }));
 
-jest.mock("@/components/ui/hover-card", () => ({
+jest.mock("@host/components/ui/hover-card", () => ({
   HoverCard: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -37,19 +37,19 @@ jest.mock("@/components/ui/hover-card", () => ({
   ),
 }));
 
-jest.mock("@/features/agents/components/previews/NoteHoverPreview", () => ({
+jest.mock("@host/features/agents/components/previews/NoteHoverPreview", () => ({
   NotePreviewContent: ({ noteId }: { noteId: string }) => <span>{noteId}</span>,
 }));
 
-jest.mock("@/features/agents/components/previews/TaskHoverPreview", () => ({
+jest.mock("@host/features/agents/components/previews/TaskHoverPreview", () => ({
   TaskPreviewContent: ({ taskId }: { taskId: string }) => <span>{taskId}</span>,
 }));
 
-jest.mock("@/features/agents/components/previews/DataRefHoverPreview", () => ({
+jest.mock("@host/features/agents/components/previews/DataRefHoverPreview", () => ({
   DataRefPreviewContent: () => <span>data preview</span>,
 }));
 
-jest.mock("@/features/agents/components/previews/WebpageHoverPreview", () => ({
+jest.mock("@host/features/agents/components/previews/WebpageHoverPreview", () => ({
   WebpagePreviewContent: ({
     url,
     title,
@@ -68,7 +68,7 @@ jest.mock("@/features/agents/components/previews/WebpageHoverPreview", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/components/context-items/useContextItemDrawer",
+  "../useContextItemDrawer",
   () => ({
     useContextItemDrawer: () => ({
       open: false,
@@ -85,13 +85,13 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/components/context-items/ContextItemDrawer",
+  "../ContextItemDrawer",
   () => ({
     ContextItemDrawer: () => null,
   }),
 );
 
-jest.mock("@/features/files/components/preview/FileResourceChip", () => ({
+jest.mock("@host/features/files/components/preview/FileResourceChip", () => ({
   FileResourceChip: (props: { fileId: string; nameOverride?: string }) => {
     fileResourceChipProps(props);
     return <span>{props.fileId}</span>;
@@ -115,7 +115,7 @@ jest.mock("../../messages-display/user/ResourceAttachmentTile", () => ({
 }));
 
 import { WebpageBody } from "../bodies/WebpageBody";
-import { BlockHoverPreview } from "../../previews/BlockHoverPreview";
+import { BlockHoverPreview } from "@host/features/agents/components/previews/BlockHoverPreview";
 import { MessageAttachmentStrip } from "../../messages-display/MessageAttachmentStrip";
 
 const snapshot: PreFetchedUrl = {

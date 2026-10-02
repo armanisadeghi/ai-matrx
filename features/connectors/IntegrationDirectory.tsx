@@ -18,7 +18,7 @@ import {
 import { Input, Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
+import { MCP_CATEGORY_META } from "@ai-matrx/chat/agents/types/mcp.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ConnectorMark } from "./ConnectorMark";
 import {

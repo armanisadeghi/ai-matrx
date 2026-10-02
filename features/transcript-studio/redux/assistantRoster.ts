@@ -18,9 +18,9 @@
 import type { RootState } from "@/lib/redux/store";
 import type { AssistantConversationRef } from "../types";
 import { TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY } from "../constants";
-import { resolveMandate } from "@/features/mandates/service";
-import { verifyFastPathAgainstMandate } from "@/features/mandates/fast-path-guard";
-import { selectSurfaceConfigEntry } from "@/features/surfaces/redux/surfaceConfigSlice";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
+import { verifyFastPathAgainstMandate } from "@ai-matrx/chat/mandates/fast-path-guard";
+import { selectSurfaceConfigEntry } from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
 import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
 
 /**

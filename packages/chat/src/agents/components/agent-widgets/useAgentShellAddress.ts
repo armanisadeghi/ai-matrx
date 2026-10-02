@@ -12,10 +12,10 @@
  * the shell can never disagree again. Closing the shell unregisters the token.
  */
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { useUrlSync } from "@/features/window-panels/url-sync/useUrlSync";
-import { agentPanelUrlArgs } from "@/features/window-panels/windows/agents/agentPanelSurfaceAddress";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { useUrlSync } from "@host/features/window-panels/url-sync/useUrlSync";
+import { agentPanelUrlArgs } from "../../../window-panels/windows/agents/agentPanelSurfaceAddress";
+import type { ResultDisplayMode } from "../../utils/run-ui-utils";
 
 export function useAgentShellAddress(
   conversationId: string,

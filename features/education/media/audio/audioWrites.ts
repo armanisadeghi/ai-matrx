@@ -3,8 +3,8 @@
 import { getFileMetadata } from "@/features/files/api/files";
 import { getResourceAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
-import { collectionWriteHandlers, readCollectionList } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers, readCollectionList } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { studyMediaService } from "../service";
 import type { StudyMediaRow } from "../types";
 

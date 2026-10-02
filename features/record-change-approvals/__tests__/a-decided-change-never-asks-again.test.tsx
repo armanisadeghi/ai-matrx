@@ -33,7 +33,7 @@ jest.mock("@/features/unified-data/objectOrganization", () => ({
 }));
 jest.mock("@/lib/knobs/useUnifiedDataCampaignGate", () => ({ useUnifiedDataCampaign: () => ({ on: true, because: "" }) }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
-jest.mock("@/features/agents/ui-first-tools/ui/ApprovalCard", () => ({
+jest.mock("@ai-matrx/chat/agents/ui-first-tools/ui/ApprovalCard", () => ({
   ApprovalCard: ({ outcome }: { outcome?: React.ReactNode }) =>
     outcome ? <div data-testid="outcome">{outcome}</div> : <button type="button">Approve</button>,
 }));

@@ -2,27 +2,27 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState, useTransition } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   fetchAgentsListFull,
   fetchFullAgent,
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
-} from "@/features/agents/redux/agent-definition/thunks";
-import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
+} from "../../redux/agent-definition/thunks";
+import type { AgentVersionHistoryItem } from "../../redux/agent-definition/thunks";
 import {
   selectAllAgentsArray,
   selectAgentById,
   selectVersionsByParentAgentId,
-} from "@/features/agents/redux/agent-definition/selectors";
-import SearchableSelect from "@/components/matrx/SearchableSelect";
-import type { Option } from "@/components/matrx/SearchableSelect";
+} from "../../redux/agent-definition/selectors";
+import SearchableSelect from "@host/components/matrx/SearchableSelect";
+import type { Option } from "@host/components/matrx/SearchableSelect";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { Skeleton } from "@ai-matrx/design-system";
-import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import SuspenseLoader from "@host/components/loaders/SuspenseLoader";
 import { ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { cn } from "@host/lib/utils";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const AgentDiffViewer = dynamic(
   () => import("./AgentDiffViewer").then((m) => m.AgentDiffViewer),

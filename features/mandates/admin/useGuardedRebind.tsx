@@ -18,9 +18,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   agentDefaultHolder,
   parseMandateContract,

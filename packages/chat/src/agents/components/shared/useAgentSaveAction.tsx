@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAgentIsDirty,
   selectAgentIsLoading,
@@ -11,15 +11,15 @@ import {
   selectAgentById,
   selectAgentIsReadOnly,
   selectAgentAccessResolved,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../../redux/agent-definition/selectors";
 import {
   saveAgent,
   createAgent,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { toast } from "@/lib/toast-service";
-import { toast as nameTakenToast } from "@/lib/toast";
-import { agentNameTaken } from "@/features/agents/redux/agent-definition/agentNameTaken";
-import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
+} from "../../redux/agent-definition/thunks";
+import { toast } from "@host/lib/toast-service";
+import { toast as nameTakenToast } from "@host/lib/toast";
+import { agentNameTaken } from "../../redux/agent-definition/agentNameTaken";
+import { setAgentField } from "../../redux/agent-definition/slice";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,9 +29,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useAgentDuplicateFlow } from "@/features/agents/hooks/useAgentDuplicateFlow";
-import { useAgentChangeReach } from "@/features/mandates/admin/useAgentChangeReach";
+} from "@host/components/ui/alert-dialog";
+import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
+import { useAgentChangeReach } from "@host/features/mandates/admin/useAgentChangeReach";
 
 /**
  * Shared save behaviour for an agent record.

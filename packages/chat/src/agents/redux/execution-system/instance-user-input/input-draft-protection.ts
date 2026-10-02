@@ -60,8 +60,8 @@
 // Net: text + attachments + variables — the WHOLE composer — survive a stream.
 // ============================================================================
 
-import type { InstanceUserInputState } from "@/features/agents/types/instance.types";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import type { InstanceUserInputState } from "../../../types/instance.types";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 
 /**
  * True when `entry.text` holds a live next-message draft that MUST NOT be

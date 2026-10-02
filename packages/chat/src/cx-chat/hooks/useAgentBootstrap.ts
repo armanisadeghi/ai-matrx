@@ -27,21 +27,21 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   initializeChatAgents,
   isChatListStale,
   fetchAgentExecutionMinimal,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+} from "../../agents/redux/agent-definition/thunks";
+import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
 import {
   activeChatActions,
   selectActiveChatAgent,
   type ActiveChatAgent,
 } from "../_legacy-stubs";
-import type { LLMParams } from "@/lib/types/agent-chat";
-import { DEFAULT_AGENTS } from "@/features/cx-chat/components/agent/local-agents";
-import type { RootState } from "@/lib/redux/store";
+import type { LLMParams } from "@host/lib/types/agent-chat";
+import { DEFAULT_AGENTS } from "../components/agent/local-agents";
+import type { RootState } from "@host/lib/redux/store";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

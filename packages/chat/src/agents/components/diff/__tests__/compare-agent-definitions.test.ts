@@ -1,5 +1,5 @@
 import { compareAgentDefinitions } from "../compare-agent-definitions";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "../../../types/agent-definition.types";
 
 describe("compareAgentDefinitions", () => {
   it("treats a renamed personal copy as behavior-identical", () => {

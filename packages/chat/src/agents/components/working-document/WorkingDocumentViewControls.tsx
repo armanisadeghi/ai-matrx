@@ -17,9 +17,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
+} from "@host/components/ui/dropdown-menu";
+import { cn } from "@host/lib/utils";
+import type { EditorMode } from "@host/features/notes/components/NoteEditorCore";
 import {
   setWorkingDocEditorMode,
   setWorkingDocHistoryOpen,

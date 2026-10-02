@@ -34,9 +34,9 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectToolDisplayPreference } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 
 import { formatWorkDuration } from "../grouping/foldAgentWork";
 import { useAgentWorkTurnMembership } from "./agentWorkTurn";

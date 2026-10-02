@@ -22,8 +22,8 @@
  * returns; the window only bounds how long we might declare a dead executor.
  */
 
-import { supabase } from "@/utils/supabase/client";
-import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
+import { supabase } from "@host/utils/supabase/client";
+import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
 
 /** matrx-local heartbeats every 5 min; allow one missed beat + 60s slack. */
 const LIVE_WINDOW_MS = 11 * 60_000;

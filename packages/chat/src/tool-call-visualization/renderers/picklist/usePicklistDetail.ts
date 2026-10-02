@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import {
   getListWithItems,
   getStructuredListForSelection,
-} from "@/features/user-lists/service";
+} from "@host/features/user-lists/service";
 import type {
   UserListWithItems,
   GroupedItem,
   StructuredListForSelection,
-} from "@/features/user-lists/types";
+} from "@host/features/user-lists/types";
 
 /**
  * Load a picklist by id for the `picklist` tool renderer, so it can render the

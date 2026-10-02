@@ -16,10 +16,10 @@ import {
   selectMcpConnectingServerId,
   selectMcpAvailabilityForOrganization,
   selectMcpAvailabilityStatusForOrganization,
-} from "@/features/agents/redux/mcp/mcp.slice";
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+} from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
 import { useConnectMcpServer } from "@/features/connectors/useConnectMcpServer";
-import { buildSupabaseScopedMcpEndpoint } from "@/features/agents/services/mcp-oauth/endpoint";
+import { buildSupabaseScopedMcpEndpoint } from "@ai-matrx/chat/agents/services/mcp-oauth/endpoint";
 import { toast, recordToast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -32,7 +32,7 @@ import {
   mcpEntrySummary,
   mcpLocation,
   MCP_CSV_COLUMNS,
-} from "@/features/agents/mcp-copy";
+} from "@ai-matrx/chat/agents/mcp-copy";
 
 import {
   Globe,
@@ -76,7 +76,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ConnectorsSettingsPanel } from "@/features/connectors/ConnectorsSettingsPanel";
 import { providerArtworkUrls } from "@/features/connectors/live-connectors";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
-import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   catalogActionPresentation,
   catalogConnectionPresentation,

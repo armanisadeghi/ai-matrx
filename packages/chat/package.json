@@ -1,0 +1,9 @@
+{
+  "name": "@ai-matrx/chat",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI Matrx chat: running agents, chat, tool calls, streaming, context management (moved from matrx-frontend, R1/R2).",
+  "exports": {
+    "./*": "./src/*"
+  }
+}

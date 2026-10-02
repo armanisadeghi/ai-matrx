@@ -13,7 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@host/components/ui/select";
 
 /** Common ISO-4217 codes; extend as needed. */
 export const CURRENCY_CODES = [

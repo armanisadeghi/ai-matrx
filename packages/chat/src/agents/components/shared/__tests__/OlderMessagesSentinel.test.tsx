@@ -7,14 +7,14 @@ import messages, {
   prependMessages,
   setOlderLoading,
   type MessageRecord,
-} from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
+} from "../../../redux/execution-system/messages/messages.slice";
+import { loadOlderMessages } from "../../../redux/execution-system/thunks/load-older-messages.thunk";
 import { OlderMessagesSentinel } from "../OlderMessagesSentinel";
 
 // Only the fetch boundary is replaced. Real selectors, grouping, reducers,
 // effects and event listeners must schedule each subsequent history request.
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk",
+  "../../../redux/execution-system/thunks/load-older-messages.thunk",
   () => ({
     loadOlderMessages: jest.fn(() => ({ type: "test/history-request" })),
   }),

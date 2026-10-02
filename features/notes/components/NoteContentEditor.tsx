@@ -60,7 +60,7 @@ import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesS
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { toast } from "@/lib/toast";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NoteSaveFailureBanner } from "./NoteSaveFailureBanner";
 import { NoteDraftRecoveryBanner } from "./NoteDraftRecoveryBanner";
 import { FindReplaceBar } from "./FindReplaceBar";

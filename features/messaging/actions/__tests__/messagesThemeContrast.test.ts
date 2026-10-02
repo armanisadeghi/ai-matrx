@@ -16,7 +16,7 @@ const messagesCss = readFileSync(
 const entityCardSource = readFileSync(
   path.join(
     process.cwd(),
-    "features/tool-call-visualization/renderers/_shared-entity/EntityCard.tsx",
+    "packages/chat/src/tool-call-visualization/renderers/_shared-entity/EntityCard.tsx",
   ),
   "utf8",
 );

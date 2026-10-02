@@ -27,7 +27,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { forkConversation } from "./fork-conversation.thunk";
 import { mergeEditedText } from "./content-blocks.util";
 
@@ -124,9 +124,9 @@ export const forkAndResubmitFromMessage = createAsyncThunk<
     } else {
       // This told the user to go find the branch by hand while holding its
       // id — the Door Law violation stated out loud. It opens now.
-      const { toast } = await import("@/lib/toast");
+      const { toast } = await import("@host/lib/toast");
       const { toastDoor } = await import(
-        "@/components/official/entity-ref/toastDoor"
+        "@host/components/official/entity-ref/toastDoor"
       );
       toast.success("Branch created", {
         action: toastDoor("conversation", newConversationId),

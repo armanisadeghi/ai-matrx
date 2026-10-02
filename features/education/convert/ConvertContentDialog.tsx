@@ -51,7 +51,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { useContentConverter } from "./useContentConverter";
 import { isTargetAvailable } from "./registry";
 import type { ConvertResult, ConvertSource, SourceRef, TargetKind } from "./types";

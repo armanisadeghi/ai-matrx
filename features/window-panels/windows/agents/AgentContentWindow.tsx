@@ -30,13 +30,13 @@ import {
   selectAgentIsDirty,
   selectAgentIsEditable,
   selectAgentName,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchFullAgent,
   saveAgentField,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { setAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { toast } from "@/lib/toast";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { Messages } from "@/features/agents/components/builder/message-builders/Messages";
@@ -48,15 +48,15 @@ import { AgentContextInjectionSwitch } from "@/features/agents/components/contex
 import { AgentSettingsForm } from "@/features/agents/components/settings/AgentSettingsForm";
 import { AgentSettingsCore } from "@/features/agents/components/settings-management/AgentSettingsCore";
 import { AgentSharePanel } from "@/features/agents/components/sharing/AgentSharePanel";
-import { AgentSaveStatus } from "@/features/agents/components/shared/AgentSaveStatus";
+import { AgentSaveStatus } from "@ai-matrx/chat/agents/components/shared/AgentSaveStatus";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMemo } from "react";
-import { AgentRunWrapper } from "@/features/agents/components/smart/AgentRunWrapper";
-import { AgentVersionDiffPage } from "@/features/agents/components/diff/AgentVersionDiffPage";
+import { AgentRunWrapper } from "@ai-matrx/chat/agents/components/smart/AgentRunWrapper";
+import { AgentVersionDiffPage } from "@ai-matrx/chat/agents/components/diff/AgentVersionDiffPage";
 import { AgentContentHistoryPanel } from "./AgentContentHistoryPanel";
 import { AgentContentTab } from "./agent-content.types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { AGENT_ADVANCED_EDITOR_SURFACE_NAME } from "./agentAdvancedEditorWrite";
 import { useAgentAdvancedEditorSurface } from "./useAgentAdvancedEditorSurface";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -240,7 +240,7 @@ function FooterControls({
     if (!dirtyFields) return;
     for (const field of Object.keys(
       dirtyFields,
-    ) as (keyof import("@/features/agents/types/agent-definition.types").AgentDefinition)[]) {
+    ) as (keyof import("@ai-matrx/chat/agents/types/agent-definition.types").AgentDefinition)[]) {
       dispatch(
         saveAgentField({ agentId, field, value: agent[field] as never }),
       );

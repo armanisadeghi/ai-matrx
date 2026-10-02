@@ -32,24 +32,24 @@
 const mockGetManifest = jest.fn();
 const mockSelectIn = jest.fn();
 
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: (name: string) => mockGetManifest(name),
 }));
 
 // The capability providers register a large client module graph that this
 // decision does not touch. The registry itself stays real (it answers empty).
 jest.mock(
-  "@/features/agents/redux/execution-system/client-capabilities/register-all",
+  "../../client-capabilities/register-all",
   () => ({}),
 );
 
 // A signed-in person: signed out, no agent's schema is readable at all
 // (`fetchAgentOutputSchemas` skips the read), which is not what this pins.
-jest.mock("@/lib/supabase/hasBrowserSession", () => ({
+jest.mock("@host/lib/supabase/hasBrowserSession", () => ({
   hasBrowserSession: async () => true,
 }));
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => ({
@@ -64,14 +64,14 @@ jest.mock("@/utils/supabase/client", () => ({
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { buildToolInjection } from "../build-tool-injection";
-import type { ToolInjectionResult } from "@/features/agents/types/tool-injection.types";
+import type { ToolInjectionResult } from "../../../../types/tool-injection.types";
 import {
   registerSurfaceRuntime,
   useSurfaceClientTools,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { invalidateOutputSchemaCache } from "@/features/mandates/output-contract";
-import { resetMandateCatalogueCache } from "@/features/mandates/catalogue";
-import type { RootState } from "@/lib/redux/store";
+} from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { invalidateOutputSchemaCache } from "../../../../../mandates/output-contract";
+import { resetMandateCatalogueCache } from "@host/features/mandates/catalogue";
+import type { RootState } from "@host/lib/redux/store";
 
 // React 19 refuses `act` outside an act environment.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =

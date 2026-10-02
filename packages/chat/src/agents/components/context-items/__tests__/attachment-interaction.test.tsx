@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/features/agents/components/context-items/registry", () => ({
+jest.mock("../registry", () => ({
   resolveContextItemDef: () => ({
     typeLabel: "Webpage",
     icon: () => null,
@@ -19,7 +19,7 @@ jest.mock("@/features/agents/components/context-items/registry", () => ({
   resolveContextItemTitleActions: () => null,
 }));
 
-jest.mock("@/components/matrx/resizable/MatrxDynamicPanelHost", () => ({
+jest.mock("@host/components/matrx/resizable/MatrxDynamicPanelHost", () => ({
   MatrxDynamicPanelHost: ({
     open,
     children,
@@ -29,27 +29,27 @@ jest.mock("@/components/matrx/resizable/MatrxDynamicPanelHost", () => ({
   }) => open ? <section data-testid="attachment-drawer">{children}</section> : null,
 }));
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
 }));
 
-jest.mock("@/features/files/components/preview/FileResourceChip", () => ({
+jest.mock("@host/features/files/components/preview/FileResourceChip", () => ({
   FileResourceChip: () => null,
 }));
 
-jest.mock("@/features/agents/components/previews/WebpageHoverPreview", () => ({
+jest.mock("@host/features/agents/components/previews/WebpageHoverPreview", () => ({
   WebpagePreviewContent: () => <div>Saved webpage preview</div>,
 }));
 
-jest.mock("@/features/agents/components/previews/NoteHoverPreview", () => ({
+jest.mock("@host/features/agents/components/previews/NoteHoverPreview", () => ({
   NotePreviewContent: () => null,
 }));
 
-jest.mock("@/features/agents/components/previews/TaskHoverPreview", () => ({
+jest.mock("@host/features/agents/components/previews/TaskHoverPreview", () => ({
   TaskPreviewContent: () => null,
 }));
 
-jest.mock("@/features/agents/components/previews/DataRefHoverPreview", () => ({
+jest.mock("@host/features/agents/components/previews/DataRefHoverPreview", () => ({
   DataRefPreviewContent: () => null,
 }));
 

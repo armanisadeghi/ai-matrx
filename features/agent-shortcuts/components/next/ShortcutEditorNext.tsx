@@ -13,10 +13,10 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 import { useAgentShortcutCrud } from "@/features/agent-shortcuts/hooks/useAgentShortcutCrud";
-import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
-import { fetchFullShortcut } from "@/features/agents/redux/agent-shortcuts/thunks";
-import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
-import { fetchAllReadableCategories } from "@/features/agents/redux/agent-shortcut-categories/thunks";
+import { selectShortcutById } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
+import { fetchFullShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
+import { selectAllCategoriesArray } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
+import { fetchAllReadableCategories } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/thunks";
 
 import { SurfacePicker } from "./SurfacePicker";
 import { WidgetPicker } from "./WidgetPicker";
@@ -32,7 +32,7 @@ import {
 // The ONE buildBindingTargets (Wave 2 consolidation, 2026-08-22) — the local
 // fork this file carried omitted `defaultValue`, hiding agent defaults from
 // the shared binding rows.
-import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+import { buildBindingTargets } from "@ai-matrx/chat/surfaces/utils/buildBindingTargets";
 // THE ONE PRE-FLIGHT (FIX-11), through this editor's own pure rule.
 import { shortcutSaveRefusals } from "@/features/agent-shortcuts/save-refusal";
 import { WritePolicyEditor } from "@/features/surfaces/components/bind/WritePolicyEditor";
@@ -40,22 +40,22 @@ import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   loadBindingsForAgent,
   loadSurfaceValues,
-} from "@/features/surfaces/redux/thunks";
+} from "@ai-matrx/chat/surfaces/redux/thunks";
 import {
   makeSelectBindingsForAgent,
   makeSelectSurfaceValues,
   makeSelectSurfaceValuesStatus,
-} from "@/features/surfaces/redux/selectors";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 
-import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
+import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import type {
   SurfaceValue,
   ValueMapping,
   ValueMappingMap,
-} from "@/features/surfaces/types";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+} from "@ai-matrx/chat/surfaces/types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { ResultDisplayMode } from "@ai-matrx/chat/agents/utils/run-ui-utils";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { takeShortcutDraftSeed } from "@/features/agent-shortcuts/draft-seed";

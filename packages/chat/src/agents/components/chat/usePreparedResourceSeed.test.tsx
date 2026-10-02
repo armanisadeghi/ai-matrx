@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { renderHook } from "@/test-utils/renderHook";
+import { renderHook } from "@host/test-utils/renderHook";
 import { usePreparedResourceSeed, type PreparedResourceIdentity } from "./usePreparedResourceSeed";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "../../resources/types";
 
 const identity = { userId: "usr_7d21ac", organizationId: "org_4b9f10" };
 const resources: Resource[] = [{ type: "text", data: { id: "captured", label: "Edited note", text: "Exact edited bytes\n**keep this**" } }];

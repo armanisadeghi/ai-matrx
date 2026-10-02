@@ -11,16 +11,16 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   VariableDefinition,
   VariableResourceContextConfig,
-} from "@/features/agents/types/agent-definition.types";
+} from "../../../types/agent-definition.types";
 import { resolveVariablesForRequest } from "./resolve-variables-for-request";
 import {
   contextItemBindingOf,
   isCustomDataBinding,
-} from "@/features/agents/utils/variable-binding";
+} from "../../../utils/variable-binding";
 
 // Stable references returned when the instance hasn't been initialized yet.
 const EMPTY_DEFINITIONS: VariableDefinition[] = [];

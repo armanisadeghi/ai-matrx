@@ -14,7 +14,7 @@
  * ArtifactRender / ArtifactRefBlock use.
  */
 
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
+import type { CxContentBlock } from "@ai-matrx/chat/public-chat/types/cx-tables";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { planMaterialization } from "../planMaterialization";
 import { storedKindValue } from "@/features/canvas/artifact-types/storedKindValue";

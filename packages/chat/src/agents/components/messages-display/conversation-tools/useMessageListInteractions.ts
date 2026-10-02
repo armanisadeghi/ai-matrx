@@ -15,7 +15,7 @@
 
 import { useEffect } from "react";
 import { nextMessageIndex } from "./message-keyboard-nav";
-import { togglePinnedMessage } from "@/features/agents/message-pins/pinned-messages-store";
+import { togglePinnedMessage } from "../../../message-pins/pinned-messages-store";
 
 const GROUP = "[data-message-group]";
 const LONG_PRESS_MS = 500;

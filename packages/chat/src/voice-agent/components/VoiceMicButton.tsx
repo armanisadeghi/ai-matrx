@@ -7,7 +7,7 @@
 
 import { AudioLines, CircleStop, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type { VoiceStatus } from "../types";
 
 interface VoiceMicButtonProps {

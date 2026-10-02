@@ -7,13 +7,13 @@ import { createRoot, type Root } from "react-dom/client";
 
 const dispatch = jest.fn();
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatch,
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
+  "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({
     selectAutoRun: () => () => false,
     selectAllowChat: () => () => true,
@@ -25,22 +25,22 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversations.selectors",
+  "../../../redux/execution-system/conversations/conversations.selectors",
   () => ({ selectInstanceStatus: () => () => "paused" }),
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/selectors/aggregate.selectors",
+  "../../../redux/execution-system/selectors/aggregate.selectors",
   () => ({ selectIsExecuting: () => () => false }),
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors",
+  "../../../redux/execution-system/instance-user-input/instance-user-input.selectors",
   () => ({ selectHasUserInput: () => () => true }),
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/execute-instance.thunk",
+  "../../../redux/execution-system/thunks/execute-instance.thunk",
   () => ({ executeInstance: jest.fn() }),
 );
 
@@ -57,13 +57,13 @@ jest.mock("../../messages-display/AgentConversationDisplay", () => ({
 }));
 
 jest.mock(
-  "@/features/matrx-envelope/components/ProposedDirectivesZone",
+  "@host/features/matrx-envelope/components/ProposedDirectivesZone",
   () => ({
     ProposedDirectivesZone: () => <div data-testid="directives" />,
   }),
 );
 
-jest.mock("@/features/agents/ui-first-tools/ui/PendingAsksZone", () => ({
+jest.mock("../../../ui-first-tools/ui/PendingAsksZone", () => ({
   PendingAsksZone: ({ conversationId }: { conversationId: string }) => (
     <div data-testid="pending-asks">{conversationId}</div>
   ),

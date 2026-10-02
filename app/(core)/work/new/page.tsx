@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { AiWorkHeader } from "@/features/ai-work/components/AiWorkHeader";
 import { AiWorkComposer } from "@/features/ai-work/compose/components/AiWorkComposer";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 
 export function generateMetadata() {

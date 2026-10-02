@@ -14,7 +14,7 @@
  * live per-variation edits straight from `agentDefinition.agents[syntheticId]`.
  */
 
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 /**
  * The editable slice of an agent definition that the Builder left panel

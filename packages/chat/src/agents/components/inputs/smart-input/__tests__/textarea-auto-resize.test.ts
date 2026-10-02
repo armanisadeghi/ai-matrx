@@ -12,7 +12,7 @@ const smartInputSource = readFileSync(
   "utf8",
 );
 const connectorSource = readFileSync(
-  join(__dirname, "../../../../../connectors/ConnectorStrip.tsx"),
+  join(__dirname, "../../../../../../../../features/connectors/ConnectorStrip.tsx"),
   "utf8",
 );
 const connectionsStripSource = readFileSync(
@@ -24,7 +24,7 @@ const plusMenuSource = readFileSync(
   "utf8",
 );
 const windowPanelSource = readFileSync(
-  join(__dirname, "../../../../../window-panels/WindowPanel.tsx"),
+  join(__dirname, "../../../../../../../../features/window-panels/WindowPanel.tsx"),
   "utf8",
 );
 

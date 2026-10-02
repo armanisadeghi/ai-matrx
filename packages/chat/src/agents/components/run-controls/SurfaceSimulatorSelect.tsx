@@ -20,8 +20,8 @@
 
 import { useEffect, useState } from "react";
 import { Check, Monitor, X } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Label } from "@/components/ui/label";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { Label } from "@host/components/ui/label";
 import {
   Command,
   CommandEmpty,
@@ -29,23 +29,23 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from "@host/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
   SelectChevron,
 } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
-import { detectActiveSurface } from "@/features/surfaces/utils/route-to-surface";
+import { cn } from "@host/lib/utils";
+import { setBuilderAdvancedSettings } from "../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectBuilderAdvancedSettings } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../types/instance.types";
+import { detectActiveSurface } from "../../../surfaces/utils/route-to-surface";
 import {
   listSurfaceOptions,
   type SurfaceOption,
-} from "@/features/surfaces/services/surfaces.service";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "../../../surfaces/services/surfaces.service";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 // Module-level cache — the surface catalog (~100 rows) changes rarely, so we
 // fetch it once per session instead of on every panel open.

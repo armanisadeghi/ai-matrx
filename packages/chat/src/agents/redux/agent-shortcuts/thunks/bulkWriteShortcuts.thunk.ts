@@ -1,25 +1,25 @@
 "use client";
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
+import { supabase } from "@host/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import type { AgentShortcut } from "../types";
-import type { ShortcutFormData } from "@/features/agent-shortcuts/types";
+import type { ShortcutFormData } from "@host/features/agent-shortcuts/types";
 import { agentShortcutToInsert, dbRowToAgentShortcut } from "../converters";
 import {
   fromGlobalOwnershipRecord,
   toGlobalOwnershipRecord,
-} from "@/lib/organizations/globalOwnership";
+} from "@host/lib/organizations/globalOwnership";
 import { upsertShortcuts } from "../slice";
 import { selectCategoryById } from "../../agent-shortcut-categories/selectors";
-import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
-import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { resolveShortcutWriteScope } from "@host/features/agent-shortcuts/resolveShortcutWriteScope";
+import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
 import {
   SHORTCUT_STORAGE_CUTOVER,
   shortcutTable,
-} from "@/lib/supabase/shortcutStorage";
+} from "@host/lib/supabase/shortcutStorage";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 

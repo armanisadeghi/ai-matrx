@@ -25,7 +25,7 @@ import { CircleAlert, Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import {
   CONVERSATION_ANALYSIS_KINDS,

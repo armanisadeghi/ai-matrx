@@ -30,12 +30,12 @@ import {
   PAGE_CONTEXT_BUDGET,
   type ResolvedSurfaceManifest,
   type SurfaceManifest,
-} from "@/features/surfaces/types";
-import { resolveSurfaceUrlPattern } from "@/features/surfaces/utils/surface-url-pattern";
+} from "../types";
+import { resolveSurfaceUrlPattern } from "../utils/surface-url-pattern";
 import {
   introWithGuidePointer,
   surfaceGuidePath,
-} from "@/features/surfaces/utils/surface-guide";
+} from "../utils/surface-guide";
 
 /**
  * Which `ui` schema generation is live. Flip each flag in the SAME commit that
@@ -49,7 +49,7 @@ export const SYNC_SCHEMA: SyncSchema = {
   contentHash: true,
 };
 
-import { SURFACE_BRIEF_MAX_VALUES } from "@/features/surfaces/runtime/surface-brief";
+import { SURFACE_BRIEF_MAX_VALUES } from "../runtime/surface-brief";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 const NAME_RE = /^[a-z][a-z0-9_]*$/;
 const ROLE_KINDS = new Set(["single", "multi"]);
@@ -70,7 +70,7 @@ function issue(
 /** Agent roles — owned by the agent layer, carried on the manifest as an extension slot. */
 export const agentRolesExtension: DeclarationExtension<Manifest> = {
   key: "agentRoles",
-  owner: "matrx-frontend agents (features/surfaces/declare)",
+  owner: "matrx-frontend agents (packages/chat/src/surfaces/declare)",
   inheritedLists: [
     { field: "agentRoles", identity: (entry) => (entry as { name: string }).name },
   ],
@@ -124,7 +124,7 @@ export const agentRolesExtension: DeclarationExtension<Manifest> = {
 /** Client tools — the ACTION tier, an extension slot typed by the agent layer. */
 export const clientToolsExtension: DeclarationExtension<Manifest> = {
   key: "clientTools",
-  owner: "matrx-frontend agents (features/surfaces/declare)",
+  owner: "matrx-frontend agents (packages/chat/src/surfaces/declare)",
   validate(m, context) {
     const s = m.surfaceName;
     const out: DeclarationIssue[] = [];
@@ -213,7 +213,7 @@ export const clientToolsExtension: DeclarationExtension<Manifest> = {
  */
 export const agentHintsExtension: DeclarationExtension<Manifest> = {
   key: "agentHints",
-  owner: "matrx-frontend agents (features/surfaces/declare)",
+  owner: "matrx-frontend agents (packages/chat/src/surfaces/declare)",
   validate(m, context) {
     const s = m.surfaceName;
     const out: DeclarationIssue[] = [];

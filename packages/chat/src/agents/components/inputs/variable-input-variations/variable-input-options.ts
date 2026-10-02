@@ -1,7 +1,7 @@
 import {
   VARIABLE_COMPONENT_TYPES,
   type VariableComponentType,
-} from "@/features/agents/types/agent-definition.types";
+} from "../../../types/agent-definition.types";
 
 // ─── Re-export so consumers only need this file ────────────────────────────
 export { VARIABLE_COMPONENT_TYPES };

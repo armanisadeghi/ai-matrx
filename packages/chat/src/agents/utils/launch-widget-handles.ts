@@ -15,8 +15,8 @@ import {
   WIDGET_TOOL_NAME_TO_HANDLE_METHOD,
   type SelectionWriteBack,
   type WidgetHandle,
-} from "@/features/agents/types/widget-handle.types";
-import { callbackManager } from "@/utils/callbackManager";
+} from "../types/widget-handle.types";
+import { callbackManager } from "@host/utils/callbackManager";
 
 const launchHandleIds = new Set<string>();
 

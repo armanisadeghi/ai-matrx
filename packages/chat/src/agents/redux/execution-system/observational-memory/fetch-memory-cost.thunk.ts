@@ -14,11 +14,11 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import {
   callConversationMemoryCost,
   type MemoryCostSummary,
-} from "@/lib/api/call-api";
+} from "@host/lib/api/call-api";
 import {
   setCostFetchStatus,
   setCostSummary,

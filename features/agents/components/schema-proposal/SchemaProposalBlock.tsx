@@ -21,7 +21,7 @@ import { ChevronDown, ChevronRight, FileJson, Shapes, Zap } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import type { OutputSchema } from "@/features/agents/types/json-schema";
+import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 import { ApplySchemaDialog } from "./ApplySchemaDialog";
 
 const JsonBlock = lazy(() =>

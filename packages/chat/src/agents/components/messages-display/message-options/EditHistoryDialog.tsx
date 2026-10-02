@@ -24,34 +24,34 @@ import {
   ChevronRight,
   GitCompareArrows,
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@host/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
-} from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "@/lib/toast";
+} from "@host/components/ui/drawer";
+import { Button } from "@host/components/ui/button";
+import { ScrollArea } from "@host/components/ui/scroll-area";
+import { toast } from "@host/lib/toast";
 import {
   selectMessageContentHistory,
   selectMessageContent,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
-import { editMessage } from "@/features/agents/redux/execution-system/message-crud/edit-message.thunk";
-import { setRequestEditedText } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import { selectMessageStreamRequestId } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import type { Json } from "@/types/database.types";
+} from "../../../redux/execution-system/messages/messages.selectors";
+import { useOpenDiffViewerWindow } from "@host/features/overlays/openers/diffViewerWindow";
+import { editMessage } from "../../../redux/execution-system/message-crud/edit-message.thunk";
+import { setRequestEditedText } from "../../../redux/execution-system/active-requests/active-requests.slice";
+import { selectMessageStreamRequestId } from "../../../redux/execution-system/messages/messages.selectors";
+import type { Json } from "@host/types/database.types";
 
 interface EditHistoryDialogProps {
   open: boolean;

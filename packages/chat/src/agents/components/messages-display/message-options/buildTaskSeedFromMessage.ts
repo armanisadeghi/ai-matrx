@@ -18,11 +18,11 @@
  * can never drift.
  */
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
-import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
-import { cleanMarkdown } from "@/utils/markdown-processors/clean-markdown-to-text";
-import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
-import type { PendingSource } from "@/features/tasks/redux/taskUiSlice";
+import { durableRecordId } from "@host/lib/ids/durable-record-id";
+import { plainTitleFromMarkdown } from "@host/components/markdown-core/plain-title";
+import { cleanMarkdown } from "@host/utils/markdown-processors/clean-markdown-to-text";
+import { buildConversationMessageTitle } from "../../../utils/conversation-message-title";
+import type { PendingSource } from "@host/features/tasks/redux/taskUiSlice";
 
 export interface TaskSeedFromMessageArgs {
   /** Answer-only flat text of the message (thinking already stripped). */

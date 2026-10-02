@@ -2,7 +2,7 @@
  * conversationInbox selectors — queued-while-running message cards.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type { ConversationInboxItem } from "./inbox.slice";
 
 const EMPTY_ITEMS: ConversationInboxItem[] = [];

@@ -1,5 +1,5 @@
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import { DEFAULT_AGENT_MODEL_ID } from "@/features/agents/constants/blank-agent";
+import type { AgentDefinition } from "../types/agent-definition.types";
+import { DEFAULT_AGENT_MODEL_ID } from "./blank-agent";
 
 /**
  * A DEMONSTRATION TEMPLATE, and nothing a person gets by default.

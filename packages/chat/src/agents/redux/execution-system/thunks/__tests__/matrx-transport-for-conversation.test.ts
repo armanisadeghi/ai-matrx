@@ -6,17 +6,17 @@
  * (conversation org, app-selection fallback) and passes through untouched.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 jest.mock("@ai-matrx/data/net", () => ({
   resilientFetch: jest.fn(),
   isNetError: () => false,
 }));
-jest.mock("@/lib/diagnostics/captureApiError", () => ({
+jest.mock("@host/lib/diagnostics/captureApiError", () => ({
   captureApiError: jest.fn(),
 }));
-jest.mock("@/lib/api/log-api-target", () => ({ logApiTarget: jest.fn() }));
-jest.mock("@/lib/redux/slices/apiConfigSlice", () => ({
+jest.mock("@host/lib/api/log-api-target", () => ({ logApiTarget: jest.fn() }));
+jest.mock("@host/lib/redux/slices/apiConfigSlice", () => ({
   selectResolvedBaseUrl: () => "https://backend.test",
   selectEndpointOverrideConfig: () => null,
   selectAiApiVersion: () => "v1",

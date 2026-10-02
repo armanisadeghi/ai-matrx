@@ -20,7 +20,7 @@ jest.mock("@/components/official/structured-value/AnswerValueView", () => ({
 }));
 
 import { AnswerTextPreview, answerFieldText } from "../AnswerTextPreview";
-import { VoiceTranscriptTurn } from "@/features/voice-agent/components/VoiceTranscriptTurn";
+import { VoiceTranscriptTurn } from "@ai-matrx/chat/voice-agent/components/VoiceTranscriptTurn";
 import { RunRow } from "@/features/scheduling/components/detail/RunRow";
 
 const SET_JSON = JSON.stringify({

@@ -1,12 +1,12 @@
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { toast } from "@/lib/toast";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { toast } from "@host/lib/toast";
 import {
   hasConversationAtExecutionBoundary,
   smartExecute,
 } from "../smart-execute.thunk";
 import { claimSubmit, releaseSubmitClaim } from "../submit-claims";
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { info: jest.fn() },
 }));
 

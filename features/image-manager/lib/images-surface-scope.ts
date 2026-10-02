@@ -13,7 +13,7 @@
 
 import { isSignedUrl } from "@/lib/media/signed-url";
 import type { CloudFileRecord } from "@/features/files/types";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   createImagesScope,
   type ImagesImageSummary,

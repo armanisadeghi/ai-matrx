@@ -25,7 +25,7 @@
 import {
   isMediaVariableType,
   type VariableCustomComponent,
-} from "@/features/agents/types/agent-definition.types";
+} from "../../types/agent-definition.types";
 
 export type CollapsedRowKind =
   /** One-line text box; the full component is behind the chevron. */

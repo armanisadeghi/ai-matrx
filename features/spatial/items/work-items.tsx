@@ -24,16 +24,16 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
-import { ChatConversationSurface } from "@/features/agents/components/chat/ChatConversationSurface";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { ConversationHistorySidebar } from "@ai-matrx/chat/agents/components/conversation-history/ConversationHistorySidebar";
+import { ChatConversationSurface } from "@ai-matrx/chat/agents/components/chat/ChatConversationSurface";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import {
   selectAgentIdFromInstance,
   selectConversationTitle,
-} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
-import { CanvasChatColumn } from "@/features/canvas/workspace/CanvasChatColumn";
-import { useCanvasWorkspaceConversation } from "@/features/canvas/workspace/useCanvasWorkspaceConversation";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { useRetainLatestRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { CanvasChatColumn } from "@ai-matrx/chat/canvas/workspace/CanvasChatColumn";
+import { useCanvasWorkspaceConversation } from "@ai-matrx/chat/canvas/workspace/useCanvasWorkspaceConversation";
 import { NotePickerInline } from "@/features/notes/components/NotePickerPopover";
 import { SingleFileSurfaceHost } from "@/features/files/components/surfaces/single-file/SingleFileSurfaceHost";
 import { SingleFileWorkspace } from "@/features/files/components/surfaces/single-file/SingleFileWorkspace";

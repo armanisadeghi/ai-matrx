@@ -58,7 +58,7 @@ import {
   projectKeywordPerformanceRow,
   providerLabel,
 } from "@/features/marketing/seo/keyword-research/format";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { buildSiteKeywordsScope } from "@/features/marketing/lib/scopes/site-keywords-scope";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

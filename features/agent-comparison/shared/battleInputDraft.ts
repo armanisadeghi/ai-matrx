@@ -4,21 +4,21 @@
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { destroyInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { copyInstanceRequestDraft } from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
-import { setSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { destroyInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { copyInstanceRequestDraft } from "@ai-matrx/chat/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
+import { setSubmitOnEnter } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
+import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   applyRequestDraft,
   captureRequestDraft,
   isRequestDraftSnapshot,
   type OmittedAttachment,
   type RequestDraftSnapshot,
-} from "@/features/agents/redux/execution-system/thunks/request-draft-snapshot";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/request-draft-snapshot";
 
 const BATTLE_SOURCE_FEATURE = "agent-comparison" as const;
 

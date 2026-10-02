@@ -23,7 +23,7 @@ import notesReducer, {
 import { NOTE_SAVE_FAILURE_BLOCK_THRESHOLD } from "../../redux/notes.types";
 import type { Note } from "../../types";
 import MobileNoteEditor from "./MobileNoteEditor";
-import { getSurfaceRuntimeForName } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { getSurfaceRuntimeForName } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 jest.mock("../../hooks/useNotesRedux", () => ({
   useNotesRedux: () => ({

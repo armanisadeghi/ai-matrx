@@ -21,7 +21,7 @@
  * The door's shape is declared structurally here (not imported) so this seam
  * never depends on a package version; `EntityCustomFields` passes the real one.
  */
-import type { SurfaceWriteTarget } from "@/features/surfaces/types";
+import type { SurfaceWriteTarget } from "../types";
 import type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
 
 export const CUSTOM_FIELDS_TARGET_NAME = "custom_fields_add";

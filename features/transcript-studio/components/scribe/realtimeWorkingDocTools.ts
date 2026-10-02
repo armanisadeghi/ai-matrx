@@ -22,7 +22,7 @@ import { selectWorkingDocument } from "@/features/transcript-studio/redux/select
 import {
   registerRealtimeClientTool,
   type RealtimeClientToolContext,
-} from "@/features/voice-agent/runtime/client-tool-registry";
+} from "@ai-matrx/chat/voice-agent/runtime/client-tool-registry";
 
 /** JSON-Schema parameter shapes (advisory — these match what tool.definition stores). */
 export const WORKING_DOC_TOOL_NAMES = {

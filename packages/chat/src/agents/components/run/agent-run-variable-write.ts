@@ -1,5 +1,5 @@
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import type { VariableDefinition } from "../../types/agent-definition.types";
+import { refuseSurfaceWrite } from "../../../surfaces/runtime/surface-writeback";
 
 interface AgentRunVariableWriteDeps {
   readDefinitions: () => readonly VariableDefinition[];

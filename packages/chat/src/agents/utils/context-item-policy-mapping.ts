@@ -5,24 +5,24 @@
  * and by the scope batch-import tool — kept in one place so both never drift.
  */
 
-import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
+import { sanitizeVariableName } from "./variable-utils";
 import {
   applyAgentEditAccess,
   type AgentEditAccess,
-} from "@/features/agents/utils/agent-edit-access";
+} from "./agent-edit-access";
 import {
   SYSTEM_ITEMS_KEY,
   type ContextItem,
-} from "@/features/scopes/redux/contextItemCatalog";
+} from "@host/features/scopes/redux/contextItemCatalog";
 import type {
   ContextObjectType,
   ContextPolicy,
   ContextPolicyPersist,
-} from "@/features/agents/types/agent-api-types";
+} from "../types/agent-api-types";
 import type {
   VariableDefinition,
   ContextItemBinding,
-} from "@/features/agents/types/agent-definition.types";
+} from "../types/agent-definition.types";
 
 /** Loose mapping used to suggest a policy `type` when binding to a context item. */
 export function contextItemValueTypeToPolicyType(

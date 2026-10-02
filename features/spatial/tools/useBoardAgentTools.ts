@@ -28,7 +28,7 @@ import { toast } from "@/lib/toast";
 import {
   useSurfaceClientTools,
   type SurfaceToolCall,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type {
   ActorUndoResult,
   BoardActor,

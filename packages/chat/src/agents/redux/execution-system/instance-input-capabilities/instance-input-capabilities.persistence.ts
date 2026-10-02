@@ -1,8 +1,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { Database, Json } from "@/types/database.types";
-import { supabase } from "@/utils/supabase/client";
-import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { Database, Json } from "@host/types/database.types";
+import { supabase } from "@host/utils/supabase/client";
+import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { waitForConversationPersisted } from "../conversations/conversation-persistence";
 import {
@@ -13,7 +13,7 @@ import {
   UI_GATE_KEYS,
   parseUiGates,
   type UiGates,
-} from "@/lib/redux/slices/agent-settings/ui-gates";
+} from "@host/lib/redux/slices/agent-settings/ui-gates";
 
 type ConversationMetadataRow = Pick<
   Database["chat"]["Tables"]["conversation"]["Row"],

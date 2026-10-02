@@ -4,7 +4,7 @@
 **Tier:** `1`
 **Last updated:** `2026-08-30`
 
-> This doc covers the new unified `features/conversation/` AND the legacy `features/chat/`, `features/cx-chat/`, `features/cx-conversation/`, `features/public-chat/`. **Critical:** the unified `ConversationShell` is built, but no route uses it yet. Agents modifying chat UX must understand which surface they're actually touching. **The live `/chat` route already exists** — it runs at `app/(a)/chat/` on the `features/agents/` execution-system, and its authoritative doc is [`features/agents/components/chat/FEATURE.md`](../agents/components/chat/FEATURE.md), **not** this file. Do not assume "chat route" means `ConversationShell`.
+> This doc covers the new unified `packages/chat/src/conversation/` AND the legacy `features/chat/`, `features/cx-chat/`, `packages/chat/src/cx-conversation/`, `packages/chat/src/public-chat/`. **Critical:** the unified `ConversationShell` is built, but no route uses it yet. Agents modifying chat UX must understand which surface they're actually touching. **The live `/chat` route already exists** — it runs at `app/(a)/chat/` on the `features/agents/` execution-system, and its authoritative doc is [`packages/chat/src/agents/components/chat/FEATURE.md`](../agents/components/chat/FEATURE.md), **not** this file. Do not assume "chat route" means `ConversationShell`.
 
 ---
 
@@ -18,21 +18,21 @@ One conversational surface for every agent interaction — the endpoint of the B
 
 | Surface                                                     | Location                                             | Status                                                                                                                                                                                                  |
 | ----------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Live chat route** (the real `/chat`)                      | `app/(a)/chat/` + `features/agents/components/chat/` | **Active in prod** — built on the `features/agents/` execution-system, NOT `ConversationShell`. Authoritative doc: [`features/agents/components/chat/FEATURE.md`](../agents/components/chat/FEATURE.md) |
-| `ConversationShell` (target unified tree)                   | `features/conversation/`                             | **Built but no route consumes it yet**                                                                                                                                                                  |
+| **Live chat route** (the real `/chat`)                      | `app/(a)/chat/` + `packages/chat/src/agents/components/chat/` | **Active in prod** — built on the `features/agents/` execution-system, NOT `ConversationShell`. Authoritative doc: [`packages/chat/src/agents/components/chat/FEATURE.md`](../agents/components/chat/FEATURE.md) |
+| `ConversationShell` (target unified tree)                   | `packages/chat/src/conversation/`                             | **Built but no route consumes it yet**                                                                                                                                                                  |
 | Legacy chat backing                                         | `features/cx-chat/`                                  | Live in prod                                                                                                                                                                                            |
-| Legacy conversation backing                                 | `features/cx-conversation/`                          | Live in prod                                                                                                                                                                                            |
+| Legacy conversation backing                                 | `packages/chat/src/cx-conversation/`                          | Live in prod                                                                                                                                                                                            |
 | Intermediate chat feature                                   | `features/chat/`                                     | Partial                                                                                                                                                                                                 |
-| Public chat                                                 | `features/public-chat/`                              | Live; has its own README                                                                                                                                                                                |
+| Public chat                                                 | `packages/chat/src/public-chat/`                              | Live; has its own README                                                                                                                                                                                |
 | Deprecated route stub                                       | `app/(authenticated)/deprecated/chat/`               | Placeholder                                                                                                                                                                                             |
 | Planned unified route (migrate live `/chat` onto the Shell) | `app/(a)/chat/` → `ConversationShell`                | Not started — the live route above runs on `features/agents/` today                                                                                                                                     |
 | Legacy public route                                         | `app/(public)/free/`                                 | Live                                                                                                                                                                                                    |
 | Legacy prompt-apps route                                    | `app/(authenticated)/prompt-apps/`                   | Live, deprecated                                                                                                                                                                                        |
 | Current Runner route                                        | `app/(authenticated)/ai/[agent-id]/run/`             | Live                                                                                                                                                                                                    |
 
-**Five legacy routes** will consolidate into the unified Shell. Tracking: [`features/agents/migration/phases/phase-07-chat-route.md`](../agents/migration/phases/phase-07-chat-route.md), [`features/cx-chat/MIGRATION-TRACKER.md`](../cx-chat/MIGRATION-TRACKER.md).
+**Five legacy routes** will consolidate into the unified Shell. Tracking: [`features/agents/migration/phases/phase-07-chat-route.md`](../agents/migration/phases/phase-07-chat-route.md), [`packages/chat/src/cx-chat/MIGRATION-TRACKER.md`](../cx-chat/MIGRATION-TRACKER.md).
 
-**Required reading for target architecture:** [`features/conversation/CONVERSATION_SYSTEM.md`](./CONVERSATION_SYSTEM.md) and [`DEPENDENCIES.md`](./DEPENDENCIES.md).
+**Required reading for target architecture:** [`packages/chat/src/conversation/CONVERSATION_SYSTEM.md`](./CONVERSATION_SYSTEM.md) and [`DEPENDENCIES.md`](./DEPENDENCIES.md).
 
 ---
 
@@ -56,17 +56,17 @@ Every chat/conversation surface — legacy and new — must support:
 
 ## Entry points
 
-**Unified (new) — `features/conversation/`**
+**Unified (new) — `packages/chat/src/conversation/`**
 
 - `components/` — `ConversationShell`, message list, input, panel orchestrator
 - `hooks/` — conversation loading, message actions
 - `state/` — transient UI state (not execution — that's in `features/agents/redux/`)
 - `types/`, `utils/`, `CONVERSATION_SYSTEM.md`, `DEPENDENCIES.md`
 
-**Legacy — `features/cx-chat/`, `features/cx-conversation/`, `features/chat/`**
+**Legacy — `features/cx-chat/`, `packages/chat/src/cx-conversation/`, `features/chat/`**
 
 - Don't extend. Read for context when debugging prod.
-- `features/cx-chat/MIGRATION-TRACKER.md` tracks consolidation.
+- `packages/chat/src/cx-chat/MIGRATION-TRACKER.md` tracks consolidation.
 
 **Invocation path** — all surfaces go through `launchConversation` (see [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`](/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md)).
 
@@ -76,7 +76,7 @@ Every chat/conversation surface — legacy and new — must support:
 
 - `chat.conversation` — conversation root: `id`, durable scope columns (`organization_id`, `task_id`), optional project membership through canonical `conversation → project` associations, `parent_conversation_id` (for nesting), `forked_from_id` / `forked_at_position` (for forks), created/updated timestamps
 - Message table — turns in order with role, content (blocks), tool-call lifecycle, reactions
-- Execution Redux state lives under `features/agents/redux/execution-system/` (see the agents FEATURE.md); conversation UI state lives under `features/conversation/state/`
+- Execution Redux state lives under `packages/chat/src/agents/redux/execution-system/` (see the agents FEATURE.md); conversation UI state lives under `features/conversation/state/`
 
 ---
 
@@ -118,7 +118,7 @@ Every chat/conversation surface — legacy and new — must support:
 
 ## Invariants & gotchas
 
-- **Unified Shell exists but no route uses it yet.** Do not assume you can modify it and see changes anywhere — wire it up on a phase-07 task, don't repurpose a legacy route mid-sprint. The **live** chat route is a _different_ codebase (`app/(a)/chat/` + `features/agents/components/chat/`); to change real chat UX, edit there and read [its FEATURE.md](../agents/components/chat/FEATURE.md).
+- **Unified Shell exists but no route uses it yet.** Do not assume you can modify it and see changes anywhere — wire it up on a phase-07 task, don't repurpose a legacy route mid-sprint. The **live** chat route is a _different_ codebase (`app/(a)/chat/` + `packages/chat/src/agents/components/chat/`); to change real chat UX, edit there and read [its FEATURE.md](../agents/components/chat/FEATURE.md).
 - **Forks are fully independent DB copies**, not shared-data branches. Breaking this invariant silently corrupts history.
 - **`parentConversationId` is for nesting, NOT forking.** Two different relationships.
 - **Socket.IO is legacy.** New code uses NDJSON; any addition to Socket.IO is a regression.
@@ -127,7 +127,7 @@ Every chat/conversation surface — legacy and new — must support:
 - **Print outcomes are user-visible.** `printMarkdownContent` delegates popup handling to `@ai-matrx/print/core`; a blocked popup downloads `<title>.html` and `notifyPrintOutcome` emits the exact fallback toast. Permanent regressions live in `utils/markdown-print.test.ts` and `lib/print/print-outcome-toast.test.ts`.
 - **Tool call renderers come from the registry**, not inline per-chat custom renders. See [`../tool-call-visualization/FEATURE.md`](../tool-call-visualization/FEATURE.md).
 - **Scope stamping happens at first-turn time** on `cx_conversation`; subsequent turns inherit. Do not re-stamp.
-- **Legacy features to leave alone:** `features/cx-chat/`, `features/cx-conversation/`. Read-only reference unless you're migrating them.
+- **Legacy features to leave alone:** `features/cx-chat/`, `packages/chat/src/cx-conversation/`. Read-only reference unless you're migrating them.
 
 ---
 
@@ -143,8 +143,8 @@ Every chat/conversation surface — legacy and new — must support:
 - `2026-08-30` — codex: pinned blocked message printing end to end: `window.open() === null` produces `message.html`, and only the `"downloaded"` outcome emits the exact fallback toast.
 - `2026-08-12` — codex: removed the stale `platform.entity_relationships` containment entry that still told IAM/RLS to follow the retired `chat.conversation.project_id` column. Conversation reads now remain association-only and the migration fails loudly if that legacy registry edge survives.
 - `2026-07-27` — codex: removed the forbidden physical `chat.conversation.project_id` FK from the frontend contract. Project membership and fork inheritance now use canonical association edges.
-- `2026-06-26` — claude: **conversation sharing/ownership moved onto canonical `cx_conversation` columns.** `is_public`→`visibility` (`platform.visibility` enum, RLS-enforced via `iam.has_access`) and `user_id`→`created_by` (trigger-stamped owner). Sharing read/write for conversations now writes the `visibility` column directly (owner-UPDATE RLS) instead of the deprecated-`is_public` `make_resource_*` RPCs; ownership reads use `created_by`. Canonical `ConversationVisibility` type + helpers in `features/cx-chat/types/cx-tables.ts`. Full detail in `features/agents/components/chat/FEATURE.md` Change Log (the live `/chat` doc).
-- `2026-05-23` — claude: corrected the migration table + intro + invariants — the LIVE `/chat` route is active in prod at `app/(a)/chat/` on the `features/agents/` execution-system (NOT the unbuilt `ConversationShell`, which this doc previously implied was the only chat tree). Linked its new authoritative doc `features/agents/components/chat/FEATURE.md`.
+- `2026-06-26` — claude: **conversation sharing/ownership moved onto canonical `cx_conversation` columns.** `is_public`→`visibility` (`platform.visibility` enum, RLS-enforced via `iam.has_access`) and `user_id`→`created_by` (trigger-stamped owner). Sharing read/write for conversations now writes the `visibility` column directly (owner-UPDATE RLS) instead of the deprecated-`is_public` `make_resource_*` RPCs; ownership reads use `created_by`. Canonical `ConversationVisibility` type + helpers in `packages/chat/src/cx-chat/types/cx-tables.ts`. Full detail in `packages/chat/src/agents/components/chat/FEATURE.md` Change Log (the live `/chat` doc).
+- `2026-05-23` — claude: corrected the migration table + intro + invariants — the LIVE `/chat` route is active in prod at `app/(a)/chat/` on the `features/agents/` execution-system (NOT the unbuilt `ConversationShell`, which this doc previously implied was the only chat tree). Linked its new authoritative doc `packages/chat/src/agents/components/chat/FEATURE.md`.
 - `2026-04-22` — claude: initial combined FEATURE.md covering unified conversation + legacy chat surfaces.
 
 ---

@@ -9,7 +9,7 @@
  */
 
 import { useEffect } from "react";
-import type { AnyMandateKey } from "./mandate-key";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 import { verifyFastPathAgainstMandate } from "./fast-path-guard";
 
 export function FastPathMandateGuard({

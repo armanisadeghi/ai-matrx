@@ -31,7 +31,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   EMAIL_BODY_MAX_CHARS,
   EMAIL_DRAFT_KEYS,

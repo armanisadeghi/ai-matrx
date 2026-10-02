@@ -30,7 +30,7 @@ const callId = String(block.call_id ?? block.tool_use_id ?? '');
 
 ## Issue 2 — TYPE ACCURACY: `CxToolResultContent.tool_call_id` is a phantom field
 
-**File:** `features/public-chat/types/cx-tables.ts`
+**File:** `packages/chat/src/public-chat/types/cx-tables.ts`
 
 **What's wrong:** `CxToolResultContent` has a `tool_call_id?: string` field that Python **never** writes. This is misleading — any code that keys on `tool_call_id` will never find a value.
 

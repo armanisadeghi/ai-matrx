@@ -10,15 +10,15 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   BuilderAdvancedSettings,
   InstanceUIState,
-} from "@/features/agents/types/instance.types";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
-import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
+} from "../../../types/instance.types";
+import type { ResultDisplayMode } from "../../../utils/run-ui-utils";
+import type { VariablesPanelStyle } from "../../../components/inputs/variable-input-variations/variable-input-options";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
+import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 
 // ── Full state accessor ──────────────────────────────────────────────────────
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectModeState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { updateModeState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { selectModeState } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { updateModeState } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
 const HEARTBEAT_STEPS = [0, 15, 30, 60, 120, 300];
 

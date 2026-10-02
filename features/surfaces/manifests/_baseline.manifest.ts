@@ -12,7 +12,7 @@
  * in `mergeBaselineValues`.
  */
 
-import type { SurfaceValue } from "@/features/surfaces/types";
+import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 
 /**
  * THE PERSON'S POINTER (Arman, 2026-09-30). What someone highlighted — and the

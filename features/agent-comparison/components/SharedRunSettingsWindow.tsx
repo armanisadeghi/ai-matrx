@@ -13,8 +13,8 @@
  */
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
+import { selectBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@ai-matrx/chat/agents/types/instance.types";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { InfoHint } from "@/components/official/InfoHint";
 import { Switch } from "@/components/ui/switch";

@@ -28,7 +28,7 @@ import {
   TextDecoder as NodeTextDecoder,
   TextEncoder as NodeTextEncoder,
 } from "node:util";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -52,7 +52,7 @@ function stateForComponents(): RootState {
     get: (target, key: string) => (key in target ? target[key] : EMPTY_SLICE),
   }) as unknown as RootState;
 }
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector(stateForComponents()),
   useAppDispatch: () => () => undefined,
@@ -63,9 +63,9 @@ jest.mock("next/dynamic", () => ({
   default: () => () => null,
 }));
 // The engine loads through next/dynamic in the app; render it directly here.
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
-  default: jest.requireActual("@/components/MarkdownStreamImpl").default,
+  default: jest.requireActual("@host/components/MarkdownStreamImpl").default,
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
 jest.mock("next/navigation", () => ({
@@ -76,7 +76,7 @@ jest.mock("next/navigation", () => ({
 // The card's own body: one marked node per call. Everything that decides
 // whether THIS node survives lives above it.
 jest.mock(
-  "@/features/tool-call-visualization/components/ToolCallVisualization",
+  "../../../../tool-call-visualization/components/ToolCallVisualization",
   () => ({
     ToolCallVisualization: ({
       entries,
@@ -87,22 +87,22 @@ jest.mock(
     ),
   }),
 );
-jest.mock("@/features/tool-call-visualization/components/ToolCallBatch", () => ({
+jest.mock("../../../../tool-call-visualization/components/ToolCallBatch", () => ({
   ToolCallBatch: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer",
+  "@host/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer",
   () => ({ SafeBlockRenderer: () => null }),
 );
 jest.mock(
-  "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor",
+  "@host/components/mardown-display/chat-markdown/FullScreenMarkdownEditor",
   () => ({ __esModule: true, default: () => null }),
 );
 jest.mock(
-  "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema",
+  "@host/components/mardown-display/blocks/json/useBoundAgentOutputSchema",
   () => ({ useBoundAgentOutputSchema: () => null }),
 );
-jest.mock("@/features/agents/components/shared/transcript-audience", () => ({
+jest.mock("../../shared/transcript-audience", () => ({
   useMachineFramesVisible: () => true,
 }));
 jest.mock("../assistant/AssistantMessageFooter", () => ({
@@ -111,16 +111,16 @@ jest.mock("../assistant/AssistantMessageFooter", () => ({
     <>{children}</>
   ),
 }));
-jest.mock("@/features/code/views/history/MessageFilesStrip", () => ({
+jest.mock("@host/features/code/views/history/MessageFilesStrip", () => ({
   MessageFilesStrip: () => null,
 }));
 
 import activeRequestsReducer, {
   createRequest,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import messagesReducer from "@/features/agents/redux/execution-system/messages/messages.slice";
-import observabilityReducer from "@/features/agents/redux/execution-system/observability/observability.slice";
-import { processStream } from "@/features/agents/redux/execution-system/thunks/process-stream";
+} from "../../../redux/execution-system/active-requests/active-requests.slice";
+import messagesReducer from "../../../redux/execution-system/messages/messages.slice";
+import observabilityReducer from "../../../redux/execution-system/observability/observability.slice";
+import { processStream } from "../../../redux/execution-system/thunks/process-stream";
 import {
   buildDisplayEntries,
   groupDisplayEntries,

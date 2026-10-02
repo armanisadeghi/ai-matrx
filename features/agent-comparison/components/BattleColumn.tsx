@@ -18,7 +18,7 @@
 
 import { ChevronsLeftRight } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { cn } from "@/lib/utils";
 import { BattleColumnHeader } from "./BattleColumnHeader";
 import { BoundColumn } from "../shared/BoundColumn";

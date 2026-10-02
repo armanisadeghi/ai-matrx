@@ -44,7 +44,7 @@ interface ToolRendererProps {
 }
 ```
 
-### `ToolLifecycleEntry` (from `features/agents/types/request.types.ts`)
+### `ToolLifecycleEntry` (from `packages/chat/src/agents/types/request.types.ts`)
 
 | Field | Source (live) | Source (persisted) |
 |---|---|---|

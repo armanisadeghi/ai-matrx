@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
+import type { EditorMode } from "@host/features/notes/components/NoteEditorCore";
 
 export type WorkingDocMainView = "editor" | "agent-diff";
 

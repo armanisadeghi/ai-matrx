@@ -25,19 +25,19 @@
  *     (the agent's edit content, streamed as each ctx_patch lands — D9 fix).
  */
 
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { ContextDeltaData } from "@/types/python-generated/stream-events";
+import type { ContextDeltaData } from "@host/types/python-generated/stream-events";
 import { applyContextDeltaToContent } from "./contextDelta";
-import { studioDocumentContentChanged } from "@/features/transcript-studio/redux/slice";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { NotesAPI } from "@/features/notes/service/notesApi";
-import { getActiveOrgId } from "@/lib/organizations/activeOrg";
+import { studioDocumentContentChanged } from "@host/features/transcript-studio/redux/slice";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { NotesAPI } from "@host/features/notes/service/notesApi";
+import { getActiveOrgId } from "@host/lib/organizations/activeOrg";
 import {
   refreshNoteContent,
   saveNoteField,
-} from "@/features/notes/redux/thunks";
-import { generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
+} from "@host/features/notes/redux/thunks";
+import { generateLabelFromContent } from "@host/features/notes/hooks/useAutoLabel";
 import {
   addAttachedScratchpad,
   removeAttachedScratchpad,
@@ -65,9 +65,9 @@ import {
   selectWorkingDocTitle,
   selectWorkingDocVersion,
 } from "./instance-working-document.selectors";
-import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectIsCacheOnly } from "../conversations/conversations.selectors";
+import { waitForConversationPersisted } from "../conversations/conversation-persistence";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import {
   commitWorkingDocumentContent,
   getCxWorkingDocumentById,

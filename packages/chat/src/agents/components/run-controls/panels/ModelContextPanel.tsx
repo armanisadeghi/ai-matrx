@@ -22,10 +22,10 @@
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useEffect, useMemo, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { fetchContextState } from "@/lib/api/context-api";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
+import { fetchContextState } from "@host/lib/api/context-api";
 import {
   selectContextState,
   selectEstimatedTokens,
@@ -35,10 +35,10 @@ import {
   selectLastTrimSummary,
   selectLastRawUsage,
   DEFAULT_CONTEXT_WINDOW_TOKENS,
-} from "@/features/agents/redux/execution-system/context-state/context-state.selectors";
+} from "../../../redux/execution-system/context-state/context-state.selectors";
 import { EmptyStats, StatRow, StatSection, fmtTokens } from "./shared";
-import { cn } from "@/lib/utils";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { cn } from "@host/lib/utils";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 
 export interface ModelContextPanelProps {
   conversationId: string;

@@ -45,7 +45,7 @@ _Last scan: **360** name matches · **296** actionable duplicates · **853** Ope
 
 ## Completed
 
-- [x] `CustomTool` / `CustomToolInputSchema` → aliased in `features/agents/types/agent-api-types.ts`
+- [x] `CustomTool` / `CustomToolInputSchema` → aliased in `packages/chat/src/agents/types/agent-api-types.ts`
 - [x] `ToolSpecRegistered` / `ToolSpecInline` / `ToolSpecAgent` → already aliased in `tool-injection.types.ts`
 - [x] `LLMParams` / `IdeState` / `ChatRequestPayload` → derived wrappers (leave as-is)
 
@@ -57,7 +57,7 @@ _Agents chat/manual/conversation request types + media blocks. Unblocks converte
 
 See also: [`generated/by-feature/agents.md`](./generated/by-feature/agents.md) (33 duplicates)
 
-### `features/agents/types/agent-api-types.ts`
+### `packages/chat/src/agents/types/agent-api-types.ts`
 
 - [ ] `AgentStartRequest` → `NonNullableFields<components["schemas"]["AgentStartRequest"]>`
 - [ ] `ConversationContinueRequest` → alias from OpenAPI
@@ -66,7 +66,7 @@ See also: [`generated/by-feature/agents.md`](./generated/by-feature/agents.md) (
 - [ ] `SystemInstruction` → delete; use `components["schemas"]["SystemInstructionInput"]`
 - [ ] `SystemInstructionInput` → `string | components["schemas"]["SystemInstructionInput"]`
 
-### `features/agents/types/message-types.ts`
+### `packages/chat/src/agents/types/message-types.ts`
 
 Re-export media blocks from `stream-events.ts` (bookmarks already re-export correctly at top of file).
 
@@ -75,17 +75,17 @@ Re-export media blocks from `stream-events.ts` (bookmarks already re-export corr
 - [ ] `VideoBlock`
 - [ ] `DocumentBlock`
 
-### `features/agents/types/tool-injection.types.ts`
+### `packages/chat/src/agents/types/tool-injection.types.ts`
 
 - [ ] `ClientContext` → alias from OpenAPI (align `capabilities` / `amendments` fields)
 
-### `features/agents/types/request.types.ts`
+### `packages/chat/src/agents/types/request.types.ts`
 
 - [ ] `UserOverrides` → alias from OpenAPI
 - [ ] `ClientToolResult` → **rename** internal camelCase type; alias wire `ClientToolResult` separately
 - [ ] `TimelineRenderBlock` → re-export from `stream-events.ts`
 
-### `features/agents/redux/agent-definition/converters.ts`
+### `packages/chat/src/agents/redux/agent-definition/converters.ts`
 
 - [ ] Remove `as unknown as` on `customTools` / `custom_tools` after types aligned (~lines 135, 183, 317, 393)
 
@@ -95,7 +95,7 @@ Re-export media blocks from `stream-events.ts` (bookmarks already re-export corr
 
 Entire file mirrors OpenAPI — bulk alias or replace with re-exports.
 
-**File:** `features/agents/services/agentService.types.ts` (17 duplicates)
+**File:** `packages/chat/src/agents/services/agentService.types.ts` (17 duplicates)
 
 - [ ] `AgentVariableInput`
 - [ ] `CreateAgentInput`

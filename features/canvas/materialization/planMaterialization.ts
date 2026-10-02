@@ -28,9 +28,9 @@
 import type {
   CxContentBlock,
   CxTextContent,
-} from "@/features/public-chat/types/cx-tables";
+} from "@ai-matrx/chat/public-chat/types/cx-tables";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { reconstructBlockMarkdown } from "@/features/agents/redux/execution-system/utils/assemble-cx-content-blocks";
+import { reconstructBlockMarkdown } from "@ai-matrx/chat/agents/redux/execution-system/utils/assemble-cx-content-blocks";
 import { getCatalogEntry } from "@/components/mermaid/catalog";
 import {
   detectDiagramType,

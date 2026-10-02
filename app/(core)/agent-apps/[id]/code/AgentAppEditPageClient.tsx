@@ -10,7 +10,7 @@ import { agaAppsAdapter } from "@/features/code/library-sources/adapters/aga-app
 // Side-effect: register `aga-app:` previewer with the render-preview registry.
 import "@/features/agent-apps/code-preview/registerAgentAppRenderPreview";
 import type { AgentApp } from "@/features/agent-apps/types";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 interface AgentAppEditPageClientProps {

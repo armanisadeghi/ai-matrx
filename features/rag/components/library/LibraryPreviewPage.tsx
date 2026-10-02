@@ -29,8 +29,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   buildRagViewerContextData,
   type RagViewerActivePage,

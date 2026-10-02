@@ -3,13 +3,13 @@ import { renderHook } from "@/test-utils/renderHook";
 const resolveMandate = jest.fn();
 const onMandateCacheInvalidated = jest.fn((_listener: unknown) => jest.fn());
 
-jest.mock("../service", () => ({
+jest.mock("@ai-matrx/chat/mandates/service", () => ({
   resolveMandate: (...args: unknown[]) => resolveMandate(...args),
   onMandateCacheInvalidated: (listener: unknown) =>
     onMandateCacheInvalidated(listener),
 }));
 
-import { useMandate } from "../useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 
 describe("useMandate — disabled key", () => {
   beforeEach(() => {

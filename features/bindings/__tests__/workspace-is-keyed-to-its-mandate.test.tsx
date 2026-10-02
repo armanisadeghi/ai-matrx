@@ -191,8 +191,8 @@ jest.mock("@/features/organizations/hooks", () => ({
     ],
   }),
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
-  ...jest.requireActual("@/features/agents/redux/agent-definition/selectors"),
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   selectBuiltinAgents: () => [],
 }));
 /** Every toast this tree could raise, counted. */

@@ -16,7 +16,7 @@ import {
   createMessagesScope,
   type MessagesScopeValues,
 } from "@/features/surfaces/manifests/messages.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 export function useMessagesSurfaceScope(
   conversationId?: string,

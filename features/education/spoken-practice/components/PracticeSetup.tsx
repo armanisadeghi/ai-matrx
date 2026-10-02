@@ -21,7 +21,7 @@ import {
   useHeldStudyStart,
 } from "@/features/education/study/components/StudyOrganizationGate";
 import type { FcSetRow } from "@/features/flashcards/data/types";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MODE_CONFIG,
   DIFFICULTY_OPTIONS,

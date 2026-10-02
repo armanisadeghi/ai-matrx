@@ -17,7 +17,7 @@ import {
   ProblemList,
   readCollectionList,
   repeatsProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import type { PublicDeck } from "./types";
 
 export const MAX_DECKS_PER_WRITE = 10;

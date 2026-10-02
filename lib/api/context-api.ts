@@ -27,7 +27,7 @@ import {
   OrganizationContextError,
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
-import { hydrateContextState } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
+import { hydrateContextState } from "@ai-matrx/chat/agents/redux/execution-system/context-state/context-state.slice";
 
 export class SelectedBackendUnavailableError extends Error {}
 

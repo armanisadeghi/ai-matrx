@@ -25,29 +25,29 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, History, Loader2, Search } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { toast } from "@host/lib/toast";
+import { cn } from "@host/lib/utils";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
 import { Input } from "@ai-matrx/design-system";
-import { fetchConversationHistory } from "@/features/agents/redux/conversation-history/thunks";
-import { setScopeSearch } from "@/features/agents/redux/conversation-history/slice";
+import { fetchConversationHistory } from "../../../agents/redux/conversation-history/thunks";
+import { setScopeSearch } from "../../../agents/redux/conversation-history/slice";
 import {
   makeSelectConversationHistoryItems,
   makeSelectConversationHistoryScope,
   makeSelectConversationHistoryStatus,
-} from "@/features/agents/redux/conversation-history/selectors";
-import { useConversationServerSearch } from "@/features/agents/components/conversation-history/useConversationServerSearch";
-import { ConversationSearchStatus } from "@/features/agents/components/conversation-history/ConversationSearchStatus";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
-import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
-import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
+} from "../../../agents/redux/conversation-history/selectors";
+import { useConversationServerSearch } from "../../../agents/components/conversation-history/useConversationServerSearch";
+import { ConversationSearchStatus } from "../../../agents/components/conversation-history/ConversationSearchStatus";
+import type { ConversationListItem } from "../../../agents/redux/conversation-list/conversation-list.types";
+import { resumeConversation } from "../../../agents/redux/execution-system/thunks/resume-conversation.thunk";
+import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";
+import { useAgentNames } from "../../hooks/useAgentNames";
+import { useEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs.client";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@host/lib/text/asClause";
 
 const RECENT_COUNT = 2;
 /**

@@ -29,7 +29,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { InfoHint } from "@/components/official/InfoHint";
 import { ContextItemPicker } from "@/features/scope-system/components/ContextItemPicker";
-import { contextItemValueTypeToPolicyType } from "@/features/agents/utils/context-item-policy-mapping";
+import { contextItemValueTypeToPolicyType } from "@ai-matrx/chat/agents/utils/context-item-policy-mapping";
 import {
   Select,
   SelectContent,
@@ -38,14 +38,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentContextPolicies } from "@/features/agents/redux/agent-definition/slice";
+import { selectAgentContextPolicies } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentContextPolicies } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import type {
   ContextObjectType,
   ContextPolicy,
   ContextPolicyPersist,
   ContextPolicySource,
-} from "@/features/agents/types/agent-api-types";
+} from "@ai-matrx/chat/agents/types/agent-api-types";
 import {
   Dialog,
   DialogContent,
@@ -61,7 +61,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
+import { sanitizeVariableName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   InlinePolicyControl,
@@ -71,7 +71,7 @@ import {
 } from "@/features/agents/components/context-policies-management/InlinePolicyControl";
 import { AgentEditAccessControl } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
 import { AgentContextInjectionSwitch } from "@/features/agents/components/context-policies-management/AgentContextInjectionSwitch";
-import { SCOPE_ITEM_DEFAULT_SAVE_MODE } from "@/features/agents/utils/agent-edit-access";
+import { SCOPE_ITEM_DEFAULT_SAVE_MODE } from "@ai-matrx/chat/agents/utils/agent-edit-access";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

@@ -23,10 +23,10 @@ import variablesReducer, {
 import {
   setHostVariableValues,
   stampSubmittedFirstTurnValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+} from "../../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 // jest.mock calls below are hoisted above these imports by babel-jest.
 import { AgentUserMessage } from "../AgentUserMessage";
-import { TranscriptAudienceProvider } from "@/features/agents/components/shared/transcript-audience";
+import { TranscriptAudienceProvider } from "../../../shared/transcript-audience";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -41,13 +41,13 @@ const KIT_VALUES = {
 
 let mockState: Record<string, unknown> = {};
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector(mockState),
   useAppDispatch: () => jest.fn(),
   useAppStore: () => ({ getState: () => mockState }),
 }));
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <div>{content}</div>,
 }));
@@ -56,13 +56,13 @@ jest.mock("../../MessageAttachmentStrip", () => ({
   MessageAttachmentStrip: () => null,
 }));
 jest.mock(
-  "@/features/agents/components/context-policies-display/ContextPolicyChipStrip",
+  "../../../context-policies-display/ContextPolicyChipStrip",
   () => ({ ContextPolicyChipStrip: () => null }),
 );
-jest.mock("@/features/scopes/hooks/useEntityTitles", () => ({
+jest.mock("@host/features/scopes/hooks/useEntityTitles", () => ({
   useEntityTitles: () => ({ titleFor: () => undefined }),
 }));
-jest.mock("@/components/official/entity-ref/EntityRef", () => ({
+jest.mock("@host/components/official/entity-ref/EntityRef", () => ({
   EntityRef: () => null,
 }));
 

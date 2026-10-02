@@ -26,7 +26,7 @@ import type {
   DataInputBlock,
   ContentBlock,
 } from "./message-types";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@host/types/python-generated/api-types";
 
 // StructuredInputBase is defined in message-types.ts — not re-declared here.
 
@@ -456,4 +456,4 @@ export type {
   StructuredInputWarningData,
   VideoOutputData,
   WorkflowStepData,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";

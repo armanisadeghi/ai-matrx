@@ -16,7 +16,7 @@ import { Provider } from "react-redux";
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 
 import appContext, { setOrganization, setScopeSelections } from "@/lib/redux/slices/appContextSlice";
-import conversations, { hydrateConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import conversations, { hydrateConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 
 import { ActiveContextLensChip } from "../ActiveContextLensChip";
 

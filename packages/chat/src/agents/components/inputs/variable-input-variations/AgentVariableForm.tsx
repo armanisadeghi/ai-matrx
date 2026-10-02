@@ -1,46 +1,46 @@
 "use client";
 
-import { variableValueToInputText } from "@/features/agents/utils/variable-utils";
+import { variableValueToInputText } from "../../../utils/variable-utils";
 
 import { useState } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import { isControlVariable } from "@ai-matrx/agents";
-import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
-import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
+import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { BoundVariableChips } from "../BoundVariableChips";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { toggleVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { Label } from "@/components/ui/label";
+} from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { setUserVariableValue } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { toggleVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { Label } from "@host/components/ui/label";
 import { Input } from "@ai-matrx/design-system";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@host/components/ui/switch";
+import { Checkbox } from "@host/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@host/components/ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@host/components/ui/select";
 import { ChevronDown } from "lucide-react";
-import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { VoiceTextarea } from "@host/components/official/VoiceTextarea";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { motion } from "motion/react";
 import type {
   VariableDefinition,
   VariableCustomComponent,
-} from "@/features/agents/types/agent-definition.types";
-import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
-import { ImageVariableInput } from "@/features/agents/components/inputs/input-components/ImageVariableInput";
-import { AudioVariableInput } from "@/features/agents/components/inputs/input-components/AudioVariableInput";
-import { VideoVariableInput } from "@/features/agents/components/inputs/input-components/VideoVariableInput";
-import { DocumentVariableInput } from "@/features/agents/components/inputs/input-components/DocumentVariableInput";
-import { YoutubeVariableInput } from "@/features/agents/components/inputs/input-components/YoutubeVariableInput";
+} from "../../../types/agent-definition.types";
+import { isMediaVariableType } from "../../../types/agent-definition.types";
+import { ImageVariableInput } from "../input-components/ImageVariableInput";
+import { AudioVariableInput } from "../input-components/AudioVariableInput";
+import { VideoVariableInput } from "../input-components/VideoVariableInput";
+import { DocumentVariableInput } from "../input-components/DocumentVariableInput";
+import { YoutubeVariableInput } from "../input-components/YoutubeVariableInput";
 
 const IOS_INPUT_STYLE = { fontSize: "16px" } as const;
 

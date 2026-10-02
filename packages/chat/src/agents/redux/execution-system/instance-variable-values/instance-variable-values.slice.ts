@@ -20,7 +20,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   VariableDefinition,
   VariableResourceContextConfig,
-} from "@/features/agents/types/agent-definition.types";
+} from "../../../types/agent-definition.types";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
 

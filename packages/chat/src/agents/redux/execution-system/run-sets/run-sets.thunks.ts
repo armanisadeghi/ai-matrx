@@ -13,7 +13,7 @@
  * row (with its full raw event log) per run for the tab's lifetime.
  */
 
-import type { AppThunk } from "@/lib/redux/store";
+import type { AppThunk } from "@host/lib/redux/store";
 
 import {
   releaseRequestForViewer,

@@ -14,7 +14,7 @@ import {
   ProblemList,
   readCollectionList,
   repeatsProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import type { DeckSuggestionRow } from "./types";
 
 const INLINE_ROWS = 25;

@@ -65,7 +65,7 @@ describe("the header right set", () => {
 
   it("is ONE set: the shell header and the canvas workspace header both mount it", () => {
     expect(header).toContain("<HeaderControlSet isAuthenticated={isAuthenticated} />");
-    const workspace = read("features/canvas/workspace/ChatCanvasWorkspace.tsx");
+    const workspace = read("packages/chat/src/canvas/workspace/ChatCanvasWorkspace.tsx");
     expect(workspace).toContain("<HeaderControlSet");
     for (const text of [header, workspace]) {
       expect(text).not.toContain("<InboxHeaderButton");
@@ -104,7 +104,7 @@ describe("the header right set", () => {
 
   it("gives a guest the same buttons, gated rather than hidden", () => {
     const agents = read(
-      "features/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx",
+      "packages/chat/src/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx",
     );
     const inbox = read(
       "features/notifications/components/InboxHeaderButton.tsx",

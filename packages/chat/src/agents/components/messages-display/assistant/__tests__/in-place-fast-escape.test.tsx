@@ -9,9 +9,9 @@
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { createSandboxTestStore, SandboxStoreProvider } from "@/test-utils/sandbox-store";
+import { createSandboxTestStore, SandboxStoreProvider } from "@host/test-utils/sandbox-store";
 
-jest.mock("@/components/rich-editor/RichEditor", () => {
+jest.mock("@host/components/rich-editor/RichEditor", () => {
   function StandInEditor(props: { value: string; onChange?: (t: string) => void; onCancel?: () => void }) {
     return (
       <div>
@@ -36,7 +36,7 @@ jest.mock("@/components/rich-editor/RichEditor", () => {
   return { __esModule: true, default: StandInEditor };
 });
 
-jest.mock("@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk", () => ({
+jest.mock("../../../../redux/execution-system/message-crud/save-answer-edit.thunk", () => ({
   fetchStoredAnswer: async () => ({ content: [{ type: "text", text: "Stored answer." }], text: "Stored answer." }),
   saveAnswerEdit: Object.assign(() => ({ type: "noop" }), { rejected: { match: () => false } }),
 }));

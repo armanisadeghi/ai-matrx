@@ -100,7 +100,7 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { MESSAGING_MANDATE_KEYS, MESSAGING_MANDATE_ROLES } from "@/features/messaging/lib/messagingMandates";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

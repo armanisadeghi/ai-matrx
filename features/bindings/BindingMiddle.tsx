@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import {
   SurfaceVariableBinding,
   offeredAvailabilityLabel,

@@ -25,52 +25,52 @@ const fakeState = () => ({
   },
 });
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(() => ({ finally: () => undefined })),
   useAppSelector: (sel: (s: unknown) => unknown) => sel(fakeState()),
 }));
-jest.mock("@/lib/redux/slices/userSlice", () => ({
+jest.mock("@host/lib/redux/slices/userSlice", () => ({
   selectUserContext: () => ({ isAuthenticated: true, isAdmin: false }),
 }));
-jest.mock("@/lib/redux/slices/apiConfigSlice", () => ({
+jest.mock("@host/lib/redux/slices/apiConfigSlice", () => ({
   selectActiveServer: () => "local",
   selectResolvedBaseUrl: () => "http://localhost:8200",
   selectActiveServerHealth: () => ({ status: "healthy", latencyMs: null }),
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/selectors/aggregate.selectors",
+  "../../../../agents/redux/execution-system/selectors/aggregate.selectors",
   () => ({
     selectLatestConversationId: () => () => null,
     selectLatestRequestStatus: () => () => null,
     selectIsExecuting: () => () => false,
   }),
 );
-jest.mock("@/features/cx-chat/_legacy-stubs", () => ({
+jest.mock("../../../_legacy-stubs", () => ({
   selectTurnCount: () => () => 1,
 }));
-jest.mock("@/hooks/useDebugContext", () => ({
+jest.mock("@host/hooks/useDebugContext", () => ({
   useDebugContext: () => ({ publish: () => undefined, isActive: false }),
 }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
 jest.mock("next/dynamic", () => () => () => null);
 jest.mock(
-  "@/features/agents/components/messages-display/AgentConversationDisplay",
+  "../../../../agents/components/messages-display/AgentConversationDisplay",
   () => ({ AgentConversationDisplay: () => null }),
 );
 jest.mock(
-  "@/features/agents/components/inputs/smart-input/SmartAgentInput",
+  "../../../../agents/components/inputs/smart-input/SmartAgentInput",
   () => ({ SmartAgentInput: () => null }),
 );
-jest.mock("@/features/matrx-envelope/components/ProposedDirectivesZone", () => ({
+jest.mock("@host/features/matrx-envelope/components/ProposedDirectivesZone", () => ({
   ProposedDirectivesZone: () => null,
 }));
-jest.mock("@/features/agents/ui-first-tools/redux/pending-asks.slice", () => ({
+jest.mock("../../../../agents/ui-first-tools/redux/pending-asks.slice", () => ({
   selectActivePendingAsksForConversation: () => () => [],
 }));
-jest.mock("@/features/agents/redux/execution-system/thunks/resume-instance.thunk", () => ({
+jest.mock("../../../../agents/redux/execution-system/thunks/resume-instance.thunk", () => ({
   resumeInstance: jest.fn(),
 }));
-jest.mock("@/features/agents/runtime-reconnect/reconnect-server-operation.thunk", () => ({
+jest.mock("../../../../agents/runtime-reconnect/reconnect-server-operation.thunk", () => ({
   reconnectServerOperation: jest.fn(),
 }));
 

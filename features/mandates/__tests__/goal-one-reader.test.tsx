@@ -114,7 +114,7 @@ jest.mock("@/utils/supabase/client", () => ({
 import { MandateGoalBlock } from "../MandateGoalBlock";
 import { fetchMandateCatalogue } from "../catalogue";
 import { resolveMandateGoal } from "../goal";
-import { invalidateMandateCache } from "../service";
+import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 
 let container: HTMLDivElement;
 let root: Root;

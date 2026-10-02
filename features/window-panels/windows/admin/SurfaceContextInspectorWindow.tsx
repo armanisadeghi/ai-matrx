@@ -32,19 +32,19 @@ import {
   getManifest,
   getRawManifest,
 } from "@/features/surfaces/manifests/registry";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { allBaseline } from "@/features/surfaces/manifests/_baseline.manifest";
-import { qualifyingDefaultSurfaces } from "@/features/surfaces/services/surface-bound-agents.service";
-import type { SurfaceValue } from "@/features/surfaces/types";
+import { qualifyingDefaultSurfaces } from "@ai-matrx/chat/surfaces/services/surface-bound-agents.service";
+import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
-import { useLiveSurfaceScope } from "@/features/surfaces/runtime/useLiveSurfaceScope";
-import type { LiveSurfaceScopeStatus } from "@/features/surfaces/runtime/useLiveSurfaceScope";
+import { useLiveSurfaceScope } from "@ai-matrx/chat/surfaces/runtime/useLiveSurfaceScope";
+import type { LiveSurfaceScopeStatus } from "@ai-matrx/chat/surfaces/runtime/useLiveSurfaceScope";
 import {
   getSurfaceByName,
   type UiSurfaceRow,
-} from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import { SurfaceAdminDetailPage } from "@/features/surfaces/admin-detail/SurfaceAdminDetailPage";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {

@@ -10,7 +10,7 @@
  */
 
 import { callbackManager } from "@/utils/callbackManager";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 
 export interface ResourcePickerWindowCallbackGroup {

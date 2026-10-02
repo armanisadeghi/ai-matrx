@@ -29,24 +29,24 @@ import {
   type SurfaceRegistry,
   type SurfaceRuntimeValue,
   type SurfaceToolCall,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { describeAgentWritableTargets } from "@/features/surfaces/runtime/agent-offer";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { describeAgentWritableTargets } from "@ai-matrx/chat/surfaces/runtime/agent-offer";
 import {
   SURFACE_BRIEF_MAX_VALUES,
   SURFACE_BRIEF_TEXT_CHARS,
   surfaceBrief,
-} from "@/features/surfaces/runtime/surface-brief";
+} from "@ai-matrx/chat/surfaces/runtime/surface-brief";
 import {
   executeSurfaceClientTool,
   listLiveSurfaceClientTools,
-} from "@/features/surfaces/runtime/surface-client-tools";
-import { surfacePatchContractLine } from "@/features/surfaces/runtime/surface-write-patch";
-import { surfaceWriteToolOutput } from "@/features/surfaces/runtime/surface-write-tool-output";
+} from "@ai-matrx/chat/surfaces/runtime/surface-client-tools";
+import { surfacePatchContractLine } from "@ai-matrx/chat/surfaces/runtime/surface-write-patch";
+import { surfaceWriteToolOutput } from "@ai-matrx/chat/surfaces/runtime/surface-write-tool-output";
 import {
   applySurfaceWrite,
   listAgentWritableTargets,
-} from "@/features/surfaces/runtime/surface-writeback";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 /** Items listed in `board_items`; the rest are counted in `omitted_count`. */
 export const BOARD_ITEMS_MAX = 60;

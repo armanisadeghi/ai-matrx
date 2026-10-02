@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { createAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { createAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { useRouter } from "next/navigation";
 import { ToolsService } from "@/utils/supabase/tools-service";
 import { IMPORT_SOURCES, buildToolIndex } from "./import-types";
@@ -36,7 +36,7 @@ import {
   type ImportValidationIssue,
 } from "./agent-import-validation";
 import { ImportQuickFixes } from "./ImportQuickFixes";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 

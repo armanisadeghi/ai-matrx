@@ -1,6 +1,6 @@
 "use client";
 
-import { RunToolPicker } from "@/features/agents/components/inputs/smart-input/RunToolPicker";
+import { RunToolPicker } from "@ai-matrx/chat/agents/components/inputs/smart-input/RunToolPicker";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface ToolsResourcePickerProps {

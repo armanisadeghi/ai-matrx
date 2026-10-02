@@ -7,7 +7,7 @@ const eq = jest.fn();
 const invalidate = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
-jest.mock("@/features/mandates/service", () => ({
+jest.mock("@ai-matrx/chat/mandates/service", () => ({
   invalidateMandateCache: () => invalidate(),
 }));
 jest.mock("@/lib/supabase/mandateStorage", () => ({

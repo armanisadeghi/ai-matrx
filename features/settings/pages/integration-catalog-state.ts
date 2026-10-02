@@ -1,4 +1,4 @@
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
 import {
   deriveMcpConnectionState,
   type FirstPartyStatus,

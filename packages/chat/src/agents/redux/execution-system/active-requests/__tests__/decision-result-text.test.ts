@@ -27,9 +27,9 @@ import { selectLatestAccumulatedText } from "../../selectors/aggregate.selectors
 import {
   DECISION_ANSWERS_BLOCK_TYPE,
   decisionAnswersMarkdownFromValue,
-} from "@/features/content-ir/kinds/decision-answers";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
-import type { RootState } from "@/lib/redux/store";
+} from "@host/features/content-ir/kinds/decision-answers";
+import type { ActiveRequest } from "../../../../types/request.types";
+import type { RootState } from "@host/lib/redux/store";
 
 const REQ = "req_decision_text";
 const CONV = "conv_decision_text";

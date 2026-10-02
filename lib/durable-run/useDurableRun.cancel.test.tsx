@@ -33,12 +33,12 @@ jest.mock("@/lib/api/call-api", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream",
   () => ({ adoptForeignStream: jest.fn() }),
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/active-requests/active-requests.slice",
+  "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice",
   () => ({ removeRequest: jest.fn() }),
 );
 

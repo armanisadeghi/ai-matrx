@@ -10,7 +10,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@host/lib/utils';
 import {
   ARTIFACT_SKILLS,
   ATTRIBUTES,

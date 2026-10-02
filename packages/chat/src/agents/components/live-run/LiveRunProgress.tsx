@@ -2,12 +2,12 @@
 
 import { AlertTriangle, CheckCircle2, Circle, Loader2 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   honestProgressSummary,
   type RunShape,
-} from "@/lib/progress/honestSummary";
-import { isJsonObject } from "@/types/json";
+} from "@host/lib/progress/honestSummary";
+import { isJsonObject } from "@host/types/json";
 
 export type LiveRunProgressStatus =
   "waiting" | "running" | "completed" | "failed";

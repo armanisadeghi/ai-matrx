@@ -21,33 +21,33 @@
  */
 
 import type { Dispatch } from "@reduxjs/toolkit";
-import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import { toast } from "@host/lib/toast";
+import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
 import {
   addResource,
   removeResource,
   setResourcePreview,
   setResourceStatus,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+} from "../../../redux/execution-system/instance-resources/instance-resources.slice";
+import { selectIsCacheOnly } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
   refineBlockType,
   resourceDataToSource,
-} from "@/features/agents/redux/execution-system/instance-resources/resource-source";
-import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
+} from "../../../redux/execution-system/instance-resources/resource-source";
+import { isEditableCapableBlockType } from "../../../redux/execution-system/instance-resources/editable-resource-types";
 // W5 swap: durable association edges ride the @ai-matrx/associations store
 // (the Redux association thunks/cache fragments are deleted).
-import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
+import { getAssociationsStore } from "@host/features/scopes/host/associationsStore";
 import type { AssociationWriteResult } from "@ai-matrx/associations/core";
 import {
   cleanDocumentLabel,
   documentAttachLabelFromState,
   type AttachedDocumentMetadata,
-} from "@/features/agents/components/inputs/resources/attached-documents";
-import type { Resource } from "@/features/agents/resources/types";
-import type { ResourceBlockType } from "@/features/agents/types/instance.types";
-import type { Json } from "@/types/database.types";
+} from "./attached-documents";
+import type { Resource } from "../../../resources/types";
+import type { ResourceBlockType } from "../../../types/instance.types";
+import type { Json } from "@host/types/database.types";
 
 /** Map prompt-system resource types to agent ResourceBlockType. */
 export function resourceTypeToBlockType(

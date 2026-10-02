@@ -14,12 +14,12 @@
  * Canonical doc: common-docs/systems/agents/typed-messages/FEATURE.md (The slot).
  */
 
-import type { ControlDefinition } from "@/features/agents/hooks/useModelControls";
-import { choiceComponentType } from "@/features/agents/utils/choice-rule";
+import type { ControlDefinition } from "../hooks/useModelControls";
+import { choiceComponentType } from "./choice-rule";
 import type {
   VariableCustomComponent,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
+} from "../types/agent-definition.types";
 
 /** The org knob that decides which controls may be exposed as variables. */
 export const CONTROL_BINDABLE_KNOB = {

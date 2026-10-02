@@ -14,19 +14,19 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
 import {
   createSandboxTestStore,
   SandboxStoreProvider,
-} from "@/test-utils/sandbox-store";
+} from "@host/test-utils/sandbox-store";
 import {
   speechScriptCompatibility,
   type SpeechTurnSpec,
-} from "@/features/agents/speech-script/types";
+} from "../types";
 
 // ProTextarea carries the whole voice/AI toolbar (Redux, recording); the cells'
 // VALUE is what this suite is about, so a plain textarea stands in for it.
-jest.mock("@/components/official/ProTextarea", () => {
+jest.mock("@host/components/official/ProTextarea", () => {
   const ReactActual = jest.requireActual("react");
   return {
     ProTextarea: ReactActual.forwardRef(
@@ -42,7 +42,7 @@ jest.mock("@/components/official/ProTextarea", () => {
   };
 });
 
-jest.mock("@/features/podcasts/generator/useVoices", () => ({
+jest.mock("@host/features/podcasts/generator/useVoices", () => ({
   useVoices: () => ({
     voices: [
       { provider_voice_id: "kore", name: "Kore", gender: "female", metadata: { models: ["gemini-2.5-flash-preview-tts"] } },
@@ -56,13 +56,13 @@ jest.mock("@/features/podcasts/generator/useVoices", () => ({
 }));
 
 const mockSpeak = jest.fn();
-jest.mock("@/features/audio/service/speak", () => ({
+jest.mock("@host/features/audio/service/speak", () => ({
   speak: (request: unknown) => mockSpeak(request),
 }));
-jest.mock("@/features/audio/unlock", () => ({ primeAudioOutput: () => {} }));
+jest.mock("@host/features/audio/unlock", () => ({ primeAudioOutput: () => {} }));
 
 // eslint-disable-next-line import/first
-import { SpeechScriptEditor } from "@/features/agents/components/builder/message-builders/SpeechScriptEditor";
+import { SpeechScriptEditor } from "@host/features/agents/components/builder/message-builders/SpeechScriptEditor";
 
 const TTS_CAPS = { input: ["text"], output: ["audio"], features: [], interaction: "turn" };
 

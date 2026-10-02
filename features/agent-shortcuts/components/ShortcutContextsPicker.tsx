@@ -9,7 +9,7 @@ import {
   SHORTCUT_CONTEXT_META,
   isValidShortcutContext,
   type ShortcutContext,
-} from "@/features/agents/utils/shortcut-context-utils";
+} from "@ai-matrx/chat/agents/utils/shortcut-context-utils";
 import {
   Tooltip,
   TooltipContent,

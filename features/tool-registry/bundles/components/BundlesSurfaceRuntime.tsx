@@ -53,8 +53,8 @@ import {
   type AdminBundleEditor,
   type AdminNewBundleEditor,
 } from "@/features/surfaces/manifests/admin-bundles.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 /**
  * The selected bundle's inline identity editor, exposed as getters plus the

@@ -18,8 +18,8 @@ import type {
   CxTextContent,
   CxThinkingContent,
   CxMediaContent,
-} from "@/features/cx-chat/types/cx-tables";
-import type { Json } from "@/types/database.types";
+} from "../types/cx-tables";
+import type { Json } from "@host/types/database.types";
 
 // ============================================================================
 // Types for the converter output

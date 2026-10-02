@@ -32,7 +32,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useLiveRunHandle } from "@/features/agents/hooks/useLiveRunHandle";
+import { useLiveRunHandle } from "@ai-matrx/chat/agents/hooks/useLiveRunHandle";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import {
   startContinuousCapture,

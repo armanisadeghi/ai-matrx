@@ -32,7 +32,7 @@ export const workingDocumentAdapter: ContentSourceAdapter = {
     // Lazy import — the working-document thunks pull in Supabase service glue
     // and the notes save path that we don't want in every RichDocument bundle.
     const { persistWorkingDocumentContentThunk } = await import(
-      "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks"
+      "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.thunks"
     );
     await dispatch(
       persistWorkingDocumentContentThunk({

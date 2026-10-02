@@ -109,8 +109,8 @@ describe("no agent run path carries a fixed first-response wait", () => {
   // The class: a literal connectTimeoutMs on an agent-run stream. Every such
   // wait is the organization's knob, resolved through resolveRunWait.
   const RUN_PATHS = [
-    "features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
-    "features/agents/redux/execution-system/thunks/run-ai-stream.ts",
+    "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
+    "packages/chat/src/agents/redux/execution-system/thunks/run-ai-stream.ts",
   ];
   it.each(RUN_PATHS)("%s", (path) => {
     const source = readFileSync(join(process.cwd(), path), "utf8");

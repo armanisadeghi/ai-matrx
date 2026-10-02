@@ -2,11 +2,11 @@
 
 import { useCallback, type ReactNode } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
+import { Button } from "@host/components/ui/button";
+import { Badge } from "@host/components/ui/badge";
+import { ScrollArea } from "@host/components/ui/scroll-area";
+import { Separator } from "@host/components/ui/separator";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   Undo2,
@@ -17,28 +17,28 @@ import {
   ArrowDown,
   Clock,
 } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectAgentById,
   selectAgentCanUndo,
   selectAgentCanRedo,
   selectAgentName,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../../redux/agent-definition/selectors";
 import {
   undoAgentEdit,
   redoAgentEdit,
   clearAgentUndoHistory,
-} from "@/features/agents/redux/agent-definition/slice";
-import type { UndoEntry } from "@/features/agents/types/agent-definition.types";
+} from "../../redux/agent-definition/slice";
+import type { UndoEntry } from "../../types/agent-definition.types";
 import {
   getUndoShortcutHint,
   getRedoShortcutHint,
-} from "@/features/agents/hooks/useAgentUndoRedo";
+} from "../../hooks/useAgentUndoRedo";
 import {
   AiModelRef,
   AiToolRef,
-} from "@/components/official/entity-ref/AiIdentityRef";
-import { ModelTierIdentityList } from "@/features/agents/components/model-tiers/ModelTierIdentityList";
+} from "@host/components/official/entity-ref/AiIdentityRef";
+import { ModelTierIdentityList } from "../model-tiers/ModelTierIdentityList";
 
 const FIELD_LABELS: Partial<Record<string, string>> = {
   messages: "Messages",

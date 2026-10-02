@@ -7,7 +7,7 @@
  */
 
 import { KIND_KEY } from "@ai-matrx/content-ir";
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
+import type { CxContentBlock } from "@ai-matrx/chat/public-chat/types/cx-tables";
 import { planMaterialization } from "../planMaterialization";
 
 const textBlock = (text: string): CxContentBlock =>

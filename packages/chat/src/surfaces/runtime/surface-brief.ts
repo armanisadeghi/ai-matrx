@@ -17,8 +17,8 @@ import {
   AMBIENT_VALUES,
   BASELINE_VALUES,
   PLATFORM_CONTEXT_VALUES,
-} from "@/features/surfaces/manifests/_baseline.manifest";
-import type { SurfaceManifest, SurfaceScopePayload } from "@/features/surfaces/types";
+} from "@host/features/surfaces/manifests/_baseline.manifest";
+import type { SurfaceManifest, SurfaceScopePayload } from "../types";
 
 /** At most this many values in one brief. */
 export const SURFACE_BRIEF_MAX_VALUES = 4;

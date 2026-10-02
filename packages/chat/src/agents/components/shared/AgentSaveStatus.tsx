@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Save, Loader2, AlertTriangle, Eye } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { UnsavedChangesDiff } from "@/features/agents/components/diff/UnsavedChangesDiff";
-import { cn } from "@/lib/utils";
+import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
+import { UnsavedChangesDiff } from "../diff/UnsavedChangesDiff";
+import { cn } from "@host/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,10 +14,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
+} from "@host/components/ui/alert-dialog";
+import { AgentSettingsModal } from "@host/features/agents/components/settings-management/AgentSettingsModal";
 import { useAgentSaveAction } from "./useAgentSaveAction";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 export function AgentSaveStatus({
   agentId,

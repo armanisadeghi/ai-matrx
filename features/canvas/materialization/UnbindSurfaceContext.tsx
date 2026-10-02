@@ -13,7 +13,7 @@
  */
 
 import { createContext } from "react";
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
+import type { CxContentBlock } from "@ai-matrx/chat/public-chat/types/cx-tables";
 import type { PersistRewrite } from "./materializeBlocks";
 
 export interface UnbindSurface {

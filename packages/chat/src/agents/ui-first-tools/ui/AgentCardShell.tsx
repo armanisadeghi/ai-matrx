@@ -33,9 +33,9 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useScrollFade } from "@/components/ui/scroll-fade";
+import { cn } from "@host/lib/utils";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { useScrollFade } from "@host/components/ui/scroll-fade";
 
 export type AccentTone =
   "neutral" | "primary" | "info" | "success" | "warning" | "danger" | "violet";

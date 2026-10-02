@@ -13,7 +13,7 @@ jest.mock("next/dynamic", () => () => (props: { mode: string; sourceFeature: str
   require("react").createElement("div", { "data-testid": "alchemy-menu", "data-mode": props.mode, "data-source": props.sourceFeature }),
 );
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
-jest.mock("@/features/agents/hooks/useWidgetHandle", () => ({ useOptionalWidgetHandle: () => null }));
+jest.mock("@ai-matrx/chat/agents/hooks/useWidgetHandle", () => ({ useOptionalWidgetHandle: () => null }));
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

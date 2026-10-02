@@ -75,7 +75,7 @@ import {
   selectJsonExtractionRevision,
   selectAllJsonComplete,
   selectExtractedJsonCount,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 
 // All results (live-updates during stream)
 const results = useAppSelector(selectExtractedJson(requestId));
@@ -180,7 +180,7 @@ const final = tracker.finalize();
 Old:
 
 ```ts
-import { extractJsonFromText } from "@/features/agents/utils/json-extraction";
+import { extractJsonFromText } from "@ai-matrx/chat/agents/utils/json-extraction";
 import {
   extractJsonBlock,
   extractNonJsonContent,
@@ -256,7 +256,7 @@ Files to migrate, grouped by priority. Check off each as completed.
 
 ### Priority 2 — Legacy wrapper shims (delete when no consumers remain)
 
-- [ ] `features/agents/utils/json-extraction.ts` — legacy `extractJsonFromText` / `extractJsonBlock` / `extractNonJsonContent` wrapper
+- [ ] `packages/chat/src/agents/utils/json-extraction.ts` — legacy `extractJsonFromText` / `extractJsonBlock` / `extractNonJsonContent` wrapper
 - [ ] `features/prompts/utils/json-extraction.ts` — re-exports from agents wrapper
 
 ### Priority 3 — Components using progressive-json-parser
@@ -285,6 +285,6 @@ Files to migrate, grouped by priority. Check off each as completed.
 
 ### Already migrated
 
-- [x] `features/agents/redux/execution-system/thunks/process-stream.ts` — uses `StreamingJsonTracker`
+- [x] `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts` — uses `StreamingJsonTracker`
 - [x] `lib/redux/prompt-execution/thunks/executeBuiltinWithJsonExtractionThunk.ts` — uses `extractFirstJson`
 - [x] `components/admin/MarkdownTester.tsx` — uses both `extractAllJson` and `StreamingJsonTracker`

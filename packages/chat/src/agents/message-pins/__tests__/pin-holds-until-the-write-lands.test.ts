@@ -5,11 +5,11 @@
  * a second press while pending is not a second write, and a refusal is said in words.
  */
 const setPinned = jest.fn();
-jest.mock("@/features/scopes/service/favoritesService", () => ({
+jest.mock("@host/features/scopes/service/favoritesService", () => ({
   favoritesService: { setPinned: (...a: unknown[]) => setPinned(...a), getBulk: jest.fn() },
 }));
 const toastError = jest.fn();
-jest.mock("@/lib/toast", () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn() } }));
+jest.mock("@host/lib/toast", () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn() } }));
 
 import * as store from "../pinned-messages-store";
 

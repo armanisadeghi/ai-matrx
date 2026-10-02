@@ -29,29 +29,29 @@ import {
   CircleDot,
   CircleOff,
 } from "lucide-react";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
-import { ObservationalMemoryCore } from "@/features/agents/components/observational-memory/ObservationalMemoryCore";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
+import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { ObservationalMemoryCore } from "../../../agents/components/observational-memory/ObservationalMemoryCore";
 import {
   selectAllObservationalMemoryConversations,
   selectIsMemoryEnabledForConversation,
   selectMemoryCounters,
   selectMemoryDegraded,
   selectMemoryMetadata,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
-import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import type { RootState } from "@/lib/redux/store";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+} from "../../../agents/redux/execution-system/observational-memory/observational-memory.selectors";
+import { selectInstance } from "../../../agents/redux/execution-system/conversations/conversations.selectors";
+import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";
+import type { RootState } from "@host/lib/redux/store";
+import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { useCostDisplay } from "@host/components/cost/useCostDisplay";
 import {
   OBSERVATIONAL_MEMORY_SURFACE_NAME,
   createObservationalMemoryScope,
-} from "@/features/surfaces/manifests/observational-memory.manifest";
+} from "@host/features/surfaces/manifests/observational-memory.manifest";
 
 // =============================================================================
 // Sidebar

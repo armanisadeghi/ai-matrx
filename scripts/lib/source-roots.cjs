@@ -27,7 +27,7 @@ const FEATURE_ROOTS = Object.freeze(["features", CHAT_PACKAGE_SRC]);
 /** The app's top-level source directories, the feature roots included. */
 const SOURCE_ROOTS = Object.freeze([
   "app",
-  "features",
+  "features", "packages/chat/src",
   "components",
   "lib",
   "hooks",

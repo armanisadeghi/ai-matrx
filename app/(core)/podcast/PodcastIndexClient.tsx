@@ -17,7 +17,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
 import type { PcShow } from "@/features/podcasts/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createPodcastScope,
   podcastEpisodeEntry,

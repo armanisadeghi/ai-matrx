@@ -47,10 +47,10 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { mandateRoute } from "@/features/mandates/browse/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentLineageIndex,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchMandateConsoleData,
   fetchMandateCodeTruthReport,
@@ -60,9 +60,9 @@ import {
 import { buildRow, type MandateRow } from "@/features/mandates/admin/mandate-health";
 import { MandateDetailView } from "@/features/mandates/admin/MandateDetailPanel";
 import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
-import { onMandateCacheInvalidated } from "@/features/mandates/service";
+import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { splitMandateKey } from "@/features/mandates/mandate-key";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { cn } from "@/lib/utils";
 import type { MandateWindowView } from "@/features/overlays/openers/mandateWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

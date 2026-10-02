@@ -30,21 +30,21 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "@/lib/toast";
 import type { RootState, AppDispatch } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
-import { submitToolResult } from "@/features/agents/api/submit-tool-results";
-import { setInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { upsertToolLifecycle } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { submitToolResult } from "@ai-matrx/chat/agents/api/submit-tool-results";
+import { setInstanceStatus } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { upsertToolLifecycle } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   setThreadAutoApprove,
   clearThreadAutoApprove,
 } from "@/features/war-room/redux/slice";
 import { selectIsThreadAutoApproved } from "@/features/war-room/redux/selectors";
-import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
+import type { ApprovalChange } from "@ai-matrx/chat/agents/ui-first-tools/ui/approval-types";
 import { getWarRoomToolEntry } from "../tools/registry";
 import { isWarRoomToolName } from "../tools/names";
 import { getWarRoomThreadTarget } from "../thread-target-registry";
 import { requestWarRoomApproval, cascadeAutoApprove } from "./approval";
 import { buildApprovalChange } from "./summary";
-import { personDeclinedToolOutput } from "@/features/agents/api/person-declined-tool-output";
+import { personDeclinedToolOutput } from "@ai-matrx/chat/agents/api/person-declined-tool-output";
 
 export interface DispatchWarRoomToolPayload {
   conversationId: string;

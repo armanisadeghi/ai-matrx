@@ -35,14 +35,14 @@ jest.mock("@/utils/supabase/client", () => ({
   },
 }));
 const hydrate = jest.fn(async () => undefined);
-jest.mock("@/features/agents/components/messages-display/hydrateConversationForReading", () => ({
+jest.mock("@ai-matrx/chat/agents/components/messages-display/hydrateConversationForReading", () => ({
   hydrateConversationForReading: (...a: unknown[]) => hydrate(...(a as [])),
 }));
 const loadFull = jest.fn(async () => ({ complete: true, loaded: 3 }));
-jest.mock("@/features/agents/conversation-export/load-full-history", () => ({
+jest.mock("@ai-matrx/chat/agents/conversation-export/load-full-history", () => ({
   loadFullConversationHistory: (...a: unknown[]) => loadFull(...(a as [])),
 }));
-jest.mock("@/features/agents/redux/execution-system/messages/messages.slice", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice", () => ({
   setVisibleGroupLimit: (p: unknown) => ({ type: "setVisibleGroupLimit", payload: p }),
 }));
 jest.mock("@/features/access-gate/components/AccessGate", () => ({
@@ -50,7 +50,7 @@ jest.mock("@/features/access-gate/components/AccessGate", () => ({
 }));
 // The transcript as the real display draws it: one wrapper per group, tagged
 // with every message id it shows.
-jest.mock("@/features/agents/components/messages-display/AgentConversationDisplay", () => ({
+jest.mock("@ai-matrx/chat/agents/components/messages-display/AgentConversationDisplay", () => ({
   AgentConversationDisplay: () => (
     <div>
       <div data-message-group="" data-message-ids="u1" id="g-user" />

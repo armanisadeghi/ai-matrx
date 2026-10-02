@@ -12,8 +12,8 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@/lib/redux/rootReducer";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
 import {
   createRequest,
   upsertRenderBlock,

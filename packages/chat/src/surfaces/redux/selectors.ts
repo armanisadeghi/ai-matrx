@@ -1,9 +1,9 @@
 "use client";
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import type { SurfaceValue } from "@/features/surfaces/types";
+import type { RootState } from "@host/lib/redux/store";
+import type { AgentSurfaceBinding } from "../services/bind-agent-to-surface.service";
+import type { SurfaceValue } from "../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Catalogue (surfacesCatalog)

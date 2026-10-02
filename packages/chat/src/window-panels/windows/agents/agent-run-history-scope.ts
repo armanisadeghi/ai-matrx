@@ -24,17 +24,17 @@ import {
   type AgentRunHistoryRow,
   type AgentRunHistoryTranscriptEntry,
   type AgentRunHistoryVersionSummary,
-} from "@/features/surfaces/manifests/agent-run-history.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+} from "@host/features/surfaces/manifests/agent-run-history.manifest";
+import type { SurfaceScopePayload } from "../../../surfaces/types";
 import type {
   ConversationListItem,
   ConversationListLoadStatus,
-} from "@/features/agents/redux/conversation-list/conversation-list.types";
+} from "../../../agents/redux/conversation-list/conversation-list.types";
 import {
   extractFlatText,
   selectConversationMessages,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import type { RootState } from "@/lib/redux/store";
+} from "../../../agents/redux/execution-system/messages/messages.selectors";
+import type { RootState } from "@host/lib/redux/store";
 
 /**
  * What the sidebar knows, handed UP to the window's provider.

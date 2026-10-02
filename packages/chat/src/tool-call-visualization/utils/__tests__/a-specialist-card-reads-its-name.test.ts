@@ -11,8 +11,8 @@ import { configureStore } from "@reduxjs/toolkit";
 import activeRequestsReducer, {
   createRequest,
   upsertToolLifecycle,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+} from "../../../agents/redux/execution-system/active-requests/active-requests.slice";
+import type { CxToolCallRecord } from "../../../agents/redux/execution-system/observability/observability.slice";
 
 import { cxToolCallToLifecycleEntry } from "../cxToolCallToLifecycleEntry";
 

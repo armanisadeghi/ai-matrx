@@ -17,18 +17,18 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import isEqual from "lodash/isEqual";
 import {
   selectAgentById,
   selectAgentFetchStatus,
   selectAgentIsReadOnly,
   selectAgentAccessResolved,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
-import { readField } from "@/features/agents/redux/shared/field-flags";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import { toast } from "@/lib/toast";
+} from "../redux/agent-definition/selectors";
+import { setAgentField } from "../redux/agent-definition/slice";
+import { readField } from "../redux/shared/field-flags";
+import type { AgentDefinition } from "../types/agent-definition.types";
+import { toast } from "@host/lib/toast";
 
 const STORAGE_PREFIX = "agent-autosave:";
 const DEBOUNCE_MS = 2_000;

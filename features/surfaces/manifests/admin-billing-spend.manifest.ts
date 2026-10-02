@@ -12,7 +12,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 export const ADMIN_BILLING_SPEND_SURFACE_NAME = "matrx-admin/billing-spend";
 

@@ -3,10 +3,10 @@
  * of a bare "AI help isn't available right now."
  */
 import { helpLive } from "../helpLive";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { runHeadlessAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 
-jest.mock("@/features/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
-  ...jest.requireActual("@/features/agents/redux/execution-system/thunks/run-headless-agent-json"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json"),
   runHeadlessAgentJson: jest.fn(),
 }));
 

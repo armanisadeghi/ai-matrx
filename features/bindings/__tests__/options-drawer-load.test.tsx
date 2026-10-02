@@ -45,13 +45,13 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/agent-shortcut-categories/selectors",
+  "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors",
   () => ({
     selectAllCategoriesArray: () => [],
   }),
 );
 
-jest.mock("@/features/agents/redux/agent-shortcut-categories/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-shortcut-categories/thunks", () => ({
   fetchCategoriesForScope: () => ({ type: "noop" }),
 }));
 

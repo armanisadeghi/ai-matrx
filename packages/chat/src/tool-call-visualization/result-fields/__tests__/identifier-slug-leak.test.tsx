@@ -20,7 +20,7 @@
 
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+import { StructuredValueView } from "@host/components/official/structured-value/StructuredValueView";
 import { isTechnicalTableColumn } from "../ResultTable";
 import { isIdentifierKey, humanNameSiblingKey } from "../KeyValueGrid";
 

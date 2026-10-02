@@ -1,16 +1,16 @@
 import { getHydrator, registerPanelHydrator } from "./UrlPanelRegistry";
-import { restoreUnsentLaunch } from "@/features/agents/redux/execution-system/instance-user-input/restore-unsent-launch.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { followWhatIsStillInFlight } from "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight";
-import { DISPLAY_MODE_TO_OVERLAY_ID } from "@/features/agents/redux/execution-system/display-mode-overlay";
+import { restoreUnsentLaunch } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/restore-unsent-launch.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
+import { DISPLAY_MODE_TO_OVERLAY_ID } from "@ai-matrx/chat/agents/redux/execution-system/display-mode-overlay";
 import {
   AGENT_RUN_WINDOW_AGENT_ARG,
   AGENT_RUN_WINDOW_CONVERSATION_ARG,
   AGENT_RUN_WINDOW_URL_MODE,
-} from "@/features/window-panels/windows/agents/agentRunWindowAddress";
-import { readAgentPanelSurfaceArg } from "@/features/window-panels/windows/agents/agentPanelSurfaceAddress";
-import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+} from "@ai-matrx/chat/window-panels/windows/agents/agentRunWindowAddress";
+import { readAgentPanelSurfaceArg } from "@ai-matrx/chat/window-panels/windows/agents/agentPanelSurfaceAddress";
+import { patchConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import type { ResultDisplayMode } from "@ai-matrx/chat/agents/utils/run-ui-utils";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { OVERLAY_CATALOGUE } from "@/features/overlays/catalogue";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";

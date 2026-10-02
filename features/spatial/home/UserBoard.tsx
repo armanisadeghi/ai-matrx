@@ -25,7 +25,7 @@ import { toast } from "@/lib/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { type Camera, type Rect, screenToWorld } from "../engine/camera";
 import { useIsEditing, useIsLiveTile } from "../engine/react";
-import { SurfaceActivity, createSurfaceCapture } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceActivity, createSurfaceCapture } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { SpatialStore } from "../engine/spatial-store";
 import type { ThrowAction, ThrowDirection } from "../engine/throw";
 import { DEFAULT_THROW_ACTIONS } from "../engine/throw";

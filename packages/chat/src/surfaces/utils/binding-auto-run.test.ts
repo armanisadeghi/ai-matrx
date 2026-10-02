@@ -10,10 +10,10 @@ import {
   evaluateBindingAutoRun,
   resolveEffectiveAutoRun,
   unresolvedRequiredVariables,
-} from "@/features/surfaces/utils/binding-auto-run";
-import { buildSurfaceBindingPayload } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import { mergeValueMappingLayers } from "@/features/surfaces/utils/merge-value-mappings";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+} from "./binding-auto-run";
+import { buildSurfaceBindingPayload } from "../services/bind-agent-to-surface.service";
+import { mergeValueMappingLayers } from "./merge-value-mappings";
+import type { ValueMappingMap } from "../types";
 
 describe("evaluateBindingAutoRun — when auto-run may be offered", () => {
   it("is eligible when every required target is mapped", () => {

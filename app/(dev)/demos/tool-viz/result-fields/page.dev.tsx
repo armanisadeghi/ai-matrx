@@ -18,19 +18,19 @@ import React, { useState } from "react";
 import { Play, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
-import { RESULT_MEDIA_DEMO_REF } from "@/features/tool-call-visualization/result-fields/demo-fixtures";
-import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
-import { ToolCallBatch } from "@/features/tool-call-visualization/components/ToolCallBatch";
-import { ChatResultColumn } from "@/features/tool-call-visualization/components/ChatResultColumn";
-import { PatchDiffInline } from "@/features/tool-call-visualization/renderers/working-document/PatchDiffInline";
-import { SearchInline } from "@/features/tool-call-visualization/renderers/search/SearchInline";
-import { SearchOverlay } from "@/features/tool-call-visualization/renderers/search/SearchOverlay";
-import { ScrapeInline } from "@/features/tool-call-visualization/renderers/scrape/ScrapeInline";
-import { ScrapeOverlay } from "@/features/tool-call-visualization/renderers/scrape/ScrapeOverlay";
-import { ResearchInline } from "@/features/tool-call-visualization/renderers/research/ResearchInline";
-import { SubagentReportBlock } from "@/features/tool-call-visualization/renderers/research/SubagentReportBlock";
+import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
+import { RESULT_MEDIA_DEMO_REF } from "@ai-matrx/chat/tool-call-visualization/result-fields/demo-fixtures";
+import { GenericRenderer } from "@ai-matrx/chat/tool-call-visualization/registry/GenericRenderer";
+import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
+import { ToolCallBatch } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallBatch";
+import { ChatResultColumn } from "@ai-matrx/chat/tool-call-visualization/components/ChatResultColumn";
+import { PatchDiffInline } from "@ai-matrx/chat/tool-call-visualization/renderers/working-document/PatchDiffInline";
+import { SearchInline } from "@ai-matrx/chat/tool-call-visualization/renderers/search/SearchInline";
+import { SearchOverlay } from "@ai-matrx/chat/tool-call-visualization/renderers/search/SearchOverlay";
+import { ScrapeInline } from "@ai-matrx/chat/tool-call-visualization/renderers/scrape/ScrapeInline";
+import { ScrapeOverlay } from "@ai-matrx/chat/tool-call-visualization/renderers/scrape/ScrapeOverlay";
+import { ResearchInline } from "@ai-matrx/chat/tool-call-visualization/renderers/research/ResearchInline";
+import { SubagentReportBlock } from "@ai-matrx/chat/tool-call-visualization/renderers/research/SubagentReportBlock";
 import {
   buildResearchRecording,
   buildScrapeRecording,
@@ -38,7 +38,7 @@ import {
   buildSimpleRecording,
 } from "@/features/tool-call-visualization/simulator/streamRecording";
 import { useSimulatedToolEntry } from "@/features/tool-call-visualization/simulator/useSimulatedToolEntry";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 
 // ─── Synthetic lifecycle entries ────────────────────────────────────────────
 

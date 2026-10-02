@@ -31,14 +31,14 @@
 
 import React, { useMemo, useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectWorkingDocContent } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectWorkingDocContent } from "../../../agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import { AnimatedDiffReveal } from "@ai-matrx/diff/react";
 import { computeTextDiff } from "@ai-matrx/diff/text";
-import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
+import { WORKING_DOCUMENT_CONTEXT_KEY } from "../../../agents/utils/workingDocumentContext";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal } from "../_shared";
@@ -46,7 +46,7 @@ import type { WorkingDocPatchArgs } from "./applyWorkingDocPatch";
 import {
   deriveWorkingDocDiffFrame,
   STRUCTURAL_PATCH_COMMANDS,
-} from "@/features/agents/redux/execution-system/instance-working-document/workingDocPatchDiff";
+} from "../../../agents/redux/execution-system/instance-working-document/workingDocPatchDiff";
 
 function readPatchArgs(
   args: ToolRendererProps["entry"]["arguments"],

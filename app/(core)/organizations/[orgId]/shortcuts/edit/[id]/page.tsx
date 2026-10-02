@@ -11,7 +11,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
+import { selectShortcutById } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
 import { ShortcutForm } from "@/features/agent-shortcuts/components/ShortcutForm";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";

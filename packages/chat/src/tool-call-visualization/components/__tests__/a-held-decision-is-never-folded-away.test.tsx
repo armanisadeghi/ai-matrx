@@ -12,24 +12,24 @@ import React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let knob: unknown = false;
-jest.mock("@/lib/scoped-config/sessionKnob", () => ({
+jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
   useSessionKnob: () => knob,
   getSessionKnob: () => knob,
 }));
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: () => "default",
   useAppDispatch: () => jest.fn(),
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
+  "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({ selectToolDisplayPreference: jest.fn() }),
 );
-jest.mock("@/components/loaders/ShimmerText", () => ({
+jest.mock("@host/components/loaders/ShimmerText", () => ({
   ShimmerText: ({ text }: { text: string }) => <span>{text}</span>,
 }));
 jest.mock("../../registry/registry", () => ({ getToolDisplayName: () => "Context" }));
@@ -47,7 +47,7 @@ jest.mock("../../components/agentWorkTurn", () => ({ useCloudBrowserTurnRun: () 
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ToolCallBatch } = require(process.env.TOOL_CALL_BATCH_UNDER_TEST ?? "../ToolCallBatch") as typeof import("../ToolCallBatch");
-import captured from "@/features/record-change-approvals/__tests__/fixtures/awaiting-approval.captured.json";
+import captured from "@host/features/record-change-approvals/__tests__/fixtures/awaiting-approval.captured.json";
 
 function entry(callId: string, result: unknown): ToolLifecycleEntry {
   return {

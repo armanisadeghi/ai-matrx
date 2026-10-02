@@ -8,7 +8,7 @@
  * does not exist yet).
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../../agents/types/request.types";
 import { getCollabCallInfo, isCollaborationAgentCall } from "../collab";
 
 function entry(over: Partial<ToolLifecycleEntry>): ToolLifecycleEntry {

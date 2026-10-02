@@ -73,7 +73,7 @@ import { useDrillNameBook, useDrillNames } from "./drillNames";
 import { DrillNumberFilter } from "./DrillNumberFilter";
 import { drillExplorerScope } from "./drillExplorerScope";
 import { useDrillAttributes } from "./useDrillAttributes";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { DrillSiblingFindings } from "./DrillSiblingFindings";
 import { drillSiblingDimensions, drillSiblingMeasures, openDrillSibling, useDrillSiblings } from "./drillSiblings";
 import { DrillRecords } from "./DrillRecords";

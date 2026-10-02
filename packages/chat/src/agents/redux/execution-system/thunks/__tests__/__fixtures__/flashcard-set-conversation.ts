@@ -15,7 +15,7 @@
  * Timestamps are rendered in the ISO form PostgREST returns.
  */
 
-import type { Database, Json } from "@/types/database.types";
+import type { Database, Json } from "@host/types/database.types";
 
 /** `content_ir.kind_example.data` - the canonical flashcard_set sample. */
 export const FLASHCARD_SET_KIND_EXAMPLE = {

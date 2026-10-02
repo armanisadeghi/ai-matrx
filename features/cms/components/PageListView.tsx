@@ -16,7 +16,7 @@ import {
   type ContentVolume,
 } from "@/features/cms/utils/contentVolume";
 import { Button } from "@/components/ui/button";
-import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
+import { SurfaceRoleAgentButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ItemMenu } from "@/components/official/item/ItemMenu";

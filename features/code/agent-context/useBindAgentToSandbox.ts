@@ -6,7 +6,7 @@ import {
   setServerOverrideUrl,
   setServerOverrideAuthToken,
   setServerOverrideAuthTokenError,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectEditorMode } from "../redux/codeWorkspaceSlice";
 import { useSandboxAccessToken } from "./useSandboxAccessToken";
 

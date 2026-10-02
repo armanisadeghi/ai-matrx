@@ -35,7 +35,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 export const QUICK_DATA_SURFACE_NAME = "matrx-user/quick-data";
 

@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { surfaceDeleteConsequence } from "@/features/surfaces/utils/surface-delete-consequence";
+import { surfaceDeleteConsequence } from "@ai-matrx/chat/surfaces/utils/surface-delete-consequence";
 import { getRegisteredSurfaceNames } from "@/features/surfaces/manifests/registry";
 import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import {
@@ -30,15 +30,15 @@ import {
   updateSurface,
   readinessBucketOf,
   type SurfaceWithStats,
-} from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import {
   SurfaceReadinessBadge,
   READINESS_META,
 } from "@/features/surfaces/components/SurfaceReadinessBadge";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { SurfaceValuesTable } from "@/features/surfaces/components/SurfaceValuesTable";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import type { SurfaceValue } from "@/features/surfaces/types";
+import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ProTextarea } from "@/components/official/ProTextarea";

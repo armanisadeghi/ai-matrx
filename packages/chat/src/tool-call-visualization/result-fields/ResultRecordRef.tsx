@@ -11,13 +11,13 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import {
     entityTitleFallback,
     fetchEntityTitles,
     getCachedEntityTitle,
-} from "@/features/scopes/service/entityTitles";
-import { resolveEntityToken } from "@/features/scopes/registry/entityRegistry";
+} from "@host/features/scopes/service/entityTitles";
+import { resolveEntityToken } from "@host/features/scopes/registry/entityRegistry";
 
 export interface ResultRecordRefProps {
     /** The pointer's `resource_type`. */

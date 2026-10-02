@@ -26,13 +26,13 @@ import {
   StatusToken,
 } from "@/components/official/ConfigurationFields";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
+import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type {
   VariableCustomComponent,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   holderOfMandate,
   type HolderRef,
@@ -61,8 +61,8 @@ import type { ServedInput } from "@/features/workflow-runtime/served-form/served
 import {
   displayLabelForKey,
   formatVariableDisplayName,
-} from "@/features/agents/utils/variable-utils";
-import { RunFailureCard } from "@/features/mandates/RunFailureCard";
+} from "@ai-matrx/chat/agents/utils/variable-utils";
+import { RunFailureCard } from "@ai-matrx/chat/mandates/RunFailureCard";
 import { ServerNotes } from "@/components/official/ServerNotes";
 import {
   fetchVersionVariableDefinitions,
@@ -77,9 +77,9 @@ import {
   sampleInputText,
   type AgentSampleRow,
 } from "@/features/agents/samples/service";
-import { resolveMandate } from "@/features/mandates/service";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { sampleInputsForMandate } from "./sample-inputs";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

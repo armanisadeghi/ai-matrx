@@ -15,15 +15,15 @@ import {
   selectAgentModelId,
   selectAgentModelMissing,
   selectAgentSettings,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   setAgentField,
   setAgentSettings,
-} from "@/features/agents/redux/agent-definition/slice";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import type {
   FeLlmParams,
   LLMParams,
-} from "@/features/agents/types/agent-api-types";
+} from "@ai-matrx/chat/agents/types/agent-api-types";
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { AgentVariablesModal } from "@/features/agents/components/variables-management/AgentVariablesModal";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";

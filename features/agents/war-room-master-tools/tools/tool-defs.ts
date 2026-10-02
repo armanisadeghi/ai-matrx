@@ -19,7 +19,7 @@
  * `schemas.ts` — Zod is the runtime gate; this is what the model sees.
  */
 
-import type { ToolSpecInline } from "@/features/agents/types/tool-injection.types";
+import type { ToolSpecInline } from "@ai-matrx/chat/agents/types/tool-injection.types";
 import {
   WAR_ROOM_MASTER_TOOL_NAMES,
   type WarRoomMasterToolName,

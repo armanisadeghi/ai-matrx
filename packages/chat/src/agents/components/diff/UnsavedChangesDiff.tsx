@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAgentById,
   selectAgentDirtyFields,
   selectAgentFieldHistory,
-} from "@/features/agents/redux/agent-definition/selectors";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+} from "../../redux/agent-definition/selectors";
+import type { AgentDefinition } from "../../types/agent-definition.types";
 import { AgentDiffViewer } from "./AgentDiffViewer";
 
 interface UnsavedChangesDiffProps {

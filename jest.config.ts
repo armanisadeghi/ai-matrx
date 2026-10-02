@@ -166,6 +166,9 @@ const config: Config = {
     // started consuming the published stream runtime. Map the subpaths to
     // dist directly (they are also listed in transformIgnorePatterns below,
     // because the published files are ESM).
+    // chat package (packages/chat): the package's own subpaths, and its single tie back to the app.
+    "^@ai-matrx/chat/(.*)$": "<rootDir>/packages/chat/src/$1",
+    "^@host/(.*)$": "<rootDir>/$1",
     "^@ai-matrx/([^/]+)/package\\.json$":
       "<rootDir>/node_modules/@ai-matrx/$1/package.json",
     // Some `@ai-matrx/agents` subpaths have a DIRECTORY dist target

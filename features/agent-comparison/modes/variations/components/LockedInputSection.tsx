@@ -18,11 +18,11 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchAgentVersionHistory,
   type AgentVersionHistoryItem,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentById,
   selectAgentName,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";

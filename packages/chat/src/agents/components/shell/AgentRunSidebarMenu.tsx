@@ -7,21 +7,21 @@ import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Loader2, ChevronRight, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import { makeSelectAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { ItemRow } from "@/components/official/item/ItemRow";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentById } from "../../redux/agent-definition/selectors";
+import { fetchAgentConversations } from "../../redux/conversation-list/conversation-list.thunks";
+import { makeSelectAgentConversations } from "../../redux/conversation-list/conversation-list.selectors";
+import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
+import { ItemRow } from "@host/components/official/item/ItemRow";
+import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
+import { renameConversation } from "../../redux/conversation-list/conversation-row-actions.thunks";
 import {
   buildAgentRunUrl,
   resolveAgentRunRoute,
   type AgentRunRoute,
 } from "./agent-run-route";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface AgentRunSidebarMenuProps {
   expanded: boolean;

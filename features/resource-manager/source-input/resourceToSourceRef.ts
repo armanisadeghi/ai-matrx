@@ -23,7 +23,7 @@
  */
 
 import { createSourceRef, type SourceRef } from "@ai-matrx/agents/sources";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 
 export type ResourceKind = Resource["type"];
 type ResourceData<K extends ResourceKind> = Extract<Resource, { type: K }>["data"];

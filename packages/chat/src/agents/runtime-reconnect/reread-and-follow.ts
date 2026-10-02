@@ -14,8 +14,8 @@
  * Guard: `__tests__/an-answered-ask-follows-the-resumed-turn.test.ts` (also a
  * census — every door rendering `ActionRequestInlineAnswer` goes through here).
  */
-import type { AppDispatch } from "@/lib/redux/store";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import type { AppDispatch } from "@host/lib/redux/store";
+import { loadConversation } from "../redux/execution-system/thunks/load-conversation.thunk";
 import { followWhatIsStillInFlight } from "./follow-what-is-still-in-flight";
 
 export async function rereadAndFollow(

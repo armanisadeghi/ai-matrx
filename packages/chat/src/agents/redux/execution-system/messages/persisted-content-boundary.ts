@@ -3,7 +3,7 @@ import {
   parseMessageContent,
   type MessagePart,
   type RenderBlockPayload,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 
 export type PersistedContentEntry =
   | { kind: "message_part"; part: MessagePart; sourceIndex: number }

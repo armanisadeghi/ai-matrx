@@ -9,8 +9,8 @@
  * this module exists to make impossible.
  */
 
-import type { OverlayId } from "@/features/overlays/catalogue";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+import type { OverlayId } from "@host/features/overlays/catalogue";
+import type { ResultDisplayMode } from "../../utils/run-ui-utils";
 
 export const DISPLAY_MODE_TO_OVERLAY_ID: Partial<
   Record<ResultDisplayMode, OverlayId>

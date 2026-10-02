@@ -275,7 +275,7 @@ All boards and each feature's board view (War Room, Meetings, Workflow runs).
 
 | Piece | File |
 |---|---|
-| Page: the ONE chat-beside-a-canvas layout (`ChatCanvasWorkspace`, `features/canvas/workspace`) with the saved board as canvas; title menu Rename / New board / All boards; byline shows save state | `home/BoardPage.tsx`, `app/(core)/board/**` |
+| Page: the ONE chat-beside-a-canvas layout (`ChatCanvasWorkspace`, `packages/chat/src/canvas/workspace`) with the saved board as canvas; title menu Rename / New board / All boards; byline shows save state | `home/BoardPage.tsx`, `app/(core)/board/**` |
 | The board: placement, Add menu, Start panel (empty board), drop + paste, tools, shelf, layers, agent tools host | `home/UserBoard.tsx`, `home/AddMenu.tsx` |
 | What a paste/drop of text becomes (a link → web page / image, other text → a new Note) | `home/board-intake.ts` |
 | Saving: `useSavedBoard({home:true} \| {boardId})` — debounced autosave (`AUTOSAVE_DELAY_MS`) of a lazily built document, flush on unmount, keepalive flush on hide / pagehide; the viewer's camera via `saveCamera` (see Saved boards). `saveBoardDocument(id, doc, { expectedVersion, baseFingerprint })` is version-guarded (`guardedUpdate`): a version moved only by a rename or the opened stamp retries; a document changed elsewhere is a `conflict` the person is told about | `persistence/` |

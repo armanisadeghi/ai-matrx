@@ -35,7 +35,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ComposerChip } from "@/features/agents/components/inputs/smart-input/ComposerChip";
+import { ComposerChip } from "@ai-matrx/chat/agents/components/inputs/smart-input/ComposerChip";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { AgentCredit } from "../components/AgentCredit";
 import {
@@ -47,28 +47,28 @@ import {
 import { AGENT_ICON, AGENT_ICON_NAME } from "@/components/icons/domain-icons";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { ChatRoomSkeleton } from "@ai-matrx/chat/agents/components/chat/ChatRoomSkeleton";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
-import { useMandate } from "@/features/mandates/useMandate";
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { useConversationResume } from "@ai-matrx/chat/agents/hooks/useConversationResume";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
+import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
   setDisplayDescriptionOverride,
   setDisplayIconNameOverride,
   setDisplayNameOverride,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
-import { VoiceRelayBar } from "@/features/voice-agent/relay/VoiceRelayBar";
+import { VoiceRelayBar } from "@ai-matrx/chat/voice-agent/relay/VoiceRelayBar";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import {
   missingRequiredVariables,
   missingVariablesMessage,
-} from "@/features/mandates/service";
+} from "@ai-matrx/chat/mandates/service";
 import { RULEBOOK_DOCUMENT_VARIABLE } from "@/features/masterwork/agent-context/rulebookDocument";
 import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
 import {

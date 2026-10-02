@@ -15,10 +15,10 @@
 
 import { useState } from "react";
 import { Box, FolderTree, TerminalSquare, FileText } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
-import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
-import { SimpleTerminal } from "@/features/code/terminal/SimpleTerminal";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { resolveAgentSandboxRef } from "@host/lib/sandbox/active-binding";
+import { SandboxDiagnosticsPanel } from "@host/features/code/views/sandboxes/SandboxDiagnosticsPanel";
+import { SimpleTerminal } from "@host/features/code/terminal/SimpleTerminal";
 import { SandboxFileViewer } from "./SandboxFileViewer";
 
 type View = "files" | "terminal" | "viewer";

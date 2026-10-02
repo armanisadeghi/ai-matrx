@@ -10,11 +10,11 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import type { MediaRef } from "@/features/files/types";
-import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { cn } from "@/lib/utils";
+import { Button } from "@host/components/ui/button";
+import type { MediaRef } from "@host/features/files/types";
+import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
+import { cn } from "@host/lib/utils";
 
 import type { ToolRendererProps } from "../../types";
 import { ResultMedia } from "../../result-fields/ResultMedia";

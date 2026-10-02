@@ -64,7 +64,7 @@ jest.mock("@/components/official/ProTextarea", () => ({
     <textarea defaultValue={props.value} />
   ),
 }));
-jest.mock("@/features/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
+jest.mock("@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
   resolveAskByCallId: (callId: string, response: Record<string, unknown>) => {
     resolved.push({ callId, response });
   },

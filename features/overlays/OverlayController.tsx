@@ -13,8 +13,8 @@
  */
 "use client";
 
-import { isValueMappingMap } from "@/features/surfaces/types";
-import { isPreparedResourceIdentity } from "@/features/agents/components/chat/usePreparedResourceSeed";
+import { isValueMappingMap } from "@ai-matrx/chat/surfaces/types";
+import { isPreparedResourceIdentity } from "@ai-matrx/chat/agents/components/chat/usePreparedResourceSeed";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
 import { isMandateKey } from "@ai-matrx/agents/mandates";
@@ -71,14 +71,14 @@ import type {
   TaskSourceInput,
   TaskPrePopulate,
 } from "@/features/tasks/widgets/quick-create/TaskQuickCreateCore";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 import type {
   RagAiCopyBundle,
   RagAiSectionKey,
 } from "@/features/rag/components/search/ragAiCopy";
 import { isJsonObject } from "@/types/json";
 import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
-import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
+import { parseLiveRunProgressState } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 import type { Finding } from "@/features/hindsight/types";
 import type { ExtractionCellEditorTargetInput } from "@/features/page-extraction/data-review/extractionCellEditorCallbacks";
 import { isEntityTypeToken } from "@ai-matrx/associations";
@@ -153,33 +153,33 @@ const AgentContentWindow = lazyOverlay(
 );
 const AgentAssistantMarkdownDebugWindow = lazyOverlay(
   () =>
-    import("@/features/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow"),
+    import("@ai-matrx/chat/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow"),
   { ssr: false },
 );
 const AgentChatAssistant = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/chat-assistant/AgentChatAssistant").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/chat-assistant/AgentChatAssistant").then(
       (m) => ({ default: m.AgentChatAssistant }),
     ),
   { ssr: false },
 );
 const AgentChatBubble = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/AgentChatBubble").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/AgentChatBubble").then(
       (m) => ({ default: m.AgentChatBubble }),
     ),
   { ssr: false },
 );
 const ChatCollapsible = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/ChatCollapsible").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/ChatCollapsible").then(
       (m) => ({ default: m.ChatCollapsible }),
     ),
   { ssr: false },
 );
 const AgentCompactModal = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/AgentCompactModal").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/AgentCompactModal").then(
       (m) => ({ default: m.AgentCompactModal }),
     ),
   { ssr: false },
@@ -217,7 +217,7 @@ const KeywordQuickAnswersWindow = lazyOverlay(
     import("@/features/window-panels/windows/marketing/KeywordQuickAnswersWindow"),
 );
 const AgentMemoryWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/AgentMemoryWindow"),
+  () => import("@ai-matrx/chat/window-panels/windows/agents/AgentMemoryWindow"),
   { ssr: false },
 );
 const AgentCreateAppWindow = lazyOverlay(
@@ -250,7 +250,7 @@ const AgentDataStorageWindow = lazyOverlay(
   { ssr: false },
 );
 const AgentDebugWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/AgentDebugWindow"),
+  () => import("@ai-matrx/chat/window-panels/windows/agents/AgentDebugWindow"),
   { ssr: false },
 );
 const AgentFindUsagesWindow = lazyOverlay(
@@ -262,21 +262,21 @@ const AgentFindUsagesWindow = lazyOverlay(
 );
 const AgentFlexiblePanel = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/AgentFlexiblePanel").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/AgentFlexiblePanel").then(
       (m) => ({ default: m.AgentFlexiblePanel }),
     ),
   { ssr: false },
 );
 const AgentFloatingChat = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/AgentFloatingChat").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/AgentFloatingChat").then(
       (m) => ({ default: m.AgentFloatingChat }),
     ),
   { ssr: false },
 );
 const AgentFullModal = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/AgentFullModal").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/AgentFullModal").then(
       (m) => ({ default: m.AgentFullModal }),
     ),
   { ssr: false },
@@ -291,7 +291,7 @@ const AgentImportWindow = lazyOverlay(
 );
 const AgentInlineOverlay = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/AgentInlineOverlay").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/AgentInlineOverlay").then(
       (m) => ({ default: m.AgentInlineOverlay }),
     ),
   { ssr: false },
@@ -312,17 +312,17 @@ const AgentOptimizerWindow = lazyOverlay(
 );
 const AgentPanelOverlay = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/AgentPanelOverlay").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/AgentPanelOverlay").then(
       (m) => ({ default: m.AgentPanelOverlay }),
     ),
   { ssr: false },
 );
 const AgentRunHistoryWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/AgentRunHistoryWindow"),
+  () => import("@ai-matrx/chat/window-panels/windows/agents/AgentRunHistoryWindow"),
   { ssr: false },
 );
 const AgentRunWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/AgentRunWindow"),
+  () => import("@ai-matrx/chat/window-panels/windows/agents/AgentRunWindow"),
   { ssr: false },
 );
 const AgentSettingsWindow = lazyOverlay(
@@ -344,14 +344,14 @@ const ImpactBatchWindow = lazyOverlay(
 );
 const AgentSidebarOverlay = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/AgentSidebarOverlay").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/AgentSidebarOverlay").then(
       (m) => ({ default: m.AgentSidebarOverlay }),
     ),
   { ssr: false },
 );
 const AgentToastOverlay = lazyOverlay(
   () =>
-    import("@/features/agents/components/agent-widgets/AgentToastOverlay").then(
+    import("@ai-matrx/chat/agents/components/agent-widgets/AgentToastOverlay").then(
       (m) => ({ default: m.AgentToastOverlay }),
     ),
   { ssr: false },
@@ -456,7 +456,7 @@ const ChatDebugWindow = lazyOverlay(
   { ssr: false },
 );
 const RunControlsWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/RunControlsWindow"),
+  () => import("@ai-matrx/chat/window-panels/windows/agents/RunControlsWindow"),
   { ssr: false },
 );
 const RagAiCopyWindow = lazyOverlay(
@@ -706,7 +706,7 @@ const ContextItemsWindow = lazyOverlay(
 );
 const HtmlPreviewBridge = lazyOverlay(
   () =>
-    import("@/features/cx-conversation/components/HtmlPreviewBridge").then(
+    import("@ai-matrx/chat/cx-conversation/components/HtmlPreviewBridge").then(
       (m) => ({ default: m.HtmlPreviewBridge }),
     ),
   { ssr: false },
@@ -720,7 +720,7 @@ const CopySubsetWindow = lazyOverlay(
 );
 const ImageArrivalPeekHost = lazyOverlay(
   () =>
-    import("@/features/agents/components/notifications/ImageArrivalPeekHost").then(
+    import("@ai-matrx/chat/agents/components/notifications/ImageArrivalPeekHost").then(
       (m) => ({ default: m.ImageArrivalPeekHost }),
     ),
   { ssr: false },
@@ -836,7 +836,7 @@ const AttachResourceDialog = lazyOverlay(
   { ssr: false },
 );
 const CustomAgentWindow = lazyOverlay(
-  () => import("@/features/agents/components/custom-agent/CustomAgentWindow"),
+  () => import("@ai-matrx/chat/agents/components/custom-agent/CustomAgentWindow"),
   { ssr: false },
 );
 const ShortcutEditorWindow = lazyOverlay(
@@ -852,7 +852,7 @@ const AgentPickerWindow = lazyOverlay(
   { ssr: false },
 );
 const SendToAgentWindow = lazyOverlay(
-  () => import("@/features/agents/components/send-to-agent/SendToAgentWindow"),
+  () => import("@ai-matrx/chat/agents/components/send-to-agent/SendToAgentWindow"),
   { ssr: false },
 );
 const AddToRulebookDialog = lazyOverlay(
@@ -892,7 +892,7 @@ const MarkdownEditorWindow = lazyOverlay(
   { ssr: false },
 );
 const MessageAnalysisWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/MessageAnalysisWindow"),
+  () => import("@ai-matrx/chat/window-panels/windows/agents/MessageAnalysisWindow"),
   { ssr: false },
 );
 const MessagesWindow = lazyOverlay(
@@ -911,7 +911,7 @@ const DiffViewerWindow = lazyOverlay(
   { ssr: false },
 );
 const LiveRunWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/LiveRunWindow"),
+  () => import("@ai-matrx/chat/window-panels/windows/agents/LiveRunWindow"),
   { ssr: false },
 );
 const WorkflowRunWindow = lazyOverlay(
@@ -980,7 +980,7 @@ const NotesWindow = lazyOverlay(
 );
 const ObservationalMemoryWindow = lazyOverlay(
   () =>
-    import("@/features/window-panels/windows/agents/ObservationalMemoryWindow"),
+    import("@ai-matrx/chat/window-panels/windows/agents/ObservationalMemoryWindow"),
   { ssr: false },
 );
 const PdfExtractorWindow = lazyOverlay(
@@ -999,13 +999,13 @@ const ProjectsWindow = lazyOverlay(
 );
 const QuickChatSheet = lazyOverlay(
   () =>
-    import("@/features/quick-actions/components/QuickChatSheet").then((m) => ({
+    import("@ai-matrx/chat/quick-actions/components/QuickChatSheet").then((m) => ({
       default: m.QuickChatSheet,
     })),
   { ssr: false },
 );
 const ChatHistoryWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/ChatHistoryWindow"),
+  () => import("@ai-matrx/chat/window-panels/windows/agents/ChatHistoryWindow"),
   { ssr: false },
 );
 const QuickDataSheet = lazyOverlay(
@@ -1041,21 +1041,21 @@ const QuickNotesSheet = lazyOverlay(
 );
 const DocumentsWorkspace = lazyOverlay(
   () =>
-    import("@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace").then(
+    import("@ai-matrx/chat/agents/components/working-document/documents-workspace/DocumentsWorkspace").then(
       (m) => ({ default: m.DocumentsWorkspace }),
     ),
   { ssr: false },
 );
 const ContextPreviewPanel = lazyOverlay(
   () =>
-    import("@/features/agents/components/context-preview/ContextPreviewPanel").then(
+    import("@ai-matrx/chat/agents/components/context-preview/ContextPreviewPanel").then(
       (m) => ({ default: m.ContextPreviewPanel }),
     ),
   { ssr: false },
 );
 const ScratchpadQuickPanel = lazyOverlay(
   () =>
-    import("@/features/agents/components/working-document/ScratchpadQuickPanel").then(
+    import("@ai-matrx/chat/agents/components/working-document/ScratchpadQuickPanel").then(
       (m) => ({ default: m.ScratchpadQuickPanel }),
     ),
   { ssr: false },
@@ -1184,7 +1184,7 @@ const SmartCodeEditorWindow = lazyOverlay(
 
 const StreamDebugFloating = lazyOverlay(
   () =>
-    import("@/features/agents/components/debug/StreamDebugFloating").then(
+    import("@ai-matrx/chat/agents/components/debug/StreamDebugFloating").then(
       (m) => ({ default: m.StreamDebugFloating }),
     ),
   { ssr: false },
@@ -1218,7 +1218,7 @@ const HindsightFindingWindow = lazyOverlay(
 );
 const ToolCallWindowPanel = lazyOverlay(
   () =>
-    import("@/features/tool-call-visualization/window-panel/ToolCallWindowPanel"),
+    import("@ai-matrx/chat/tool-call-visualization/window-panel/ToolCallWindowPanel"),
   { ssr: false },
 );
 const TopicalMapTopicPanel = lazyOverlay(
@@ -1239,7 +1239,7 @@ const TranscriptStudioWindow = lazyOverlay(
 );
 const UndoHistoryOverlay = lazyOverlay(
   () =>
-    import("@/features/agents/components/undo-history/UndoHistoryOverlay").then(
+    import("@ai-matrx/chat/agents/components/undo-history/UndoHistoryOverlay").then(
       (m) => ({ default: m.UndoHistoryOverlay }),
     ),
   { ssr: false },
@@ -3470,7 +3470,7 @@ export default function OverlayController() {
             initialToolsOpen={data?.initialToolsOpen === true}
             initialResources={
               Array.isArray(data?.initialResources)
-                ? (data.initialResources as import("@/features/agents/resources/types").Resource[])
+                ? (data.initialResources as import("@ai-matrx/chat/agents/resources/types").Resource[])
                 : null
             }
             initialResourceIdentity={

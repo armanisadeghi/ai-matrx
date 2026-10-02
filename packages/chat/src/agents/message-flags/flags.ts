@@ -15,9 +15,9 @@
  * visible, greyed, with the reason (the same law as the Questions part).
  */
 
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
-import { estimateTokensForText } from "@/lib/tokens/estimate";
+import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
+import { estimateTokensForText } from "@host/lib/tokens/estimate";
 
 // Flag keys, the stored flag shape and the compatibility modes are GENERATED
 // from aidream `matrx_ai/config/message_flags.py` (scripts/generate_types.py →
@@ -29,7 +29,7 @@ import {
   type FlagCompatibilityMode,
   type MessageFlagKey,
   type MessageFlags,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 
 export {
   DEFAULT_FLAG_COMPATIBILITY_MODE,

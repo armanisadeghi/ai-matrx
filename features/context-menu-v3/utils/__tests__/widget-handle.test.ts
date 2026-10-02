@@ -8,7 +8,7 @@
  */
 
 import { buildEditableWidgetHandle } from "../widget-handle";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 
 const scopeWith = (content: string) => (): ApplicationScope =>
   ({ content }) as unknown as ApplicationScope;

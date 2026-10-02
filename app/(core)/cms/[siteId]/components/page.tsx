@@ -11,8 +11,8 @@ import { createCmsComponentExtraSections } from "@/features/cms/agent-context/cm
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRoleAgentButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";

@@ -35,7 +35,7 @@ import { Input } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";

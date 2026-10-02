@@ -39,7 +39,7 @@ import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/Ma
 import { GscPortfolioClassBar } from "@/features/marketing/search-console/components/ambassador/GscPortfolioClassBar";
 import { useOpenSiteQuickViewWindow } from "@/features/overlays/openers/siteQuickViewWindow";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import type {
   EntityListConfig,

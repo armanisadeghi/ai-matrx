@@ -71,7 +71,7 @@ import { TextTileBody } from "../tiles/TextTileBody";
 import { NoteItemBody } from "../items/NoteItemBody";
 import { entityId, isNoteDraft, noteSeedEdit } from "../items/work-sources";
 import type { NodeSource } from "../board/document";
-import { SurfaceActivity } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceActivity } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { MarkdownTileBody } from "../tiles/MarkdownTileBody";
 import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
 import type {

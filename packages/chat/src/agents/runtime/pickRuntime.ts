@@ -16,7 +16,7 @@
 // Pure: no React, no Redux, no I/O. The launcher does the lookups and
 // passes plain data in.
 
-import type { InteractionMode } from "@/features/ai-models/capabilities/types";
+import type { InteractionMode } from "@host/features/ai-models/capabilities/types";
 
 export const EXECUTION_MODES = [
   "python-stream",

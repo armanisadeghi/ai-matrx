@@ -24,7 +24,7 @@
 
 import { useCallback, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingSiteScope } from "@/features/surfaces/manifests/marketing-site.manifest";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingKeys, useBrand } from "@/features/marketing/data/hooks";

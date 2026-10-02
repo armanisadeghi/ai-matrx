@@ -97,10 +97,10 @@ describe("composerKeyIntent — Enter sends, Shift+Enter is a new line", () => {
 const REPO = path.resolve(__dirname, "../../../..");
 
 const COMPOSERS = [
-  "features/agents/components/inputs/smart-input/AgentTextarea.tsx",
-  "features/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
-  "features/cx-chat/components/user-input/ConversationInput.tsx",
-  "features/cx-conversation/ConversationInput.tsx",
+  "packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx",
+  "packages/chat/src/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
+  "packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx",
+  "packages/chat/src/cx-conversation/ConversationInput.tsx",
   "features/whatsapp-clone/chat-view/MessageInputBar.tsx",
   "components/official/ProTextarea.tsx",
 ];

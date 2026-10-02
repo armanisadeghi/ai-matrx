@@ -18,24 +18,24 @@
  * values never remounts it.
  */
 
-import { useConversationDisplayRows } from "@/features/agents/components/inputs/smart-input/useConversationDisplayRows";
+import { useConversationDisplayRows } from "../inputs/smart-input/useConversationDisplayRows";
 import { ContextRulesPanelBody } from "@ai-matrx/agents/context/react";
 import type { ResolvedContextRow } from "@ai-matrx/agents/context";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
+import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
 import {
   selectContextInlineCap,
-} from "@/features/agents/redux/execution-system/context-rules/request-context";
+} from "../../redux/execution-system/context-rules/request-context";
 import {
   useMandateKillSwitch,
   useSaveContextRule,
-} from "@/features/agents/components/inputs/smart-input/ConversationContextChip";
-import { AgentEditAccessBadge } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
-import { decodeAgentEditAccess } from "@/features/agents/utils/agent-edit-access";
-import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
+} from "../inputs/smart-input/ConversationContextChip";
+import { AgentEditAccessBadge } from "@host/features/agents/components/context-policies-management/AgentEditAccessControl";
+import { decodeAgentEditAccess } from "../../utils/agent-edit-access";
+import { docKindForContextKey } from "../../utils/workingDocumentContext";
+import type { ContextObjectType } from "../../types/agent-api-types";
 import { ContextValueBody } from "./ContextValueBody";
 import {
   WorkingDocumentBody,

@@ -1,4 +1,4 @@
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import type { ImportValidationIssue } from "./agent-import-validation";
 

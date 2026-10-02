@@ -32,7 +32,7 @@ import { Component, Server, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PlaceholdersVanishingSearchInput } from "@/components/matrx/search-input/PlaceholdersVanishingSearchInput";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME,
   createAdminOfficialComponentsScope,

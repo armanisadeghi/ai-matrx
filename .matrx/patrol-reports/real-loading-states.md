@@ -99,10 +99,10 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 - `features/agent-apps/route/AgentAppSettingsContent.tsx`
 - `features/agent-shortcuts/components/batch/BatchSurfaceSelector.tsx`
 - `features/agent-shortcuts/components/ShortcutList.tsx`
-- `features/agents/ui-first-tools/ui/lists/ListsHubView.tsx`
+- `packages/chat/src/agents/ui-first-tools/ui/lists/ListsHubView.tsx`
 - `features/code/views/explorer/FileTree.tsx`
 - `features/code/views/library/LibraryTree.tsx`
-- `features/cx-chat/components/SsrSidebarAgents.tsx`
+- `packages/chat/src/cx-chat/components/SsrSidebarAgents.tsx`
 - `features/dictionary/components/DictionaryManager.tsx`
 - `features/files/blocks/image/UnifiedImageBlockRenderer.tsx`
 - `features/files/components/core/FilePreview/FilePreview.tsx`

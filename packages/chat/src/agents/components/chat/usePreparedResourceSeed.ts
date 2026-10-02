@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "../../resources/types";
 
 export type PreparedResourceIdentity = { userId: string; organizationId: string };
 export function isPreparedResourceIdentity(value: unknown): value is PreparedResourceIdentity {

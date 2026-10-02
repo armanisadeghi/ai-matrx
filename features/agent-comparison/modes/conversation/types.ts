@@ -1,4 +1,4 @@
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import type { ConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
 
 export type ConversationBattleSource = Pick<
   ConversationListItem,

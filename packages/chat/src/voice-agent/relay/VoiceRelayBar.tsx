@@ -15,16 +15,16 @@
 
 import { useState } from "react";
 import { Mic, Square, AudioLines } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useMandate } from "@/features/mandates/useMandate";
+import { Button } from "@host/components/ui/button";
+import { useMandate } from "../../mandates/useMandate";
 import { VoiceMuteButton } from "../components/VoiceMuteButton";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import type { SourceFeature } from "@host/types/python-generated/source-attribution";
 import type { QuestionPacing } from "./types";
 import {
   useVoiceRelaySession,
   VOICE_COMMUNICATOR_MANDATE_KEY,
 } from "./useVoiceRelaySession";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 export interface VoiceRelayBarProps {
   /** The brain — the surface's primary agent. */

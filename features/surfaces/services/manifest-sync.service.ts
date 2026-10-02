@@ -40,10 +40,10 @@ import {
 import {
   planManifestSync,
   toPackageResolved,
-} from "@/features/surfaces/declare/surface-declare";
+} from "@ai-matrx/chat/surfaces/declare/surface-declare";
 import { executeSyncPlan } from "@/features/surfaces/services/execute-sync-plan";
 import { findStaleRows, type SurfaceSyncPlan } from "@ai-matrx/alchemy/checks";
-import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
+import { listRegisteredNamespaces } from "@ai-matrx/chat/surfaces/config/namespace-registry";
 import { readAllRows } from "@ai-matrx/data/db";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -72,12 +72,12 @@ import type {
   SurfaceWriteTargetDrift,
   UnknownNamespace,
   ValueMapping,
-} from "@/features/surfaces/types";
-import { isValueMapping } from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
+import { isValueMapping } from "@ai-matrx/chat/surfaces/types";
 import {
   resolveSurfaceUrlPattern,
   getDefaultUrlPatternForSurface,
-} from "@/features/surfaces/utils/surface-url-pattern";
+} from "@ai-matrx/chat/surfaces/utils/surface-url-pattern";
 
 type Sb = SupabaseClient<Database>;
 type UiSurfaceValueRow = Database["ui"]["Tables"]["ui_surface_value"]["Row"];

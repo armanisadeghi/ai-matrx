@@ -69,11 +69,11 @@ import {
   Circle,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { Textarea } from "@host/components/ui/textarea";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import type { PendingAsk, PendingAskLevel } from "../redux/pending-asks.slice";
 import {
   resolvePendingAsk,

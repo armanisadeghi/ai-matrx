@@ -1,15 +1,15 @@
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceAgentName } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectInstanceAgentDescription } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceAgentName } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectInstanceAgentDescription } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { Webhook } from "lucide-react";
 import dynamic from "next/dynamic";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 // The MarkdownStream FRONT DOOR (already a dynamic ssr:false shell) — never
 // re-wrap or bypass it with a second boundary on MarkdownStreamImpl; that
 // duplicated the whole rich-document engine into a second chunk group.
-import MarkdownStream from "@/components/MarkdownStream";
-import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
-import { selectIsVariableFormShown } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { selectIsVariableFormShown } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { emptyStateInstruction } from "./empty-state-instruction";
 
 const IconResolver = dynamic(

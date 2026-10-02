@@ -22,7 +22,7 @@
  *                                   gap.
  */
 
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import type { ValueMappingMap } from "../types";
 
 /** The minimum a bindable target must expose. Structural on purpose — the
  * bind panel's richer `BindingTarget` satisfies it without importing a

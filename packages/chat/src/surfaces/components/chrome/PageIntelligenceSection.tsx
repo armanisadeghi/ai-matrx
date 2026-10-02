@@ -4,20 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
-import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
+import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
 import {
   declaredKeysForRoute,
-} from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
-import { usePageIntelligenceDoors } from "@/features/mandates/feature-intelligence/page-intelligence-doors";
-import { declaredPlacesFor } from "@/features/mandates/feature-intelligence/registry";
-import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
-import { targetForKey } from "@/features/mandates/feature-intelligence/placement";
-import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
-import { fetchMandateIdentities, type MandateIdentity } from "@/features/mandates/service";
-import { mandateDisplayName } from "@/features/mandates/mandate-words";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
+} from "@host/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { usePageIntelligenceDoors } from "@host/features/mandates/feature-intelligence/page-intelligence-doors";
+import { declaredPlacesFor } from "@host/features/mandates/feature-intelligence/registry";
+import { featureIntelligenceHref } from "@host/features/mandates/feature-intelligence/hrefs";
+import { targetForKey } from "@host/features/mandates/feature-intelligence/placement";
+import { useLiveSurfaceMandates } from "../../runtime/surface-mandates";
+import { fetchMandateIdentities, type MandateIdentity } from "../../../mandates/service";
+import { mandateDisplayName } from "@host/features/mandates/mandate-words";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { useOpenMandateWindow } from "@host/features/overlays/openers/mandateWindow";
 
 /**
  * The page's jobs, after agents and conversations in the menu. A row opens the

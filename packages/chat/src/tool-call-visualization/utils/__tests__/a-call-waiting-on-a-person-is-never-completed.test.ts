@@ -10,7 +10,7 @@
  * The persisted entry must say what it is: not terminal, and parked on that request.
  * The row shape below is the real one read from production (conversation 19ac9c0c…, 2026-09-28).
  */
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import type { CxToolCallRecord } from "../../../agents/redux/execution-system/observability/observability.slice";
 
 import { persistedToolEntry } from "../cxToolCallToLifecycleEntry";
 

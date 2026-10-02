@@ -20,22 +20,22 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { AssembledAgentStartRequest } from "@/features/agents/types/request.types";
+import type { RootState } from "@host/lib/redux/store";
+import type { AssembledAgentStartRequest } from "../../../types/request.types";
 import type {
   ActiveRequest,
   PendingToolCall,
   RequestStatus,
   ToolLifecycleEntry,
   TimelineEntry,
-} from "@/features/agents/types/request.types";
+} from "../../../types/request.types";
 import type {
   Phase,
   RenderBlockPayload,
   CompletionPayload,
   ErrorPayload,
-} from "@/types/python-generated/stream-events";
-import type { ShortcutContext } from "@/features/agents/redux/agent-shortcuts/types";
+} from "@host/types/python-generated/stream-events";
+import type { ShortcutContext } from "../../agent-shortcuts/types";
 import { selectHasMessages } from "../messages/messages.selectors";
 import { selectHasUnsentResources } from "../instance-resources/instance-resources.selectors";
 import { selectInputCharCount } from "../instance-user-input/instance-user-input.selectors";
@@ -51,7 +51,7 @@ import { assembleRequest } from "../thunks/execute-instance.thunk";
 import {
   contextItemBindingOf,
   isCustomDataBinding,
-} from "@/features/agents/utils/variable-binding";
+} from "../../../utils/variable-binding";
 
 // =============================================================================
 // Base Primitive — the shared bridge from conversationId → ActiveRequest
@@ -1039,7 +1039,7 @@ export const selectLatestReservations =
   ):
     | Record<
         string,
-        import("@/features/agents/types/request.types").ReservationRecord
+        import("../../../types/request.types").ReservationRecord
       >
     | undefined => {
     const ids = state.activeRequests?.byConversationId[conversationId];

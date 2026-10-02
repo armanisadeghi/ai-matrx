@@ -7,7 +7,7 @@ jest.mock("@/lib/toast", () => ({ toast: Object.assign(jest.fn(), { error: jest.
 
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { executeSurfaceClientTool } from "@/features/surfaces/runtime/surface-client-tools";
+import { executeSurfaceClientTool } from "@ai-matrx/chat/surfaces/runtime/surface-client-tools";
 import { BoardStore } from "../board/board-store";
 import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
 import { SpatialStore } from "../engine/spatial-store";

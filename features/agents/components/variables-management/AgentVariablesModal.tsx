@@ -21,7 +21,7 @@ import {
 import { AgentVariablesPanel } from "@/features/agents/components/variables-management/AgentVariablesPanel";
 import { AgentVariablesManager } from "@/features/agents/components/variables-management/AgentVariablesManager";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 
 interface AgentVariablesModalProps {
   agentId: string;

@@ -1,6 +1,6 @@
 const inCalls = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => ({
@@ -12,7 +12,7 @@ jest.mock("@/utils/supabase/client", () => ({
   }),
 }));
 
-jest.mock("@/lib/supabase/hasBrowserSession", () => ({
+jest.mock("@host/lib/supabase/hasBrowserSession", () => ({
   hasBrowserSession: () => Promise.resolve(true),
 }));
 

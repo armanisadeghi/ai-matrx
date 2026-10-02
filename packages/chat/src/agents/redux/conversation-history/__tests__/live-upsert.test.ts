@@ -4,7 +4,7 @@
  * `upsertConversationIntoScopes` existed, the agent-run window's sidebar
  * showed "No conversations yet." above the chat the user was typing in.
  */
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import type { ConversationListItem } from "../../conversation-list/conversation-list.types";
 import reducer, {
   setScopeAgentIds,
   setScopePageSuccess,

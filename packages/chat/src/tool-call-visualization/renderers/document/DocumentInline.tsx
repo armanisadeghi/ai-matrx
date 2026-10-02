@@ -13,7 +13,7 @@ import { isTerminal } from "../_shared";
 import { parseDocument } from "./parseDocument";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { EmptyResultCard } from "../_shared-entity/EmptyResultCard";
-import { useOpenDocumentCanvas } from "@/features/data-tables/hooks/useOpenDocumentCanvas";
+import { useOpenDocumentCanvas } from "@host/features/data-tables/hooks/useOpenDocumentCanvas";
 
 /**
  * Inline renderer for the `document` tool — a polished entity card with a short

@@ -19,12 +19,12 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
 import type { ContextItemBodyProps } from "../types";
-import { useAttachedDocumentDisplayName } from "@/features/agents/components/inputs/resources/attached-documents";
-import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
+import { useAttachedDocumentDisplayName } from "../../inputs/resources/attached-documents";
+import { resolvePdfSurfaceIds } from "@host/features/pdf/hooks/usePdfSurfaceLinks";
 
 const LibraryPreviewPage = dynamic(
   () =>
-    import("@/features/rag/components/library/LibraryPreviewPage").then(
+    import("@host/features/rag/components/library/LibraryPreviewPage").then(
       (m) => m.LibraryPreviewPage,
     ),
   {

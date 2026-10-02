@@ -24,13 +24,13 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import type { Json } from "@/types/database.types";
-import { editMessage } from "@/features/agents/redux/execution-system/message-crud/edit-message.thunk";
-import { forkConversation } from "@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk";
-import { softDeleteConversation } from "@/features/agents/redux/execution-system/message-crud/soft-delete-conversation.thunk";
-import { launchConversation } from "@/features/agents/redux/execution-system/thunks/launch-conversation.thunk";
-import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import type { Json } from "@host/types/database.types";
+import { editMessage } from "../../redux/execution-system/message-crud/edit-message.thunk";
+import { forkConversation } from "../../redux/execution-system/message-crud/fork-conversation.thunk";
+import { softDeleteConversation } from "../../redux/execution-system/message-crud/soft-delete-conversation.thunk";
+import { launchConversation } from "../../redux/execution-system/thunks/launch-conversation.thunk";
+import type { ConversationInvocation } from "../../types/conversation-invocation.types";
 
 export interface UseMessageActionsArgs {
   conversationId: string;

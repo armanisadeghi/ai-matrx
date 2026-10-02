@@ -18,7 +18,7 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   createWarRoomScope,
   type WarRoomResourceEntry,

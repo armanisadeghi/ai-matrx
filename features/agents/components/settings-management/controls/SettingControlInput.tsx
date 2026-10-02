@@ -47,7 +47,7 @@ import { NumberInput } from "./NumberInput";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRatioSelect";
 import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
-import { choiceControlFor } from "@/features/agents/utils/choice-rule";
+import { choiceControlFor } from "@ai-matrx/chat/agents/utils/choice-rule";
 
 export interface SettingControlInputProps {
   /** Setting key (snake_case) — used for ids and response_format handling. */

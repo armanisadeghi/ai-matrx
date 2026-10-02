@@ -15,7 +15,7 @@ import unwiredReport from "@/scripts/unwired/report.json";
 jest.mock("@ai-matrx/design-system/data-table", () => ({
   MatrxDataTable: () => null,
 }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({

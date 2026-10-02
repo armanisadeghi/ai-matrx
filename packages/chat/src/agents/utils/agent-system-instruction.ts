@@ -9,7 +9,7 @@
  * to rebuild the messages array around new instruction text.
  */
 
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+import type { AgentDefinitionMessage } from "../types/agent-message-types";
 
 /**
  * Flatten an agent definition's system message into plain instruction text.

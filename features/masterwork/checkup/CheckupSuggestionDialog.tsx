@@ -43,7 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { toast } from "@/lib/toast";
 import { RuleFields, type RuleFieldValues } from "../components/detail/RuleFields";
 import { useRuleImproveRun } from "../review/useRuleImproveRun";

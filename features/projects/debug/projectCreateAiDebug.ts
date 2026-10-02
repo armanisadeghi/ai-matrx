@@ -5,7 +5,7 @@
  * Remove once the RLS / agent-load regression is fixed.
  */
 
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**

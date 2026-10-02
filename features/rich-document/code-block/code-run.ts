@@ -8,7 +8,7 @@
 // The code travels as STDIN to a fixed interpreter command, never spliced
 // into the command line, so nothing in the code can escape the shell.
 
-import type { ExecutionInstance } from "@/features/agents/types/instance.types";
+import type { ExecutionInstance } from "@ai-matrx/chat/agents/types/instance.types";
 import type { ProcessResult } from "@/features/code/types";
 
 type SandboxBinding = NonNullable<ExecutionInstance["sandboxBinding"]>;

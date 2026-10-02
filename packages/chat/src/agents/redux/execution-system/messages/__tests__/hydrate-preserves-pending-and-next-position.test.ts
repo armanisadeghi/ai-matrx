@@ -29,7 +29,7 @@ import {
   clearTranscriptJournal,
   readTranscriptJournal,
 } from "../transcript-journal";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const CONV = "conv-window";
 

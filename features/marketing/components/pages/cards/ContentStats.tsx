@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   parseSnapshotExtracted,
   parseSnapshotImages,

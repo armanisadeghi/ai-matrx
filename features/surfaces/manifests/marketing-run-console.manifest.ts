@@ -23,7 +23,7 @@
  * reasons about it.
  */
 
-import type { ManifestAgentRole, SurfaceManifest } from "@/features/surfaces/types";
+import type { ManifestAgentRole, SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { RUN_CONSOLE_GROUPS, RUN_CONSOLE_VALUES } from "./_run-console.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";

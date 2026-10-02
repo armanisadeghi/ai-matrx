@@ -20,31 +20,31 @@
  */
 
 import { SurfaceRegistrationError } from "./surface-registration-error";
-import { associationsService } from "@/features/scopes/service/associationsService";
-import { getSurfaceByName } from "@/features/surfaces/services/surfaces.service";
-import { invalidateSurfaceBoundAgents } from "@/features/surfaces/services/surface-bound-agents.service";
+import { associationsService } from "@host/features/scopes/service/associationsService";
+import { getSurfaceByName } from "./surfaces.service";
+import { invalidateSurfaceBoundAgents } from "./surface-bound-agents.service";
 import {
   getSurfaceAncestry,
   surfaceAcceptsAgentBindings,
-} from "@/features/surfaces/manifests/registry";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+} from "@host/features/surfaces/manifests/registry";
+import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import {
   isValueMappingMap,
   sanitizeWritePolicyMap,
   type ValueMappingMap,
-} from "@/features/surfaces/types";
-import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mappings";
+} from "../types";
+import type { MappingLayer } from "../utils/merge-value-mappings";
 import type {
   SurfaceBindingPayload,
   WritePolicyMap,
-} from "@/features/surfaces/types";
-import type { Json, Tables } from "@/types/database.types";
-import { createClient } from "@/utils/supabase/client";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { ensureOrgAvailability } from "@/utils/permissions/service";
+} from "../types";
+import type { Json, Tables } from "@host/types/database.types";
+import { createClient } from "@host/utils/supabase/client";
+import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import { ensureOrgAvailability } from "@host/utils/permissions/service";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
 // to store in a mapping, for every system that stores one.
-import { assertMappingsAreAnswerable } from "@/features/mandates/provision-shapes";
+import { assertMappingsAreAnswerable } from "@host/features/mandates/provision-shapes";
 
 // ---------------------------------------------------------------------------
 // Types

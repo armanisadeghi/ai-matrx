@@ -21,11 +21,11 @@ import React, { useMemo } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import MarkdownStream from "@/components/MarkdownStream";
-import { ToolResultValue } from "@/features/tool-call-visualization/result-fields/ToolResultValue";
+import { ToolResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ToolResultValue";
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist, type Assist } from "@/features/assists/types";
 import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import type { EmitRendererProps } from "./types";
 
 /** Cap for the inlined payload JSON — enough context, never a mega-prompt. */

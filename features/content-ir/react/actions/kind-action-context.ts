@@ -4,8 +4,8 @@
  * stays free of any React / hook import (unit-testable, capability-locked).
  */
 
-import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
-import type { LaunchResult } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import type { ManagedAgentOptions } from "@ai-matrx/chat/agents/types/instance.types";
+import type { LaunchResult } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 
 /**
  * The exact `launchAgent` surface a handler is allowed to use — the same

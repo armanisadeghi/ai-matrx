@@ -1,11 +1,11 @@
-import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
+import { PLACEMENT_TYPES } from "@host/features/agent-shortcuts/constants";
 import {
   createChatScope,
   type ChatAttachedResourceEntry,
   type ChatRunConfigurationRef,
   type ChatScratchpadRef,
   type ChatWorkingDocumentRef,
-} from "@/features/surfaces/manifests/chat.manifest";
+} from "@host/features/surfaces/manifests/chat.manifest";
 import type {
   ChatConversationRecord,
   ChatTranscriptEntry,

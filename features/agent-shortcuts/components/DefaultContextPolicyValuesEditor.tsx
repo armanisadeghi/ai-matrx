@@ -3,7 +3,7 @@
 import React from "react";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface DefaultContextPolicyValuesEditorProps {

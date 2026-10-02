@@ -16,9 +16,9 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectResourcePayloads } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
-import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectResourcePayloads } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { selectVisibleInputDefinitions } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
 
 export function isConversationRequestEmpty(
   state: RootState,

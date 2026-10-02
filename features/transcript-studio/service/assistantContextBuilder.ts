@@ -26,7 +26,7 @@
 
 import type { RootState } from "@/lib/redux/store";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { buildWorkingDocumentContextValue } from "@/features/agents/utils/workingDocumentContext";
+import { buildWorkingDocumentContextValue } from "@ai-matrx/chat/agents/utils/workingDocumentContext";
 import {
   selectCleanedSegmentForRecording,
   selectRawSegmentsForRecording,

@@ -15,18 +15,18 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let operation: unknown = null;
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(() => ({ finally: () => undefined })),
   useAppSelector: (sel: (s: unknown) => unknown) =>
     sel({ conversations: { byConversationId: { "conv-1": { serverOperation: operation } } } }),
 }));
-jest.mock("@/features/agents/ui-first-tools/redux/pending-asks.slice", () => ({
+jest.mock("../../ui-first-tools/redux/pending-asks.slice", () => ({
   selectActivePendingAsksForConversation: () => () => [],
 }));
-jest.mock("@/features/agents/redux/execution-system/thunks/resume-instance.thunk", () => ({
+jest.mock("../../redux/execution-system/thunks/resume-instance.thunk", () => ({
   resumeInstance: jest.fn(),
 }));
-jest.mock("@/features/agents/runtime-reconnect/reconnect-server-operation.thunk", () => ({
+jest.mock("../reconnect-server-operation.thunk", () => ({
   reconnectServerOperation: jest.fn(),
 }));
 

@@ -12,7 +12,7 @@
  *   converterRegistry                   → Map<string, ImportConverter>
  */
 
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type {
   ConversionResult,
   ImportConverter,

@@ -39,7 +39,7 @@
 // This module is pure and dependency-free so both the hook and the tests use
 // exactly the same code the menu runs.
 
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 
 /* -------------------------------------------------------------------------- */
 /* 1. REQUIREMENTS — what an item consumes                                    */

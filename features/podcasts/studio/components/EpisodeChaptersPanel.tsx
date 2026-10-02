@@ -22,7 +22,7 @@ import MediaChaptersBlock from "@/components/mardown-display/blocks/media-chapte
 import { podcastService } from "@/features/podcasts/service";
 import { chapterTimingAdjustmentNotice } from "@/features/podcasts/chapter-timing";
 import { useEpisodeChapters } from "@/features/podcasts/generator/useEpisodeChapters";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   PODCAST_RUN_SURFACE_NAME,
   asRecord,

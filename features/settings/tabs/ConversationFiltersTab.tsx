@@ -27,7 +27,7 @@ import {
   FEATURE_META,
   FILTERABLE_SURFACES,
   getSurfaceDefault,
-} from "@/features/agents/redux/conversation-history/source-registry";
+} from "@ai-matrx/chat/agents/redux/conversation-history/source-registry";
 import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 
 /** Feature options for the multi-select — every known feature, minus the

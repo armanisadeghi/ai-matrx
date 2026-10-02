@@ -47,8 +47,8 @@ import {
   getPlaceDetectionStatus,
   runPlaceDetectionPass,
 } from "../value-system/rules/data";
-import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { RunConsoleLiveState } from "./run-console-scope";
 import type { PlaceDetectionRunOutcome } from "./types";
 import { formatRelativeTime } from "@/utils/datetime";

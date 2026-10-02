@@ -116,14 +116,14 @@ jest.mock("./useProTextareaAgentAction", () => ({
     cancel: jest.fn(),
   }),
 }));
-jest.mock("@/features/surfaces/hooks/useSurfaceBoundAgents", () => ({
+jest.mock("@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents", () => ({
   useSurfaceBoundAgents: () => ({
     sections: [],
     loading: false,
     refresh: jest.fn(),
   }),
 }));
-jest.mock("@/features/surfaces/hooks/useSurfaceConfig", () => ({
+jest.mock("@ai-matrx/chat/surfaces/hooks/useSurfaceConfig", () => ({
   useSurfaceAgentRoles: () => ({ roles: {}, loading: false }),
 }));
 

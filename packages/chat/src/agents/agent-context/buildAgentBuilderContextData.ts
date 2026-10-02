@@ -1,6 +1,6 @@
-import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
-import { createAgentBuilderScope } from "@/features/surfaces/manifests/agent-builder.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { PLACEMENT_TYPES } from "@host/features/agent-shortcuts/constants";
+import { createAgentBuilderScope } from "@host/features/surfaces/manifests/agent-builder.manifest";
+import type { SurfaceScopePayload } from "../../surfaces/types";
 
 /** Placements for agent-builder text fields (target wiring). */
 export const AGENT_BUILDER_CONTEXT_MENU_PLACEMENTS = [

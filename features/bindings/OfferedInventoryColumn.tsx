@@ -15,7 +15,7 @@
 import { Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import {
   OFFERED_LAZY_WORDS,
   OFFERED_SOMETIMES_WORDS,

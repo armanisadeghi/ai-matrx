@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectIsExecuting } from "../../redux/execution-system/selectors/aggregate.selectors";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
+} from "@host/components/ui/collapsible";
+import { Button } from "@host/components/ui/button";
 import { Check, ChevronDown, Loader2, Webhook, X } from "lucide-react";
 import { AgentRunner } from "../smart/AgentRunner";
 

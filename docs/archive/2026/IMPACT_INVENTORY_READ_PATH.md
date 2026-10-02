@@ -34,7 +34,7 @@ Action vocabulary:
 - **`features/files/utils/`** — `resolveRenderableImageUrl.ts` + test DELETED (folded into resolver).
 - **`features/files/virtual-sources/`** — adapters KEEP (path-only); CodeInlinePreview/NotesInlinePreview render text, not file bytes — KEEP.
 - **`features/agents/`** — `useAiImageUrl.ts` DELETED; message-display components MODIFIED.
-- **`features/cx-chat/`, `features/cx-conversation/`** — user/assistant message renderers MODIFIED to `<InlineMediaRef>`.
+- **`features/cx-chat/`, `packages/chat/src/cx-conversation/`** — user/assistant message renderers MODIFIED to `<InlineMediaRef>`.
 - **`features/podcasts/`** — admin tables + player pages MODIFIED to `<InlineMediaRef>` and `useFile`.
 - **`features/organizations/`** — logo/avatar display surfaces MODIFIED.
 - **`features/image-manager/`** — ProfilePhotoTab + PublicImagesSection + CloudFileMetadataSheet MODIFIED.
@@ -239,23 +239,23 @@ NEW hooks in `features/files/hooks/` introduced by PR3: `useFile.ts`, `useFileSr
 | File | Lines | Current behavior | Action | What changes |
 |---|---|---|---|---|
 | features/agents/hooks/useAiImageUrl.ts | 252 | bespoke hook: builds image URL from AI image record | DELETE | replaced by `useFile(mediaRef)` — record exposes a MediaRef directly |
-| features/agents/components/notifications/ImageArrivalPeek.tsx | 194 | consumes `useAiImageUrl` to peek a new image | MODIFY | swap to `<InlineMediaRef ref={mediaRef} />` |
-| features/agents/components/notifications/useImageArrivalPeeks.ts | — | hook coordinator | KEEP | |
-| features/agents/components/messages-display/user/AgentUserMessage.tsx | 654 | renders user message: attached images via `<img src={publicUrl ?? signedUrl}>` | MODIFY | `<InlineMediaRef ref={mediaRef} />` |
-| features/agents/components/inputs/input-components/MediaVariableInput.tsx | 326 | display side of media variable (chip + thumb); uses `useFileSrc` + `useFileBlob` | MODIFY | `useFile` + `<InlineMediaRef>` |
-| features/agents/components/inputs/smart-input/AgentTextarea.tsx | — | textarea; image paste display | MODIFY | display side switches to `<InlineMediaRef>` (upload path OOS) |
+| packages/chat/src/agents/components/notifications/ImageArrivalPeek.tsx | 194 | consumes `useAiImageUrl` to peek a new image | MODIFY | swap to `<InlineMediaRef ref={mediaRef} />` |
+| packages/chat/src/agents/components/notifications/useImageArrivalPeeks.ts | — | hook coordinator | KEEP | |
+| packages/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx | 654 | renders user message: attached images via `<img src={publicUrl ?? signedUrl}>` | MODIFY | `<InlineMediaRef ref={mediaRef} />` |
+| packages/chat/src/agents/components/inputs/input-components/MediaVariableInput.tsx | 326 | display side of media variable (chip + thumb); uses `useFileSrc` + `useFileBlob` | MODIFY | `useFile` + `<InlineMediaRef>` |
+| packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx | — | textarea; image paste display | MODIFY | display side switches to `<InlineMediaRef>` (upload path OOS) |
 | features/agents/components/builder/message-builders/AddBlockButton.tsx | 744 | builder UI; shows file refs | MODIFY | display via `<InlineMediaRef>` |
 | features/agents/components/tools-management/AgentToolsManager.tsx | 3757 | many file references in UI | MODIFY | display via `<InlineMediaRef>` |
-| features/agents/redux/execution-system/instance-resources/resource-source.ts | 114 | resource-coercion (mostly write-side); imports from file-handler | MODIFY | retarget import to `@/features/files` after merge |
+| packages/chat/src/agents/redux/execution-system/instance-resources/resource-source.ts | 114 | resource-coercion (mostly write-side); imports from file-handler | MODIFY | retarget import to `@/features/files` after merge |
 
-### features/cx-chat/ + features/cx-conversation/
+### features/cx-chat/ + packages/chat/src/cx-conversation/
 
 | File | Lines | Current behavior | Action | What changes |
 |---|---|---|---|---|
-| features/cx-chat/components/messages/AssistantMessage.tsx | 297 | renders assistant message; `<img src>` for inline images | MODIFY | `<InlineMediaRef>` |
-| features/cx-chat/components/messages/UserMessage.tsx | 373 | renders user message; `<img src>` for attached images | MODIFY | `<InlineMediaRef>` |
-| features/cx-chat/components/sidebar/SidebarUserFooter.tsx | 68 | avatar `<img src>` | MODIFY | `<InlineMediaRef>` or `<Avatar>` wrapper |
-| features/cx-conversation/AssistantMessage.tsx | 297 | parallel assistant message renderer (legacy?) | MODIFY | `<InlineMediaRef>` |
+| packages/chat/src/cx-chat/components/messages/AssistantMessage.tsx | 297 | renders assistant message; `<img src>` for inline images | MODIFY | `<InlineMediaRef>` |
+| packages/chat/src/cx-chat/components/messages/UserMessage.tsx | 373 | renders user message; `<img src>` for attached images | MODIFY | `<InlineMediaRef>` |
+| packages/chat/src/cx-chat/components/sidebar/SidebarUserFooter.tsx | 68 | avatar `<img src>` | MODIFY | `<InlineMediaRef>` or `<Avatar>` wrapper |
+| packages/chat/src/cx-conversation/AssistantMessage.tsx | 297 | parallel assistant message renderer (legacy?) | MODIFY | `<InlineMediaRef>` |
 
 ### features/podcasts/
 
@@ -521,7 +521,7 @@ The following files matched a tag scan but are not in scope (they render unrelat
 - `features/prompt-apps/components/PromptAppEditor.tsx` (legacy; see active-migration prompts→agents)
 - `features/prompts/components/builder/PromptAssistantMessage.tsx`
 - `features/prompts/components/resource-display/ResourcePreviewSheet.tsx`
-- `features/public-chat/components/AgentSelector.tsx`
+- `packages/chat/src/public-chat/components/AgentSelector.tsx`
 - `features/research/components/overview/live-pipeline/ui/Favicon.tsx`
 - `features/tool-call-visualization/admin/tool-ui-generator-prompt.ts`
 - `features/workflows/results/registered-components/{BraveSearchDisplay,SerpResultsPage}.tsx`
@@ -573,7 +573,7 @@ The following files matched a tag scan but are not in scope (they render unrelat
 
 1. **`features/files/virtual-sources/adapters/CodeInlinePreview.tsx` (246) and `NotesInlinePreview.tsx` (220)** — these render text content fetched via virtual-source adapters, not cloud-file bytes. Confirm KEEP — they're rendering already-resolved virtual content, no `useFile` migration applies.
 2. **`features/files/redux/virtual-thunks.ts`** — fetches signed URLs for virtual sources (code-files, notes, prompt-apps, tool-ui-components, aga-apps). Should virtual-source URL minting also funnel through the new `useFile` resolver, or stay separate? The plan doesn't explicitly call it out.
-3. **`features/cx-conversation/AssistantMessage.tsx` (297)** vs **`features/cx-chat/components/messages/AssistantMessage.tsx` (297)** — same line count, very similar names. Confirm both are active (one may be dead code from an earlier rename).
+3. **`packages/chat/src/cx-conversation/AssistantMessage.tsx` (297)** vs **`packages/chat/src/cx-chat/components/messages/AssistantMessage.tsx` (297)** — same line count, very similar names. Confirm both are active (one may be dead code from an earlier rename).
 4. **`features/prompts/components/builder/PromptAssistantMessage.tsx`** and the prompt-app legacy editor — these match the active prompts→agents migration. Should the read-path sweep skip them entirely (because they're scheduled for deletion in phases 16–19), or do they still need to work during the transition window?
 5. **`components/admin/applet-admin/AppletConfigViewer.tsx`** — admin debug viewer. Worth migrating, or freeze and let it be replaced once applets→agent-apps lands?
 6. **`features/agent-apps/components/inputs/AgentAppImageField.tsx` (161)** — confirm this is a display field (read), not the upload field (write). The grep hit included it under both — may need a closer look.

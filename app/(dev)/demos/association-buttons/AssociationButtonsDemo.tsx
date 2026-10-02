@@ -22,7 +22,7 @@ import {
 import { SourceInput } from "@/features/resource-manager/source-input/components/SourceInput";
 
 // Local copies
-import { ComposerPlusMenu } from "@/features/agents/components/inputs/smart-input/composer/ComposerPlusMenu";
+import { ComposerPlusMenu } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/ComposerPlusMenu";
 import { SourceAddMenu } from "@/features/sources/components/SourceCapture";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import { StartHero } from "@/features/education/onboard/components/StartHero";
@@ -240,7 +240,7 @@ export default function AssociationButtonsDemo() {
 
         <Variant
           name="Composer plus menu"
-          path="features/agents/components/inputs/smart-input/composer/ComposerPlusMenu.tsx"
+          path="packages/chat/src/agents/components/inputs/smart-input/composer/ComposerPlusMenu.tsx"
           canonical={false}
         >
           <ComposerPlusMenu

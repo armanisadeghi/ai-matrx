@@ -11,7 +11,7 @@ import {
 } from "@ai-matrx/design-system";
 import { ResourcePickerMenu } from "./ResourcePickerMenu";
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 
 // Lazy-loaded: the window component (with its WindowPanel chrome + every
 // resource-picker tab) is its own chunk, only fetched when `useWindowMode`

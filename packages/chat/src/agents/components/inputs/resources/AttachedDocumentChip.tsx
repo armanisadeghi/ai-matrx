@@ -2,7 +2,7 @@
 
 import { createElement, useState } from "react";
 import { ChevronDown, FileText, Loader2, X, ArrowUpRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   Popover,
   PopoverContent,
@@ -12,13 +12,13 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { resolveResourceAttachmentTileTheme } from "@/features/agents/components/messages-display/user/resourceAttachmentTile.theme";
-import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
-import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
-import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
-import { compactChipLabel } from "@/features/agents/components/messages-display/user/compact-chip-label";
-import { primaryFormShortLabel } from "@/features/agents/components/inputs/resources/resource-family-words";
+} from "@host/components/ui/tooltip";
+import { resolveResourceAttachmentTileTheme } from "../../messages-display/user/resourceAttachmentTile.theme";
+import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
+import type { DocumentRepresentation } from "../../../types/instance.types";
+import { ResourceFamilyPolicyEditor } from "./ResourceFamilyPolicyEditor";
+import { compactChipLabel } from "../../messages-display/user/compact-chip-label";
+import { primaryFormShortLabel } from "./resource-family-words";
 
 export interface AttachedDocumentSettings {
   representation?: DocumentRepresentation;

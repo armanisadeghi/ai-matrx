@@ -1,14 +1,14 @@
 "use client";
 
 import { CheckCircle2, X } from "lucide-react";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import {
   SurfaceVariableBinding,
   type BindingTarget,
 } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
-import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import type { SurfaceValue, ValueMapping } from "@ai-matrx/chat/surfaces/types";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { ScalarValueControl } from "./BatchFieldControls";
 import { BatchBindingCell } from "./BatchBindingCell";
 import { FillDownButton, RowKindBadge, RowStatusDot } from "./BatchGridParts";

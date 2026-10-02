@@ -19,7 +19,7 @@ import {
   ProblemList,
   readCollectionList,
   repeatsProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 
 /** The guide as the parsers need it: its current body and the version anchors name. */
 export interface GuideText {

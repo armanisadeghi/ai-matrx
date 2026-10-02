@@ -69,7 +69,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 import { emitItem, endItems } from "./checks/items.mjs";
 
 const REPO_ROOT = resolve(__dirname, "..");
-const SCANNED_DIRS = ["features", "lib", "app", "components", "hooks"] as const;
+const SCANNED_DIRS = ["features", "packages/chat/src", "lib", "app", "components", "hooks"] as const;
 const BASELINE_PATH = join(REPO_ROOT, "scripts/record-toasts.baseline.json");
 
 const TOAST_METHODS = new Set(["success", "error", "info", "warning"]);

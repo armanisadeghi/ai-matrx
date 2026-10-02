@@ -13,12 +13,12 @@
 
 import { AlertTriangle, CheckCircle, FileText } from "lucide-react";
 
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
-import { cn } from "@/lib/utils";
-import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
-import { SerpFieldChips } from "@/features/marketing/seo/serp/SerpValidation";
-import { ApplyMetaToPage } from "@/features/marketing/seo/serp/ApplyMetaToPage";
-import type { SerpEntry } from "@/features/marketing/seo/serp/types";
+import { CopyButton } from "@host/components/matrx/buttons/CopyButton";
+import { cn } from "@host/lib/utils";
+import { SerpResult } from "@host/features/marketing/seo/serp/SerpResult";
+import { SerpFieldChips } from "@host/features/marketing/seo/serp/SerpValidation";
+import { ApplyMetaToPage } from "@host/features/marketing/seo/serp/ApplyMetaToPage";
+import type { SerpEntry } from "@host/features/marketing/seo/serp/types";
 
 const MAX_INLINE = 6;
 

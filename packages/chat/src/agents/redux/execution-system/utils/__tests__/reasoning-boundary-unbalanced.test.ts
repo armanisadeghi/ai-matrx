@@ -37,7 +37,7 @@ import activeRequestsReducer, {
   upsertRenderBlock,
 } from "../../active-requests/active-requests.slice";
 import { StreamBlockAccumulator } from "../stream-block-accumulator";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
+import type { ActiveRequest } from "../../../../types/request.types";
 
 const captured: Array<{ source: string; message: string }> = [];
 
@@ -48,8 +48,8 @@ const captured: Array<{ source: string; message: string }> = [];
 // time — zero tests ran while the file still looked green in a list. Spread the
 // real module: only the export this suite observes is replaced, and a new
 // export can never silently take the suite down.
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: (input: { source: string; message: string }) => {
     captured.push({ source: input.source, message: input.message });
   },

@@ -33,10 +33,10 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { Button } from "@host/components/ui/button";
+import { Textarea } from "@host/components/ui/textarea";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import type { PendingAsk } from "../redux/pending-asks.slice";
 import {
   resolvePendingAsk,

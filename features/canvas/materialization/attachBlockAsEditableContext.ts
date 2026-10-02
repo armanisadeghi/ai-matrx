@@ -20,11 +20,11 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type {
   CxContentBlock,
   CxTextContent,
-} from "@/features/public-chat/types/cx-tables";
-import { reconstructBlockMarkdown } from "@/features/agents/redux/execution-system/utils/assemble-cx-content-blocks";
-import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "@ai-matrx/chat/public-chat/types/cx-tables";
+import { reconstructBlockMarkdown } from "@ai-matrx/chat/agents/redux/execution-system/utils/assemble-cx-content-blocks";
+import { setContextEntry } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { flipMessageToDbRender } from "./flipMessageToDbRender";
-import { buildCanvasItemContextValue } from "@/features/agents/utils/canvasItemContext";
+import { buildCanvasItemContextValue } from "@ai-matrx/chat/agents/utils/canvasItemContext";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import {
   CANVAS_ITEM_UPDATED_EVENT,

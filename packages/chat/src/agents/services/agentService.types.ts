@@ -2,10 +2,10 @@
 // OpenAPI (`types/python-generated/api-types.ts`) is the sole source of truth —
 // never hand-mirror these schemas. Regen: `pnpm sync-types`.
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@host/types/python-generated/api-types";
 
 export type ResponseFormat = "text" | "json" | "json_schema";
-export type { FeedbackType } from "@/types/feedback.types";
+export type { FeedbackType } from "@host/types/feedback.types";
 
 export type AgentVariableInput = components["schemas"]["AgentVariableInput"];
 export type CreateAgentInput = components["schemas"]["CreateAgentInput"];

@@ -31,7 +31,7 @@ import {
   isMediaGeneratorSourceKind,
   type MediaGeneratorSourceKind,
 } from "@/features/education/media/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationMemoryScope,
   MEMORY_FOCUS_MAX,
@@ -44,8 +44,8 @@ import { memoryAidCounts } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { EDU_MEMORY_MANDATES } from "../mandates";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseCreateMemoryAids } from "../memoryWrites";
 
 // The generator source vocabulary lives ONCE in media/types.ts — the picker

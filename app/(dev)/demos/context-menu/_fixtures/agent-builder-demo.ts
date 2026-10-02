@@ -1,4 +1,4 @@
-import type { AgentBuilderScopeInput } from "@/features/agents/agent-context/buildAgentBuilderContextData";
+import type { AgentBuilderScopeInput } from "@ai-matrx/chat/agents/agent-context/buildAgentBuilderContextData";
 
 /** Stable placeholder agent for context-menu demos. */
 export const DEMO_AGENT_ID = "00000000-0000-4000-8000-000000000001";

@@ -29,7 +29,7 @@ import type { BaseReduxState } from "@/types/reduxTypes";
 import NavigationLoader from "@/components/loaders/NavigationLoader";
 import AppShell from "@/features/shell/components/AppShell";
 import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
-import { userShellPathForSystemAgentPath } from "@/features/agents/addressing/agentAddress";
+import { userShellPathForSystemAgentPath } from "@ai-matrx/chat/agents/addressing/agentAddress";
 
 // Admin pages require authentication and cannot be statically generated
 export const dynamic = "force-dynamic";

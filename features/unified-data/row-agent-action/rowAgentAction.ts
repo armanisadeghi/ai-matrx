@@ -24,7 +24,7 @@
 
 import type { Field, PermissionLevel, RecordDocument, RecordsActor, RecordsDataSource } from "@ai-matrx/records";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
+import type { ManagedAgentOptions } from "@ai-matrx/chat/agents/types/instance.types";
 import type { DataTableRowActionOffer } from "@/types/python-generated/provision-offers";
 
 /**

@@ -18,7 +18,7 @@ import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import {
   isCapturedSurfaceRegistrationError,
   isSurfaceRegistrationError,
-} from "@/features/surfaces/services/surface-registration-error";
+} from "@ai-matrx/chat/surfaces/services/surface-registration-error";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Label } from "@/components/ui/label";
@@ -31,38 +31,38 @@ import {
 } from "@/features/agent-shortcuts/constants";
 import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentById,
   selectAgentExecutionPayload,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { SurfaceVariableBindingList } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import { GlobalBindAgentGuard } from "@/features/surfaces/components/bind/GlobalBindAgentGuard";
 import { BindingSuggestionsTab } from "@/features/surfaces/components/bind/BindingSuggestionsTab";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
-import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+import { buildBindingTargets } from "@ai-matrx/chat/surfaces/utils/buildBindingTargets";
 // THE ONE PRE-FLIGHT (FIX-11) — the same judge every mapping writer runs.
 import { valueMappingsProblems } from "@/features/mandates/provision-shapes";
-import { evaluateBindingAutoRun } from "@/features/surfaces/utils/binding-auto-run";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
-import { loadSurfaceValues } from "@/features/surfaces/redux/thunks";
+import { evaluateBindingAutoRun } from "@ai-matrx/chat/surfaces/utils/binding-auto-run";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import { loadSurfaceValues } from "@ai-matrx/chat/surfaces/redux/thunks";
 import {
   makeSelectSurfaceValues,
   makeSelectSurfaceValuesStatus,
-} from "@/features/surfaces/redux/selectors";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
 import {
   bindAgentToSurface,
   listAgentSurfaceBindings,
   type AgentSurfaceBinding,
-} from "@/features/surfaces/services/bind-agent-to-surface.service";
+} from "@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type {
   SurfaceValue,
   ValueMapping,
   ValueMappingMap,
   WritePolicyMap,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
 import { cn } from "@/lib/utils";
 

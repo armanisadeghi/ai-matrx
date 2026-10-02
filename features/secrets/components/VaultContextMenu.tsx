@@ -41,7 +41,7 @@ import type {
   ContextMenuExtraSection,
   ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
 

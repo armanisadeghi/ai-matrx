@@ -10,12 +10,12 @@
  * default rode a Search-agents switch into a Claude Sonnet agent's run).
  */
 
-import type { AppDispatch } from "@/lib/redux/store";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { AppDispatch } from "@host/lib/redux/store";
+import type { FeLlmParams } from "../../../types/agent-api-types";
 import {
   isBasicWorkMandate,
   resolvePreferredChatModel,
-} from "@/features/ai-models/preferredChatModel";
+} from "@host/features/ai-models/preferredChatModel";
 import { seedOverrides } from "./instance-model-overrides.slice";
 
 export async function applyLaunchModelOverrides(

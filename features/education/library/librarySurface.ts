@@ -13,9 +13,9 @@ import type { EntityFilters, EntityListQuery } from "@/lib/entity-list/types";
 import { NONE_VALUE } from "@/lib/entity-list/types";
 import { makeScope } from "@/lib/list-scope/types";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
-import { ProblemList } from "@/features/surfaces/runtime/collection-write-targets";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { ProblemList } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   EDUCATION_LIBRARY_SORT_FIELDS,
   EDUCATION_LIBRARY_SURFACE_NAME,

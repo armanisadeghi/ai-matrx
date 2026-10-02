@@ -177,8 +177,8 @@ const MERGE_ONLY_ACTIONS = [
   "setUserVariableValues",
 ];
 
-const SCAN_ROOTS = ["features", "components", "lib", "app", "hooks"];
-const REPO_ROOT = path.resolve(__dirname, "../../../../../..");
+const SCAN_ROOTS = ["features", "packages/chat/src", "components", "lib", "app", "hooks"];
+const REPO_ROOT = path.resolve(__dirname, "../../../../../../../..");
 
 function sourceFiles(): string[] {
   const out: string[] = [];

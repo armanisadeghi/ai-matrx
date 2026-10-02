@@ -25,12 +25,12 @@
  */
 
 import React, { useCallback, useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
-import type { MicVariant } from "@/features/audio/components/MicrophoneIconButton";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { MicrophoneIconButton } from "@host/features/audio/components/MicrophoneIconButton";
+import type { MicVariant } from "@host/features/audio/components/MicrophoneIconButton";
+import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectUserVariableValues } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 
 interface AgentMicrophoneButtonProps {
   conversationId: string;

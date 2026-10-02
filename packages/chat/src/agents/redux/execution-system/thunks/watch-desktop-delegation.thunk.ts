@@ -1,10 +1,10 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { ThunkAction } from "redux-thunk";
 import { isRfc9562Uuid } from "@ai-matrx/kit/uuid";
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 
-import { fetchConversationPendingCallsStrict } from "@/features/agents/api/fetch-pending-calls";
-import type { RootState } from "@/lib/redux/store";
+import { fetchConversationPendingCallsStrict } from "../../../api/fetch-pending-calls";
+import type { RootState } from "@host/lib/redux/store";
 import { hasAbortController } from "./abort-registry";
 import { loadConversation } from "./load-conversation.thunk";
 import { resumeInstance } from "./resume-instance.thunk";

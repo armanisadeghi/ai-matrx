@@ -32,7 +32,7 @@
 
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { publishedToWebPatch } from "@/lib/row-access";
-import { invalidateMandateCache } from "@/features/mandates/service";
+import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import { createClient } from "@/utils/supabase/client";
 import { getResourceAccess } from "@/utils/permissions/access";
 import type { ResourceAccess } from "@/utils/permissions/access-core";

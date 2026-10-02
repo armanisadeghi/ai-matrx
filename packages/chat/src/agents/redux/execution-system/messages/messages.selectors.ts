@@ -9,7 +9,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { nextTranscriptPosition, type MessageRecord } from "./messages.slice";
 import type {
   ContentSegment,
@@ -28,27 +28,27 @@ import {
   type DocumentMediaPart,
   type YouTubeMediaPart,
   type RenderBlockPayload,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 import { normalizeContentBlocks } from "../utils/normalize-content-blocks";
-import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
+import { isAttachmentMessagePart } from "../../../components/context-items/normalize";
 import {
   messagePartsFromPersistedContent,
   parsePersistedMessageContent,
   unknownPersistedPartBlock,
 } from "./persisted-content-boundary";
-import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
+import { fromCxMediaPart } from "@host/features/files/blocks/image/adapters/from-cx-media-part";
 import {
   fromCxAudioPart,
   fromCxVideoPart,
-} from "@/features/files/blocks/adapters/from-cx-av-part";
-import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
+} from "@host/features/files/blocks/adapters/from-cx-av-part";
+import { seedPersistedEnvelopeCache } from "@host/features/content-ir/registry/region-envelope-memo";
 import {
   readEnvelope,
   reconstructRegionValue,
-} from "@/features/content-ir/redux/render-block-envelope";
+} from "@host/features/content-ir/redux/render-block-envelope";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { NON_ANSWER_BLOCK_TYPES } from "../active-requests/active-requests.selectors";
-import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import type { ApiEndpointMode } from "../../../types/instance.types";
 import {
   buildMessageCitationIndex,
   insertCitationMarkers,

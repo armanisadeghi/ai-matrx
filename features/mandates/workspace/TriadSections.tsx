@@ -34,7 +34,7 @@ import {
   ConfigurationTableRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -57,19 +57,19 @@ import {
 } from "../authoring/service";
 import { DraftInputsEditor } from "../authoring/DraftInputsEditor";
 import { isUserTextOnly, useMandateInputSurface } from "../input-surface";
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
-import { useMandate } from "../useMandate";
+import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import {
   useSurfaceScopeContribution,
   useSurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MANDATE_WORKSPACE_SURFACE_NAME,
   MANDATE_WORKSPACE_WRITE_TARGETS,
   type createMandateWorkspaceScope,
 } from "@/features/surfaces/manifests/mandate-workspace.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 /** The goal editor's fragment of the workspace scope — every key typed against
  * the manifest helper, minus the provider-owned `mandate_key`. */

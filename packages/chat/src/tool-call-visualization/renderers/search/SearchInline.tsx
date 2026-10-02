@@ -54,11 +54,11 @@ import {
     ArrowRight,
     BookOpen,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { useOpenScraperWindow } from "@/features/overlays/openers/scraperWindow";
-import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { cn } from "@host/lib/utils";
+import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { useOpenScraperWindow } from "@host/features/overlays/openers/scraperWindow";
+import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { ToolRendererProps } from "../../types";
 import { PartPeekPopover } from "../_shared-entity/PartPeekPopover";
 import {

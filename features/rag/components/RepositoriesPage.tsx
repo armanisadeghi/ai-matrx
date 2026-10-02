@@ -40,7 +40,7 @@ import { postJson } from "@/lib/python-client";
 import { createClient } from "@/utils/supabase/client";
 import { codeDb } from "@/utils/supabase/codeDb";
 import type { components } from "@/types/python-generated/api-types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildKnowledgeRepositoriesContextData } from "@/features/rag/agent-context/buildKnowledgeRepositoriesContextData";
 import { readOf } from "@/components/read-state/ReadGate";
 

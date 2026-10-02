@@ -13,7 +13,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import type { DiagramData } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

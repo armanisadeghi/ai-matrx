@@ -48,7 +48,7 @@ import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThum
 import { DesiredSection } from "@/features/marketing/components/pages/desired/DesiredSection";
 import { useDesiredValueSlice } from "@/features/marketing/components/pages/desired/useDesiredValueSlice";
 import { useOpenTaskQuickCreateWindow } from "@/features/overlays/openers/taskQuickCreateWindow";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
 import {
   generatePageImage,

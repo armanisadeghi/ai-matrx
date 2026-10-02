@@ -1,7 +1,7 @@
 "use client";
 
 import { ListChecks, Loader2 } from "lucide-react";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 import { useScribeDraftTasks } from "../../hooks/useScribeDraftTasks";

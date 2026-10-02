@@ -65,7 +65,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
+import { RunSetWindowController } from "@ai-matrx/chat/agents/components/live-run/RunSetDisplay";
 import {
   DESCRIPTION_LIMITS,
   TITLE_LIMITS,

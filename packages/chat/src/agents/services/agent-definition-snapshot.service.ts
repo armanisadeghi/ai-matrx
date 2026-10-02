@@ -1,8 +1,8 @@
-import { dbRowToAgentDefinition } from "@/features/agents/redux/agent-definition/converters";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import { supabase } from "@/utils/supabase/client";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { operationFailed } from "@/utils/errors";
+import { dbRowToAgentDefinition } from "../redux/agent-definition/converters";
+import type { AgentDefinition } from "../types/agent-definition.types";
+import { supabase } from "@host/utils/supabase/client";
+import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import { operationFailed } from "@host/utils/errors";
 
 /**
  * Read the currently saved agent definition without hydrating Redux.

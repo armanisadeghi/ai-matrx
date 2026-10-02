@@ -7,7 +7,7 @@ import { loginHref, withAuthDestination } from "@/utils/auth/auth-destination";
 import { AuthedWorkspaceCTA } from "./AuthedWorkspaceCTA";
 import { ModuleLandingConversionNudges } from "../conversion/ModuleLandingConversionNudges";
 import { MODULE_LANDING_DIRECTORY } from "./landings/directory";
-import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-assistant/ScrollAssistantLauncher";
+import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
 
 export interface ModuleCapability {
   icon: LucideIcon;

@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { Badge } from "@/components/ui/badge";
 import {
   Popover,

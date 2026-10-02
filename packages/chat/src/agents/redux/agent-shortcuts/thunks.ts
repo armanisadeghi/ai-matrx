@@ -19,15 +19,15 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
+import { supabase } from "@host/utils/supabase/client";
+import { requireAuthenticatedSupabaseSession } from "@host/utils/supabase/webDb";
 import { pgErrorToError } from "@ai-matrx/data";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { toGlobalOwnershipRecord } from "@/lib/organizations/globalOwnership";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { assignField } from "@/features/agents/redux/shared/field-flags";
+import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
+import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
+import { toGlobalOwnershipRecord } from "@host/lib/organizations/globalOwnership";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { assignField } from "../shared/field-flags";
 import type {
   AgentShortcut,
   AgentShortcutMenuResult,
@@ -36,10 +36,10 @@ import type {
   CreateShortcutForAgentParams,
   ShortcutFieldSnapshot,
 } from "./types";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { ShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
+import type { ResultDisplayMode } from "../../utils/run-ui-utils";
+import type { ShortcutContext } from "../../utils/shortcut-context-utils";
+import type { VariableDefinition } from "../../types/agent-definition.types";
+import type { ContextPolicy } from "../../types/agent-api-types";
 
 function parseScopeMappings(raw: unknown): Record<string, string> | null {
   if (raw === null || raw === undefined) return null;
@@ -104,7 +104,7 @@ function pickJsonObject<T>(
 function menuItemToConfigFields(item: unknown): {
   displayMode: ResultDisplayMode;
   showVariablePanel: boolean;
-  variablesPanelStyle: import("@/features/agents/components/inputs/variable-input-variations/variable-input-options").VariablesPanelStyle;
+  variablesPanelStyle: import("../../components/inputs/variable-input-variations/variable-input-options").VariablesPanelStyle;
   autoRun: boolean;
   allowChat: boolean;
   showDefinitionMessages: boolean;
@@ -119,10 +119,10 @@ function menuItemToConfigFields(item: unknown): {
   defaultVariables: Record<string, unknown> | null;
   contextOverrides: Record<string, unknown> | null;
   llmOverrides: Partial<
-    import("@/features/agents/types/agent-api-types").LLMParams
+    import("../../types/agent-api-types").LLMParams
   > | null;
   jsonExtraction:
-    | import("@/features/agents/types/instance.types").JsonExtractionConfig
+    | import("../../types/instance.types").JsonExtractionConfig
     | null;
 } {
   const o = (item ?? {}) as Record<string, unknown>;
@@ -131,7 +131,7 @@ function menuItemToConfigFields(item: unknown): {
       "modal-full") as ResultDisplayMode,
     showVariablePanel: pickBool(o, false, "show_variable_panel"),
     variablesPanelStyle: (pickString(o, "variables_panel_style") ??
-      "inline") as import("@/features/agents/components/inputs/variable-input-variations/variable-input-options").VariablesPanelStyle,
+      "inline") as import("../../components/inputs/variable-input-variations/variable-input-options").VariablesPanelStyle,
     autoRun: pickBool(o, true, "auto_run"),
     allowChat: pickBool(o, true, "allow_chat"),
     showDefinitionMessages: pickBool(o, false, "show_definition_messages"),
@@ -162,10 +162,10 @@ function menuItemToConfigFields(item: unknown): {
       "context_overrides",
     ),
     llmOverrides: pickJsonObject<
-      Partial<import("@/features/agents/types/agent-api-types").LLMParams>
+      Partial<import("../../types/agent-api-types").LLMParams>
     >(o, "llm_overrides"),
     jsonExtraction: pickJsonObject<
-      import("@/features/agents/types/instance.types").JsonExtractionConfig
+      import("../../types/instance.types").JsonExtractionConfig
     >(o, "json_extraction"),
   };
 }
@@ -218,15 +218,15 @@ import {
   upsertCategories as upsertCategoriesAction,
   mergePartialCategory,
 } from "../agent-shortcut-categories/slice";
-import { sklActions } from "@/features/agent-connections/redux/skl/slice";
+import { sklActions } from "@host/features/agent-connections/redux/skl/slice";
 import type {
   SklRenderDefinition,
   RenderDefinitionBlockType,
   RenderDefinitionVisibility,
-} from "@/features/agent-connections/redux/skl/types";
+} from "@host/features/agent-connections/redux/skl/types";
 import { categoryRowToDef } from "../agent-shortcut-categories/converters";
 import type { CategoryApiRow } from "../agent-shortcut-categories/types";
-import { mergePartialAgent } from "@/features/agents/redux/agent-definition/slice";
+import { mergePartialAgent } from "../agent-definition/slice";
 import {
   selectShortcutById,
   selectShortcutsInitialLoaded,
@@ -1598,8 +1598,8 @@ import {
   SHORTCUT_RPCS,
   mandateIdOfShortcutRow,
   mandateKeyOfShortcutRow,
-} from "@/lib/supabase/shortcutStorage";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+} from "@host/lib/supabase/shortcutStorage";
+import { storedMandateKey, type AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 // Content-block CRUD moved to the canonical skl thunks
 // (features/agent-connections/redux/skl/thunks.ts —

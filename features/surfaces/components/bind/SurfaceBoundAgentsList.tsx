@@ -15,19 +15,19 @@ import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import {
   isCapturedSurfaceRegistrationError,
   isSurfaceRegistrationError,
-} from "@/features/surfaces/services/surface-registration-error";
+} from "@ai-matrx/chat/surfaces/services/surface-registration-error";
 
-import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
-import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { useSurfaceBoundAgents } from "@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents";
+import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
+import { useAgentNames } from "@ai-matrx/chat/surfaces/hooks/useAgentNames";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
-import { deleteAgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
+import { deleteAgentSurfaceBinding } from "@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
+import type { SurfaceBoundAgentEntry } from "@ai-matrx/chat/surfaces/services/surface-bound-agents.service";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface SurfaceBoundAgentsListProps {

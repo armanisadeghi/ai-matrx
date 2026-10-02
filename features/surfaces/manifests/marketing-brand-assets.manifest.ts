@@ -29,7 +29,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { MEDIA_ORDER_PRESET_IDS } from "@/features/marketing/lib/media-order-presets";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

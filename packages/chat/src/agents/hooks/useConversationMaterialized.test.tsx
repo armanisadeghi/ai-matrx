@@ -1,16 +1,16 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { waitForConversationPersisted } from "../redux/execution-system/conversations/conversation-persistence";
 import { useConversationMaterialized } from "./useConversationMaterialized";
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: jest.fn(),
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversation-persistence",
+  "../redux/execution-system/conversations/conversation-persistence",
   () => ({
     waitForConversationPersisted: jest.fn(),
   }),

@@ -19,7 +19,7 @@ import type {
 import {
   shortcutRowToFrontend,
   type AdminNonGlobalShortcutRow,
-} from "@/features/agents/redux/agent-shortcuts/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import { pushAppHref } from "@/lib/deployment/navigate";
 
 interface PromoteTargetState {

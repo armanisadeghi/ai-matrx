@@ -17,7 +17,7 @@ import type { MandateKey } from "@ai-matrx/agents/mandates";
 import React from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -34,8 +34,8 @@ import {
 } from "../../hooks/useMergedAgentConversations";
 import type { CodeEditorAgentConfig } from "../../types";
 import { ItemRow } from "@/components/official/item/ItemRow";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
+import { renameConversation } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CodeEditorHistoryPanelProps {

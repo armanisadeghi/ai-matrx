@@ -5,7 +5,7 @@
  */
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/run-headless-agent-json",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json",
   () => ({ runHeadlessAgentJson: jest.fn(), livePosture: () => ({}) }),
 );
 

@@ -25,7 +25,7 @@ import {
   sweepPendingAsks,
 } from "../redux/pending-asks.slice";
 import { registerAskResolver } from "../redux/ask-resolver-registry";
-import { resolveGmailSendConnection } from "@/features/google-workspace/connection";
+import { resolveGmailSendConnection } from "@host/features/google-workspace/connection";
 
 export const googleEmailSendHandler: ToolHandler<
   GoogleEmailSendArgs,

@@ -21,8 +21,8 @@ import { toast } from "@/lib/toast";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";

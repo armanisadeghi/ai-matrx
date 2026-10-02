@@ -39,9 +39,9 @@ import { ShimmerText } from "@/components/loaders/ShimmerText";
 import {
   RunJobWorkingLine,
   useIsRunJob,
-} from "@/features/agents/components/run/RunJobWorkingLine";
-import { GenerationJobCard } from "@/features/agents/components/run/GenerationJobCard";
-import { selectRequestGenerationJob } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "@ai-matrx/chat/agents/components/run/RunJobWorkingLine";
+import { GenerationJobCard } from "@ai-matrx/chat/agents/components/run/GenerationJobCard";
+import { selectRequestGenerationJob } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import FullScreenMarkdownEditor from "./FullScreenMarkdownEditor";
 import { InlineStatusIndicator } from "./internal-handlers/InlineStatusIndicator";
 import { InlineThinkingSlot } from "./internal-handlers/InlineThinkingSlot";
@@ -59,30 +59,30 @@ import {
   type ContentSegment,
   type ContentSegmentDbTool,
   type UnifiedSlot,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import {
   insertCitationMarkers,
   type BlockCitationMarker,
-} from "@/features/agents/redux/execution-system/messages/message-citations";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/message-citations";
 import {
   foldAgentWork,
   SHORT_TEXT_FOLD_MAX,
   type AgentWorkClass,
   type AgentWorkFold,
-} from "@/features/tool-call-visualization/grouping/foldAgentWork";
-import { AgentWorkGroup } from "@/features/tool-call-visualization/components/AgentWorkGroup";
-import { holdsADecision, recordHoldsADecision } from "@/features/tool-call-visualization/components/holdsADecision";
+} from "@ai-matrx/chat/tool-call-visualization/grouping/foldAgentWork";
+import { AgentWorkGroup } from "@ai-matrx/chat/tool-call-visualization/components/AgentWorkGroup";
+import { holdsADecision, recordHoldsADecision } from "@ai-matrx/chat/tool-call-visualization/components/holdsADecision";
 import {
   EXPERT_WORKING_LABEL,
   useMachineFramesVisible,
-} from "@/features/agents/components/shared/transcript-audience";
-import { getToolDisplayMode } from "@/features/tool-call-visualization/registry/registry";
-import { isCloudBrowserToolName } from "@/features/tool-call-visualization/renderers/cloud-browser/cloudBrowserRun";
-import { collectCloudBrowserRun } from "@/features/tool-call-visualization/grouping/groupCloudBrowserRuns";
+} from "@ai-matrx/chat/agents/components/shared/transcript-audience";
+import { getToolDisplayMode } from "@ai-matrx/chat/tool-call-visualization/registry/registry";
+import { isCloudBrowserToolName } from "@ai-matrx/chat/tool-call-visualization/renderers/cloud-browser/cloudBrowserRun";
+import { collectCloudBrowserRun } from "@ai-matrx/chat/tool-call-visualization/grouping/groupCloudBrowserRuns";
 import {
   selectMessageInterleavedContent,
   selectMessagesInterleavedRuns,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ToolCard, ToolBatch } from "./internal-handlers/ToolHandlers";

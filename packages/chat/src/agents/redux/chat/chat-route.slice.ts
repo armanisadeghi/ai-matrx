@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+import type { RootState } from "@host/lib/redux/store";
+import type { ComposerMode } from "../../components/inputs/smart-input/composer/composer-types";
 
 interface ChatRouteState {
   /**

@@ -11,15 +11,15 @@
  * `NOTES_EDITOR_CONTEXT_MENU_PROPS`) — NOT the deleted bespoke NoteContextMenu.
  */
 
-import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
+import { PLACEMENT_TYPES } from "@host/features/agent-shortcuts/constants";
 import {
   countWords,
   findCurrentHeading,
-} from "@/features/notes/utils/markdown-headings";
-import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
-import { createConversationDocumentScope } from "@/features/surfaces/manifests/_conversation-document.manifest";
-import type { WorkingDocumentBinding, WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+} from "@host/features/notes/utils/markdown-headings";
+import { formatEditorSurroundContext } from "@host/utils/format-editor-surround-context";
+import { createConversationDocumentScope } from "@host/features/surfaces/manifests/_conversation-document.manifest";
+import type { WorkingDocumentBinding, WorkingDocumentKind } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
+import type { SourceFeature } from "../../types/instance.types";
 
 export const WORKING_DOCUMENT_SURFACE_NAME = "matrx-user/working-document" as const;
 export const SCRATCHPAD_SURFACE_NAME = "matrx-user/scratchpad" as const;

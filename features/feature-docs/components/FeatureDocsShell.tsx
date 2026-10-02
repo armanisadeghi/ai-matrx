@@ -10,12 +10,12 @@ import {
   type FeatureDocDotDir,
   type FeatureDocZone,
 } from "@/features/feature-docs/constants";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_DOCUMENTATION_SURFACE_NAME,
   createAdminDocumentationScope,
 } from "@/features/surfaces/manifests/admin-documentation.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 interface FeatureDocsShellProps {
   title: string;

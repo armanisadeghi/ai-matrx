@@ -16,8 +16,8 @@ import type { ToolRendererProps } from "../../types";
 import { isTerminal } from "../_shared";
 import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
-import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
-import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
+import { formatAbsoluteDate, formatRelativeTime } from "@host/utils/datetime";
+import { useOpenNotesWindow } from "@host/features/overlays/openers/notesWindow";
 
 import { useNoteToolData, type NoteToolMode } from "./useNoteToolData";
 import {

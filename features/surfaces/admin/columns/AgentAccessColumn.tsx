@@ -24,18 +24,18 @@ import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import {
   isCapturedSurfaceRegistrationError,
   isSurfaceRegistrationError,
-} from "@/features/surfaces/services/surface-registration-error";
+} from "@ai-matrx/chat/surfaces/services/surface-registration-error";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { WritePolicyEditor } from "@/features/surfaces/components/bind/WritePolicyEditor";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   loadBindingsForAgent,
   upsertAgentSurfaceBindingThunk,
-} from "@/features/surfaces/redux/thunks";
-import { makeSelectBindingsForAgent } from "@/features/surfaces/redux/selectors";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
-import type { WritePolicyMap } from "@/features/surfaces/types";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/surfaces/redux/thunks";
+import { makeSelectBindingsForAgent } from "@ai-matrx/chat/surfaces/redux/selectors";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import type { WritePolicyMap } from "@ai-matrx/chat/surfaces/types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 
 export function AgentAccessColumn({ agent }: { agent: AgentDefinition }) {
@@ -111,7 +111,7 @@ function AgentAccessForm({
   agent: AgentDefinition;
   surfaceName: string;
   existing:
-    | import("@/features/surfaces/services/bind-agent-to-surface.service").AgentSurfaceBinding
+    | import("@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service").AgentSurfaceBinding
     | null;
   currentUserId: string | null;
 }) {

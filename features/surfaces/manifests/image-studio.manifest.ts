@@ -22,7 +22,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   CROPPING_IMAGE_FIT,
   IMAGE_FIT_OPTIONS,

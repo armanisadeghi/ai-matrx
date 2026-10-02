@@ -29,27 +29,27 @@ import { fileURLToPath } from "node:url";
 import { featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SCAN_DIRS = ["features", "lib", "components", "app", "hooks", "utils"];
+const SCAN_DIRS = ["features", "packages/chat/src", "lib", "components", "app", "hooks", "utils"];
 
 /** Allowed files, each with the reason. A stale entry (file gone) fails too. */
 const ALLOWED = {
-  "features/agents/redux/execution-system/context-rules/request-context.ts": "THE door",
-  "features/agents/ui-first-tools/redux/build-ambient-context.ts": "defines buildAmbientContext",
-  "features/agents/redux/execution-system/instance-resources/instance-resources.selectors.ts":
+  "packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts": "THE door",
+  "packages/chat/src/agents/ui-first-tools/redux/build-ambient-context.ts": "defines buildAmbientContext",
+  "packages/chat/src/agents/redux/execution-system/instance-resources/instance-resources.selectors.ts":
     "defines selectResourceContextPayload",
-  "features/agents/redux/execution-system/thunks/execute-instance.thunk.ts":
+  "packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts":
     "assembleRequest sets request.context from the door",
-  "features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts":
+  "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts":
     "assembleManualRequest sets request.context from the door",
-  "features/agents/redux/execution-system/thunks/resume-instance.thunk.ts":
+  "packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts":
     "resume spreads the door's context into its body",
 };
 
 /** The request builders: each sends the door's `context` AND its `context_withheld`. */
 const REQUEST_BUILDERS = [
-  "features/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
-  "features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
-  "features/agents/redux/execution-system/thunks/resume-instance.thunk.ts",
+  "packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
+  "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
+  "packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts",
 ];
 
 /** Rule 6 for one builder's text: the door's withheld keys must reach its body. */
@@ -82,7 +82,7 @@ const RULES = [
 /** Findings for one file's text (path relative to repo root). */
 /** Rules that hold even in the allowed files (only the door itself defines them). */
 const EVERYWHERE = new Set(["ambient-override"]);
-const DOOR = "features/agents/redux/execution-system/context-rules/request-context.ts";
+const DOOR = "packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts";
 
 export function findings(relPath, text) {
   if (relPath === DOOR) return [];
@@ -132,7 +132,7 @@ function run() {
   if (all.length || stale.length) {
     console.error(
       `\ncheck:context-single-door — ${all.length} finding(s). A request's context is built ONLY by ` +
-        "features/agents/redux/execution-system/context-rules/request-context.ts (buildRequestContext).",
+        "packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts (buildRequestContext).",
     );
     process.exit(1);
   }
@@ -170,7 +170,7 @@ function selfTest() {
     console.error("✗ self-test: a clean file was flagged", findings("features/x/clean.ts", clean));
     ok = false;
   }
-  if (findings("features/agents/redux/execution-system/context-rules/request-context.ts", "buildContextWire(rows)").length) {
+  if (findings("packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts", "buildContextWire(rows)").length) {
     console.error("✗ self-test: the door itself was flagged");
     ok = false;
   }
@@ -186,7 +186,7 @@ function selfTest() {
     ok = false;
   }
   // Rule 7 holds inside an allowed request builder too (the resume path forced it until 2026-10-01).
-  if (!findings("features/agents/redux/execution-system/thunks/resume-instance.thunk.ts", "  includeAmbient: true,").some((f) => f.rule === "ambient-override")) {
+  if (!findings("packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts", "  includeAmbient: true,").some((f) => f.rule === "ambient-override")) {
     console.error("✗ self-test: includeAmbient in an allowed builder was NOT caught");
     ok = false;
   }

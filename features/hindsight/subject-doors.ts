@@ -13,7 +13,7 @@
  */
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { runHref } from "@/features/workflow-runtime/run-doors";
-import { agentPathFor } from "@/features/agents/addressing/agentAddress";
+import { agentPathFor } from "@ai-matrx/chat/agents/addressing/agentAddress";
 
 import type { Enrollment } from "./types";
 

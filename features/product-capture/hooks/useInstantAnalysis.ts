@@ -45,22 +45,22 @@
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useCallback, useEffect, useState } from "react";
 
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 import {
   isSourceFeature,
   type SourceFeature,
-} from "@/features/agents/types/instance.types";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
+} from "@ai-matrx/chat/agents/types/instance.types";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { reconnectServerOperation } from "@ai-matrx/chat/agents/runtime-reconnect/reconnect-server-operation.thunk";
 import {
   selectLatestAnswerText,
   selectLatestRequestId,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectFirstExtractedObject } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectFirstExtractedObject } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import {
   extractContentBlocks,
   selectConversationMessages,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { fileHandler } from "@/features/files/handler/handler";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";

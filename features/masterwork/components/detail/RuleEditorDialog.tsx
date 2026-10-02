@@ -25,8 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { nextRuleId } from "../../ruleIds";
 import { findIdenticalRule } from "../../duplicateRules";
 import type { RulebookDraftSnapshot } from "../../agent-context/rulebookSurfaceScope";

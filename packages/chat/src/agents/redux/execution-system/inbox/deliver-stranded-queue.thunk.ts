@@ -22,8 +22,8 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { toast } from "@/lib/toast";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { toast } from "@host/lib/toast";
 import { retractInboxItem } from "./inbox.thunks";
 import { isStrandablePersonLine } from "./inbox.selectors";
 import { hasAbortController } from "../thunks/abort-registry";

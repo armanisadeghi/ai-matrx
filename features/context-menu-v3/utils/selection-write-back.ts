@@ -24,7 +24,7 @@
 // `insertAtCaret` replaces the live selection, `onTextInsertAfter` inserts a
 // block after it.
 
-import type { SelectionWriteBack } from "@/features/agents/types/widget-handle.types";
+import type { SelectionWriteBack } from "@ai-matrx/chat/agents/types/widget-handle.types";
 import { spliceInputValue, type SelectionRange } from "./selection-tracking";
 
 export interface BuildSelectionWriteBackArgs {

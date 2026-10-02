@@ -19,7 +19,7 @@ import { Fragment } from "react";
 import { AlertTriangle, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import {
   FillDownButton,
   RowKindBadge,
@@ -29,7 +29,7 @@ import {
   SurfaceVariableBinding,
   type BindingTarget,
 } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
-import type { ValueMapping } from "@/features/surfaces/types";
+import type { ValueMapping } from "@ai-matrx/chat/surfaces/types";
 import type {
   ConsumptionMap,
   OfferedValue,

@@ -36,7 +36,7 @@ import {
 } from "../notification-preferences";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { useSurfaceScopeContribution, useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceScopeContribution, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ROLE_BOUND_AREAS,
   notificationArea,

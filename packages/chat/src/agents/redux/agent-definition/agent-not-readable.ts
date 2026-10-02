@@ -6,7 +6,7 @@
 // logging live once, in lib/errors/expectedRefusal.ts (`logFailure`); this
 // module only builds and recognises the agent's own refusal.
 
-import { expectedRefusal, expectedRefusalCode } from "@/lib/errors/expectedRefusal";
+import { expectedRefusal, expectedRefusalCode } from "@host/lib/errors/expectedRefusal";
 
 export const AGENT_NOT_READABLE = "agent_not_readable" as const;
 

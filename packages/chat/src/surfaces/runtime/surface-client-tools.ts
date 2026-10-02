@@ -29,9 +29,9 @@
  *    never declared, and a caller cannot invent one.
  */
 
-import { getAllManifests, getManifest } from "@/features/surfaces/manifests/registry";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { toast } from "@/lib/toast";
+import { getAllManifests, getManifest } from "@host/features/surfaces/manifests/registry";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { toast } from "@host/lib/toast";
 
 import type { SurfaceClientTool } from "../types";
 import {

@@ -17,8 +17,8 @@
  */
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectRequestError } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { AssistantError } from "@/features/agents/components/run/AssistantError";
+import { selectRequestError } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { AssistantError } from "@ai-matrx/chat/agents/components/run/AssistantError";
 
 export function InlineAssistantError({ requestId }: { requestId: string }) {
   const streamError = useAppSelector(selectRequestError(requestId));

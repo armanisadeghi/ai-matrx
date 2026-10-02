@@ -43,7 +43,7 @@ import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import type { PageSearchPerformance } from "@/features/marketing/types";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
-import { useSurfaceClientTools } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceClientTools } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { cn } from "@/lib/utils";
 
 import { NODE_TYPE_LABELS, planStatusColor } from "../constants";

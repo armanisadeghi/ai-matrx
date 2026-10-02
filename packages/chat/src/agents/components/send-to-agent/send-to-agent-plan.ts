@@ -10,9 +10,9 @@
 // explicitly and then edits in the composer before sending — it IS their text.
 // Every other destination is a variable or a context entry.
 
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
-import type { AgentExecutionRuntime } from "@/features/agents/types/agent-execution-config.types";
+import type { VariableDefinition } from "../../types/agent-definition.types";
+import type { ContextPolicy } from "../../types/agent-api-types";
+import type { AgentExecutionRuntime } from "../../types/agent-execution-config.types";
 
 /** The ad-hoc context key the default destination lands under. */
 export const IMPORTANT_CONTEXT_KEY = "user_tagged_context";

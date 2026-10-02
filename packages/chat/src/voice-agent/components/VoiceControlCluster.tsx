@@ -4,7 +4,7 @@
 // Session toggle (AudioLines / stop) + optional mute control. Mute sits
 // to the left of the main button and only appears while a session is live.
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type { VoiceStatus } from "../types";
 import { VoiceMicButton } from "./VoiceMicButton";
 import { VoiceMuteButton } from "./VoiceMuteButton";

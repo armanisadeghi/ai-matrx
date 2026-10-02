@@ -27,10 +27,10 @@ import type {
   AgentVersionSnapshot,
   ModelTier,
   ModelTiers,
-} from "@/features/agents/types/agent-definition.types";
-import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-directives.types";
-import type { SkillConfig } from "@/features/skills/types";
-import { parseUiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+} from "../../types/agent-definition.types";
+import type { MatrxDirectivesConfig } from "../../types/matrx-directives.types";
+import type { SkillConfig } from "@host/features/skills/types";
+import { parseUiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
 import { parseCustomTools } from "./parse-custom-tools";
 import {
   parseAgentMessages,

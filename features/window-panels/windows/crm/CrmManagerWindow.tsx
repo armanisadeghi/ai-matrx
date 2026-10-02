@@ -3,7 +3,7 @@
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { CrmListPage } from "@/features/crm/components/CrmListPage";
 import { CRM_MANAGER_SURFACE_NAME } from "@/features/surfaces/manifests/crm-manager.manifest";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 
 export interface CrmManagerWindowProps {
   isOpen: boolean;

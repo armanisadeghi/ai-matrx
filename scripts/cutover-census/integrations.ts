@@ -152,7 +152,7 @@ export const INTEGRATIONS: Integration[] = [
     proofs: [
       { kind: "contains", repo: "matrx-frontend", file: "features/quick-actions/components/QuickDataSheet.tsx", pattern: "listTablesEverywhere", says: "lists both stores" },
       { kind: "contains", repo: "matrx-frontend", file: "features/quick-actions/components/QuickDataSheet.tsx", pattern: "LocatedTableViewer", says: "opens through the locating viewer" },
-      { kind: "lacks", repo: "matrx-frontend", files: ["features/quick-actions/**"], pattern: OLDER_DOOR_PATTERN, says: "names no older door" },
+      { kind: "lacks", repo: "matrx-frontend", files: ["features/quick-actions/**", "packages/chat/src/quick-actions/**"], pattern: OLDER_DOOR_PATTERN, says: "names no older door" },
     ],
   },
   {
@@ -165,7 +165,7 @@ export const INTEGRATIONS: Integration[] = [
       "matrx-frontend": [
         "features/window-panels/windows/UserTableWindow.tsx",
         "features/canvas/artifact-types/renderers/TableArtifact.tsx",
-        "features/tool-call-visualization/**",
+        "features/tool-call-visualization/**", "packages/chat/src/tool-call-visualization/**",
       ],
     },
     proofs: [
@@ -179,7 +179,7 @@ export const INTEGRATIONS: Integration[] = [
         "features/window-panels/windows/UserTableWindow.tsx",
         "components/mardown-display/tables/ViewTableModal.tsx",
         "features/canvas/artifact-types/renderers/TableArtifact.tsx",
-        "features/tool-call-visualization/renderers/dataset/DatasetOverlay.tsx",
+        "packages/chat/src/tool-call-visualization/renderers/dataset/DatasetOverlay.tsx",
       ].map((file) => ({ kind: "contains" as const, repo: "matrx-frontend" as const, file, pattern: "LocatedTableViewer", says: `${file.split("/").pop()} mounts the locating viewer` })),
       { kind: "lacks", repo: "matrx-frontend", files: ["features/window-panels/windows/UserTableWindow.tsx"], pattern: "\\.from\\(\\s*[\"']udt_datasets", says: "the window no longer reads its title from the older table" },
     ],

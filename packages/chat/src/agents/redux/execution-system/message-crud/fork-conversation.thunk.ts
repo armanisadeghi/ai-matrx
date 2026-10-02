@@ -19,14 +19,14 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import type { Json } from "@/types/database.types";
+import { supabase } from "@host/utils/supabase/client";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { recordUnavailable } from "@host/lib/records/recordUnavailable";
+import type { Json } from "@host/types/database.types";
 import {
   sourceAppFromStorage,
   sourceFeatureFromStorage,
-} from "@/features/agents/types/instance.types";
+} from "../../../types/instance.types";
 import { hydrateConversation } from "../conversations/conversations.slice";
 import { setAutoRun } from "../instance-ui-state/instance-ui-state.slice";
 import { hydrateMessages } from "../messages/messages.slice";

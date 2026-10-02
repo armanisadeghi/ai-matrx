@@ -31,7 +31,7 @@
  * time the user presses Apply.
  */
 
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { addChoices, updateChoice, updateList } from "./service";
 import { LIST_WRITE_TARGET_NAMES } from "./surface-write-targets";
 

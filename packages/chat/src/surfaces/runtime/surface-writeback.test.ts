@@ -3,21 +3,21 @@ const mockToastSuccess = jest.fn();
 const mockCaptureError = jest.fn();
 const mockGetManifest = jest.fn();
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: {
     error: mockToastError,
     success: mockToastSuccess,
   },
 }));
 
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
   // the real store so a new export can never take this suite down at import.
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: mockCaptureError,
 }));
 
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
 
@@ -25,7 +25,7 @@ jest.mock("@/features/surfaces/manifests/registry", () => ({
 // over the app's `SchemaSourcePort`), `validateStructuralLeg`
 // and ajv all run for real — see the value-contract describe block below.
 const mockGetKindInputContract = jest.fn();
-jest.mock("@/features/content-ir/registry/schema-source-kind-tables", () => ({
+jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({
   getKindInputContractBySlug: (kind: string) =>
     mockGetKindInputContract(kind),
 }));
@@ -37,12 +37,12 @@ import {
   refuseSurfaceWrite,
   __resetUnwiredTargetReports,
 } from "./surface-writeback";
-import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
+import { kindValidator } from "@host/features/content-ir/registry/kind-schema-source";
 import type {
   SurfaceManifest,
   SurfaceValue,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "../types";
 import { registerSurfaceRuntime } from "./SurfaceRuntimeContext";
 
 const target = {
@@ -493,7 +493,7 @@ describe("surface approval comparison", () => {
 
   it("carries the live original into approval and applies only after approval", async () => {
     const { buildSurfaceWriteApprovalChange } =
-      await import("@/features/agents/redux/execution-system/thunks/surface-write-approval-change");
+      await import("../../agents/redux/execution-system/thunks/surface-write-approval-change");
     mockGetManifest.mockReturnValue(
       manifestFor([contentReplacementTarget], [contentReadTwin]),
     );

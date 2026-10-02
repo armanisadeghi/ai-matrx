@@ -51,11 +51,11 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { ELAPSED_TICK_MS, formatElapsed } from "@/lib/progress/elapsed";
 
-import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
-import type { ForeignStreamConsumer } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { removeRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import type { ForeignStreamConsumer } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
-import type { LiveRunProgressItem } from "@/features/agents/components/live-run/LiveRunProgress";
+import type { LiveRunProgressItem } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 import { callApi } from "@/lib/api/call-api";
 import type { ApiCallError } from "@/lib/api/call-api";
 import { isStreamTransportLost } from "@/lib/api/errors";

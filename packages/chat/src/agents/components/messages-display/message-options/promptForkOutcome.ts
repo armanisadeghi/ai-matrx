@@ -24,9 +24,9 @@
  * without wiring local React state.
  */
 
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import type { AppDispatch } from "@/lib/redux/store";
-import { requestSurfaceNavigation } from "@/features/agents/redux/surfaces/request-surface-navigation.thunk";
+import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
+import type { AppDispatch } from "@host/lib/redux/store";
+import { requestSurfaceNavigation } from "../../../redux/surfaces/request-surface-navigation.thunk";
 
 export interface PromptForkOutcomeArgs {
   dispatch: AppDispatch;

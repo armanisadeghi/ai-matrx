@@ -14,7 +14,7 @@
 // is on — no manual memo.
 
 import { useState } from "react";
-import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
+import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { toast } from "@/lib/toast";

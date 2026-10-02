@@ -4,7 +4,7 @@ import React from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { SurfaceManifest, SurfaceValue } from "@/features/surfaces/types";
+import type { SurfaceManifest, SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**

@@ -17,7 +17,7 @@ import type { RefObject } from "react";
 
 import { useTranscripts } from "@/features/transcripts/hooks/useTranscripts";
 import { buildTranscriptsContextData } from "@/features/transcripts/agent-context/buildTranscriptsContextData";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 export interface UseTranscriptsSurfaceScopeParams {
   /**

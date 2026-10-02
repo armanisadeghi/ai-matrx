@@ -32,7 +32,7 @@ export interface SourceHost {
 const SCAN_DIRS = [
   "app",
   "components",
-  "features",
+  "features", "packages/chat/src",
   "lib",
   "utils",
   "hooks",

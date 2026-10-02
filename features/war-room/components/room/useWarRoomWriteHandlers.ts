@@ -27,7 +27,7 @@
 
 import { useCallback } from "react";
 
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   selectOrderedGalleryThreadIds,

@@ -42,7 +42,7 @@ import {
   useModelControls,
   ControlDefinition,
   NormalizedControls,
-} from "@/features/agents/hooks/useModelControls";
+} from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectAgentSettings,
@@ -50,13 +50,13 @@ import {
   selectAgentTools,
   selectAgentOutputSchema,
   selectAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   setAgentControlBinding,
   setAgentSettings,
   setAgentField,
   setAgentTools,
-} from "@/features/agents/redux/agent-definition/slice";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import {
   fetchModelById,
   fetchModelOptions,
@@ -70,7 +70,7 @@ import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
 import type {
   LLMParams,
   FeLlmParams,
-} from "@/features/agents/types/agent-api-types";
+} from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import { useConfigValidation } from "./validation/useConfigValidation";
 import type { ValidationIssue } from "./validation/types";
@@ -102,8 +102,8 @@ import {
   isControlBindable,
   readControlBindablePolicy,
   unbindControlVariable,
-} from "@/features/agents/utils/control-variables";
-import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
+} from "@ai-matrx/chat/agents/utils/control-variables";
+import { variableValueToDisplay } from "@ai-matrx/chat/agents/utils/variable-utils";
 import {
   buildSettingsDocument,
   describeSetting,

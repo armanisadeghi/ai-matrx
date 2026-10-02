@@ -2,7 +2,7 @@
  * Emit the SQL that mirrors the manifests into the `ui` schema.
  *
  * ALC-14 — ONE SYNC PATH: the rows come from `@ai-matrx/alchemy/checks`
- * `planSurfaceSync` (via `features/surfaces/declare/surface-declare.ts`
+ * `planSurfaceSync` (via `packages/chat/src/surfaces/declare/surface-declare.ts`
  * `planManifestSync`) and the SQL from `renderSurfaceSyncSql`. This file builds
  * no rows of its own. Governance columns (`organization_id` and the row's web
  * state) are INSERT-ONLY: a conflict never rewrites them (chair ruling N5).
@@ -35,14 +35,14 @@ import {
 import {
   planManifestSync,
   toPackageResolved,
-} from "@/features/surfaces/declare/surface-declare";
+} from "@ai-matrx/chat/surfaces/declare/surface-declare";
 import { sqlSyncedFrom } from "@/features/surfaces/services/sync-provenance";
 import {
   surfaceGuideSkillId,
   surfaceGuideSkillText,
   surfaceGuideSlug,
-} from "@/features/surfaces/utils/surface-guide";
-import type { SurfaceManifest } from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/utils/surface-guide";
+import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const REPO_ROOT = resolve(__dirname, "..");

@@ -24,7 +24,7 @@ import {
   entityScopesKey,
 } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
+import { waitForConversationPersisted } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;

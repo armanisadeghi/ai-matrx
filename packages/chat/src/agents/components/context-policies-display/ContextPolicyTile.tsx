@@ -6,8 +6,8 @@
  */
 
 import { createElement, forwardRef, type ComponentType } from "react";
-import { cn } from "@/lib/utils";
-import { RESOURCE_ATTACHMENT_TILE_SHELL_ADAPTIVE } from "@/features/agents/components/messages-display/user/resourceAttachmentTile.theme";
+import { cn } from "@host/lib/utils";
+import { RESOURCE_ATTACHMENT_TILE_SHELL_ADAPTIVE } from "../messages-display/user/resourceAttachmentTile.theme";
 import { resolveContextPolicyTileTheme } from "./contextPolicyTile.theme";
 
 export interface ContextPolicyTileProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {

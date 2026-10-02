@@ -31,7 +31,7 @@
  * drifting apart while one editor and one handler block serve both.
  */
 
-import type { SurfaceManifest } from "@/features/surfaces/types";
+import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import {
   CONVERSATION_DOCUMENT_GROUPS,

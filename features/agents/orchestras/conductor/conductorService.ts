@@ -18,7 +18,7 @@ import {
 } from "@/features/scopes/service/rpcResult";
 import type { ScopesRpcResult } from "@/features/scopes/types";
 import type { Database } from "@/types/database.types";
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
 import {
   AVAILABLE_AGENTS_CLOSE,
   AVAILABLE_AGENTS_OPEN,

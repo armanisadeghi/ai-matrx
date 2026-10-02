@@ -21,7 +21,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   SUPPRESSION_REASON_MAX_LENGTH,
   USER_WRITABLE_FINDING_STATUSES,

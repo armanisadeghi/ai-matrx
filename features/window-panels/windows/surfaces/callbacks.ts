@@ -9,7 +9,7 @@
  */
 
 import { callbackManager } from "@/utils/callbackManager";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 
 export type SurfaceAgentBindEventType = "bound" | "window-close";
 

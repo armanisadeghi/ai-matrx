@@ -12,8 +12,8 @@
 
 import React from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
 import { Hammer } from "lucide-react";
 import { SMART_CODE_EDITOR_SURFACE_KEY } from "../../constants";
 

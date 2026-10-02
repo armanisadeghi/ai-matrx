@@ -6,11 +6,11 @@
  * Extracted so the two surfaces share one code path.
  */
 
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type {
   NormalizedControls,
   ControlDefinition,
-} from "@/features/agents/hooks/useModelControls";
+} from "@ai-matrx/chat/agents/hooks/useModelControls";
 import type { ValidationIssue } from "./types";
 import { getControlForKey } from "./resolve-config";
 

@@ -13,7 +13,7 @@
  * document containing a route table and a ```bash setup block.
  */
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { classifyInnerFenceLine } from "@ai-matrx/content-ir/source";
 

@@ -31,7 +31,7 @@ const windowPanelsImportRestriction = {
     {
       group: [
         "@/features/window-panels/windows/*",
-        "@/features/window-panels/windows/**/*",
+        "@/features/window-panels/windows/**/*", "@ai-matrx/chat/window-panels/windows/**/*",
       ],
       message:
         "Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct imports break bundle splitting. See .claude/skills/overlay-system/SKILL.md.",
@@ -348,7 +348,7 @@ const matrxLintPlugin = {
         schema: [],
         messages: {
           banned:
-            "Do not import StreamingJsonTracker here. It is the streaming raw-text JSON scanner and belongs ONLY to the canonical extraction path (features/agents/redux/execution-system/thunks/process-stream.ts), which feeds it the ANSWER-only text via deriveAnswerText — never raw chunks. For a one-shot parse of a string you already have, use extractFirstJson/extractAllJson from @/utils/json/extract-json. Spinning up a parallel scanner reintroduces the thinking-pollution bug this ban exists to kill.",
+            "Do not import StreamingJsonTracker here. It is the streaming raw-text JSON scanner and belongs ONLY to the canonical extraction path (packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts), which feeds it the ANSWER-only text via deriveAnswerText — never raw chunks. For a one-shot parse of a string you already have, use extractFirstJson/extractAllJson from @/utils/json/extract-json. Spinning up a parallel scanner reintroduces the thinking-pollution bug this ban exists to kill.",
         },
       },
       create(context) {
@@ -432,7 +432,7 @@ const matrxLintPlugin = {
         schema: [],
         messages: {
           banned:
-            "Bespoke stream rendering is banned. `useLiveJsonRegion` / `openParseSession` are INTERNAL to content-ir — not consumable primitives. Render streamed content through the canonical pipeline: give the run a requestId (launch via the execution system, or adopt a server-orchestrated stream with `adoptForeignStream` from @/features/agents/redux/execution-system/thunks/adopt-foreign-stream), then read it from Redux (`selectKindEnvelope`, `selectRenderBlocksInOrder`). See features/content-ir/FEATURE.md § No bespoke stream renderers.",
+            "Bespoke stream rendering is banned. `useLiveJsonRegion` / `openParseSession` are INTERNAL to content-ir — not consumable primitives. Render streamed content through the canonical pipeline: give the run a requestId (launch via the execution system, or adopt a server-orchestrated stream with `adoptForeignStream` from @ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream), then read it from Redux (`selectKindEnvelope`, `selectRenderBlocksInOrder`). See features/content-ir/FEATURE.md § No bespoke stream renderers.",
         },
       },
       create(context) {
@@ -502,7 +502,7 @@ const matrxLintPlugin = {
         // but keep them hosts so refactors inside them don't fight
         // the guard).
         const ALLOWED = [
-          "/features/agents/redux/agent-definition/",
+          "/packages/chat/src/agents/redux/agent-definition/",
           "/features/agents/browse/service.ts",
           // Admin model-maintenance sweeps (usage report + bulk
           // reference replacement) — list-shaped reads scoped by a
@@ -562,7 +562,7 @@ const matrxLintPlugin = {
         schema: [],
         messages: {
           banned:
-            'Hand-written mandate ladder. A `mandate.binding` read filtered by `principal_type` is a resolution rung, and rungs are walked in ONE place: ask `GET /mandates/{key}/resolution` through `resolveMandate` (features/mandates/service.ts), which goes over the org-bound transport and returns the same verdict the server runs on. To LIST bindings, use the scoped list door (`mnd_list_scoped`) via features/mandates/browse or the admin door in features/mandates/admin/service.ts. To WRITE one, use features/mandates/overrides.ts. See common-docs/systems/intelligence/mandates/STATE.md.',
+            'Hand-written mandate ladder. A `mandate.binding` read filtered by `principal_type` is a resolution rung, and rungs are walked in ONE place: ask `GET /mandates/{key}/resolution` through `resolveMandate` (packages/chat/src/mandates/service.ts), which goes over the org-bound transport and returns the same verdict the server runs on. To LIST bindings, use the scoped list door (`mnd_list_scoped`) via features/mandates/browse or the admin door in features/mandates/admin/service.ts. To WRITE one, use features/mandates/overrides.ts. See common-docs/systems/intelligence/mandates/STATE.md.',
         },
       },
       create(context) {
@@ -1122,13 +1122,13 @@ const parallelSliceRestriction = {
       name: "@reduxjs/toolkit",
       importNames: ["createSlice", "createReducer"],
       message:
-        "createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLES.md anti-pattern #3 (Parallel Redux slices). If a genuinely new slice is needed, place it in the canonical dirs.",
+        "createSlice / createReducer must live in lib/redux/**, features/*/redux/** or packages/chat/src/**/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLES.md anti-pattern #3 (Parallel Redux slices). If a genuinely new slice is needed, place it in the canonical dirs.",
     },
     {
       name: "@reduxjs/toolkit/react",
       importNames: ["createSlice", "createReducer"],
       message:
-        "createSlice / createReducer must live in lib/redux/** or features/*/redux/**. See PRINCIPLES.md anti-pattern #3.",
+        "createSlice / createReducer must live in lib/redux/**, features/*/redux/** or packages/chat/src/**/redux/**. See PRINCIPLES.md anti-pattern #3.",
     },
   ],
 };
@@ -1318,7 +1318,7 @@ const appContextWriteSyntaxRestrictions = [
   },
 ];
 
-// Client tool results MUST be posted through @/features/agents/api/submit-tool-results
+// Client tool results MUST be posted through @ai-matrx/chat/agents/api/submit-tool-results
 // (the `submitToolResult` thunk → microtask batcher → `postToolResults`). That
 // funnel intrinsically reads `continuation_needed` on the response and fires
 // `resumeInstance` against /ai/conversations/{id}/resume so the agent loop
@@ -1360,12 +1360,12 @@ const toolResultsChokepointSyntaxRestrictions = [
   {
     selector: "Literal[value=/\\/tool_results$/]",
     message:
-      "Direct POST to /tool_results is banned. Tool results MUST go through submitToolResult() in @/features/agents/api/submit-tool-results, which is the single funnel that fires the continuation_needed → resumeInstance handoff. Bypassing it reintroduces the 'stream never resumes after ask-user' bug. See features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.",
+      "Direct POST to /tool_results is banned. Tool results MUST go through submitToolResult() in @ai-matrx/chat/agents/api/submit-tool-results, which is the single funnel that fires the continuation_needed → resumeInstance handoff. Bypassing it reintroduces the 'stream never resumes after ask-user' bug. See features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.",
   },
   {
     selector: "TemplateElement[value.raw=/\\/tool_results/]",
     message:
-      "Direct POST to /tool_results is banned. Tool results MUST go through submitToolResult() in @/features/agents/api/submit-tool-results. See features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.",
+      "Direct POST to /tool_results is banned. Tool results MUST go through submitToolResult() in @ai-matrx/chat/agents/api/submit-tool-results. See features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.",
   },
 ];
 
@@ -1612,7 +1612,7 @@ const surfaceLabelOverrideBan = [
   {
     selector: "JSXAttribute[name.name='surfaceLabel']",
     message:
-      'The surfaceLabel prop is prohibited — surface display names are canonical. Derive the label with getSurfaceDisplayLabel(surfaceName) from @/features/surfaces/utils/surface-display (manifest-owned). See features/surfaces/FEATURE.md "THE NAMING LAW".',
+      'The surfaceLabel prop is prohibited — surface display names are canonical. Derive the label with getSurfaceDisplayLabel(surfaceName) from @ai-matrx/chat/surfaces/utils/surface-display (manifest-owned). See features/surfaces/FEATURE.md "THE NAMING LAW".',
   },
 ];
 
@@ -1690,7 +1690,7 @@ export default [
       // user -> ACTIVE org -> system is walked in ONE place; a client that
       // walks its own rungs is how a screen comes to lie. Error, not warn:
       // this rule was proven RED on the three hand-written ladders it
-      // killed (features/mandates/service.ts, service.server.ts) before
+      // killed (packages/chat/src/mandates/service.ts, service.server.ts) before
       // they were deleted, and the tree is at zero violations.
       "matrx/no-mandate-binding-ladder-query": "error",
       // THE DOOR LAW (Arman, 2026-08-08): never render an id you can't
@@ -1736,7 +1736,7 @@ export default [
               name: "sonner",
               importNames: ["toast"],
               message:
-                'Import { toast } from "@/lib/toast", not "sonner" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts.',
+                'Import { toast } from "@host/lib/toast", not "sonner" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts.',
             },
           ],
         },
@@ -1798,7 +1798,7 @@ export default [
           selector:
             "ImportDeclaration[source.value='sonner'] ImportSpecifier[imported.name='toast']",
           message:
-            'Import { toast } from "@/lib/toast", not "sonner" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts.',
+            'Import { toast } from "@host/lib/toast", not "sonner" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts.',
         },
         // …and the dynamic-import escape hatch (`await import("sonner")`),
         // which the static import rules cannot see. 13 such call sites
@@ -1806,7 +1806,7 @@ export default [
         {
           selector: "ImportExpression[source.value='sonner']",
           message:
-            'Dynamic import("sonner") bypasses Error Inspector capture — use import("@/lib/toast") instead. See lib/toast.ts.',
+            'Dynamic import("sonner") bypasses Error Inspector capture — use import("@host/lib/toast") instead. See lib/toast.ts.',
         },
         // Twin of the where-it-lives `patterns` ban above, for the blocks that turn
         // `no-restricted-imports` off (lane FE-TAILS, 2026-09-24).
@@ -1983,7 +1983,7 @@ export default [
     },
   },
   {
-    files: ["features/window-panels/windows/**/*"],
+    files: ["features/window-panels/windows/**/*", "packages/chat/src/window-panels/windows/**/*"],
     rules: {
       "no-restricted-imports": "off",
     },
@@ -2135,7 +2135,7 @@ export default [
   // bypassing the funnel forfeits the resume handoff. See
   // features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.
   {
-    files: ["features/agents/api/submit-tool-results.ts"],
+    files: ["packages/chat/src/agents/api/submit-tool-results.ts"],
     rules: {
       "no-restricted-syntax": [
         "error",
@@ -2164,8 +2164,8 @@ export default [
       "lib/sync/**",
       // Any depth: a slice under features/<x>/modes/<y>/redux/ is still "in a
       // redux directory" — the intent is the directory, not the nesting.
-      "features/**/redux/**",
-      "features/**/state/**",
+      "features/**/redux/**", "packages/chat/src/**/redux/**",
+      "features/**/state/**", "packages/chat/src/**/state/**",
       "styles/themes/**",
       "**/__tests__/**",
       "**/*.test.ts",

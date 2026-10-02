@@ -26,7 +26,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { planInvocation, skippedSentence } from "../invoke/supplied-values";
+import { planInvocation, skippedSentence } from "@ai-matrx/chat/mandates/invoke/supplied-values";
 import type { ServedInput } from "@/features/workflow-runtime/served-form/served-input";
 
 function served(p: Partial<ServedInput> & { name: string }): ServedInput {

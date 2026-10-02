@@ -71,7 +71,7 @@ import {
   MCP_SERVER_CATEGORY_VALUES,
   type McpServerDraft,
 } from "@/features/tool-registry/mcp-admin/components/AddMcpServerDialog";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_MCP_SERVERS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-mcp-servers.manifest";
 import {
   buildAdminMcpServersScope,

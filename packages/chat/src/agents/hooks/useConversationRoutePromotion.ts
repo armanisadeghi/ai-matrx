@@ -23,16 +23,16 @@
 
 import { useEffect, useEffectEvent, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { waitForConversationPersisted } from "../redux/execution-system/conversations/conversation-persistence";
+import { selectMessageCount } from "../redux/execution-system/messages/messages.selectors";
 import {
   registerSurface,
   unregisterSurface,
   selectPendingNavigation,
   clearPendingNavigation,
-} from "@/features/agents/redux/surfaces/surfaces.slice";
+} from "../redux/surfaces/surfaces.slice";
 
 export interface ConversationRoutePromotionArgs {
   /** The surface's focus/registry key (e.g. `education-tutor:<agentId>`). */

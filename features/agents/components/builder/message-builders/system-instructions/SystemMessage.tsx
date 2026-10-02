@@ -15,13 +15,13 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { SystemPromptOptimizer } from "@/features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer";
 
 // Agent Types
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
 
 // Module Shared Components
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
 import { SystemMessageButtons } from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessageButtons";
-import { MessageFlagToggles } from "@/features/agents/message-flags/MessageFlagToggles";
-import { useMessageFlags } from "@/features/agents/message-flags/useMessageFlags";
+import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";
+import { useMessageFlags } from "@ai-matrx/chat/agents/message-flags/useMessageFlags";
 import {
   MessageViewModeMenu,
   type MessageViewMode,
@@ -37,12 +37,12 @@ import {
   selectAgentName,
   selectAgentSettings,
   selectAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { selectAgentSystemMessage } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
-import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
-import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
-import { withAgentSystemInstruction } from "@/features/agents/utils/agent-system-instruction";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { selectAgentSystemMessage } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
+import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
+import { withAgentSystemInstruction } from "@ai-matrx/chat/agents/utils/agent-system-instruction";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Terminal } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";

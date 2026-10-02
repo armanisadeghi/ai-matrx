@@ -14,11 +14,11 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
 import { hydrateMessages, type MessageRecord } from "../../messages/messages.slice";
 import { extractFlatText } from "../../messages/messages.selectors";
 import { saveAnswerEdit, saveMessageDisplayEdit } from "../save-answer-edit.thunk";
-import { chatMessageAdapter } from "@/features/rich-document/actions/sources/chat-message";
+import { chatMessageAdapter } from "@host/features/rich-document/actions/sources/chat-message";
 import {
   describeDisplayChange,
   rebaseEdit,
@@ -28,13 +28,13 @@ import {
   spliceAnswerText,
   spliceDisplayEdit,
 } from "../answer-text-splice";
-import { savePreparedContentEdit } from "@/features/rich-document/actions/handlers/preparedEdit";
-import { getSourceAdapter } from "@/features/rich-document/actions/sources";
-import type { ChatAnswerSaveReceipt, RichDocumentActionContext } from "@/features/rich-document/types";
+import { savePreparedContentEdit } from "@host/features/rich-document/actions/handlers/preparedEdit";
+import { getSourceAdapter } from "@host/features/rich-document/actions/sources";
+import type { ChatAnswerSaveReceipt, RichDocumentActionContext } from "@host/features/rich-document/types";
 import { commitInlineContentEdit, flushPendingInlineEdit } from "../commit-inline-edit.thunk";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { listIslands, tokenizeSource } from "@ai-matrx/content-ir/source";
-import { planSave } from "@/components/rich-editor/core/save-plan";
+import { planSave } from "@host/components/rich-editor/core/save-plan";
 
 const rpc = jest.fn();
 const rpcReturns = jest.fn();
@@ -42,7 +42,7 @@ const rpcReturns = jest.fn();
 let dbContent: unknown = null;
 let reduxContent: unknown = null;
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     rpc: (...args: unknown[]) => {
       rpc(...args);
@@ -81,11 +81,11 @@ jest.mock("../invalidate-conversation-cache.thunk", () => ({
 }));
 
 const toastError = jest.fn();
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn(), info: jest.fn(), warning: jest.fn() },
 }));
 
-jest.mock("@/lib/output-feedback/service", () => ({
+jest.mock("@host/lib/output-feedback/service", () => ({
   saveOutputFeedback: jest.fn(async () => undefined),
 }));
 

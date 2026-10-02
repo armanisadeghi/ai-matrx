@@ -59,22 +59,22 @@ const LIVE_CALL_SHAPES: ReadonlyArray<{
     reads: "This file's edit history was not saved",
   },
   {
-    where: "features/cx-conversation/components/HtmlPreviewBridge.tsx (register)",
+    where: "packages/chat/src/cx-conversation/components/HtmlPreviewBridge.tsx (register)",
     options: { subject: "This page", act: "linked to the conversation" },
     reads: "This page was not linked to the conversation",
   },
   {
-    where: "features/cx-conversation/components/HtmlPreviewBridge.tsx (update)",
+    where: "packages/chat/src/cx-conversation/components/HtmlPreviewBridge.tsx (update)",
     options: { subject: "This page's record", act: "updated" },
     reads: "This page's record was not updated",
   },
   {
-    where: "features/voice-agent/persistence/voiceTranscriptWriter.ts (conversation)",
+    where: "packages/chat/src/voice-agent/persistence/voiceTranscriptWriter.ts (conversation)",
     options: { subject: "This voice conversation", act: "saved" },
     reads: "This voice conversation was not saved",
   },
   {
-    where: "features/voice-agent/persistence/voiceTranscriptWriter.ts (turns)",
+    where: "packages/chat/src/voice-agent/persistence/voiceTranscriptWriter.ts (turns)",
     options: { subject: "This transcript", act: "saved" },
     reads: "This transcript was not saved",
   },
@@ -90,7 +90,7 @@ const LIVE_CALL_SHAPES: ReadonlyArray<{
     reads: "Nothing was archived",
   },
   {
-    where: "features/agents/redux/agent-shortcut-categories/thunks.ts and the other withOrganizationRefusalShown sites",
+    where: "packages/chat/src/agents/redux/agent-shortcut-categories/thunks.ts and the other withOrganizationRefusalShown sites",
     options: { act: "created" },
     reads: "Nothing was created",
   },

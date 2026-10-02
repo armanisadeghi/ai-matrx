@@ -55,22 +55,22 @@ import {
   Search,
   Webhook,
 } from "lucide-react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   ROUTE_MENU_ICON_SIZE,
   ROUTE_MENU_ICON_STROKE_WIDTH,
   ROUTE_MENU_NAV_ITEM_CLASS,
-} from "@/features/shell/constants/route-menu-style";
+} from "@host/features/shell/constants/route-menu-style";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { useInPlaceChatHost } from "./in-place-chat-host";
-import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
+import { closeShellMobileMenu } from "@host/features/shell/utils/closeShellMobileMenu";
 
 /** A plain left click on a `/chat/a/<agentId>` link → that agent id (and the click is consumed). */
 function hostedAgentLink(event: React.MouseEvent<HTMLElement>): string | null {

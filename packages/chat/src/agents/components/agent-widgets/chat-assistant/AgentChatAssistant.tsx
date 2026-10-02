@@ -15,17 +15,17 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceDisplayTitle } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectIsExecuting } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { selectMessageCount } from "../../../redux/execution-system/messages/messages.selectors";
 import {
   registerSurface,
   unregisterSurface,
   selectPendingNavigation,
   clearPendingNavigation,
-} from "@/features/agents/redux/surfaces/surfaces.slice";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+} from "../../../redux/surfaces/surfaces.slice";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
 import { AssistantCardStack } from "./AssistantCardStack";
 import { CompactAssistantInput } from "./CompactAssistantInput";
 import { AssistantControlBar } from "./AssistantControlBar";

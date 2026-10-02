@@ -10,7 +10,7 @@
 
 import Link from "next/link";
 import { Plus, Settings2, ShieldCheck } from "lucide-react";
-import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
+import { ConversationHistorySidebar } from "@ai-matrx/chat/agents/components/conversation-history/ConversationHistorySidebar";
 import {
   Popover,
   PopoverContent,
@@ -20,7 +20,7 @@ import { EducationToolHeader } from "@/features/education/components/EducationTo
 import { TutorSettingsPanel } from "./TutorSettingsPanel";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationTutorHistoryScope,
   EDUCATION_TUTOR_HISTORY_SURFACE_NAME,

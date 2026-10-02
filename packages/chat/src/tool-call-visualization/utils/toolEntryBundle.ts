@@ -4,7 +4,7 @@
  *   { tool, input, result, error? }
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 export interface ToolEntryToolMeta {
   toolName: string;

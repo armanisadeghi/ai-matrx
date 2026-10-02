@@ -1,5 +1,5 @@
 import { AdminDomainLanding } from "@/features/admin/components/AdminDomainLanding";
-import { StaticSurfaceRuntimeProvider } from "@/features/surfaces/runtime/StaticSurfaceRuntimeProvider";
+import { StaticSurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/StaticSurfaceRuntimeProvider";
 import { ADMIN_REPORTING_SURFACE_NAME, createAdminReportingScope } from "@/features/surfaces/manifests/admin-reporting.manifest";
 
 export default function ReportingAdministrationPage() {

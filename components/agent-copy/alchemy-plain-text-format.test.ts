@@ -11,7 +11,7 @@
  */
 import { capture, createDraft, type Payload } from "@ai-matrx/kit/content-transfer";
 import { alchemyPlainTextFormat } from "./alchemy-plain-text-format";
-import { buildConversationMarkdown } from "@/features/agents/conversation-export/conversation-markdown";
+import { buildConversationMarkdown } from "@ai-matrx/chat/agents/conversation-export/conversation-markdown";
 
 const signal = new AbortController().signal;
 

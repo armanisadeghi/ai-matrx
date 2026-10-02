@@ -56,7 +56,7 @@ import { PdfCldFileViewer } from "./PdfStudioReader";
 import { PdfStudioInspector } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { useShortcutTrigger } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 

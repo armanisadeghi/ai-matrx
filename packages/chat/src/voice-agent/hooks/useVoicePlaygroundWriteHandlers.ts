@@ -37,9 +37,9 @@
 
 import { useMemo } from "react";
 
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import type { SurfaceWriteHandlers } from "../../surfaces/runtime/SurfaceRuntimeContext";
+import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
 import { VOICES } from "../constants";
 import { updateConfig } from "../state/voiceAgentSlice";
 import {

@@ -25,10 +25,10 @@ import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AccessModeBadge } from "./AccessModeBadge";
 import { daysUntil, nextExamDate } from "../settings";
 import type { ClassSettings, StudyClass } from "../types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import {
   EDUCATION_CLASSES_SURFACE_NAME,
   type NewClassDraftScope,

@@ -62,7 +62,7 @@ import type {
   SandboxInstanceRow as SandboxInstance,
   SandboxAccessResponse,
 } from "@/types/sandbox";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_SANDBOX_SURFACE_NAME,
   createAdminSandboxScope,

@@ -10,8 +10,8 @@
 
 import type { Dispatch } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import { selectInstanceContextEntry } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.selectors";
 import {
   formatConversationReference,
   type ConversationReferenceRow,

@@ -41,12 +41,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { selectInstanceStatus } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 import {
   SHAPES_ALL_HREF,

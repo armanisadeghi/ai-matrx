@@ -6,7 +6,7 @@ import {
 } from "@ai-matrx/design-system/content-transfer";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 
 // Agent-native surfaces are excluded by the disclosure law even when a shared
 // utility offers a fixed worker. Their agents are the subject of the surface.

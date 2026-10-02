@@ -25,10 +25,10 @@
 
 import { useCallback } from "react";
 
-import { useAppStore } from "@/lib/redux/hooks";
-import { createAgentBuilderScope } from "@/features/surfaces/manifests/agent-builder.manifest";
-import { extractAgentSystemInstruction } from "@/features/agents/utils/agent-system-instruction";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { useAppStore } from "@host/lib/redux/hooks";
+import { createAgentBuilderScope } from "@host/features/surfaces/manifests/agent-builder.manifest";
+import { extractAgentSystemInstruction } from "../utils/agent-system-instruction";
+import type { SurfaceScopePayload } from "../../surfaces/types";
 import {
   selectAgentAccessLevel,
   selectAgentCategory,
@@ -64,7 +64,7 @@ import {
   selectAgentUiGates,
   selectAgentVariableDefinitions,
   selectAgentVersion,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../redux/agent-definition/selectors";
 
 /**
  * Returns a builder that snapshots the active agent definition from Redux at

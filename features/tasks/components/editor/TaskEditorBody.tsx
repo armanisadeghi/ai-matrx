@@ -82,8 +82,8 @@ import {
 } from "@/features/tasks/agent-context/buildTasksContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { tasksManifest } from "@/features/surfaces/manifests/tasks.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useTaskEditorControllerCtx } from "./TaskEditorControllerContext";
 import { SectionHeader, PropertyRow } from "./editorPrimitives";
 

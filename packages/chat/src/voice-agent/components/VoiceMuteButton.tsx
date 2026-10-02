@@ -6,7 +6,7 @@
 
 import { Mic, MicOff } from "lucide-react";
 import { motion } from "motion/react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 interface VoiceMuteButtonProps {
   muted: boolean;

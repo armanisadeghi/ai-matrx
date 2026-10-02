@@ -9,7 +9,7 @@ import { ListsSidebar } from "./ListsSidebar";
 import { ListDetailClient } from "./ListDetailClient";
 import { Loader2, ListFilter } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createListManagerScope,
   type ListManagerItemEntry,

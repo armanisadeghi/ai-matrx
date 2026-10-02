@@ -1,5 +1,5 @@
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
-import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
+import { MCP_CATEGORY_META } from "@ai-matrx/chat/agents/types/mcp.types";
 import { matchesIntegrationSearch } from "@/features/settings/tabs/integration-search-match";
 import { readConnectionStatus } from "./connection-status";
 import type { ConnectorDefinition } from "./types";

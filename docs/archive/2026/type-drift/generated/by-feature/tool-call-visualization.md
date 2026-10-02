@@ -8,7 +8,7 @@ _Generated: 2026-07-11T14:08:07.826Z_
 
 Regenerate: `pnpm generate:type-drift-hitlists`
 
-## `features/tool-call-visualization/renderers/picklist/parsePicklist.ts` (1)
+## `packages/chat/src/tool-call-visualization/renderers/picklist/parsePicklist.ts` (1)
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |

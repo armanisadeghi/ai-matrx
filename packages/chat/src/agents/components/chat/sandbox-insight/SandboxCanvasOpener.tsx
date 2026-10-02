@@ -22,15 +22,15 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { getEffectiveSandboxRef } from "@/lib/sandbox/active-binding";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { getEffectiveSandboxRef } from "@host/lib/sandbox/active-binding";
 import {
   selectCanvasIsOpen,
   selectCanvasItems,
   selectCurrentItemId,
-} from "@/features/canvas/redux/canvasSlice";
-import { selectToolCallsForConversation } from "@/features/agents/redux/execution-system/observability/observability.selectors";
-import { selectLiveToolLifecycleByConversation } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "@host/features/canvas/redux/canvasSlice";
+import { selectToolCallsForConversation } from "../../../redux/execution-system/observability/observability.selectors";
+import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import { isSandboxTool } from "./sandbox-activity";
 import {
   decideSandboxCanvasAction,

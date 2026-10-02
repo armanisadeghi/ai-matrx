@@ -14,9 +14,9 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import { operationFailed } from "@/utils/errors";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { supabase } from "@host/utils/supabase/client";
+import { operationFailed } from "@host/utils/errors";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { clearMessages } from "../messages/messages.slice";
 import { clearForConversation as clearObservabilityForConversation } from "../observability/observability.slice";

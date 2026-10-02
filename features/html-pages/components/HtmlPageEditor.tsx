@@ -38,7 +38,7 @@ import { useHtmlPagesManager } from "@/features/html-pages/hooks/useHtmlPagesMan
 import { useHtmlPageSurfaceScope } from "@/features/html-pages/hooks/useHtmlPageSurfaceScope";
 import { HTML_PAGE_CONTEXT_MENU_PROPS } from "@/features/html-pages/agent-context/htmlPageContextMenuProps";
 import { createHtmlPageExtraSections } from "@/features/html-pages/agent-context/htmlPageExtraSections";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";

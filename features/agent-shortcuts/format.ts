@@ -1,8 +1,8 @@
 import type { ShortcutDirectoryRow } from "./utils/shortcut-directory-rows";
 import { scopeTypeLabel } from "./utils/shortcut-directory-rows";
-import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
+import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import type { AgentContentBlock, AgentShortcutCategory } from "./types";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 
 /**
  * Human-readable one-liner for a `ShortcutDirectoryRow` — the shared "Copy"

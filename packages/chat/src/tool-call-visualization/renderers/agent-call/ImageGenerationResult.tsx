@@ -21,7 +21,7 @@ import type { ToolRendererProps } from "../../types";
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ResultMedia } from "../../result-fields/ResultMedia";
 import { findResultMedia } from "./findResultMedia";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
 
 export const ImageGenerationResult: React.FC<ToolRendererProps> = (props) => {
   const { entry, onOpenOverlay, toolGroupId } = props;

@@ -1,8 +1,8 @@
 import { associateInterviewWhenPersisted } from "./service";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
+import { waitForConversationPersisted } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence";
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversation-persistence",
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence",
   () => ({ waitForConversationPersisted: jest.fn() }),
 );
 

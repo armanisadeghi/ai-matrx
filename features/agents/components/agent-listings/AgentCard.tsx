@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { AgentActionModal } from "./AgentActionModal";
 import { AgentSneakPeekModal } from "./AgentSneakPeekModal";
@@ -37,7 +37,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   buildSystemAgentRosterEntries,
   systemAgentRosterEntrySummary,
-} from "@/features/agents/format";
+} from "@ai-matrx/chat/agents/format";
 import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
 
 interface AgentCardProps {

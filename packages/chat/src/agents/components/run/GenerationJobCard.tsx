@@ -25,24 +25,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { Clapperboard } from "lucide-react";
 import { Progress } from "@ai-matrx/design-system";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
 import {
   selectRequest,
   selectRequestGenerationJob,
   selectRequestStartedAt,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+} from "../../redux/execution-system/active-requests/active-requests.selectors";
+import { selectCurrentSettings } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   selectInstanceVariableDefinitions,
   selectResolvedVariables,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectRunModelId } from "@/features/agents/runtime/generation-job";
+} from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectRunModelId } from "../../runtime/generation-job";
 import { useVideoSecondPoints } from "./useVideoSecondPoints";
 import { formatCost, pointsToUsd, type CostUnit, formatDurationMs } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import { currentCostUnit } from "@/components/cost/costUnit";
+import { currentPointsRate } from "@host/components/cost/pointsRate";
+import { useCostDisplay } from "@host/components/cost/useCostDisplay";
+import { currentCostUnit } from "@host/components/cost/costUnit";
 
 /** The value a control resolves to for this run: a variable bound to the
  *  control key wins (the run form's answer), else the literal setting. */

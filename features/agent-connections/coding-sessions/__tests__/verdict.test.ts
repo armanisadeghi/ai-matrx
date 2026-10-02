@@ -8,7 +8,7 @@ import {
   APP_META,
   describeSource,
   FEATURE_META,
-} from "@/features/agents/redux/conversation-history/source-registry";
+} from "@ai-matrx/chat/agents/redux/conversation-history/source-registry";
 
 describe("coding-session provider vocabulary", () => {
   it("maps storage enums to the exact conversation source_feature slugs", () => {

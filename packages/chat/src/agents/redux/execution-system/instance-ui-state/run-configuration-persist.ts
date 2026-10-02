@@ -25,8 +25,8 @@
 
 import type { Middleware } from "@reduxjs/toolkit";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
-import type { RootState } from "@/lib/redux/rootReducer";
-import { supabase } from "@/utils/supabase/client";
+import type { RootState } from "@host/lib/redux/rootReducer";
+import { supabase } from "@host/utils/supabase/client";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 
 export const RUN_CONFIGURATION_KEY = "run_configuration";

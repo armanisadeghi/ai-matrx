@@ -1,19 +1,19 @@
 "use client";
 
 import { useMemo } from "react";
-import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setConversationSandbox } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
-import { selectConversationIsEphemeral } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { toast } from "@host/lib/toast";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { setConversationSandbox } from "../../../redux/conversation-list/conversation-row-actions.thunks";
+import { selectChatIncognitoActive } from "../../../redux/chat/chat-incognito.slice";
+import { selectConversationIsEphemeral } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
   useComputeTargets,
   type ComputeTarget,
-} from "@/hooks/sandbox/use-compute-targets";
-import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
-import { clearSandboxBindingCache } from "@/lib/sandbox/active-binding";
-import { resolveBoundTargetView } from "@/lib/sandbox/bound-target-view";
-import { resolveBindingScope } from "@/lib/sandbox/binding-scope";
+} from "@host/hooks/sandbox/use-compute-targets";
+import { useVerifiedSandboxBinding } from "@host/hooks/sandbox/use-verified-binding";
+import { clearSandboxBindingCache } from "@host/lib/sandbox/active-binding";
+import { resolveBoundTargetView } from "@host/lib/sandbox/bound-target-view";
+import { resolveBindingScope } from "@host/lib/sandbox/binding-scope";
 
 const MAX_LENS_TARGETS = 2;
 

@@ -13,16 +13,16 @@
  *     admins also get a toast and a console dump of the full diff.
  */
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   compareReceipt,
   type ContextReceipt,
   type ContextReceiptMismatch,
 } from "@ai-matrx/agents/context";
-import type { ContextReceiptData } from "@/types/python-generated/stream-events";
+import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 import { setContextReceipt } from "../instance-context/instance-context.slice";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { toast } from "@/lib/toast";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { toast } from "@host/lib/toast";
 
 /** Normalize the generated wire type (optional fields) to the package's receipt. */
 export function toContextReceipt(data: ContextReceiptData): ContextReceipt {

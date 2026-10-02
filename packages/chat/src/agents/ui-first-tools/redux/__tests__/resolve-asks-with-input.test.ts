@@ -22,7 +22,7 @@ import {
 import { setAskDraft, __clearAllDraftsForTests } from "../ask-draft-registry";
 import { resolvePendingAsksWithInput } from "../resolve-asks-with-input.thunk";
 import { EMPTY_ASK_RESPONSE, type AskUserResponse } from "../../tools/schemas";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 
 const CONVERSATION = "conv-1";
 

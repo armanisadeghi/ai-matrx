@@ -35,7 +35,7 @@
  * card) + a delayed `sweepPendingAsks` (removes it after the fade).
  */
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   selectActivePendingAsksForConversation,
   resolvePendingAsk,

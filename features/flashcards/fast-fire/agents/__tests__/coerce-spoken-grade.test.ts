@@ -10,7 +10,7 @@ jest.mock("@/features/files/handler/handler", () => ({
   fileHandler: { upload: jest.fn(), toContentPart: jest.fn() },
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/run-headless-agent-json",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json",
   () => ({ runHeadlessAgentJson: jest.fn(), livePosture: () => ({}) }),
 );
 

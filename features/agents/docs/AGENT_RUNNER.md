@@ -112,7 +112,7 @@ These are overlays on the same runtime Chat uses — no separate code path, just
 - [`AGENT_VERSIONING.md`](./AGENT_VERSIONING.md) — version pin semantics
 - [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md) — endpoint routing
 - [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md) — stream event pipeline
-- `features/conversation/FEATURE.md` — the Chat surface (same runtime)
+- `packages/chat/src/conversation/FEATURE.md` — the Chat surface (same runtime)
 
 ---
 

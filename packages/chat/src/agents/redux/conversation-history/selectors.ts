@@ -1,8 +1,8 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import type { RootState } from "@/lib/redux/store";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import type { RootState } from "@host/lib/redux/store";
+import type { ConversationListItem } from "../conversation-list/conversation-list.types";
+import { selectAgentById } from "../agent-definition/selectors";
 import {
   defaultScopeState,
   rowMatchesArchiveView,

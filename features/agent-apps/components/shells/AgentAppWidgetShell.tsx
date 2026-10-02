@@ -20,16 +20,16 @@ import React, { useEffect } from "react";
 import { Loader2, Play } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
-import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
+import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
 import { Button } from "@/components/ui/button";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import MarkdownStream from "@/components/MarkdownStream";
-import { SmartAgentVariables } from "@/features/agents/components/inputs/variable-input-variations/SmartAgentVariables";
+import { SmartAgentVariables } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/SmartAgentVariables";
 import {
   setAutoRun,
   setAllowChat,
   setShowVariablePanel,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import type {
   AgentAppShellConfigCommon,
   PublicAgentApp,

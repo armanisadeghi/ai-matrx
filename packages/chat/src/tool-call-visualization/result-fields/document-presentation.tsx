@@ -46,10 +46,10 @@
 
 import React, { createContext, useContext, useMemo } from "react";
 
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
+import { getStoreSingleton } from "@host/lib/redux/store-singleton";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { useEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs.client";
 
 /** What the floor does with a field whose value does not apply. */
 export type OptionalFieldPolicy =

@@ -47,6 +47,9 @@ importers:
       '@ai-matrx/capture':
         specifier: latest
         version: 0.5.41(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+      '@ai-matrx/chat':
+        specifier: workspace:*
+        version: link:packages/chat
       '@ai-matrx/content-ir':
         specifier: latest
         version: 0.19.21
@@ -996,6 +999,8 @@ importers:
       util:
         specifier: latest
         version: 0.12.5
+
+  packages/chat: {}
 
 packages:
 

@@ -11,9 +11,9 @@ import { resolveVariablesForRequest } from "../resolve-variables-for-request";
 import {
   unplacedBoundVariableNames,
   withBoundVariablePlaced,
-} from "@/features/agents/utils/variable-binding";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+} from "../../../../utils/variable-binding";
+import type { VariableDefinition } from "../../../../types/agent-definition.types";
+import type { AgentDefinitionMessage } from "../../../../types/agent-message-types";
 
 const CARRIER_RATES: VariableDefinition = {
   name: "carrier_rates",

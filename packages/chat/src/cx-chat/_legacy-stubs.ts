@@ -3,8 +3,8 @@
 // typed no-op placeholders so TypeScript compiles. Dispatched actions are
 // harmless (no reducer handles them); selectors return empty defaults.
 
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { Resource } from "@/features/agents/resources/types";
+import type { VariableDefinition } from "../agents/types/agent-definition.types";
+import type { Resource } from "../agents/resources/types";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Re-export real types where canonical definitions still exist. Using the

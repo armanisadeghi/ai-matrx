@@ -23,12 +23,12 @@ import type { NarrativeReport } from "../narrative";
 import { NarrativeCard } from "./NarrativeCard";
 import { StudyAnalyticsView } from "./StudyAnalyticsView";
 import type { StudyAnalytics } from "../computeAnalytics";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationProgressScope } from "@/features/surfaces/manifests/education-progress.manifest";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildProgressOverviewXml } from "../progressContextBundle";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { STUDY_MANDATES } from "../../planner/mandates";
 import type { StudyWeekSeries } from "../../components/StudyTrends";
 

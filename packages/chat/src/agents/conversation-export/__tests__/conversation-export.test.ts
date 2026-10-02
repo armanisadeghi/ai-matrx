@@ -30,22 +30,22 @@ import {
 } from "../conversation-transfer";
 import { CONVERSATION_TRANSFER_ROWS } from "../conversation-transfer-rows";
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { loading: jest.fn(() => "t"), success: jest.fn(), error: jest.fn(), warning: jest.fn() },
 }));
-jest.mock("@/features/agents/redux/execution-system/messages/messages.selectors", () => ({
+jest.mock("../../redux/execution-system/messages/messages.selectors", () => ({
   extractFlatText: (r: { text: string }) => r.text,
 }));
-jest.mock("@/features/agents/redux/execution-system/conversations/conversations.selectors", () => ({
+jest.mock("../../redux/execution-system/conversations/conversations.selectors", () => ({
   selectConversationTitle: () => () => "Pool route plan",
 }));
 jest.mock("../load-full-history", () => ({
   loadFullConversationHistory: async () => ({ complete: true, loaded: 4 }),
 }));
-jest.mock("@/features/agents/message-pins/pinned-messages-store", () => ({
+jest.mock("../../message-pins/pinned-messages-store", () => ({
   isMessagePinned: (id: string) => id === "m2",
 }));
-jest.mock("@/components/agent-copy/alchemy-session", () => ({ openAlchemySession: jest.fn(() => true) }));
+jest.mock("@host/components/agent-copy/alchemy-session", () => ({ openAlchemySession: jest.fn(() => true) }));
 
 const MESSAGES = [
   { id: "m1", role: "user", text: "Plan Tuesday's pool route for the Irvine crew.", createdAt: "2026-09-25T09:00:00Z" },
@@ -206,14 +206,14 @@ describe("every message reaches the file (the one Alchemy engine, real print)", 
 });
 
 describe("one catalogue, one engine", () => {
-  const root = join(__dirname, "..", "..", "..", "..");
+  const root = join(__dirname, "../../../../../..", ".", ".", ".");
 
   it("the old app-side conversation engine is gone", () => {
     expect(existsSync(join(root, "features/agents/conversation-export/export-conversation.ts"))).toBe(false);
   });
 
   it("the header menu and the answer menu both render THE catalogue", () => {
-    const header = readFileSync(join(root, "features/agents/components/chat/ConversationPageMenu.tsx"), "utf8");
+    const header = readFileSync(join(root, "packages/chat/src/agents/components/chat/ConversationPageMenu.tsx"), "utf8");
     const answer = readFileSync(join(root, "features/rich-document/actions/handlers/conversation-section.ts"), "utf8");
     for (const src of [header, answer]) expect(src).toContain("CONVERSATION_TRANSFER_ROWS");
   });

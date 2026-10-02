@@ -5,11 +5,11 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 import { EducationHeader } from "@/features/education/components/EducationHeader";
 import { OfflineStudySyncMount } from "@/features/education/study/offline/OfflineStudySyncMount";
 import { EducationAgeGateMount } from "@/features/education/compliance/EducationAgeGateMount";
-import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-assistant/ScrollAssistantLauncher";
+import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import { ChatCanvasWorkspace } from "@/features/canvas/workspace/ChatCanvasWorkspace";
-import { readCanvasWorkspaceLayout } from "@/features/canvas/workspace/workspace-cookies.server";
-import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
+import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
 
 /** The education workspace's id: its chat, its remembered layout. */
 const EDUCATION_WORKSPACE_ID = "education";

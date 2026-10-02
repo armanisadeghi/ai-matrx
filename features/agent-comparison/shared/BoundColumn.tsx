@@ -25,7 +25,7 @@
  * `AgentConversationColumn` so all battle modes inherit it automatically.
  */
 
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
 import { ResponseFeedbackBar } from "../components/ResponseFeedbackBar";
 
 export interface BoundColumnProps {

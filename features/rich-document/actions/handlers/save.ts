@@ -34,9 +34,9 @@ import {
   contentForDestination,
 } from "../utils";
 import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
-import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { buildTaskSeedFromMessage } from "@/features/agents/components/messages-display/message-options/buildTaskSeedFromMessage";
+import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectMessagePosition } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { buildTaskSeedFromMessage } from "@ai-matrx/chat/agents/components/messages-display/message-options/buildTaskSeedFromMessage";
 import type { ContentSource } from "../../types";
 
 /**

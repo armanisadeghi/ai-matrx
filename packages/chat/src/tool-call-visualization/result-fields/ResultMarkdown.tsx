@@ -12,9 +12,9 @@
 
 import React from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { cn } from "@/lib/utils";
+import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { Collapsible, CollapsibleContent } from "@host/components/ui/collapsible";
+import { cn } from "@host/lib/utils";
 
 export interface ResultMarkdownProps {
     content: string;

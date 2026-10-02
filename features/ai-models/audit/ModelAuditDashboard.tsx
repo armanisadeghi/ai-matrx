@@ -30,7 +30,7 @@ import {
   ADMIN_AI_MODEL_AUDIT_SURFACE_NAME,
   createAdminAiModelAuditScope,
 } from "@/features/surfaces/manifests/admin-ai-model-audit.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type TabId = AuditCategory | "overview" | "settings";

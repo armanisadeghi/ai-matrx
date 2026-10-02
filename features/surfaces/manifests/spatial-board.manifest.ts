@@ -13,7 +13,7 @@
  * Runtime emitter: `features/spatial/components/SpatialBoardSurface.tsx`.
  */
 
-import type { SurfaceManifest, SurfaceValue, SurfaceValueGroup } from "@/features/surfaces/types";
+import type { SurfaceManifest, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
 import { BOARD_CLIENT_TOOLS } from "@/features/spatial/tools/board-tools";
 import { mergeBaselineValues } from "./_baseline.manifest";
 

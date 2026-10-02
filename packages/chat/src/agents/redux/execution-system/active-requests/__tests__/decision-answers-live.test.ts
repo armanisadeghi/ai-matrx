@@ -28,9 +28,9 @@ import activeRequestsReducer, {
   appendTimeline,
 } from "../active-requests.slice";
 import { assembleMessageParts } from "../../utils/assemble-cx-content-blocks";
-import { readAnswersFromContent } from "@/features/agent-comparison/decisions/readColumnAnswers";
-import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
+import { readAnswersFromContent } from "@host/features/agent-comparison/decisions/readColumnAnswers";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
+import type { ActiveRequest } from "../../../../types/request.types";
 
 const REQ = "req_decision_1";
 const CONV = "conv_decision_1";

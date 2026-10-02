@@ -26,12 +26,12 @@ import activeRequestsReducer, {
   upsertRenderBlock,
   upsertToolLifecycle,
   trackOperationInit,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   selectAgentCallChildSlots,
   selectUnifiedSlots,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 
 if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver = class {

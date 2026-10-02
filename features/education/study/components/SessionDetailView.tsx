@@ -27,10 +27,10 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useLiveRunStatus } from "@/features/agents/components/live-run/useLiveRunStatus";
-import { useLiveRunHandle } from "@/features/agents/hooks/useLiveRunHandle";
+import { useLiveRunStatus } from "@ai-matrx/chat/agents/components/live-run/useLiveRunStatus";
+import { useLiveRunHandle } from "@ai-matrx/chat/agents/hooks/useLiveRunHandle";
 import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
-import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
+import { reconnectServerOperation } from "@ai-matrx/chat/agents/runtime-reconnect/reconnect-server-operation.thunk";
 import { reviewSession } from "@/features/education/tutor/lanes/reviewSession";
 import {
   buildReviewAggregate,

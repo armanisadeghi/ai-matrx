@@ -1,4 +1,4 @@
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 
 /**
  * An input as a person reads it: the provision's own label, else the name

@@ -9,13 +9,13 @@ import { useState, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { pushAppHref } from "@/lib/deployment/navigate";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
+import { pushAppHref } from "@host/lib/deployment/navigate";
 
 const AgentPickerSheet = dynamic(
   () =>
-    import("@/features/cx-chat/components/agent/AgentPickerSheet").then(
+    import("./agent/AgentPickerSheet").then(
       (m) => ({ default: m.AgentPickerSheet }),
     ),
   { ssr: false },

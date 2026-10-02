@@ -5,11 +5,11 @@
  * Keeps snake_case naming for compatibility with Python backend
  */
 
-import { LLM_PARAMS_KEYS } from "@/types/python-generated/llm-enums";
-import { UI_GATE_KEYS } from "@/lib/redux/slices/agent-settings/ui-gates";
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
-import { isJsonObject } from "@/types/json";
-import { outputFormatControlKey } from "@/features/ai-models/utils/model-normalizer";
+import { LLM_PARAMS_KEYS } from "@host/types/python-generated/llm-enums";
+import { UI_GATE_KEYS } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { isJsonObject } from "@host/types/json";
+import { outputFormatControlKey } from "@host/features/ai-models/utils/model-normalizer";
 
 export interface ControlDefinition {
   type:

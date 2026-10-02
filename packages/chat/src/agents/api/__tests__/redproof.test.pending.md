@@ -36,7 +36,7 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversations.slice",
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice",
   () => ({
     setInstanceStatus: jest.fn((payload: unknown) => ({
       type: "conversations/setInstanceStatus",

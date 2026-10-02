@@ -20,7 +20,7 @@
  */
 
 import type { SurfaceWriteChange, SurfaceWriteResult } from "./surface-writeback";
-import { personDeclinedToolOutput } from "@/features/agents/api/person-declined-tool-output";
+import { personDeclinedToolOutput } from "../../agents/api/person-declined-tool-output";
 
 /**
  * The sentence the model reads when a write did not land. It always says

@@ -10,14 +10,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const ROOT = join(__dirname, "..", "..", "..", "..", "..");
+const ROOT = join(__dirname, "../../../../../../..", ".", ".", ".", ".");
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
 
-const CONTROLLER = "features/agents/components/shared/AgentModeController.tsx";
+const CONTROLLER = "packages/chat/src/agents/components/shared/AgentModeController.tsx";
 const HOSTS = [
-  "features/agents/components/shared/AgentHeader.tsx",
-  "features/agents/components/run/AgentRunHeader.tsx",
-  "features/agents/components/widgets/AgentWidgetsPage.tsx",
+  "packages/chat/src/agents/components/shared/AgentHeader.tsx",
+  "packages/chat/src/agents/components/run/AgentRunHeader.tsx",
+  "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
 ];
 
 describe("agent mode labels follow the header's own width", () => {

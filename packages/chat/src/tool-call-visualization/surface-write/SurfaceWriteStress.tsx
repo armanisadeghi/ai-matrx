@@ -18,10 +18,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
-import { SURFACE_WRITE_STEP } from "@/features/tool-call-visualization/surface-write/readSurfaceWrite";
+import { Button } from "@host/components/ui/button";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
+import { ToolCallVisualization } from "../components/ToolCallVisualization";
+import { SURFACE_WRITE_STEP } from "./readSurfaceWrite";
 
 const SECTION = (n: number) =>
   `## Section ${n}: Patient intake policy\n\n` +

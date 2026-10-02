@@ -9,7 +9,7 @@
  * would be the one that quietly drops the method tag.
  */
 
-import { DecisionAnswers } from "@/features/agents/decision-answers/DecisionAnswers";
+import { DecisionAnswers } from "@ai-matrx/chat/agents/decision-answers/DecisionAnswers";
 import { readDecisionAnswers } from "@ai-matrx/agents/presentation/decision-answers";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";

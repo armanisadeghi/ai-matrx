@@ -18,24 +18,24 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, BookmarkPlus, Loader2 } from "lucide-react";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
-import { extractErrorMessage } from "@/utils/errors";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/selectors";
-import { AgentPickerFrame } from "@/features/window-panels/windows/agents/AgentPickerWindow";
-import { bindConversationToApplyTarget } from "@/features/rich-document/review/applyTargets";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "@host/components/ui/select";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { toast } from "@host/lib/toast";
+import { cn } from "@host/lib/utils";
+import { extractErrorMessage } from "@host/utils/errors";
+import { useAgentLauncher } from "../../hooks/useAgentLauncher";
+import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
+import { selectAgentVariableDefinitions } from "../../redux/agent-definition/selectors";
+import { AgentPickerFrame } from "@host/features/window-panels/windows/agents/AgentPickerWindow";
+import { bindConversationToApplyTarget } from "@host/features/rich-document/review/applyTargets";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import {
   SKIP,
   buildInputRows,
@@ -45,10 +45,10 @@ import { getCustomAgentSession, releaseCustomAgentSession } from "./session";
 import {
   putShortcutDraftSeed,
   shortcutSeedForMapping,
-} from "@/features/agent-shortcuts/draft-seed";
-import { shortcutEditorWindowAction } from "@/features/overlays/openers/shortcutEditorWindow";
-import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { getSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@host/features/agent-shortcuts/draft-seed";
+import { shortcutEditorWindowAction } from "@host/features/overlays/openers/shortcutEditorWindow";
+import { patchConversation } from "../../redux/execution-system/conversations/conversations.slice";
+import { getSurfaceRuntime } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 
 export interface CustomAgentWindowProps {
   isOpen: boolean;

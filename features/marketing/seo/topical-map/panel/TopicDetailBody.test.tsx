@@ -158,7 +158,7 @@ jest.mock("@/features/overlays/openers/mandateWindow", () => ({
 }));
 // No `mandate.definition` row carries `seo.topic_curation` live (verified
 // 2026-09-18) — the resolver's `absent` is the state the screen must be honest about.
-jest.mock("@/features/mandates/useMandate", () => ({
+jest.mock("@ai-matrx/chat/mandates/useMandate", () => ({
   __esModule: true,
   useMandate: () => ({
     mandate: null,
@@ -168,7 +168,7 @@ jest.mock("@/features/mandates/useMandate", () => ({
     organizationPending: false,
   }),
 }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   __esModule: true,
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   getSurfaceRuntimeForName: () => null,

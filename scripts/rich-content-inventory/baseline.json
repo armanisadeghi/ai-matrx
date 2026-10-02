@@ -6,7 +6,7 @@
     "BasicContentEditor :: features/window-panels/windows/page-extraction/ExtractionCellEditorWindow.tsx",
     "FullScreenMarkdownEditor :: components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx",
     "FullScreenMarkdownEditor :: components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge.tsx",
-    "FullScreenMarkdownEditor :: features/agents/components/messages-display/message-options/userEditActions.ts",
+    "FullScreenMarkdownEditor :: packages/chat/src/agents/components/messages-display/message-options/userEditActions.ts",
     "FullScreenMarkdownEditor :: features/overlays/openers/fullScreenEditor.tsx",
     "cleanMarkdownPreview :: features/agents/browse/columns.tsx",
     "cleanMarkdownPreview :: features/agents/browse/components/AgentBrowseCards.tsx",

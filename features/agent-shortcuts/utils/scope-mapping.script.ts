@@ -14,7 +14,7 @@ import {
   type ScopeData,
   type ScopeMappingLogger,
 } from "./scope-mapping";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 let passed = 0;
 let failed = 0;

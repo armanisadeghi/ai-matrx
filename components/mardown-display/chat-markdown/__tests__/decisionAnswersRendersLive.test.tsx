@@ -30,7 +30,7 @@ import activeRequestsReducer, {
   createRequest,
   upsertRenderBlock,
   appendTimeline,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
 import capturedEvent from "./fixtures/decision-answers-live-event.json";
 

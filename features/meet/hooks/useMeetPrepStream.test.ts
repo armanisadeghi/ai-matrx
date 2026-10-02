@@ -10,10 +10,10 @@
 
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => jest.fn() }));
 jest.mock("@/lib/api/call-api", () => ({ callApi: jest.fn() }));
-jest.mock("@/features/agents/redux/execution-system/thunks/adopt-foreign-stream", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream", () => ({
   adoptForeignStream: jest.fn(),
 }));
-jest.mock("@/features/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({
   selectAnswerText: jest.fn(),
 }));
 jest.mock("@/features/overlays/openers/liveRunWindow", () => ({

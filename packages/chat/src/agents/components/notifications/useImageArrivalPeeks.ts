@@ -20,10 +20,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createSelector } from "@reduxjs/toolkit";
-import { useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
-import type { UnifiedImageBlock } from "@/features/files/blocks/image/types";
-import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
+import type { UnifiedImageBlock } from "@host/features/files/blocks/image/types";
+import { isUnifiedImageBlock } from "@host/features/files/blocks/image/guards";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

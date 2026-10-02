@@ -83,7 +83,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/inbox/inbox.thunks",
+  "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.thunks",
   () => ({
     enqueueInboxMessage: (args: unknown) => ({ type: "enqueue", args }),
     retractInboxItem: (args: unknown) => ({ type: "retract", args }),
@@ -91,7 +91,7 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/smart-execute.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk",
   () => ({
     cancelExecution: (conversationId: string) => ({
       type: "cancel",

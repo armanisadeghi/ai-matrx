@@ -41,7 +41,7 @@
  * and the splitter reuses the envelope by reference instead of parsing.
  */
 
-import type { ActiveRequest } from "@/features/agents/types/request.types";
+import type { ActiveRequest } from "../../../types/request.types";
 import type {
   CxContentBlock,
   CxTextContent,
@@ -49,26 +49,26 @@ import type {
   CxToolCallContent,
   CxToolResultContent,
   CxMediaContent,
-} from "@/features/public-chat/types/cx-tables";
+} from "../../../../public-chat/types/cx-tables";
 import type {
   TimelineEntry,
   TimelineTextEnd,
   TimelineReasoningEnd,
   TimelineToolEvent,
   TimelineRenderBlock,
-} from "@/features/agents/types/request.types";
+} from "../../../types/request.types";
 import { computeChildOwnedRanges } from "./child-owned-ranges";
-import { toCxMediaPart } from "@/features/files/blocks/image/adapters/to-cx-media-part";
-import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
-import { SPECIAL_CODE_LANGUAGES } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { toCxMediaPart } from "@host/features/files/blocks/image/adapters/to-cx-media-part";
+import { isUnifiedImageBlock } from "@host/features/files/blocks/image/guards";
+import { SPECIAL_CODE_LANGUAGES } from "@host/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
-import type { NormalizedCitation } from "@/features/agents/redux/execution-system/messages/message-citations";
+import type { NormalizedCitation } from "../messages/message-citations";
 import { envelopeCacheFromEnvelopes } from "@ai-matrx/content-ir";
-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import { readEnvelope } from "@host/features/content-ir/redux/render-block-envelope";
 import {
   DECISION_ANSWERS_BLOCK_TYPE,
   DECISION_ANSWERS_KIND,
-} from "@/features/content-ir/kinds/decision-answers";
+} from "@host/features/content-ir/kinds/decision-answers";
 
 // ---------------------------------------------------------------------------
 // Internal helpers

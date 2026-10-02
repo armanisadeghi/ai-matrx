@@ -2,12 +2,12 @@
 
 import { createContext, useContext, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectChatIncognitoActive,
   setChatIncognitoActive,
   toggleChatIncognito,
-} from "@/features/agents/redux/chat/chat-incognito.slice";
+} from "../../redux/chat/chat-incognito.slice";
 import { isNewChatRoute } from "./chat-incognito.routes";
 
 interface ChatIncognitoContextValue {

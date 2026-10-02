@@ -22,32 +22,32 @@
 import {
   promptForValues,
   type ValuePromptField,
-} from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
-import { toast } from "@/lib/toast";
+} from "@host/components/dialogs/value-prompts/ValuePromptsDialogHost";
+import { toast } from "@host/lib/toast";
 import {
   readSurfaceScopeValue,
   resolveValueMappings,
-} from "@/features/surfaces/utils/value-mapping-resolver";
-import { getManifest } from "@/features/surfaces/manifests/registry";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
-import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
-import { registerSurfaceWritePolicies } from "@/features/surfaces/runtime/surface-writeback";
-import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
+} from "../../../../surfaces/utils/value-mapping-resolver";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
+import type { VariableDefinition } from "../../../types/agent-definition.types";
+import type { InstanceContextEntry } from "../../../types/instance.types";
+import type { ApplicationScope } from "../../../types/scope.types";
+import type { ContextObjectType } from "../../../types/agent-api-types";
+import { resolveShortcutMappings } from "@host/features/agent-shortcuts/utils/resolveShortcutMappings";
+import { registerSurfaceWritePolicies } from "../../../../surfaces/runtime/surface-writeback";
+import { fetchSurfaceBindingLayers } from "../../../../surfaces/services/bind-agent-to-surface.service";
 import type {
   ValueMapping,
   ValueMappingMap,
   WritePolicyMap,
-} from "@/features/surfaces/types";
+} from "../../../../surfaces/types";
 import {
   mergeValueMappingLayers,
   type MappingLayer,
   type MergedValueMappings,
-} from "@/features/surfaces/utils/merge-value-mappings";
+} from "../../../../surfaces/utils/merge-value-mappings";
 
-export type { MergedValueMappings } from "@/features/surfaces/utils/merge-value-mappings";
+export type { MergedValueMappings } from "../../../../surfaces/utils/merge-value-mappings";
 
 export interface ShortcutMappingSource {
   valueMappings: ValueMappingMap | null;

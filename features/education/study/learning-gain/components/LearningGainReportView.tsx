@@ -23,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationProgressScope } from "@/features/surfaces/manifests/education-progress.manifest";
 import { learningGainService } from "../learningGainService";
 import type { LearningGainPair, LearningGainReport } from "../types";

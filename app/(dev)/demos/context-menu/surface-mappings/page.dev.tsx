@@ -36,31 +36,31 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   fetchAgentsListFull,
   fetchAgentExecutionFull,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAllAgents,
   selectAgentsSliceError,
   selectAgentsSliceStatus,
   selectAgentCustomExecutionPayload,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   getAllManifests,
   getManifest,
   getSurfaceAncestry,
 } from "@/features/surfaces/manifests/registry";
-import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
+import { fetchSurfaceBindingLayers } from "@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service";
 import {
   mergeValueMappingLayers,
   type MappingLayer,
   type MergedValueMappings,
-} from "@/features/surfaces/utils/merge-value-mappings";
-import { alwaysOnSurfaceKeys } from "@/features/surfaces/utils/always-on-context";
-import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
+} from "@ai-matrx/chat/surfaces/utils/merge-value-mappings";
+import { alwaysOnSurfaceKeys } from "@ai-matrx/chat/surfaces/utils/always-on-context";
+import { withBaselineScope } from "@ai-matrx/chat/surfaces/utils/baseline-scope";
 import {
   mapScopeToInstanceWithSurface,
   type SurfaceBoundScopeMappingResult,
-} from "@/features/agents/utils/scope-mapping";
-import type { SurfaceValue } from "@/features/surfaces/types";
+} from "@ai-matrx/chat/agents/utils/scope-mapping";
+import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

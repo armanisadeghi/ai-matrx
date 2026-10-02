@@ -18,9 +18,9 @@ import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { fetchNoteById } from "@/features/notes/service/notesService";
-import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import { useAttachResource } from "@ai-matrx/chat/agents/components/inputs/resources/attach-resource";
 import { appendConversationReference } from "@/features/resource-manager/resource-picker/conversation-reference-context";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import { registerActiveAttachTarget, type KnowledgeAttachTarget } from "./attachTarget";
 

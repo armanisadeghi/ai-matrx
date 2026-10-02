@@ -24,11 +24,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { selectModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   resetOverride,
   setOverrides,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { renameModelColumn } from "../redux/slice";
 import { removeColumnFromModelBattle } from "../redux/thunks";

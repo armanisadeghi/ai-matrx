@@ -38,8 +38,8 @@
 // fact.
 
 import { createContext, useContext } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectShowCreatorPanel } from "@host/lib/redux/preferences/creatorDebugSlice";
 
 /**
  * Who is reading this transcript.

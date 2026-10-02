@@ -16,18 +16,18 @@
  */
 
 import { FileText, Globe } from "lucide-react";
-import { cn } from "@/lib/utils";
-import CitationChip from "@/components/official/citation-chip/CitationChip";
+import { cn } from "@host/lib/utils";
+import CitationChip from "@host/components/official/citation-chip/CitationChip";
 import {
   citationSourceDisplayKind,
   type MessageCitationSource,
-} from "@/features/agents/redux/execution-system/messages/message-citations";
+} from "../../../redux/execution-system/messages/message-citations";
 import {
   citationSourceLabel,
   citationSourceLocator,
-} from "@/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
-import { citationSourceIsOpenable } from "@/components/mardown-display/chat-markdown/citations/citation-open-request";
-import { useOpenCitationSource } from "@/components/mardown-display/chat-markdown/citations/useOpenCitationSource";
+} from "@host/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
+import { citationSourceIsOpenable } from "@host/components/mardown-display/chat-markdown/citations/citation-open-request";
+import { useOpenCitationSource } from "@host/components/mardown-display/chat-markdown/citations/useOpenCitationSource";
 
 export interface MessageSourcesRowProps {
   sources: MessageCitationSource[];

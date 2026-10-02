@@ -27,7 +27,7 @@
 import { useState } from "react";
 import { StatusToken } from "@/components/official/ConfigurationFields";
 import { ShortcutFieldRow } from "@/features/agent-shortcuts/components/next/SettingsSection";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { updateMandateDefinition } from "./service";

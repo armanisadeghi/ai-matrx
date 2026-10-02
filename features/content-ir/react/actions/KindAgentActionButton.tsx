@@ -27,7 +27,7 @@ import { useCallback, useState } from "react";
 import { Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { useKindActionRunner } from "./useKindActionRunner";
 
 export interface KindAgentActionButtonProps {

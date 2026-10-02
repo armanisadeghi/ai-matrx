@@ -32,11 +32,11 @@ import {
   type VariableComponentType,
   type VariableCustomComponent,
   type VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type {
   ContextObjectType,
   ContextPolicy,
-} from "@/features/agents/types/agent-api-types";
+} from "@ai-matrx/chat/agents/types/agent-api-types";
 
 const makeSchema = (fields: KindSchema["fields"]): KindSchema => ({
   kind: "bridge_demo",

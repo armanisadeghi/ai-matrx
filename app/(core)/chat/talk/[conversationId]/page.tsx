@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
+import { ChatRunHeader } from "@ai-matrx/chat/agents/components/chat/ChatRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   VoiceChatClient,
   voiceChatAgentHref,
-} from "@/features/voice-agent/relay/VoiceChatClient";
+} from "@ai-matrx/chat/voice-agent/relay/VoiceChatClient";
 
 interface VoiceChatConversationPageProps {
   params: Promise<{ conversationId: string }>;

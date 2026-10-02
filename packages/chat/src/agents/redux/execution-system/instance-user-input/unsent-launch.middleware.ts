@@ -7,7 +7,7 @@
 // covered without its callers knowing this exists.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/rootReducer";
+import type { RootState } from "@host/lib/redux/rootReducer";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { DISPLAY_MODE_TO_OVERLAY_ID } from "../display-mode-overlay";
 import {

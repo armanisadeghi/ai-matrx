@@ -229,7 +229,7 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 /** Every directory a window component can live in. A window is not always under
  *  `features/window-panels/windows/` — the settings shell, the image studio and
  *  the agent variable editor each render their own `WindowPanel`. */
-const COMPONENT_ROOTS = ["features", "components", "app"].map((dir) =>
+const COMPONENT_ROOTS = ["features", "packages/chat/src", "components", "app"].map((dir) =>
   join(REPO_ROOT, dir),
 );
 

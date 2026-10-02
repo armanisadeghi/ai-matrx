@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   IMAGE_REFERENCE_ROLES,
   IMAGE_ROLE_META,

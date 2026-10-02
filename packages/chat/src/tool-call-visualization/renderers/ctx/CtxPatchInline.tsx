@@ -16,15 +16,15 @@
 
 import React, { useMemo } from "react";
 import { CheckCircle2, FilePen } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@host/components/ui/badge";
 
 import type { ToolRendererProps } from "../../types";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { PatchDiffInline } from "../working-document/PatchDiffInline";
-import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
+import { contextEntryLabel } from "../../../agents/components/context-policies-display/contextEntryLabel";
 
 /** Keys a write outcome might use to carry an echoed/previewed value. */
 const PREVIEW_KEYS = [

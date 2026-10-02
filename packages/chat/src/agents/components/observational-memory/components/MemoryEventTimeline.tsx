@@ -28,23 +28,23 @@ import {
   CircleDot,
   Timer,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectRecentMemoryEvents,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
+} from "../../../redux/execution-system/observational-memory/observational-memory.selectors";
 import type {
   MemoryEventEntry,
   MemoryEventKind,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.slice";
+} from "../../../redux/execution-system/observational-memory/observational-memory.slice";
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { useCostDisplay } from "@host/components/cost/useCostDisplay";
 import {
   formatCostUsd,
   formatRelativeTime,
   formatTokens,
 } from "./format";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface MemoryEventTimelineProps {
   conversationId: string;

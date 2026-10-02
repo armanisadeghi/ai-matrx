@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { AgentDefinitionSliceState } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinitionSliceState } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";

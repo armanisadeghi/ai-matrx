@@ -7,10 +7,10 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { CodeAgentFilter } from "@/lib/redux/preferences/userPreferencesSlice";
-import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
-import { selectActiveAgents } from "@/features/agents/redux/agent-definition/selectors";
+import type { RootState } from "@host/lib/redux/store";
+import type { CodeAgentFilter } from "@host/lib/redux/preferences/userPreferencesSlice";
+import type { AgentDefinitionRecord } from "../../types/agent-definition.types";
+import { selectActiveAgents } from "../agent-definition/selectors";
 
 /**
  * Returns the subset of `selectActiveAgents` that matches the given filter.

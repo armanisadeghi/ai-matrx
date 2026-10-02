@@ -50,7 +50,7 @@ const InitialCropWindow = dynamic(
   { ssr: false, loading: () => null },
 );
 import { useImageStudio } from "../hooks/useImageStudio";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { IMAGE_STUDIO_SURFACE_NAME } from "@/features/surfaces/manifests/image-studio.manifest";
 import {
   downloadVariantsAsZip,

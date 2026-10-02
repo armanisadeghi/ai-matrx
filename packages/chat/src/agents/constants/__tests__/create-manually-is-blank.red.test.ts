@@ -7,7 +7,7 @@
  * asserting nothing. Run by name; `jest.config.ts` keeps `*.red.test.ts` out of
  * `pnpm test` on purpose.
  */
-import { TEMPLATE_DATA } from "@/features/agents/constants/local-agent-templates";
+import { TEMPLATE_DATA } from "../local-agent-templates";
 
 function messageText(seed: typeof TEMPLATE_DATA): string {
   return (seed.messages ?? [])

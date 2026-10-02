@@ -12,7 +12,7 @@ jest.mock("next/dynamic", () => () => (props: { mode: string; sourceFeature: str
   });
 });
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
-jest.mock("@/features/agents/hooks/useWidgetHandle", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useWidgetHandle", () => ({
   useOptionalWidgetHandle: () => null,
 }));
 

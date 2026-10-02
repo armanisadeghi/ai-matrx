@@ -35,15 +35,15 @@ import {
   tierFor,
   readinessBucketOf,
   type SurfaceWithStats,
-} from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import { SurfaceReadinessBadge } from "@/features/surfaces/components/SurfaceReadinessBadge";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   checkAgeLabel,
   checkSortWeight,
   surfaceCheckState,
-} from "@/features/surfaces/utils/surface-check-ledger";
+} from "@ai-matrx/chat/surfaces/utils/surface-check-ledger";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMediaQuery } from "@/hooks/use-media-query";

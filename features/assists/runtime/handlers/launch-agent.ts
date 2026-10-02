@@ -5,7 +5,7 @@
  * click time (swappable from /mandates, no deploy).
  */
 
-import { resolveMandate } from "@/features/mandates/service";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   registerAssistAction,

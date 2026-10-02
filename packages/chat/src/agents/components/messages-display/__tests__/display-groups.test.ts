@@ -3,7 +3,7 @@ import {
   buildDisplayEntries,
   groupDisplayEntries,
 } from "../display-groups";
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
+import type { MessageRecord } from "../../../redux/execution-system/messages/messages.slice";
 
 const CONV = "conv-test";
 

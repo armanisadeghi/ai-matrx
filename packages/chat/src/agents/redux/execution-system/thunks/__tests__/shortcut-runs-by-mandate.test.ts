@@ -10,21 +10,21 @@
  * through `/ai/mandates/{key}` and the server resolves user → org → default.
  */
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: { schema: () => ({}) } }));
+jest.mock("@host/utils/supabase/client", () => ({ supabase: { schema: () => ({}) } }));
 jest.mock("../execute-instance.thunk", () => ({ executeInstance: jest.fn() }));
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-input-capabilities/input-capabilities-snapshot",
+  "../../instance-input-capabilities/input-capabilities-snapshot",
   () => ({ fetchInputCapabilitiesSnapshot: jest.fn(async () => ({})) }),
 );
-jest.mock("@/lib/supabase/shortcutStorage", () => ({
-  ...jest.requireActual("@/lib/supabase/shortcutStorage"),
+jest.mock("@host/lib/supabase/shortcutStorage", () => ({
+  ...jest.requireActual("@host/lib/supabase/shortcutStorage"),
   fetchShortcutMandateKey: jest.fn(async () => "shortcut.looked_up_key"),
 }));
 
 import { createInstanceFromShortcut } from "../create-instance.thunk";
 import { resolveStartPath } from "../../utils/resolve-start-path";
-import { fetchShortcutMandateKey } from "@/lib/supabase/shortcutStorage";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { fetchShortcutMandateKey } from "@host/lib/supabase/shortcutStorage";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 const SHORTCUT_ID = "11111111-1111-4111-8111-111111111111";
 const AGENT_ID = "22222222-2222-4222-8222-222222222222";

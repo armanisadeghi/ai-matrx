@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import type { ConversationHistoryScopeState } from "@/features/agents/redux/conversation-history/types";
+import { useDebounce } from "@host/hooks/usehooks/useDebounce";
+import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
+import type { ConversationHistoryScopeState } from "../../redux/conversation-history/types";
 import {
   initialConversationSearchRange,
   nextConversationSearchRange,
   searchConversations,
   type ConversationSearchRange,
-} from "@/features/agents/redux/conversation-history/conversation-search";
+} from "../../redux/conversation-history/conversation-search";
 
 type SearchStatus =
   "idle" | "loading" | "loading-more" | "succeeded" | "failed";

@@ -12,9 +12,9 @@
  */
 
 import React from "react";
-import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
-import { KindDataGate } from "@/components/official/structured-value/KindDataGate";
-import { cn } from "@/lib/utils";
+import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
+import { KindDataGate } from "@host/components/official/structured-value/KindDataGate";
+import { cn } from "@host/lib/utils";
 
 export interface ResultJsonProps {
     data: unknown;

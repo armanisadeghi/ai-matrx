@@ -33,7 +33,7 @@ jest.mock("@/features/organizations/hooks", () => ({
     organizations: [{ id: "org-1", name: "Write Target Sandbox", role: "admin" }],
   }),
 }));
-jest.mock("../../useMandate", () => ({
+jest.mock("@ai-matrx/chat/mandates/useMandate", () => ({
   useMandate: () => ({ mandate: null, loading: false, error: null }),
 }));
 jest.mock("../useMandateLadder", () => ({
@@ -77,8 +77,8 @@ jest.mock("../useMandateWorkspaceData", () => ({
     refresh: () => undefined,
   }),
 }));
-jest.mock("../../output-contract", () => {
-  const actual = jest.requireActual("../../output-contract");
+jest.mock("@ai-matrx/chat/mandates/output-contract", () => {
+  const actual = jest.requireActual("@ai-matrx/chat/mandates/output-contract");
   return {
     ...actual,
     fetchAgentOutputSchemas: (ids: string[]) =>

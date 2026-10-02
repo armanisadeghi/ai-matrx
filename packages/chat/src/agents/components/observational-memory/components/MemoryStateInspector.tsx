@@ -14,7 +14,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage } from "@host/utils/errors";
 import {
   Check,
   ChevronRight,
@@ -28,11 +28,11 @@ import {
   RefreshCw,
   Hammer,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/utils/supabase/client";
-import type { Tables } from "@/types/database.types";
+import { cn } from "@host/lib/utils";
+import { supabase } from "@host/utils/supabase/client";
+import type { Tables } from "@host/types/database.types";
 import { formatDateTime, formatRelativeTime, formatTokens } from "./format";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 type MemoryRow = Tables<{ schema: "chat" }, "observational_memory">;
 

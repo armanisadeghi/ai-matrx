@@ -24,23 +24,23 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentSettings } from "@/features/agents/redux/agent-definition/slice";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentSettings } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import {
   fetchFullAgent,
   saveAgent,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   fetchModelById,
   selectAllModels,
   selectModelFullyLoaded,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import type { ModelConstraint } from "@/features/ai-models/types";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import {
   resolveModelControls,
   type NormalizedControls,
-} from "@/features/agents/hooks/useModelControls";
+} from "@ai-matrx/chat/agents/hooks/useModelControls";
 import {
   applyAllFixableIssues,
   canFixIssue,

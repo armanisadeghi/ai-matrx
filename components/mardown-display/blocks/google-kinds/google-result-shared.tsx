@@ -62,8 +62,8 @@ import {
 } from "@/features/item-presentation/registry";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import type { ItemType } from "@/features/item-presentation/types";
-import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
-import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
+import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
+import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   Section,

@@ -1,7 +1,7 @@
 import { AgentModeController } from "../shared/AgentModeController";
 import { AgentSaveStatus } from "../shared/AgentSaveStatus";
 import { AgentOptionsMenu } from "../shared/AgentOptionsMenu";
-import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
+import { ReviewAnswersLink } from "@host/features/agents/decision-review/components/ReviewAnswersLink";
 import Link from "next/link";
 import { AgentSelectorIsland } from "../shared/AgentSelectorIsland";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";

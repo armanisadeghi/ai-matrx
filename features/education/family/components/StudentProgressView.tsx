@@ -10,7 +10,7 @@
 // guardian_can_view before mounting this); the RPCs re-check on every read.
 
 import { StudyAnalyticsView } from "@/features/education/study/analytics/components/StudyAnalyticsView";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationFamilyScope } from "@/features/surfaces/manifests/education-family.manifest";
 import { useGuardianStudentAnalytics } from "../useGuardianStudentAnalytics";
 

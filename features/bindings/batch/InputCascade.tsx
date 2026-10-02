@@ -18,9 +18,9 @@
 
 import { InlineBindingEditor } from "@/features/agent-shortcuts/components/batch/BatchBindingCell";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
-import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
+import type { SurfaceValue, ValueMapping } from "@ai-matrx/chat/surfaces/types";
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { sourceLabelsFor } from "../words";
 
 export type InputMode = "inherit" | "all" | "row";

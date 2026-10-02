@@ -25,8 +25,8 @@ import type {
   FlashcardsBlockData,
   RenderBlockPayload,
 } from "@/types/python-generated/stream-events";
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import type { CxContentBlock } from "@ai-matrx/chat/public-chat/types/cx-tables";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 import { deriveFlashcardsSet } from "@/components/mardown-display/blocks/flashcards/flashcards-set-derive";
 import { planMaterialization } from "@/features/canvas/materialization/planMaterialization";

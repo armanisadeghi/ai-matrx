@@ -54,7 +54,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   LIST_SURFACE_WRITE_TARGETS,
   LIST_VISIBILITY_ENUM_TEXT,

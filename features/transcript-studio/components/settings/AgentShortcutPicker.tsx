@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
+import { selectAllShortcutsArray } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
 import { cn } from "@/lib/utils";
 
 interface AgentShortcutPickerProps {

@@ -29,8 +29,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
-import { fetchMandateIdentities, type MandateIdentity } from "../service";
+import { useLiveSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
+import { fetchMandateIdentities, type MandateIdentity } from "@ai-matrx/chat/mandates/service";
 import { mandateDisplayName } from "../mandate-words";
 import { featureIntelligenceHref, resolveIntelligenceSlug } from "./hrefs";
 import { DECLARED_FEATURES, declaredPlacesFor } from "./registry";

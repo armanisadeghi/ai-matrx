@@ -28,7 +28,7 @@ import {
   type DiagramPoint,
 } from "@/features/canvas/edges/rounded-orthogonal-path";
 import { cn } from "@/lib/utils";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createAdminGrowthLoopScope,
   type GrowthLoopEdgeSummaryEntry,

@@ -8,7 +8,7 @@
  * and the slice labelled an unlabelled chip with its raw key.
  */
 jest.mock("@/features/files/components/pickers/cloudFilesPickerOpeners", () => ({ openFilePicker: jest.fn() }));
-jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({ useAgentLauncher: () => ({ launchMandate: jest.fn() }) }));
+jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({ useAgentLauncher: () => ({ launchMandate: jest.fn() }) }));
 jest.mock("@/features/sharing/components/RecordStoreShareSurface", () => ({ recordStoreShare: () => null }));
 jest.mock("@/features/unified-data/record-chat/RecordScopedChat", () => ({ RecordScopedChat: () => null }));
 jest.mock("@/features/organizations/service", () => ({ getOrganizationMembers: jest.fn() }));
@@ -26,7 +26,7 @@ jest.mock("@/features/unified-data/recordsReferences", () => ({ RECORDS_REFERENC
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
 
 import { buildAskRuntime } from "../recordsUiHost";
-import instanceContextReducer, { keyWords, setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import instanceContextReducer, { keyWords, setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 
 const ASK = {
   kind: "column" as const,

@@ -17,16 +17,16 @@ import {
   History,
   LayoutDashboard,
 } from "lucide-react";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
-import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { formatJson } from "@/utils/json/json-cleaner-utility";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
+import { formatJson } from "@host/utils/json/json-cleaner-utility";
+import { fetchFullAgent } from "../../../agents/redux/agent-definition/thunks";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";
 
 // ─── Agent definition selectors ───────────────────────────────────────────────
 import {
@@ -39,7 +39,7 @@ import {
   selectAgentMessages,
   selectAgentTags,
   selectAgentCategory,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../../../agents/redux/agent-definition/selectors";
 
 // ─── Execution instance selectors ─────────────────────────────────────────────
 import {
@@ -47,20 +47,20 @@ import {
   selectAllConversationIds,
   selectConversationIdsByAgent,
   selectInstancesByAgent,
-} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+} from "../../../agents/redux/execution-system/conversations/conversations.selectors";
 
 // ─── Instance variable values selectors ───────────────────────────────────────
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
   selectResolvedVariables,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+} from "../../../agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 
 // ─── Instance user input selectors ────────────────────────────────────────────
 import {
   selectUserInputText,
   selectUserInputMessageParts,
-} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+} from "../../../agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 
 // ─── Instance UI state selectors ──────────────────────────────────────────────
 import {
@@ -69,7 +69,7 @@ import {
   selectAutoRun,
   selectAllowChat,
   selectShowVariablePanel,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 
 // ─── Conversation history selectors ───────────────────────────────────────────
 import {
@@ -77,8 +77,8 @@ import {
   selectApiEndpointMode,
   selectMessageCount,
   extractInspectableText,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
+} from "../../../agents/redux/execution-system/messages/messages.selectors";
+import type { MessageRecord } from "../../../agents/redux/execution-system/messages/messages.slice";
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 

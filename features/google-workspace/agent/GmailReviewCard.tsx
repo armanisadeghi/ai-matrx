@@ -19,17 +19,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
+import type { PendingAsk } from "@ai-matrx/chat/agents/ui-first-tools/redux/pending-asks.slice";
 import {
   cancelPendingAsk,
   resolvePendingAsk,
-} from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
+} from "@ai-matrx/chat/agents/ui-first-tools/redux/pending-asks.slice";
 import {
   cancelAskByCallId,
   resolveAskByCallId,
-} from "@/features/agents/ui-first-tools/redux/ask-resolver-registry";
-import { EMPTY_ASK_RESPONSE } from "@/features/agents/ui-first-tools/tools/schemas";
-import { AgentCardShell } from "@/features/agents/ui-first-tools/ui/AgentCardShell";
+} from "@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry";
+import { EMPTY_ASK_RESPONSE } from "@ai-matrx/chat/agents/ui-first-tools/tools/schemas";
+import { AgentCardShell } from "@ai-matrx/chat/agents/ui-first-tools/ui/AgentCardShell";
 import { sendReviewedGmail } from "@/features/google-workspace/service";
 import { splitMailboxField } from "@/features/crm/gmail/mailbox";
 import {

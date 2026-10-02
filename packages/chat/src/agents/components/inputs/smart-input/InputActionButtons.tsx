@@ -21,9 +21,9 @@ import {
   CircleStop,
   AudioLines,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { announceComingSoon } from "@/lib/coming-soon/announce";
+import { Button } from "@host/components/ui/button";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { announceComingSoon } from "@host/lib/coming-soon/announce";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import { RunControlsMenu } from "./RunControlsMenu";
 import { ContextDocsMenu } from "./ContextDocsMenu";
@@ -33,24 +33,24 @@ import {
   selectShowAttachments,
   selectShowMicrophone,
   selectAutoClearConversation,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   setSubmitOnEnter,
   toggleVariablePanel,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
   selectComposerHasSomethingToSend,
   selectShouldShowVariables,
   selectShouldShowAutoClearToggle,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { useSurfaceExecution } from "@/features/agents/hooks/useSurfaceExecution";
+} from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { useSurfaceExecution } from "../../../hooks/useSurfaceExecution";
 import { DesktopPresenceIndicator } from "./DesktopPresenceIndicator";
 import {
   smartExecute,
   cancelExecution,
-} from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
+} from "../../../redux/execution-system/thunks/smart-execute.thunk";
+import { setAutoClearMode } from "../../../redux/execution-system/thunks/create-instance.thunk";
+import { MicDeviceMenu } from "@host/components/audio/MicDeviceMenu";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
 
 // ── Inline button primitive ──────────────────────────────────────────────────

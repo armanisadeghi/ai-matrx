@@ -23,7 +23,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 let PATH = "/education/flashcards";
 jest.mock("next/navigation", () => ({ usePathname: () => PATH }));
-jest.mock("@/features/surfaces/runtime/surface-mandates", () => ({ useLiveSurfaceMandates: () => [] }));
+jest.mock("@ai-matrx/chat/surfaces/runtime/surface-mandates", () => ({ useLiveSurfaceMandates: () => [] }));
 jest.mock("@/features/settings/components/SettingsPresentationContext", () => ({
   useSettingsPresentation: () => ({}),
 }));

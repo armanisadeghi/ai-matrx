@@ -25,10 +25,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentLineageIndex } from "@/features/agents/redux/agent-definition/selectors";
-import { onMandateCacheInvalidated } from "@/features/mandates/service";
-import { fetchAgentOutputSchemas } from "@/features/mandates/output-contract";
+import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentLineageIndex } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
+import { fetchAgentOutputSchemas } from "@ai-matrx/chat/mandates/output-contract";
 import { buildRow, type MandateRow } from "@/features/mandates/admin/mandate-health";
 import { MandateDetailView } from "@/features/mandates/admin/MandateDetailPanel";
 import {

@@ -31,7 +31,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { SORT_OPTIONS } from "@ai-matrx/agents/catalog";
 import { AGENT_NONE_SENTINEL } from "@ai-matrx/agents/catalog";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";

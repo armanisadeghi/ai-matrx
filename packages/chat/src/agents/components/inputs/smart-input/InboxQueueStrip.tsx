@@ -30,27 +30,27 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-import IconButton from "@/components/official/IconButton";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { TextInputDialog } from "@host/components/dialogs/text-input/TextInputDialog";
+import IconButton from "@host/components/official/IconButton";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { selectInboxItems } from "@/features/agents/redux/execution-system/inbox/inbox.selectors";
-import { TERMINAL_RUNTIME_STATUSES } from "@/features/agents/runtime-reconnect/types";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "@host/components/ui/tooltip";
+import { selectInboxItems } from "../../../redux/execution-system/inbox/inbox.selectors";
+import { TERMINAL_RUNTIME_STATUSES } from "../../../runtime-reconnect/types";
+import { selectIsExecuting } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import {
   enqueueInboxMessage,
   promoteQueuedToSteer,
   retractInboxItem,
   editInboxItem,
-} from "@/features/agents/redux/execution-system/inbox/inbox.thunks";
+} from "../../../redux/execution-system/inbox/inbox.thunks";
 import {
   removeInboxItem,
   type ConversationInboxItem,
-} from "@/features/agents/redux/execution-system/inbox/inbox.slice";
+} from "../../../redux/execution-system/inbox/inbox.slice";
 
 interface InboxQueueStripProps {
   conversationId: string;

@@ -19,9 +19,9 @@ import type {
 } from "../tools/schemas";
 import { resolveThread } from "../service/threadResolver";
 import { messageRecordToText } from "../service/messageText";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { listConversationDocuments } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { selectConversationMessages } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { listConversationDocuments } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/cx-working-document.service";
 
 const DEFAULT_LIMIT = 20;
 

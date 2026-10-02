@@ -9,7 +9,7 @@ import {
   citationOpenRequest,
   citationSourceIsOpenable,
 } from "../citation-open-request";
-import type { MessageCitationSource } from "@/features/agents/redux/execution-system/messages/message-citations";
+import type { MessageCitationSource } from "@ai-matrx/chat/agents/redux/execution-system/messages/message-citations";
 
 function source(
   over: Partial<MessageCitationSource> = {},

@@ -2,13 +2,13 @@
 
 import React, { useState } from "react";
 import { CircleDot, Save, Loader2 } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectSessionHasUnsavedChanges,
   selectDirtyMessages,
 } from "./_legacy-stubs";
 import { editMessage } from "./_legacy-stubs";
-import { buildContentBlocksForSave } from "@/features/cx-conversation/utils/buildContentBlocksForSave";
+import { buildContentBlocksForSave } from "./utils/buildContentBlocksForSave";
 
 interface UnsavedChangesIndicatorProps {
   sessionId: string;

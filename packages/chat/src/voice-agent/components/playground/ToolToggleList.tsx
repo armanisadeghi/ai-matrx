@@ -4,9 +4,9 @@
 // Per-tool on/off switches. The server-side tools (web_search, x_search) are
 // executed by xAI itself — we just declare them in session.update.
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { Label } from "@host/components/ui/label";
+import { Switch } from "@host/components/ui/switch";
 import { selectVoiceTools } from "../../state/selectors";
 import { updateConfig } from "../../state/voiceAgentSlice";
 import type { BuiltinToolName, ResolvedRealtimeTool } from "../../types";

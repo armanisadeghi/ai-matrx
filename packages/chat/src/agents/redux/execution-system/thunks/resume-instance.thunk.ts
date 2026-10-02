@@ -2,7 +2,7 @@ import {
   executionRejectionMeta,
   RESUME_RETRY_SCHEDULED_ERROR_NAME,
   type ExecutionRejectionMeta,
-} from "@/lib/diagnostics/executionRejectionMeta";
+} from "@host/lib/diagnostics/executionRejectionMeta";
 /**
  * resumeInstance — continue an agent loop whose original stream has ended
  * because a client-delegated tool was answered after the hard-suspend.
@@ -36,8 +36,8 @@ import {
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { UserOverrides } from "@/features/agents/types/request.types";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { UserOverrides } from "../../../types/request.types";
 
 import { generateRequestId } from "../utils/ids";
 import {
@@ -76,18 +76,18 @@ import {
   patchConversation,
   setInstanceStatus,
 } from "../conversations/conversations.slice";
-import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
+import { selectDesktopTargetInstanceId } from "@host/lib/redux/preferences/adminPreferencesSlice";
 import {
   selectProjectId,
   selectScopeSelectionsContext,
   selectTaskId,
-} from "@/lib/redux/slices/appContextSlice";
+} from "@host/lib/redux/slices/appContextSlice";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
 import {
   createRequest,
   setRequestStatus,
 } from "../active-requests/active-requests.slice";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage } from "@host/utils/errors";
 
 interface ResumeInstanceArgs {
   conversationId: string;

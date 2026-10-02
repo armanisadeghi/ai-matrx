@@ -10,7 +10,7 @@
 
 import { useMemo } from "react";
 import type { NormalizedControls } from "@/lib/redux/slices/agent-settings/types";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import type { ValidationResult } from "./types";
 import { resolveConfig } from "./resolve-config";

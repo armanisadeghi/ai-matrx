@@ -26,8 +26,8 @@ import type {
   MemoryReflectorCompletedData,
   MemoryBufferSpawnedData,
   MemoryErrorData,
-} from "@/types/python-generated/stream-events";
-import type { components } from "@/types/python-generated/api-types";
+} from "@host/types/python-generated/stream-events";
+import type { components } from "@host/types/python-generated/api-types";
 
 // =============================================================================
 // Types

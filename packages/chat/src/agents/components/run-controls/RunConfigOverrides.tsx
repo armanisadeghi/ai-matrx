@@ -33,43 +33,43 @@ import {
   ConfigurationTable,
   ConfigurationTableRow,
   FieldHelp,
-} from "@/components/official/ConfigurationFields";
+} from "@host/components/official/ConfigurationFields";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import {
   selectAllModels,
   selectModelFullyLoaded,
   fetchModelById,
   retryModelDetail,
   selectModelDetailError,
-} from "@/features/ai-models/redux/modelRegistrySlice";
-import { useModelControls } from "@/features/agents/hooks/useModelControls";
+} from "@host/features/ai-models/redux/modelRegistrySlice";
+import { useModelControls } from "../../hooks/useModelControls";
 import {
   selectInstanceOverrideState,
   selectSettingsOverridesForApi,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+} from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   setOverrides,
   replaceOverrides,
   resetOverride,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+} from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
   buildSettingsRows,
   humanizeSettingKey,
   type SettingsRow,
-} from "@/lib/redux/slices/agent-settings/settings-catalogue";
-import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types";
-import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { parseRequestOverrides } from "@/features/agents/redux/execution-system/utils/request-overrides";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "@host/lib/redux/slices/agent-settings/settings-catalogue";
+import type { ControlDefinition } from "@host/lib/redux/slices/agent-settings/types";
+import { SettingControlInput } from "@host/features/agents/components/settings-management/controls/SettingControlInput";
+import { Label } from "@host/components/ui/label";
+import { cn } from "@host/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
+import { Textarea } from "@host/components/ui/textarea";
+import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";
+import type { LLMParams } from "../../types/agent-api-types";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const OVERRIDE_COLUMNS = [
   { key: "setting", label: "Setting" },

@@ -4,7 +4,7 @@ import { tabToFileIdentity } from "../utils/fileIdentity";
 
 import { useCallback, type MutableRefObject } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setContextEntry } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import type { StandaloneCodeEditor } from "../editor/MonacoEditor";
 import type { EditorFile } from "../types";
 import { isPreviewTab } from "../types";

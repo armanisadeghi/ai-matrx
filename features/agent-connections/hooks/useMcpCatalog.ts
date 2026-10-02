@@ -10,9 +10,9 @@ import {
   connectServer,
   disconnectServer,
   discoverServerTools,
-} from "@/features/agents/redux/mcp/mcp.slice";
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
-import type { UpsertConnectionParams } from "@/features/agents/services/mcp.service";
+} from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
+import type { UpsertConnectionParams } from "@ai-matrx/chat/agents/services/mcp.service";
 
 export interface UseMcpCatalogResult {
   servers: McpCatalogEntry[];

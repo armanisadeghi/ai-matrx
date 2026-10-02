@@ -173,11 +173,11 @@ jest.mock("@/features/overlays/openers/mandateWindow", () => ({
   __esModule: true,
   useOpenMandateWindow: () => jest.fn(),
 }));
-jest.mock("@/features/mandates/useMandate", () => ({
+jest.mock("@ai-matrx/chat/mandates/useMandate", () => ({
   __esModule: true,
   useMandate: () => ({ mandate: null, loading: false, error: null, absent: true, organizationPending: false }),
 }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   __esModule: true,
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   getSurfaceRuntimeForName: () => null,

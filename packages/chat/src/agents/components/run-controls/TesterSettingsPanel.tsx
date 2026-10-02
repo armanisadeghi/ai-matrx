@@ -1,19 +1,19 @@
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Label } from "@host/components/ui/label";
+import { Switch } from "@host/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@host/components/ui/select";
 import {
   VARIABLE_PANEL_STYLE_OPTIONS,
   type VariablesPanelStyle,
-} from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
-import { VoiceTextarea } from "@/components/official/VoiceTextarea";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "../inputs/variable-input-variations/variable-input-options";
+import type { ApiEndpointMode } from "../../types/instance.types";
+import { VoiceTextarea } from "@host/components/official/VoiceTextarea";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 // =============================================================================
 // Shared settings panel used by both the sidebar and widget-invoker testers.

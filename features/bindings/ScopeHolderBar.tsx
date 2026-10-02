@@ -32,8 +32,8 @@ import {
 } from "@/components/official/ConfigurationFields";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { selectBuiltinAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import type { AgentTab } from "@ai-matrx/agents/catalog";
 import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import {

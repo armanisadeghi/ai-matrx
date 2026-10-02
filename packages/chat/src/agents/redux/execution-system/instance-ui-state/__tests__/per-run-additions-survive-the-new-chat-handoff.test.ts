@@ -32,16 +32,16 @@
  * `client.mcp`. Only its network/registry dependencies are stubbed.
  */
 
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: () => undefined,
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/client-capabilities/register-all",
+  "../../client-capabilities/register-all",
   () => ({}),
 );
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({
       from: () => ({
@@ -60,7 +60,7 @@ import { createInstanceFull } from "../../create-instance-full";
 import { destroyInstanceIfAbandoned } from "../../conversations/conversations.thunks";
 import { destroyInstance } from "../../conversations/conversations.slice";
 import { buildToolInjection } from "../../utils/build-tool-injection";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const CONVERSATION = "conv-new-chat";
 const AGENT = "agent-new-chat";

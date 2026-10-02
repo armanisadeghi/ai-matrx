@@ -17,12 +17,12 @@ import { Search } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import type { RootState } from "@/lib/redux/store";
 import { AgentUsagesEngine } from "@/features/agents/components/usages/AgentUsagesEngine";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 interface AgentFindUsagesWindowProps {

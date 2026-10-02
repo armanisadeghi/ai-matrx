@@ -32,7 +32,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { selectModelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { cn } from "@/lib/utils";
 import { renameSettingsColumn } from "../redux/slice";

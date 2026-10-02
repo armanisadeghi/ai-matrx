@@ -16,17 +16,17 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@host/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from "@/components/ui/drawer";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
+} from "@host/components/ui/drawer";
+import { Alert, AlertDescription } from "@host/components/ui/alert";
+import { Button } from "@host/components/ui/button";
+import { useIsMobile } from "@host/hooks/use-mobile";
 
 export type DuplicateOutcomeState = "loading" | "success" | "error";
 

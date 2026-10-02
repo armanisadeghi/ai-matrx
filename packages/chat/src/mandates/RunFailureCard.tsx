@@ -20,14 +20,14 @@
 
 import { AlertTriangle } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { ServerNotes } from "@/components/official/ServerNotes";
-import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+import { Badge } from "@host/components/ui/badge";
+import { ServerNotes } from "@host/components/official/ServerNotes";
+import { TextWithDoors } from "@host/components/official/entity-ref/TextWithDoors";
 import {
   mandateRefusalHeadline,
   type MandateRunFailure,
-} from "./test-run";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "@host/features/mandates/test-run";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 export function RunFailureCard({
   failure,

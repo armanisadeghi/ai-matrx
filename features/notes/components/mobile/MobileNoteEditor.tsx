@@ -21,7 +21,7 @@ import { usePreparedNoteContentSource } from "../../usePreparedNoteContentSource
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesSurfaceRuntime";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useOptionalNotesInstanceId } from "../../context/NotesInstanceContext";
 import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { isRichEditorMode, type EditorMode } from "../NoteEditorCore";

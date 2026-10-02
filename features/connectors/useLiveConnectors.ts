@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
-import { useMcpCatalog } from "@/features/agents/hooks/useMcpTools";
+import { useMcpCatalog } from "@ai-matrx/chat/agents/hooks/useMcpTools";
 import {
   connectServer,
   fetchCatalog,
   selectMcpCatalogError,
-} from "@/features/agents/redux/mcp/mcp.slice";
-import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
+} from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
+import { startMcpOAuthPopup } from "@ai-matrx/chat/agents/services/mcp-oauth/popup";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { toast } from "@/lib/toast";

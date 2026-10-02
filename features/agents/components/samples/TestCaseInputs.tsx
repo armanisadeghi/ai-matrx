@@ -42,10 +42,10 @@ import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
-import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
-import { MessageAttachmentStrip } from "@/features/agents/components/messages-display/MessageAttachmentStrip";
-import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
+import { buildVariableDisplayLines } from "@ai-matrx/chat/agents/utils/variable-display-lines";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
+import { MessageAttachmentStrip } from "@ai-matrx/chat/agents/components/messages-display/MessageAttachmentStrip";
+import { isAttachmentMessagePart } from "@ai-matrx/chat/agents/components/context-items/normalize";
 import type { AgentVariableDeclaration } from "@/features/agents/samples/service";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 

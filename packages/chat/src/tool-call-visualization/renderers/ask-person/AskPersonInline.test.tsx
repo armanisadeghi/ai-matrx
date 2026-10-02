@@ -1,19 +1,19 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({
+jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({
   ErrorAlchemyMenu: () => null,
 }));
 
 const fetchPending = jest.fn();
 const completeAsSelf = jest.fn();
-jest.mock("@/features/action-requests/self-service", () => ({
+jest.mock("@host/features/action-requests/self-service", () => ({
   fetchPendingActionRequests: (...args: unknown[]) => fetchPending(...args),
   completeActionRequestAsSelf: (...args: unknown[]) => completeAsSelf(...args),
 }));
@@ -21,11 +21,11 @@ jest.mock("@/features/action-requests/self-service", () => ({
 const dispatchSpy = jest.fn((action: unknown) => ({
   unwrap: () => Promise.resolve(action),
 }));
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatchSpy,
 }));
 const loadConversation = jest.fn((args: unknown) => ({ type: "loadConversation", args }));
-jest.mock("@/features/agents/redux/execution-system/thunks/load-conversation.thunk", () => ({
+jest.mock("../../../agents/redux/execution-system/thunks/load-conversation.thunk", () => ({
   loadConversation: (args: unknown) => loadConversation(args),
 }));
 

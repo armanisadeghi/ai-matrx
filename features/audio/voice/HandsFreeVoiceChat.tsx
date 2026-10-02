@@ -3,7 +3,7 @@
 import { Mic, MicOff, Moon, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useVoiceChat, type VoiceChatPhase } from "@/hooks/tts/useVoiceChat";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createVoiceChatScope, VOICE_CHAT_SURFACE } from "@/features/surfaces/manifests/voice-chat.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

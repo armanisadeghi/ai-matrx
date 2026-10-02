@@ -31,48 +31,48 @@ import {
   Brain,
   Zap,
 } from "lucide-react";
-import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
+import { useAppSelector, useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
 
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { CHAT_CONTEXT_MENU_PROPS } from "@/features/agents/components/chat/agent-context/buildChatContextData";
-import { buildRunControlsApplicationScope } from "@/features/agents/components/chat/agent-context/buildChatRunConfiguration";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { CHAT_CONTEXT_MENU_PROPS } from "../../chat/agent-context/buildChatContextData";
+import { buildRunControlsApplicationScope } from "../../chat/agent-context/buildChatRunConfiguration";
 
-import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
 import { RunToolPicker } from "./RunToolPicker";
 import { RunSkillPicker } from "./RunSkillPicker";
-import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
-import { RunSettingsEditor } from "@/features/agents/components/run-controls/RunSettingsEditor";
-import { RunModelPicker } from "@/features/agents/components/run-controls/RunModelPicker";
-import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
-import { RunInputCapabilities } from "@/features/agents/components/run-controls/RunInputCapabilities";
-import { DocumentsWorkspace } from "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace";
-import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
-import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
+import { SandboxPanel } from "../../chat/SandboxPanel";
+import { RunSettingsEditor } from "../../run-controls/RunSettingsEditor";
+import { RunModelPicker } from "../../run-controls/RunModelPicker";
+import { RunConfigOverrides } from "../../run-controls/RunConfigOverrides";
+import { RunInputCapabilities } from "../../run-controls/RunInputCapabilities";
+import { DocumentsWorkspace } from "../../working-document/documents-workspace/DocumentsWorkspace";
+import { selectWorkingDocEnabled } from "../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { ActiveContextTree } from "@host/features/scopes/components/active-context/ActiveContextTree";
+import { selectHasActiveContext } from "@host/features/scopes/redux/selectors/active-context";
+import { selectInstanceOverrideState } from "../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectAttachmentCapabilities } from "../../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import {
   selectBuilderAdvancedSettings,
   selectIsCreator,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
-import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectChatIncognitoActive } from "../../../redux/chat/chat-incognito.slice";
+import { useVerifiedSandboxBinding } from "@host/hooks/sandbox/use-verified-binding";
 import {
   selectShowCreatorPanel,
   toggleShowCreatorPanel,
-} from "@/lib/redux/preferences/creatorDebugSlice";
+} from "@host/lib/redux/preferences/creatorDebugSlice";
 import {
   selectIsSuperAdmin,
   selectIsSuperAdminDebugger,
-} from "@/lib/redux/slices/userSlice";
-import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
-import { useOpenChatDebugWindow } from "@/features/overlays/openers/chatDebugWindow";
-import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPreviewWindow";
-import { AgentMemoryInlinePanel } from "@/features/agents/components/memory/components/AgentMemoryInlinePanel";
+} from "@host/lib/redux/slices/userSlice";
+import { selectIsDebugMode } from "@host/lib/redux/preferences/adminDebugSlice";
+import { useOpenChatDebugWindow } from "@host/features/overlays/openers/chatDebugWindow";
+import { useOpenPromptPreviewWindow } from "@host/features/overlays/openers/promptPreviewWindow";
+import { AgentMemoryInlinePanel } from "../../memory/components/AgentMemoryInlinePanel";
 import { QuicksetPanel } from "./QuicksetPanel";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "../../../resources/types";
 
 export type RunControlsTab =
   | "quickset"

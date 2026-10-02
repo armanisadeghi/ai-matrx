@@ -50,8 +50,8 @@ Each site replaced a hand-rolled `<img src=...>` with `<InlineMediaRef ref={...}
 | 1 | `components/mardown-display/blocks/artifact/ArtifactBlock.tsx` (line 167) | `case "image"` rendered raw `<img src={content}>`. Replaced. |
 | 2 | `components/matrx/Entity/prewired-components/entity-management/parts/EntitySelectVariants.tsx` (line 165) | Entity carousel option image — external URL. |
 | 3 | `features/scraper/parts/ScrapedResultDetailTabs.tsx` (line 233) | `selected.mainImage` rendered raw. |
-| 4 | `features/agents/components/notifications/ImageArrivalPeek.tsx` (line 172) | The AI-image arrival toast. The site already routed the URL through `useFileAs` for expiry-wheel refresh, so the leftover `<img>` was redundant. |
-| 5 | `features/agents/components/messages-display/user/AgentUserMessage.tsx` (line 338) | `ImageBlockModal` body. |
+| 4 | `packages/chat/src/agents/components/notifications/ImageArrivalPeek.tsx` (line 172) | The AI-image arrival toast. The site already routed the URL through `useFileAs` for expiry-wheel refresh, so the leftover `<img>` was redundant. |
+| 5 | `packages/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx` (line 338) | `ImageBlockModal` body. |
 | 6 | `features/rag/components/documents/panes/PdfPane.tsx` (line 55) | Page-image fallback when the source isn't a cld_files PDF. |
 | 7 | `features/window-panels/windows/image/ImageViewerWindow.tsx` (line 365) | Thumbnail strip below the viewer. The main viewer (line 207) still uses `<img>` — see §4. |
 | 8 | `app/(authenticated)/tests/oauth/components/SlackManager.tsx` (line 337) | Slack avatar render. |
@@ -73,7 +73,7 @@ These are real `<img>` sites where the only thing blocking migration is a missin
 
 | Missing capability | `<InlineMediaRef>` gap | Importers that need it (filepath:line) |
 |---|---|---|
-| **`onError` callback** — caller wants to hide the element / fall back to a sibling when the URL 404s | Component swallows errors and shows its built-in `fallback="icon"|"skeleton"`; no escape hatch for caller logic | `features/agents/components/inputs/input-components/MediaVariableInput.tsx:214` (hides on error), `features/agents/components/builder/message-builders/AddBlockButton.tsx:596` (hides on error), `features/news/components/NewsFloatingWorkspace.tsx:179` (toggles `imgError` state), `features/workflows/results/registered-components/BraveSearchDisplay.tsx:257,375,467` (hides on error), `features/files/components/core/MediaThumbnail/MediaThumbnail.tsx:202` (sets local `errored` to show fallback), `features/files/components/core/FilePreview/previewers/ImagePreview.tsx:58` (sets local `errored`), `features/files/components/core/FilePreview/previewers/SvgPreview.tsx:111` (calls `onError` prop), `components/official/ImageAssetUploader.tsx:621` (hides on error) — **9 sites** |
+| **`onError` callback** — caller wants to hide the element / fall back to a sibling when the URL 404s | Component swallows errors and shows its built-in `fallback="icon"|"skeleton"`; no escape hatch for caller logic | `packages/chat/src/agents/components/inputs/input-components/MediaVariableInput.tsx:214` (hides on error), `features/agents/components/builder/message-builders/AddBlockButton.tsx:596` (hides on error), `features/news/components/NewsFloatingWorkspace.tsx:179` (toggles `imgError` state), `features/workflows/results/registered-components/BraveSearchDisplay.tsx:257,375,467` (hides on error), `features/files/components/core/MediaThumbnail/MediaThumbnail.tsx:202` (sets local `errored` to show fallback), `features/files/components/core/FilePreview/previewers/ImagePreview.tsx:58` (sets local `errored`), `features/files/components/core/FilePreview/previewers/SvgPreview.tsx:111` (calls `onError` prop), `components/official/ImageAssetUploader.tsx:621` (hides on error) — **9 sites** |
 | **`onLoad` callback** — caller measures the rendered image or fades it in once the bytes arrive | No `onLoad` exposed | `components/mardown-display/blocks/images/ImageOutputBlock.tsx:317` (fade-in transition), `features/image-studio/modes/annotate/AnnotateModeShell.tsx:220` (initializes the annotation canvas overlay) — **2 sites** |
 | **`ref` forwarding** — caller needs imperative access to the `<img>` element (e.g. transform calculations, canvas snapshot) | No `forwardRef` wrapper | `features/image-studio/modes/annotate/AnnotateModeShell.tsx:221` (`imgRef` for coordinate translation) — **1 site** |
 | **`crossOrigin` attribute** — needed for canvas-based pixel reads | Not exposed | `features/image-studio/modes/annotate/AnnotateModeShell.tsx:225` (canvas annotation requires `crossOrigin="anonymous"`) — **1 site** |
@@ -112,7 +112,7 @@ These render content that is **not** a file in the `cld_files` sense — transie
 
 Surfacing for completeness — these would migrate cleanly **once** §4a's `onError` gap closes (none of them need anything more):
 
-- `features/agents/components/inputs/input-components/MediaVariableInput.tsx:214`
+- `packages/chat/src/agents/components/inputs/input-components/MediaVariableInput.tsx:214`
 - `features/agents/components/builder/message-builders/AddBlockButton.tsx:596`
 - `features/news/components/NewsFloatingWorkspace.tsx:179`
 - `features/workflows/results/registered-components/BraveSearchDisplay.tsx:257`, `:375`, `:467`

@@ -27,7 +27,7 @@ wired to an agent and that agent runs — that is a done deal, and nothing about
 ### Where the value comes from (added 2026-08-29 — THE INVERSION FIX)
 
 It is not a single flag any more. `resolveEffectiveAutoRun` in
-[`features/surfaces/utils/binding-auto-run.ts`](../../surfaces/utils/binding-auto-run.ts)
+[`packages/chat/src/surfaces/utils/binding-auto-run.ts`](../../surfaces/utils/binding-auto-run.ts)
 owns the precedence, in one testable place:
 
 **caller's explicit literal → the surface binding's stored answer → whatever
@@ -80,7 +80,7 @@ call site.
 
 `direct` means *"no overlay — the **caller** renders the interface"*, and
 callers do. `/chat`
-([`features/cx-chat/hooks/useInstanceBootstrap.ts`](../../cx-chat/hooks/useInstanceBootstrap.ts))
+([`packages/chat/src/cx-chat/hooks/useInstanceBootstrap.ts`](../../cx-chat/hooks/useInstanceBootstrap.ts))
 creates an empty conversation with `direct` + `autoRun: false` exactly so you
 can type in the chat composer before anything is sent. Treating `direct` as
 headless would fire a blank run the moment anyone opened a chat.

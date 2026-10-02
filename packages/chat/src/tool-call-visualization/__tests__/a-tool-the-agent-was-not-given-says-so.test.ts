@@ -6,7 +6,7 @@
  * The card read "Board Write failed", which tells the person the board broke.
  * It did not: the call never ran. The row says that instead.
  */
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import { getToolPhaseLabel } from "../registry/registry";
 
 function refused(toolName: string, errorType: string | null): ToolLifecycleEntry {

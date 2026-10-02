@@ -29,7 +29,7 @@ state straight out of Redux — useful when a shortcut is missing from the menu.
 ## From a React component — `useShortcutTrigger()`
 
 ```tsx
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { useShortcutTrigger } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
 
 function ExplainButton({ selectedText }: { selectedText: string }) {
   const trigger = useShortcutTrigger();
@@ -52,7 +52,7 @@ That's it. Six lines including the import.
 When a component always triggers the same shortcut, bind the ID once:
 
 ```tsx
-import { useShortcut } from "@/features/agents/hooks/useShortcutTrigger";
+import { useShortcut } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
 
 function ExplainButton({ selectedText }: { selectedText: string }) {
   const runExplain = useShortcut("863b28c4-bb94-400f-8e23-b6cf50486537");
@@ -70,7 +70,7 @@ Outside the React tree (thunks, keyboard-shortcut registries, services), use
 the helper — you already have `dispatch`:
 
 ```ts
-import { triggerShortcut } from "@/features/agents/utils/trigger-shortcut";
+import { triggerShortcut } from "@ai-matrx/chat/agents/utils/trigger-shortcut";
 
 // inside a thunk
 await triggerShortcut(dispatch, {
@@ -83,7 +83,7 @@ From a non-thunk module (rare), grab the store:
 
 ```ts
 import { getStore } from "@/lib/redux/store";
-import { triggerShortcut } from "@/features/agents/utils/trigger-shortcut";
+import { triggerShortcut } from "@ai-matrx/chat/agents/utils/trigger-shortcut";
 
 await triggerShortcut(getStore()!.dispatch, {
   shortcutId,

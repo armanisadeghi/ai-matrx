@@ -5,7 +5,7 @@
 // defaults are included. Sending unchanged settings causes the server
 // to reject the request.
 
-import type { LLMParams } from "@/lib/api/types";
+import type { LLMParams } from "@host/lib/api/types";
 /**
  * Compare user settings against agent defaults and return ONLY the overrides.
  *

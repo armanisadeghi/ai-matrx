@@ -58,7 +58,7 @@
  * the `assistant` role — not a page-runtime surface.
  */
 
-import type { SurfaceManifest } from "@/features/surfaces/types";
+import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Canonical surface name for the Scribe studio. */

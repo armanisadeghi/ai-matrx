@@ -42,16 +42,16 @@ import {
   type CountRead,
 } from "@/components/official/stale-data/UntrustedCount";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectBuiltinAgents,
   selectLiveAgents,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
-import { selectShortcutsByAgentId } from "@/features/agents/redux/agent-shortcuts/selectors";
+import { selectShortcutsByAgentId } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
 import type { RootState } from "@/lib/redux/store";
-import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
-import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
+import type { AgentDefinitionRecord } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import {
   fetchAgentAppsAdmin,
   type AgentAppAdminView,

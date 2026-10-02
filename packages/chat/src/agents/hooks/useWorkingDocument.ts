@@ -28,17 +28,17 @@
  * always receives the current document regardless of which editor is open.
  */
 
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { saveNoteField } from "@/features/notes/redux/thunks";
-import { useAutoLabel } from "@/features/notes/hooks/useAutoLabel";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
+import { saveNoteField } from "@host/features/notes/redux/thunks";
+import { useAutoLabel } from "@host/features/notes/hooks/useAutoLabel";
 import {
   acquireDocumentBridge,
   releaseDocumentBridge,
 } from "./documentBridgeOwnership";
-import { useAccess } from "@/utils/permissions/access";
+import { useAccess } from "@host/utils/permissions/access";
 import {
   USER_SCRATCHPAD_CONTEXT_KEY,
   USER_SCRATCHPAD_LABEL,
@@ -47,11 +47,11 @@ import {
   buildUserScratchpadContextValue,
   buildWorkingDocumentContextValue,
   scratchpadExtraContextKey,
-} from "@/features/agents/utils/workingDocumentContext";
+} from "../utils/workingDocumentContext";
 import {
   removeContextEntry,
   setContextEntries,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "../redux/execution-system/instance-context/instance-context.slice";
 import {
   applyAgentWorkingDocContent,
   DEFAULT_DOC_KIND,
@@ -68,7 +68,7 @@ import {
   setWorkingDocVersion,
   type WorkingDocumentBinding,
   type WorkingDocumentKind,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+} from "../redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   selectActiveScratchpadId,
   selectAttachedScratchpadIds,
@@ -81,7 +81,7 @@ import {
   selectWorkingDocSaving,
   selectWorkingDocTitle,
   selectWorkingDocVersion,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+} from "../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   bindWorkingDocumentToNoteThunk,
   hydrateConversationDocumentsThunk,
@@ -90,19 +90,19 @@ import {
   setConversationDocumentEnabledThunk,
   unbindWorkingDocumentThunk,
   type BindNoteMode,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+} from "../redux/execution-system/instance-working-document/instance-working-document.thunks";
 import {
   hydrateActiveScratchpadThunk,
   hydrateAttachedScratchpadsThunk,
-} from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
+} from "../redux/execution-system/instance-working-document/scratchpad.thunks";
 import {
   commitWorkingDocumentContent,
   getCxWorkingDocumentById,
   updateCxWorkingDocumentTitle,
   type CxWorkingDocumentRow,
-} from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
-import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+} from "../redux/execution-system/instance-working-document/cx-working-document.service";
+import { selectIsCacheOnly } from "../redux/execution-system/conversations/conversations.selectors";
+import { useCanvas } from "@host/features/canvas/hooks/useCanvas";
 import {
   defineChannelNamespace,
   subscribeToRealtimeManager,

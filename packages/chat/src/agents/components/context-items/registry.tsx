@@ -39,7 +39,7 @@ import {
   Video,
   Webhook,
 } from "lucide-react";
-import { Youtube } from "@/components/icons/brand-icons";
+import { Youtube } from "@host/components/icons/brand-icons";
 import type { ComponentType } from "react";
 import {
   CONTEXT_ITEM_BLOCK_TYPES,

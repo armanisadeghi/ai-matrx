@@ -19,7 +19,7 @@ import { LISTENING_HOME_SURFACE } from "@/features/audio/service/listeningConfig
 import {
   ensureSurfaceConfig,
   selectSurfaceConfigEntry,
-} from "@/features/surfaces/redux/surfaceConfigSlice";
+} from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
 import { registerAction } from "../provider";
 import { getErrorMessage, contentForDestination } from "../utils";
 import type { RichDocumentActionContext } from "../../types";

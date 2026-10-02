@@ -14,10 +14,10 @@
  * consecutive assistant messages into one turn, the way the chat itself reads.
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
-import { previewResult } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
+import { previewResult } from "@ai-matrx/chat/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 
 /** One tool step as the database served it — already cleaned. */
 export interface SharedChatTool {

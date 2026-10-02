@@ -35,7 +35,7 @@ import { AlertTriangle, Check, Clock, Loader2, X } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
+import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
 import {
   componentForInputOptions,
   resolveVariantComponent,

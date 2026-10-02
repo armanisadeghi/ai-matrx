@@ -13,12 +13,12 @@
  */
 
 import { useCallback } from "react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_DOCUMENTATION_SURFACE_NAME,
   createAdminDocumentationScope,
 } from "@/features/surfaces/manifests/admin-documentation.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { FeatureDocDetail } from "@/features/feature-docs/service";
 
 export function FeatureDocViewerRuntime({

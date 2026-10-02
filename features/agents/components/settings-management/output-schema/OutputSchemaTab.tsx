@@ -28,9 +28,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentOutputSchema } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentOutputSchema } from "@/features/agents/redux/agent-definition/slice";
-import type { OutputSchema } from "@/features/agents/types/json-schema";
+import { selectAgentOutputSchema } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentOutputSchema } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 import { InfoHint } from "@/components/official/InfoHint";
 import { SettingsJsonEditor } from "../json/SettingsJsonEditor";
 import {

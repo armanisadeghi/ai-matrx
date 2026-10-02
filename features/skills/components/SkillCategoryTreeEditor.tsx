@@ -25,7 +25,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_SKILLS_SURFACE_NAME, createAdminSkillsScope } from "@/features/surfaces/manifests/admin-skills.manifest";
 import {
   DndContext,

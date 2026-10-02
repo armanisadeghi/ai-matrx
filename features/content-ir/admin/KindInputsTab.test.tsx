@@ -29,7 +29,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
   },
 }));
 
-jest.mock("@/features/agents/components/inputs/input-components/VariableInputComponent", () => ({
+jest.mock("@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent", () => ({
   VariableInputComponent: () => null,
 }));
 

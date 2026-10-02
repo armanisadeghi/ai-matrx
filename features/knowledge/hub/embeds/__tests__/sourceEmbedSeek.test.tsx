@@ -56,7 +56,7 @@ jest.mock("@/features/scraper/hooks/useScraperApi", () => ({ useScraperApi: () =
 jest.mock("@/features/shell/components/header/templates/EntityModeHeader", () => ({
   EntityModeHeader: () => <div data-testid="shell-header" />,
 }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 jest.mock("@/features/rag/agent-context/buildRagViewerContextData", () => ({ buildRagViewerContextData: () => ({}) }));

@@ -11,7 +11,7 @@
  */
 
 import { selectAgentLineageIndex } from "../selectors";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type { AgentDefinitionRecord } from "../../../types/agent-definition.types";
 
 function agent(

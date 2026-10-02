@@ -6,8 +6,8 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { createLegalCaWcScope } from "@/features/surfaces/manifests/legal-ca-wc.manifest";
 import { legalCaWcManifest } from "@/features/surfaces/manifests/legal-ca-wc.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import { CalculatorShell } from "./CalculatorShell";
 import { ResultDisplay } from "./ResultDisplay";

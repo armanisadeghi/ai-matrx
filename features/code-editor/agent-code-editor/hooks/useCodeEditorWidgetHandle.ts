@@ -22,12 +22,12 @@
  */
 
 import { useMemo, useRef } from "react";
-import { useWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
+import { useWidgetHandle } from "@ai-matrx/chat/agents/hooks/useWidgetHandle";
 import type {
   WidgetHandle,
   WidgetCompletionResult,
   WidgetErrorPayload,
-} from "@/features/agents/types/widget-handle.types";
+} from "@ai-matrx/chat/agents/types/widget-handle.types";
 import { applyCodeEdits } from "../utils/applyCodeEdits";
 
 export interface PendingCodeEdit {

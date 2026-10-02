@@ -32,7 +32,7 @@ import {
   canManageSettings,
   type OrgRole,
 } from "@/features/organizations/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createContextItemsScope,
   CONTEXT_ITEMS_SURFACE_NAME,

@@ -16,13 +16,13 @@ import { createRoot, type Root } from "react-dom/client";
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () =>
-    jest.requireActual("@/components/markdown-core/MarkdownCoreImpl").default,
+    jest.requireActual("@host/components/markdown-core/MarkdownCoreImpl").default,
 }));
-jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
+jest.mock("@host/features/content-ir/studio/components/KindInstanceRender", () => ({
   __esModule: true,
   default: ({ kind }: { kind: string }) => <div data-kind-route={kind} />,
 }));
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => (
     <div
@@ -32,20 +32,20 @@ jest.mock("@/components/MarkdownStream", () => ({
   ),
 }));
 const mockCaptureError = jest.fn();
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: (input: unknown) => mockCaptureError(input),
 }));
 
 import { ResultValue } from "../ResultValue";
 import { KeyValueGrid } from "../KeyValueGrid";
 import { ResultJson } from "../ResultJson";
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
-import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
-import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
-import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
-import { JsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
-import { resetKindAtRawRendererReports } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
+import { StructuredValueView } from "@host/components/official/structured-value/StructuredValueView";
+import { JsonTreeViewer } from "@host/components/official/json-explorer/JsonTreeViewer";
+import RawJsonExplorer from "@host/components/official/json-explorer/RawJsonExplorer";
+import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
+import { JsonViewer } from "@host/components/ui/JsonComponents/JsonViewerComponent";
+import { resetKindAtRawRendererReports } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
 const TIMELINE = { __kind: "timeline", title: "History", events: [{ year: 1900 }] };
 

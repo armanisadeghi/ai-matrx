@@ -149,7 +149,7 @@ These are Builder-only and travel on `ConversationInvocation.builder`:
 - [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md) — wire protocol
 - [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md) — delegated tools contract
 - [`WIDGET_HANDLE_SYSTEM.md`](./WIDGET_HANDLE_SYSTEM.md) — widget tools
-- `features/tool-call-visualization/FEATURE.md` — rendering tool calls in the UI
+- `packages/chat/src/tool-call-visualization/FEATURE.md` — rendering tool calls in the UI
 
 ---
 

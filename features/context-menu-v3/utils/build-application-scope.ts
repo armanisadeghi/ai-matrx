@@ -1,4 +1,4 @@
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/utils/scope-mapping";
 import type { SelectionRange } from "./selection-tracking";
 
 export function buildApplicationScopeFromMenuContext(args: {

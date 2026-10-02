@@ -105,7 +105,7 @@ jest.mock("@/lib/api/call-api", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream",
   () => ({
     adoptForeignStream: ({
       onAdopted,
@@ -121,15 +121,15 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/active-requests/active-requests.slice",
+  "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice",
   () => ({ createRequest: () => ({ type: "createRequest" }) }),
 );
-jest.mock("@/features/agents/redux/execution-system/utils/ids", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/utils/ids", () => ({
   generateConversationId: () => "conv-1",
   generateRequestId: () => "req-1",
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/follow-workflow-run-stream",
   () => ({ followWorkflowRunStream: () => Promise.resolve() }),
 );
 jest.mock("@ai-matrx/data/net", () => ({ isTransportFailure: () => false }));

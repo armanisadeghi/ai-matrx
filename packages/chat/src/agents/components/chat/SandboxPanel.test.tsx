@@ -16,16 +16,16 @@ import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));
-jest.mock("@/features/code/views/sandboxes/CloneRepoDialog", () => ({
+jest.mock("@host/features/code/views/sandboxes/CloneRepoDialog", () => ({
   CloneRepoDialog: () => null,
 }));
 // The DB write. It is a thunk, so it is replaced with a plain, identifiable
 // action creator — what is asserted is THAT it is dispatched, with which args.
 jest.mock(
-  "@/features/agents/redux/conversation-list/conversation-row-actions.thunks",
+  "../../redux/conversation-list/conversation-row-actions.thunks",
   () => ({
     setConversationSandbox: jest.fn((args: unknown) => ({
       type: "conversationRow/setSandbox",
@@ -33,7 +33,7 @@ jest.mock(
     })),
   }),
 );
-jest.mock("@/hooks/sandbox/use-sandbox", () => ({
+jest.mock("@host/hooks/sandbox/use-sandbox", () => ({
   useSandboxInstances: () => ({
     instances: [
       {
@@ -55,10 +55,10 @@ jest.mock("@/hooks/sandbox/use-sandbox", () => ({
     error: null,
   }),
 }));
-jest.mock("@/hooks/sandbox/use-compute-targets", () => ({
+jest.mock("@host/hooks/sandbox/use-compute-targets", () => ({
   useComputeTargets: () => ({ data: { targets: [] }, loading: false }),
 }));
-jest.mock("@/hooks/sandbox/use-verified-binding", () => ({
+jest.mock("@host/hooks/sandbox/use-verified-binding", () => ({
   useVerifiedSandboxBinding: () => ({
     ref: null,
     status: "unknown",
@@ -66,7 +66,7 @@ jest.mock("@/hooks/sandbox/use-verified-binding", () => ({
   }),
 }));
 
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@host/components/ui/tooltip";
 import { SandboxPanel } from "./SandboxPanel";
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {

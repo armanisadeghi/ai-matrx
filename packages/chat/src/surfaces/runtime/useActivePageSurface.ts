@@ -28,12 +28,12 @@
  */
 
 import { usePathname } from "next/navigation";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
 import {
   useSurfaceRuntime,
   type SurfaceRuntimeValue,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { surfaceFromPathname } from "@/features/surfaces/utils/route-to-surface";
+} from "./SurfaceRuntimeContext";
+import { surfaceFromPathname } from "../utils/route-to-surface";
 
 export interface ActivePageSurface {
   /** The surface the person is looking at; null on an unregistered page. */

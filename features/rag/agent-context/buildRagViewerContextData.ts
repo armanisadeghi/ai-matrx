@@ -18,7 +18,7 @@ import {
   type RagViewerSearchHitEntry,
   type RagViewerSegmentEntry,
 } from "@/features/surfaces/manifests/rag-viewer.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { LibraryDocDetail } from "@/features/rag/types/library";
 import type {
   DocSearchHit,

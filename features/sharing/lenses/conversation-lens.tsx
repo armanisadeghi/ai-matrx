@@ -31,7 +31,7 @@ import { RichContentStaticStandard } from "@/components/rich-content/RichContent
 import { Button } from "@/components/ui/button";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { DecisionQuestionsTranscriptView } from "@/features/agents/decision-questions/DecisionQuestionsTranscriptView";
-import { SpeechScriptTranscriptView } from "@/features/agents/speech-script/SpeechScriptTranscriptView";
+import { SpeechScriptTranscriptView } from "@ai-matrx/chat/agents/speech-script/SpeechScriptTranscriptView";
 import DecisionAnswersBlock from "@/components/mardown-display/blocks/decision-answers/DecisionAnswersBlock";
 import {
   pythonBaseUrl,

@@ -14,7 +14,7 @@ import {
 } from "../conversation-search";
 import type { ConversationHistoryScopeState } from "../types";
 
-const repoRoot = path.resolve(__dirname, "../../../../..");
+const repoRoot = path.resolve(__dirname, "../../../../../../..");
 
 function read(relative: string): string {
   return readFileSync(path.join(repoRoot, relative), "utf8");
@@ -83,13 +83,13 @@ describe("/chat authoritative server search", () => {
 
   it("keeps the server-search doors on the shared sidebar (on for every variant)", () => {
     const wrapper = read(
-      "features/agents/components/chat/ChatHistorySidebar.tsx",
+      "packages/chat/src/agents/components/chat/ChatHistorySidebar.tsx",
     );
     const shared = read(
-      "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
+      "packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx",
     );
     const status = read(
-      "features/agents/components/conversation-history/ConversationSearchStatus.tsx",
+      "packages/chat/src/agents/components/conversation-history/ConversationSearchStatus.tsx",
     );
     expect(wrapper).toContain("serverSearch");
     expect(shared).toContain("serverSearch = true");
@@ -157,7 +157,7 @@ describe("/chat authoritative server search", () => {
 
   it("cancels superseded searches as the query or filters change", () => {
     const hook = read(
-      "features/agents/components/conversation-history/useConversationServerSearch.ts",
+      "packages/chat/src/agents/components/conversation-history/useConversationServerSearch.ts",
     );
     expect(hook).toContain("activeController.current?.abort()");
     expect(hook).toContain("requestSequence.current");

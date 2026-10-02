@@ -1,4 +1,4 @@
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 /**
  * THE FLATTENING DISEASE — detection, in one place.
  *

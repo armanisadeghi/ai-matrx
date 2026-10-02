@@ -29,7 +29,7 @@ const mockFetchBundle = jest.fn();
 const mockHasAccess = jest.fn();
 let mockSignedIn: string | null = null;
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     auth: { getUser: async () => ({ data: { user: null } }) },
     schema: () => ({
@@ -37,7 +37,7 @@ jest.mock("@/utils/supabase/client", () => ({
     }),
   },
 }));
-jest.mock("@/utils/supabase/claimsUser", () => ({
+jest.mock("@host/utils/supabase/claimsUser", () => ({
   getClaimsUser: async () => ({
     data: { user: mockSignedIn ? { id: mockSignedIn } : null },
   }),
@@ -53,10 +53,10 @@ jest.mock(
   "../../instance-input-capabilities/input-capabilities-snapshot",
   () => ({ fetchInputCapabilitiesSnapshot: async () => ({}) }),
 );
-jest.mock("@/features/code/redux/codeEditHistoryHydration", () => ({
+jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
   loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
 }));
-jest.mock("@/features/canvas/materialization/reconcileArtifacts", () => ({
+jest.mock("@host/features/canvas/materialization/reconcileArtifacts", () => ({
   reconcileMessagesArtifacts: async () => undefined,
 }));
 

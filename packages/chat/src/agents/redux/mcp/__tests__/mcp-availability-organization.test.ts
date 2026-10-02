@@ -3,7 +3,7 @@ import reducer, {
   selectMcpAvailabilityForOrganization,
   selectMcpAvailabilityStatusForOrganization,
 } from "../mcp.slice";
-import type { McpAvailability } from "@/features/connectors/connection-state";
+import type { McpAvailability } from "@host/features/connectors/connection-state";
 
 const githubAvailability: McpAvailability = {
   slug: "github",

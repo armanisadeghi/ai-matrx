@@ -28,7 +28,7 @@ import {
   PROJECT_CREATE_MANDATE_KEY,
   PROJECT_CREATE_SOURCE_FEATURE,
 } from "@/features/projects/debug/projectCreateAiDebug";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { FileJson } from "lucide-react";
 import { useDispatchThunk } from "@/lib/redux/hooks";
@@ -36,7 +36,7 @@ import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/
 import {
   CreateWithAiTabs,
   type CreateWithAiMode,
-} from "@/features/agents/components/smart/CreateWithAiTabs";
+} from "@ai-matrx/chat/agents/components/smart/CreateWithAiTabs";
 import { ProjectFormCore, type ProjectFormCoreProps } from "./ProjectFormCore";
 import { ProjectImportJsonPanel } from "./ProjectImportJsonPanel";
 

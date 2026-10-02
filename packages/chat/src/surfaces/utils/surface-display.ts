@@ -8,8 +8,8 @@
  * components alike.
  */
 
-import type { SurfaceManifest, SurfaceValueGroup } from "@/features/surfaces/types";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import type { SurfaceManifest, SurfaceValueGroup } from "../types";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
 
 /** Tokens that stay fully uppercase in slug-derived fallback labels. */
 const ACRONYMS = new Set([

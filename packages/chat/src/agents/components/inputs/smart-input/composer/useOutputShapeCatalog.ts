@@ -17,10 +17,10 @@
  */
 
 import { useEffect, useState } from "react";
-import { fetchShapePage } from "@/features/content-ir/browse/service";
-import type { ShapeBrowseRow } from "@/features/content-ir/browse/types";
-import type { EntityFilters, EntityListQuery, EntityListSort } from "@/lib/entity-list/types";
-import type { ListScope } from "@/lib/list-scope/types";
+import { fetchShapePage } from "@host/features/content-ir/browse/service";
+import type { ShapeBrowseRow } from "@host/features/content-ir/browse/types";
+import type { EntityFilters, EntityListQuery, EntityListSort } from "@host/lib/entity-list/types";
+import type { ListScope } from "@host/lib/list-scope/types";
 
 export type ShapeSource = "system" | "org" | "mine";
 

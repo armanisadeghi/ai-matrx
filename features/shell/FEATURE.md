@@ -29,7 +29,7 @@ and its Chats side opens conversations in the page's chat panel: read
 | Control | File | Inactive state |
 |---|---|---|
 | Search | `features/knowledge/command-bar/OpenCommandBarButtons.tsx` | Guest → auth gate. |
-| Intelligence | `features/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx` | Guest → auth gate. |
+| Intelligence | `packages/chat/src/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx` | Guest → auth gate. |
 | Canvas | `features/canvas/core/CanvasHeaderToggle.tsx` | Never disabled: empty → opens the canvas HOME (`CanvasHomeSheet`: saved items + Board). The 44px slot never unmounts. |
 | Messages | `features/messaging/components/shell/MessagesHeaderButton.tsx` | Guest → auth gate. Own unread-conversation count; toggles the docked messages sheet. |
 | Notifications | `features/notifications/components/InboxHeaderButton.tsx` | Guest → auth gate. Never counts DMs. |
@@ -92,7 +92,7 @@ rail's icon column (x = 12px) — collapsed = icon, expanded = icon + name.
 
 - `2026-09-27` — **No nav item sits under the account block**: the `--shell-user-block-h` reservation moved from `.shell-sidebar-footer` (hidden on the settings route, so /user-settings' last item sat under the avatar) to the `.shell-sidebar` column at desktop widths. Landed in sweep commit `591d465ff0`. Guard: `__tests__/sidebar-reserves-the-account-block.test.ts` (2 of 2 red against the old CSS).
 
-- **2026-09-27** — Chat beside a page is the canvas workspace (`features/canvas/workspace/`), not a shell column: the short-lived right-side chat dock and its header control were removed (Arman). Signed-in `/education` renders in canvas chrome (`SIGNED_IN_CANVAS_CHROME_ROUTES`, `data-signed-in`).
+- **2026-09-27** — Chat beside a page is the canvas workspace (`packages/chat/src/canvas/workspace/`), not a shell column: the short-lived right-side chat dock and its header control were removed (Arman). Signed-in `/education` renders in canvas chrome (`SIGNED_IN_CANVAS_CHROME_ROUTES`, `data-signed-in`).
 - `2026-09-27` — **The phone header keeps the title**: below 640px Search / Agents / Canvas / Inbox fold into `HeaderPhoneOverflow` (one button → bottom sheet with the same four). `AGENTS_AUTH_GATE`, `INBOX_AUTH_GATE`, `useOpenBarOrGate`, `useCanvasHeaderToggle`, `SurfaceAgentsPanelImpl` are exported so the sheet reuses each control's own copy and state.
 
 - `2026-09-27` — **"Choose org" is a call to action, not an alarm** (page-pass shared defects): the header nudge, the avatar ring and the account menu's Organization icon move from red to primary. Guards: `HeaderChooseOrgButton.test.tsx`, `UserMenuOrgSection.test.tsx`.

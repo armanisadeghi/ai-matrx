@@ -12,7 +12,7 @@
 
 import React from "react";
 import { Check, Copy } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 export interface ShortIdProps {
   value: string;

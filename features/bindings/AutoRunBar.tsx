@@ -11,9 +11,9 @@ import { ServerNotes } from "@/components/official/ServerNotes";
 import {
   evaluateBindingAutoRun,
   type BindingAutoRunEligibility,
-} from "@/features/surfaces/utils/binding-auto-run";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/utils/binding-auto-run";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
+import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 import type { ConsumptionMap } from "@/features/mandates/provision-shapes";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 

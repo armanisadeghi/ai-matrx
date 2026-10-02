@@ -20,7 +20,7 @@
 import type {
   ValueMappingMap,
   WritePolicyMap,
-} from "@/features/surfaces/types";
+} from "../types";
 
 export interface MappingLayer {
   /** Stable display name, e.g. "binding:global", "binding:org:5dc930e9", "shortcut". */

@@ -33,7 +33,7 @@ import {
   originClassLabel,
   providerLabel,
 } from "./presentation";
-import { appLabel } from "@/features/agents/redux/conversation-history/source-registry";
+import { appLabel } from "@ai-matrx/chat/agents/redux/conversation-history/source-registry";
 import {
   conversationHomeHref,
   useConversationRowActions,

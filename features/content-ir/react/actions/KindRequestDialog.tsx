@@ -37,7 +37,7 @@ import {
   selectConversationRequestIds,
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { refreshKindComponents } from "../../registry/component-registry";
 import DbKindComponent from "../db-component/DbKindComponent";

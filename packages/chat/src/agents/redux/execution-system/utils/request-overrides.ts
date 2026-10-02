@@ -10,7 +10,7 @@
  * sent WITHOUT the override rather than with garbage.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { selectBuilderAdvancedSettings } from "../instance-ui-state/instance-ui-state.selectors";
 
 export interface RequestOverridesResult {

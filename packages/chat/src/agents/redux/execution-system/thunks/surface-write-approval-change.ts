@@ -53,8 +53,8 @@
  * diff that a document view cannot.
  */
 
-import type { SurfaceWriteApprovalProposal } from "@/features/surfaces/runtime/surface-writeback";
-import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
+import type { SurfaceWriteApprovalProposal } from "../../../../surfaces/runtime/surface-writeback";
+import type { ApprovalChange } from "../../../ui-first-tools/ui/approval-types";
 
 /**
  * What approving the write will actually do, in the user's terms. Stated per

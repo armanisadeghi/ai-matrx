@@ -33,7 +33,7 @@ import {
   resolveEntityToken,
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
-import { useAgentHref } from "@/features/agents/addressing/useAgentHref";
+import { useAgentHref } from "@ai-matrx/chat/agents/addressing/useAgentHref";
 import { useTeamHref } from "@/features/organizations/addressing/useTeamHref";
 
 export interface EntityHrefResult {

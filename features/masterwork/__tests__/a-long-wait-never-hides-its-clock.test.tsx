@@ -81,7 +81,7 @@ let launchedConversationId: string | null;
 /** Whether `useConversationResume` is still rehydrating. */
 let stillResuming: boolean;
 
-jest.mock("@/features/mandates/useMandate", () => ({
+jest.mock("@ai-matrx/chat/mandates/useMandate", () => ({
   useMandate: () => mandateState,
 }));
 jest.mock("@/features/masterwork/agent-context/useRulebookDocument", () => ({
@@ -96,15 +96,15 @@ jest.mock("@/features/masterwork/record/service", () => ({
     Promise.resolve({ interviews: [], hiddenCount: 0 }),
   associateInterviewWhenPersisted: () => {},
 }));
-jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({ conversationId: launchedConversationId }),
 }));
-jest.mock("@/features/agents/hooks/useConversationResume", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useConversationResume", () => ({
   useConversationResume: () => ({ isResuming: stillResuming, error: null }),
 }));
 // The conversation column itself is a whole chat surface and is not what this
 // suite is about — it only has to be distinguishable from the wait.
-jest.mock("@/features/agents/components/shared/AgentConversationColumn", () => ({
+jest.mock("@ai-matrx/chat/agents/components/shared/AgentConversationColumn", () => ({
   AgentConversationColumn: () => <div data-testid="column">column</div>,
 }));
 // The start screen's own content is `interview-door-never-silent`'s subject.

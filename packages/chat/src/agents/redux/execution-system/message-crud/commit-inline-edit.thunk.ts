@@ -41,7 +41,7 @@
  * components. A failed save toasts (persistInlineEdit).
  */
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   clearRequestEditedText,
   setRequestEditedText,
@@ -49,8 +49,8 @@ import {
 import { updateMessageRecord } from "../messages/messages.slice";
 import { saveAnswerEdit } from "./save-answer-edit.thunk";
 import { refetchSingleMessage } from "./refetch-single-message.thunk";
-import { toast } from "@/lib/toast";
-import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
+import { toast } from "@host/lib/toast";
+import { buildContentBlocksForSave } from "../../../../cx-chat/utils/buildContentBlocksForSave";
 import { stripCitationMarkers } from "../messages/message-citations";
 import { extractFlatText } from "../messages/messages.selectors";
 

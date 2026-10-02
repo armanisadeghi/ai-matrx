@@ -32,8 +32,8 @@ import type { FcSetRow } from "@/features/flashcards/data/types";
 import { useEntitlement } from "@/features/entitlements/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationGameScope,
   type GameDeckOption,

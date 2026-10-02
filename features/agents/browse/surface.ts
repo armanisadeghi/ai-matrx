@@ -3,7 +3,7 @@ import type { EntityFilters, EntityListQuery } from "@/lib/entity-list/types";
 import { countActiveFilters, NONE_VALUE } from "@/lib/entity-list/types";
 import { makeScope } from "@/lib/list-scope/types";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import { parseAgentsHubCatalogFilters } from "@/features/agents/agents-hub-catalog-filter-contract";
+import { parseAgentsHubCatalogFilters } from "@ai-matrx/chat/agents/agents-hub-catalog-filter-contract";
 import { getPeekedAgentId } from "@/features/agents/components/agent-listings/agent-peek-tracker";
 import { SORT_OPTIONS } from "@ai-matrx/agents/catalog";
 import {

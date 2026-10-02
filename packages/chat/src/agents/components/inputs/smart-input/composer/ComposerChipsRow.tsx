@@ -18,9 +18,9 @@
 import { useState } from "react";
 import { ChevronDown, Cloud, Server } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
-import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
-import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
+import { cn } from "@host/lib/utils";
+import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
 import { useComputeTargetActions } from "../use-compute-target-actions";
 import { ComposerEnvironmentPanel } from "./ComposerPlusMenu";

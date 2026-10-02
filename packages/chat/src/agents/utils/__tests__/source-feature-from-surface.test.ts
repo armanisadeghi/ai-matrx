@@ -1,4 +1,4 @@
-import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
+import { sourceFeatureFromSurfaceName } from "../source-feature-from-surface";
 
 describe.each([
   ["header launcher", "matrx-user/legal-ca-wc", "legal"],

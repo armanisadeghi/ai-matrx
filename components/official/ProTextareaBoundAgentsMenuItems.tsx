@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import type {
   SurfaceBoundAgentEntry,
   SurfaceBoundAgentSection,
-} from "@/features/surfaces/services/surface-bound-agents.service";
+} from "@ai-matrx/chat/surfaces/services/surface-bound-agents.service";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface ProTextareaBoundAgentsMenuItemsProps {

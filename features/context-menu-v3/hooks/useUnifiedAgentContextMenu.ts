@@ -5,16 +5,16 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchUnifiedMenu,
   unifiedMenuLoadedKey,
-} from "@/features/agents/redux/agent-shortcuts/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import { withMenuDeadline } from "../utils/menu-deadline";
-import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
-import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
+import { selectAllShortcutsArray } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
+import { selectAllCategoriesArray } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
 import { selectAllContentBlocksArray } from "@/features/agent-connections/redux/skl/content-block-compat";
-import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
-import type { AgentShortcutCategoryRecord } from "@/features/agents/redux/agent-shortcut-categories/types";
+import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
+import type { AgentShortcutCategoryRecord } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/types";
 import type { AgentContentBlockRecord } from "@/features/agent-connections/redux/skl/content-block-compat";
-import type { Scope } from "@/features/agents/redux/shared/scope";
-import { resolveRowScope } from "@/features/agents/redux/shared/scope";
+import type { Scope } from "@ai-matrx/chat/agents/redux/shared/scope";
+import { resolveRowScope } from "@ai-matrx/chat/agents/redux/shared/scope";
 import { placementGroupKey } from "@/features/agent-shortcuts/constants";
 import {
   decideOffer,

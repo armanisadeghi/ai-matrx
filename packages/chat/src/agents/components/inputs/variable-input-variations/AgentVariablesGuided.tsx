@@ -1,34 +1,34 @@
 "use client";
 
-import { variableValueToInputText } from "@/features/agents/utils/variable-utils";
+import { variableValueToInputText } from "../../../utils/variable-utils";
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@host/components/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
-import { cn } from "@/lib/utils";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
-import { ImageVariableInput } from "@/features/agents/components/inputs/input-components/ImageVariableInput";
-import { AudioVariableInput } from "@/features/agents/components/inputs/input-components/AudioVariableInput";
-import { VideoVariableInput } from "@/features/agents/components/inputs/input-components/VideoVariableInput";
-import { DocumentVariableInput } from "@/features/agents/components/inputs/input-components/DocumentVariableInput";
-import { YoutubeVariableInput } from "@/features/agents/components/inputs/input-components/YoutubeVariableInput";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import type { VariableDefinition } from "../../../types/agent-definition.types";
+import { isMediaVariableType } from "../../../types/agent-definition.types";
+import { ImageVariableInput } from "../input-components/ImageVariableInput";
+import { AudioVariableInput } from "../input-components/AudioVariableInput";
+import { VideoVariableInput } from "../input-components/VideoVariableInput";
+import { DocumentVariableInput } from "../input-components/DocumentVariableInput";
+import { YoutubeVariableInput } from "../input-components/YoutubeVariableInput";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
-import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
-import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { ProTextarea } from "@/components/official/ProTextarea";
+} from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { BoundVariableChips } from "../BoundVariableChips";
+import { setUserVariableValue } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectShouldShowVariables } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { ProTextarea } from "@host/components/official/ProTextarea";
 
 // ============================================================================
 // TYPES

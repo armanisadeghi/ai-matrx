@@ -8,7 +8,7 @@ import {
   Newspaper,
   Lightbulb,
 } from "lucide-react";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "../../../agents/types/agent-definition.types";
 import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 
 export interface AgentOption {

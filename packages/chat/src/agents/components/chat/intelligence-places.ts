@@ -6,7 +6,7 @@
 // component under `roots` that names a job mapped here).
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import type { FeaturePlaces } from "@/features/mandates/feature-intelligence/types";
+import type { FeaturePlaces } from "@host/features/mandates/feature-intelligence/types";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 
 const K = MANDATE_KEYS;
@@ -27,7 +27,7 @@ export const CHAT_PLACES: FeaturePlaces = {
   feature: "chat",
   label: "Chat",
   aliases: { DEFAULT_NEW_CHAT_MANDATE_KEY },
-  roots: ["features/agents/components/chat", "app/(core)/chat"],
+  roots: ["packages/chat/src/agents/components/chat", "app/(core)/chat"],
   places: [
     {
       id: "new",
@@ -37,9 +37,9 @@ export const CHAT_PLACES: FeaturePlaces = {
       mandateKeys: [K.chat__default_new_chat],
       sources: [
         "app/(core)/chat/new/page.tsx",
-        "features/agents/components/chat/ChatNewClient.tsx",
-        "features/agents/components/chat/ChatNewHeader.tsx",
-        "features/agents/components/chat/NewChatGreeting.tsx",
+        "packages/chat/src/agents/components/chat/ChatNewClient.tsx",
+        "packages/chat/src/agents/components/chat/ChatNewHeader.tsx",
+        "packages/chat/src/agents/components/chat/NewChatGreeting.tsx",
       ],
     },
     {
@@ -58,8 +58,8 @@ export const CHAT_PLACES: FeaturePlaces = {
       mandateKeys: [K.chat__default_new_chat],
       sources: [
         "app/(core)/chat/[conversationId]/page.tsx",
-        "features/agents/components/chat/ChatConversationRoom.tsx",
-        "features/agents/components/chat/ChatRoomClient.tsx",
+        "packages/chat/src/agents/components/chat/ChatConversationRoom.tsx",
+        "packages/chat/src/agents/components/chat/ChatRoomClient.tsx",
       ],
     },
     {
@@ -81,7 +81,7 @@ export const CHAT_PLACES: FeaturePlaces = {
         K.chat__response_mode_data,
         K.chat__response_mode_brainstorm,
       ],
-      sources: ["features/cx-chat/components/agent/local-agents.ts"],
+      sources: ["packages/chat/src/cx-chat/components/agent/local-agents.ts"],
     },
   ],
 };

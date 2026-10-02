@@ -42,7 +42,7 @@ import {
 } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   TABLE_VIEWER_SURFACE_NAME,
   createTableViewerScope,

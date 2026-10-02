@@ -15,10 +15,10 @@ import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import { createManualKit, isManualKitSourceType, kitHref, kitMembershipFingerprint, readKit, type ManualKitSourceType } from "../kitService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationKitsScope, EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/education-kits.manifest";
-import { collectionWriteHandlers, readCollectionList } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers, readCollectionList } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { recoverManualKitDraft } from "./manualKitDraftRecovery";
 
 const PAGE_SIZE = 25;

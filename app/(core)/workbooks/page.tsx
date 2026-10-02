@@ -42,7 +42,7 @@ import type {
   ImportRouteDetection,
   ImportRouting,
 } from "@/features/data-tables/smart-importer";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createWorkbooksScope } from "@/features/surfaces/manifests/workbooks.manifest";
 import { ImportRouteDialog } from "@/features/data-tables/components/ImportRouteDialog";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";

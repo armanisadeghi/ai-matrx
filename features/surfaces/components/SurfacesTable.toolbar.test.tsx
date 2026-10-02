@@ -3,7 +3,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { MatrxDataTableProps } from "@ai-matrx/design-system/data-table";
-import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
+import type { SurfaceWithStats } from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import { DEFAULT_FILTER_STATE } from "./SurfacesFilterBar";
 import { SurfacesTable, type RegistryAction } from "./SurfacesTable";
 

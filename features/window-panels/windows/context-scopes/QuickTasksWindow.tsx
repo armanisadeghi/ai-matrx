@@ -9,7 +9,7 @@ import {
   filterQuickTasksByOrg,
   filterQuickTasksBySearch,
 } from "@/features/tasks/components/QuickTasksWorkspace";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   QUICK_TASKS_SURFACE_NAME,
   createQuickTasksScope,

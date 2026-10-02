@@ -77,7 +77,7 @@ import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import {
   SurfaceRuntimeProvider,
   useSurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MobilePanelShell,
   useMobilePanelClose,

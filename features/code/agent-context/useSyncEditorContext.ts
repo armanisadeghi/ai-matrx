@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   removeContextEntry,
   setContextEntries,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import type { RootState } from "@/lib/redux/store";
 import {
   filterDisabledTabs,

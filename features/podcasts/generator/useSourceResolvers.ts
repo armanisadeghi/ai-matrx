@@ -24,8 +24,8 @@
 import { useCallback } from "react";
 import { useAppStore } from "@/lib/redux/hooks";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
-import { selectAnswerText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
+import { selectAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useAudioTranscription } from "@/features/audio/hooks/useAudioTranscription";
 import {

@@ -76,7 +76,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { isJsonObject } from "@/types/json";
 import KeywordSerpIntentAnalysisBlock from "@/components/mardown-display/blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
 
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createKeywordIntelligenceScope,
   keywordIntelligenceManifest,

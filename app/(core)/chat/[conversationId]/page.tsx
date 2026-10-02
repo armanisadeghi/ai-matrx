@@ -1,11 +1,11 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
-import { ChatConversationRoom } from "@/features/agents/components/chat/ChatConversationRoom";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { ChatConversationRoom } from "@ai-matrx/chat/agents/components/chat/ChatConversationRoom";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
-import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
-import { readComposerModeCookie } from "@/features/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { ChatRunHeader } from "@ai-matrx/chat/agents/components/chat/ChatRunHeader";
+import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   conversationSandboxBindingFromRow,

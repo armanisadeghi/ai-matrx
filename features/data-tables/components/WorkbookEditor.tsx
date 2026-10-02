@@ -48,7 +48,7 @@ import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import { WorkbookCursorOverlay } from "./WorkbookCursorOverlay";
 import { getLatestSnapshot, saveSnapshot } from "../workbook-service";
 import { registerWorkbookScopeSource } from "../workbook-scope-source";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { isServiceFailure } from "../types";
 import { downloadUniverAsXlsx } from "../univer-to-xlsx";
 import { WorkbookHistoryViewer } from "./WorkbookHistoryViewer";

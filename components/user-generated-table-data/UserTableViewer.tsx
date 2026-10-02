@@ -125,8 +125,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import type { ManagedAgentOptions } from "@ai-matrx/chat/agents/types/instance.types";
 import {
   agentActionOffer,
   describeRowAction,
@@ -275,7 +275,7 @@ import TableReferenceModal from "./TableReferenceModal";
 import ColumnHeaderMenu from "./ColumnHeaderMenu";
 import { TableLayoutMenu } from "@/features/data-tables/components/TableLayoutMenu";
 import type { TableField } from "@/features/data-tables/table-shapes";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   buildDataTablesScope,
   type DataTableScopeField,

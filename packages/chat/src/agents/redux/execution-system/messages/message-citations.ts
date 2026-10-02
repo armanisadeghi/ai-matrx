@@ -33,7 +33,7 @@
  * index-shape-agnostic.
  */
 
-import type { NormalizedCitation as WireNormalizedCitation } from "@/types/python-generated/stream-events";
+import type { NormalizedCitation as WireNormalizedCitation } from "@host/types/python-generated/stream-events";
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
 
 /**

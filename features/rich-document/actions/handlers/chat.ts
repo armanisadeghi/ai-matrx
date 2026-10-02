@@ -5,13 +5,13 @@
 // from any embedded surface). Absent on the chat page itself.
 
 import { MessageSquareShare, RefreshCw } from "lucide-react";
-import { selectIsLatestAssistantMessage } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectRegenerateAnchor } from "@/features/agents/redux/execution-system/message-crud/regenerate-anchor";
-import { selectReservedConversationId } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectIsLatestAssistantMessage } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { selectRegenerateAnchor } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/regenerate-anchor";
+import { selectReservedConversationId } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import {
   isChatRoutePath,
   resolveContinueInChatConversationId,
-} from "@/features/agents/components/messages-display/assistant/continue-in-chat";
+} from "@ai-matrx/chat/agents/components/messages-display/assistant/continue-in-chat";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { getAction, registerAction } from "../provider";
 import type { RichDocumentActionContext } from "../../types";

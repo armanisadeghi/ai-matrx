@@ -36,7 +36,7 @@
  * `add_list_items`) and can never remove one (removal stays human-only).
  */
 
-import type { SurfaceWriteTarget } from "@/features/surfaces/types";
+import type { SurfaceWriteTarget } from "@ai-matrx/chat/surfaces/types";
 import { LIST_VISIBILITY_VALUES } from "./types";
 
 /**

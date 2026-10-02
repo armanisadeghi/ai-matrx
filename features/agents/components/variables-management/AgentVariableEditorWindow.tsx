@@ -34,8 +34,8 @@ import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { selectAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/slice";
+import { selectAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { AgentVariableEditor } from "./AgentVariableEditor";
 import { variableEditorInstanceId } from "./variableEditorAddress";
 

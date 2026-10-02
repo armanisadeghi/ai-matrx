@@ -16,7 +16,7 @@
 
 import { useCallback } from "react";
 
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   buildCmsSiteContextData,
   type CmsSiteMode,

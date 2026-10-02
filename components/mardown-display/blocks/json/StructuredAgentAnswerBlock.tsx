@@ -5,7 +5,7 @@ import { Copy, Table2 } from "lucide-react";
 import { shapeOfValue } from "@ai-matrx/records-ui/table-shape";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { KIND_KEY } from "@ai-matrx/content-ir";
-import { outputSchemaKeys } from "@/features/mandates/output-contract";
+import { outputSchemaKeys } from "@ai-matrx/chat/mandates/output-contract";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { toast } from "@/lib/toast";
 import { isJsonObject } from "@/types/json";

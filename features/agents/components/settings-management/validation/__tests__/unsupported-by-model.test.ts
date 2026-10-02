@@ -10,8 +10,8 @@
 import { validateConfig } from "../engine";
 import { resolveConfig } from "../resolve-config";
 import { canFixIssue, applyFixForIssue } from "../apply-fix";
-import type { NormalizedControls } from "@/features/agents/hooks/useModelControls";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { NormalizedControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 
 const controlsWithTemp = {
   temperature: { type: "number", min: 0, max: 2 },

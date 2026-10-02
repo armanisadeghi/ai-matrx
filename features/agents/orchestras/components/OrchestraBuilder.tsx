@@ -29,7 +29,7 @@ import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   EntityModeHeader,
   type EntityHeaderAction,
@@ -47,7 +47,7 @@ import {
   syncConductorPrompt,
 } from "../conductor/thunks";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
-import { selectDisplayConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { selectDisplayConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import { OrchestraRunStatusContext } from "../run/OrchestraRunStatusContext";
 import { useOrchestraMemberRunStatus } from "../run/useOrchestraMemberRunStatus";
 import { AgentLibraryRail } from "./AgentLibraryRail";

@@ -19,7 +19,7 @@
 import { cn } from "@/lib/utils";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
-import type { WorkflowNodeStreamEntry } from "@/features/agents/types/request.types";
+import type { WorkflowNodeStreamEntry } from "@ai-matrx/chat/agents/types/request.types";
 import { ROLES, STRUCTURED_ROLES, type RoleKey } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
 

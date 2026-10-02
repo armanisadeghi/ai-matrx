@@ -23,7 +23,7 @@ import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 import ShapeActivationControl from "@/features/content-ir/studio/components/ShapeActivationControl";
 import type { ShapeActivationVerdict } from "@/features/content-ir/studio/shape-authoring-service";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import KindContentBlockGenerator from "@/features/content-ir/studio/components/KindContentBlockGenerator";
 import { ownerUpsertKindContentBlock } from "@/features/content-ir/studio/kind-content-block-service";
 import { updateOwnedShapeProfile } from "@/features/content-ir/studio/shape-authoring-service";

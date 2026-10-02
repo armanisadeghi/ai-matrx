@@ -21,8 +21,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, ImageIcon } from "lucide-react";
-import { UnifiedImageBlockRenderer } from "@/features/files/blocks/image/UnifiedImageBlockRenderer";
-import type { UnifiedImageBlock } from "@/features/files/blocks/image/types";
+import { UnifiedImageBlockRenderer } from "@host/features/files/blocks/image/UnifiedImageBlockRenderer";
+import type { UnifiedImageBlock } from "@host/features/files/blocks/image/types";
 
 export interface ImageArrivalPeekProps {
   /** `${requestId}:${blockId}` — globally unique across all requests. */

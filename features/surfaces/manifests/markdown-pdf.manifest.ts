@@ -11,7 +11,7 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const MARKDOWN_PDF_SURFACE_NAME = "matrx-user/markdown-pdf" as const;

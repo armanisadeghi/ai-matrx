@@ -29,7 +29,7 @@ describe("variableInputPlaceholder", () => {
   });
 
   it("no variable input anywhere rebuilds the old placeholder", () => {
-    const roots = ["features", "components", "lib", "app"];
+    const roots = ["features", "packages/chat/src", "components", "lib", "app"];
     const offenders: string[] = [];
     const walk = (dir: string) => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 import type { StreamRecording } from "./streamRecording";
 

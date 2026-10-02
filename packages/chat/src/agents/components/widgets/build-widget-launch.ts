@@ -20,10 +20,10 @@ import type {
   JsonExtractionConfig,
   ManagedAgentOptions,
   ResultDisplayMode,
-} from "@/features/agents/types/instance.types";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
+} from "../../types/instance.types";
+import type { FeLlmParams } from "../../types/agent-api-types";
+import type { ApplicationScope } from "../../utils/scope-mapping";
+import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 
 /** Every piece of live tester state the launch options are built from. */
 export interface WidgetLaunchState {

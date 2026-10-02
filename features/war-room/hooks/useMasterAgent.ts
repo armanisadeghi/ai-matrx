@@ -23,10 +23,10 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useMandate } from "@/features/mandates/useMandate";
+import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { WAR_ROOM_MASTER_AGENT_MANDATE } from "@/features/war-room/constants";
 import { selectSessionsList } from "@/features/war-room/redux/selectors";
 import { useDurableAgentConversation } from "@/features/war-room/hooks/useDurableAgentConversation";

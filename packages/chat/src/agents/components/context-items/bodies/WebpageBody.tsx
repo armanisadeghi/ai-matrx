@@ -8,13 +8,13 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { toast } from "@/lib/toast-service";
-import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
+} from "@host/components/ui/tooltip";
+import { toast } from "@host/lib/toast-service";
+import { WebpageSnapshotView } from "@host/features/resource-manager/webpage/WebpageSnapshotView";
 import {
   webpageTitle,
   webpageUrl,
-} from "@/features/resource-manager/webpage/webpage-snapshot";
+} from "@host/features/resource-manager/webpage/webpage-snapshot";
 import type { ContextItemBodyProps } from "../types";
 
 function firstWebpage(item: ContextItemBodyProps["item"]) {

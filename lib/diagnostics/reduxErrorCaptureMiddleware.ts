@@ -23,7 +23,7 @@
  * Register once in `lib/redux/store.ts`. Never breaks the dispatch chain.
  */
 
-import { isCapturedSurfaceRegistrationError } from "@/features/surfaces/services/surface-registration-error";
+import { isCapturedSurfaceRegistrationError } from "@ai-matrx/chat/surfaces/services/surface-registration-error";
 import type { Middleware } from "@reduxjs/toolkit";
 import { captureError, getSnapshot } from "@/lib/diagnostics/errorCaptureStore";
 import {

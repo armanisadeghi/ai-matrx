@@ -15,7 +15,7 @@
 
 import { Globe, TrendingUp } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   KeywordCompetitionBadge,
   KeywordTrendBadge,
@@ -23,12 +23,12 @@ import {
   formatCpc,
   formatSearchVolume,
   monthlySearchTrend,
-} from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
+} from "@host/features/marketing/seo/keyword-research/components/KeywordMetrics";
 import type {
   SeoKeywordDataResult,
   SeoKeywordDatum,
-} from "@/features/marketing/seo/keyword-research/types";
-import { AddKeywordsToPage } from "@/features/marketing/seo/keyword-research/components/AddKeywordsToPage";
+} from "@host/features/marketing/seo/keyword-research/types";
+import { AddKeywordsToPage } from "@host/features/marketing/seo/keyword-research/components/AddKeywordsToPage";
 
 const INLINE_LIMIT = 8;
 

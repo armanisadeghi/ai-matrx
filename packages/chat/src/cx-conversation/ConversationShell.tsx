@@ -3,19 +3,19 @@
 import React, { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { MessageList } from "@/features/cx-conversation/MessageList";
-import { ConversationInput } from "@/features/cx-conversation/ConversationInput";
-import type { ConversationInputProps } from "@/features/cx-conversation/ConversationInput";
-import { UnsavedChangesIndicator } from "@/features/cx-conversation/UnsavedChangesIndicator";
-import { useUnsavedChangesGuard } from "@/features/cx-conversation/hooks/useUnsavedChangesGuard";
+import { Button } from "@host/components/ui/button";
+import { MessageList } from "./MessageList";
+import { ConversationInput } from "./ConversationInput";
+import type { ConversationInputProps } from "./ConversationInput";
+import { UnsavedChangesIndicator } from "./UnsavedChangesIndicator";
+import { useUnsavedChangesGuard } from "./hooks/useUnsavedChangesGuard";
 
 const ResizableCanvas = dynamic(
-  () => import("@/features/canvas/core/ResizableCanvas").then((m) => ({ default: m.ResizableCanvas })),
+  () => import("@host/features/canvas/core/ResizableCanvas").then((m) => ({ default: m.ResizableCanvas })),
   { ssr: false }
 );
 const CanvasRenderer = dynamic(
-  () => import("@/features/canvas/core/CanvasRenderer").then((m) => ({ default: m.CanvasRenderer })),
+  () => import("@host/features/canvas/core/CanvasRenderer").then((m) => ({ default: m.CanvasRenderer })),
   { ssr: false }
 );
 

@@ -18,26 +18,26 @@
  *     for surfaces that need to override the saved agent definition.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   ClientCapabilityName,
   ClientCapabilityPayloads,
   ClientContext,
   ToolInjectionResult,
   ToolSpec,
-} from "@/features/agents/types/tool-injection.types";
+} from "../../../types/tool-injection.types";
 import {
   deriveClientToolsFromHandle,
   isWidgetActionName,
   type WidgetHandle,
-} from "@/features/agents/types/widget-handle.types";
+} from "../../../types/widget-handle.types";
 import {
   selectWidgetHandleIdFor,
   selectBuilderAdvancedSettings,
 } from "../instance-ui-state/instance-ui-state.selectors";
-import { callbackManager } from "@/utils/callbackManager";
+import { callbackManager } from "@host/utils/callbackManager";
 import { getRegisteredCapabilities } from "../client-capabilities/registry";
-import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
+import { selectDesktopTargetInstanceId } from "@host/lib/redux/preferences/adminPreferencesSlice";
 // CRITICAL: register the capability providers in the SAME (client) module graph
 // that reads them. They were previously only imported from app/Providers.tsx —
 // a Server Component — so the side-effect ran server-side and the client
@@ -45,30 +45,30 @@ import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPref
 // binding ever attached). Importing here guarantees registration before this
 // consumer runs. See features/.../client-capabilities/register-all.ts.
 import "../client-capabilities/register-all";
-import { surfacePatchContractLine } from "@/features/surfaces/runtime/surface-write-patch";
-import { detectActiveSurface } from "@/features/surfaces/utils/route-to-surface";
-import { selectCreatorSettings } from "@/lib/redux/preferences/creatorDebugSlice";
-import { isWarRoomToolName } from "@/features/agents/war-room-tools/tools/names";
-import { getWarRoomInlineToolDef } from "@/features/agents/war-room-tools/tools/tool-defs";
-import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools/tools/names";
-import { getWarRoomMasterInlineToolDef } from "@/features/agents/war-room-master-tools/tools/tool-defs";
-import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
-import { getScribeInlineToolDef } from "@/features/agents/scribe-tools/tools/tool-defs";
+import { surfacePatchContractLine } from "../../../../surfaces/runtime/surface-write-patch";
+import { detectActiveSurface } from "../../../../surfaces/utils/route-to-surface";
+import { selectCreatorSettings } from "@host/lib/redux/preferences/creatorDebugSlice";
+import { isWarRoomToolName } from "@host/features/agents/war-room-tools/tools/names";
+import { getWarRoomInlineToolDef } from "@host/features/agents/war-room-tools/tools/tool-defs";
+import { isWarRoomMasterToolName } from "@host/features/agents/war-room-master-tools/tools/names";
+import { getWarRoomMasterInlineToolDef } from "@host/features/agents/war-room-master-tools/tools/tool-defs";
+import { isScribeToolName } from "../../../scribe-tools/tools/names";
+import { getScribeInlineToolDef } from "../../../scribe-tools/tools/tool-defs";
 import {
   isDeclaredSurfaceClientToolName,
   listLiveSurfaceClientTools,
-} from "@/features/surfaces/runtime/surface-client-tools";
+} from "../../../../surfaces/runtime/surface-client-tools";
 import {
   listAgentWritableTargets,
   SURFACE_WRITE_TOOL_NAME,
-} from "@/features/surfaces/runtime/surface-writeback";
-import { isPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { describeAgentWritableTargets } from "@/features/surfaces/runtime/agent-offer";
+} from "../../../../surfaces/runtime/surface-writeback";
+import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { describeAgentWritableTargets } from "../../../../surfaces/runtime/agent-offer";
 import {
   announceWithheldSurfaceWriteTools,
   resolveRunOutputContract,
 } from "./output-contract-guard";
-import type { ToolSpecInline } from "@/features/agents/types/tool-injection.types";
+import type { ToolSpecInline } from "../../../types/tool-injection.types";
 
 interface BuildOptions {
   mode?: "additive" | "replace";

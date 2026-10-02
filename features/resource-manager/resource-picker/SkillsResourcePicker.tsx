@@ -1,6 +1,6 @@
 "use client";
 
-import { RunSkillPicker } from "@/features/agents/components/inputs/smart-input/RunSkillPicker";
+import { RunSkillPicker } from "@ai-matrx/chat/agents/components/inputs/smart-input/RunSkillPicker";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface SkillsResourcePickerProps {

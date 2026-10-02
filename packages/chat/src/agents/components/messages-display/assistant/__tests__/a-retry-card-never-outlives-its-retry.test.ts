@@ -6,7 +6,7 @@
  * answer, and titled an unknown error "busy". Once the stream ends only the
  * terminal retry outcomes stay on screen; the turn's own error owns it.
  */
-import type { ProviderRetryPayload } from "@/types/python-generated/stream-events";
+import type { ProviderRetryPayload } from "@host/types/python-generated/stream-events";
 import { shouldShowProviderRetry, statusCopy } from "../ProviderRetryCard";
 
 function retry(

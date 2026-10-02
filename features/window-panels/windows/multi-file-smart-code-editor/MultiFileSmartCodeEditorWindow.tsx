@@ -57,13 +57,13 @@ import { CodeEditorTabBar } from "@/features/code-editor/multi-file-core/CodeEdi
 import { useCodeEditorWindowState } from "@/features/code-editor/multi-file-core/useCodeEditorWindowState";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import { useCodeEditorWidgetHandle } from "@/features/code-editor/agent-code-editor/hooks/useCodeEditorWidgetHandle";
 import { useIdeContextSync } from "@/features/code-editor/agent-code-editor/hooks/useIdeContextSync";
 import { SMART_CODE_EDITOR_SURFACE_KEY } from "@/features/code-editor/agent-code-editor/constants";
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import { setInputPlaceholder } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
+import { setInputPlaceholder } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
 import { useMultiFileSmartCodeEditorEmitter } from "./useMultiFileSmartCodeEditorEmitter";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";

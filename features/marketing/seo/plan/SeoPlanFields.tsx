@@ -32,7 +32,7 @@ import {
 } from "@/features/marketing/seo/serp/metrics";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import type { PlannedLinkEntry } from "@/features/marketing/types";
 
 import { PAGE_ROLES, PAGE_ROLE_LABELS, type PageRole } from "./plan-model";

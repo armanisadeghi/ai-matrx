@@ -11,17 +11,17 @@ import { createRoot, type Root } from "react-dom/client";
 
 let answer = "";
 let executing = false;
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: (sel: () => unknown) => sel(),
 }));
-jest.mock("@/features/agents/redux/execution-system/selectors/aggregate.selectors", () => ({
+jest.mock("../../../redux/execution-system/selectors/aggregate.selectors", () => ({
   selectLatestAccumulatedText: () => () => answer,
   selectIsExecuting: () => () => executing,
 }));
-jest.mock("@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({
+jest.mock("../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({
   selectInstanceDisplayTitle: () => () => "Study helper",
 }));
-jest.mock("@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer", () => ({
+jest.mock("../../../redux/execution-system/active-requests/useRetainRequestForViewer", () => ({
   useRetainLatestRequestForViewer: () => undefined,
 }));
 jest.mock("../../smart/AgentRunner", () => ({ AgentRunner: () => null }));

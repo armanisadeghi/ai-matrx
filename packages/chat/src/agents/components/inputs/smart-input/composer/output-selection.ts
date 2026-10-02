@@ -26,7 +26,7 @@
  * PURE — no React, no Redux — so it is unit-testable.
  */
 
-import { skillNamedForKind } from "@/features/content-ir/admin/duplicate-skill-analysis";
+import { skillNamedForKind } from "@host/features/content-ir/admin/duplicate-skill-analysis";
 import { SHAPE_CHIP_DEFS, type ShapeChipSkillSource } from "../shape-chips";
 
 export type OutputTypeGroup = "core" | "media" | "files";

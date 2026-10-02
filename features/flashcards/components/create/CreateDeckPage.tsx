@@ -63,7 +63,7 @@ import {
   organizationRefusalMessage,
   presentOrganizationRefusal,
 } from "@/lib/organizations/organizationRefusalToast";
-import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectKindEnvelope } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import type { Depth } from "@/features/education/assessment/data/types";
 import type { ConvertProgress } from "@/features/education/convert/types";
@@ -76,7 +76,7 @@ import { useSourceSet } from "@/features/resource-manager/source-input/useSource
 import {
   ASSISTANT_MESSAGE_COLUMN_CLASS,
   ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
-} from "@/features/agents/components/shared/assistant-message-layout";
+} from "@ai-matrx/chat/agents/components/shared/assistant-message-layout";
 import { DEPTH_TIERS } from "../../data/enhanceCard";
 import { FC_MANDATES } from "../../data/mandates";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
@@ -97,7 +97,7 @@ import {
   generateDeckFromSources,
 } from "../../data/generateDeckFromSources";
 import { saveDeckSourceSet, sourceNamesOf } from "../../data/deckSourceSet";
-import { useSuppressAmbientAssistant } from "@/features/agents/components/ambient-assistant/ambientAssistantSuppression";
+import { useSuppressAmbientAssistant } from "@ai-matrx/chat/agents/components/ambient-assistant/ambientAssistantSuppression";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { useTabBoundRun } from "@/lib/wizard-draft/useTabBoundRun";

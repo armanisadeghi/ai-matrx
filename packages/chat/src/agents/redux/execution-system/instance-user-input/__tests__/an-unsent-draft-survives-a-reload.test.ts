@@ -30,7 +30,7 @@ import instanceUserInputReducer, {
   resetSubmissionPhase,
   setUserInputText,
 } from "../instance-user-input.slice";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import {
   composerDraftMiddleware,
   __discardComposerDraftWritesForTest,
@@ -44,10 +44,10 @@ import {
 } from "../composer-draft-store";
 import { applyComposerDraft } from "../restore-composer-draft.thunk";
 
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
   // the real store so a new export can never take this suite down at import.
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 

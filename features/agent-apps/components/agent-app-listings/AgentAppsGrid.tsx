@@ -65,7 +65,7 @@ import {
   deleteApp,
 } from "@/features/agents/redux/agent-apps/thunks";
 import { selectAppsStatus } from "@/features/agents/redux/agent-apps/selectors";
-import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchAgentsList } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import type {
   AgentAppSortOption,
   AgentAppTab,
@@ -78,7 +78,7 @@ import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { selectAllAppCardModels } from "@/features/agent-apps/redux/agent-app-consumers/selectors";
 import { appBrief, humanAgentApp } from "@/features/agent-apps/format";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   AGENT_APPS_SURFACE_NAME,
   createAgentAppsScope,

@@ -31,7 +31,7 @@ import { PRESET_CATEGORIES, getPresetById } from "../presets";
 import { slugifyFilename } from "../utils/slugify-filename";
 import { buildDescribePreview } from "../utils/build-describe-preview";
 import { DESCRIBE_TEMP_FOLDER_PATH } from "../constants/describe";
-import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
+import { getSystemShortcut } from "@ai-matrx/chat/agents/constants/system-shortcuts";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { uploadFiles, ensureFolderPath } from "@/features/files/redux/thunks";
@@ -39,21 +39,21 @@ import {
   previewAssetMultipart,
   type PreviewVariantSpec,
 } from "@/features/files/api/assets";
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { useShortcutTrigger } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
 import {
   IMAGE_STUDIO_SURFACE_NAME,
   createImageStudioScope,
 } from "@/features/surfaces/manifests/image-studio.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
+import { ensureShortcutLoaded } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import type { Visibility } from "@/features/files/types";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
+import { executeInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-instance.thunk";
 import {
   addResource,
   setResourcePreview,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { adoptHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import { adoptHeadlessAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
 
 /**

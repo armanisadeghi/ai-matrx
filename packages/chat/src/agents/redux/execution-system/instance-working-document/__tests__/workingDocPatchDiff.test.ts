@@ -2,7 +2,7 @@ import {
   deriveWorkingDocDiffFrame,
   STRUCTURAL_PATCH_COMMANDS,
 } from "../workingDocPatchDiff";
-import type { WorkingDocPatchArgs } from "@/features/tool-call-visualization/renderers/working-document/applyWorkingDocPatch";
+import type { WorkingDocPatchArgs } from "../../../../../tool-call-visualization/renderers/working-document/applyWorkingDocPatch";
 
 const strReplace = (oldStr: string, newStr: string): WorkingDocPatchArgs => ({
   command: "str_replace",

@@ -61,7 +61,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
+import { RunSetWindowController } from "@ai-matrx/chat/agents/components/live-run/RunSetDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { cn } from "@/lib/utils";

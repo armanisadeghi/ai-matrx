@@ -36,7 +36,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { DATA_STORE_KINDS } from "@/features/rag/types/data-stores-ext";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

@@ -13,31 +13,31 @@
 
 import { useState, useRef, useEffect } from "react";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
   selectUserInputText,
   selectSubmissionPhase,
-} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectIsExecuting } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { selectSubmitOnEnter } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   setSubmitOnEnter,
   toggleVariablePanel,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectAllResourcesResolved } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectInstanceVariableDefinitions } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectAllResourcesResolved } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
 import {
   smartExecute,
   cancelExecution,
-} from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+} from "../../../redux/execution-system/thunks/smart-execute.thunk";
 import { InboxQueueStrip } from "../../inputs/smart-input/InboxQueueStrip";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import { ArrowUp, Mic, Braces, CircleStop, CornerDownLeft } from "lucide-react";
 
 // Voice input
-import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
-import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
+import { useRecordAndTranscribe } from "@host/features/audio/hooks/useRecordAndTranscribe";
+import { TranscriptionLoader } from "@host/features/audio/components/TranscriptionLoader";
 
 // Resource picker + paste-image attach
 import { SmartAgentResourcePickerButton } from "../../inputs/resources/SmartAgentResourcePickerButton";
@@ -45,14 +45,14 @@ import { SmartAgentResourceChips } from "../../inputs/resources/SmartAgentResour
 import { AttachedDocumentChips } from "../../inputs/resources/AttachedDocumentChips";
 import { usePasteImageResource } from "../../inputs/resources/usePasteImageResource";
 import { SmartInputFileDropTarget } from "../../inputs/smart-input/SmartInputFileDropTarget";
-import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
+import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";
 
-import { toast } from "@/lib/toast";
-import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
+import { toast } from "@host/lib/toast";
+import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@/components/official/composer/composerSubmit";
+} from "@host/components/official/composer/composerSubmit";
 
 interface CompactAssistantInputProps {
   conversationId: string;

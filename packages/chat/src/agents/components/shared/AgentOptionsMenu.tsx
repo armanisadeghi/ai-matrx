@@ -1,26 +1,26 @@
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { invalidateAgentCache } from "@/features/agents/redux/agent-definition/invalidate-agent-cache.thunk";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
-import { useOpenAgentRunHistoryWindow } from "@/features/overlays/openers/agentRunHistoryWindow";
-import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
-import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
-import { useOpenAgentOptimizerWindow } from "@/features/overlays/openers/agentOptimizerWindow";
-import { useOpenAgentFindUsagesWindow } from "@/features/overlays/openers/agentFindUsagesWindow";
-import { useOpenAgentCreateAppWindow } from "@/features/overlays/openers/agentCreateAppWindow";
-import { useOpenAgentDataStorageWindow } from "@/features/overlays/openers/agentDataStorageWindow";
-import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
-import { useOpenAgentShortcutQuickCreateWindow } from "@/features/overlays/openers/agentAdminShortcutWindow";
-import { useOpenAgentAdminFindUsagesWindow } from "@/features/overlays/openers/agentAdminFindUsagesWindow";
-import { useOpenAgentImportWindow } from "@/features/overlays/openers/agentImportWindow";
-import { useOpenAgentInterfaceVariationsWindow } from "@/features/overlays/openers/agentInterfaceVariationsWindow";
-import { useOpenSaveKitDialog } from "@/features/overlays/openers/saveKitDialog";
-import { KIT_WORD } from "@/features/kits/constants";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
+import { duplicateAgent } from "../../redux/agent-definition/thunks";
+import { invalidateAgentCache } from "../../redux/agent-definition/invalidate-agent-cache.thunk";
+import { selectAgentById } from "../../redux/agent-definition/selectors";
+import { useOpenAgentSettingsWindow } from "@host/features/overlays/openers/agentSettingsWindow";
+import { useOpenAgentRunHistoryWindow } from "@host/features/overlays/openers/agentRunHistoryWindow";
+import { useOpenAgentContentWindow } from "@host/features/overlays/openers/agentAdvancedEditorWindow";
+import { useOpenAgentRunWindow } from "@host/features/overlays/openers/agentRunWindow";
+import { useOpenAgentOptimizerWindow } from "@host/features/overlays/openers/agentOptimizerWindow";
+import { useOpenAgentFindUsagesWindow } from "@host/features/overlays/openers/agentFindUsagesWindow";
+import { useOpenAgentCreateAppWindow } from "@host/features/overlays/openers/agentCreateAppWindow";
+import { useOpenAgentDataStorageWindow } from "@host/features/overlays/openers/agentDataStorageWindow";
+import { useOpenAgentConvertSystemWindow } from "@host/features/overlays/openers/agentConvertSystemWindow";
+import { useOpenAgentShortcutQuickCreateWindow } from "@host/features/overlays/openers/agentAdminShortcutWindow";
+import { useOpenAgentAdminFindUsagesWindow } from "@host/features/overlays/openers/agentAdminFindUsagesWindow";
+import { useOpenAgentImportWindow } from "@host/features/overlays/openers/agentImportWindow";
+import { useOpenAgentInterfaceVariationsWindow } from "@host/features/overlays/openers/agentInterfaceVariationsWindow";
+import { useOpenSaveKitDialog } from "@host/features/overlays/openers/saveKitDialog";
+import { KIT_WORD } from "@host/features/kits/constants";
 
 /** The menu label is also this item's dispatch key. */
 const SAVE_AS_KIT_LABEL = `Save as ${KIT_WORD.oneLower}`;
@@ -55,10 +55,10 @@ import {
   Trash2,
   PackagePlus,
 } from "lucide-react";
-import { toast } from "@/lib/toast-service";
-import { cn } from "@/lib/utils";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "@host/lib/toast-service";
+import { cn } from "@host/lib/utils";
+import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
+import { useIsMobile } from "@host/hooks/use-mobile";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
   DropdownMenu,
@@ -70,21 +70,21 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+} from "@host/components/ui/dropdown-menu";
+import { Drawer, DrawerContent, DrawerTitle } from "@host/components/ui/drawer";
 import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   AgentDuplicateOutcomeDialog,
   type DuplicateOutcomeState,
 } from "./AgentDuplicateOutcomeDialog";
-import { ReferenceCopyMenuItem } from "@/features/matrx-envelope/components/ReferenceCopyMenuItem";
+import { ReferenceCopyMenuItem } from "@host/features/matrx-envelope/components/ReferenceCopyMenuItem";
 import {
   ADMIN_SYSTEM_AGENTS_BASE_PATH,
   isAdminSystemAgentsContext,
-} from "@/features/agents/components/shared/agent-route-context";
-import { useAgentLifecycleActions } from "@/features/agents/lifecycle/useAgentLifecycleActions";
-import { getUserMessage } from "@/lib/api/errors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+} from "./agent-route-context";
+import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActions";
+import { getUserMessage } from "@host/lib/api/errors";
+import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
 
 const INTERFACE_VARIATIONS = [
   "Full Modal",

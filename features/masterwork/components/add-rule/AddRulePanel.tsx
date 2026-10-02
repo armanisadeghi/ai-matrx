@@ -32,7 +32,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import type { RuleImproveResult } from "../../agent-context/ruleImprove";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";

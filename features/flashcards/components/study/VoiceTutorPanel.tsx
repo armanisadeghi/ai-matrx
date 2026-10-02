@@ -28,25 +28,25 @@
 
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useMandateAgentInstructions } from "@/features/voice-agent/agentInstructions";
+import { useMandateAgentInstructions } from "@ai-matrx/chat/voice-agent/agentInstructions";
 import {
   useLiveConversationVoice,
   useVoiceAgentInstance,
-} from "@/features/voice-agent/hooks/useVoiceAgentInstance";
-import { useRealtimeAgentConfig } from "@/features/voice-agent/hooks/useRealtimeAgentConfig";
-import { useXaiVoiceSession } from "@/features/voice-agent/hooks/useXaiVoiceSession";
-import { updateConfig } from "@/features/voice-agent/state/voiceAgentSlice";
+} from "@ai-matrx/chat/voice-agent/hooks/useVoiceAgentInstance";
+import { useRealtimeAgentConfig } from "@ai-matrx/chat/voice-agent/hooks/useRealtimeAgentConfig";
+import { useXaiVoiceSession } from "@ai-matrx/chat/voice-agent/hooks/useXaiVoiceSession";
+import { updateConfig } from "@ai-matrx/chat/voice-agent/state/voiceAgentSlice";
 import {
   selectVoiceTurns,
   selectVoiceError,
   selectVoiceVoiceId,
-} from "@/features/voice-agent/state/selectors";
-import { VoiceMicButton } from "@/features/voice-agent/components/VoiceMicButton";
-import { VoiceStatusPill } from "@/features/voice-agent/components/VoiceStatusPill";
-import { LiveVoiceDoor } from "@/features/voice-agent/components/LiveVoiceDoor";
-import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
+} from "@ai-matrx/chat/voice-agent/state/selectors";
+import { VoiceMicButton } from "@ai-matrx/chat/voice-agent/components/VoiceMicButton";
+import { VoiceStatusPill } from "@ai-matrx/chat/voice-agent/components/VoiceStatusPill";
+import { LiveVoiceDoor } from "@ai-matrx/chat/voice-agent/components/LiveVoiceDoor";
+import { VoiceTranscriptStream } from "@ai-matrx/chat/voice-agent/components/VoiceTranscriptStream";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const EDUCATION_VOICE_TUTOR_MANDATE =

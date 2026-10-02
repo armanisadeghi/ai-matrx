@@ -18,7 +18,7 @@ import type {
   PlannerGoalScopeEntry,
   PlannerPlanProgress,
 } from "@/features/surfaces/manifests/education-planner.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { StudyGoalRow } from "../types";
 import { daysUntil, rankGoals, type GoalStat } from "./goalStats";
 import { readPlanSetupDraft, readPlannerPlanSnapshot } from "./plannerSnapshot";

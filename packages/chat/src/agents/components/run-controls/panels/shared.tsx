@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCost, formatDurationMs, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
+import { currentPointsRate } from "@host/components/cost/pointsRate";
 
 /**
  * Shared primitives for request/session stat panels.
@@ -20,14 +20,14 @@ import { currentPointsRate } from "@/components/cost/pointsRate";
 
 import React from "react";
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
+import type { RootState } from "@host/lib/redux/store";
+import type { ActiveRequest } from "../../../types/request.types";
 import type {
   UserRequestResult,
   UsageTotals,
-} from "@/types/python-generated/stream-events";
-import { cn } from "@/lib/utils";
-import { currentCostUnit } from "@/components/cost/costUnit";
+} from "@host/types/python-generated/stream-events";
+import { cn } from "@host/lib/utils";
+import { currentCostUnit } from "@host/components/cost/costUnit";
 
 // ── Selectors ──────────────────────────────────────────────────────────────
 

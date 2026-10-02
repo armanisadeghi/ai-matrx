@@ -4,11 +4,11 @@ import {
   PanelLeftTapButton,
   ChevronLeftTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { PowerTapButton } from "@/components/icons/ai-tap-buttons";
+import { PowerTapButton } from "@host/components/icons/ai-tap-buttons";
 import {
   SearchGroup,
   SearchGroupTrigger,
-} from "@/components/icons/SearchToolbar";
+} from "@host/components/icons/SearchToolbar";
 import { AgentNewRunButton } from "../../shared/AgentNewRunButton";
 
 interface SidebarHeaderProps {

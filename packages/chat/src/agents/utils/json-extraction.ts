@@ -11,8 +11,8 @@ import {
   extractAllJson,
   extractFirstJson,
   type ExtractedJson,
-} from "@/utils/json/extract-json";
-import { findAllFencedBlocks } from "@/utils/json/json-structural";
+} from "@host/utils/json/extract-json";
+import { findAllFencedBlocks } from "@host/utils/json/json-structural";
 
 // ── Legacy interface preserved for backward compat ──────────────────────────
 

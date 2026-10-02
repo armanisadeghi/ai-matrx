@@ -5,21 +5,21 @@
  * card says the cost arrives with the video instead of inventing a number.
  */
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({ captureError: jest.fn() }));
+jest.mock("@host/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({ captureError: jest.fn() }));
 
 import {
   describeEstimate,
   estimateVideoJob,
   resolvedControl,
-} from "@/features/agents/components/run/GenerationJobCard";
-import { readVideoSecondPoints } from "@/features/agents/components/run/useVideoSecondPoints";
+} from "../GenerationJobCard";
+import { readVideoSecondPoints } from "../useVideoSecondPoints";
 
 
 // The points rate is the billing.points_per_usd knob; this suite runs with no
 // knob snapshot, so it pins the rate to a fixture (the platform default).
-jest.mock("@/components/cost/pointsRate", () => ({
-  ...jest.requireActual("@/components/cost/pointsRate"),
+jest.mock("@host/components/cost/pointsRate", () => ({
+  ...jest.requireActual("@host/components/cost/pointsRate"),
   currentPointsRate: () => 20_000,
   usePointsRate: () => 20_000,
 }));

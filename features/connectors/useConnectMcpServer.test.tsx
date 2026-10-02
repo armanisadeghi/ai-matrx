@@ -1,7 +1,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
-import type { McpOAuthOutcome } from "@/features/agents/services/mcp-oauth/popup";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
+import type { McpOAuthOutcome } from "@ai-matrx/chat/agents/services/mcp-oauth/popup";
 
 const mockDispatch = jest.fn();
 const mockPopup = jest.fn();
@@ -11,10 +11,10 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => mockDispatch,
   useAppSelector: () => "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
 }));
-jest.mock("@/features/agents/services/mcp-oauth/popup", () => ({
+jest.mock("@ai-matrx/chat/agents/services/mcp-oauth/popup", () => ({
   startMcpOAuthPopup: (...args: unknown[]) => mockPopup(...args),
 }));
-jest.mock("@/features/agents/redux/mcp/mcp.slice", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/mcp/mcp.slice", () => ({
   fetchCatalog: () => ({ type: "catalog" }),
   fetchAvailability: (payload: unknown) => ({ type: "availability", payload }),
   connectServer: (payload: unknown) => ({ type: "connect", payload }),

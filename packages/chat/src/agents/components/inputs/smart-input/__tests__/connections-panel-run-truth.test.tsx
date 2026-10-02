@@ -5,11 +5,11 @@ const mockDispatch = jest.fn();
 let mockAddedMcpServers: string[] = [];
 let mockInfoEvents: { code: string; metadata: { attachments: { slug: string; state: string; tool_count: number }[] } }[] = [];
 let mockWarnings: { code: string; metadata: { slug: string; reason: string } }[] = [];
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
   useAppDispatch: () => mockDispatch,
 }));
-jest.mock("@/features/agents/hooks/useMcpTools", () => ({
+jest.mock("../../../../hooks/useMcpTools", () => ({
   useMcpCatalog: () => ({
     catalog: [], status: "succeeded", availabilityStatus: "succeeded",
     refreshAvailability: jest.fn(),
@@ -19,30 +19,30 @@ jest.mock("@/features/agents/hooks/useMcpTools", () => ({
     }],
   }),
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("../../../../redux/agent-definition/selectors", () => ({
   selectAgentMcpServers: () => [], selectAgentReadyForCustomExecution: () => true,
 }));
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({ fetchAgentExecutionFull: jest.fn() }));
-jest.mock("@/features/agents/redux/mcp/mcp.slice", () => ({ fetchCatalog: jest.fn() }));
-jest.mock("@/features/agents/redux/execution-system/conversations/conversations.selectors", () => ({
+jest.mock("../../../../redux/agent-definition/thunks", () => ({ fetchAgentExecutionFull: jest.fn() }));
+jest.mock("../../../../redux/mcp/mcp.slice", () => ({ fetchCatalog: jest.fn() }));
+jest.mock("../../../../redux/execution-system/conversations/conversations.selectors", () => ({
   selectAgentIdFromInstance: () => () => "agent",
 }));
-jest.mock("@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({
+jest.mock("../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({
   selectBuilderAdvancedSettings: () => () => ({ addedMcpServers: mockAddedMcpServers }),
 }));
-jest.mock("@/features/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({
+jest.mock("../../../../redux/execution-system/active-requests/active-requests.selectors", () => ({
   selectPrimaryRequest: () => () => ({ warnings: mockWarnings, infoEvents: mockInfoEvents }),
 }));
-jest.mock("@/features/connectors/useConnectMcpServer", () => ({
+jest.mock("@host/features/connectors/useConnectMcpServer", () => ({
   useConnectMcpServer: () => ({ connect: jest.fn(), connectingSlug: null }),
 }));
-jest.mock("@/features/connectors/useAttachResourcePicker", () => ({ useAttachResourcePicker: () => jest.fn() }));
-jest.mock("@/features/connectors/useConversationAttachments", () => ({
+jest.mock("@host/features/connectors/useAttachResourcePicker", () => ({ useAttachResourcePicker: () => jest.fn() }));
+jest.mock("@host/features/connectors/useConversationAttachments", () => ({
   useConversationAttachments: () => ({ status: "succeeded", items: [] }),
 }));
-jest.mock("@/features/connectors/AttachedResourcesSection", () => ({ AttachedResourcesSection: () => null }));
-jest.mock("@/features/overlays/openers/liveIntegrationsWindow", () => ({ useOpenLiveIntegrationsWindow: () => jest.fn() }));
-jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+jest.mock("@host/features/connectors/AttachedResourcesSection", () => ({ AttachedResourcesSection: () => null }));
+jest.mock("@host/features/overlays/openers/liveIntegrationsWindow", () => ({ useOpenLiveIntegrationsWindow: () => jest.fn() }));
+jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 import { ComposerConnectorsPanel } from "../composer/ComposerConnectorsPanel";
 
 describe("Connections preserve per-chat access and run truth", () => {

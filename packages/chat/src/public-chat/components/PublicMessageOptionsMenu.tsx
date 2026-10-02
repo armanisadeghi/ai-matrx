@@ -22,20 +22,20 @@ import {
   LayoutDashboard,
   Share2,
 } from "lucide-react";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@host/components/matrx/buttons/markdown-copy-utils";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
-import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
-import { EmailInputDialog } from "@/components/dialogs/EmailInputDialog";
-import { AuthGateDialog } from "@/components/dialogs/AuthGateDialog";
-import { NotesAPI } from "@/features/notes/service/notesApi";
-import { toast } from "@/lib/toast";
+import AdvancedMenu, { MenuItem } from "@host/components/official/AdvancedMenu";
+import { EmailInputDialog } from "@host/components/dialogs/EmailInputDialog";
+import { AuthGateDialog } from "@host/components/dialogs/AuthGateDialog";
+import { NotesAPI } from "@host/features/notes/service/notesApi";
+import { toast } from "@host/lib/toast";
 import { useSelector } from "react-redux";
-import { selectUser } from "@/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { removeCodeSpans, replaceFences } from "@/lib/markdown/code-ranges";
+import { selectUser } from "@host/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { removeCodeSpans, replaceFences } from "@host/lib/markdown/code-ranges";
 
 // Key used to store pending actions across the auth redirect
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";

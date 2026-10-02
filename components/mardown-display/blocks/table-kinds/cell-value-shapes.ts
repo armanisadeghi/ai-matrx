@@ -30,7 +30,7 @@
  * never promoted to a number (that is how `"01234"` stops being a ZIP code).
  */
 
-import { looksLikeUrl } from "@/features/tool-call-visualization/result-fields/shape";
+import { looksLikeUrl } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 
 export { looksLikeUrl };
 

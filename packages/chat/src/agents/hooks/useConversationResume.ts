@@ -35,13 +35,13 @@
 // common-docs/policies/table-stakes-are-never-a-question.md.
 
 import { useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { followWhatIsStillInFlight } from "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight";
-import { setFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
+import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { createManualInstance } from "../redux/execution-system/thunks/create-instance.thunk";
+import { loadConversation } from "../redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "../runtime-reconnect/follow-what-is-still-in-flight";
+import { setFocus } from "../redux/execution-system/conversation-focus/conversation-focus.slice";
+import { patchConversation } from "../redux/execution-system/conversations/conversations.slice";
+import type { ConversationSandboxBinding } from "@host/lib/sandbox/conversation-binding-row";
 
 export interface UseConversationResumeOptions {
   /** The conversation to reopen. `null` disables the hook entirely. */

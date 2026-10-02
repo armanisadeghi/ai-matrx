@@ -17,11 +17,11 @@
  * person is sending".
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   AssembledAgentStartRequest,
   UserInputPart,
-} from "@/features/agents/types/request.types";
+} from "../../../types/request.types";
 import {
   messagePartToUserInputPart,
   selectEditorResourceXml,

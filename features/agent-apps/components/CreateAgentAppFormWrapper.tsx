@@ -47,11 +47,11 @@ import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import {
   selectLiveAgents,
   selectAgentById,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchAgentsListFull,
   fetchFullAgent,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { supabase } from "@/utils/supabase/client";
 import type { CreateAgentAppInput } from "../types";
 

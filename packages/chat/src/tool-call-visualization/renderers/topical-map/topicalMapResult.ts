@@ -14,8 +14,8 @@
  * without importing a component.
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import type { MapTreeNode } from "@/features/marketing/seo/topical-map/types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
+import type { MapTreeNode } from "@host/features/marketing/seo/topical-map/types";
 
 import { getArg, resultAsObject } from "../_shared";
 

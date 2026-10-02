@@ -27,7 +27,7 @@ import { AGENT_ICON, INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { NewTabLink } from "@/components/official/entity-ref/NewTabLink";
 import { usePeekHrefOverride } from "@/features/organizations/peek/peekHrefOverride";
-import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
+import { useAgentNames } from "@ai-matrx/chat/surfaces/hooks/useAgentNames";
 import {
   MANDATE_HOLDER_COLUMNS,
   holderOfMandate,

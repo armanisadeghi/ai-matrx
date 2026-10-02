@@ -80,7 +80,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   ASSISTANT_NAME_MAX_LENGTH,
   CREATIVITY_LEVEL_ENUM_TEXT,

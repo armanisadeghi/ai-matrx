@@ -71,16 +71,16 @@
  *    pretending the tool failed.
  */
 
-import { callApi } from "@/lib/api/call-api";
-import { toast } from "@/lib/toast";
+import { callApi } from "@host/lib/api/call-api";
+import { toast } from "@host/lib/toast";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { ThunkAction, ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 type ToolResultsDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
-import type { components } from "@/types/python-generated/api-types";
-import { setInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import type { components } from "@host/types/python-generated/api-types";
+import { setInstanceStatus } from "../redux/execution-system/conversations/conversations.slice";
 import { settleClientToolCall } from "./settle-client-tool-call";
 import { nonErrorOutputReadsAsFailure } from "./person-declined-tool-output";
 
@@ -346,7 +346,7 @@ function postToolResults(
           //   → dispatch-ui-first-tool → submit-tool-results.
           // executeInstance uses the same pattern for cache-bypass + clearUserInput.
           const { resumeInstance } = await import(
-            "@/features/agents/redux/execution-system/thunks/resume-instance.thunk"
+            "../redux/execution-system/thunks/resume-instance.thunk"
           );
           void dispatch(
             resumeInstance({
@@ -449,7 +449,7 @@ async function failLifecycleForCalls(
 ): Promise<void> {
   try {
     const { upsertToolLifecycle } = await import(
-      "@/features/agents/redux/execution-system/active-requests/active-requests.slice"
+      "../redux/execution-system/active-requests/active-requests.slice"
     );
     // Walk every active request for this conversation and force-terminal any
     // matching callId. The reducer is idempotent + already filters on

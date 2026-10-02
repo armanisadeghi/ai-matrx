@@ -11,7 +11,7 @@ import { Link2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceAgentBindPanel } from "@/features/surfaces/components/bind/SurfaceAgentBindPanel";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 import {
   emitSurfaceAgentBindEvent,
   type SurfaceAgentBindWindowData,

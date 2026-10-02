@@ -37,7 +37,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 
 import { prependMessages, setOlderLoading } from "../messages/messages.slice";
 import { mergeToolCalls } from "../observability/observability.slice";

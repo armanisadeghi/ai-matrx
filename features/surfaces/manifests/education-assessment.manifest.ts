@@ -33,7 +33,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 // The generation vocabularies, from their canonical home — the write-target
 // descriptions below interpolate these rather than re-typing the enums, so the
 // prose an agent reads can never drift from what the handlers accept. This is

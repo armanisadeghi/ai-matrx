@@ -14,7 +14,7 @@ import {
   xmlElement,
   xmlList,
   xmlText,
-} from "@/features/surfaces/runtime/context-bundle";
+} from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 
 /** The note body's share of the ~10,000-char page budget (the rest: tabs, folders, scopes). */
 const NOTE_BUNDLE_BODY_CHARS = 7000;

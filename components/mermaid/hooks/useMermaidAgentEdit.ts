@@ -15,26 +15,26 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { executeInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   selectPrimaryRequest,
   selectAccumulatedText,
   selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
-import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import { mergeValueMappingLayers } from "@/features/surfaces/utils/merge-value-mappings";
-import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { fetchSurfaceBindingLayers } from "@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service";
+import { mergeValueMappingLayers } from "@ai-matrx/chat/surfaces/utils/merge-value-mappings";
+import { resolveValueMappings } from "@ai-matrx/chat/surfaces/utils/value-mapping-resolver";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
+import type { InstanceContextEntry } from "@ai-matrx/chat/agents/types/instance.types";
+import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { extractMermaidFromOutput } from "../extract-fence";

@@ -18,15 +18,15 @@
  */
 
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   collectProblems,
   collectionWriteHandlers,
   readCollectionList,
   repeatsProblem,
   ListLevelProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import {
   copyNote,
   createNewNote,

@@ -10,8 +10,8 @@
 
 import { useDropzone } from "react-dropzone";
 import { Loader2, Upload } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useUploadAgentResources } from "@/features/agents/components/inputs/resources/usePasteImageResource";
+import { cn } from "@host/lib/utils";
+import { useUploadAgentResources } from "../resources/usePasteImageResource";
 
 interface SmartInputFileDropTargetProps extends Omit<
   React.ComponentPropsWithoutRef<"div">,

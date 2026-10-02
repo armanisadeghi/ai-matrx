@@ -51,7 +51,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 // The notice severity vocabulary is imported from the feature's canonical
 // schema module, never re-typed here — the manifest description, the handler
 // and the editor's own Select all read the SAME list.

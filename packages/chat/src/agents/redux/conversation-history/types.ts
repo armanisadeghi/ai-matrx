@@ -11,7 +11,7 @@
  * this one owns scope-specific views that span multiple agents at once.
  */
 
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import type { ConversationListItem } from "../conversation-list/conversation-list.types";
 import type { ConversationLane } from "./lanes";
 
 /**

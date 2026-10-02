@@ -17,7 +17,7 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
  * to the right component. A skipped/failed run rejects — never a silent empty.
  */
 
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 
 export interface KindRequestInput {

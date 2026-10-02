@@ -24,8 +24,8 @@ import { ExternalLink } from "lucide-react";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
-import { ApprovalCard } from "@/features/agents/ui-first-tools/ui/ApprovalCard";
-import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
+import { ApprovalCard } from "@ai-matrx/chat/agents/ui-first-tools/ui/ApprovalCard";
+import type { PendingAsk } from "@ai-matrx/chat/agents/ui-first-tools/redux/pending-asks.slice";
 
 import {
   approvalChangeFor,

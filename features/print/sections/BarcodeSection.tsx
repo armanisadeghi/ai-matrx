@@ -17,14 +17,14 @@ import { Field, SectionShell, StatusChip, controlClass, svgToImgSrc } from "@/fe
 import { ProInput } from "@/components/official/ProInput";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import {
     BARCODE_PREVIEW_SURFACE_NAME,
     barcodePreviewManifest,
     createBarcodePreviewScope,
 } from "@/features/surfaces/manifests/barcode-preview.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // The generated source-attribution contract is being extended with `print`.

@@ -32,11 +32,11 @@ import React from "react";
 import { Braces, CircleCheck, TriangleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
-import { ResultMarkdown } from "@/features/tool-call-visualization/result-fields/ResultMarkdown";
+import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
+import { ResultMarkdown } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultMarkdown";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
-import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
+import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 
 export interface WebAnalysisItemBlockProps {
   /** The raw region source — the zero-loss floor when no envelope survived. */

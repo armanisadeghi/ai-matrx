@@ -22,7 +22,7 @@ import { AlertTriangle, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 
 /** Stable display order mirroring agent-api-types `LLMParams` sections. */
 const LLM_PARAM_ORDER = [

@@ -28,7 +28,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
+import { SandboxPanel } from "@ai-matrx/chat/agents/components/chat/SandboxPanel";
 import { useOpenerHost } from "@ai-matrx/kit/opener-react";
 import { sandboxGateOpener } from "./sandboxGateOpener";
 

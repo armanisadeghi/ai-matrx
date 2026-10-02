@@ -38,7 +38,7 @@
 //   session running someone else's prompt.
 
 import { useEffect, useMemo, useRef } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import { DEFAULT_INTRO_TOOLS, DEFAULT_INTRO_VOICE } from "../constants";
 import {
   applyAgentConfig,
@@ -51,13 +51,13 @@ import type {
   VoiceAgentPreset,
   VoiceId,
 } from "../types";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import type { RootState } from "@/lib/redux/store";
+import { fetchFullAgent } from "../../agents/redux/agent-definition/thunks";
+import type { RootState } from "@host/lib/redux/store";
 import { readInstructionsFromAgent } from "../agentInstructions";
-import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
-import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
-import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { LIVE_CONVERSATION_VOICES } from "@/lib/voices/voiceSets";
+import { selectAgentReadyForBuilder } from "../../agents/redux/agent-definition/selectors";
+import { recordUnavailableMessage } from "@host/lib/records/recordUnavailable";
+import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { LIVE_CONVERSATION_VOICES } from "@host/lib/voices/voiceSets";
 
 interface UseVoiceAgentInstanceOpts {
   preset: VoiceAgentPreset;

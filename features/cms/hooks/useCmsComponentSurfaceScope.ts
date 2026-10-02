@@ -10,7 +10,7 @@
 
 import { useCallback } from "react";
 
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { buildCmsComponentContextData } from "../agent-context/buildCmsComponentContextData";
 import type { ClientComponent, ClientPageSummary, ClientSite } from "../types";
 

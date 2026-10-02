@@ -18,7 +18,7 @@
  * change found in the text lands at the right place in the stream.
  */
 
-import type { SurfaceWriteHandlerEntry } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlerEntry } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 /**
  * A product bound, not a database one (snapshots are jsonb): a body an agent

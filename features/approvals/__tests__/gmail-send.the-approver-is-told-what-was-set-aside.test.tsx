@@ -59,7 +59,7 @@ jest.mock("../data", () => ({
 jest.mock("@/features/crm/compliance/service", () => ({
   checkSendEligibility: async () => verdict,
 }));
-jest.mock("@/features/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
+jest.mock("@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
   registerAskResolver: (callId: string, resolver: Resolver) => {
     resolvers.set(callId, resolver);
   },

@@ -26,12 +26,12 @@ import {
   removeFromTrash,
   setGlobalListSuccess,
   removeConversation,
-} from "@/features/agents/redux/conversation-list/conversation-list.slice";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import type { AppDispatch } from "@/lib/redux/store";
+} from "../../../redux/conversation-list/conversation-list.slice";
+import type { ConversationListItem } from "../../../redux/conversation-list/conversation-list.types";
+import { buildConversationMenu } from "../conversationActionRegistry";
+import type { AppDispatch } from "@host/lib/redux/store";
 
-const repoRoot = path.resolve(__dirname, "../../../../..");
+const repoRoot = path.resolve(__dirname, "../../../../../../..");
 
 function read(relative: string): string {
   return readFileSync(path.join(repoRoot, relative), "utf8");
@@ -60,12 +60,12 @@ const baseCtx = {
 
 describe("DD-179 — the conversation page can rename, delete and restore", () => {
   it("mounts the conversation menu on the production chat header", () => {
-    const header = read("features/agents/components/chat/ChatRunHeader.tsx");
+    const header = read("packages/chat/src/agents/components/chat/ChatRunHeader.tsx");
     expect(header).toContain("ConversationPageMenu");
   });
 
   it("mounts the SAME menu component on the demo chat header", () => {
-    const header = read("features/cx-chat/components/ChatHeaderControls.tsx");
+    const header = read("packages/chat/src/cx-chat/components/ChatHeaderControls.tsx");
     expect(header).toContain("ConversationPageMenu");
   });
 
@@ -127,14 +127,14 @@ describe("DD-179 — the conversation page can rename, delete and restore", () =
 
   it("carries a restorable trash on every conversation list surface", () => {
     const sidebar = read(
-      "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
+      "packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx",
     );
     // Both variants — the dense workspace list and the consumer /chat list.
     const mounts = sidebar.match(/<ConversationTrashSection/g) ?? [];
     expect(mounts.length).toBeGreaterThanOrEqual(2);
 
     const trash = read(
-      "features/agents/components/conversation-history/ConversationTrashSection.tsx",
+      "packages/chat/src/agents/components/conversation-history/ConversationTrashSection.tsx",
     );
     expect(trash).toContain("restoreConversation");
     expect(trash).toContain("Restore");

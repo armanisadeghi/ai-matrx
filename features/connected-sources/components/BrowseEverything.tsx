@@ -42,7 +42,7 @@ import {
   OrganizationRequiredNotice,
   isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CONNECTED_SOURCES_SURFACE_NAME } from "@/features/surfaces/manifests/connected-sources.manifest";
 import { extractErrorMessage } from "@/utils/errors";
 import { listConnectedAdapters } from "../api";

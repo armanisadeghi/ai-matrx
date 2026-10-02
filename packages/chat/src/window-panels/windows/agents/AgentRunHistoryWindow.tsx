@@ -17,32 +17,32 @@ import {
   History,
   Workflow,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import { makeSelectAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import type { RootState } from "@/lib/redux/store";
-import { useAppStore } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";
+import { fetchAgentConversations } from "../../../agents/redux/conversation-list/conversation-list.thunks";
+import { makeSelectAgentConversations } from "../../../agents/redux/conversation-list/conversation-list.selectors";
+import type { ConversationListItem } from "../../../agents/redux/conversation-list/conversation-list.types";
+import { AgentConversationDisplay } from "../../../agents/components/messages-display/AgentConversationDisplay";
+import { loadConversation } from "../../../agents/redux/execution-system/thunks/load-conversation.thunk";
+import { createManualInstance } from "../../../agents/redux/execution-system/thunks/create-instance.thunk";
+import type { RootState } from "@host/lib/redux/store";
+import { useAppStore } from "@host/lib/redux/hooks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { ItemRow } from "@/components/official/item/ItemRow";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { AGENT_RUN_HISTORY_SURFACE_NAME } from "@/features/surfaces/manifests/agent-run-history.manifest";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { selectConversationTitle } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { ItemRow } from "@host/components/official/item/ItemRow";
+import { buildConversationMenu } from "../../../agents/components/conversation-actions/conversationActionRegistry";
+import { renameConversation } from "../../../agents/redux/conversation-list/conversation-row-actions.thunks";
+import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
+import { AGENT_RUN_HISTORY_SURFACE_NAME } from "@host/features/surfaces/manifests/agent-run-history.manifest";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { selectConversationTitle } from "../../../agents/redux/execution-system/messages/messages.selectors";
 import {
   buildAgentRunHistoryScope,
   readSelectedRunTranscript,
   type AgentRunHistorySnapshot,
 } from "./agent-run-history-scope";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_KEY = "agent-run-history-window";
 

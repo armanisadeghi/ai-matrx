@@ -16,14 +16,14 @@ import { useRouter } from "next/navigation";
 import { Music2, Radio, Settings2 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
-import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
+import RouteHeader from "@host/features/shell/components/header/RouteHeader";
+import { toast } from "@host/lib/toast";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
 import { useVoiceAgentInstance } from "../hooks/useVoiceAgentInstance";
 import { useRealtimeAgentConfig } from "../hooks/useRealtimeAgentConfig";
 import { useRealtimeHolderModel } from "../realtimeModel";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "../../mandates/useMandate";
 import { VOICE_INTRO_MANDATE_KEY } from "../constants";
 import { useXaiVoiceSession } from "../hooks/useXaiVoiceSession";
 import { usePersistVoiceTranscript } from "../hooks/usePersistVoiceTranscript";
@@ -40,11 +40,11 @@ import {
   selectVoiceTurns,
   selectVoiceVoiceId,
 } from "../state/selectors";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   CHAT_VOICE_SURFACE,
   createChatVoiceScope,
-} from "@/features/surfaces/manifests/chat-voice.manifest";
+} from "@host/features/surfaces/manifests/chat-voice.manifest";
 import { deriveVoiceTranscriptScope } from "../agent-context/voiceTranscriptScope";
 import { VoiceOrb } from "./VoiceOrb";
 import { VoiceEdgeRibbon } from "./VoiceEdgeRibbon";

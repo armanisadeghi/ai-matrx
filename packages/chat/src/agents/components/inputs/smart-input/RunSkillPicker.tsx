@@ -16,9 +16,9 @@
  *      Same state the Quickset ShapeChipsRow toggles — keep them consistent.
  */
 
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
+import { readOf } from "@host/components/read-state/ReadGate";
 import { useEffect, useState } from "react";
 import {
   Search,
@@ -31,23 +31,23 @@ import {
   ListOrdered,
   EyeOff,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { ProInput } from "@/components/official/ProInput";
-import { cn } from "@/lib/utils";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { ProInput } from "@host/components/official/ProInput";
+import { cn } from "@host/lib/utils";
+import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
   selectAgentError,
   selectAgentSkillConfig,
   selectAgentReadyForCustomExecution,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
-import { useSkills } from "@/features/skills/hooks/useSkills";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import type { SkillRow } from "@/features/skills/types";
+} from "../../../redux/agent-definition/selectors";
+import { fetchAgentExecutionFull } from "../../../redux/agent-definition/thunks";
+import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
+import { useSkills } from "@host/features/skills/hooks/useSkills";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import type { SkillRow } from "@host/features/skills/types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 
 type AgentSkillTier = "included" | "listed" | "forbidden";

@@ -15,7 +15,7 @@
 // competing page-local sidebar; sub-view choices belong in one shared header
 // RouteModeNav.
 
-import { AGENT_RUN_PATH_PATTERN } from "@/features/agents/components/shell/agent-run-route";
+import { AGENT_RUN_PATH_PATTERN } from "@ai-matrx/chat/agents/components/shell/agent-run-route";
 import { RESEARCH_TOPIC_PATH_PATTERN } from "@/features/research/components/shell/research-topic-route";
 import { USER_SETTINGS_PATH_PATTERN } from "@/features/settings/route-shell/settings-route-path";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
@@ -58,7 +58,7 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     iconName: "Webhook",
     label: "Agent Runs",
     importFn: () =>
-      import("@/features/agents/components/shell/AgentRunSidebarMenu"),
+      import("@ai-matrx/chat/agents/components/shell/AgentRunSidebarMenu"),
   },
   {
     pathPattern: /^\/administration(?:\/|$)/,
@@ -74,13 +74,13 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     iconName: "MessageCircle",
     label: "Chats",
     defaultView: "main",
-    importFn: () => import("@/features/agents/components/chat/ChatSidebarMenu"),
+    importFn: () => import("@ai-matrx/chat/agents/components/chat/ChatSidebarMenu"),
   },
   {
     pathPattern: /^\/chat(?:\/|$)/,
     iconName: "MessageCircle",
     label: "Chats",
-    importFn: () => import("@/features/agents/components/chat/ChatSidebarMenu"),
+    importFn: () => import("@ai-matrx/chat/agents/components/chat/ChatSidebarMenu"),
   },
   {
     pathPattern: /^\/staff(?:\/|$)/,

@@ -1,4 +1,4 @@
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const EMPTY_CLIENT_TOOLS: string[] = [];
 

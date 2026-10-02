@@ -1,5 +1,5 @@
 import { MNEMONIC_TECHNIQUES, type MemoryAidPayload } from "@/features/content-ir/kinds/memory-aid";
-import { collectProblems, readCollectionList, repeatsProblem } from "@/features/surfaces/runtime/collection-write-targets";
+import { collectProblems, readCollectionList, repeatsProblem } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import type { StudyMediaRow } from "@/features/education/media/types";
 
 const object = (value: unknown, at: string): Record<string, unknown> => {

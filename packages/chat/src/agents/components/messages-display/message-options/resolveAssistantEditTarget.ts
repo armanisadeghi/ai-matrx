@@ -1,5 +1,5 @@
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import type { MessageRecord } from "../../../redux/execution-system/messages/messages.slice";
+import { extractFlatText } from "../../../redux/execution-system/messages/messages.selectors";
 
 export interface AssistantEditTarget {
   messageId: string;

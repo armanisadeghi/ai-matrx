@@ -25,7 +25,7 @@ import activeRequestsReducer, {
 } from "../../active-requests/active-requests.slice";
 import messagesReducer from "../../messages/messages.slice";
 import { processStream } from "../process-stream";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;

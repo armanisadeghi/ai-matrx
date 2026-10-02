@@ -1,4 +1,4 @@
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
+import type { ContextObjectType } from "../../types/agent-api-types";
 import {
   previewKnownContext,
   resolveContextEntryValue,

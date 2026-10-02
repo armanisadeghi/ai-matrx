@@ -18,16 +18,16 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { Button } from "@host/components/ui/button";
+import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from "@host/components/ui/dropdown-menu";
+import { cn } from "@host/lib/utils";
 import {
   displayTitleForMemory,
   importanceScore,

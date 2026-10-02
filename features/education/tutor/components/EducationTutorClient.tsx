@@ -23,37 +23,37 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createSelector } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAuthReady,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useConversationRoutePromotion } from "@/features/agents/hooks/useConversationRoutePromotion";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { useConversationRoutePromotion } from "@ai-matrx/chat/agents/hooks/useConversationRoutePromotion";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { surfaceColdPendingCalls } from "@ai-matrx/chat/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import {
   setFocus,
   clearFocus,
-} from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
   selectPreSend,
   selectUserInputText,
-} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   selectConversationMessages,
   selectMessageCount,
   selectLatestAssistantMessageId,
   selectMessageContent,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
-import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
-import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
+import { ChatRoomSkeleton } from "@ai-matrx/chat/agents/components/chat/ChatRoomSkeleton";
 import {
   useEntitlement,
   useEntitlementConsume,
@@ -64,14 +64,14 @@ import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { Eye } from "lucide-react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type {
   SurfaceBeforeExecuteResult,
   SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationTutorScope } from "@/features/surfaces/manifests/education-tutor.manifest";
 import { useSetting } from "@/features/settings/hooks/useSetting";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { TUTOR_MANDATE_KEY } from "../mandates";
 import {
   TUTOR_TEACHING_MODES,

@@ -37,7 +37,7 @@ import {
   type AgentAppAdminView,
   type UpdateAgentAppAdminInput,
 } from "@/lib/services/agent-apps-admin-service";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,

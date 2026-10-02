@@ -20,7 +20,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { ServerNotes } from "@/components/official/ServerNotes";
-import { RunFailureCard } from "../RunFailureCard";
+import { RunFailureCard } from "@ai-matrx/chat/mandates/RunFailureCard";
 import {
   MandateRunRefusal,
   describeMandateRunFailure,

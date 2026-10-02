@@ -12,7 +12,7 @@
  *     send thunks never merge garbage onto the request body.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { getRegisteredCapabilities } from "../registry";
 import "../agent-fs.provider";
 import { parseRequestOverrides } from "../../utils/request-overrides";

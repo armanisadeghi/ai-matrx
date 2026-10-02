@@ -44,7 +44,7 @@ import { createMarketingTopicalMapScope } from "@/features/surfaces/manifests/ma
 import {
   SurfaceRuntimeProvider,
   getSurfaceRuntimeForName,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 

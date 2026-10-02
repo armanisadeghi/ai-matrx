@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Handshake } from "lucide-react";
 import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { parseDealDraft } from "../../agent-context/crmRecordSurfaceWrite";
 import { Button } from "@/components/ui/button";

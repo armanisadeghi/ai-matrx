@@ -34,7 +34,7 @@ import {
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { cn } from "@/lib/utils";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationAudioStudyScope,
   type AudioLibraryEntry,

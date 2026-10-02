@@ -9,7 +9,7 @@
  */
 
 import { configureStore, type Middleware } from "@reduxjs/toolkit";
-import overlaysReducer, { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import overlaysReducer, { closeOverlay, openOverlay } from "@host/lib/redux/slices/overlaySlice";
 import conversationsReducer, {
   createInstance,
   destroyInstance,
@@ -20,9 +20,9 @@ import { launchHandleReleaseMiddleware } from "./launch-handle-release.middlewar
 import {
   liveLaunchWidgetHandleCount,
   registerLaunchWidgetHandle,
-} from "@/features/agents/utils/launch-widget-handles";
-import { callbackManager } from "@/utils/callbackManager";
-import type { SelectionWriteBack } from "@/features/agents/types/widget-handle.types";
+} from "../../../utils/launch-widget-handles";
+import { callbackManager } from "@host/utils/callbackManager";
+import type { SelectionWriteBack } from "../../../types/widget-handle.types";
 
 const writeBack: SelectionWriteBack = {
   originalText: "Skip to main content | Patient portal",

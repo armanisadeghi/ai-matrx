@@ -25,16 +25,16 @@ import { useState } from "react";
 import { ExternalLink, ListTree, PanelRightOpen } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
 
-import { TopicTree } from "@/components/official/topic-tree/TopicTree";
-import { useOpenTopicalMapCanvas } from "@/features/marketing/seo/topical-map/canvas/useOpenTopicalMapCanvas";
+import { TopicTree } from "@host/components/official/topic-tree/TopicTree";
+import { useOpenTopicalMapCanvas } from "@host/features/marketing/seo/topical-map/canvas/useOpenTopicalMapCanvas";
 import {
   expandableSlugs,
   flattenTreeNodes,
   topicTreeRows,
   type FlatTopic,
-} from "@/features/marketing/seo/topical-map/proposals/topicRows";
-import { TopicStatusMark } from "@/features/marketing/seo/topical-map/ui/TopicStatusMark";
-import { useOpenTopicalMapWindow } from "@/features/overlays/openers/topicalMapWindow";
+} from "@host/features/marketing/seo/topical-map/proposals/topicRows";
+import { TopicStatusMark } from "@host/features/marketing/seo/topical-map/ui/TopicStatusMark";
+import { useOpenTopicalMapWindow } from "@host/features/overlays/openers/topicalMapWindow";
 
 import type { ToolRendererProps } from "../../types";
 import { ResultValue } from "../../result-fields/ResultValue";

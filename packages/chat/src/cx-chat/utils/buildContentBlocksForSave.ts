@@ -10,7 +10,7 @@
 import type {
   CxContentBlock,
   CxTextContent,
-} from "@/features/cx-chat/types/cx-tables";
+} from "../types/cx-tables";
 
 /**
  * Citation-bearing provider turns store MANY text blocks, each carrying its own

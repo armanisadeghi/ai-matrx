@@ -31,20 +31,20 @@
 
 import { useCallback } from "react";
 
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
 import {
   selectAgentAccessResolved,
   selectAgentById,
   selectAgentIsReadOnly,
   selectAgentMessages,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../redux/agent-definition/selectors";
 import {
   setAgentField,
   setAgentMessages,
-} from "@/features/agents/redux/agent-definition/slice";
-import { withAgentSystemInstruction } from "@/features/agents/utils/agent-system-instruction";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import type { RootState } from "@/lib/redux/store";
+} from "../redux/agent-definition/slice";
+import { withAgentSystemInstruction } from "../utils/agent-system-instruction";
+import type { AgentDefinition } from "../types/agent-definition.types";
+import type { RootState } from "@host/lib/redux/store";
 
 /** A non-empty string, trimmed — or a throw naming the target. */
 function requireText(value: unknown, target: string): string {

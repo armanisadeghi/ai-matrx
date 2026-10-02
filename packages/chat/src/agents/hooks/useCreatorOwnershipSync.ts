@@ -18,10 +18,10 @@
  */
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setIsCreator } from "@/lib/redux/preferences/creatorDebugSlice";
-import { selectAgentIsOwner } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentAccessLevel } from "@/features/agents/redux/agent-definition/thunks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { setIsCreator } from "@host/lib/redux/preferences/creatorDebugSlice";
+import { selectAgentIsOwner } from "../redux/agent-definition/selectors";
+import { fetchAgentAccessLevel } from "../redux/agent-definition/thunks";
 
 export function useCreatorOwnershipSync(agentId: string | null | undefined) {
   const dispatch = useAppDispatch();

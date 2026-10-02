@@ -11,15 +11,15 @@
 // there is nothing to reset TO, so the button stays disabled rather than
 // offering a stale default.
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Button } from "@host/components/ui/button";
+import { Label } from "@host/components/ui/label";
 import { VOICE_INTRO_MANDATE_KEY } from "../../constants";
 import { useMandateAgentInstructions } from "../../agentInstructions";
 import { updateConfig } from "../../state/voiceAgentSlice";
 import { selectVoiceInstructions } from "../../state/selectors";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProTextarea } from "@host/components/official/ProTextarea";
 
 interface InstructionsEditorProps {
   instanceId: string;

@@ -46,7 +46,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { AdminLaneWatcher, alchemyOrganizationId, useAdminLaneOrganizationId } from "./alchemy-organization";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { supabase } from "@/utils/supabase/client";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { toast } from "@/lib/toast";
 import { createMatrxTransferActions } from "@ai-matrx/agents/content-transfer";

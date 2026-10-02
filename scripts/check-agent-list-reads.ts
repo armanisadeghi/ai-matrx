@@ -106,7 +106,7 @@ function report(findings: Finding[]): void {
       "  getAgentCatalog().ensureLoaded()   → rows\n" +
       "  getAgentCatalog().searchServer(q)  → matching ids\n" +
       "and project what you need into the agent-definition registry (see\n" +
-      "features/agents/redux/agent-definition/thunks.ts). Needing a field the\n" +
+      "packages/chat/src/agents/redux/agent-definition/thunks.ts). Needing a field the\n" +
       "catalog does not expose is a PACKAGE gap — fix it there and release.\n",
   );
 }

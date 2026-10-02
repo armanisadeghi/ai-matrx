@@ -7,7 +7,7 @@ import type {
 } from "@/features/marketing/types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { SerpResult, type SerpDevice } from "@/features/marketing/seo/serp/SerpResult";
 import { SerpFieldChips } from "@/features/marketing/seo/serp/SerpValidation";
 import { MetaRecommendations } from "@/features/marketing/seo/serp/MetaRecommendations";

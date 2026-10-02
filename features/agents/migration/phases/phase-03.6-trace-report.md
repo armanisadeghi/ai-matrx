@@ -63,9 +63,9 @@ Traced all 16 config fields from `agx_shortcut` table through their entire lifec
 
 **Evidence:**
 - ✓ DB column defined: migrations/agx_shortcut_execution_config_v2.sql:74
-- ✓ Read from DB: features/agents/redux/agent-shortcuts/converters.ts:166-169 (rNumber fallback 3)
-- ✓ Persisted to AgentShortcut type: features/agents/redux/agent-shortcuts/types.ts:49
-- ✗ NOT in InstanceUIState interface (features/agents/types/instance.types.ts)
+- ✓ Read from DB: packages/chat/src/agents/redux/agent-shortcuts/converters.ts:166-169 (rNumber fallback 3)
+- ✓ Persisted to AgentShortcut type: packages/chat/src/agents/redux/agent-shortcuts/types.ts:49
+- ✗ NOT in InstanceUIState interface (packages/chat/src/agents/types/instance.types.ts)
 - ✗ NO selector: grep for `selectBypassGateSeconds` → no matches
 - ✗ NO timer component in AgentGateInput.tsx — gate waits for manual user input only
 - ✗ NOT sent to API (not in execute-instance.thunk.ts:156-169)
@@ -73,12 +73,12 @@ Traced all 16 config fields from `agx_shortcut` table through their entire lifec
 **Impact:** Users cannot configure auto-submit timeout. Gate will block execution indefinitely unless user manually clicks "Continue".
 
 **Fix:** 
-1. Add `bypassGateSeconds` to InstanceUIState (features/agents/types/instance.types.ts)
+1. Add `bypassGateSeconds` to InstanceUIState (packages/chat/src/agents/types/instance.types.ts)
 2. Dispatch in initInstanceUIState (create-instance.thunk.ts:335-336)
 3. Create selectBypassGateSeconds selector (instance-ui-state.selectors.ts)
 4. Add countdown timer to AgentGateInput.tsx; dispatch setPreExecutionSatisfied after N seconds
 
-**Most Promising Fix File:** `features/agents/components/agent-widgets/execution-gates/AgentGateInput.tsx` — add useEffect to watch bypassGateSeconds and auto-submit when time elapses.
+**Most Promising Fix File:** `packages/chat/src/agents/components/agent-widgets/execution-gates/AgentGateInput.tsx` — add useEffect to watch bypassGateSeconds and auto-submit when time elapses.
 
 ---
 
@@ -88,8 +88,8 @@ Traced all 16 config fields from `agx_shortcut` table through their entire lifec
 
 **Evidence:**
 - ✓ DB column defined: migrations/agx_shortcut_execution_config_v2.sql (not new, pre-existing)
-- ✓ Read from DB: features/agents/redux/agent-shortcuts/converters.ts:109-110
-- ✓ Persisted to AgentShortcut type: features/agents/redux/agent-shortcuts/types.ts:33
+- ✓ Read from DB: packages/chat/src/agents/redux/agent-shortcuts/converters.ts:109-110
+- ✓ Persisted to AgentShortcut type: packages/chat/src/agents/redux/agent-shortcuts/types.ts:33
 - ✗ NOT in InstanceUIState
 - ✗ NO selector or Redux dispatch in create-instance thunk
 - ✗ Only used in context menu view (agent_context_menu_view) for menu placement
@@ -171,13 +171,13 @@ Traced all 16 config fields from `agx_shortcut` table through their entire lifec
 | File | Lines | Purpose |
 |------|-------|---------|
 | migrations/agx_shortcut_execution_config_v2.sql | 66–78 | 16 config columns defined |
-| features/agents/types/agent-execution-config.types.ts | 26–128 | AgentExecutionConfig canonical bundle |
-| features/agents/redux/agent-shortcuts/converters.ts | 90–221 | DB → Frontend: dbRowToAgentShortcut |
-| features/agents/redux/execution-system/thunks/create-instance.thunk.ts | 245–414 | Shortcut → Redux dispatch |
-| features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts | 112–172 | initInstanceUIState storage |
-| features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors.ts | 1–450 | 14 selectors for UI consumption |
-| features/agents/redux/execution-system/thunks/execute-instance.thunk.ts | 75–169 | API payload assembly |
+| packages/chat/src/agents/types/agent-execution-config.types.ts | 26–128 | AgentExecutionConfig canonical bundle |
+| packages/chat/src/agents/redux/agent-shortcuts/converters.ts | 90–221 | DB → Frontend: dbRowToAgentShortcut |
+| packages/chat/src/agents/redux/execution-system/thunks/create-instance.thunk.ts | 245–414 | Shortcut → Redux dispatch |
+| packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts | 112–172 | initInstanceUIState storage |
+| packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors.ts | 1–450 | 14 selectors for UI consumption |
+| packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts | 75–169 | API payload assembly |
 | components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx | 154–159 | hideReasoning / hideToolResults filtering |
-| features/agents/components/inputs/variable-input-variations/SmartAgentVariables.tsx | 47–98 | variablesPanelStyle style switching |
-| features/agents/components/agent-widgets/execution-gates/AgentGateInput.tsx | 19–113 | Gate UI (missing timer for bypass_gate_seconds) |
+| packages/chat/src/agents/components/inputs/variable-input-variations/SmartAgentVariables.tsx | 47–98 | variablesPanelStyle style switching |
+| packages/chat/src/agents/components/agent-widgets/execution-gates/AgentGateInput.tsx | 19–113 | Gate UI (missing timer for bypass_gate_seconds) |
 

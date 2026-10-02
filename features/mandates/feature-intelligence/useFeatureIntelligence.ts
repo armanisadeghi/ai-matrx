@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onMandateCacheInvalidated } from "../service";
+import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { fetchFeatureIntelligence } from "./service";
 import { targetPrefixes } from "./placement";
 import {

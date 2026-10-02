@@ -30,7 +30,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   executeBuiltinWithCodeExtraction,
   executeBuiltinWithJsonExtraction,
-} from "@/features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks";
 import {
   validateSlugsInBatch,
   generateSlugCandidates,

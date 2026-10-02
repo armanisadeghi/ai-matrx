@@ -151,9 +151,9 @@ will mislead future agents who grep for these names.
 |---|---|---|
 | `features/image-manager/IMAGE-FEATURE-INVENTORY.md` | 58 | `**\`ImageUploadField\`** ... (uses \`useFileUploadWithStorage\`). **LINK-FROM.**` |
 | `features/image-manager/IMAGE-FEATURE-INVENTORY.md` | 59 | `**\`PasteImageHandler\`** + **\`usePasteImageUpload\`** ... \`usePasteImageUpload.ts\`...` |
-| `features/cx-conversation/DEPENDENCIES.md` | 99 | `\| \`@/components/ui/file-upload/useFileUploadWithStorage\` \| ConversationInput \| **Keep**...` |
-| `features/conversation/DEPENDENCIES.md` | 114 | `\| \`useFileUploadWithStorage\` \| ConversationInput \| Eager \|` |
-| `features/conversation/CONVERSATION_SYSTEM.md` | 207 | `\| \`useFileUploadWithStorage\` \| \`components/ui/file-upload/useFileUploadWithStorage.ts\`...` |
+| `packages/chat/src/cx-conversation/DEPENDENCIES.md` | 99 | `\| \`@/components/ui/file-upload/useFileUploadWithStorage\` \| ConversationInput \| **Keep**...` |
+| `packages/chat/src/conversation/DEPENDENCIES.md` | 114 | `\| \`useFileUploadWithStorage\` \| ConversationInput \| Eager \|` |
+| `packages/chat/src/conversation/CONVERSATION_SYSTEM.md` | 207 | `\| \`useFileUploadWithStorage\` \| \`components/ui/file-upload/useFileUploadWithStorage.ts\`...` |
 | `features/files/FEATURE.md` | 336 | `\`components/ui/file-upload/useFileUploadWithStorage.ts\` was rewritten in place...` (historical Change-Log entry — fine as history, but the file no longer exists; reword as "was deleted in <date>") |
 | `features/files/handler/types.ts` | 168 | `/** Legacy-compat shape from \`components/ui/file-upload/useFileUploadWithStorage\`. */` |
 | `features/files/handler/FEATURE.md` | 139 | `\| \`components/ui/file-upload/useFileUploadWithStorage.ts\` \| \`useFileUpload\` from this feature \| pending \|` (now "done") |
@@ -296,7 +296,7 @@ to delete the block entirely.
   `app/(authenticated)/(admin-auth)/administration/ui/official-components/to-be-added/toggle-menu-demo/page.tsx`
   — unrelated demo.
 - `extractFileId` defined privately inside
-  `features/agents/components/inputs/resources/SmartAgentResourceChips.tsx`
+  `packages/chat/src/agents/components/inputs/resources/SmartAgentResourceChips.tsx`
   (lines 201, 223) — separate local helper, not a reference to the
   deleted hook export.
 - `lib/redux/constants.ts` lines 2–13 — a constant list that still includes

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AgentAppsGrid } from "@/features/agent-apps/components/layouts/AgentAppsGrid";
 import type { AgentAppSummary } from "@/features/agent-apps/types";
-import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
+import { useCreatorOwnershipSync } from "@ai-matrx/chat/agents/hooks/useCreatorOwnershipSync";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { humanAgentApp } from "@/features/agent-apps/format";
 

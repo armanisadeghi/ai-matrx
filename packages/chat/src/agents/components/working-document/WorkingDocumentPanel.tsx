@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from "react";
 import { FileText, Link2, Loader2, Lock, Maximize2, X } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@host/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -20,32 +20,32 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { NotePickerPopover } from "@/features/notes/components/NotePickerPopover";
-import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
+} from "@host/components/ui/alert-dialog";
+import { Button } from "@host/components/ui/button";
+import { cn } from "@host/lib/utils";
+import { NotePickerPopover } from "@host/features/notes/components/NotePickerPopover";
+import { useWorkingDocument } from "../../hooks/useWorkingDocument";
 import { DocumentLinkPicker } from "./DocumentLinkPicker";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   scratchDocIdFromScope,
   type WorkingDocumentKind,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+} from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   selectActiveScratchpadId,
   selectAttachedScratchpadIds,
   selectWorkingDocEnabled,
   selectWorkingDocMaterialized,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { ShareButton } from "@/features/sharing/components/ShareButton";
+} from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { ShareButton } from "@host/features/sharing/components/ShareButton";
 import {
   attachScratchpadToConversationThunk,
   detachScratchpadFromConversationThunk,
   setScratchpadGateThunk,
-} from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
-import { RichDocumentActionProvider } from "@/features/rich-document/RichDocumentActionProvider";
-import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
-import type { ContentSource } from "@/features/rich-document/types";
+} from "../../redux/execution-system/instance-working-document/scratchpad.thunks";
+import { RichDocumentActionProvider } from "@host/features/rich-document/RichDocumentActionProvider";
+import { RichDocumentActionSurface } from "@host/features/rich-document/RichDocumentActionSurface";
+import type { ContentSource } from "@host/features/rich-document/types";
 import { WorkingDocumentEditor } from "./WorkingDocumentEditor";
 import {
   sourceFeatureForKind,
@@ -54,7 +54,7 @@ import {
 import { WorkingDocumentViewControls } from "./WorkingDocumentViewControls";
 import { WorkingDocumentVersionHistory } from "./WorkingDocumentVersionHistory";
 import { DiffViewer } from "@ai-matrx/diff/react";
-import { useLiveWorkingDocPatch } from "@/features/agents/redux/execution-system/instance-working-document/useLiveWorkingDocPatch";
+import { useLiveWorkingDocPatch } from "../../redux/execution-system/instance-working-document/useLiveWorkingDocPatch";
 import { WorkingDocumentAgentDiff } from "./WorkingDocumentAgentDiff";
 import { WorkingDocumentLatestVersionDiff } from "./WorkingDocumentLatestVersionDiff";
 import {
@@ -64,7 +64,7 @@ import {
   setWorkingDocSeenPatch,
   useWorkingDocViewState,
 } from "./workingDocumentViewStore";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /**
  * Stable RichDocument action-surface id for a conversation's document. Shared

@@ -20,7 +20,7 @@
 
 const mockCallApi = jest.fn();
 
-jest.mock("@/lib/api/call-api", () => ({
+jest.mock("@host/lib/api/call-api", () => ({
   callApi: (config: unknown) => {
     mockCallApi(config);
     return async () => mockNextResponse();
@@ -35,7 +35,7 @@ import {
   fetchConversationPendingCallsStrict,
 } from "../fetch-pending-calls";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type { ThunkAction } from "redux-thunk";
 
 const CONVERSATION_A = "11111111-1111-4111-8111-111111111111";

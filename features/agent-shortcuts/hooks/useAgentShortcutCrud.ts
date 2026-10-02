@@ -11,18 +11,18 @@ import {
   promoteShortcutToGlobal,
   listNonGlobalShortcutsForAdmin,
   type AdminNonGlobalShortcutRow,
-} from "@/features/agents/redux/agent-shortcuts/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import {
   createShortcutFromAgentSurface,
   type CreateShortcutFromAgentSurfaceArgs,
-} from "@/features/agents/redux/agent-shortcuts/thunks/createShortcutFromAgentSurface.thunk";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks/createShortcutFromAgentSurface.thunk";
 import {
   createCategory,
   updateCategory,
   deleteCategory,
   duplicateCategory,
   type DuplicateCategoryInput,
-} from "@/features/agents/redux/agent-shortcut-categories/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/thunks";
 import type { AgentScope } from "../constants";
 import type {
   AgentShortcut,

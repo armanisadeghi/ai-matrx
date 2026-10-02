@@ -29,32 +29,32 @@ import {
   sanitizeVariableName,
   shouldShowSanitizationPreview,
   variableValueToDisplay,
-} from "@/features/agents/utils/variable-utils";
+} from "@ai-matrx/chat/agents/utils/variable-utils";
 import type {
   VariableCustomComponent,
   VariableComponentType,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
 import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/slice";
+import { selectAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import {
   buildCustomComponent,
   extractEffectiveValues,
-} from "@/features/agents/utils/variable-customcomponent";
-import type { VariableBinding } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/utils/variable-customcomponent";
+import type { VariableBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   contextItemBindingOf,
   isCustomDataBinding,
-} from "@/features/agents/utils/variable-binding";
+} from "@ai-matrx/chat/agents/utils/variable-binding";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
   AGENT_BUILDER_CONTEXT_MENU_PROPS,
   buildAgentBuilderContextData,
-} from "@/features/agents/agent-context/buildAgentBuilderContextData";
-import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
+} from "@ai-matrx/chat/agents/agent-context/buildAgentBuilderContextData";
+import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
 import { createList } from "@/features/user-lists/service";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { CustomComponentConfigurator } from "./CustomComponentConfigurator";
@@ -62,7 +62,7 @@ import { ContextItemBindingEditor } from "./ContextItemBindingEditor";
 import {
   isAutoAssignValue,
   supportsRandomAssignment,
-} from "@/features/agents/utils/auto-assignment";
+} from "@ai-matrx/chat/agents/utils/auto-assignment";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 

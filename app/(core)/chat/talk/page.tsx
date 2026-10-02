@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 
 /**
  * `/chat/talk` — start talking with whichever agent owns new chats for THIS

@@ -17,7 +17,7 @@ import path from "node:path";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -25,29 +25,29 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () =>
-    jest.requireActual("@/components/markdown-core/MarkdownCoreImpl").default,
+    jest.requireActual("@host/components/markdown-core/MarkdownCoreImpl").default,
 }));
-jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
+jest.mock("@host/features/content-ir/studio/components/KindInstanceRender", () => ({
   __esModule: true,
   default: ({ kind }: { kind: string }) => <div data-kind-route={kind} />,
 }));
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: () => <div data-markdown-stream="1" />,
 }));
-jest.mock("@/components/agent-copy/CopyButtons", () => ({
+jest.mock("@host/components/agent-copy/CopyButtons", () => ({
   CopyButtons: () => null,
 }));
 jest.mock("@ai-matrx/media/react", () => ({ InlineMediaRef: () => null }));
 const mockCaptureError = jest.fn();
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: (input: unknown) => mockCaptureError(input),
 }));
 
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { OutputView } from "../../components/ToolTabBodies";
-import { resetKindAtRawRendererReports } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
+import { resetKindAtRawRendererReports } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
 const SCOPE_RESULT = {
   __kind: "scope_system_result",

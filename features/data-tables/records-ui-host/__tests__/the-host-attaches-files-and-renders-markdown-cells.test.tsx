@@ -23,7 +23,7 @@ jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: functio
 jest.mock("@/components/official/icons/IconInputWithValidation.dynamic", () => ({ IconInputCompact: () => null }));
 jest.mock("@/lib/content-cleanup/clean-cells", () => ({ cleanValue: (t: string) => ({ after: t }) }));
 jest.mock("@/lib/content-cleanup/value-operations", () => ({ DEFAULT_ENABLED_VALUE_OPERATIONS: [] }));
-jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({ useAgentLauncher: () => ({ launchMandate: jest.fn() }) }));
+jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({ useAgentLauncher: () => ({ launchMandate: jest.fn() }) }));
 jest.mock("@/features/sharing/components/RecordStoreShareSurface", () => ({ recordStoreShare: () => null }));
 jest.mock("@/features/unified-data/record-chat/RecordScopedChat", () => ({ RecordScopedChat: () => null }));
 jest.mock("@/features/organizations/service", () => ({ getOrganizationMembers: jest.fn() }));

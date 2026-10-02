@@ -29,12 +29,12 @@ import messages from "../../messages/messages.slice";
 import conversations from "../../conversations/conversations.slice";
 import instanceVariableValues from "../../instance-variable-values/instance-variable-values.slice";
 import { selectOwnVariableValues } from "../../instance-variable-values/instance-variable-values.selectors";
-import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
+import { buildVariableDisplayLines } from "../../../../utils/variable-display-lines";
 import { loadConversation } from "../load-conversation.thunk";
 
 const mockFetchBundle = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     auth: { getUser: async () => ({ data: { user: null } }) },
   },
@@ -48,7 +48,7 @@ jest.mock("../conversation-bundle", () => {
   };
 });
 
-jest.mock("@/features/code/redux/codeEditHistoryHydration", () => ({
+jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
   loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
 }));
 
@@ -211,19 +211,19 @@ describe("authorship is a claim about named values, never a blanket", () => {
  * fails here rather than putting the host's words back in her mouth.
  */
 describe("no replay path claims authorship it was not given", () => {
-  const REPO_ROOT = join(__dirname, "..", "..", "..", "..", "..", "..");
+  const REPO_ROOT = join(__dirname, "../../../../../../../..", ".", ".", ".", ".", ".");
   const read = (relative: string) =>
     readFileSync(join(REPO_ROOT, relative), "utf8");
 
   const REPLAY_SITES = [
     // The live first turn: stamps the exact payload being sent.
-    "features/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
+    "packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
     // The same stamp on the manual request builder.
-    "features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
+    "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
     // The reopen: stamps `chat.conversation.variables` back in.
-    "features/agents/redux/execution-system/thunks/load-conversation.thunk.ts",
+    "packages/chat/src/agents/redux/execution-system/thunks/load-conversation.thunk.ts",
     // The carries: into a new conversation, and back to the first submit.
-    "features/agents/redux/execution-system/thunks/create-instance.thunk.ts",
+    "packages/chat/src/agents/redux/execution-system/thunks/create-instance.thunk.ts",
   ];
 
   it.each(REPLAY_SITES)("%s replays through restoreVariableValues", (file) => {
@@ -242,14 +242,14 @@ describe("no replay path claims authorship it was not given", () => {
 
   it("the reopen reads the authorship column, not a guess", () => {
     const source = read(
-      "features/agents/redux/execution-system/thunks/load-conversation.thunk.ts",
+      "packages/chat/src/agents/redux/execution-system/thunks/load-conversation.thunk.ts",
     );
     expect(source).toContain("parsePersistedHostValueNames(conv)");
   });
 
   it("the first turn writes the authorship it just recorded", () => {
     const source = read(
-      "features/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
+      "packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
     );
     expect(source).toContain("persistVariableAuthorship({ conversationId })");
   });

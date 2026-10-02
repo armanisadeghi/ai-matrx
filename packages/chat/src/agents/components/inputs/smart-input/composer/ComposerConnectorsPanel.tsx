@@ -17,27 +17,27 @@
  * own connectors ride every run of that agent — their switch is on and fixed.
  */
 
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { indexRunMcpAttachments, readRunMcpAttachments, mcpChipPresentation } from "@/features/connectors/run-attachments";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { AttachedResourcesSection } from "@/features/connectors/AttachedResourcesSection";
+import { selectPrimaryRequest } from "../../../../redux/execution-system/active-requests/active-requests.selectors";
+import { indexRunMcpAttachments, readRunMcpAttachments, mcpChipPresentation } from "@host/features/connectors/run-attachments";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { AttachedResourcesSection } from "@host/features/connectors/AttachedResourcesSection";
 import { useEffect, useState } from "react";
 import { Loader2, Paperclip, Search } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useMcpCatalog, type McpServerState } from "@/features/agents/hooks/useMcpTools";
-import { selectAgentReadyForCustomExecution, selectAgentMcpServers } from "@/features/agents/redux/agent-definition/selectors";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { useConnectMcpServer } from "@/features/connectors/useConnectMcpServer";
-import { attachActionLabel } from "@/features/connectors/attachable-resources";
-import { useAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
-import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
-import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
-import { fetchCatalog } from "@/features/agents/redux/mcp/mcp.slice";
+import { Switch } from "@host/components/ui/switch";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useMcpCatalog, type McpServerState } from "../../../../hooks/useMcpTools";
+import { selectAgentReadyForCustomExecution, selectAgentMcpServers } from "../../../../redux/agent-definition/selectors";
+import { selectAgentIdFromInstance } from "../../../../redux/execution-system/conversations/conversations.selectors";
+import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { useConnectMcpServer } from "@host/features/connectors/useConnectMcpServer";
+import { attachActionLabel } from "@host/features/connectors/attachable-resources";
+import { useAttachResourcePicker } from "@host/features/connectors/useAttachResourcePicker";
+import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";
+import { useOpenLiveIntegrationsWindow } from "@host/features/overlays/openers/liveIntegrationsWindow";
+import { fetchAgentExecutionFull } from "../../../../redux/agent-definition/thunks";
+import { fetchCatalog } from "../../../../redux/mcp/mcp.slice";
 import { ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
 
 export function ComposerConnectorsPanel({

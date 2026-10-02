@@ -20,7 +20,7 @@ import {
   DEFAULT_SURFACE_KEY,
   type ContextRowSource,
 } from "@ai-matrx/agents/context";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 /** The context key the resumed request carries the note under. */
 export const SURFACE_WRITES_NOTE_KEY = "page_values_read_after_your_writes";

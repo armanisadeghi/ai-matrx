@@ -36,7 +36,7 @@
 import type {
   ContextPolicy,
   ContextPolicyPersist,
-} from "@/features/agents/types/agent-api-types";
+} from "../types/agent-api-types";
 
 /** What the agent is allowed to do with a policy. The UI never says "mutable". */
 export type AgentEditAccess = "read_only" | "editable";

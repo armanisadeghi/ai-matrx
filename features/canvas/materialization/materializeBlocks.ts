@@ -41,7 +41,7 @@ import { durableRecordId } from "@/lib/ids/durable-record-id";
 import type {
   CxContentBlock,
   CxTextContent,
-} from "@/features/public-chat/types/cx-tables";
+} from "@ai-matrx/chat/public-chat/types/cx-tables";
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { getAdapter } from "@/features/canvas/artifact-types/persistence/artifact-adapters";

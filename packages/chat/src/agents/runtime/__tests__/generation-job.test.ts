@@ -5,16 +5,16 @@
  * run path never labelled anything, so the job card never appeared.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const fetchModelById = jest.fn((id: string) => ({ type: "fetchModelById", id }));
-jest.mock("@/features/ai-models/redux/modelRegistrySlice", () => ({
+jest.mock("@host/features/ai-models/redux/modelRegistrySlice", () => ({
   fetchModelById: (id: string) => fetchModelById(id),
   selectModelById: (state: { modelRegistry: { entities: Record<string, unknown> } }, id: string) =>
     state.modelRegistry.entities[id],
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors",
+  "../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors",
   () => ({ selectCurrentSettings: () => () => undefined }),
 );
 
@@ -22,7 +22,7 @@ import {
   labelGenerationJob,
   resolveGenerationJob,
   selectRunModelId,
-} from "@/features/agents/runtime/generation-job";
+} from "../generation-job";
 
 const VEO = {
   id: "8eb0413e-10c2-4f6d-99f1-4aea3a8434a4",

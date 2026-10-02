@@ -1,7 +1,7 @@
 "use client";
 
-import { AgentModelConfiguration } from "@/features/agents/components/builder/AgentModelConfiguration";
-import { AgentSettingsCore } from "@/features/agents/components/settings-management/AgentSettingsCore";
+import { AgentModelConfiguration } from "@host/features/agents/components/builder/AgentModelConfiguration";
+import { AgentSettingsCore } from "@host/features/agents/components/settings-management/AgentSettingsCore";
 
 export interface AgentModelPanelProps {
   agentId: string;

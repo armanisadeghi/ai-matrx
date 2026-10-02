@@ -22,12 +22,12 @@ export type {
   VariableDefinition,
   VariableCustomComponent,
   VariableComponentType,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 // Legacy alias — existing cx-chat code uses PromptVariable everywhere.
 // VariableDefinition is a superset: defaultValue is `unknown` vs `string`.
 // All existing string-defaultValue usage is safe.
-export type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
+export type { VariableDefinition as PromptVariable } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 // ── Model / LLM settings ────────────────────────────────────────────────────
 
@@ -44,7 +44,7 @@ export type { LLMParams as PromptSettings } from "@/lib/api/types";
 
 // Canonical resource shape — now lives in features/agents/resources/types.ts.
 // Re-exporting here keeps the import path consistent for existing consumers.
-export type { Resource } from "@/features/agents/resources/types";
+export type { Resource } from "@ai-matrx/chat/agents/resources/types";
 
 // ── Agent identity ──────────────────────────────────────────────────────────
 
@@ -54,4 +54,4 @@ export type {
   AgentDefinition,
   AgentDefinitionRecord,
   AgentType,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";

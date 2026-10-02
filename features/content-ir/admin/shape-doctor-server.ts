@@ -87,7 +87,7 @@ const DB_KIND_COMPONENT_KEY = "db_kind_component";
 
 const SOURCE_FILES = {
   accumulator:
-    "features/agents/redux/execution-system/utils/stream-block-accumulator.ts",
+    "packages/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
   splitter:
     "components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts",
   systemKinds: "features/content-ir/registry/system-kinds.ts",

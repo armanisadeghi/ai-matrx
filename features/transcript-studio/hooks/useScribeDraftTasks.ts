@@ -21,7 +21,7 @@
 
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { addClientTool } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import { addClientTool } from "@ai-matrx/chat/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 
 /** Registered UI-first tools the draft-task flow needs (server-known names). */
 const DRAFT_TASK_TOOLS = ["update_plan", "tasks"] as const;

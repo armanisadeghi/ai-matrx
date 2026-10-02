@@ -11,7 +11,7 @@
  * Omission means "unspecified" on the backend and must never represent a lock.
  */
 
-import type { ResourceBlockType } from "@/features/agents/types/instance.types";
+import type { ResourceBlockType } from "../../../types/instance.types";
 
 const EDITABLE_CAPABLE_BLOCK_TYPES: ReadonlySet<ResourceBlockType> = new Set([
   "input_notes",

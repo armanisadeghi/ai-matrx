@@ -14,15 +14,15 @@ import { hasRetainedTransportConsumer, processStream } from "../process-stream";
 import {
   compareMatrixRequestToPortableProjection,
   projectMatrixRequestForPortableParity,
-} from "@/features/agents/runtime/portable-request-parity";
+} from "../../../../runtime/portable-request-parity";
 import {
   PORTABLE_PARITY_CONVERSATION_ID,
   PORTABLE_PARITY_REPLAY_EVENTS,
   PORTABLE_PARITY_REQUEST_ID,
   PORTABLE_PARITY_SERVER_TOOL_EVENTS,
   PORTABLE_PARITY_SETTLED_EVENTS,
-} from "@/features/agents/runtime/portable-request-parity.fixtures";
-import type { RootState } from "@/lib/redux/store";
+} from "../../../../runtime/portable-request-parity.fixtures";
+import type { RootState } from "@host/lib/redux/store";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;

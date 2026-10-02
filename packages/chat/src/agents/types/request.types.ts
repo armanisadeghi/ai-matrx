@@ -35,12 +35,12 @@ import type {
   ResourceChangedPayload,
   StructuredOutputPayload,
   ProviderRetryPayload,
-} from "@/types/python-generated/stream-events";
-import type { components } from "@/types/python-generated/api-types";
-import type { BackendChannel } from "@/features/agents/redux/execution-system/thunks/resolve-base-url";
-import type { ResolvedSandboxRef } from "@/lib/sandbox/active-binding";
-import type { LiveCitationEntry } from "@/features/agents/redux/execution-system/messages/message-citations";
-import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
+} from "@host/types/python-generated/stream-events";
+import type { components } from "@host/types/python-generated/api-types";
+import type { BackendChannel } from "../redux/execution-system/thunks/resolve-base-url";
+import type { ResolvedSandboxRef } from "@host/lib/sandbox/active-binding";
+import type { LiveCitationEntry } from "../redux/execution-system/messages/message-citations";
+import type { VariableResourceContextConfig } from "./agent-definition.types";
 
 // =============================================================================
 // Client-Side Metrics

@@ -45,7 +45,7 @@ import {
   type FeedbackCategory,
   type FeedbackAssignableAdmin,
 } from "@/types/feedback.types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   FEEDBACK_SURFACE_NAME,
   createFeedbackScope,
@@ -83,7 +83,7 @@ import { useScreenCapture } from "@/hooks/useScreenCapture";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { useOpenImageAnnotationWindow } from "@/features/overlays/openers/imageAnnotationWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";

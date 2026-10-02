@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createSandboxesScope } from "@/features/surfaces/manifests/sandboxes.manifest";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { toast } from "@/lib/toast";

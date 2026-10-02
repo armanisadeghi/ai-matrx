@@ -24,11 +24,11 @@
  */
 
 import { useEffect, useRef } from "react";
-import { callbackManager } from "@/utils/callbackManager";
+import { callbackManager } from "@host/utils/callbackManager";
 import {
   WIDGET_TOOL_NAME_TO_HANDLE_METHOD,
   type WidgetHandle,
-} from "@/features/agents/types/widget-handle.types";
+} from "../types/widget-handle.types";
 
 const LIFECYCLE_KEYS = ["onComplete", "onCancel", "onError"] as const;
 

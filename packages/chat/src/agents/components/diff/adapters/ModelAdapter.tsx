@@ -1,13 +1,13 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { Webhook } from "lucide-react";
 import type {
   FieldAdapter,
   FieldDiffProps,
   EnrichmentContext,
 } from "@ai-matrx/diff/react";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@host/components/official/entity-ref/AiIdentityRef";
 
 function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
   const oldId = typeof node.oldValue === "string" ? node.oldValue : null;

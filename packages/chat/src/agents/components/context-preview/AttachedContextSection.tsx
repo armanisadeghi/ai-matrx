@@ -34,31 +34,31 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceContextEntries } from "../../redux/execution-system/instance-context/instance-context.selectors";
+import { removeContextEntry } from "../../redux/execution-system/instance-context/instance-context.slice";
 import {
   selectInstanceResources,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
-import { removeResource } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { selectVariablesForRequest } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectInstanceClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.selectors";
+} from "../../redux/execution-system/instance-resources/instance-resources.selectors";
+import { removeResource } from "../../redux/execution-system/instance-resources/instance-resources.slice";
+import { selectVariablesForRequest } from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectInstanceClientTools } from "../../redux/execution-system/instance-client-tools/instance-client-tools.selectors";
 import {
   selectIsMemoryEnabledForConversation,
   selectMemoryModelForConversation,
   selectMemoryScopeForConversation,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
-import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
-import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
-import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
-import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
-import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
+} from "../../redux/execution-system/observational-memory/observational-memory.selectors";
+import { setConversationDocumentEnabledThunk } from "../../redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { setScratchpadGateThunk } from "../../redux/execution-system/instance-working-document/scratchpad.thunks";
+import { useActiveContextLayerItems } from "../context-items/useActiveContextLayerItems";
+import { docKindForContextKey } from "../../utils/workingDocumentContext";
+import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
 import type {
   InstanceContextEntry,
   ManagedResource,
-} from "@/features/agents/types/instance.types";
-import { cn } from "@/lib/utils";
-import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
+} from "../../types/instance.types";
+import { cn } from "@host/lib/utils";
+import { contextEntryLabel } from "../context-policies-display/contextEntryLabel";
 
 /** Hover copy that stays visible on touch devices. */
 const COPY_REVEAL =

@@ -39,14 +39,14 @@ import {
   Info,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { ChangeDiff } from "@/components/ui/change-diff";
-import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
-import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { Button } from "@host/components/ui/button";
+import { Checkbox } from "@host/components/ui/checkbox";
+import { Textarea } from "@host/components/ui/textarea";
+import { ChangeDiff } from "@host/components/ui/change-diff";
+import KindInstanceRender from "@host/features/content-ir/studio/components/KindInstanceRender";
+import { StructuredValueView } from "@host/components/official/structured-value/StructuredValueView";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import type { PendingAsk } from "../redux/pending-asks.slice";
 import { resolvePendingAsk } from "../redux/pending-asks.slice";
 import { resolveAskByCallId } from "../redux/ask-resolver-registry";

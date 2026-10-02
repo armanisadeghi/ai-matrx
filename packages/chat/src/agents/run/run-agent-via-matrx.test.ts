@@ -10,16 +10,16 @@
  * injection into the request body.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 jest.mock("@ai-matrx/agents/matrx", () => ({
   startAgentRun: jest.fn(),
 }));
-jest.mock("@/lib/api/matrx-transport", () => ({
+jest.mock("@host/lib/api/matrx-transport", () => ({
   createMatrxTransport: jest.fn(() => ({ fetch: jest.fn() })),
 }));
-jest.mock("@/lib/api/call-api", () => {
-  const actual = jest.requireActual("@/lib/api/call-api");
+jest.mock("@host/lib/api/call-api", () => {
+  const actual = jest.requireActual("@host/lib/api/call-api");
   return {
     ...actual,
     waitForAuthReady: jest.fn(async () => true),

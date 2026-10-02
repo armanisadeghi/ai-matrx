@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { ScrollArea } from "@host/components/ui/scroll-area";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
-import { selectInstanceAgentId } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { fetchAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import { makeSelectAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { ItemRow } from "@/components/official/item/ItemRow";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import type { AppDispatch } from "@/lib/redux/store";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { selectInstanceAgentId } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { fetchAgentConversations } from "../../redux/conversation-list/conversation-list.thunks";
+import { makeSelectAgentConversations } from "../../redux/conversation-list/conversation-list.selectors";
+import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
+import { ItemRow } from "@host/components/official/item/ItemRow";
+import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
+import { renameConversation } from "../../redux/conversation-list/conversation-row-actions.thunks";
+import type { AppDispatch } from "@host/lib/redux/store";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /** Stable idle result — a fresh literal per call re-rendered the sidebar on every dispatch. */
 const IDLE_CONVERSATIONS = {

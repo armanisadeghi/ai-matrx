@@ -8,7 +8,7 @@
 // is an enqueue the server acknowledges after the turn already ended locally.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/rootReducer";
+import type { RootState } from "@host/lib/redux/rootReducer";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { confirmInboxItem } from "./inbox.slice";
 import { isStrandablePersonLine } from "./inbox.selectors";

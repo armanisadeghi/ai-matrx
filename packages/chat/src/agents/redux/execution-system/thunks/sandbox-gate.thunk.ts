@@ -42,7 +42,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   getConversationSandboxBinding,
   getSurfaceSeedRef,
@@ -50,11 +50,11 @@ import {
   resolveSandboxRefDetails,
   clearSandboxBindingCache,
   type ResolvedSandboxRef,
-} from "@/lib/sandbox/active-binding";
-import { setConversationSandbox } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { selectConversationSandboxPersisted } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
-import { openSandboxGate } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
+} from "@host/lib/sandbox/active-binding";
+import { setConversationSandbox } from "../../conversation-list/conversation-row-actions.thunks";
+import { selectConversationSandboxPersisted } from "../conversations/conversations.selectors";
+import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
+import { openSandboxGate } from "@host/components/dialogs/sandbox-gate/SandboxGateHost";
 
 const LOG = "[sandbox-gate]";
 

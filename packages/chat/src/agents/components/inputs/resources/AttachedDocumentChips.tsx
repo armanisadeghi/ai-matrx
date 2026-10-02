@@ -19,30 +19,30 @@
 import { useEffect } from "react";
 import { AlertTriangle, FileText, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
+import { toast } from "@host/lib/toast";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
 import {
   useContainerLinks,
   type ContainerLink,
-} from "@/features/scopes/hooks/useContainerLinks";
-import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
-import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
-import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
+} from "@host/features/scopes/hooks/useContainerLinks";
+import { ContextItemDrawer } from "../../context-items/ContextItemDrawer";
+import { useContextItemDrawer } from "../../context-items/useContextItemDrawer";
+import type { ContextDrawerItem } from "../../context-items/types";
 import {
   AttachedDocumentChip,
   type AttachedDocumentSettings,
-} from "@/features/agents/components/inputs/resources/AttachedDocumentChip";
+} from "./AttachedDocumentChip";
 import {
   cleanDocumentLabel,
   parseAttachedDocumentMetadata,
   useAttachedDocumentDisplayName,
   type AttachedDocumentMetadata,
-} from "@/features/agents/components/inputs/resources/attached-documents";
-import type { Json } from "@/types/database.types";
-import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
-import { removeResource } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+} from "./attached-documents";
+import type { Json } from "@host/types/database.types";
+import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
+import { removeResource } from "../../../redux/execution-system/instance-resources/instance-resources.slice";
 
 function metaAsJson(
   existing: Json,

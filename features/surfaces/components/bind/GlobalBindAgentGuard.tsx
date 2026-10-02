@@ -26,8 +26,8 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { fetchLinkedCounterpart } from "@/features/agents/redux/agent-definition/thunks";
-import type { LinkedAgentRef } from "@/features/agents/types/agent-definition.types";
+import { fetchLinkedCounterpart } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import type { LinkedAgentRef } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
 import { createClient } from "@/utils/supabase/client";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";

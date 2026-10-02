@@ -12,7 +12,7 @@ import {
 import {
   resetFastPathVerdictsForTests,
   verifyFastPathAgainstMandate,
-} from "../fast-path-guard";
+} from "@ai-matrx/chat/mandates/fast-path-guard";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const KEY = MANDATE_KEYS.chat__cx_default;

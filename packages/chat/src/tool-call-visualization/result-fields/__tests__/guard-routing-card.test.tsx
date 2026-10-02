@@ -11,12 +11,12 @@
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   // correctedIds (a Set), suspended ids (not an array), display pref (no match).
   useAppSelector: () => new Set<string>(),

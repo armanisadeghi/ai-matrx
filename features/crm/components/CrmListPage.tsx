@@ -117,7 +117,7 @@ import { partyMenuTarget, useCrmRowMenu } from "./crm-row-actions";
 import { AddToOutreachListDialog } from "./outreach-lists/AddToOutreachListDialog";
 import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
 import { CRM_CREATE_NAME_PARAM, CRM_CREATE_PARAM } from "../routes";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
 import { buildCrmListContextData } from "../agent-context/buildCrmListContextData";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";

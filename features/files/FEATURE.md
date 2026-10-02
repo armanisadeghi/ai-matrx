@@ -46,7 +46,7 @@ in the same change.
    (`useFileUpload()` / `fileHandler.upload(...)`); custom retry/queue layers around it are wrong.
 5. **`fileId` is identity.** Never cache by `file_path` — paths move with renames.
 6. **No `Set` in Redux state** — use `FieldFlags<K>` from
-   `features/agents/redux/shared/field-flags.ts` (imported, never duplicated). No local `useState`
+   `packages/chat/src/agents/redux/shared/field-flags.ts` (imported, never duplicated). No local `useState`
    for file data; no second Redux slice for files — extend `cloudFiles`.
 7. **Mutations are optimistic + rollback**, never spinner-then-refetch, and every REST write ships a
    `requestId` registered in `redux/request-ledger.ts` — that is what lets realtime middleware ignore

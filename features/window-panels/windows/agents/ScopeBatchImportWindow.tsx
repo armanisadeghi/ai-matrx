@@ -12,10 +12,10 @@
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ScopeBatchImportBody } from "@/features/agents/components/scope-batch-import/ScopeBatchImportBody";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 
 interface ScopeBatchImportWindowProps {
   isOpen: boolean;

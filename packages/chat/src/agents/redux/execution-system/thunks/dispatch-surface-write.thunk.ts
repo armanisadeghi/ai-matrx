@@ -45,11 +45,11 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import { extractErrorMessage } from "@/utils/errors";
-import { submitToolResult } from "@/features/agents/api/submit-tool-results";
-import { applySurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
-import { surfaceWriteToolOutput } from "@/features/surfaces/runtime/surface-write-tool-output";
+import type { RootState } from "@host/lib/redux/store";
+import { extractErrorMessage } from "@host/utils/errors";
+import { submitToolResult } from "../../../api/submit-tool-results";
+import { applySurfaceWrite } from "../../../../surfaces/runtime/surface-writeback";
+import { surfaceWriteToolOutput } from "../../../../surfaces/runtime/surface-write-tool-output";
 import { createSurfaceToolCall } from "./surface-tool-call";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
 import { setInstanceStatus } from "../conversations/conversations.slice";

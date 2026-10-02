@@ -30,17 +30,17 @@
 import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { ShimmerText } from "@/components/loaders/ShimmerText";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { ShimmerText } from "@host/components/loaders/ShimmerText";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 import { getToolDisplayName } from "../registry/registry";
 import { DIFF_START_OPEN_KNOB, readSurfaceWrite } from "../surface-write/readSurfaceWrite";
 import { holdsADecision } from "./holdsADecision";
-import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
-import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectToolDisplayPreference } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   getToolCardUserChoice,
   setToolCardUserChoice,

@@ -17,14 +17,14 @@
  * bundle so the scroll sentinel knows whether older history exists.
  */
 
-import { ensureAgentIdentity } from "@/features/agents/redux/agent-definition/thunks";
+import { ensureAgentIdentity } from "../../agent-definition/thunks";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { supabase } from "@host/utils/supabase/client";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   sourceAppFromStorage,
   sourceFeatureFromStorage,
-} from "@/features/agents/types/instance.types";
+} from "../../../types/instance.types";
 
 import {
   hydrateConversation,
@@ -34,13 +34,13 @@ import {
   hydrateMessages,
   setMessagesHydrationFailure,
 } from "../messages/messages.slice";
-import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
+import { reconcileMessagesArtifacts } from "@host/features/canvas/materialization/reconcileArtifacts";
 import {
   parsePersistedEngineeredInputs,
   parsePersistedSurfaceOwnsOutput,
 } from "../conversations/surface-owns-output.persistence";
 import { selectConversationSurfaceOwnsOutput } from "../conversations/conversations.selectors";
-import { conversationSandboxBindingFromRow } from "@/lib/sandbox/conversation-binding-row";
+import { conversationSandboxBindingFromRow } from "@host/lib/sandbox/conversation-binding-row";
 import { hydrateObservability } from "../observability/observability.slice";
 import { hydrateRequestsFromObservability } from "../active-requests/active-requests.slice";
 import { hydrateInbox } from "../inbox/inbox.thunks";
@@ -56,7 +56,7 @@ import {
 } from "../instance-model-overrides/instance-model-overrides.slice";
 import { initInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
 import { fetchInputCapabilitiesSnapshot } from "../instance-input-capabilities/input-capabilities-snapshot";
-import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
 import { parsePersistedInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
 import {
   initInstanceUIState,
@@ -78,7 +78,7 @@ import {
   setMemoryMetadata,
   type ObservationalMemoryMetadata,
 } from "../observational-memory/observational-memory.slice";
-import { loadCodeEditHistoryThunk } from "@/features/code/redux/codeEditHistoryHydration";
+import { loadCodeEditHistoryThunk } from "@host/features/code/redux/codeEditHistoryHydration";
 import {
   CONVERSATION_NOT_MATERIALIZED,
   fetchConversationBundle,
@@ -93,8 +93,8 @@ import {
   type CxRequestRow,
 } from "./conversation-bundle";
 
-import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { canActOn } from "@/features/access-gate/service/canActOn";
+import { getClaimsUser } from "@host/utils/supabase/claimsUser";
+import { canActOn } from "@host/features/access-gate/service/canActOn";
 // =============================================================================
 // Thunk
 // =============================================================================
@@ -589,7 +589,7 @@ export const loadConversation = createAsyncThunk<
         if (agentBehindApp || conv.source_feature === "agent-app") {
           // Expected — see `agentBehindApp`. The warn above is the record.
         } else {
-          const { toast } = await import("@/lib/toast");
+          const { toast } = await import("@host/lib/toast");
           toast.info("This chat's agent isn't available to you anymore", {
             description:
               "The conversation opened with the default input settings. Ask the agent's owner to share it to use its own settings.",

@@ -4,7 +4,7 @@ import type {
   AgentProjectionTool,
   AgentRequestProjection,
 } from "@ai-matrx/agents/projection/request";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
+import type { ActiveRequest } from "../types/request.types";
 
 /**
  * The package's `answer` is the raw chunk channel. Matrix additionally folds

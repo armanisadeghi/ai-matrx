@@ -1,6 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { serializeExecutionRejection } from "@/lib/diagnostics/executionRejectionMeta";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { serializeExecutionRejection } from "@host/lib/diagnostics/executionRejectionMeta";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { selectAutoClearConversation } from "../instance-ui-state/instance-ui-state.selectors";
 import {
   executeInstance,
@@ -18,9 +18,9 @@ import {
   setUserInputText,
   setPreSend,
 } from "../instance-user-input/instance-user-input.slice";
-import { resolvePendingAsksWithInput } from "@/features/agents/ui-first-tools/redux/resolve-asks-with-input.thunk";
+import { resolvePendingAsksWithInput } from "../../../ui-first-tools/redux/resolve-asks-with-input.thunk";
 import { ensureSandboxOrDecide } from "./sandbox-gate.thunk";
-import { ensureConversationScopesOrAsk } from "@/features/scopes/redux/thunks/conversationScopeGate";
+import { ensureConversationScopesOrAsk } from "@host/features/scopes/redux/thunks/conversationScopeGate";
 import {
   selectAllResourcesResolved,
 } from "../instance-resources/instance-resources.selectors";
@@ -33,15 +33,15 @@ import {
   selectInFlightRequestIds,
   settleAfterStop,
 } from "./settle-after-stop.thunk";
-import { cancelAgentRunRequest } from "@/lib/api/matrx-transport";
-import { toast } from "@/lib/toast";
+import { cancelAgentRunRequest } from "@host/lib/api/matrx-transport";
+import { toast } from "@host/lib/toast";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import {
   ensureExecutionOrganization,
   executionOrganizationForRequest,
 } from "../utils/required-organization";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
 import {
   claimSubmit,
   isDuplicateSubmittedInput,

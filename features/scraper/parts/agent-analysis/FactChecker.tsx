@@ -39,13 +39,13 @@ import { PageTemplate, Card } from "@/components/official/PageTemplate";
 import MarkdownStream from "@/components/MarkdownStream";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectFirstExtractedObject } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { selectFirstExtractedObject } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 import {
   SCRAPER_ANALYSIS_MANDATES,
 } from "@/features/scraper/constants/analysis-agents";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { AnalysisMandateGate } from "./AnalysisMandateGate";
 import {
   factCheckVariables,

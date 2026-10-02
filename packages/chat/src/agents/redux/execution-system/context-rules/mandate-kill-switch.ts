@@ -10,8 +10,8 @@
  * the hot path.
  */
 
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { resolveMandate } from "@/features/mandates/service";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { resolveMandate } from "../../../../mandates/service";
 
 export async function resolveMandateKillSwitch(
   mandateKey: AnyMandateKey | null | undefined,

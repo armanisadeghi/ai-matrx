@@ -12,7 +12,7 @@ import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShor
 import type {
   AgentShortcut,
   AgentShortcutRecord,
-} from "@/features/agents/redux/agent-shortcuts/types";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { pushAppHref } from "@/lib/deployment/navigate";

@@ -26,8 +26,8 @@ import activeRequestsReducer, {
 import { selectUnifiedSlots } from "../active-requests.selectors";
 import { StreamBlockAccumulator } from "../../utils/stream-block-accumulator";
 import { assembleMessageParts } from "../../utils/assemble-cx-content-blocks";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import type { ActiveRequest } from "../../../../types/request.types";
+import { splitContentIntoBlocksV2 } from "@host/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 type AnyState = Parameters<ReturnType<typeof selectUnifiedSlots>>[0];
 

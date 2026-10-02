@@ -14,9 +14,9 @@
 import { AgentVariablesModal } from "../../variables-management/AgentVariablesModal";
 import { AgentToolsModal } from "../../tools-management/AgentToolsModal";
 import { AgentSettingsModal } from "../AgentSettingsModal";
-import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
+import { setAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentModelId } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentModelId } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useCallback } from "react";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { Label } from "@/components/ui/label";

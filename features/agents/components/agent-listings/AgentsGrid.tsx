@@ -26,7 +26,7 @@ import {
   FileSearch,
   Loader2,
 } from "lucide-react";
-import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
+import { DesktopFilterPanel } from "@ai-matrx/chat/agents/components/shared/DesktopFilterPanel";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { buildAgentDeleteConfirm } from "@/features/agents/deletion/agentDeleteConfirm";
 import { Button } from "@/components/ui/button";
@@ -57,23 +57,23 @@ import {
 import {
   selectAgentsSliceStatus,
   selectAgentsSliceError,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   fetchAgentsList,
   deleteAgent,
   duplicateAgent,
   resolveAgentVersionId,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import type {
   AgentConsumerState,
   AgentSortOption,
   AgentSummary,
 } from "@ai-matrx/agents/catalog";
-import { parseAgentsHubCatalogFilters } from "@/features/agents/agents-hub-catalog-filter-contract";
-import type { AgentVersionLookup } from "@/features/agents/types/agent-definition.types";
+import { parseAgentsHubCatalogFilters } from "@ai-matrx/chat/agents/agents-hub-catalog-filter-contract";
+import type { AgentVersionLookup } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   AGENTS_HUB_SURFACE_NAME,
   createAgentsHubScope,

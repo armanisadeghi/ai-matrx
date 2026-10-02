@@ -35,7 +35,7 @@ import {
 import { toast } from "@/lib/toast";
 import MarkdownStream from "@/components/MarkdownStream";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
-import { extractJsonFromText } from "@/features/agents/utils/json-extraction";
+import { extractJsonFromText } from "@ai-matrx/chat/agents/utils/json-extraction";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

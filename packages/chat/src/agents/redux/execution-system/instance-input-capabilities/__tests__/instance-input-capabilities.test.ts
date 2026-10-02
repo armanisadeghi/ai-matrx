@@ -5,7 +5,7 @@ import reducer, {
   updateBaseInputCapabilities,
 } from "../instance-input-capabilities.slice";
 import { selectAttachmentCapabilities } from "../instance-input-capabilities.selectors";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { parsePersistedInputCapabilities } from "../instance-input-capabilities.persistence";
 
 describe("instance input capabilities", () => {

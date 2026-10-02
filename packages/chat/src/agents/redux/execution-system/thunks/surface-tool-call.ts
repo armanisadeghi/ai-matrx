@@ -13,11 +13,11 @@
 
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { SurfaceToolCall } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { resolveAgentName } from "@/features/surfaces/hooks/useAgentNames";
-import { requestInlineApproval } from "@/features/agents/ui-first-tools/redux/request-approval";
+import type { RootState } from "@host/lib/redux/store";
+import type { SurfaceToolCall } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { selectAgentById } from "../../agent-definition/selectors";
+import { resolveAgentName } from "../../../../surfaces/hooks/useAgentNames";
+import { requestInlineApproval } from "../../../ui-first-tools/redux/request-approval";
 import { buildSurfaceWriteApprovalChange } from "./surface-write-approval-change";
 
 type Dispatch = ThunkDispatch<RootState, unknown, UnknownAction>;

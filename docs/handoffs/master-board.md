@@ -78,7 +78,7 @@ existing one, work in it; chat with the board's agent about several items at onc
 
 ## Resources
 
-- Mechanics: `features/spatial/FEATURE.md` (Board section + change log); item contract `features/spatial/items/types.ts`; surfaces runtime `features/surfaces/runtime/SurfaceRuntimeContext.tsx` (`SurfaceActivity`, `createSurfaceCapture`, `useSurfaceDormant`); bridge `features/spatial/tools/item-surfaces.ts`, `useBoardAgentTools.ts`, `board-tools.ts`; board manifest `features/surfaces/manifests/spatial-board.manifest.ts`.
-- Tests: `pnpm -s jest --forceExit features/spatial features/surfaces/runtime features/unified-data/__tests__/one-record-carries-the-data-tables-surface-for-that-row-only.test.tsx`.
+- Mechanics: `features/spatial/FEATURE.md` (Board section + change log); item contract `features/spatial/items/types.ts`; surfaces runtime `packages/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx` (`SurfaceActivity`, `createSurfaceCapture`, `useSurfaceDormant`); bridge `features/spatial/tools/item-surfaces.ts`, `useBoardAgentTools.ts`, `board-tools.ts`; board manifest `features/surfaces/manifests/spatial-board.manifest.ts`.
+- Tests: `pnpm -s jest --forceExit features/spatial packages/chat/src/surfaces/runtime features/unified-data/__tests__/one-record-carries-the-data-tables-surface-for-that-row-only.test.tsx`.
 - Browser: `docs/official/browser-testing.md`; `pnpm preview:start` then `pnpm dev-login /board`; admin's Workspace in the org picker. In a Claude cloud container, Chromium needs `--ignore-certificate-errors-spki-list` with the egress CA pins (never `ignoreHTTPSErrors`) and the proxy bypassing `.localhost`; the dev server uses ~8.5 GB, so run one browser at a time and no full type-check alongside it.
 - Skills: `board-items`, `surface-authoring`, `surface-write-targets`.

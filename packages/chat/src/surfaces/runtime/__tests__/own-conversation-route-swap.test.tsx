@@ -17,25 +17,25 @@ import { createRoot } from "react-dom/client";
 const dispatched: Array<{ type: string; payload?: unknown }> = [];
 let state: Record<string, unknown> = {};
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => (action: unknown) => {
     dispatched.push(action as { type: string });
     return action;
   },
   useAppSelector: (selector: (s: unknown) => unknown) => selector(state),
 }));
-jest.mock("@/features/agents/redux/execution-system/thunks/refresh-surface-scope.thunk", () => ({
+jest.mock("../../../agents/redux/execution-system/thunks/refresh-surface-scope.thunk", () => ({
   refreshSurfaceScope: (arg: { conversationId: string }) => ({ type: "refreshSurfaceScope", payload: arg }),
 }));
 // The route is /chat/<id>: the page the person is looking at is the chat.
 jest.mock("../useActivePageSurface", () => ({
   useActivePageSurface: () => ({ surfaceName: "matrx-user/chat" }),
 }));
-jest.mock("@/components/agent-copy/AlchemySurfaceBridge", () => ({
+jest.mock("@host/components/agent-copy/AlchemySurfaceBridge", () => ({
   AlchemySurfaceBridge: ({ children }: { children: unknown }) => children,
   useAlchemySurfaceHandle: () => null,
 }));
-jest.mock("@/features/surfaces/utils/surface-display", () => ({
+jest.mock("../../utils/surface-display", () => ({
   getSurfaceDisplayLabel: (n: string) => n,
 }));
 

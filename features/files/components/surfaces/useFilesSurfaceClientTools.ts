@@ -51,8 +51,8 @@
 "use client";
 
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { SurfaceClientToolHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { useSurfaceClientTools } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceClientToolHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceClientTools } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { clearColumnFilters, setFocusedId } from "@/features/files/redux/slice";
 import {
   selectAllFilesMap,

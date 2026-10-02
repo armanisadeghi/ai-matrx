@@ -7,9 +7,9 @@ import {
   buildTranscriptIntegrityReport,
   formatTranscriptIntegrityReport,
 } from "../transcript-integrity-report";
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import type { RootState } from "@/lib/redux/store";
-import { clearTranscriptJournal } from "@/features/agents/redux/execution-system/messages/transcript-journal";
+import type { MessageRecord } from "../../../redux/execution-system/messages/messages.slice";
+import type { RootState } from "@host/lib/redux/store";
+import { clearTranscriptJournal } from "../../../redux/execution-system/messages/transcript-journal";
 
 const CONV = "conv-report";
 

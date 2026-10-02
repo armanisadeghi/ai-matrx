@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { TRANSCRIPT_STUDIO_SURFACE } from "../constants";
 import { buildTranscriptStudioScope } from "../lib/transcript-studio-scope";
 import { useStudioSurfaceWriteHandlers } from "../hooks/useStudioSurfaceWriteHandlers";

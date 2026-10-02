@@ -19,12 +19,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { Hammer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_KIND_REGISTRY_SURFACE_NAME,
   createAdminKindRegistryScope,

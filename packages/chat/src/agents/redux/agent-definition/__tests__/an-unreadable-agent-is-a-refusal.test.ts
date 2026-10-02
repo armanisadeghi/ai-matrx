@@ -9,7 +9,7 @@
  * public-app door because nothing rejected. Only the Supabase client is stubbed.
  */
 const rpc = jest.fn();
-jest.mock("@/utils/supabase/client", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
+jest.mock("@host/utils/supabase/client", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
 
 import { fetchAgentExecutionMinimal } from "../thunks";
 

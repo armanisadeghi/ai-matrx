@@ -12,7 +12,7 @@ Every output that produces an image returns a `cloud_file_id` from the `cloud_fi
 ## How agents are referenced from app code
 
 ```ts
-import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
+import { getSystemShortcut } from "@ai-matrx/chat/agents/constants/system-shortcuts";
 const SHORTCUT = getSystemShortcut("image-suggest-edits-01");
 
 const trigger = useShortcutTrigger();
@@ -366,7 +366,7 @@ Every agent above is single-purpose and short-prompted on purpose — modern vis
 
 ## Registry entries to add
 
-Add these to `features/agents/constants/system-shortcuts.ts` once the DB rows exist (one per shortcut). Keys follow the existing naming convention.
+Add these to `packages/chat/src/agents/constants/system-shortcuts.ts` once the DB rows exist (one per shortcut). Keys follow the existing naming convention.
 
 ```ts
 "image-suggest-edits-01";

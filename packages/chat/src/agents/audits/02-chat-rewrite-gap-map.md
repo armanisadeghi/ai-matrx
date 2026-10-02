@@ -8,8 +8,8 @@ Reference when building the new `app/(a)/chat/...` route on `@matrx/agents`.
 | Folder | State | Files | Keep? |
 |---|---|---|---|
 | `features/cx-chat/` | Non-functional (57 files) | mostly broken | rewrite on new slices |
-| `features/cx-conversation/` | Partially functional | 21 files; Runner depends on 3 | keep critical, rewrite rest |
-| `features/conversation/` | Re-export layer (12 files) | utilities OK, barrels broken | keep utils, delete barrels |
+| `packages/chat/src/cx-conversation/` | Partially functional | 21 files; Runner depends on 3 | keep critical, rewrite rest |
+| `packages/chat/src/conversation/` | Re-export layer (12 files) | utilities OK, barrels broken | keep utils, delete barrels |
 | `features/chat/` | Utility + tool renderers (113 files) | print utils + tool overlays OK | keep utils, delete legacy stream |
 
 ## Runner-critical imports — MUST survive any deletion
@@ -35,13 +35,13 @@ folders.
 - **Keep**: `types/cx-tables.ts`, `types/content.ts`, `utils/cx-content-converter.ts`, `utils/buildContentBlocksForSave.ts`, `utils/settings-diff.ts`.
 - **Delete after rewrite**: all `components/**`, all `hooks/**`, `admin/ChatDebugModal.tsx`, `actions/messageActionRegistry.ts`.
 
-### `features/cx-conversation/`
+### `packages/chat/src/cx-conversation/`
 
 - **Keep (Runner critical)**: `AssistantActionBar.tsx`, `MessageOptionsMenu.tsx`, `ToolCallVisualization.tsx`, `HtmlPreviewBridge.tsx`.
 - **Rewrite**: `useConversationSession.ts` (core hook; 13 call sites), `ConversationShell.tsx`, `UnifiedChatWrapper.tsx`.
 - **Delete**: `useUnsavedChangesGuard.ts`, `useAuthenticatedChatProps.ts`, `actions/messageActionRegistry.ts`.
 
-### `features/conversation/`
+### `packages/chat/src/conversation/`
 
 - **Keep**: `hooks/useDomCapturePrint.ts`, `utils/markdown-print.ts`, `utils/resource-parsing.ts`.
 - **Delete**: `state/index.ts` (legacy-shim re-exports), `hooks/useAuthenticatedChatProps.ts`, `hooks/usePublicChatProps.ts`.

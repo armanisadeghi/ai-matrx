@@ -8,9 +8,9 @@
  * `/ai/agents/{id}`, these fail.
  */
 
-import { aiVersionPathOverrides } from "@/lib/api/ai-api-version";
+import { aiVersionPathOverrides } from "@host/lib/api/ai-api-version";
 import { resolveStartPath } from "../resolve-start-path";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@host/features/mandates/mandate-key";
 
 const V2 = { pathOverrides: aiVersionPathOverrides("v2") };
 

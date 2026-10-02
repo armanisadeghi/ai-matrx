@@ -17,20 +17,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@host/hooks/use-mobile";
 import {
   BottomSheet,
   BottomSheetHeader,
   BottomSheetBody,
 } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   listUserDocuments,
   type CxWorkingDocument,
   type DocumentListScope,
   type WorkingDocumentKind,
-} from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "../../redux/execution-system/instance-working-document/cx-working-document.service";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface DocumentLinkPickerProps {
   kind: WorkingDocumentKind;

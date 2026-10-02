@@ -99,7 +99,7 @@ These are **not** explicit `case`s in `BlockRenderer`. If they appear as `block.
 |-------|------|
 | Markdown → `ContentBlock[]` | `components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts` |
 | Stream / DB block envelope | `types/python-generated/stream-events.ts` (`ContentBlockPayload`, `TypedContentBlock`, `TypedDataPayload`) |
-| DB → payload normalization | `features/agents/redux/execution-system/utils/normalize-content-blocks.ts` |
+| DB → payload normalization | `packages/chat/src/agents/redux/execution-system/utils/normalize-content-blocks.ts` |
 | `data` → `serverData` on UI blocks | `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx` |
 | Switch / dispatch | `components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx` |
 

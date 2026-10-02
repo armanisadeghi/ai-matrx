@@ -15,9 +15,9 @@ import path from "node:path";
 import {
   BLANK_AGENT_SEED,
   DEFAULT_AGENT_MODEL_ID,
-} from "@/features/agents/constants/blank-agent";
+} from "../blank-agent";
 
-const REPO_ROOT = path.resolve(__dirname, "../../../..");
+const REPO_ROOT = path.resolve(__dirname, "../../../../../..");
 
 const MANUAL_ENTRY_POINTS = [
   "app/(core)/agents/new/manual/CreateManualAgentClient.tsx",

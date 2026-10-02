@@ -71,7 +71,7 @@ import {
   speakerCapFor,
   type ScriptCompatibility,
   type SpeechTurnSpec,
-} from "@/features/agents/speech-script/types";
+} from "@ai-matrx/chat/agents/speech-script/types";
 
 const SETTING_VOICE = "__setting__";
 const VARIABLE_VOICE = "__variable__";

@@ -72,7 +72,7 @@
 // reload it exists to protect.
 // ============================================================================
 
-import { DRAFT_TTL_MS } from "@/lib/drafts/useTextDraft";
+import { DRAFT_TTL_MS } from "@host/lib/drafts/useTextDraft";
 
 const PREFIX = "matrx.composer-draft.";
 const ALIAS_PREFIX = "matrx.composer-draft.surface.";

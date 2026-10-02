@@ -29,13 +29,13 @@ import { useEffect, useRef, useState } from "react";
 import { Brain, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useLiveRunHandle } from "@/features/agents/hooks/useLiveRunHandle";
+import { useLiveRunHandle } from "@ai-matrx/chat/agents/hooks/useLiveRunHandle";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import MemoryHintBlock from "@/components/mardown-display/blocks/memory-aid/MemoryHintBlock";
 import { memoryHint, memoryHintFromDetail } from "../lanes/memoryHint";
 import type { MemoryHintPayload } from "@/features/content-ir/kinds/memory-aid";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { EDU_MEMORY_MANDATES } from "../mandates";
 
 export function MemoryAidButton({

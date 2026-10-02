@@ -19,12 +19,12 @@ import {
   type QuickAnswersSurfaceHandle,
 } from "@/features/marketing/seo/value-system/workbench/session/QuickAnswers";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   KEYWORD_QUICK_ANSWERS_SURFACE_NAME,
   createKeywordQuickAnswersScope,
 } from "@/features/surfaces/manifests/keyword-quick-answers.manifest";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 
 interface KeywordQuickAnswersWindowProps {
   isOpen: boolean;

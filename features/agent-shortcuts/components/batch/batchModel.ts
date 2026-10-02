@@ -23,19 +23,19 @@ import type {
   AgentShortcut,
   ShortcutFormData,
 } from "@/features/agent-shortcuts/types";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
-import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
+import type { ValueMapping, ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 // THE ONE PRE-FLIGHT (FIX-11) — the same judge the mandate grids run.
 import { valueMappingsProblems } from "@/features/mandates/provision-shapes";
 import {
   RESULT_DISPLAY_META,
   type ResultDisplayMode,
-} from "@/features/agents/utils/run-ui-utils";
+} from "@ai-matrx/chat/agents/utils/run-ui-utils";
 import {
   VARIABLE_PANEL_STYLE_OPTIONS,
   type VariablesPanelStyle,
-} from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
+} from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Field config
@@ -399,7 +399,7 @@ export interface BatchContext {
 // (Wave 2 consolidation, 2026-08-22) — this fork used to omit `defaultValue`,
 // so the shared SurfaceVariableBinding rows could never show agent defaults
 // here. Re-exported so every existing batch import keeps working.
-export { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+export { buildBindingTargets } from "@ai-matrx/chat/surfaces/utils/buildBindingTargets";
 
 /** Initial per-target binding state — defaults every target to per-row. */
 export function defaultBindingStates(

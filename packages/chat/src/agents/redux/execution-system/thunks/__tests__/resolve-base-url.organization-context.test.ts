@@ -4,27 +4,27 @@
  * the active organization for a new conversation) before any transport runs.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
-jest.mock("@/lib/redux/slices/apiConfigSlice", () => ({
+jest.mock("@host/lib/redux/slices/apiConfigSlice", () => ({
   selectResolvedBaseUrl: () => "https://backend.test",
   selectActiveServer: () => "production",
 }));
-jest.mock("@/lib/redux/slices/userSlice", () => ({
+jest.mock("@host/lib/redux/slices/userSlice", () => ({
   selectAccessToken: (state: RootState) =>
     (state as unknown as { token: string | null }).token,
   selectFingerprintId: () => null,
 }));
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: (state: RootState) =>
     (state as unknown as { selectedOrganizationId: string | null })
       .selectedOrganizationId,
 }));
-jest.mock("@/lib/sandbox/active-binding", () => ({
+jest.mock("@host/lib/sandbox/active-binding", () => ({
   resolveAgentSandboxRef: () => null,
   getEffectiveSandboxRef: () => null,
 }));
-jest.mock("@/lib/local-engine/discovery", () => ({
+jest.mock("@host/lib/local-engine/discovery", () => ({
   discoverLocalEngine: jest.fn(),
   getCachedLocalEngine: () => null,
   supportsLocalAgentExecution: () => false,

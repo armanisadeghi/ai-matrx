@@ -1,6 +1,6 @@
 import React from "react";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import { Minus, Plus } from "lucide-react";
 
 interface NumberInputProps {

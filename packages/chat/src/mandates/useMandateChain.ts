@@ -1,7 +1,7 @@
 "use client";
 
 import { useMandate, type MandateState } from "./useMandate";
-import type { AmbientAssistantMandateChain } from "@/features/agents/components/ambient-assistant/ambientAssistantMandates";
+import type { AmbientAssistantMandateChain } from "../agents/components/ambient-assistant/ambientAssistantMandates";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 export interface ResolvedMandateChainState extends MandateState {

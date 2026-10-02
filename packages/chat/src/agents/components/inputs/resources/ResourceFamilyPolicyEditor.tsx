@@ -1,20 +1,20 @@
 "use client";
 
 import { Loader2, Plus, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Button } from "@host/components/ui/button";
+import { Checkbox } from "@host/components/ui/checkbox";
+import { Label } from "@host/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
-import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
-import { useFileResourceFamily } from "@/features/files/hooks/useFileResourceFamily";
-import { cn } from "@/lib/utils";
+} from "@host/components/ui/select";
+import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
+import type { DocumentRepresentation } from "../../../types/instance.types";
+import { useFileResourceFamily } from "@host/features/files/hooks/useFileResourceFamily";
+import { cn } from "@host/lib/utils";
 import {
   addFamilyPromotion,
   MAX_RESOURCE_PROMOTIONS,
@@ -22,14 +22,14 @@ import {
   removeFamilyPromotion,
   setFamilyRepresentationEnabled,
   updateFamilyPromotion,
-} from "@/features/agents/components/inputs/resources/resource-family-policy";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "./resource-family-policy";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import {
   capabilitySentence,
   familyWords,
   PRIMARY_FORM_CHOICES,
-} from "@/features/agents/components/inputs/resources/resource-family-words";
-import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
+} from "./resource-family-words";
+import { ClampedNumberInput } from "@host/components/official/ClampedNumberInput";
 
 interface ResourceFamilyPolicyEditorProps {
   fileId: string | null;

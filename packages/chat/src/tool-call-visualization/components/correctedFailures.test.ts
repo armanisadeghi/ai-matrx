@@ -1,7 +1,7 @@
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
-import { selectCorrectedToolCallIds } from "@/features/agents/redux/execution-system/observability/observability.selectors";
-import type { RootState } from "@/lib/redux/store";
+import { selectCorrectedToolCallIds } from "../../agents/redux/execution-system/observability/observability.selectors";
+import type { RootState } from "@host/lib/redux/store";
 
 import { withoutCorrectedFailures } from "./correctedFailures";
 

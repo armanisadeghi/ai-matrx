@@ -41,16 +41,16 @@ import {
   ArrowRight,
   ScanText,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { ToolRendererProps } from "../../types";
 import { collectMessages, isTerminal, isSuccess } from "../_shared";
 import { getDomain, getFaviconUrl } from "../search/parseSearch";
 import { parseScrape, type ScrapePage } from "./parseScrape";
-import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@host/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small building blocks

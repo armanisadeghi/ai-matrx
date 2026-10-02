@@ -37,7 +37,7 @@ import { join, resolve } from "node:path";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const BASELINE = join(ROOT, "scripts/unstable-selectors-baseline.json");
-const SCOPE = ["app", "features", "components", "hooks", "lib", "providers"];
+const SCOPE = ["app", "features", "packages/chat/src", "components", "hooks", "lib", "providers"];
 const HOOKS = new Set(["useAppSelector", "useSelector"]);
 const FRESH_METHODS = new Set([
   "filter",

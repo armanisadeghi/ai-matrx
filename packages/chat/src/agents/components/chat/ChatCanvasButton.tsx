@@ -14,15 +14,15 @@
  */
 
 import { Columns2 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
 import {
   openCanvas,
   selectCanvasIsOpen,
   toggleCanvas,
-} from "@/features/canvas/redux/canvasSlice";
-import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
-import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+} from "@host/features/canvas/redux/canvasSlice";
+import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
+import { setConversationDocumentEnabledThunk } from "../../redux/execution-system/instance-working-document/instance-working-document.thunks";
 
 interface ChatCanvasButtonProps {
   /** The active conversation, when known. Absent on /chat/new before the first

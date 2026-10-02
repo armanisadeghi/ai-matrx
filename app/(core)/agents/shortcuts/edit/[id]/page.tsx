@@ -8,11 +8,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
+import { selectShortcutById } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
 import { ShortcutForm } from "@/features/agent-shortcuts/components/ShortcutForm";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
-import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
+import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 
 const SCOPE = "user" as const;
 

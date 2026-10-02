@@ -11,7 +11,7 @@ import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSit
 import { createCmsSiteExtraSections } from "@/features/cms/agent-context/cmsSiteExtraSections";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import {
   slugifyTitle,

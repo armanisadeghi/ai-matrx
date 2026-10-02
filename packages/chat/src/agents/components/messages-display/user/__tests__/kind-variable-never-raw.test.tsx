@@ -9,12 +9,12 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => ({}) }));
-jest.mock("@/features/scopes/hooks/useEntityTitles", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({ useAppSelector: () => ({}) }));
+jest.mock("@host/features/scopes/hooks/useEntityTitles", () => ({
   useEntityTitles: () => ({ titleFor: () => undefined }),
 }));
-jest.mock("@/components/official/entity-ref/EntityRef", () => ({ EntityRef: () => null }));
-jest.mock("@/components/official/structured-value/AnswerValueView", () => ({
+jest.mock("@host/components/official/entity-ref/EntityRef", () => ({ EntityRef: () => null }));
+jest.mock("@host/components/official/structured-value/AnswerValueView", () => ({
   AnswerValueView: ({ value }: { value?: unknown }) => (
     <div data-testid="answer-value-view" data-kind={(value as { __kind?: string })?.__kind ?? ""} />
   ),

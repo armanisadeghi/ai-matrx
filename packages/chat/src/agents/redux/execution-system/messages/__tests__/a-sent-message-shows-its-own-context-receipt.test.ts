@@ -15,10 +15,10 @@
  * Quick Test Agent on /notes, 2026-09-30), rows trimmed, fields verbatim.
  */
 
-jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("@host/utils/supabase/client", () => ({ supabase: {} }));
 
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type { CxMessageRow } from "../../thunks/conversation-bundle";
 import { messageRowToRecord } from "../../thunks/conversation-bundle";
 import messagesReducer, {
@@ -35,7 +35,7 @@ import {
   selectMessageContextReceipt,
   selectMessageContextReceiptSource,
 } from "../message-context-receipt";
-import type { ContextReceiptData } from "@/types/python-generated/stream-events";
+import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 import captured from "./fixtures/notes-context-receipts.json";
 
 const FIRST = captured.first as ContextReceiptData;

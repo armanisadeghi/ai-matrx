@@ -98,8 +98,8 @@ import {
 import { headerWithTooltip } from "@/features/marketing/components/backlinks/lib/columns";
 import type { SerpProspects } from "@/features/marketing/components/backlinks/useSerpProspects";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
-import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { SurfaceRoleAgentButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceRoleAgentButton";
+import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import {
   humanLines,
   webLocation,

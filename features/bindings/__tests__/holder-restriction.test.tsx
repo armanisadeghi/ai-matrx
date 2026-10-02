@@ -54,14 +54,14 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
 
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   // An UNREAD catalogue, deliberately: the violation alert must stay silent
   // until the system agents are actually known. An empty list is "not loaded",
   // never "not a system agent".
   selectBuiltinAgents: () => [],
 }));
 
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
   // The version control reads the agent's history through this thunk.
   fetchAgentVersionHistory: () => ({ type: "noop" }),

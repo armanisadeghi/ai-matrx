@@ -3,8 +3,8 @@
  * Returns an array of issues (possibly empty). No side effects.
  */
 
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { getComponentTypeMeta } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
+import type { VariableDefinition } from "../types/agent-definition.types";
+import { getComponentTypeMeta } from "../components/inputs/variable-input-variations/variable-input-options";
 import { sanitizeVariableName } from "./variable-utils";
 import { readOptions, readMin, readMax } from "./variable-customcomponent";
 

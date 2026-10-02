@@ -21,14 +21,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2, Trash2, Undo2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { toast } from "@host/lib/toast";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   fetchTrashedConversations,
   restoreConversation,
-} from "@/features/agents/redux/conversation-list/conversation-trash.thunks";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "../../redux/conversation-list/conversation-trash.thunks";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface ConversationTrashSectionProps {
   /** `"consumer"` matches the comfortable /chat sidebar; `"dense"` the rest. */

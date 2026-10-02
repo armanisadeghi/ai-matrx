@@ -75,10 +75,10 @@ import {
   DECISION_DEFAULT_MODEL_KNOB,
   firstDecisionModelId,
 } from "@/features/ai-models/preferredDecisionModel";
-import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
-import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
+import { getSystemShortcut } from "@ai-matrx/chat/agents/constants/system-shortcuts";
+import { ensureShortcutLoaded } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
+import { fetchAgentExecutionFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentCustomExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The control kinds this file renders. Anything else keeps the row's own editor. */

@@ -39,14 +39,14 @@
 
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
+import { SurfaceRoleAgentButton } from "@ai-matrx/chat/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Save, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import type { ClientSite } from "@/features/cms/types";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 import { useCmsResearchLineage } from "@/features/cms/hooks/useCmsResearchLineage";
 import { ResearchLineagePanel } from "@/features/cms/components/ResearchLineagePanel";

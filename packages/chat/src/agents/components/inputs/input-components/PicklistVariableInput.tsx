@@ -1,19 +1,19 @@
 "use client";
 
 import React from "react";
-import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
+import { readStructuredList } from "../../../utils/variable-customcomponent";
 import { SelectInput } from "./SelectInput";
 import { RadioGroupInput } from "./RadioGroupInput";
 import { CheckboxGroupInput } from "./CheckboxGroupInput";
 import { PillToggleInput } from "./PillToggleInput";
 import { Skeleton } from "@ai-matrx/design-system";
-import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import type { VariableCustomComponent } from "../../../types/agent-definition.types";
 import {
   buildPicklistItemFence,
   readPicklistSelection,
-} from "@/features/matrx-envelope/referenceFence";
-import { useStructuredListForSelection } from "@/features/user-lists/hooks/useStructuredListForSelection";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+} from "@host/features/matrx-envelope/referenceFence";
+import { useStructuredListForSelection } from "@host/features/user-lists/hooks/useStructuredListForSelection";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 
 interface PicklistVariableInputProps {
   value: unknown;

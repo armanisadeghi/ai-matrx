@@ -5,21 +5,21 @@
  * model route was retired and the page blamed the agent's output format).
  */
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk",
   () => ({ launchAgentExecution: jest.fn() }),
 );
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/execute-instance.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-instance.thunk",
   () => ({ executeInstance: jest.fn() }),
 );
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversations.thunks",
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks",
   () => ({ destroyInstanceIfAllowed: jest.fn() }),
 );
 jest.mock("@/features/overlays/openers/liveRunWindow", () => ({
   openLiveRunWindowAction: jest.fn(),
 }));
-jest.mock("@/features/mandates/service", () => ({ resolveMandate: jest.fn() }));
+jest.mock("@ai-matrx/chat/mandates/service", () => ({ resolveMandate: jest.fn() }));
 
 import type { RootState } from "@/lib/redux/store";
 import { waitForAnswerText } from "./generate-page-image";

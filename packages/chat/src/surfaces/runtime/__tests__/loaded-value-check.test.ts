@@ -9,8 +9,8 @@
  *   - in development it announces the sentence and remedy once;
  *   - in production it never blocks the person (law 6: validation offers).
  */
-import { withScopeContributions } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import { withScopeContributions } from "../SurfaceRuntimeContext";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
 
 const SURFACE = "matrx-user/notes";
 

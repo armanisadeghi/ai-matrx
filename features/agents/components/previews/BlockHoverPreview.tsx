@@ -16,7 +16,7 @@ import {
   webpageTitle,
   webpageUrl,
 } from "@/features/resource-manager/webpage/webpage-snapshot";
-import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
+import type { ContextDrawerItem } from "@ai-matrx/chat/agents/components/context-items/types";
 
 function PreviewBody({ item }: { item: ContextDrawerItem }) {
   const noteId = item.refs.noteIds?.[0];

@@ -48,7 +48,7 @@ import {
 import { ShieldCheck } from "lucide-react";
 import { holderOfMandate } from "@/lib/supabase/mandateStorage";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentLineageIndex } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentLineageIndex } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { invalidateMandateAdminList } from "./store";
 import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import {

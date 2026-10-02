@@ -53,12 +53,12 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type {
   VoiceActiveTurnScope,
   VoiceTurnScopeEntry,
-} from "@/features/voice-agent/agent-context/voiceTranscriptScope";
+} from "@ai-matrx/chat/voice-agent/agent-context/voiceTranscriptScope";
 
 /** Canonical surface name for the Scribe Live voice tab. */
 export const TRANSCRIPT_SCRIBE_LIVE_SURFACE =

@@ -29,7 +29,7 @@ context rail); only the chrome is arranged differently.
 
 **Hosts today:** every `/chat` route (`ChatRoomClient` — `/chat/new` splash, conversations at page size; its
 `textMenu` is `chat/agent-context/chatComposerTextMenu.ts`), the canvas workspace's docked/floating chat
-(compact, `features/canvas/workspace/`) — including modules hosted in it (education, for signed-in people);
+(compact, `packages/chat/src/canvas/workspace/`) — including modules hosted in it (education, for signed-in people);
 Quick Chat (compact, agent switch = its header picker's fresh conversation, Custom launches through the job);
 the Chat window `AgentRunWindow` (compact, agent switch = its title-bar picker, Custom through the job); the
 Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fixed agent); `/agents/[id]/run`

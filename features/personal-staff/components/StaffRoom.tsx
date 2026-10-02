@@ -33,9 +33,9 @@ import {
   selectAuthReady,
 } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ChatRoomClient } from "@/features/agents/components/chat/ChatRoomClient";
-import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { ChatRoomClient } from "@ai-matrx/chat/agents/components/chat/ChatRoomClient";
+import { ChatRoomSkeleton } from "@ai-matrx/chat/agents/components/chat/ChatRoomSkeleton";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import {
   PERSONAL_STAFF_MANDATE_KEY,
   openStaffThread,

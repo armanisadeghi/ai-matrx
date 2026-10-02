@@ -31,7 +31,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   CMS_SITE_DOMAIN_RULE,
   CMS_SITE_SLUG_RULE,

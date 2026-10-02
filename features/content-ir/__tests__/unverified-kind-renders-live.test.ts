@@ -16,7 +16,7 @@
  * `electronics_intake_analysis_board` sat unrendered.
  */
 
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { applyIrKindRoute, readIrRouteMarker } from "@/features/content-ir/react/kind-route";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";

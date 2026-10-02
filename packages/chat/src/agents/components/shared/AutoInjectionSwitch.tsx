@@ -20,8 +20,8 @@
  */
 
 import type { ReactNode } from "react";
-import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
+import { Switch } from "@host/components/ui/switch";
+import { cn } from "@host/lib/utils";
 
 interface AutoInjectionSwitchProps {
   /** Unique per agent + channel, so two switches on one screen never collide. */

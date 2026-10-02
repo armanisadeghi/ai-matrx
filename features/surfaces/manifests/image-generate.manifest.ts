@@ -22,7 +22,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   IMAGE_GENERATE_MAX_COUNT,
   IMAGE_GENERATE_MIN_COUNT,

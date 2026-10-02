@@ -16,20 +16,20 @@ import {
   INVALIDATION_KEYS,
   fireInvalidation,
   registerInvalidationCallback,
-} from "@/lib/invalidation/invalidation-registry";
-import { featureRegExp } from "@/scripts/lib/source-roots.cjs";
+} from "@host/lib/invalidation/invalidation-registry";
+import { featureRegExp } from "@host/scripts/lib/source-roots.cjs";
 
 // Keep the cache module light in jest: the compiler + fetch paths are not
 // under test here (invalidation + version bookkeeping are).
-jest.mock("@/features/agent-apps/utils/compile-slot", () => ({
+jest.mock("@host/features/agent-apps/utils/compile-slot", () => ({
   compileSlotComponent: jest.fn(() => ({ Component: () => null })),
 }));
 jest.mock(
-  "@/features/tool-call-visualization/db-renderer/fetchToolRendererRow",
+  "../db-renderer/fetchToolRendererRow",
   () => ({ fetchToolRendererRow: jest.fn(async () => null) }),
 );
 jest.mock(
-  "@/features/tool-call-visualization/db-renderer/compileToolRenderer",
+  "../db-renderer/compileToolRenderer",
   () => ({ compileToolRenderer: jest.fn(() => ({ Component: () => null })) }),
 );
 

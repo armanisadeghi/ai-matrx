@@ -26,7 +26,7 @@ import {
   selectAllAgentTags,
   selectTotalSharedAgentsCount,
 } from "@ai-matrx/agents/catalog";
-import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
+import { DesktopFilterPanel } from "@ai-matrx/chat/agents/components/shared/DesktopFilterPanel";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 

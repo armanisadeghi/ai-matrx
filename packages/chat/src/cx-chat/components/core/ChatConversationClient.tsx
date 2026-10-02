@@ -11,31 +11,31 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserContext } from "@/lib/redux/slices/userSlice";
-import { useDebugContext } from "@/hooks/useDebugContext";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectUserContext } from "@host/lib/redux/slices/userSlice";
+import { useDebugContext } from "@host/hooks/useDebugContext";
 import {
   selectActiveServer,
   selectResolvedBaseUrl,
   selectActiveServerHealth,
-} from "@/lib/redux/slices/apiConfigSlice";
+} from "@host/lib/redux/slices/apiConfigSlice";
 import {
   selectLatestConversationId,
   selectLatestRequestStatus,
   selectIsExecuting,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectTurnCount } from "@/features/cx-chat/_legacy-stubs";
+} from "../../../agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectTurnCount } from "../../_legacy-stubs";
 import { ArrowDown } from "lucide-react";
-import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
-import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
-import { pushAppHref } from "@/lib/deployment/navigate";
-import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { AgentConversationDisplay } from "../../../agents/components/messages-display/AgentConversationDisplay";
+import { SmartAgentInput } from "../../../agents/components/inputs/smart-input/SmartAgentInput";
+import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components/ProposedDirectivesZone";
+import { ServerOperationBanner } from "../../../agents/runtime-reconnect/ServerOperationBanner";
+import { pushAppHref } from "@host/lib/deployment/navigate";
+import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
 
 const AgentPickerSheet = dynamic(
   () =>
-    import("@/features/cx-chat/components/agent/AgentPickerSheet").then(
+    import("../agent/AgentPickerSheet").then(
       (m) => ({ default: m.AgentPickerSheet }),
     ),
   { ssr: false },

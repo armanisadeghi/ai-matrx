@@ -39,7 +39,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { getDomain } from "../search/parseSearch";
 
 // ─────────────────────────────────────────────────────────────────────────────

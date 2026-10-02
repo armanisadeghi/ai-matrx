@@ -12,7 +12,7 @@ let fakeState: unknown = {};
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (sel: (s: unknown) => unknown) => sel(fakeState),
 }));
-jest.mock("@/features/agents/redux/execution-system/conversations/conversations.selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors", () => ({
   selectInstance: () => () => null,
 }));
 

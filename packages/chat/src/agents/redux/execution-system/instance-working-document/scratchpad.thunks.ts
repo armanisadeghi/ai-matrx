@@ -19,9 +19,9 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
-import { getActiveOrgId } from "@/lib/organizations/activeOrg";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
+import { getActiveOrgId } from "@host/lib/organizations/activeOrg";
 import {
   applyAgentWorkingDocContent,
   markWorkingDocMaterialized,

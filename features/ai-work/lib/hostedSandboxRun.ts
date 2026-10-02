@@ -37,7 +37,7 @@ import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { callApi } from "@/lib/api/call-api";
 import type { AppThunk } from "@/lib/redux/store";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** See THE TWO-HOMES RULE. The one url for a hosted turn. */

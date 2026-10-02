@@ -25,11 +25,11 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { PromoteToSystemMandateButton } from "@/features/mandates/admin/mandate-actions";
-import { useStartMandateWorkflow } from "@/features/mandates/useStartMandateWorkflow";
+import { useStartMandateWorkflow } from "@ai-matrx/chat/mandates/useStartMandateWorkflow";
 import {
   SurfaceRuntimeProvider,
   getRegisteredSurfaceScopeContributions,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MANDATE_WORKSPACE_SURFACE_NAME,
   createMandateWorkspaceScope,

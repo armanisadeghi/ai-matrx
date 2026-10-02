@@ -16,7 +16,7 @@ import {
   ProblemList,
   readCollectionList,
   repeatsProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 
 export const DECK_WRITE_KEYS = [
   "name",

@@ -26,7 +26,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const ROOTS = ["app", "features", "components", "lib", "hooks", "providers"];
+const ROOTS = ["app", "features", "packages/chat/src", "components", "lib", "hooks", "providers"];
 
 /** `path:line-text-fragment` → why a hidden alert is acceptable there, naming its visible twin. */
 const ALLOW: Record<string, string> = {};

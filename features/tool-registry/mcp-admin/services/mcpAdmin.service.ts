@@ -6,7 +6,7 @@ import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
 import type { Database } from "@/types/database.types";
-import { refreshMcpCatalog } from "@/features/agents/services/mcp-connections.service";
+import { refreshMcpCatalog } from "@ai-matrx/chat/agents/services/mcp-connections.service";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
 type Tables = Database["public"]["Tables"];

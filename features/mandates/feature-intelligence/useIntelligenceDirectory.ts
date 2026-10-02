@@ -22,7 +22,7 @@ import {
   memberRowFromWire,
   type MandateMemberPageAnswer,
 } from "../member-list/rpc";
-import { onMandateCacheInvalidated } from "../service";
+import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { lanesFor } from "./service";
 import {
   buildDomains,

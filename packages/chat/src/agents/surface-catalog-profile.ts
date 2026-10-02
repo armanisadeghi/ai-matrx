@@ -68,7 +68,7 @@ import {
   normalizeAgentCategory,
   normalizeAgentDescription,
   normalizeAgentTags,
-} from "@/features/agents/constants/agent-identity-metadata";
+} from "./constants/agent-identity-metadata";
 
 /** The patch a catalog-profile target produces. Every key is optional; at
  * least one is always present (an empty patch throws). */

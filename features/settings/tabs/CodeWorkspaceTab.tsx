@@ -21,7 +21,7 @@ import {
   useAgentCatalogState,
 } from "@ai-matrx/agents/catalog/react";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { selectActiveAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { selectActiveAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type {
   CodeAgentFilter,
   ConversationHistoryGrouping,

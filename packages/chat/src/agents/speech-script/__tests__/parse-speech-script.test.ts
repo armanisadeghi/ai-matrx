@@ -3,7 +3,7 @@
  * refusing it dropped every message of the agent (the builder came back empty
  * over an intact row) — the same failure the decision_questions part had.
  */
-import { parseAgentMessages } from "@/features/agents/redux/agent-definition/parse-messages-variables";
+import { parseAgentMessages } from "../../redux/agent-definition/parse-messages-variables";
 
 describe("agent definition reader", () => {
   it("keeps a message whose only part is a speech script", () => {

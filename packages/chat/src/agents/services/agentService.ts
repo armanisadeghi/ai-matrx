@@ -10,7 +10,7 @@
 // model + reference lookups. Running an agent uses the existing streaming path,
 // not this client.
 
-import { apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed-client";
+import { apiGet, apiPatch, apiPost, buildPath } from "@host/lib/api/typed-client";
 
 import type {
   AgentDetail,
@@ -24,7 +24,7 @@ import type {
   ToolInfo,
   UpdateAgentInput,
   ValidateSchemaRequest,
-} from "@/features/agents/services/agentService.types";
+} from "./agentService.types";
 
 // --- discovery -------------------------------------------------------------
 

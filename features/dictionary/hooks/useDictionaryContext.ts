@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useSurfaceUserState } from "@/features/surfaces/user-state/useSurfaceUserState";
+import { useSurfaceUserState } from "@ai-matrx/chat/surfaces/user-state/useSurfaceUserState";
 import { ensureOwners, ensureResolved } from "@/features/dictionary/redux/dictionarySlice";
 import {
   selectDictOwnerCatalogue,

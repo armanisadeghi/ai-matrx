@@ -14,8 +14,8 @@ import {
 import {
   VARIABLE_PANEL_STYLE_OPTIONS,
   type VariablesPanelStyle,
-} from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
+} from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
+import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 
 /**
  * Shortcut settings panel — progressive disclosure.

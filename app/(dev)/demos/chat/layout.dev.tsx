@@ -22,8 +22,8 @@
 import {
   ChatPanelContent,
   ChatDesktopHeader,
-} from "@/features/cx-chat/components/ChatSidebarClient";
-import ChatMobileHeaderBar from "@/features/cx-chat/components/ChatMobileHeaderBar";
+} from "@ai-matrx/chat/cx-chat/components/ChatSidebarClient";
+import ChatMobileHeaderBar from "@ai-matrx/chat/cx-chat/components/ChatMobileHeaderBar";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/chat", {

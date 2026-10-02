@@ -27,7 +27,7 @@
  *      says truth is unavailable, never guesses.
  */
 
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { components } from "@/types/python-generated/api-types";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 

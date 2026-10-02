@@ -8,7 +8,7 @@ _Generated: 2026-07-11T14:08:07.827Z_
 
 Regenerate: `pnpm generate:type-drift-hitlists`
 
-## `features/voice-agent/hooks/useRealtimeAgentConfig.ts` (2)
+## `packages/chat/src/voice-agent/hooks/useRealtimeAgentConfig.ts` (2)
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |

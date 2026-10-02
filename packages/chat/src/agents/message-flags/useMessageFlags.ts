@@ -5,15 +5,15 @@
  * door every message header (user/assistant items and the system message) uses.
  */
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAgentMessages,
   selectAgentModelId,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
-import { useModelFull } from "@/features/ai-models/hooks/useModels";
-import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+} from "../redux/agent-definition/selectors";
+import { setAgentMessages } from "../redux/agent-definition/slice";
+import { useModelFull } from "@host/features/ai-models/hooks/useModels";
+import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import type { AgentDefinitionMessage } from "../types/agent-message-types";
 import {
   FLAG_COMPATIBILITY_KNOB,
   cacheBoundaryVerdict,

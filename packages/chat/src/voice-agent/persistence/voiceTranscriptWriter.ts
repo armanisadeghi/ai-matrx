@@ -13,15 +13,15 @@
 // don't double-write across React strict mode / re-renders.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
-import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { createClient } from "@host/utils/supabase/client";
+import { tryWriteOne } from "@host/utils/supabase/writeOne";
+import { getClaimsUser } from "@host/utils/supabase/claimsUser";
+import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import {
   presentOrganizationRefusal,
   organizationRefusalMessage,
-} from "@/lib/organizations/organizationRefusalToast";
-import type { Database, Json } from "@/types/database.types";
+} from "@host/lib/organizations/organizationRefusalToast";
+import type { Database, Json } from "@host/types/database.types";
 import {
   PERSISTENCE_MESSAGE_SOURCE_ASSISTANT,
   PERSISTENCE_MESSAGE_SOURCE_USER,

@@ -7,7 +7,7 @@
 // See `~/.claude/plans/the-entity-system-which-bubbly-wind.md`.
 
 import { all, call, fork } from "redux-saga/effects";
-import { watchDefinitionChanges } from "@/features/agents/redux/execution-system/sagas/syncDefinitionToInstances.saga";
+import { watchDefinitionChanges } from "@ai-matrx/chat/agents/redux/execution-system/sagas/syncDefinitionToInstances.saga";
 
 export function createSlimRootSaga() {
   return function* rootSaga() {

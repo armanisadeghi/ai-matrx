@@ -23,10 +23,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { StudioDocument } from "../types";
 import {
   selectAssistantConversationId,
@@ -46,7 +46,7 @@ import {
   type AssistantContextEntry,
 } from "../service/assistantContextBuilder";
 import { buildSessionResourceContextEntries } from "../service/sessionResourceContext";
-import { ensureSurfaceConfig } from "@/features/surfaces/redux/surfaceConfigSlice";
+import { ensureSurfaceConfig } from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
 import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
 import {
   fetchProject,

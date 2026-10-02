@@ -14,9 +14,9 @@
 import type { ReactNode } from "react";
 import { useAppStore } from "@/lib/redux/hooks";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createAgentBattleScope } from "@/features/surfaces/manifests/agent-battle.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
 import { battleMarkdown, buildBattleSnapshot } from "./battleSnapshot";
 import { RESPONSE_FEEDBACK_METRICS } from "./feedbackMetrics";

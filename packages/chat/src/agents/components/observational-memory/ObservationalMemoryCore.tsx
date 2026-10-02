@@ -17,7 +17,7 @@
  */
 
 import React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { MemoryOverviewCard } from "./components/MemoryOverviewCard";
 import { MemoryCostCard } from "./components/MemoryCostCard";
 import { MemoryEventTimeline } from "./components/MemoryEventTimeline";

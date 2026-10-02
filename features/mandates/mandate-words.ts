@@ -13,7 +13,7 @@
 // The key is not hidden by this: every one of these screens already renders it
 // on its own mono sub-line, which is its honest home.
 
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**

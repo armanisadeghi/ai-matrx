@@ -25,7 +25,7 @@ import {
 } from "@ai-matrx/content-ir";
 import type { KindCatalogEntry } from "@/features/content-ir/registry/kind-catalog";
 import { fingerprintText } from "@ai-matrx/content-ir";
-import type { OutputSchema } from "@/features/agents/types/json-schema";
+import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 
 /**
  * Families that must never appear in the binder: generated data-only machine

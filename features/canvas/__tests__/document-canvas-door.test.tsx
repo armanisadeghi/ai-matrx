@@ -59,8 +59,8 @@ import {
 } from "@/features/canvas/tool-results/decideToolResultCanvasAction";
 import { buildDocumentCanvasContent } from "@/features/data-tables/hooks/useOpenDocumentCanvas";
 import { univerDocToMarkdown } from "@/features/data-tables/univer-doc-to-markdown";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { DocumentInline } from "@/features/tool-call-visualization/renderers/document/DocumentInline";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
+import { DocumentInline } from "@ai-matrx/chat/tool-call-visualization/renderers/document/DocumentInline";
 import { CanvasNavigation } from "@/features/canvas/core/CanvasNavigation";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =

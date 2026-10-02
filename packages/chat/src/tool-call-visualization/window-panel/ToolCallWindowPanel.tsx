@@ -26,7 +26,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import {
   AlertTriangle,
   CheckCircle,
@@ -34,20 +34,20 @@ import {
   LoaderCircle,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { upsertToolCall } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { cn } from "@host/lib/utils";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { ToggleGroup, ToggleGroupItem } from "@host/components/ui/toggle-group";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { upsertToolCall } from "../../agents/redux/execution-system/observability/observability.slice";
 import {
   EMPTY_TOOL_CALLS,
   selectToolCallsForConversation,
-} from "@/features/agents/redux/execution-system/observability/observability.selectors";
-import { selectLiveToolLifecycleByConversation } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@/lib/redux/store";
+} from "../../agents/redux/execution-system/observability/observability.selectors";
+import { selectLiveToolLifecycleByConversation } from "../../agents/redux/execution-system/active-requests/active-requests.selectors";
+import type { RootState } from "@host/lib/redux/store";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 import { getOverlayTabs, getToolDisplayName } from "../registry/registry";
 import type { ToolOverlayTabSpec } from "../types";

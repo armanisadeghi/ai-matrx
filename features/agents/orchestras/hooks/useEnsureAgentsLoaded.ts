@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
+import { initializeChatAgents } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 
 /**
  * Load the user's agent list ONCE for the whole orchestras surface. Uses the

@@ -34,7 +34,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { FIELD_DATA_TYPES } from "@/features/data-tables/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";

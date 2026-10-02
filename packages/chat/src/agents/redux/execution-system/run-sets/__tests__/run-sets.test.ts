@@ -8,7 +8,7 @@
 
 import { configureStore } from "@reduxjs/toolkit";
 
-import type { AppDispatch } from "@/lib/redux/store";
+import type { AppDispatch } from "@host/lib/redux/store";
 
 import activeRequestsReducer, {
   createRequest,

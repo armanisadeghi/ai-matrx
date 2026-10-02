@@ -16,7 +16,7 @@ import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_EMAIL_SURFACE_NAME,
   createAdminEmailScope,

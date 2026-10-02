@@ -29,7 +29,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { KEYWORD_CLUSTER_WRITE_MODES } from "@/features/marketing/seo/keyword-research/types";
 import { MAX_STAGED_KEYWORD_LENGTH } from "@/features/marketing/seo/keyword-research/keyword-research-write";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";

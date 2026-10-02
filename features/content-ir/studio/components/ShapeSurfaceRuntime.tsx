@@ -17,7 +17,7 @@
 
 import { useCallback, type ReactNode } from "react";
 import type { Json } from "@/types/database.types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 
 interface ShapeSurfaceRuntimeProps {

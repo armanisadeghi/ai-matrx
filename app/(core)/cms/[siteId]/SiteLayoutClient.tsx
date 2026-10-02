@@ -44,7 +44,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
 import { usePathname } from "next/navigation";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 import type { CmsSiteMode } from "@/features/cms/agent-context/buildCmsSiteContextData";

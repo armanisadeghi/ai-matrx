@@ -11,7 +11,7 @@
  *   remember: { status: "queued" | "failed", injection_id?, error? }
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 export type CollabHistoryMode = "snapshot" | "fork";
 

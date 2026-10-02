@@ -16723,7 +16723,7 @@
       "detail": "secondary slot: 83 chars, budget 60"
     },
     {
-      "file": "features/agents/components/chat/ChatNewClient.tsx",
+      "file": "packages/chat/src/agents/components/chat/ChatNewClient.tsx",
       "line": 96,
       "rule": "over-budget",
       "severity": 2,
@@ -16733,7 +16733,7 @@
       "detail": "secondary slot: 96 chars, budget 60"
     },
     {
-      "file": "features/agents/components/chat/ChatNewClient.tsx",
+      "file": "packages/chat/src/agents/components/chat/ChatNewClient.tsx",
       "line": 96,
       "rule": "multi-sentence",
       "severity": 2,
@@ -16743,7 +16743,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/chat/sandbox-insight/SandboxActivityFeed.tsx",
+      "file": "packages/chat/src/agents/components/chat/sandbox-insight/SandboxActivityFeed.tsx",
       "line": 137,
       "rule": "over-budget",
       "severity": 2,
@@ -16783,7 +16783,7 @@
       "detail": "secondary slot: 73 chars, budget 60"
     },
     {
-      "file": "features/agents/components/context-preview/inspector/ContextParityLastRun.tsx",
+      "file": "packages/chat/src/agents/components/context-preview/inspector/ContextParityLastRun.tsx",
       "line": 88,
       "rule": "over-budget",
       "severity": 2,
@@ -16793,7 +16793,7 @@
       "detail": "secondary slot: 71 chars, budget 60"
     },
     {
-      "file": "features/agents/components/debug/SandboxInsightPanel.tsx",
+      "file": "packages/chat/src/agents/components/debug/SandboxInsightPanel.tsx",
       "line": 50,
       "rule": "over-budget",
       "severity": 2,
@@ -16803,7 +16803,7 @@
       "detail": "secondary slot: 128 chars, budget 60"
     },
     {
-      "file": "features/agents/components/debug/SandboxInsightPanel.tsx",
+      "file": "packages/chat/src/agents/components/debug/SandboxInsightPanel.tsx",
       "line": 50,
       "rule": "multi-sentence",
       "severity": 2,
@@ -16813,7 +16813,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/debug/StreamDebugPanel.tsx",
+      "file": "packages/chat/src/agents/components/debug/StreamDebugPanel.tsx",
       "line": 409,
       "rule": "over-budget",
       "severity": 2,
@@ -16823,7 +16823,7 @@
       "detail": "secondary slot: 117 chars, budget 60"
     },
     {
-      "file": "features/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 333,
       "rule": "over-budget",
       "severity": 2,
@@ -16833,7 +16833,7 @@
       "detail": "secondary slot: 96 chars, budget 60"
     },
     {
-      "file": "features/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 460,
       "rule": "over-budget",
       "severity": 2,
@@ -16843,7 +16843,7 @@
       "detail": "secondary slot: 133 chars, budget 60"
     },
     {
-      "file": "features/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 563,
       "rule": "over-budget",
       "severity": 2,
@@ -16853,7 +16853,7 @@
       "detail": "secondary slot: 101 chars, budget 60"
     },
     {
-      "file": "features/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 580,
       "rule": "over-budget",
       "severity": 2,
@@ -16863,7 +16863,7 @@
       "detail": "secondary slot: 155 chars, budget 60"
     },
     {
-      "file": "features/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 580,
       "rule": "multi-sentence",
       "severity": 2,
@@ -16873,7 +16873,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 600,
       "rule": "over-budget",
       "severity": 2,
@@ -16883,7 +16883,7 @@
       "detail": "secondary slot: 97 chars, budget 60"
     },
     {
-      "file": "features/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 696,
       "rule": "over-budget",
       "severity": 2,
@@ -16893,7 +16893,7 @@
       "detail": "secondary slot: 104 chars, budget 60"
     },
     {
-      "file": "features/agents/components/inputs/resources/resource-family-words.ts",
+      "file": "packages/chat/src/agents/components/inputs/resources/resource-family-words.ts",
       "line": 24,
       "rule": "over-budget",
       "severity": 2,
@@ -16903,7 +16903,7 @@
       "detail": "secondary slot: 84 chars, budget 60"
     },
     {
-      "file": "features/agents/components/inputs/resources/resource-family-words.ts",
+      "file": "packages/chat/src/agents/components/inputs/resources/resource-family-words.ts",
       "line": 34,
       "rule": "over-budget",
       "severity": 2,
@@ -16913,7 +16913,7 @@
       "detail": "secondary slot: 70 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/message-options/openAssistantMessageEditor.ts",
+      "file": "packages/chat/src/agents/components/messages-display/message-options/openAssistantMessageEditor.ts",
       "line": 48,
       "rule": "over-budget",
       "severity": 1,
@@ -16923,7 +16923,7 @@
       "detail": "secondary slot: 179 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/message-options/openAssistantMessageEditor.ts",
+      "file": "packages/chat/src/agents/components/messages-display/message-options/openAssistantMessageEditor.ts",
       "line": 48,
       "rule": "multi-sentence",
       "severity": 1,
@@ -16933,7 +16933,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/ResourceEditableToggleSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/ResourceEditableToggleSamples.tsx",
       "line": 71,
       "rule": "page-description",
       "severity": 1,
@@ -16943,7 +16943,7 @@
       "detail": "sentence under <h2>"
     },
     {
-      "file": "features/agents/components/messages-display/user/ResourceEditableToggleSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/ResourceEditableToggleSamples.tsx",
       "line": 71,
       "rule": "over-budget",
       "severity": 1,
@@ -16953,7 +16953,7 @@
       "detail": "secondary slot: 522 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/ResourceEditableToggleSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/ResourceEditableToggleSamples.tsx",
       "line": 71,
       "rule": "multi-sentence",
       "severity": 1,
@@ -16963,7 +16963,7 @@
       "detail": "5 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
       "line": 135,
       "rule": "page-description",
       "severity": 1,
@@ -16973,7 +16973,7 @@
       "detail": "sentence under <h2>"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
       "line": 135,
       "rule": "over-budget",
       "severity": 1,
@@ -16983,7 +16983,7 @@
       "detail": "secondary slot: 165 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
       "line": 135,
       "rule": "multi-sentence",
       "severity": 1,
@@ -16993,7 +16993,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
       "line": 166,
       "rule": "over-budget",
       "severity": 1,
@@ -17003,7 +17003,7 @@
       "detail": "secondary slot: 99 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
       "line": 166,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17013,7 +17013,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 207,
       "rule": "page-description",
       "severity": 1,
@@ -17023,7 +17023,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 207,
       "rule": "over-budget",
       "severity": 1,
@@ -17033,7 +17033,7 @@
       "detail": "secondary slot: 166 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 207,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17043,7 +17043,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 220,
       "rule": "over-budget",
       "severity": 2,
@@ -17053,7 +17053,7 @@
       "detail": "secondary slot: 147 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 220,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17063,7 +17063,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 227,
       "rule": "over-budget",
       "severity": 2,
@@ -17073,7 +17073,7 @@
       "detail": "secondary slot: 61 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 247,
       "rule": "over-budget",
       "severity": 2,
@@ -17083,7 +17083,7 @@
       "detail": "secondary slot: 68 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 247,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17093,7 +17093,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 268,
       "rule": "over-budget",
       "severity": 2,
@@ -17103,7 +17103,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 279,
       "rule": "over-budget",
       "severity": 2,
@@ -17113,7 +17113,7 @@
       "detail": "secondary slot: 102 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 279,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17123,7 +17123,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 308,
       "rule": "over-budget",
       "severity": 2,
@@ -17133,7 +17133,7 @@
       "detail": "secondary slot: 104 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 316,
       "rule": "over-budget",
       "severity": 2,
@@ -17143,7 +17143,7 @@
       "detail": "secondary slot: 126 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 316,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17153,7 +17153,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 329,
       "rule": "over-budget",
       "severity": 2,
@@ -17163,7 +17163,7 @@
       "detail": "secondary slot: 104 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 329,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17173,7 +17173,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 344,
       "rule": "over-budget",
       "severity": 2,
@@ -17183,7 +17183,7 @@
       "detail": "secondary slot: 64 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 359,
       "rule": "over-budget",
       "severity": 2,
@@ -17193,7 +17193,7 @@
       "detail": "secondary slot: 73 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
       "line": 381,
       "rule": "over-budget",
       "severity": 2,
@@ -17203,7 +17203,7 @@
       "detail": "secondary slot: 99 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 376,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17213,7 +17213,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 503,
       "rule": "over-budget",
       "severity": 1,
@@ -17223,7 +17223,7 @@
       "detail": "secondary slot: 82 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 503,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17233,7 +17233,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 511,
       "rule": "over-budget",
       "severity": 1,
@@ -17243,7 +17243,7 @@
       "detail": "secondary slot: 90 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 511,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17253,7 +17253,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 519,
       "rule": "over-budget",
       "severity": 2,
@@ -17263,7 +17263,7 @@
       "detail": "secondary slot: 85 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 519,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17273,7 +17273,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 527,
       "rule": "over-budget",
       "severity": 1,
@@ -17283,7 +17283,7 @@
       "detail": "secondary slot: 69 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 527,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17293,7 +17293,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 535,
       "rule": "over-budget",
       "severity": 2,
@@ -17303,7 +17303,7 @@
       "detail": "secondary slot: 92 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 535,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17313,7 +17313,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 582,
       "rule": "page-description",
       "severity": 1,
@@ -17323,7 +17323,7 @@
       "detail": "sentence under <h2>"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 582,
       "rule": "over-budget",
       "severity": 1,
@@ -17333,7 +17333,7 @@
       "detail": "secondary slot: 199 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 582,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17343,7 +17343,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 599,
       "rule": "over-budget",
       "severity": 1,
@@ -17353,7 +17353,7 @@
       "detail": "secondary slot: 189 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 599,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17363,7 +17363,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 623,
       "rule": "over-budget",
       "severity": 2,
@@ -17373,7 +17373,7 @@
       "detail": "secondary slot: 106 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 623,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17383,7 +17383,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 660,
       "rule": "over-budget",
       "severity": 1,
@@ -17393,7 +17393,7 @@
       "detail": "secondary slot: 106 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 660,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17403,7 +17403,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 693,
       "rule": "over-budget",
       "severity": 2,
@@ -17413,7 +17413,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 720,
       "rule": "over-budget",
       "severity": 1,
@@ -17423,7 +17423,7 @@
       "detail": "secondary slot: 180 chars, budget 60"
     },
     {
-      "file": "features/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
+      "file": "packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx",
       "line": 720,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17433,7 +17433,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/run-controls/SimpleRunSettings/capabilities.ts",
+      "file": "packages/chat/src/agents/components/run-controls/SimpleRunSettings/capabilities.ts",
       "line": 126,
       "rule": "multi-sentence",
       "severity": 2,
@@ -17443,7 +17443,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/components/run/AgentRunnerPage.tsx",
+      "file": "packages/chat/src/agents/components/run/AgentRunnerPage.tsx",
       "line": 294,
       "rule": "over-budget",
       "severity": 2,
@@ -17663,7 +17663,7 @@
       "detail": "secondary slot: 105 chars, budget 60"
     },
     {
-      "file": "features/agents/components/widgets/AgentWidgetsPage.tsx",
+      "file": "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       "line": 334,
       "rule": "over-budget",
       "severity": 2,
@@ -17673,7 +17673,7 @@
       "detail": "secondary slot: 138 chars, budget 60"
     },
     {
-      "file": "features/agents/components/widgets/AgentWidgetsPage.tsx",
+      "file": "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       "line": 340,
       "rule": "over-budget",
       "severity": 2,
@@ -17683,7 +17683,7 @@
       "detail": "secondary slot: 97 chars, budget 60"
     },
     {
-      "file": "features/agents/components/widgets/AgentWidgetsPage.tsx",
+      "file": "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       "line": 434,
       "rule": "over-budget",
       "severity": 1,
@@ -17693,7 +17693,7 @@
       "detail": "secondary slot: 184 chars, budget 60"
     },
     {
-      "file": "features/agents/components/widgets/AgentWidgetsPage.tsx",
+      "file": "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       "line": 453,
       "rule": "over-budget",
       "severity": 2,
@@ -17703,7 +17703,7 @@
       "detail": "secondary slot: 106 chars, budget 60"
     },
     {
-      "file": "features/agents/components/widgets/AgentWidgetsPage.tsx",
+      "file": "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       "line": 470,
       "rule": "over-budget",
       "severity": 2,
@@ -17713,7 +17713,7 @@
       "detail": "secondary slot: 104 chars, budget 60"
     },
     {
-      "file": "features/agents/components/widgets/AgentWidgetsPage.tsx",
+      "file": "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       "line": 615,
       "rule": "over-budget",
       "severity": 2,
@@ -17723,7 +17723,7 @@
       "detail": "secondary slot: 102 chars, budget 60"
     },
     {
-      "file": "features/agents/components/widgets/AgentWidgetsPage.tsx",
+      "file": "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       "line": 651,
       "rule": "over-budget",
       "severity": 2,
@@ -17733,7 +17733,7 @@
       "detail": "secondary slot: 113 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 16,
       "rule": "over-budget",
       "severity": 2,
@@ -17743,7 +17743,7 @@
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 25,
       "rule": "over-budget",
       "severity": 2,
@@ -17753,7 +17753,7 @@
       "detail": "secondary slot: 79 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 34,
       "rule": "over-budget",
       "severity": 2,
@@ -17763,7 +17763,7 @@
       "detail": "secondary slot: 81 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 43,
       "rule": "over-budget",
       "severity": 2,
@@ -17773,7 +17773,7 @@
       "detail": "secondary slot: 82 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 52,
       "rule": "over-budget",
       "severity": 2,
@@ -17783,7 +17783,7 @@
       "detail": "secondary slot: 84 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 61,
       "rule": "over-budget",
       "severity": 2,
@@ -17793,7 +17793,7 @@
       "detail": "secondary slot: 80 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 70,
       "rule": "over-budget",
       "severity": 2,
@@ -17803,7 +17803,7 @@
       "detail": "secondary slot: 80 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 79,
       "rule": "over-budget",
       "severity": 2,
@@ -17813,7 +17813,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 88,
       "rule": "over-budget",
       "severity": 2,
@@ -17823,7 +17823,7 @@
       "detail": "secondary slot: 83 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 97,
       "rule": "over-budget",
       "severity": 2,
@@ -17833,7 +17833,7 @@
       "detail": "secondary slot: 73 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 106,
       "rule": "over-budget",
       "severity": 2,
@@ -17843,7 +17843,7 @@
       "detail": "secondary slot: 82 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 115,
       "rule": "over-budget",
       "severity": 2,
@@ -17853,7 +17853,7 @@
       "detail": "secondary slot: 84 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 124,
       "rule": "over-budget",
       "severity": 2,
@@ -17863,7 +17863,7 @@
       "detail": "secondary slot: 80 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 133,
       "rule": "over-budget",
       "severity": 2,
@@ -17873,7 +17873,7 @@
       "detail": "secondary slot: 80 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/agent-system-competitors.ts",
+      "file": "packages/chat/src/agents/constants/agent-system-competitors.ts",
       "line": 142,
       "rule": "over-budget",
       "severity": 2,
@@ -17883,7 +17883,7 @@
       "detail": "secondary slot: 80 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/system-shortcuts.ts",
+      "file": "packages/chat/src/agents/constants/system-shortcuts.ts",
       "line": 75,
       "rule": "over-budget",
       "severity": 1,
@@ -17893,7 +17893,7 @@
       "detail": "secondary slot: 204 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/system-shortcuts.ts",
+      "file": "packages/chat/src/agents/constants/system-shortcuts.ts",
       "line": 75,
       "rule": "multi-sentence",
       "severity": 1,
@@ -17903,7 +17903,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/constants/system-shortcuts.ts",
+      "file": "packages/chat/src/agents/constants/system-shortcuts.ts",
       "line": 95,
       "rule": "over-budget",
       "severity": 1,
@@ -17913,7 +17913,7 @@
       "detail": "secondary slot: 394 chars, budget 60"
     },
     {
-      "file": "features/agents/constants/system-shortcuts.ts",
+      "file": "packages/chat/src/agents/constants/system-shortcuts.ts",
       "line": 95,
       "rule": "implementation-leak",
       "severity": 1,
@@ -17943,7 +17943,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/hooks/useWorkingDocument.ts",
+      "file": "packages/chat/src/agents/hooks/useWorkingDocument.ts",
       "line": 160,
       "rule": "implementation-leak",
       "severity": 1,
@@ -17953,7 +17953,7 @@
       "detail": "dotted snake_case identifier"
     },
     {
-      "file": "features/agents/image-roles/useImageRoleLimits.ts",
+      "file": "packages/chat/src/agents/image-roles/useImageRoleLimits.ts",
       "line": 39,
       "rule": "over-budget",
       "severity": 2,
@@ -17963,7 +17963,7 @@
       "detail": "secondary slot: 69 chars, budget 60"
     },
     {
-      "file": "features/agents/image-roles/useImageRoleLimits.ts",
+      "file": "packages/chat/src/agents/image-roles/useImageRoleLimits.ts",
       "line": 39,
       "rule": "implementation-leak",
       "severity": 1,
@@ -18103,7 +18103,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/scribe-tools/tools/tool-defs.ts",
+      "file": "packages/chat/src/agents/scribe-tools/tools/tool-defs.ts",
       "line": 23,
       "rule": "over-budget",
       "severity": 1,
@@ -18113,7 +18113,7 @@
       "detail": "secondary slot: 516 chars, budget 60"
     },
     {
-      "file": "features/agents/scribe-tools/tools/tool-defs.ts",
+      "file": "packages/chat/src/agents/scribe-tools/tools/tool-defs.ts",
       "line": 23,
       "rule": "multi-sentence",
       "severity": 1,
@@ -18123,7 +18123,7 @@
       "detail": "4 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/scribe-tools/tools/tool-defs.ts",
+      "file": "packages/chat/src/agents/scribe-tools/tools/tool-defs.ts",
       "line": 41,
       "rule": "over-budget",
       "severity": 2,
@@ -18133,7 +18133,7 @@
       "detail": "secondary slot: 109 chars, budget 60"
     },
     {
-      "file": "features/agents/scribe-tools/tools/tool-defs.ts",
+      "file": "packages/chat/src/agents/scribe-tools/tools/tool-defs.ts",
       "line": 41,
       "rule": "multi-sentence",
       "severity": 2,
@@ -18173,7 +18173,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/utils/agent-edit-access.ts",
+      "file": "packages/chat/src/agents/utils/agent-edit-access.ts",
       "line": 77,
       "rule": "over-budget",
       "severity": 2,
@@ -18183,7 +18183,7 @@
       "detail": "secondary slot: 81 chars, budget 60"
     },
     {
-      "file": "features/agents/utils/agent-edit-access.ts",
+      "file": "packages/chat/src/agents/utils/agent-edit-access.ts",
       "line": 77,
       "rule": "multi-sentence",
       "severity": 2,
@@ -18193,7 +18193,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agents/utils/agent-edit-access.ts",
+      "file": "packages/chat/src/agents/utils/agent-edit-access.ts",
       "line": 82,
       "rule": "over-budget",
       "severity": 2,
@@ -18203,7 +18203,7 @@
       "detail": "secondary slot: 124 chars, budget 60"
     },
     {
-      "file": "features/agents/utils/agent-edit-access.ts",
+      "file": "packages/chat/src/agents/utils/agent-edit-access.ts",
       "line": 87,
       "rule": "over-budget",
       "severity": 2,
@@ -18213,7 +18213,7 @@
       "detail": "secondary slot: 72 chars, budget 60"
     },
     {
-      "file": "features/agents/utils/run-ui-utils.ts",
+      "file": "packages/chat/src/agents/utils/run-ui-utils.ts",
       "line": 177,
       "rule": "over-budget",
       "severity": 2,
@@ -18223,7 +18223,7 @@
       "detail": "secondary slot: 65 chars, budget 60"
     },
     {
-      "file": "features/agents/utils/run-ui-utils.ts",
+      "file": "packages/chat/src/agents/utils/run-ui-utils.ts",
       "line": 186,
       "rule": "over-budget",
       "severity": 2,
@@ -18233,7 +18233,7 @@
       "detail": "secondary slot: 64 chars, budget 60"
     },
     {
-      "file": "features/agents/utils/run-ui-utils.ts",
+      "file": "packages/chat/src/agents/utils/run-ui-utils.ts",
       "line": 199,
       "rule": "over-budget",
       "severity": 2,
@@ -18243,7 +18243,7 @@
       "detail": "secondary slot: 71 chars, budget 60"
     },
     {
-      "file": "features/agents/utils/run-ui-utils.ts",
+      "file": "packages/chat/src/agents/utils/run-ui-utils.ts",
       "line": 229,
       "rule": "over-budget",
       "severity": 2,
@@ -18253,7 +18253,7 @@
       "detail": "secondary slot: 61 chars, budget 60"
     },
     {
-      "file": "features/agents/utils/run-ui-utils.ts",
+      "file": "packages/chat/src/agents/utils/run-ui-utils.ts",
       "line": 255,
       "rule": "over-budget",
       "severity": 2,
@@ -18263,7 +18263,7 @@
       "detail": "secondary slot: 91 chars, budget 60"
     },
     {
-      "file": "features/agents/utils/run-ui-utils.ts",
+      "file": "packages/chat/src/agents/utils/run-ui-utils.ts",
       "line": 269,
       "rule": "over-budget",
       "severity": 2,
@@ -21413,7 +21413,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/canvas/workspace/CanvasChatColumn.tsx",
+      "file": "packages/chat/src/canvas/workspace/CanvasChatColumn.tsx",
       "line": 137,
       "rule": "over-budget",
       "severity": 2,
@@ -21423,7 +21423,7 @@
       "detail": "secondary slot: 88 chars, budget 60"
     },
     {
-      "file": "features/canvas/workspace/CanvasChatColumn.tsx",
+      "file": "packages/chat/src/canvas/workspace/CanvasChatColumn.tsx",
       "line": 137,
       "rule": "multi-sentence",
       "severity": 2,
@@ -21433,7 +21433,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/canvas/workspace/CanvasChatColumn.tsx",
+      "file": "packages/chat/src/canvas/workspace/CanvasChatColumn.tsx",
       "line": 203,
       "rule": "over-budget",
       "severity": 2,
@@ -21443,7 +21443,7 @@
       "detail": "secondary slot: 96 chars, budget 60"
     },
     {
-      "file": "features/canvas/workspace/CanvasChatColumn.tsx",
+      "file": "packages/chat/src/canvas/workspace/CanvasChatColumn.tsx",
       "line": 203,
       "rule": "multi-sentence",
       "severity": 2,
@@ -21453,7 +21453,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/canvas/workspace/CanvasChatColumn.tsx",
+      "file": "packages/chat/src/canvas/workspace/CanvasChatColumn.tsx",
       "line": 203,
       "rule": "implementation-leak",
       "severity": 1,
@@ -85533,7 +85533,7 @@
       "detail": "secondary slot: 83 chars, budget 60"
     },
     {
-      "file": "features/surfaces/services/surface-registration-error.ts",
+      "file": "packages/chat/src/surfaces/services/surface-registration-error.ts",
       "line": 27,
       "rule": "over-budget",
       "severity": 2,
@@ -85543,7 +85543,7 @@
       "detail": "secondary slot: 79 chars, budget 60"
     },
     {
-      "file": "features/surfaces/utils/document-evidence.ts",
+      "file": "packages/chat/src/surfaces/utils/document-evidence.ts",
       "line": 71,
       "rule": "over-budget",
       "severity": 2,
@@ -85553,7 +85553,7 @@
       "detail": "secondary slot: 63 chars, budget 60"
     },
     {
-      "file": "features/surfaces/utils/surface-guide.ts",
+      "file": "packages/chat/src/surfaces/utils/surface-guide.ts",
       "line": 66,
       "rule": "over-budget",
       "severity": 2,
@@ -85563,7 +85563,7 @@
       "detail": "secondary slot: 154 chars, budget 60"
     },
     {
-      "file": "features/surfaces/utils/surface-guide.ts",
+      "file": "packages/chat/src/surfaces/utils/surface-guide.ts",
       "line": 66,
       "rule": "multi-sentence",
       "severity": 2,
@@ -86163,7 +86163,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/tool-call-visualization/registry/GenericRenderer.tsx",
+      "file": "packages/chat/src/tool-call-visualization/registry/GenericRenderer.tsx",
       "line": 155,
       "rule": "multi-sentence",
       "severity": 2,
@@ -86173,7 +86173,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/tool-call-visualization/renderers/agent-call/CollabCallCard.tsx",
+      "file": "packages/chat/src/tool-call-visualization/renderers/agent-call/CollabCallCard.tsx",
       "line": 148,
       "rule": "over-budget",
       "severity": 2,
@@ -86183,7 +86183,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "features/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
+      "file": "packages/chat/src/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
       "line": 113,
       "rule": "over-budget",
       "severity": 2,
@@ -86193,7 +86193,7 @@
       "detail": "secondary slot: 69 chars, budget 60"
     },
     {
-      "file": "features/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
+      "file": "packages/chat/src/tool-call-visualization/renderers/ask-person/AskPersonInline.tsx",
       "line": 113,
       "rule": "multi-sentence",
       "severity": 2,
@@ -86203,7 +86203,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx",
+      "file": "packages/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx",
       "line": 981,
       "rule": "over-budget",
       "severity": 2,
@@ -86213,7 +86213,7 @@
       "detail": "secondary slot: 71 chars, budget 60"
     },
     {
-      "file": "features/tool-call-visualization/renderers/shell/ShellInline.tsx",
+      "file": "packages/chat/src/tool-call-visualization/renderers/shell/ShellInline.tsx",
       "line": 130,
       "rule": "over-budget",
       "severity": 1,
@@ -86223,7 +86223,7 @@
       "detail": "body slot: 233 chars, budget 120"
     },
     {
-      "file": "features/tool-call-visualization/surface-write/SurfaceWriteStress.tsx",
+      "file": "packages/chat/src/tool-call-visualization/surface-write/SurfaceWriteStress.tsx",
       "line": 210,
       "rule": "over-budget",
       "severity": 2,
@@ -88243,7 +88243,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/voice-agent/components/GoogleLiveSurface.tsx",
+      "file": "packages/chat/src/voice-agent/components/GoogleLiveSurface.tsx",
       "line": 113,
       "rule": "over-budget",
       "severity": 1,
@@ -88253,7 +88253,7 @@
       "detail": "secondary slot: 174 chars, budget 60"
     },
     {
-      "file": "features/voice-agent/components/GoogleLiveSurface.tsx",
+      "file": "packages/chat/src/voice-agent/components/GoogleLiveSurface.tsx",
       "line": 113,
       "rule": "multi-sentence",
       "severity": 1,
@@ -88263,7 +88263,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/voice-agent/components/GoogleLiveSurface.tsx",
+      "file": "packages/chat/src/voice-agent/components/GoogleLiveSurface.tsx",
       "line": 138,
       "rule": "over-budget",
       "severity": 2,
@@ -88273,7 +88273,7 @@
       "detail": "secondary slot: 78 chars, budget 60"
     },
     {
-      "file": "features/voice-agent/components/playground/PlaygroundSettingsSheet.tsx",
+      "file": "packages/chat/src/voice-agent/components/playground/PlaygroundSettingsSheet.tsx",
       "line": 93,
       "rule": "over-budget",
       "severity": 2,
@@ -88283,7 +88283,7 @@
       "detail": "secondary slot: 61 chars, budget 60"
     },
     {
-      "file": "features/voice-agent/components/playground/ToolToggleList.tsx",
+      "file": "packages/chat/src/voice-agent/components/playground/ToolToggleList.tsx",
       "line": 29,
       "rule": "over-budget",
       "severity": 2,
@@ -88293,7 +88293,7 @@
       "detail": "secondary slot: 66 chars, budget 60"
     },
     {
-      "file": "features/voice-agent/components/VoiceAgentSurface.tsx",
+      "file": "packages/chat/src/voice-agent/components/VoiceAgentSurface.tsx",
       "line": 420,
       "rule": "over-budget",
       "severity": 2,
@@ -88303,7 +88303,7 @@
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
-      "file": "features/voice-agent/relay/questionLedger.ts",
+      "file": "packages/chat/src/voice-agent/relay/questionLedger.ts",
       "line": 100,
       "rule": "over-budget",
       "severity": 1,
@@ -88313,7 +88313,7 @@
       "detail": "secondary slot: 269 chars, budget 60"
     },
     {
-      "file": "features/voice-agent/relay/questionLedger.ts",
+      "file": "packages/chat/src/voice-agent/relay/questionLedger.ts",
       "line": 100,
       "rule": "multi-sentence",
       "severity": 1,
@@ -88323,7 +88323,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/voice-agent/relay/VoiceRelayDock.tsx",
+      "file": "packages/chat/src/voice-agent/relay/VoiceRelayDock.tsx",
       "line": 67,
       "rule": "over-budget",
       "severity": 2,
@@ -88333,7 +88333,7 @@
       "detail": "secondary slot: 97 chars, budget 60"
     },
     {
-      "file": "features/voice-agent/relay/VoiceRelayPanel.tsx",
+      "file": "packages/chat/src/voice-agent/relay/VoiceRelayPanel.tsx",
       "line": 66,
       "rule": "over-budget",
       "severity": 2,
@@ -88703,7 +88703,7 @@
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
-      "file": "features/window-panels/windows/agents/AgentRunWindow.tsx",
+      "file": "packages/chat/src/window-panels/windows/agents/AgentRunWindow.tsx",
       "line": 587,
       "rule": "over-budget",
       "severity": 2,

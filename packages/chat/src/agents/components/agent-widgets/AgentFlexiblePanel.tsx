@@ -1,9 +1,9 @@
 "use client";
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { agentPanelUrlArgs } from "@/features/window-panels/windows/agents/agentPanelSurfaceAddress";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { agentPanelUrlArgs } from "../../../window-panels/windows/agents/agentPanelSurfaceAddress";
 import { AgentRunner } from "../smart/AgentRunner";
 
 /** Match `AgentFullModal` (`max-w-3xl` × `h-[85dvh]`). */

@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 /**
  * Skeleton that matches the eventual conversation column layout — message

@@ -42,7 +42,7 @@ jest.mock("../../utils/required-organization", () => ({
   executionOrganizationForRequest: jest.fn(() => "org-test"),
   requireExecutionOrganizationId: jest.fn(() => "org-test"),
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({
+jest.mock("@host/lib/organization/organization-gate", () => ({
   isOrganizationSelectionCancelled: (error: unknown) =>
     Boolean((error as { __cancelled?: boolean })?.__cancelled),
 }));
@@ -59,11 +59,11 @@ jest.mock("../sandbox-gate.thunk", () => ({
   ...jest.requireActual("../sandbox-gate.thunk"),
   ensureSandboxOrDecide: () => thunkResolving("ok"),
 }));
-jest.mock("@/features/scopes/redux/thunks/conversationScopeGate", () => ({
+jest.mock("@host/features/scopes/redux/thunks/conversationScopeGate", () => ({
   ensureConversationScopesOrAsk: () => () =>
     Promise.resolve({ blocked: false, scopeIdsOverride: undefined }),
 }));
-jest.mock("@/features/agents/ui-first-tools/redux/resolve-asks-with-input.thunk", () => ({
+jest.mock("../../../../ui-first-tools/redux/resolve-asks-with-input.thunk", () => ({
   resolvePendingAsksWithInput: () => () => false,
 }));
 jest.mock("../../context-rules/context-rules.thunks", () => ({
@@ -74,12 +74,12 @@ jest.mock("../../context-rules/mandate-kill-switch", () => ({
   ...jest.requireActual("../../context-rules/mandate-kill-switch"),
   resolveMandateKillSwitch: () => Promise.resolve(false),
 }));
-jest.mock("@/features/agents/runtime/generation-job", () => ({
-  ...jest.requireActual("@/features/agents/runtime/generation-job"),
+jest.mock("../../../../runtime/generation-job", () => ({
+  ...jest.requireActual("../../../../runtime/generation-job"),
   labelGenerationJob: () => Promise.resolve(),
 }));
-jest.mock("@/features/agents/runtime/get-model-capabilities", () => ({
-  ...jest.requireActual("@/features/agents/runtime/get-model-capabilities"),
+jest.mock("../../../../runtime/get-model-capabilities", () => ({
+  ...jest.requireActual("../../../../runtime/get-model-capabilities"),
   getCapabilitiesForConversation: () => null,
 }));
 // The stream itself is not under test: once the door has sent the turn
@@ -91,7 +91,7 @@ jest.mock("../../utils/build-tool-injection", () => ({
 
 // The ONE network edge reached: the queue POST.
 const inboxPosts: Array<{ text: string; delivery: string }> = [];
-jest.mock("@/lib/api/call-api", () => ({
+jest.mock("@host/lib/api/call-api", () => ({
   callApi: (args: { body: { text: string; delivery: string } }) => () => {
     inboxPosts.push({ text: args.body.text, delivery: args.body.delivery });
     return Promise.resolve({
@@ -99,7 +99,7 @@ jest.mock("@/lib/api/call-api", () => ({
     });
   },
 }));
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { info: jest.fn(), error: jest.fn(), warning: jest.fn() },
 }));
 
@@ -130,13 +130,13 @@ import messagesReducer, {
 } from "../../messages/messages.slice";
 import activeRequestsReducer from "../../active-requests/active-requests.slice";
 import conversationInboxReducer from "../../inbox/inbox.slice";
-import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
-import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
-import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice";
-import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
-import appContextReducer from "@/lib/redux/slices/appContextSlice";
-import overlayReducer from "@/lib/redux/slices/overlaySlice";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import creatorDebugReducer from "@host/lib/redux/preferences/creatorDebugSlice";
+import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
+import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
+import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
+import appContextReducer from "@host/lib/redux/slices/appContextSlice";
+import overlayReducer from "@host/lib/redux/slices/overlaySlice";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { smartExecute } from "../smart-execute.thunk";
 
 const AGENT_ID = "compass-itinerary-clerk";

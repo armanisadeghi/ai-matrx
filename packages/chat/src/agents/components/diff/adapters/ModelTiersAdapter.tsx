@@ -9,7 +9,7 @@ import type {
 import {
   ModelTierIdentityList,
   readModelTierIdentities,
-} from "@/features/agents/components/model-tiers/ModelTierIdentityList";
+} from "../../model-tiers/ModelTierIdentityList";
 
 function ModelTiersDiffRenderer({ node }: FieldDiffProps) {
   return (

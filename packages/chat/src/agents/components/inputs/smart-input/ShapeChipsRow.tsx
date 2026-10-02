@@ -22,12 +22,12 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
-import { useSkills } from "@/features/skills/hooks/useSkills";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
+import { useSkills } from "@host/features/skills/hooks/useSkills";
 import { resolveShapeChips } from "./shape-chips";
 
 /** Chip key → Lucide icon (kept out of the pure resolver module). */

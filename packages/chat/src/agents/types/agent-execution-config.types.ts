@@ -19,11 +19,11 @@
  */
 
 import type { LLMParams } from "./agent-api-types";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+import type { ResultDisplayMode } from "../utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
 import type { ApplicationScope } from "./scope.types";
 import type { JsonExtractionConfig } from "./instance.types";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import type { ValueMappingMap } from "../../surfaces/types";
 
 /**
  * ============================================================================

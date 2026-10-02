@@ -18,8 +18,8 @@
 // surface can actually service are present — the per-turn assembler
 // (`deriveClientToolsFromHandle`) advertises exactly that subset.
 
-import type { WidgetHandle } from "@/features/agents/types/widget-handle.types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { WidgetHandle } from "@ai-matrx/chat/agents/types/widget-handle.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 
 /**
  * Write a value into a textarea so BOTH controlled and uncontrolled fields

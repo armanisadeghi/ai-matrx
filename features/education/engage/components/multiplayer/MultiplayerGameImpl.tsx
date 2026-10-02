@@ -46,7 +46,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
   SurfaceRuntimeProvider,
   useSurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationGameScope } from "@/features/surfaces/manifests/education-game.manifest";
 import { useGamePlay } from "../../data/useGamePlay";
 import { useGameChannel } from "../../realtime/useGameChannel";

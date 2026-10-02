@@ -57,11 +57,11 @@ jest.mock("@/features/overlays/openers/diffViewerWindow", () => ({
 
 import agentDefinitionReducer, {
   mergePartialAgent,
-} from "@/features/agents/redux/agent-definition/slice";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import modelRegistryReducer from "@/features/ai-models/redux/modelRegistrySlice";
 import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
 import { AgentSettingsCore } from "../AgentSettingsCore";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;

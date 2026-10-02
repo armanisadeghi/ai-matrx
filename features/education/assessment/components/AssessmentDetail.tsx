@@ -37,7 +37,7 @@ import { ConvertContentDialog } from "@/features/education/convert/ConvertConten
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
 import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import type { TargetKind } from "@/features/education/convert/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
 import { assessmentService } from "../data/assessmentService";
 import { serializeAssessment } from "../data/serializeAssessment";

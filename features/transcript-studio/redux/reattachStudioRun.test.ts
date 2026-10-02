@@ -4,7 +4,7 @@ import {
   deriveAnswerDocumentText,
   selectAccumulatedText,
   selectAnswerText,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import {
   envelopeFromCompleteValue,
   IR_ENVELOPE_KEY,

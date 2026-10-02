@@ -21,17 +21,17 @@
 
 import { useEffect, useRef } from "react";
 import { Loader2, TriangleAlert, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import MarkdownStream from "@/components/MarkdownStream";
-import { AgentAssistantMessage } from "@/features/agents/components/messages-display/assistant/AgentAssistantMessage";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { AgentAssistantMessage } from "../messages-display/assistant/AgentAssistantMessage";
+import { useRetainRequestForViewer } from "../../redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   EMPTY_CONVERSATION_MESSAGES,
   selectConversationMessages,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "../../redux/execution-system/messages/messages.selectors";
 import { useLiveRunStatus } from "./useLiveRunStatus";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const selectNoConversationMessages = () => EMPTY_CONVERSATION_MESSAGES;
 

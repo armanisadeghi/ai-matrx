@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AudioLines, Keyboard, Mic, MicOff, Square, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { Button } from "@host/components/ui/button";
+import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import {
   ambientAssistantMandateChain,
   ambientPageGuidanceValues,
@@ -12,26 +12,26 @@ import {
   type AmbientPageGuidanceValues,
 } from "./ambientAssistantMandates";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
-import { useMandate } from "@/features/mandates/useMandate";
-import { useMandateChain } from "@/features/mandates/useMandateChain";
-import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
-import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";
-import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedAction";
-import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { useVoiceRelaySession } from "@/features/voice-agent/relay/useVoiceRelaySession";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { VOICE_COMMUNICATOR_MANDATE_KEY } from "@/features/voice-agent/relay/useVoiceRelaySession";
-import { VoiceOrb } from "@/features/voice-agent/components/VoiceOrb";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
-import { cn } from "@/lib/utils";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useMandate } from "../../../mandates/useMandate";
+import { useMandateChain } from "../../../mandates/useMandateChain";
+import { selectSubmissionPhase } from "../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { sourceFeatureFromSurfaceName } from "../../utils/source-feature-from-surface";
+import { useOpenQuickChatSheet } from "@host/features/overlays/openers/quickChat";
+import { useAuthGuardedAction } from "@host/features/auth/components/useAuthGuardedAction";
+import { useSurfaceRuntime } from "../../../surfaces/runtime/SurfaceRuntimeContext";
+import { useVoiceRelaySession } from "../../../voice-agent/relay/useVoiceRelaySession";
+import { useAgentLauncher } from "../../hooks/useAgentLauncher";
+import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";
+import { VOICE_COMMUNICATOR_MANDATE_KEY } from "../../../voice-agent/relay/useVoiceRelaySession";
+import { VoiceOrb } from "../../../voice-agent/components/VoiceOrb";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectIsAuthenticated } from "@host/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { selectIsOverlayOpen } from "@host/lib/redux/slices/overlaySlice";
+import type { SourceFeature } from "@host/types/python-generated/source-attribution";
+import { cn } from "@host/lib/utils";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface ActiveAmbientVoiceAssistantProps {
   primaryAgentId: string;

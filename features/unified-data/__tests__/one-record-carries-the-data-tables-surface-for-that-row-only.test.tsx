@@ -33,7 +33,7 @@ let provided: Provided | null = null;
 const recordUpdate = jest.fn(async () => ({ ok: true }));
 
 jest.mock("@/components/official/icons/IconInputWithValidation.dynamic", () => ({ IconInputCompact: () => null }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: (props: Provided & { children: React.ReactNode }) => {
     provided = props;
     return props.children;

@@ -13,7 +13,7 @@
  * has to guess positions.
  */
 
-import type { SurfaceClientTool } from "@/features/surfaces/types";
+import type { SurfaceClientTool } from "@ai-matrx/chat/surfaces/types";
 
 export const BOARD_TILE_KINDS = ["note", "markdown", "text", "html", "image"] as const;
 export type BoardTileKindInput = (typeof BOARD_TILE_KINDS)[number];

@@ -108,7 +108,7 @@ jest.mock("@/utils/supabase/client", () => {
 /** The browser-resident poll. In the reload case it never gets to run at all
  *  — the tab is gone — so it is stubbed to the answer a dead tab gives. */
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversation-persistence",
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence",
   () => ({ waitForConversationPersisted: jest.fn(async () => false) }),
 );
 

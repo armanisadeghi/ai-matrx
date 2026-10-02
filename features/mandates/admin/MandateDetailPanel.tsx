@@ -41,11 +41,11 @@ import { cn } from "@/lib/utils";
 import type {
   AgentLineage,
   AgentLineageRef,
-} from "@/features/agents/redux/agent-definition/selectors";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
-import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
+import { getAgentModeHref } from "@ai-matrx/chat/agents/components/shared/AgentModeController";
+import { AgentDiffViewer } from "@ai-matrx/chat/agents/components/diff/AgentDiffViewer";
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { ProvisionOfferList } from "@/features/mandates/components/ProvisionOfferList";
 import { MandateGoalBlock } from "@/features/mandates/MandateGoalBlock";
@@ -90,7 +90,7 @@ import {
   FieldHelp,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { VariableVerdictList } from "./variable-verdict-presentation";
 import {
   CreateSystemTwinButton,

@@ -48,16 +48,16 @@ import visionInterviewReducer, {
 import { ROLES } from "../../types";
 import instanceUIStateReducer, {
   initInstanceUIState,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import instanceUserInputReducer, {
   initInstanceUserInput,
-} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import instanceContextReducer from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import instanceContextReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import conversationsReducer, {
   createInstance,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import messagesReducer from "@/features/agents/redux/execution-system/messages/messages.slice";
-import activeRequestsReducer from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import messagesReducer from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import activeRequestsReducer from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { RoomChatPane } from "../RoomChatPane";
 import { __resetOpeningSentMarks } from "../RoomOpening";
 
@@ -69,7 +69,7 @@ jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => true }));
 
 /** Not the subject: the chat surface itself. Its empty-state hero is asserted
  *  through the exact store fields `AgentEmptyMessageDisplay` reads. */
-jest.mock("@/features/agents/components/chat/ChatRoomClient", () => ({
+jest.mock("@ai-matrx/chat/agents/components/chat/ChatRoomClient", () => ({
   ChatRoomClient: () => null,
 }));
 
@@ -93,7 +93,7 @@ const mockSends: SendRecord[] = [];
 const mockBehaviour = { mode: "starts" as "starts" | "never-starts" };
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/smart-execute.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk",
   () => ({
     smartExecute:
       (args: { conversationId: string; surfaceKey?: string }) =>
@@ -116,7 +116,7 @@ jest.mock(
         const {
           setInstanceStatus,
           // eslint-disable-next-line @typescript-eslint/no-require-imports
-        } = require("@/features/agents/redux/execution-system/conversations/conversations.slice");
+        } = require("@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice");
         dispatch(
           setInstanceStatus({
             conversationId: args.conversationId,

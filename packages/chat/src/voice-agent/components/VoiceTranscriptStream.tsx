@@ -6,7 +6,7 @@
 
 import { useEffect, useRef } from "react";
 import { AnimatePresence } from "motion/react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type { VoiceTurn } from "../types";
 import { VoiceTranscriptTurn } from "./VoiceTranscriptTurn";
 

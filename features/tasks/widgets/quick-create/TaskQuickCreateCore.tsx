@@ -65,7 +65,7 @@ import {
   TASK_PRIORITIES,
   type TaskPriorityValue,
 } from "@/features/tasks/constants/priority";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   TASK_CREATE_SURFACE_NAME,
   type TaskCreateDraftScope,

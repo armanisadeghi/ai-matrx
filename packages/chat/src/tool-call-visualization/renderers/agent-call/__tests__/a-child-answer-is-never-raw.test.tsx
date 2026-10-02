@@ -16,28 +16,28 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../../agents/types/request.types";
 
 let childStream: { status: string; text: string; label: string | null; childConversationId: string | null } | null = null;
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: () => childStream,
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/active-requests/active-requests.selectors",
+  "../../../../agents/redux/execution-system/active-requests/active-requests.selectors",
   () => ({ selectAgentCallChildStream: () => () => childStream }),
 );
-jest.mock("@/features/agents/hooks/useConversationTitle", () => ({
+jest.mock("../../../../agents/hooks/useConversationTitle", () => ({
   useConversationTitle: () => null,
 }));
-jest.mock("@/components/official/entity-ref/EntityRef", () => ({
+jest.mock("@host/components/official/entity-ref/EntityRef", () => ({
   EntityRef: () => null,
 }));
-jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({
+jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({
   ErrorAlchemyMenu: () => null,
 }));
 jest.mock(
-  "@/features/content-ir/studio/components/KindInstanceRender",
+  "@host/features/content-ir/studio/components/KindInstanceRender",
   () => ({
     __esModule: true,
     default: ({ kind }: { kind: string }) => (
@@ -45,10 +45,10 @@ jest.mock(
     ),
   }),
 );
-jest.mock("@/components/official/structured-value/StructuredValueView", () => ({
+jest.mock("@host/components/official/structured-value/StructuredValueView", () => ({
   StructuredValueView: () => <div data-route="floor" />,
 }));
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: ({
     content,
@@ -68,7 +68,7 @@ jest.mock("@/components/MarkdownStream", () => ({
     </div>
   ),
 }));
-jest.mock("@/components/mardown-display/chat-markdown/BasicMarkdownContent", () => ({
+jest.mock("@host/components/mardown-display/chat-markdown/BasicMarkdownContent", () => ({
   BasicMarkdownContent: ({ content }: { content: string }) => (
     <pre data-route="plain-markdown">{content}</pre>
   ),

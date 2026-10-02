@@ -12,15 +12,15 @@
  * value in one retry, and a value that is partly wrong is refused whole.
  */
 
-import { readCollectionList } from "@/features/surfaces/runtime/collection-write-targets";
-import { resolveSurfaceWritePatch } from "@/features/surfaces/runtime/surface-write-patch";
+import { readCollectionList } from "../../../../surfaces/runtime/collection-write-targets";
+import { resolveSurfaceWritePatch } from "../../../../surfaces/runtime/surface-write-patch";
 import {
   CHAT_DRAFT_WRITE_MODES,
   CHAT_INPUT_DRAFT_MAX,
   CHAT_MESSAGE_TEXT_MAX,
   CHAT_MESSAGES_PER_WRITE,
   isChatDraftWriteMode,
-} from "@/features/surfaces/manifests/chat.manifest";
+} from "@host/features/surfaces/manifests/chat.manifest";
 
 /** A loaded message, as the checks need it. */
 export interface ChatMessageSnapshot {

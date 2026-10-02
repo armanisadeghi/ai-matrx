@@ -55,8 +55,8 @@ import {
   rememberGoogleConnection,
 } from "@/features/google-workspace/connection";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
-import { registerAskResolver } from "@/features/agents/ui-first-tools/redux/ask-resolver-registry";
-import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
+import { registerAskResolver } from "@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry";
+import type { PendingAsk } from "@ai-matrx/chat/agents/ui-first-tools/redux/pending-asks.slice";
 import { checkSendEligibility } from "@/features/crm/compliance/service";
 import { usePartyDetail } from "@/features/crm/hooks/usePartyDetail";
 import {

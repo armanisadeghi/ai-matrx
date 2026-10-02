@@ -19,7 +19,7 @@
  * delegation its historical callers keep using.
  */
 
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
+import type { CxContentBlock } from "@ai-matrx/chat/public-chat/types/cx-tables";
 import { ARTIFACT_TYPE_DEFS } from "../artifact-types/artifact-type-registry";
 import {
   materializeBlocks,

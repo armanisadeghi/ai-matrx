@@ -18,7 +18,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
+import type { ActiveRequest } from "@ai-matrx/chat/agents/types/request.types";
 import { formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
@@ -29,7 +29,7 @@ import {
   fmtTokens,
   getUserRequestResult,
   type MutableTotals,
-} from "@/features/agents/components/run-controls/panels/shared";
+} from "@ai-matrx/chat/agents/components/run-controls/panels/shared";
 import { EyeOff } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";

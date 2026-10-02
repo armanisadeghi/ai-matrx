@@ -35,8 +35,8 @@ import {
   isMessagePinned,
   subscribePinnedMessages,
   togglePinnedMessage,
-} from "@/features/agents/message-pins/pinned-messages-store";
-import { selectRegenerateAnchor } from "@/features/agents/redux/execution-system/message-crud/regenerate-anchor";
+} from "@ai-matrx/chat/agents/message-pins/pinned-messages-store";
+import { selectRegenerateAnchor } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/regenerate-anchor";
 import { readCodeBlockFacts, type CodeBlockFacts } from "../../code-block/code-block-context";
 import { runCommandFor, runnableSandboxId } from "../../code-block/code-run";
 import { chartableTypes, parseDelimitedTable } from "@/components/mardown-display/blocks/chart/table-chart";
@@ -106,7 +106,7 @@ export async function confirmAndRegenerate(
   if (!ok) return;
   try {
     const { regenerateAnswer } = await import(
-      "@/features/agents/redux/execution-system/message-crud/regenerate-answer"
+      "@ai-matrx/chat/agents/redux/execution-system/message-crud/regenerate-answer"
     );
     await ctx.dispatch(regenerateAnswer({ conversationId, assistantMessageId })).unwrap();
   } catch (err) {

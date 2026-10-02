@@ -14,7 +14,7 @@ import {
   AGENT_CONNECTIONS_SURFACE_NAME,
   createAgentConnectionsScope,
 } from "@/features/surfaces/manifests/agent-connections.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { getSliceBinding } from "@/features/settings/slice-bindings";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";

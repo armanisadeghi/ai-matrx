@@ -7,8 +7,8 @@
  * Only requires conversationId — reads style from Redux directly.
  */
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectVariableInputStyle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectVariableInputStyle } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type { VariablesPanelStyle } from "./variable-input-options";
 // FRAGMENTATION LAW (code-splitting skill rule 3): these six style variants are
 // ONE small feature family, always reached beneath an existing ssr:false

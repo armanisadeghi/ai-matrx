@@ -37,12 +37,12 @@
 import {
   formatVariableDisplayName,
   variableValueToDisplay,
-} from "@/features/agents/utils/variable-utils";
+} from "./variable-utils";
 import {
   resolveEntityToken,
   tryGetEntityInfo,
-} from "@/features/scopes/registry/entityRegistry";
-import { getCachedEntityTitle } from "@/features/scopes/service/entityTitles";
+} from "@host/features/scopes/registry/entityRegistry";
+import { getCachedEntityTitle } from "@host/features/scopes/service/entityTitles";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export interface VariableDisplayLine {

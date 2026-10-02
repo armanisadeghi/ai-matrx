@@ -14,7 +14,7 @@ import {
   registerSurfaceRuntime,
   registerSurfaceScopeContribution,
 } from "./SurfaceRuntimeContext";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "../types";
 
 const scope = (): SurfaceScopePayload => ({});
 

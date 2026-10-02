@@ -59,10 +59,10 @@ import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { SURFACE_LAYER_ATTRIBUTE } from "@/features/surfaces/runtime/window-forms";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { SURFACE_LAYER_ATTRIBUTE } from "@ai-matrx/chat/surfaces/runtime/window-forms";
 import {
   HR_EMPLOYER_SURFACE_NAME,
   createHrEmployerScope,

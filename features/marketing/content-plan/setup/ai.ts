@@ -20,7 +20,7 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
  */
 import { useRef, useState } from "react";
 
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 
 import type { MarketingSite } from "@/features/marketing/types";
 import {

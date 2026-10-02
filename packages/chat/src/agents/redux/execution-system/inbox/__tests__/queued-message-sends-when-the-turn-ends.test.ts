@@ -31,7 +31,7 @@ import {
   type ThunkDispatch,
   type UnknownAction,
 } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import inboxReducer, {
   addInboxItem,
   confirmInboxItem,
@@ -53,7 +53,7 @@ const deleted: string[] = [];
 const sent: { conversationId: string; composerText: string }[] = [];
 let storeRef: ReturnType<typeof makeStore> | null = null;
 
-jest.mock("@/lib/api/call-api", () => ({
+jest.mock("@host/lib/api/call-api", () => ({
   callApi:
     (args: { method: string; pathParams: { injection_id?: string } }) =>
     async () => {
@@ -66,7 +66,7 @@ jest.mock("@/lib/api/call-api", () => ({
         : { error: { status, message: "already drained" } };
     },
 }));
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { info: jest.fn(), error: jest.fn(), warning: jest.fn() },
 }));
 jest.mock("../../thunks/smart-execute.thunk", () => ({

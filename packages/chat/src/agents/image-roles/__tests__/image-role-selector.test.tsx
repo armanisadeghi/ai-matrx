@@ -14,7 +14,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { ImageRoleSelector } from "@/features/agents/image-roles/ImageRoleSelector";
+import { ImageRoleSelector } from "../ImageRoleSelector";
 import {
   IMAGE_REFERENCE_ROLES,
   readImageRoleLimits,

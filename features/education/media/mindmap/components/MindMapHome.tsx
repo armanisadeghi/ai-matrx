@@ -15,7 +15,7 @@ import { Network, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -26,8 +26,8 @@ import {
 import { authenticatedStudyMediaLoadKey } from "../../authLoad";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseCreateMindMaps, parseMindMapIds, parseUpdateMindMaps, trustAfterMindMapEdit } from "../mindMapWrites";
 import {
   distinctSourceTitle,

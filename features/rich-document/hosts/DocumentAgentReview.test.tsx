@@ -23,7 +23,7 @@ jest.mock("@/components/official/useProTextareaAgentAction", () => ({
     run: jest.fn(), reset: jest.fn(),
   }),
 }));
-jest.mock("@/features/surfaces/hooks/useSurfaceConfig", () => ({
+jest.mock("@ai-matrx/chat/surfaces/hooks/useSurfaceConfig", () => ({
   useSurfaceAgentRoles: () => ({ roles: {} }),
 }));
 jest.mock("@/lib/toast", () => ({

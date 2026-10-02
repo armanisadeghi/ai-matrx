@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
-import { keyEventInside } from "@/utils/keyboard-scope";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { keyEventInside } from "@host/utils/keyboard-scope";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   undoAgentEdit,
   redoAgentEdit,
-} from "@/features/agents/redux/agent-definition/slice";
+} from "../redux/agent-definition/slice";
 import {
   selectAgentCanUndo,
   selectAgentCanRedo,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../redux/agent-definition/selectors";
 
 // ---------------------------------------------------------------------------
 // Platform detection (runs once, cached)

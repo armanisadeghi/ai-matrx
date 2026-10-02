@@ -17,9 +17,9 @@
  *     (migrations/cx_conversation_bundle_carries_run_history.sql).
  */
 
-import { supabase } from "@/utils/supabase/client";
-import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
-import type { Database } from "@/types/database.types";
+import { supabase } from "@host/utils/supabase/client";
+import { recordUnavailableMessage } from "@host/lib/records/recordUnavailable";
+import type { Database } from "@host/types/database.types";
 import type {
   MessageRecord,
   ToolOnCall,
@@ -31,7 +31,7 @@ import type {
   CxRequestRecord,
   CxToolCallRecord,
 } from "../observability/observability.slice";
-import { componentSaver } from "@/lib/provenance/componentSaver";
+import { componentSaver } from "@host/lib/provenance/componentSaver";
 
 /**
  * Error code for "the conversation row doesn't exist YET" — a client-minted

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
-import { WEB_TOOL_UI_SURFACE } from "@/features/tool-call-visualization/db-renderer/surface";
+import { WEB_TOOL_UI_SURFACE } from "@ai-matrx/chat/tool-call-visualization/db-renderer/surface";
 import { extractErrorMessage } from "@/utils/errors";
 import { writeOneRow } from "@/utils/supabase/writeOne";
 

@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+import type { RootState } from "@host/lib/redux/store";
+import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
 
 export const selectInputCapabilitiesState =
   (conversationId: string) =>

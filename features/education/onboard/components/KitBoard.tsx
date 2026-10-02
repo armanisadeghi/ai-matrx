@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectCurrentPhase } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectCurrentPhase } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
 import type { Phase } from "@/types/python-generated/stream-events";
 import type { useKitGeneration } from "../useKitGeneration";

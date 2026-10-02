@@ -1,5 +1,5 @@
 import { agentHintsExtension } from "../surface-declare";
-import { PAGE_CONTEXT_BUDGET } from "@/features/surfaces/types";
+import { PAGE_CONTEXT_BUDGET } from "../../types";
 
 type DeclaredManifest = Parameters<NonNullable<typeof agentHintsExtension.validate>>[0];
 

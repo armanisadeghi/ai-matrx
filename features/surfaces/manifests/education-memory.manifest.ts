@@ -15,7 +15,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { MEDIA_GENERATOR_SOURCE_KINDS } from "@/features/education/media/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

@@ -16,7 +16,7 @@ import {
   type RagLibraryDocumentEntry,
   type RagLibraryJobEntry,
 } from "@/features/surfaces/manifests/rag-library.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { DocStatus, LibraryDocSummary, LibrarySummary } from "@/features/rag/types/library";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import {

@@ -10,7 +10,7 @@
 
 import { GraduationCap, ShieldCheck } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { cn } from "@/lib/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 

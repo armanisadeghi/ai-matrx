@@ -8,7 +8,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { initiativeListConfig } from "./listConfig";
 import { InitiativeEditorDialog } from "./InitiativeEditorDialog";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingInitiativesScope } from "@/features/surfaces/manifests/marketing-initiatives.manifest";
 
 export function InitiativesListPage({

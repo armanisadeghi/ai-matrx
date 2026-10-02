@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
-import { Label } from "@/components/ui/label";
+import { Label } from "@host/components/ui/label";
 import {
   Popover,
   PopoverContent,
@@ -10,13 +10,13 @@ import {
 } from "@ai-matrx/design-system";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { VariableInputComponent } from "../../../agents/components/inputs/input-components/VariableInputComponent";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+} from "../../../agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { setUserVariableValue } from "../../../agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 
 // ============================================================================
 // TYPES

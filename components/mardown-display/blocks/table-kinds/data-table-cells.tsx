@@ -60,9 +60,9 @@ import {
   Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ShortId } from "@/features/tool-call-visualization/result-fields/ShortId";
+import { ShortId } from "@ai-matrx/chat/tool-call-visualization/result-fields/ShortId";
 import { useClipboard } from "@/hooks/useClipboard";
-import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
+import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { useOpenStructuredValueWindow } from "@/features/overlays/openers/structuredValueWindow";
 import {

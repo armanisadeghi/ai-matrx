@@ -6,25 +6,25 @@ import { ChevronLeft, ChevronRight, Loader2, RotateCcw } from "lucide-react";
 import {
   MatrxDynamicPanelHost,
   sidePanelWidthToPercent,
-} from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+} from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerTitle,
-} from "@/components/ui/drawer";
+} from "@host/components/ui/drawer";
 import { DiffViewer } from "@ai-matrx/diff/react";
-import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectWorkingDocBinding } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { Button } from "@host/components/ui/button";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectWorkingDocBinding } from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const NoteVersionHistoryPanel = dynamic(
   () =>
-    import("@/features/notes/components/diff/NoteVersionHistoryPanel").then(
+    import("@host/features/notes/components/diff/NoteVersionHistoryPanel").then(
       (m) => ({ default: m.NoteVersionHistoryPanel }),
     ),
   {

@@ -7,26 +7,26 @@ import { RESPONSE_FEEDBACK_METRICS } from "@/features/agent-comparison/shared/fe
 import {
   extractFlatText,
   selectConversationMessages,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectInstanceVariableDefinitions } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectInstanceContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.selectors";
+import { selectInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import {
   selectIsExecuting,
   selectLatestAnswerText,
   selectLatestCompletion,
   selectLatestError,
   selectLatestRequestStatus,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   selectAgentDescription,
   selectAgentName,
   selectAgentVersion,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type { RootState } from "@/lib/redux/store";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 const MODEL_SURFACE_NAME = "matrx-user/agent-comparison-model";
 

@@ -1,8 +1,8 @@
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "../../../types/agent-definition.types";
 import {
   contextItemBindingOf,
   isCustomDataBinding,
-} from "@/features/agents/utils/variable-binding";
+} from "../../../utils/variable-binding";
 
 /**
  * Variables to PUT ON THE REQUEST — and to freeze into the first-turn

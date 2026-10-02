@@ -1,10 +1,10 @@
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { StreamBlockAccumulator } from "../stream-block-accumulator";
+import { splitContentIntoBlocksV2 } from "@host/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
 
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 

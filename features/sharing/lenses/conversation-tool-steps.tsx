@@ -17,8 +17,8 @@
  */
 
 import { Lock } from "lucide-react";
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
-import { ToolCallBatch } from "@/features/tool-call-visualization/components/ToolCallBatch";
+import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
+import { ToolCallBatch } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallBatch";
 import { sharedToolEntry, type SharedChatTool } from "./conversation-transcript";
 
 function WithheldNote() {

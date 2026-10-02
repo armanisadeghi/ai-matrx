@@ -17,7 +17,7 @@
 
 import { configureStore } from "@reduxjs/toolkit";
 
-import activeRequestsReducer from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import activeRequestsReducer from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { resolveProvisionalKindRender } from "@/features/content-ir/react/partial-kind-route";
 import { RunLaneManager } from "../redux/lane-manager";
 import { RenderBlockFrameAssembler } from "../transport/render-block-frames";

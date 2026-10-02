@@ -36,7 +36,7 @@ import { useCallback, useState } from "react";
 import { Check, Copy, Loader2, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
-import { useCurrentSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import { useCurrentSurfaceUiState } from "@ai-matrx/chat/surfaces/runtime/surface-ui-state";
 import {
   EPISODE_TITLE_UI_STATE_KEY,
   EPISODE_TITLE_WRITE_TARGET,

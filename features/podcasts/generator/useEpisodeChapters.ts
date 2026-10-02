@@ -26,7 +26,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import type { LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
 import { podcastService } from "@/features/podcasts/service";

@@ -17,8 +17,8 @@ import React, { useState } from "react";
 import {
   SimpleRunSettings,
   type SimpleRunSettingsValue,
-} from "@/features/agents/components/run-controls/SimpleRunSettings/SimpleRunSettings";
-import { SimpleRunSettingsButton } from "@/features/agents/components/run-controls/SimpleRunSettings/SimpleRunSettingsButton";
+} from "@ai-matrx/chat/agents/components/run-controls/SimpleRunSettings/SimpleRunSettings";
+import { SimpleRunSettingsButton } from "@ai-matrx/chat/agents/components/run-controls/SimpleRunSettings/SimpleRunSettingsButton";
 import { ArrowUp, Mic, Paperclip } from "lucide-react";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 

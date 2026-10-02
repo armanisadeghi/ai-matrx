@@ -20,17 +20,17 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   useLiveConversationVoice,
   useVoiceAgentInstance,
-} from "@/features/voice-agent/hooks/useVoiceAgentInstance";
-import { useRealtimeAgentConfig } from "@/features/voice-agent/hooks/useRealtimeAgentConfig";
-import { useXaiVoiceSession } from "@/features/voice-agent/hooks/useXaiVoiceSession";
-import { usePersistVoiceTranscript } from "@/features/voice-agent/hooks/usePersistVoiceTranscript";
-import { SCRIBE_LIVE_MANDATE_KEY } from "@/features/voice-agent/constants";
-import { useMandateAgentInstructions } from "@/features/voice-agent/agentInstructions";
+} from "@ai-matrx/chat/voice-agent/hooks/useVoiceAgentInstance";
+import { useRealtimeAgentConfig } from "@ai-matrx/chat/voice-agent/hooks/useRealtimeAgentConfig";
+import { useXaiVoiceSession } from "@ai-matrx/chat/voice-agent/hooks/useXaiVoiceSession";
+import { usePersistVoiceTranscript } from "@ai-matrx/chat/voice-agent/hooks/usePersistVoiceTranscript";
+import { SCRIBE_LIVE_MANDATE_KEY } from "@ai-matrx/chat/voice-agent/constants";
+import { useMandateAgentInstructions } from "@ai-matrx/chat/voice-agent/agentInstructions";
 // Side-effect import: registers the working-document mutator client tools into
 // the shared realtime client-tool registry so `execution:"client"` calls for
 // them resolve to a runner. Phase 2 of the realtime tool bridge.
 import "./realtimeWorkingDocTools";
-import { updateConfig } from "@/features/voice-agent/state/voiceAgentSlice";
+import { updateConfig } from "@ai-matrx/chat/voice-agent/state/voiceAgentSlice";
 import {
   selectVoiceConversationId,
   selectVoiceError,
@@ -38,20 +38,20 @@ import {
   selectVoiceStatus,
   selectVoiceTotalInterruptions,
   selectVoiceTurns,
-} from "@/features/voice-agent/state/selectors";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/voice-agent/state/selectors";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   TRANSCRIPT_SCRIBE_LIVE_SURFACE,
   createTranscriptScribeLiveScope,
 } from "@/features/surfaces/manifests/transcript-scribe-live.manifest";
-import { deriveVoiceTranscriptScope } from "@/features/voice-agent/agent-context/voiceTranscriptScope";
-import { VoiceOrb } from "@/features/voice-agent/components/VoiceOrb";
-import { VoiceEdgeRibbon } from "@/features/voice-agent/components/VoiceEdgeRibbon";
-import { VoiceControlCluster } from "@/features/voice-agent/components/VoiceControlCluster";
-import { VoiceStatusPill } from "@/features/voice-agent/components/VoiceStatusPill";
-import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
-import { VoiceErrorBanner } from "@/features/voice-agent/components/VoiceErrorBanner";
-import { VoiceDebugPanel } from "@/features/voice-agent/components/VoiceDebugPanel";
+import { deriveVoiceTranscriptScope } from "@ai-matrx/chat/voice-agent/agent-context/voiceTranscriptScope";
+import { VoiceOrb } from "@ai-matrx/chat/voice-agent/components/VoiceOrb";
+import { VoiceEdgeRibbon } from "@ai-matrx/chat/voice-agent/components/VoiceEdgeRibbon";
+import { VoiceControlCluster } from "@ai-matrx/chat/voice-agent/components/VoiceControlCluster";
+import { VoiceStatusPill } from "@ai-matrx/chat/voice-agent/components/VoiceStatusPill";
+import { VoiceTranscriptStream } from "@ai-matrx/chat/voice-agent/components/VoiceTranscriptStream";
+import { VoiceErrorBanner } from "@ai-matrx/chat/voice-agent/components/VoiceErrorBanner";
+import { VoiceDebugPanel } from "@ai-matrx/chat/voice-agent/components/VoiceDebugPanel";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { cn } from "@/lib/utils";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";

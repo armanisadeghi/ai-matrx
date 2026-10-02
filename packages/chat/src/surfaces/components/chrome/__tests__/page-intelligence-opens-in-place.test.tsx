@@ -23,31 +23,31 @@ jest.mock("next/link", () => {
   return ({ href, children, prefetch: _prefetch, ...rest }: { href: string; children: React.ReactNode; prefetch?: boolean }) =>
     ReactModule.createElement("a", { href, ...rest }, children);
 });
-jest.mock("@/features/mandates/feature-intelligence/IntelligenceIndicator", () => ({
+jest.mock("@host/features/mandates/feature-intelligence/IntelligenceIndicator", () => ({
   declaredKeysForRoute: () => ["notes.page_guidance"],
 }));
-jest.mock("@/features/mandates/feature-intelligence/page-intelligence-doors", () => ({
+jest.mock("@host/features/mandates/feature-intelligence/page-intelligence-doors", () => ({
   usePageIntelligenceDoors: () => [],
 }));
-jest.mock("@/features/mandates/feature-intelligence/registry", () => ({
+jest.mock("@host/features/mandates/feature-intelligence/registry", () => ({
   declaredPlacesFor: () => null,
 }));
-jest.mock("@/features/mandates/feature-intelligence/hrefs", () => ({
+jest.mock("@host/features/mandates/feature-intelligence/hrefs", () => ({
   featureIntelligenceHref: (_feature: string, opts: { mandateKey: string }) =>
     `/intelligence/notes?mandate=${opts.mandateKey}`,
 }));
-jest.mock("@/features/mandates/feature-intelligence/placement", () => ({
+jest.mock("@host/features/mandates/feature-intelligence/placement", () => ({
   targetForKey: () => "notes",
 }));
-jest.mock("@/features/surfaces/runtime/surface-mandates", () => ({
+jest.mock("../../../runtime/surface-mandates", () => ({
   useLiveSurfaceMandates: () => [],
 }));
-jest.mock("@/features/mandates/service", () => ({
+jest.mock("../../../../mandates/service", () => ({
   fetchMandateIdentities: () =>
     Promise.resolve({ "notes.page_guidance": { label: "Notes Page Guide" } }),
 }));
-jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
-jest.mock("@/features/overlays/openers/mandateWindow", () => ({
+jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
+jest.mock("@host/features/overlays/openers/mandateWindow", () => ({
   useOpenMandateWindow: () => openMandate,
 }));
 

@@ -9,7 +9,7 @@
  * organization, exactly as before.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import {
   ensureExecutionOrganization,
   executionOrganizationForRequest,

@@ -30,12 +30,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+} from "@host/components/ui/select";
+import { Button } from "@host/components/ui/button";
+import { cn } from "@host/lib/utils";
+import { toast } from "@host/lib/toast";
+import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 // Surface A: the "Select {ScopeType}" prompt sets the globally-active scope so a
 // globally-triggered agent run resolves its bound variables (the server fills them
 // authoritatively from request.scope_ids). Explicit active-context selection.
@@ -43,35 +43,35 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   addActiveScope,
   removeActiveScope,
-} from "@/lib/redux/slices/appContextSlice";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+} from "@host/lib/redux/slices/appContextSlice";
+import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
 import {
   useBoundVariableScope,
   type BoundVarInfo,
-} from "@/features/agents/hooks/useBoundVariableScope";
+} from "../../hooks/useBoundVariableScope";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { isCustomDataBinding } from "@/features/agents/utils/variable-binding";
+} from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { isCustomDataBinding } from "../../utils/variable-binding";
 import { DataBoundVariableChips } from "./DataBoundVariableChips";
 import {
   clearUserVariableValue,
   setUserVariableValue,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
-import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
-import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
-import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
-import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
+} from "../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { ContextValueInput } from "@host/features/scopes/components/reference/ContextValueInput";
+import { variableValueToDisplay } from "../../utils/variable-utils";
+import { setScopeContextValue } from "@host/features/scopes/redux/scopeContextView";
+import { ensureContextValues } from "@host/features/scopes/redux/thunks/ensureContextValues";
+import { buildScopeValuePayload } from "@host/features/scopes/utils/scopeValuePayload";
 import { formatText } from "@ai-matrx/kit/text-case";
-import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
+import type { ContextValueType } from "@host/features/scopes/redux/contextItemCatalog";
 import {
   selectScopeById,
   selectScopesByType,
   selectScopesLoadedForType,
-} from "@/features/scopes/redux/selectors/admin";
-import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+} from "@host/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@host/features/scopes/redux/thunks/ensureScopeTree";
 
 interface BoundVariableChipsProps {
   conversationId: string;

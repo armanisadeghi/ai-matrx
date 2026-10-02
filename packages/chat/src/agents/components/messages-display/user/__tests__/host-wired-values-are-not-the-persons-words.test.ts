@@ -35,21 +35,21 @@ import {
   initInstanceVariables,
   stampSubmittedFirstTurnValues,
   clearSubmittedFirstTurnValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+} from "../../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   selectOwnVariableValues,
   selectUserVariableValues,
   selectVariablesForRequest,
   selectHostVariableNames,
   selectOwnSubmittedFirstTurnValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
-import { resolvePerLaunchMappings } from "@/features/agents/redux/execution-system/thunks/surface-scope-mapping";
+} from "../../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { buildVariableDisplayLines } from "../../../../utils/variable-display-lines";
+import { resolvePerLaunchMappings } from "../../../../redux/execution-system/thunks/surface-scope-mapping";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const CONVERSATION = "conv-1";
-const REPO_ROOT = join(__dirname, "..", "..", "..", "..", "..", "..");
+const REPO_ROOT = join(__dirname, "../../../../../../../..", ".", ".", ".", ".", ".");
 const read = (relative: string) =>
   readFileSync(join(REPO_ROOT, relative), "utf8");
 
@@ -173,8 +173,8 @@ describe("authorship moves one way only", () => {
 
   it("releases the snapshot from both execution paths before a stream reader starts", () => {
     for (const file of [
-      "features/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
-      "features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
+      "packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
+      "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
     ]) {
       const source = read(file);
       expect(source).toContain("firstTurnSnapshotStamped && !streamStarted");
@@ -260,7 +260,7 @@ describe("authorship moves one way only", () => {
  */
 describe("every launch path records authorship", () => {
   const source = read(
-    "features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
+    "packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
   );
 
   // Since 960a1c040f the two agent paths first fold the per-launch mapping
@@ -318,7 +318,7 @@ describe("every launch path records authorship", () => {
 
   it("the user bubble reads the person's own values, never the raw user tier", () => {
     const bubble = read(
-      "features/agents/components/messages-display/user/FirstTurnVariables.tsx",
+      "packages/chat/src/agents/components/messages-display/user/FirstTurnVariables.tsx",
     );
     expect(bubble).toContain("selectOwnSubmittedFirstTurnValues(conversationId)");
     expect(bubble).not.toContain("selectUserVariableValues(conversationId)");

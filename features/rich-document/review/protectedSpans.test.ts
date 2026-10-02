@@ -6,7 +6,7 @@
  * model returned each `\u001b` escape as a space, so the result no longer
  * matched the protected bytes, even for a one-word typo fix.
  */
-import { spliceDisplayEdit, displayOfStoredAnswer } from "@/features/agents/redux/execution-system/message-crud/answer-text-splice";
+import { spliceDisplayEdit, displayOfStoredAnswer } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/answer-text-splice";
 import { maskProtectedSpans, unmaskProtectedSpans } from "./protectedSpans";
 
 const ESC = "\u001b";

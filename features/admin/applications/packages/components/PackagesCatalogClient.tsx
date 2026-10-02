@@ -5,7 +5,7 @@ import { ExternalLink, PackageCheck, PackageOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_APPLICATIONS_SURFACE_NAME,
   createAdminApplicationsScope,

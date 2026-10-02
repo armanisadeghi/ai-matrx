@@ -17,7 +17,7 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 import {
     BookOpen,
     Check,
@@ -27,11 +27,11 @@ import {
     Globe,
     Link2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import MarkdownStream from "@/components/MarkdownStream";
-import { RichDocument } from "@/features/rich-document/RichDocument";
-import type { ContentSource } from "@/features/rich-document/types";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { cn } from "@host/lib/utils";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { RichDocument } from "@host/features/rich-document/RichDocument";
+import type { ContentSource } from "@host/features/rich-document/types";
+import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 
 import type { ToolOverlayTabSpec, ToolRendererProps } from "../../types";
 import { resultAsString } from "../_shared";

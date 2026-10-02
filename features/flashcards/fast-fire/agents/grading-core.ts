@@ -23,12 +23,12 @@ import { fileHandler } from "@/features/files/handler/handler";
 import {
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   audioExtensionForType,
   normalizeAudioType,
 } from "@ai-matrx/browser-audio/core";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import {
   coerceGradeVerdict,
   verdictResult,

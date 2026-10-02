@@ -6,7 +6,7 @@ describe("agent widget display-layer handoff", () => {
     const source = fs.readFileSync(
       path.join(
         process.cwd(),
-        "features/agents/components/widgets/AgentWidgetsPage.tsx",
+        "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       ),
       "utf8",
     );

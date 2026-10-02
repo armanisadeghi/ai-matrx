@@ -42,9 +42,9 @@ import { useToolComponentAgent } from "@/features/tool-call-visualization/admin/
 import type {
   ToolLifecycleEntry,
   ToolLifecycleStatus,
-} from "@/features/agents/types/request.types";
+} from "@ai-matrx/chat/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { buildToolComponentGenerationOffer } from "@/features/tool-call-visualization/admin/toolComponentGenerationOffer";

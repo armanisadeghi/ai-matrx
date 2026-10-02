@@ -21,11 +21,11 @@
  * These thunks are pure reads; they do not mutate server state.
  */
 
-import { callApi, type ApiCallResult } from "@/lib/api/call-api";
+import { callApi, type ApiCallResult } from "@host/lib/api/call-api";
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { components } from "@/types/python-generated/api-types";
+import type { RootState } from "@host/lib/redux/store";
+import type { components } from "@host/types/python-generated/api-types";
 
 // ── Local types ──────────────────────────────────────────────────────────────
 //

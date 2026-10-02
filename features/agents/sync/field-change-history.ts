@@ -1,11 +1,11 @@
 import { computeDiff } from "@ai-matrx/diff/structural";
-import { AGENT_DIFF_OPTIONS } from "@/features/agents/components/diff/agent-diff-constants";
+import { AGENT_DIFF_OPTIONS } from "@ai-matrx/chat/agents/components/diff/agent-diff-constants";
 import {
   parseAgentAutoToolsDisabled,
   parseSkillConfigJson,
-} from "@/features/agents/redux/agent-definition/converters";
-import { parseCustomTools } from "@/features/agents/redux/agent-definition/parse-custom-tools";
-import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
+} from "@ai-matrx/chat/agents/redux/agent-definition/converters";
+import { parseCustomTools } from "@ai-matrx/chat/agents/redux/agent-definition/parse-custom-tools";
+import { sanitizeAgentToolIds } from "@ai-matrx/chat/agents/redux/agent-definition/sanitize-tool-ids";
 import type { Database } from "@/types/database.types";
 
 export type AgentDefinitionVersionRow =

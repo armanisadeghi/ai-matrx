@@ -24,7 +24,7 @@ import { AppConfigEditor } from "@/features/admin/applications/config/components
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import type { AppConfigRow } from "@/features/admin/applications/config/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_APPLICATIONS_SURFACE_NAME,
   createAdminApplicationsScope,

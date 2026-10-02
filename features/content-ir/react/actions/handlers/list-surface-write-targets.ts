@@ -25,7 +25,7 @@
  *     refuse loudly on apply; a component treats it as NOT reachable.
  */
 
-import { listLiveWriteTargets } from "@/features/surfaces/runtime/surface-writeback";
+import { listLiveWriteTargets } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import type { KindActionResult } from "../kind-action-registry";
 import { registerKindAction } from "../kind-action-registry";
 

@@ -12,7 +12,7 @@
 
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { fetchOrchestras, loadOrchestra } from "@/features/agents/redux/orchestras/thunks";
 import { loadManualOrgEdges } from "@/features/agents/redux/orchestras/orgChartThunks";
 import {

@@ -25,7 +25,7 @@
 // animation. The cue stays legible without motion.
 
 import { motion, useReducedMotion } from "motion/react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type { VoiceStatus } from "../types";
 
 interface VoiceEdgeRibbonProps {

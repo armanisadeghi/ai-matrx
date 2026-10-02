@@ -21,8 +21,8 @@
  * "real" to show. We read the agent definition directly here instead.
  */
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
+import { readOf } from "@host/components/read-state/ReadGate";
 import { useEffect, useState } from "react";
 import {
   Search,
@@ -35,41 +35,41 @@ import {
   ShieldOff,
   AlertTriangle,
 } from "lucide-react";
-import type { DatabaseTool } from "@/utils/supabase/tools-service";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ProInput } from "@/components/official/ProInput";
-import { cn } from "@/lib/utils";
+import type { DatabaseTool } from "@host/utils/supabase/tools-service";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { ProInput } from "@host/components/official/ProInput";
+import { cn } from "@host/lib/utils";
 import {
   selectAllTools,
   selectToolsStatus,
   selectToolsError,
-} from "@/features/agents/redux/tools/tools.selectors";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
+} from "../../../redux/tools/tools.selectors";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
+import { fetchAvailableTools } from "../../../redux/tools/tools.thunks";
 import {
   selectAgentError,
   selectAgentTools,
   selectAgentCustomTools,
   selectAgentAutoToolsDisabled,
   selectAgentReadyForCustomExecution,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+} from "../../../redux/agent-definition/selectors";
+import { fetchAgentExecutionFull } from "../../../redux/agent-definition/thunks";
+import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
   selectAllModels,
   selectModelFullyLoaded,
   fetchModelById,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+} from "@host/features/ai-models/redux/modelRegistrySlice";
 import {
   useModelControls,
   supportsTools,
-} from "@/features/agents/hooks/useModelControls";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
+} from "../../../hooks/useModelControls";
+import { selectInstanceOverrideState } from "../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();

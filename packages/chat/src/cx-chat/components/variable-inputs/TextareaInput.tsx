@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
-import { VoiceTextarea } from '@/components/official/VoiceTextarea';
-import { toast } from "@/lib/toast";
-import { variableInputPlaceholder } from "@/features/agents/components/inputs/input-components/variablePlaceholder";
+import { VoiceTextarea } from '@host/components/official/VoiceTextarea';
+import { toast } from "@host/lib/toast";
+import { variableInputPlaceholder } from "../../../agents/components/inputs/input-components/variablePlaceholder";
 
 interface TextareaInputProps {
   value: string;

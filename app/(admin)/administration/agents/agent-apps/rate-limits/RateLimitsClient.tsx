@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { AgentAppRef } from "@/features/agent-apps/components/AgentAppRef";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,

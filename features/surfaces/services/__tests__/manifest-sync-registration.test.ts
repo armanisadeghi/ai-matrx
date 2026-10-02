@@ -14,7 +14,7 @@ jest.mock("@/features/surfaces/manifests/registry", () => ({
   getRegisteredSurfaceNames: () => ["matrx-user/education-flashcard-set"],
   getRawManifest: () => undefined,
 }));
-jest.mock("@/features/surfaces/config/namespace-registry", () => ({
+jest.mock("@ai-matrx/chat/surfaces/config/namespace-registry", () => ({
   listRegisteredNamespaces: () => [],
 }));
 jest.mock("@/lib/organizations/systemOrg", () => ({

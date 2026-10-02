@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 
 import {
   isNeedsIntake,
@@ -23,7 +23,7 @@ function resourceUnionKinds(source: string): string[] {
   return Array.from(block.matchAll(/type:\s*"([a-z_]+)"/g), (m) => m[1]!).sort();
 }
 
-const TYPES_PATH = resolve(__dirname, "../../agents/resources/types.ts");
+const TYPES_PATH = resolve(__dirname, "../../../packages/chat/src/agents/resources/types.ts");
 
 describe("resourceToSourceRef — exhaustiveness", () => {
   it("the source reader sees an added variant (self-test)", () => {

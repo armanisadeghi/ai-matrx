@@ -26,14 +26,14 @@ import { SmartInputFileDropTarget } from "./SmartInputFileDropTarget";
 import {
   smartExecute,
   cancelExecution,
-} from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectShowFreeformInput } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectAllResourcesResolved } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
+} from "../../../redux/execution-system/thunks/smart-execute.thunk";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectShowFreeformInput } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectIsExecuting } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { selectAllResourcesResolved } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
+import { Button } from "@host/components/ui/button";
+import { cn } from "@host/lib/utils";
+import type { VariablesPanelStyle } from "../../../types/instance.types";
 import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 import type { ComposerPresentation } from "./composer/composer-types";
 import { composerShows } from "./composer/composer-mode-visibility";

@@ -13,7 +13,7 @@
  * grows above it and unmounts the moment the stream ends.
  */
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 export interface BreathingOrbProps {
   className?: string;

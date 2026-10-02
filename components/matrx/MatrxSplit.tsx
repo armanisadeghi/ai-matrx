@@ -26,7 +26,7 @@ import type {
 } from "@/features/rich-document/types";
 import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 
 // Lazy — only pulled into the bundle when a caller opts into actions by
 // passing `actionsSource`. Consumers that don't use the action surface pay

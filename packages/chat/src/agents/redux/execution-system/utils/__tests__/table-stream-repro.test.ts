@@ -3,8 +3,8 @@
  * StreamBlockAccumulator at many chunk sizes and assert every table
  * commits as a `table` block (never `code`/`text`).
  */
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { StreamBlockAccumulator } from "../stream-block-accumulator";
+import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
 
 function makeTable(startCol: number): string {
   const cols = Array.from({ length: 18 }, (_, i) => startCol + i);

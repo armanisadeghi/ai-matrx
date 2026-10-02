@@ -1,19 +1,19 @@
-import { renderHook } from "@/test-utils/renderHook";
-import type { Resource } from "@/features/agents/resources/types";
+import { renderHook } from "@host/test-utils/renderHook";
+import type { Resource } from "../../../resources/types";
 
 const add = jest.fn(async () => ({ ok: true }));
 const dispatch = jest.fn();
 const state: { instanceResources: { byConversationId: Record<string, Record<string, unknown>> } } = {
   instanceResources: { byConversationId: {} },
 };
-jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch, useAppStore: () => ({ getState: () => state }) }));
-jest.mock("@/features/scopes/host/associationsStore", () => ({ getAssociationsStore: () => ({ add, remove: jest.fn(), load: jest.fn(), getEdges: () => ({ status: "ready", edges: [] }) }) }));
-jest.mock("@/features/agents/redux/execution-system/conversations/conversations.selectors", () => ({ selectIsCacheOnly: () => () => false }));
-jest.mock("@/features/agents/redux/execution-system/instance-resources/resource-source", () => ({ refineBlockType: (x: unknown) => x, resourceDataToSource: (_t: unknown, data: unknown) => data }));
-jest.mock("@/features/agents/redux/execution-system/instance-resources/editable-resource-types", () => ({ isEditableCapableBlockType: () => false }));
-jest.mock("@/features/agents/redux/execution-system/instance-resources/instance-resources.slice", () => ({ addResource: jest.fn(() => ({ type: "add" })), removeResource: jest.fn(), setResourcePreview: jest.fn(), setResourceStatus: jest.fn((p: unknown) => ({ type: "status", payload: p })) }));
-jest.mock("@/features/agents/components/inputs/resources/attached-documents", () => ({ cleanDocumentLabel: (x: string) => x, documentAttachLabelFromState: () => "Document" }));
-jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
+jest.mock("@host/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch, useAppStore: () => ({ getState: () => state }) }));
+jest.mock("@host/features/scopes/host/associationsStore", () => ({ getAssociationsStore: () => ({ add, remove: jest.fn(), load: jest.fn(), getEdges: () => ({ status: "ready", edges: [] }) }) }));
+jest.mock("../../../redux/execution-system/conversations/conversations.selectors", () => ({ selectIsCacheOnly: () => () => false }));
+jest.mock("../../../redux/execution-system/instance-resources/resource-source", () => ({ refineBlockType: (x: unknown) => x, resourceDataToSource: (_t: unknown, data: unknown) => data }));
+jest.mock("../../../redux/execution-system/instance-resources/editable-resource-types", () => ({ isEditableCapableBlockType: () => false }));
+jest.mock("../../../redux/execution-system/instance-resources/instance-resources.slice", () => ({ addResource: jest.fn(() => ({ type: "add" })), removeResource: jest.fn(), setResourcePreview: jest.fn(), setResourceStatus: jest.fn((p: unknown) => ({ type: "status", payload: p })) }));
+jest.mock("./attached-documents", () => ({ cleanDocumentLabel: (x: string) => x, documentAttachLabelFromState: () => "Document" }));
+jest.mock("@host/lib/toast", () => ({ toast: { error: jest.fn() } }));
 
 import { useAttachResource } from "./attach-resource";
 
@@ -42,7 +42,7 @@ describe("useAttachResource file edges", () => {
 describe("useAttachResource is idempotent", () => {
   beforeEach(() => { jest.clearAllMocks(); state.instanceResources.byConversationId = {}; });
   it("does not add a second identical per-turn resource", async () => {
-    const { addResource } = jest.requireMock("@/features/agents/redux/execution-system/instance-resources/instance-resources.slice");
+    const { addResource } = jest.requireMock("../../../redux/execution-system/instance-resources/instance-resources.slice");
     state.instanceResources.byConversationId["conversation-1"] = {
       existing: { resourceId: "existing", blockType: "input_notes", source: { label: "Note", id: "note-1" } },
     };
@@ -51,7 +51,7 @@ describe("useAttachResource is idempotent", () => {
     finally { await handle.unmount(); }
   });
   it("adds a resource that differs", async () => {
-    const { addResource } = jest.requireMock("@/features/agents/redux/execution-system/instance-resources/instance-resources.slice");
+    const { addResource } = jest.requireMock("../../../redux/execution-system/instance-resources/instance-resources.slice");
     state.instanceResources.byConversationId["conversation-1"] = {
       existing: { resourceId: "existing", blockType: "input_notes", source: { id: "note-2", label: "Other" } },
     };

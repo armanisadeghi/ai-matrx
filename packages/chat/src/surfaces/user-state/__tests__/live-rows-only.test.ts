@@ -18,11 +18,11 @@ function builder(result: unknown) {
   return b;
 }
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: { schema: (...a: unknown[]) => (builder({ data: [], error: null }).schema as (...x: unknown[]) => unknown)(...a) },
 }));
-jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));
-jest.mock("@/lib/organizations/organizationRefusalToast", () => ({
+jest.mock("@host/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));
+jest.mock("@host/lib/organizations/organizationRefusalToast", () => ({
   withOrganizationRefusalShown: async (_v: string, fn: () => Promise<string>) => fn(),
 }));
 

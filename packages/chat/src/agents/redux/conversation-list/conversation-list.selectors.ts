@@ -1,7 +1,7 @@
 "use client";
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   ConversationListItem,
   ConversationListAgentCacheEntry,
@@ -11,7 +11,7 @@ import {
   CONVERSATION_LIST_TTL_MS,
   conversationListCacheKey,
 } from "./conversation-list.types";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectAgentIdFromInstance } from "../execution-system/conversations/conversations.selectors";
 
 const EMPTY_ITEMS: ConversationListItem[] = [];
 const EMPTY_IDS: string[] = [];

@@ -15,13 +15,13 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: jest.fn(),
   useAppSelector: jest.fn(),
 }));
-jest.mock("@/features/agents/redux/agent-shortcuts/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-shortcuts/thunks", () => ({
   fetchUnifiedMenu: jest.fn(),
 }));
-jest.mock("@/features/agents/redux/agent-shortcuts/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-shortcuts/selectors", () => ({
   selectAllShortcutsArray: jest.fn(),
 }));
-jest.mock("@/features/agents/redux/agent-shortcut-categories/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors", () => ({
   selectAllCategoriesArray: jest.fn(),
 }));
 jest.mock("@/features/agent-connections/redux/skl/content-block-compat", () => ({
@@ -32,8 +32,8 @@ import {
   buildCategoryGroups,
   type AgentMenuCategoryGroup,
 } from "../useUnifiedAgentContextMenu";
-import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
-import type { AgentShortcutCategoryRecord } from "@/features/agents/redux/agent-shortcut-categories/types";
+import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
+import type { AgentShortcutCategoryRecord } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/types";
 
 const ORG = "3e790542-fdaf-40b2-8bf3-658bf94fe67f";
 const CAT = "06048a3b-86db-40f4-9092-c051f6374983";

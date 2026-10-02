@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   ChevronDown,
   ChevronRight,
@@ -11,7 +11,7 @@ import {
   Check,
   LayoutDashboard,
 } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectUIStateInstancesByAgent,
   selectAllUIStateConversationIds,

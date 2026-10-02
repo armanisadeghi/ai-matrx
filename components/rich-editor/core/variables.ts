@@ -10,7 +10,7 @@
 //   unbound     the surface declares no variables at all (a note), so there is
 //               nothing to check against; shown neutral, never as an error
 
-import { isDeclarableVariableName } from "@/features/agents/utils/variable-utils";
+import { isDeclarableVariableName } from "@ai-matrx/chat/agents/utils/variable-utils";
 
 export type VariableState = "declared" | "undeclared" | "literal" | "unbound";
 

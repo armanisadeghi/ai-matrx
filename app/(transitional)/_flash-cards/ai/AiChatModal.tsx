@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowUp } from 'lucide-react';
 import { useAiChat } from '@/hooks/flashcard-app/useAiChat';
-import { LiveRunDisplay } from '@/features/agents/components/live-run/LiveRunDisplay';
+import { LiveRunDisplay } from '@ai-matrx/chat/agents/components/live-run/LiveRunDisplay';
 import { addMessage } from '@/lib/redux/slices/flashcardChatSlice';
 import {
     selectActiveFlashcard,

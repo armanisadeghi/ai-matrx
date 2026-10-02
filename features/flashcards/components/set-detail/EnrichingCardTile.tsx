@@ -35,7 +35,7 @@ import { AlertTriangle, Check, Clock, PenLine } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectKindEnvelope } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import {
   cardEnrichmentValue,

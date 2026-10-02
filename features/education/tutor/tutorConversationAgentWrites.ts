@@ -1,10 +1,10 @@
 import type { AppDispatch } from "@/lib/redux/store";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   renameConversation,
   setConversationArchived,
-} from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { softDeleteConversation } from "@/features/agents/redux/execution-system/message-crud/soft-delete-conversation.thunk";
+} from "@ai-matrx/chat/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { softDeleteConversation } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/soft-delete-conversation.thunk";
 
 export interface OwnedTutorConversation {
   id: string;

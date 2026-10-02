@@ -27,7 +27,7 @@ import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { downloadTextFile } from "../export/download";
 import { ContentFindControl } from "@/features/rich-document/search/ContentFindControl";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationSummariesScope } from "@/features/surfaces/manifests/education-summaries.manifest";
 import { useAccess } from "@/utils/permissions/access";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
@@ -36,8 +36,8 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { useStudyMediaAuthReady } from "@/features/education/media/authLoad";
 import { SummaryEditor } from "./SummaryEditor";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseCreateSummaries, parseSummaryIds, parseUpdateSummaries } from "../summaryWrites";
 
 interface SummaryEnvelope {

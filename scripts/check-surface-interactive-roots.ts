@@ -16,7 +16,7 @@ import { basename, relative, resolve } from "node:path";
 import ts from "typescript";
 
 const ROOT = process.cwd();
-const SOURCE_ROOTS = ["app", "components", "features"] as const;
+const SOURCE_ROOTS = ["app", "components", "features", "packages/chat/src"] as const;
 const TEST_FILE_RE =
   /(?:^|\/)(?:__tests__\/|[^/]+\.(?:test|spec|stories)\.tsx$)/;
 

@@ -54,7 +54,7 @@ import {
   MoreHorizontalTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { cn } from "@/lib/utils";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
@@ -99,7 +99,7 @@ import {
   EXTRACTION_JOB_NAME_MAX_LENGTH,
   EXTRACTIONS_ROUTE,
 } from "./constants";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

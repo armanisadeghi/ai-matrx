@@ -99,7 +99,7 @@ import {
   toolSummary,
   toolsListSummary,
 } from "./mcp-tools/format";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_TOOL_REGISTRY_SURFACE_NAME,
   createAdminToolRegistryScope,

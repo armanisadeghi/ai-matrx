@@ -39,14 +39,14 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectWorkingDocTitle } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { useCanvas } from "@/features/canvas/hooks/useCanvas";
-import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
-import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
-import { useOpenWorkingDocumentWindow } from "@/features/overlays/openers/workingDocumentWindow";
-import { cn } from "@/lib/utils";
+} from "@host/components/ui/dropdown-menu";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectWorkingDocTitle } from "../../agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { useCanvas } from "@host/features/canvas/hooks/useCanvas";
+import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
+import { useOpenNotesWindow } from "@host/features/overlays/openers/notesWindow";
+import { useOpenWorkingDocumentWindow } from "@host/features/overlays/openers/workingDocumentWindow";
+import { cn } from "@host/lib/utils";
 import type { ToolArtifact, ToolArtifactKind } from "../registry/toolArtifact";
 
 interface ArtifactResultBarProps {

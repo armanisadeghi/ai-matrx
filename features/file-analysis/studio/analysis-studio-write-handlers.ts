@@ -40,7 +40,7 @@ import type {
   AnnotationUpdateBody,
   LabelCatalogEntry,
 } from "@/features/file-analysis/api/file-analysis";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 /**
  * The category the label picker falls back to when the user types a custom

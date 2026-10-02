@@ -14,9 +14,9 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectActiveSurfaces,
   selectSurfacesStatus,
-} from "@/features/surfaces/redux/selectors";
-import { loadSurfaces } from "@/features/surfaces/redux/thunks";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
+import { loadSurfaces } from "@ai-matrx/chat/surfaces/redux/thunks";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 
 const DEFAULT_CLIENT = "matrx-default";
 const DEFAULT_SURFACE = "matrx-default/default";

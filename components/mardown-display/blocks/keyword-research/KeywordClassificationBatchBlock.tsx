@@ -26,7 +26,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
-import { useCurrentSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import { useCurrentSurfaceUiState } from "@ai-matrx/chat/surfaces/runtime/surface-ui-state";
 import type {
   KeywordSelectionUiState,
   KeywordSelectionWrite,

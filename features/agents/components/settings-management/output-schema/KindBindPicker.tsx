@@ -30,7 +30,7 @@ import {
 } from "@ai-matrx/design-system";
 import type { KindSchema } from "@ai-matrx/content-ir";
 import type { KindCatalogEntry } from "@/features/content-ir/registry/kind-catalog";
-import type { OutputSchema } from "@/features/agents/types/json-schema";
+import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 import { buildKindOutputSchema, listBindableKinds } from "./kindBinding";
 
 interface KindBindPickerProps {

@@ -16,9 +16,9 @@
  * disagrees with the server is worse than no verdict, because it is believed.
  */
 
-import { createClient } from "@/utils/supabase/client";
-import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
-import { isJsonObject } from "@/types/json";
+import { createClient } from "@host/utils/supabase/client";
+import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
+import { isJsonObject } from "@host/types/json";
 
 /**
  * The consumer-visible field names an agent's `output_schema` declares.

@@ -17,7 +17,7 @@
 
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { chatConversationsActions } from "../_legacy-stubs";
 import { sendMessage } from "../_legacy-stubs";
 import { loadConversationHistory } from "../_legacy-stubs";
@@ -39,8 +39,8 @@ import type {
   ChatModeConfig,
   ConversationResource,
 } from "../_legacy-stubs";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { Resource } from "@/features/agents/resources/types";
+import type { VariableDefinition } from "../../agents/types/agent-definition.types";
+import type { Resource } from "../../agents/resources/types";
 
 // ============================================================================
 // CONFIGURATION

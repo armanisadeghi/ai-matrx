@@ -3,12 +3,12 @@
 import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAgentById,
   selectAgentType,
   selectAgentVersion,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../../redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { deriveAgentMode, getAgentModeHref } from "./AgentModeController";
 

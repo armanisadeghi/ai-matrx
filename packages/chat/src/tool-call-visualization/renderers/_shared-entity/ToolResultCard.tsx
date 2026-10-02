@@ -34,8 +34,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from "@host/components/ui/dropdown-menu";
+import { cn } from "@host/lib/utils";
 
 export interface ToolResultCardMenuItem {
   label: string;

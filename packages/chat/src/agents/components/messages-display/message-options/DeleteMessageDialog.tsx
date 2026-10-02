@@ -22,7 +22,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@host/components/ui/alert-dialog";
 import {
   Drawer,
   DrawerContent,
@@ -30,11 +30,11 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-} from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectToolCallsForMessage } from "@/features/agents/redux/execution-system/observability/observability.selectors";
+} from "@host/components/ui/drawer";
+import { Button } from "@host/components/ui/button";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectToolCallsForMessage } from "../../../redux/execution-system/observability/observability.selectors";
 
 interface DeleteMessageDialogProps {
   open: boolean;

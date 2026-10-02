@@ -19,8 +19,8 @@
 // context) are guaranteed present via the platform primitive `withBaselineScope`
 // — we reuse it, never reimplement it.
 
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
+import { withBaselineScope } from "@ai-matrx/chat/surfaces/utils/baseline-scope";
 import {
   BASELINE_VALUE_NAMES,
   type BaselineKey,
@@ -29,7 +29,7 @@ import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   getSurfaceRuntime,
   getSurfaceRuntimeForName,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { SelectionRange } from "./utils/selection-tracking";
 import { CONTEXT_MENU_ENTITY_KEY, CONTEXT_MENU_HEADING_KEY } from "./types";
 

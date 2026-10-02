@@ -27,15 +27,15 @@
  */
 
 import { Cpu, Copy, RefreshCw, ExternalLink } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 import type {
   ContextMenuEntityRef,
   ContextMenuExtraSection,
-} from "@/features/context-menu-v3/types";
+} from "@host/features/context-menu-v3/types";
 import {
   withAvailability,
   type AvailabilityMap,
-} from "@/features/context-menu-v3/utils/availability";
+} from "@host/features/context-menu-v3/utils/availability";
 
 /** The `[CONTEXT_MENU_ENTITY_KEY]` value every agent-scoped window should pass. */
 export function agentEntityRef(

@@ -1,7 +1,7 @@
 import {
   isValidShortcutContext,
   type ShortcutContext,
-} from "@/features/agents/utils/shortcut-context-utils";
+} from "@ai-matrx/chat/agents/utils/shortcut-context-utils";
 
 /**
  * Parse comma/semicolon/newline-separated input into known shortcut context keys.

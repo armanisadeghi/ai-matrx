@@ -15,7 +15,7 @@ import {
   ListLevelProblem,
   ProblemList,
   repeatsProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { DEFAULT_ACCESS_MODE } from "./constants";
 import type { CreateClassInput } from "./hooks/useClasses";
 import type {

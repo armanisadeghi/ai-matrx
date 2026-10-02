@@ -1,20 +1,20 @@
 import { useState, useRef } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectAppContext } from "@/lib/redux/slices/appContextSlice";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAgentLauncher } from "./useAgentLauncher";
+import { selectInstance } from "../redux/execution-system/conversations/conversations.selectors";
+import { selectResolvedVariables } from "../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectUserInputText } from "../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectAppContext } from "@host/lib/redux/slices/appContextSlice";
 import type {
   ApiEndpointMode,
   JsonExtractionConfig,
   ManagedAgentOptions,
   ResultDisplayMode,
   SourceFeature,
-} from "@/features/agents/types/instance.types";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
+} from "../types/instance.types";
+import type { FeLlmParams } from "../types/agent-api-types";
+import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
+import type { ApplicationScope } from "../utils/scope-mapping";
 
 // Defaults for the simulated editor context (matches the user-supplied sample).
 const DEFAULT_EDITOR_SELECTION = "The capital of France is Paris.";

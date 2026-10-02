@@ -58,7 +58,7 @@ import {
   archiveTemplate,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { MenuPresenceProvider } from "@/features/context-menu-v3/menu-presence";

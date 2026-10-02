@@ -11,8 +11,8 @@
 import {
   getModelDefaults,
   resolveModelControls,
-} from "@/features/agents/hooks/useModelControls";
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
+} from "../useModelControls";
+import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
 
 function model(id: string, controls: Record<string, unknown>): AIModelRecord {
   return { id, name: id, controls } as unknown as AIModelRecord;
@@ -52,8 +52,8 @@ test("model defaults never turn an image file format into a response format", ()
 // The same rule holds at the Redux boundary (fetchModelById → normalizeModel)
 // and in the agent-settings parser — the live registry never sees a renamed
 // image output_format.
-import { normalizeModel, normalizePromptSettings } from "@/features/ai-models/utils/model-normalizer";
-import { parseModelControls } from "@/lib/redux/slices/agent-settings/internal-utils";
+import { normalizeModel, normalizePromptSettings } from "@host/features/ai-models/utils/model-normalizer";
+import { parseModelControls } from "@host/lib/redux/slices/agent-settings/internal-utils";
 
 test("the registry boundary keeps an image model's output_format", () => {
   const normalized = normalizeModel(gptImage2) as unknown as {

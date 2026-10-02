@@ -33,14 +33,14 @@ import {
   FolderKanban,
   Trash2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
-import { renameIntentFallback } from "@/components/official/item/renameIntentFallback";
+import { toast } from "@host/lib/toast";
+import { renameIntentFallback } from "@host/components/official/item/renameIntentFallback";
 import type {
   ItemMenuConfig,
   ItemMenuSection,
-} from "@/components/official/item/types";
-import type { AppDispatch } from "@/lib/redux/store";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+} from "@host/components/official/item/types";
+import type { AppDispatch } from "@host/lib/redux/store";
+import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
 import {
   copyConversationLink,
   displayConversationTitle,
@@ -52,13 +52,13 @@ import {
   setConversationFavorite,
   setConversationArchived,
   setConversationExcludeFromKg,
-} from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { softDeleteConversation } from "@/features/agents/redux/execution-system/message-crud/soft-delete-conversation.thunk";
+} from "../../redux/conversation-list/conversation-row-actions.thunks";
+import { softDeleteConversation } from "../../redux/execution-system/message-crud/soft-delete-conversation.thunk";
 import {
   describeSource,
   featureLabel,
   sourceKey,
-} from "@/features/agents/redux/conversation-history/source-registry";
+} from "../../redux/conversation-history/source-registry";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

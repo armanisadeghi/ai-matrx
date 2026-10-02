@@ -35,7 +35,7 @@ import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAccess } from "@/utils/permissions/access";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationAudioStudyScope } from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { useStudyMediaAuthReady } from "../../authLoad";
 import { studyMediaService } from "../../service";

@@ -36,9 +36,9 @@ import { Braces, Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { KIND_KEY, reconstructRegionValue } from "@ai-matrx/content-ir";
-import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
+import { humanizeKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import { useClipboard } from "@/hooks/useClipboard";
-import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
+import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 
 /** Props every runtime-result block takes — the resolver-only route shape. */
 export interface ResultKindBlockProps {

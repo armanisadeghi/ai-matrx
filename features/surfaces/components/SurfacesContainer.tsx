@@ -28,15 +28,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { ADMIN_UI_SURFACES_SURFACE_NAME } from "@/features/surfaces/manifests/admin-ui-surfaces.manifest";
 import {
   buildUiSurfacesScope,
   type UiSurfacesDialog,
-} from "@/features/surfaces/lib/ui-surfaces-scope";
+} from "@ai-matrx/chat/surfaces/lib/ui-surfaces-scope";
 import {
   parseCreateSurfacesValue,
   parseDeleteSurfacesValue,
@@ -44,9 +44,9 @@ import {
   parseUpdateSurfacesValue,
   type NewSurfaceDraftFields,
   type SurfaceWriteContext,
-} from "@/features/surfaces/lib/ui-surfaces-agent-writes";
-import { surfaceDeleteConsequence } from "@/features/surfaces/utils/surface-delete-consequence";
-import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
+} from "@ai-matrx/chat/surfaces/lib/ui-surfaces-agent-writes";
+import { surfaceDeleteConsequence } from "@ai-matrx/chat/surfaces/utils/surface-delete-consequence";
+import { countDriftIssues } from "@ai-matrx/chat/surfaces/utils/drift-report-count";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
@@ -94,12 +94,12 @@ import {
   readinessBucketOf,
   type SurfaceWithStats,
   type SurfaceReadinessBucket,
-} from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import { READINESS_META } from "@/features/surfaces/components/SurfaceReadinessBadge";
 import { getRegisteredSurfaceNames } from "@/features/surfaces/manifests/registry";
 import { SURFACE_CANDIDATES } from "@/features/surfaces/data/surface-candidates";
-import { listParentFilterOptions } from "@/features/surfaces/utils/surface-hierarchy";
-import { surfaceCheckState } from "@/features/surfaces/utils/surface-check-ledger";
+import { listParentFilterOptions } from "@ai-matrx/chat/surfaces/utils/surface-hierarchy";
+import { surfaceCheckState } from "@ai-matrx/chat/surfaces/utils/surface-check-ledger";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { readOf } from "@/components/read-state/ReadGate";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";

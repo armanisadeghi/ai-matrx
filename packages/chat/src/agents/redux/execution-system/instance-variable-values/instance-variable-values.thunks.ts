@@ -10,7 +10,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState, AppDispatch } from "@/lib/redux/store";
+import type { RootState, AppDispatch } from "@host/lib/redux/store";
 import {
   setUserVariableValue,
   setUserVariableValues,

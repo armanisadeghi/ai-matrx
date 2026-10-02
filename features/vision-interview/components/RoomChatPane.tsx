@@ -34,13 +34,13 @@ import {
   BottomSheetHeader,
 } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ChatRoomClient } from "@/features/agents/components/chat/ChatRoomClient";
+import { ChatRoomClient } from "@ai-matrx/chat/agents/components/chat/ChatRoomClient";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
-import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectSubmissionPhase } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   setContextEntries,
   removeContextEntry,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";

@@ -1,7 +1,7 @@
 import {
   executionRejectionMeta,
   type ExecutionRejectionMeta,
-} from "@/lib/diagnostics/executionRejectionMeta";
+} from "@host/lib/diagnostics/executionRejectionMeta";
 /**
  * Execute Manual Instance Thunk
  *
@@ -77,20 +77,20 @@ import {
  * features/agents/audits/04-legacy-obliteration-plan.md.
  */
 
-import { mintClientTempId } from "@/lib/ids/durable-record-id";
+import { mintClientTempId } from "@host/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import type {
   ChatRequestPayload,
   SystemInstruction,
-} from "@/features/agents/types/agent-api-types";
-import type { MessagePart } from "@/types/python-generated/stream-events";
-import type { Json } from "@/types/database.types";
-import type { UserInputPart } from "@/features/agents/types/request.types";
-import type { RequestInitiation } from "@/features/agents/types/instance.types";
+} from "../../../types/agent-api-types";
+import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { Json } from "@host/types/database.types";
+import type { UserInputPart } from "../../../types/request.types";
+import type { RequestInitiation } from "../../../types/instance.types";
 import type { MessageRecord } from "../messages/messages.slice";
-import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
+import { isSyntheticAgentId } from "../../agent-definition/synthetic-id";
 import {
   selectMessageCount,
   selectNextMessagePosition,
@@ -112,7 +112,7 @@ import {
   stampSubmittedFirstTurnValues,
   clearSubmittedFirstTurnValues,
 } from "../instance-variable-values/instance-variable-values.slice";
-import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
+import { isFirstTurn } from "../../../ui-first-tools/redux/build-ambient-context";
 import { selectInstanceContextEntries } from "../instance-context/instance-context.selectors";
 import {
   buildRequestContext,
@@ -133,20 +133,20 @@ import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
 } from "./resolve-base-url";
-import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
+import { resolveAgentSandboxRef } from "@host/lib/sandbox/active-binding";
 import {
   selectActiveServer,
   selectEndpointOverrideConfig,
-} from "@/lib/redux/slices/apiConfigSlice";
-import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
+} from "@host/lib/redux/slices/apiConfigSlice";
+import { selectDesktopTargetInstanceId } from "@host/lib/redux/preferences/adminPreferencesSlice";
 import {
   selectProjectId,
   selectActiveScopeTypeIds,
   selectScopeSelectionsContext,
   selectTaskId,
-} from "@/lib/redux/slices/appContextSlice";
+} from "@host/lib/redux/slices/appContextSlice";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
-import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
+import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
 import {
   createRequest,
   setRequestStatus,
@@ -158,7 +158,7 @@ import {
   shouldCreateOptimisticUserMessage,
 } from "../messages/messages.slice";
 import { processStream } from "./process-stream";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { ENDPOINTS } from "@host/lib/api/endpoints";
 import {
   registerAbortController,
   unregisterAbortController,
@@ -171,9 +171,9 @@ import {
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 import { resilientFetch } from "@ai-matrx/data/net";
-import { logApiTarget } from "@/lib/api/log-api-target";
+import { logApiTarget } from "@host/lib/api/log-api-target";
 import { toNetError } from "@ai-matrx/data/net";
 import {
   RUN_STREAM_LIFETIME_BACKSTOP_MS,
@@ -182,23 +182,23 @@ import {
   runOutputKindFromModalities,
   runWaitTimeoutMessage,
   type RunOutputKind,
-} from "@/lib/api/run-wait";
-import { selectModelById } from "@/features/ai-models/redux/modelRegistrySlice";
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
-import { getUserId } from "@/utils/auth/getUserId";
-import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
+} from "@host/lib/api/run-wait";
+import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
+import { getUserId } from "@host/utils/auth/getUserId";
+import { payloadSafetyStore } from "@host/lib/persistence/payloadSafetyStore";
 import {
   startRequest as startNetRequest,
   setPhase as setNetPhase,
   beatHeartbeat as beatNetHeartbeat,
   finishRequest as finishNetRequest,
-} from "@/lib/redux/net/netRequestsSlice";
+} from "@host/lib/redux/net/netRequestsSlice";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
-import type { ToolSpec } from "@/features/agents/types/tool-injection.types";
-import { isUiGateKey } from "@/lib/redux/slices/agent-settings/ui-gates";
-import { extractErrorMessage } from "@/utils/errors";
+import type { ToolSpec } from "../../../types/tool-injection.types";
+import { isUiGateKey } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import { extractErrorMessage } from "@host/utils/errors";
 
 // Model-gated UI flags that may ride flattened in the builder's working state
 // (e.g. `tools: { allowed: true }`, `image_urls: true`). They must not be

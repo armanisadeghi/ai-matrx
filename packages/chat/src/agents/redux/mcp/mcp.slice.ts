@@ -1,10 +1,10 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+import type { McpCatalogEntry } from "../../types/mcp.types";
 import {
   fetchMcpCatalog,
   connectMcpServer as connectMcpServerService,
-} from "@/features/agents/services/mcp.service";
-import type { UpsertConnectionParams } from "@/features/agents/services/mcp.service";
+} from "../../services/mcp.service";
+import type { UpsertConnectionParams } from "../../services/mcp.service";
 import {
   disconnectMcpConnection,
   fetchMcpAvailability,
@@ -12,9 +12,9 @@ import {
   persistMcpManualCredentials,
   refreshMcpConnection,
   type ManualAuthMethod,
-} from "@/features/agents/services/mcp-connections.service";
-import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
-import type { AttachableAvailability } from "@/features/connectors/attachable-resources";
+} from "../../services/mcp-connections.service";
+import type { McpToolSchema } from "../../services/mcp-client/tool-discovery";
+import type { AttachableAvailability } from "@host/features/connectors/attachable-resources";
 
 // ---------------------------------------------------------------------------
 // State

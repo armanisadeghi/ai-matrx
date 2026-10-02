@@ -34,13 +34,13 @@ import {
   FileTextIcon,
 } from "@/components/official/PageTemplate";
 import type { KeywordVariantSet } from "@/features/content-ir/kinds/generated/kinds.generated";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 import {
   SCRAPER_ANALYSIS_CONTENT_VARIABLE,
   SCRAPER_ANALYSIS_MANDATES,
 } from "@/features/scraper/constants/analysis-agents";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { AnalysisMandateGate } from "./AnalysisMandateGate";
 import type { PageAnalysisFacts } from "./page-analysis-offer-values";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

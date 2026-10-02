@@ -9,7 +9,7 @@
  * chip and the one Source input (both render `ResourceFamilyPolicyEditor`).
  */
 
-import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
+import type { DocumentRepresentation } from "../../../types/instance.types";
 import { formatCount } from "@ai-matrx/kit/format";
 
 /** The "what the AI reads" choices, in the order they are offered. */

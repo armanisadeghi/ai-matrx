@@ -20,7 +20,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
   },
 }));
 
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: ReactNode }) => children,
 }));
 

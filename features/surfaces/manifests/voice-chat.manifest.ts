@@ -1,4 +1,4 @@
-import type { SurfaceManifest, SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceManifest, SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const VOICE_CHAT_SURFACE = "matrx-user/voice-chat";

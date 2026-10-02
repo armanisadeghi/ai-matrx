@@ -1,7 +1,7 @@
 import type {
   SurfaceOption,
   SurfaceWithStats,
-} from "@/features/surfaces/services/surfaces.service";
+} from "../services/surfaces.service";
 
 type NamedSurface = Pick<
   SurfaceOption,

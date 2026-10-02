@@ -2,7 +2,7 @@
 // no network) so the action registry can decide display synchronously.
 // The thunk that acts on it lives in ./regenerate-answer.
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 export interface RegenerateAnchorInput {
   id: string;

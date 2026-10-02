@@ -31,9 +31,9 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-import { ambientAssistantMandateChain } from "@/features/agents/components/ambient-assistant/ambientAssistantMandates";
+import { ambientAssistantMandateChain } from "@ai-matrx/chat/agents/components/ambient-assistant/ambientAssistantMandates";
 import { MESSAGING_MANDATE_KEY_LIST } from "@/features/messaging/lib/messagingMandates";
-import { mandateKeyForBuiltin } from "@/features/agents/constants/system-agent-registry";
+import { mandateKeyForBuiltin } from "@ai-matrx/chat/agents/constants/system-agent-registry";
 import { MANDATE_WORKSPACE_GOAL_WRITER_MANDATE_KEY } from "@/features/surfaces/manifests/mandate-workspace.manifest";
 
 (
@@ -141,9 +141,9 @@ jest.mock("@/utils/supabase/client", () => ({
   }),
 }));
 
-import { resolveMandate } from "../service";
-import { useMandateChain } from "../useMandateChain";
-import { useMandateSet } from "../useMandateSet";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
+import { useMandateChain } from "@ai-matrx/chat/mandates/useMandateChain";
+import { useMandateSet } from "@ai-matrx/chat/mandates/useMandateSet";
 import { withClaims } from "@/test-utils/supabase-auth";
 
 let container: HTMLDivElement;

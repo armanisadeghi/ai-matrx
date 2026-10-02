@@ -12,9 +12,9 @@
  * (number / slider → number input; everything else → textarea).
  */
 
-import { Label } from "@/components/ui/label";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { Label } from "@host/components/ui/label";
+import type { VariableDefinition } from "../../types/agent-definition.types";
+import { ProTextarea } from "@host/components/official/ProTextarea";
 
 interface WidgetVariableInputsProps {
   definitions: VariableDefinition[];

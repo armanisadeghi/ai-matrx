@@ -15,17 +15,17 @@
  */
 const mockGetManifest = jest.fn();
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
-jest.mock("@/features/content-ir/registry/schema-source-kind-tables", () => ({
+jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({
   getKindInputContractBySlug: jest.fn(),
 }));
 
@@ -36,8 +36,8 @@ import {
 } from "../surface-writeback";
 import { registerSurfaceRuntime } from "../SurfaceRuntimeContext";
 import { describeAgentWritableTargets } from "../agent-offer";
-import { notesEditorManifest } from "../../manifests/notes-editor.manifest";
-import { buildSurfaceWriteApprovalChange } from "@/features/agents/redux/execution-system/thunks/surface-write-approval-change";
+import { notesEditorManifest } from "@host/features/surfaces/manifests/notes-editor.manifest";
+import { buildSurfaceWriteApprovalChange } from "../../../agents/redux/execution-system/thunks/surface-write-approval-change";
 
 const ROUTING_LINE = "Routing: (pending)";
 

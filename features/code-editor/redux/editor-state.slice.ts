@@ -16,7 +16,7 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { IdeState } from "@/features/agents/types/agent-api-types";
+import type { IdeState } from "@ai-matrx/chat/agents/types/agent-api-types";
 
 interface EditorStateSliceState {
   byConversationId: Record<string, IdeState | null>;

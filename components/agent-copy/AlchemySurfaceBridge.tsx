@@ -7,7 +7,7 @@ import {
 } from "@ai-matrx/kit/content-transfer";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 /**
  * Creates a handle for this exact React mount. Hook-only runtime registrations

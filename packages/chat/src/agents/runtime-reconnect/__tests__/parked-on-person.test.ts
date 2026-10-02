@@ -1,6 +1,6 @@
 /** The reconnect's durable fact for a parked turn: open asks on THIS conversation only. */
 const fetchPending = jest.fn();
-jest.mock("@/features/action-requests/self-service", () => ({
+jest.mock("@host/features/action-requests/self-service", () => ({
   fetchPendingActionRequests: () => fetchPending(),
 }));
 

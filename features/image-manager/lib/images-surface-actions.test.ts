@@ -6,7 +6,7 @@ import {
   pruneImageSelectionToVisible,
   selectVisibleCloudImages,
 } from "./images-surface-actions";
-import { SurfaceWriteRefusalError } from "@/features/surfaces/runtime/surface-writeback";
+import { SurfaceWriteRefusalError } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 

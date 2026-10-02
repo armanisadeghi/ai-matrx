@@ -49,14 +49,14 @@ Create one `ConversationShell` component tree driven by a single Redux slice (`c
 - **dev branch only** — nothing goes to `main` until fully tested
 - **No feature regressions** — every feature every route has today must exist in the unified system before the old code is deleted
 - **Incremental** — routes migrate one by one; the old code continues working until cut over
-- **Feature directory** — all new code must live under `features/conversation/`, not scattered in `components/`, `lib/`, or `features/[other-feature]/`
+- **Feature directory** — all new code must live under `packages/chat/src/conversation/`, not scattered in `components/`, `lib/`, or `features/[other-feature]/`
 
 ---
 
 ## 2. System Overview
 
 ```
-features/conversation/
+packages/chat/src/conversation/
 ├── components/           ← All UI components (currently at components/conversation/)
 │   ├── ConversationShell.tsx
 │   ├── MessageList.tsx
@@ -138,7 +138,7 @@ prompt-execution → usePromptExecutionAdapter → chatConversationsSlice[sessio
 
 ### 3c. Adapter Hooks (currently split)
 
-> **Must move to** `features/conversation/hooks/` — see Step 1.
+> **Must move to** `packages/chat/src/conversation/hooks/` — see Step 1.
 
 | File | Current location | What it does | Consumers today |
 |------|-----------------|-------------|-----------------|
@@ -148,7 +148,7 @@ prompt-execution → usePromptExecutionAdapter → chatConversationsSlice[sessio
 
 ### 3d. Tool Renderer Registry (delegated)
 
-Tool rendering is owned by `@/features/tool-call-visualization`. See `features/tool-call-visualization/FEATURE.md` for the renderer contract (`ToolRendererProps`, `ToolLifecycleEntry`), the static registry, and the dynamic/DB-stored renderer pipeline. Conversation components only import the `ToolCallVisualization` shell.
+Tool rendering is owned by `@/features/tool-call-visualization`. See `packages/chat/src/tool-call-visualization/FEATURE.md` for the renderer contract (`ToolRendererProps`, `ToolLifecycleEntry`), the static registry, and the dynamic/DB-stored renderer pipeline. Conversation components only import the `ToolCallVisualization` shell.
 
 ### 3e. Deprecated Legacy Files (tagged, still in production)
 
@@ -163,7 +163,7 @@ Tool rendering is owned by `@/features/tool-call-visualization`. See `features/t
 
 ## 4. External Dependencies
 
-These are all non-generic dependencies the unified system relies on. They live outside `features/conversation/` and must either remain as-is, be moved here eventually, or have their API contracts locked.
+These are all non-generic dependencies the unified system relies on. They live outside `packages/chat/src/conversation/` and must either remain as-is, be moved here eventually, or have their API contracts locked.
 
 ### 4a. Redux Slices (read-only access — must not be modified)
 
@@ -291,25 +291,25 @@ Each step is independent of the next **except ordering**. A step must pass tsc +
 
 ---
 
-### 🔲 Step 1: Relocate to `features/conversation/` (NEXT)
+### 🔲 Step 1: Relocate to `packages/chat/src/conversation/` (NEXT)
 
 **Status:** Not started  
 **Risk:** Low — almost no external consumers yet  
 **Prerequisite:** None
 
 **Tasks:**
-- [ ] `mkdir -p features/conversation/components features/conversation/hooks features/conversation/redux/thunks`
+- [ ] `mkdir -p features/conversation/components packages/chat/src/conversation/hooks features/conversation/redux/thunks`
 - [ ] Move `components/conversation/*.tsx` → `features/conversation/components/`
 - [ ] Move `components/conversation/index.ts` → `features/conversation/index.ts` (update barrel paths)
 - [ ] Move `lib/redux/chatConversations/` → `features/conversation/redux/`
-- [ ] Move `features/chat/hooks/useSocketIoSessionAdapter.ts` → `features/conversation/hooks/`
-- [ ] Move `features/prompts/hooks/usePromptExecutionAdapter.ts` → `features/conversation/hooks/`
-- [ ] Move `features/prompts/hooks/usePromptBuilderAdapter.ts` → `features/conversation/hooks/`
+- [ ] Move `features/chat/hooks/useSocketIoSessionAdapter.ts` → `packages/chat/src/conversation/hooks/`
+- [ ] Move `features/prompts/hooks/usePromptExecutionAdapter.ts` → `packages/chat/src/conversation/hooks/`
+- [ ] Move `features/prompts/hooks/usePromptBuilderAdapter.ts` → `packages/chat/src/conversation/hooks/`
 - [ ] Update `lib/redux/rootReducer.ts` import path to `@/features/conversation/redux`
 - [ ] Update all internal cross-references within the moved files
 - [ ] Create `features/conversation/index.ts` barrel exporting all public API
 - [ ] Run `NODE_OPTIONS="--max-old-space-size=8192" npx tsc --noEmit` — zero new errors
-- [ ] Commit: `refactor: relocate conversation system to features/conversation/`
+- [ ] Commit: `refactor: relocate conversation system to packages/chat/src/conversation/`
 
 **Verification:** `/chat` route still works.
 

@@ -27,7 +27,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Loader2, Network, PanelRight, Webhook } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { removeAgentFromOrchestra, reorderOrchestraMembers } from "@/features/agents/redux/orchestras/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { AgentPeekButton } from "./AgentPeekButton";

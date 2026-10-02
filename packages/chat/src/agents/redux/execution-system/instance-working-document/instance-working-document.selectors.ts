@@ -8,7 +8,7 @@
  * `createSelector` memoisation.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import {
   DEFAULT_DOC_KIND,
   NO_BINDING,

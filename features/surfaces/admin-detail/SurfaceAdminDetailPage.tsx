@@ -72,7 +72,7 @@ import {
   type SurfaceUsage,
   type ToolSurfaceDefaultsRow,
   type UiSurfaceRow,
-} from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import { NewSurfaceDialog } from "@/features/surfaces/components/NewSurfaceDialog";
 import {
   fetchSurfaceConfigBundle,
@@ -81,7 +81,7 @@ import {
   setNamespaceConfig,
   tierOf,
   type SurfaceConfigBundle,
-} from "@/features/surfaces/services/surface-config.service";
+} from "@ai-matrx/chat/surfaces/services/surface-config.service";
 import {
   getManifest,
   getRawManifest,
@@ -93,8 +93,8 @@ import {
   listAgentSurfaceBindings,
   upsertAgentSurfaceBinding,
   type AgentSurfaceBinding,
-} from "@/features/surfaces/services/bind-agent-to-surface.service";
-import { evaluateBindingAutoRun } from "@/features/surfaces/utils/binding-auto-run";
+} from "@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service";
+import { evaluateBindingAutoRun } from "@ai-matrx/chat/surfaces/utils/binding-auto-run";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   ToolSearchDialog,
@@ -109,13 +109,13 @@ import {
   listBundles,
   type BundleRow,
 } from "@/features/tool-registry/bundles/services/bundles.service";
-import { EXECUTION_MODES } from "@/features/agents/runtime/pickRuntime";
-import type { SurfaceManifest, SurfaceValue } from "@/features/surfaces/types";
+import { EXECUTION_MODES } from "@ai-matrx/chat/agents/runtime/pickRuntime";
+import type { SurfaceManifest, SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import {
   buildChildrenByParent,
   getAncestorChain,
   surfaceAdminHref,
-} from "@/features/surfaces/utils/surface-hierarchy";
+} from "@ai-matrx/chat/surfaces/utils/surface-hierarchy";
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";

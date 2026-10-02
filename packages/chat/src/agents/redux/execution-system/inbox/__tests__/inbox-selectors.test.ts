@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { selectInboxItems } from "../inbox.selectors";
 import conversationInboxReducer, { addInboxItem } from "../inbox.slice";
 

@@ -91,8 +91,8 @@ AgentPage / ChatPage (server)
 - `useAgentBootstrap.ts` — replaced by Phase 1 thunks.
 
 **Still alive (used by other features, not the SSR chat route):**
-- `features/cx-conversation/` — other routes may still use it
-- `features/conversation/` — exports from cx-chat but separate feature
+- `packages/chat/src/cx-conversation/` — other routes may still use it
+- `packages/chat/src/conversation/` — exports from cx-chat but separate feature
 
 ### Phase 5 — Completed Items
 
@@ -175,7 +175,7 @@ All `@/features/prompts/types/core` and `@/features/prompts/types/resources` imp
 **Correction from previous tracker:** `agent_conversations` table is old/unused. The actual tables are `cx_conversation` + `cx_message` — the newest, most structured tables in the system.
 
 ### Phase 1 — Completed Items
-- **`initializeChatAgents` thunk** added to `features/agents/redux/agent-definition/thunks.ts`
+- **`initializeChatAgents` thunk** added to `packages/chat/src/agents/redux/agent-definition/thunks.ts`
   - Calls `fetchAgentsListFull()` — owned + shared + builtins in one RPC
   - 15-min TTL + 4-hour stale-while-revalidate via module-level timestamp
   - `isChatListFresh()` / `isChatListStale()` exported for hook use
@@ -268,7 +268,7 @@ The **new agent system does NOT write to cx tables** — Python backend writes t
 **[KNOWN] Decision taken:** Option B — Use `fetchAgentsListFull` (owned + shared + builtins in one call). No new Tier 1 RPC needed. `get_agents_list_full()` is fast enough for the sidebar.
 
 **[DONE] Phase 1 implementation:**
-- Added `initializeChatAgents({ force?: boolean })` thunk to `features/agents/redux/agent-definition/thunks.ts`
+- Added `initializeChatAgents({ force?: boolean })` thunk to `packages/chat/src/agents/redux/agent-definition/thunks.ts`
   - Wraps `fetchAgentsListFull()` with TTL guard (15 min) + stale-while-revalidate (4 hours)
   - Uses module-level `_chatListFetchedAt` timestamp — session-local, no Redux pollution
   - Exports `isChatListFresh()` and `isChatListStale()` helpers for the bootstrap hook
@@ -433,7 +433,7 @@ The **new agent system does NOT write to cx tables** — Python backend writes t
 |---|---|---|---|
 | `PromptVariable` | `features/prompts/types/core` | `features/agents/redux/agent-definition/types` as `VariableDefinition` | [KNOWN] |
 | `PromptSettings` | `features/prompts/types/core` | `lib/api/types` as `LLMParams` | [KNOWN] |
-| `Resource` | `features/prompts/types/resources` | `features/agents/redux/execution-system/instance-resources/instance-resources.slice.ts` as `InstanceResource` | [THINK — verify shape] |
+| `Resource` | `features/prompts/types/resources` | `packages/chat/src/agents/redux/execution-system/instance-resources/instance-resources.slice.ts` as `InstanceResource` | [THINK — verify shape] |
 | `ResourceChips` component | `features/prompts/components/resource-display` | `features/agents/components/smart/SmartAgentResourceChips` | [THINK] |
 | `ResourcePickerMenu` | `features/prompts/components/resource-picker` | `features/agents/components/smart/SmartAgentResourcePickerButton` | [THINK] |
 | `ModelSettingsDialog` | `features/prompts/components/configuration` | Needs agent system equivalent | [THINK — check AgentSettingsModal] |
@@ -442,17 +442,17 @@ The **new agent system does NOT write to cx tables** — Python backend writes t
 
 **Files needing type import updates (after new types decided):**
 - `lib/redux/slices/activeChatSlice.ts` — `PromptVariable` + `PromptSettings` in interface + state
-- `features/cx-chat/types/conversation.ts` — `PromptVariable`, `Resource` in interfaces
-- `features/cx-chat/types/agents.ts` — `PromptVariable`
-- `features/cx-chat/hooks/useAgentBootstrap.ts` — `PromptSettings`
+- `packages/chat/src/cx-chat/types/conversation.ts` — `PromptVariable`, `Resource` in interfaces
+- `packages/chat/src/cx-chat/types/agents.ts` — `PromptVariable`
+- `packages/chat/src/cx-chat/hooks/useAgentBootstrap.ts` — `PromptSettings`
 - `features/cx-chat/hooks/useConversationSession.ts` — `PromptVariable`, `Resource`
-- `features/cx-chat/utils/settings-diff.ts` — `PromptSettings`
-- `features/cx-chat/components/user-input/ConversationInput.tsx` — 3 components + types
-- `features/cx-chat/components/user-input/GuidedVariableInputs.tsx` — `PromptVariable`
-- `features/cx-chat/components/user-input/StackedVariableInputs.tsx` — `VariableInputComponent`
-- `features/cx-chat/components/messages/UserMessage.tsx` — `ResourcesContainer`
-- `features/cx-chat/components/ChatWelcomeServer.tsx` — `PromptVariable`
-- `features/cx-chat/components/ChatWelcomeClient.tsx` — `Resource`
+- `packages/chat/src/cx-chat/utils/settings-diff.ts` — `PromptSettings`
+- `packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx` — 3 components + types
+- `packages/chat/src/cx-chat/components/user-input/GuidedVariableInputs.tsx` — `PromptVariable`
+- `packages/chat/src/cx-chat/components/user-input/StackedVariableInputs.tsx` — `VariableInputComponent`
+- `packages/chat/src/cx-chat/components/messages/UserMessage.tsx` — `ResourcesContainer`
+- `packages/chat/src/cx-chat/components/ChatWelcomeServer.tsx` — `PromptVariable`
+- `packages/chat/src/cx-chat/components/ChatWelcomeClient.tsx` — `Resource`
 
 **Decision needed:** Do we create a shared type shim (e.g. `lib/types/agent-chat.ts` re-exporting from both sources) or do a one-shot update of all imports? Given the file count, a shim first + one-shot sweep later is pragmatic.
 
@@ -538,12 +538,12 @@ OR: Adapt `ConversationInput` to dispatch to new slices while keeping same UI.
 
 ### Status: ✅ Done (Phase 4)
 
-**[KNOWN]** `AgentPickerSheet.tsx` currently uses `useAgentConsumer` from `features/cx-chat/hooks` which reads from `agentCacheSlice` (prompts table). Uses `autoUpgradeToCore` to fetch descriptions/tags when picker opens.
+**[KNOWN]** `AgentPickerSheet.tsx` currently uses `useAgentConsumer` from `packages/chat/src/cx-chat/hooks` which reads from `agentCacheSlice` (prompts table). Uses `autoUpgradeToCore` to fetch descriptions/tags when picker opens.
 
-**[THINK]** The new system's `useAgentConsumer` from `features/agents/hooks` reads from `agentDefinition` slice. If Gap 1 is done (agent listing from agents table), swap the hook.
+**[THINK]** The new system's `useAgentConsumer` from `packages/chat/src/agents/hooks` reads from `agentDefinition` slice. If Gap 1 is done (agent listing from agents table), swap the hook.
 
 **Tasks:**
-- [ ] Swap `useAgentConsumer` import from `cx-chat/hooks` to `features/agents/hooks`
+- [ ] Swap `useAgentConsumer` import from `cx-chat/hooks` to `packages/chat/src/agents/hooks`
 - [ ] Update `AgentPickerSheet` to use `fetchAgentExecutionFull` on agent select (instead of `selectAgent` from old consumer)
 
 ---

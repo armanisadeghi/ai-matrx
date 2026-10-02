@@ -16,7 +16,7 @@ import {
   AdminSectionShell,
   type AdminSectionTab,
 } from "@/features/admin/components/AdminSectionShell";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_APPLICATIONS_SURFACE_NAME,
   createAdminApplicationsScope,

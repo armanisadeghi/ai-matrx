@@ -42,24 +42,24 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
-import { entityFromSurfaceKey } from "@/features/agents/utils/surface-key";
+import { entityFromSurfaceKey } from "@ai-matrx/chat/agents/utils/surface-key";
 import {
   selectLastFocusedInputConversation,
   selectLastFocusedDisplayConversation,
   selectLastFocusedSurfaceKey,
-} from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import CreatorRunTabContent, {
   useCreatorRunWindows,
   type RunTabId,
-} from "@/features/agents/components/run-controls/CreatorRunTabContent";
+} from "@ai-matrx/chat/agents/components/run-controls/CreatorRunTabContent";
 import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
 import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { StreamDebugPanel } from "@/features/agents/components/debug/StreamDebugPanel";
-import { RoutingPanel } from "@/features/agents/components/debug/RoutingPanel";
-import { SandboxInsightPanel } from "@/features/agents/components/debug/SandboxInsightPanel";
-import { ObservationalMemoryCore } from "@/features/agents/components/observational-memory/ObservationalMemoryCore";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { StreamDebugPanel } from "@ai-matrx/chat/agents/components/debug/StreamDebugPanel";
+import { RoutingPanel } from "@ai-matrx/chat/agents/components/debug/RoutingPanel";
+import { SandboxInsightPanel } from "@ai-matrx/chat/agents/components/debug/SandboxInsightPanel";
+import { ObservationalMemoryCore } from "@ai-matrx/chat/agents/components/observational-memory/ObservationalMemoryCore";
 import CreatorSettingsTab from "./tabs/CreatorSettingsTab";
 import CreatorDataTab from "./tabs/CreatorDataTab";
 

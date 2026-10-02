@@ -19,7 +19,7 @@ import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { DynamicIcon } from "@ai-matrx/icons";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createScopesScope,
   SCOPES_SURFACE_NAME,

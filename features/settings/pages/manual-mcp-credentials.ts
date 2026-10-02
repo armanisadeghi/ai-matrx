@@ -1,4 +1,4 @@
-import { headerFieldKey } from "@/features/agents/services/mcp-connections.service";
+import { headerFieldKey } from "@ai-matrx/chat/agents/services/mcp-connections.service";
 
 export interface ManualHeaderInput {
   name: string;

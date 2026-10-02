@@ -18,49 +18,49 @@
  * are persisted to Redux so components can read them after creation.
  */
 
-import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
+import { adminLaneOrganizationId } from "@host/lib/api/admin-lane";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   ManagedAgentOptions,
   ResultDisplayMode,
-} from "@/features/agents/types/instance.types";
+} from "../../../types/instance.types";
 import {
   isHeadlessDisplayMode,
   resolveInterfaceOnlyFlag,
-} from "@/features/agents/utils/run-ui-utils";
+} from "../../../utils/run-ui-utils";
 import {
   resolveMandate,
   assertMandateVariables,
   type ResolvedMandate,
-} from "@/features/mandates/service";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import { toast } from "@/lib/toast";
-import type { ValueMappingMap } from "@/features/surfaces/types";
-import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
-import { isPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { withLiveSurfaceContext } from "@/features/surfaces/runtime/surface-chain";
+} from "../../../../mandates/service";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
+import type { ApplicationScope } from "../../../types/scope.types";
+import { toast } from "@host/lib/toast";
+import type { ValueMappingMap } from "../../../../surfaces/types";
+import { withBaselineScope } from "../../../../surfaces/utils/baseline-scope";
+import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { withLiveSurfaceContext } from "../../../../surfaces/runtime/surface-chain";
 import {
   resolveEffectiveAutoRun,
   unresolvedRequiredVariables,
-} from "@/features/surfaces/utils/binding-auto-run";
+} from "../../../../surfaces/utils/binding-auto-run";
 import {
   getSurfaceRuntime,
   getSurfaceRuntimeForName,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
-import { alwaysOnSurfaceKeys } from "@/features/surfaces/utils/always-on-context";
+} from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { withSurfaceDocumentEvidence } from "../../../../surfaces/utils/document-evidence";
+import { alwaysOnSurfaceKeys } from "../../../../surfaces/utils/always-on-context";
 import {
   ensureAgentIdentity,
   fetchAgentExecutionFull,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "../../agent-definition/thunks";
 import { applyLaunchModelOverrides } from "../instance-model-overrides/launch-model-overrides";
-import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
-import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
-import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
-import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
+import { selectAgentCustomExecutionPayload } from "../../agent-definition/selectors";
+import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
+import { ensureShortcutLoaded } from "../../agent-shortcuts/thunks";
+import { resolveShortcutMappings } from "@host/features/agent-shortcuts/utils/resolveShortcutMappings";
 import {
   createManualInstance,
   createInstanceFromShortcut,
@@ -91,14 +91,14 @@ import {
   setInstanceSurfaceOwnsOutput,
   patchConversation,
 } from "../conversations/conversations.slice";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
 import { DISPLAY_MODE_TO_OVERLAY_ID } from "../display-mode-overlay";
 import {
   isProjectCreateFlow,
   logProjectCreateAiSnapshot,
   logProjectCreateAiStage,
   warnProjectCreateAi,
-} from "@/features/projects/debug/projectCreateAiDebug";
+} from "@host/features/projects/debug/projectCreateAiDebug";
 import {
   applyLaunchWritePolicies,
   prepareLaunchMappings,
@@ -247,7 +247,7 @@ export const launchAgentExecution = createAsyncThunk<
       const questionOrganizationId =
         organizationId ??
         selectedOrganizationId ??
-        (await (await import("@/lib/organizations/ensureOrgId")).ensureOrgId(null));
+        (await (await import("@host/lib/organizations/ensureOrgId")).ensureOrgId(null));
       const displayKey: AnyMandateKey = mandateKey;
       const resolved = await resolveMandate(displayKey, { organizationId: questionOrganizationId });
       resolvedMandate = resolved;

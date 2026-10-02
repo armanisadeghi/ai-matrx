@@ -33,8 +33,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import {
   AnchorRecordsList,
   useAnchorRecords,
-} from "@/features/content-ir/records/AnchorRecordsList";
-import { CONVERSATION_ANCHOR_TYPE } from "@/features/content-ir/records/kind-record-service";
+} from "@host/features/content-ir/records/AnchorRecordsList";
+import { CONVERSATION_ANCHOR_TYPE } from "@host/features/content-ir/records/kind-record-service";
 
 export function ConversationRecordsChip({
   conversationId,

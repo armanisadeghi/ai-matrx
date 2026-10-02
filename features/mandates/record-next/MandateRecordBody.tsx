@@ -62,7 +62,7 @@ import {
   StatusToken,
   PropertyRow,
 } from "@/components/official/ConfigurationFields";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { Section } from "@/features/mandates/workspace/Section";
 import { EffectiveConfigLayers } from "@/features/mandates/components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
@@ -79,7 +79,7 @@ import {
   readMandateAddress,
 } from "@/features/mandates/mandate-address";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { useMandateHolder } from "@/features/mandates/useMandateHolder";
+import { useMandateHolder } from "@ai-matrx/chat/mandates/useMandateHolder";
 import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
 import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
 import {
@@ -89,7 +89,7 @@ import {
   buildMandateDefinitionCore,
   type MandateAlchemyCapture,
 } from "@/features/mandates/workspace/MandateAlchemy";
-import type { ResolvedMandateHolder } from "@/features/mandates/service";
+import type { ResolvedMandateHolder } from "@ai-matrx/chat/mandates/service";
 import {
   ladderRowChangesHolder,
   ladderRowIsBroken,

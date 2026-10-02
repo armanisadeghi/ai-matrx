@@ -16,15 +16,15 @@ import {
     Check,
     Shield,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@host/components/ui/button";
+import { Badge } from "@host/components/ui/badge";
 import type { ToolRendererProps } from "../../types";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
+import { useOpenStructuredListManagerV2Window } from "@host/features/overlays/openers/structuredListManagerV2Window";
 import { EntityOpenActions } from "../_shared-entity/EntityOpenActions";
 import { getArg, resultAsObject } from "../_shared";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface UserList {
     id: string;

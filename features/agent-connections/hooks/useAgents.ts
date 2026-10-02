@@ -6,9 +6,9 @@ import {
   selectLiveAgents,
   selectAgentsSliceStatus,
   selectAgentsSliceError,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
-import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchAgentsList } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import type { AgentDefinitionRecord } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 export interface UseAgentsResult {
   agents: AgentDefinitionRecord[];

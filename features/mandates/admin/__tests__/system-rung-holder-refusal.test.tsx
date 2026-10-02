@@ -49,10 +49,10 @@ jest.mock("@/lib/redux/hooks", () => ({
 
 /** A READ catalogue that does not contain the drafted agent — a real personal
  *  agent standing at the system rung, not an unloaded list. */
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectBuiltinAgents: () => [{ id: "system-agent-1" }],
 }));
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
   // The version control reads the agent's history through this thunk.
   fetchAgentVersionHistory: () => ({ type: "noop" }),

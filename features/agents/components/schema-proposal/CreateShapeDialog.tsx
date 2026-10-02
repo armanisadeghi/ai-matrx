@@ -39,7 +39,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supabase } from "@/utils/supabase/client";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
-import type { OutputSchema } from "@/features/agents/types/json-schema";
+import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 import {
   buildShapePlan,
   createShapeButtonLabel,

@@ -36,12 +36,12 @@ import { useEffect, useId, useRef } from "react";
 import {
   useOpenLiveRunWindow,
   type LiveRunWindowHandle,
-} from "@/features/overlays/openers/liveRunWindow";
+} from "@host/features/overlays/openers/liveRunWindow";
 import {
   useLiveAgentRun,
   type LiveAgentRunOptions,
-} from "@/features/agents/hooks/useLiveAgentRun";
-import { useLiveRunHandle } from "@/features/agents/hooks/useLiveRunHandle";
+} from "./useLiveAgentRun";
+import { useLiveRunHandle } from "./useLiveRunHandle";
 
 /**
  * A run this hook only WATCHES — launched and owned elsewhere, its state read

@@ -17,10 +17,10 @@
 // dispatched immediately; matrx-ai owns provider admission and rate limits.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { selectRenderBlocksByType } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
+import { selectRenderBlocksByType } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectLatestRequestId } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { pickSpokenFrontCues, pickSpokenFrontVariables } from "./variations";
 import { ttsRenderFacts } from "../ttsRenderFacts";

@@ -43,7 +43,7 @@ jest.mock("@ai-matrx/media/react", () => ({ InlineMediaRef: () => null }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({
   ErrorAlchemyMenu: () => null,
 }));
-jest.mock("@/features/agents/decision-answers/DecisionAnswers", () => ({
+jest.mock("@ai-matrx/chat/agents/decision-answers/DecisionAnswers", () => ({
   DecisionAnswers: () => <div data-route="decision-answers" />,
 }));
 jest.mock("@/features/list-change-proposals/ListChangeProposalView", () => ({

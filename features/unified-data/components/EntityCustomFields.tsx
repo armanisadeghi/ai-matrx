@@ -41,12 +41,12 @@ import {
   CUSTOM_FIELDS_VALUE_NAME,
   customFieldsScopeValue,
   registerCustomFieldsDoor,
-} from "@/features/surfaces/runtime/custom-field-targets";
+} from "@ai-matrx/chat/surfaces/runtime/custom-field-targets";
 import {
   useSurfaceDormant,
   useSurfaceRuntime,
   useSurfaceScopeContribution,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 
 export interface EntityCustomFieldsProps {

@@ -47,7 +47,7 @@ import { createContentPlanSetupScope } from "@/features/surfaces/manifests/conte
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -136,8 +136,8 @@ import {
 } from "./PlanReviewSection";
 import { BuildWithAiDialog, type BuildLogEntry } from "./BuildWithAiDialog";
 import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
+import { RunSetWindowController } from "@ai-matrx/chat/agents/components/live-run/RunSetDisplay";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupCommitBar, SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";

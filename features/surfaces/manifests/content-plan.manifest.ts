@@ -24,7 +24,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 // TYPE-ONLY: the view vocabulary is owned by the workspace hook, so a renamed
 // or removed view breaks this file at compile time. Erased at build — the
 // manifest registry stays free of client-component imports.

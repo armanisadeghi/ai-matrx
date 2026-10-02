@@ -41,7 +41,7 @@ import { captureNoteEditSource, noteIdentityContentSource } from "@/features/not
 import { noteAdapter } from "../sources/note";
 import { getAction } from "../provider";
 import { FullScreenMarkdownEditorBridge } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge";
-import { HtmlPreviewBridge } from "@/features/cx-conversation/components/HtmlPreviewBridge";
+import { HtmlPreviewBridge } from "@ai-matrx/chat/cx-conversation/components/HtmlPreviewBridge";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

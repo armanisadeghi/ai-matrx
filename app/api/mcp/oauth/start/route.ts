@@ -8,14 +8,14 @@ import {
   resolveOAuthServerMetadata,
   resolveRegisteredTokenEndpointAuthMethod,
   selectDcrTokenEndpointAuthMethod,
-} from "@/features/agents/services/mcp-oauth/discovery";
+} from "@ai-matrx/chat/agents/services/mcp-oauth/discovery";
 import {
   generateCodeVerifier,
   generateCodeChallenge,
   generateState,
-} from "@/features/agents/services/mcp-oauth/pkce";
-import { validateSupabaseScopedMcpEndpointOverride } from "@/features/agents/services/mcp-oauth/endpoint";
-import { supportsClientIdMetadataDocument } from "@/features/agents/services/mcp-oauth/client-registration";
+} from "@ai-matrx/chat/agents/services/mcp-oauth/pkce";
+import { validateSupabaseScopedMcpEndpointOverride } from "@ai-matrx/chat/agents/services/mcp-oauth/endpoint";
+import { supportsClientIdMetadataDocument } from "@ai-matrx/chat/agents/services/mcp-oauth/client-registration";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { extractErrorMessage } from "@/utils/errors";
 

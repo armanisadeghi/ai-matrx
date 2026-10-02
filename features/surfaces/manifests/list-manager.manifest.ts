@@ -18,7 +18,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { LIST_SURFACE_WRITE_TARGETS } from "@/features/user-lists/surface-write-targets";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

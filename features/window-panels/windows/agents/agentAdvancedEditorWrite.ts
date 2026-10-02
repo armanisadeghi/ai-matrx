@@ -16,13 +16,13 @@
  * value and sending escaped newlines into the user's system prompt.
  */
 
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import type { OutputSchema } from "@/features/agents/types/json-schema";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 import { validateOutputSchema } from "@/features/agents/components/settings-management/output-schema/validateOutputSchema";
 import {
   parseAgentCatalogProfile,
   type AgentCatalogProfilePatch,
-} from "@/features/agents/surface-catalog-profile";
+} from "@ai-matrx/chat/agents/surface-catalog-profile";
 
 /** Canonical surface name — the ONE string chrome and handlers agree on. */
 export const AGENT_ADVANCED_EDITOR_SURFACE_NAME =

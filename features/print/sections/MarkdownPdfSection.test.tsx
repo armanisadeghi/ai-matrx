@@ -91,7 +91,7 @@ jest.mock("@/lib/toast", () => ({
   },
 }));
 
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 

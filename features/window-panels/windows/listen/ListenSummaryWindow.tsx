@@ -34,10 +34,10 @@ import {
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import { useLiveRunStatus } from "@/features/agents/components/live-run/useLiveRunStatus";
-import { selectSpokenText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
+import { useLiveRunStatus } from "@ai-matrx/chat/agents/components/live-run/useLiveRunStatus";
+import { selectSpokenText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { speak } from "@/features/audio/service/speak";
 import { useAudioSessions } from "@/features/audio/session/useAudioSessions";
 import {

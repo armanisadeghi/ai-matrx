@@ -24,7 +24,7 @@ import type {
   HrEmployerProfileRead,
   HrEstablishment,
 } from "../types";
-import { xmlElement, xmlList, xmlText } from "@/features/surfaces/runtime/context-bundle";
+import { xmlElement, xmlList, xmlText } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 
 // ── Entity form ─────────────────────────────────────────────────────────────
 

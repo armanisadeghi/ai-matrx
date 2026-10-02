@@ -30,11 +30,11 @@ import type {
   SurfaceValue,
   ValueMapping,
   ValueMappingMap,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   formatVariableDisplayName,
   variableValueToDisplay,
-} from "@/features/agents/utils/variable-utils";
+} from "@ai-matrx/chat/agents/utils/variable-utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**

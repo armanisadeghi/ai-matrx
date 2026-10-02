@@ -31,8 +31,8 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchAgentsList } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 
 export function AgentParamPicker({
     label,

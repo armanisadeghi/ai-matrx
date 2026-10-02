@@ -12,20 +12,20 @@ import {
   Globe,
   Paperclip,
 } from "lucide-react";
-import { Youtube } from "@/components/icons/brand-icons";
-import { Button } from "@/components/ui/button";
+import { Youtube } from "@host/components/icons/brand-icons";
+import { Button } from "@host/components/ui/button";
 import {
   parseResourcesFromMessage,
   extractMessageWithoutResources,
   messageContainsResources,
-} from "@/features/conversation/utils/resource-parsing";
-import { ResourcesContainer } from "@/features/agents/resources/ResourceDisplay";
+} from "../../../conversation/utils/resource-parsing";
+import { ResourcesContainer } from "../../../agents/resources/ResourceDisplay";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
+import { VideoPublishDate } from "@host/features/files/blocks/video/VideoPublishDate";
 import type {
   ConversationMessage,
   ConversationResource,
-} from "@/features/cx-chat/types/conversation";
+} from "../../types/conversation";
 
 // ============================================================================
 // ATTACHED RESOURCES DISPLAY (structured array — images, files, etc.)

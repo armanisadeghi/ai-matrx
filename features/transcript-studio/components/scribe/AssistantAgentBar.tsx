@@ -18,8 +18,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
   selectAllAgents,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { initializeChatAgents } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   selectActiveAssistantAgentId,

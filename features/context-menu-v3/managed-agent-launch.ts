@@ -1,4 +1,4 @@
-import type { AgentExecutionConfig } from "@/features/agents/types/agent-execution-config.types";
+import type { AgentExecutionConfig } from "@ai-matrx/chat/agents/types/agent-execution-config.types";
 
 /**
  * Framework-owned launch defaults for agents listed in the managed "Agents"

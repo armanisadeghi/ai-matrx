@@ -14,8 +14,8 @@
  */
 
 import { AlertTriangle, Ban } from "lucide-react";
-import { Cost } from "@/components/cost/Cost";
-import { cn } from "@/lib/utils";
+import { Cost } from "@host/components/cost/Cost";
+import { cn } from "@host/lib/utils";
 import {
   answerProbability,
   formatAnswerHeadline,
@@ -24,7 +24,7 @@ import {
   type DecisionAnswerView,
   type DecisionAnswersView,
 } from "@ai-matrx/agents/presentation/decision-answers";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 function percent(value: number | null): string {
   if (value == null) return "—";

@@ -41,8 +41,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { fetchCategoriesForScope } from "@/features/agents/redux/agent-shortcut-categories/thunks";
-import { selectGlobalCategories } from "@/features/agents/redux/agent-shortcut-categories/selectors";
+import { fetchCategoriesForScope } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/thunks";
+import { selectGlobalCategories } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
 import { getPlacementTypeMeta, PLACEMENT_TYPES } from "../constants";
 import type { PlacementType } from "../constants";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";

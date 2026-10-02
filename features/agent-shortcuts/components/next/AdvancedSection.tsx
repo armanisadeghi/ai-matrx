@@ -18,10 +18,10 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/styles/themes/utils";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
-import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
+import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { StoredModelOverridesField } from "@/features/agents/components/run-controls/StoredModelOverridesField";
-import type { RunConfigOverridesWords } from "@/features/agents/components/run-controls/RunConfigOverrides";
+import { StoredModelOverridesField } from "@ai-matrx/chat/agents/components/run-controls/StoredModelOverridesField";
+import type { RunConfigOverridesWords } from "@ai-matrx/chat/agents/components/run-controls/RunConfigOverrides";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 

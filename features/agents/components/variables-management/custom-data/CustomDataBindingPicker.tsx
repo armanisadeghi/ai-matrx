@@ -49,7 +49,7 @@ import {
   CreatablePicker,
   type CreatableOption,
 } from "@/components/ui/creatable-picker";
-import type { CustomDataBinding } from "@/features/agents/types/agent-definition.types";
+import type { CustomDataBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   MISSING_CHOICES,
   SHAPE_CHOICES,

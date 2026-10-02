@@ -8,7 +8,7 @@
  */
 
 import { detectResultShape, isPlainObject } from "../../result-fields/shape";
-import type { MediaRef } from "@/features/files/types";
+import type { MediaRef } from "@host/features/files/types";
 
 /** Keys an image agent may hand its picture back on, most specific first. */
 const IMAGE_RESULT_KEYS = ["result", "image", "images", "output"] as const;

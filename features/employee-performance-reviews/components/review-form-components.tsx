@@ -24,7 +24,7 @@ import {
   MAX_LIST_ITEMS,
   type RatingValue,
 } from "@/features/employee-performance-reviews/schema";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 
 // ── Section card with a numbered/lettered badge ──────────────────────────────
 export function SectionCard({

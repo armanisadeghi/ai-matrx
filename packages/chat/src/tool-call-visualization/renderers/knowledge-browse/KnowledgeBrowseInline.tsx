@@ -2,7 +2,7 @@
 
 import type React from "react";
 import type { ToolRendererProps } from "../../types";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { getArg, resultAsObject } from "../_shared";
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { KnowledgeSourcesInline } from "./KnowledgeSourcesInline";

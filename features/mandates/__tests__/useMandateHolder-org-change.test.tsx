@@ -13,7 +13,7 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => ({
 }));
 
 const resolveMandateHolder = jest.fn();
-jest.mock("../service", () => {
+jest.mock("@ai-matrx/chat/mandates/service", () => {
   class MandateOrganizationUnresolvedError extends Error {}
   return {
     MandateOrganizationUnresolvedError,
@@ -22,8 +22,8 @@ jest.mock("../service", () => {
   };
 });
 
-import { useMandateHolder } from "../useMandateHolder";
-import { MandateOrganizationUnresolvedError } from "../service";
+import { useMandateHolder } from "@ai-matrx/chat/mandates/useMandateHolder";
+import { MandateOrganizationUnresolvedError } from "@ai-matrx/chat/mandates/service";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 describe("useMandateHolder — the organization is part of the question", () => {

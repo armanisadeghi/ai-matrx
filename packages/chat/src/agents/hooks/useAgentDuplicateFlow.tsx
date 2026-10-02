@@ -2,16 +2,16 @@
 
 import { useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentById } from "../redux/agent-definition/selectors";
+import { duplicateAgent } from "../redux/agent-definition/thunks";
 import {
   AgentDuplicateOutcomeDialog,
   type DuplicateOutcomeState,
-} from "@/features/agents/components/shared/AgentDuplicateOutcomeDialog";
-import { isAdminSystemAgentsContext } from "@/features/agents/components/shared/agent-route-context";
-import { getUserMessage } from "@/lib/api/errors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+} from "../components/shared/AgentDuplicateOutcomeDialog";
+import { isAdminSystemAgentsContext } from "../components/shared/agent-route-context";
+import { getUserMessage } from "@host/lib/api/errors";
+import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
 
 interface UseAgentDuplicateFlowOptions {
   basePath?: string;

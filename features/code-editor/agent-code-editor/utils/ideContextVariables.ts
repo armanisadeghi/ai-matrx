@@ -19,7 +19,7 @@ import {
   AGENT_CONTEXT_KEYS,
   CONTEXT_LABELS,
 } from "../constants";
-import type { IdeState } from "@/features/agents/types/agent-api-types";
+import type { IdeState } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
 
 /**

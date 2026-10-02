@@ -22,7 +22,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { FEEDBACK_TYPES } from "@/types/feedback.types";
 import { FEEDBACK_DRAFT_FIELDS } from "@/features/feedback/feedbackDraftWrite";
 import {

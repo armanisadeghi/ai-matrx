@@ -22,21 +22,21 @@ There is **no** `page.tsx` or other route files under `(a)/agents/` in this repo
 
 ---
 
-## 2. Redux: `features/agents/redux/agent-definition/`
+## 2. Redux: `packages/chat/src/agents/redux/agent-definition/`
 
 **Files**
 
 | File | Path |
 |------|------|
-| `slice.ts` | `/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/slice.ts` |
-| `selectors.ts` | `/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/selectors.ts` |
-| `thunks.ts` | `/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/thunks.ts` |
-| `converters.ts` | `/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/converters.ts` |
-| `ACTION-REVIEW.md` | `/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/ACTION-REVIEW.md` |
+| `slice.ts` | `/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/slice.ts` |
+| `selectors.ts` | `/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/selectors.ts` |
+| `thunks.ts` | `/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/thunks.ts` |
+| `converters.ts` | `/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/converters.ts` |
+| `ACTION-REVIEW.md` | `/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/ACTION-REVIEW.md` |
 
 **Slice exports** (`agentDefinitionSlice.actions` — names only):
 
-```701:730:/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/slice.ts
+```701:730:/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/slice.ts
 export const {
   upsertAgent,
   mergePartialAgent,
@@ -81,9 +81,9 @@ Also: `agentDefinitionSlice`, default reducer export, `export type { LoadedField
 
 ---
 
-## 3. `features/agents/redux/tools/`
+## 3. `packages/chat/src/agents/redux/tools/`
 
-**Does not exist** — no directory at `/Users/armanisadeghi/code/matrx-admin/features/agents/redux/tools/`.
+**Does not exist** — no directory at `/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/tools/`.
 
 ---
 
@@ -91,7 +91,7 @@ Also: `agentDefinitionSlice`, default reducer export, `export type { LoadedField
 
 There is **no** function named `versionSnapshotRowToAgentDefinition`. The RPC row is typed as `AgentVersionSnapshot`, then mapped inline into an `AgentDefinition`-shaped object passed to `upsertAgent`:
 
-```363:435:/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/thunks.ts
+```363:435:/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/thunks.ts
 export const fetchAgentVersionSnapshot = createAsyncThunk<
   void,
   { agentId: string; versionNumber: number },
@@ -131,7 +131,7 @@ export const fetchAgentVersionSnapshot = createAsyncThunk<
 
 `upsertAgent` sets `_fetchStatus` to `"versionSnapshot"` when `data.isVersion` is true:
 
-```314:330:/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/slice.ts
+```314:330:/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/slice.ts
     upsertAgent(state, action: PayloadAction<AgentDefinition>) {
       const data = action.payload;
       const status: AgentFetchStatus = data.isVersion
@@ -156,7 +156,7 @@ export const fetchAgentVersionSnapshot = createAsyncThunk<
 
 ## 5. `converters.ts`
 
-Exists at `/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/converters.ts`.
+Exists at `/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/converters.ts`.
 
 **Exports**
 
@@ -167,7 +167,7 @@ Exists at `/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-def
 
 `dbRowToAgentDefinition` excerpt:
 
-```53:112:/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/converters.ts
+```53:112:/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/converters.ts
 export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
   return {
     id: row.id,
@@ -229,11 +229,11 @@ export function AgentRunWrapper() {
 
 ## 8. `selectAgentReadyForBuilder` and `selectAgentById`
 
-`/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/selectors.ts`
+`/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/selectors.ts`
 
 **`selectAgentById`** — memoized selector: `(state, id) => agents[id]` as `AgentDefinitionRecord | undefined`.
 
-```45:49:/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/selectors.ts
+```45:49:/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/selectors.ts
 export const selectAgentById = createSelector(
   [selectAllAgents, (_state: RootState, id: string) => id],
   (agents, id): AgentDefinitionRecord | undefined => agents[id],
@@ -242,7 +242,7 @@ export const selectAgentById = createSelector(
 
 **`selectAgentReadyForBuilder`** — true when `_fetchStatus` is `"full"` or `"versionSnapshot"`.
 
-```134:142:/Users/armanisadeghi/code/matrx-admin/features/agents/redux/agent-definition/selectors.ts
+```134:142:/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/agent-definition/selectors.ts
 export const selectAgentReadyForBuilder = createSelector(
   [selectAgentFetchStatus],
   (status): boolean => status === "full" || status === "versionSnapshot",
@@ -254,5 +254,5 @@ export const selectAgentReadyForBuilder = createSelector(
 ### Plan takeaway
 
 - Agents **pages** in `app/` are only under **`/ssr/agents/...`** plus research/public variants; **`(a)/agents`** is documentation only, and **`/ai/agents`** app routes were **not** found despite `useAgentsBasePath` defaulting to it outside `/ssr/`.
-- **No** `features/agents/redux/tools/` slice; tool strings / custom tools live on **`AgentDefinition`** and related thunks/selectors.
+- **No** `packages/chat/src/agents/redux/tools/` slice; tool strings / custom tools live on **`AgentDefinition`** and related thunks/selectors.
 - Version snapshots: **inline** mapping in **`fetchAgentVersionSnapshot`** + **`upsertAgent`**; **`converters.ts`** is for **`agx_agent`** rows only.

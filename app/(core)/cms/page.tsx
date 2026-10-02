@@ -49,7 +49,7 @@ import { CMS_HUB_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsHubC
 import { createCmsHubExtraSections } from "@/features/cms/agent-context/cmsHubExtraSections";
 import { useCmsHubSurfaceScope } from "@/features/cms/hooks/useCmsHubSurfaceScope";
 import { buildCmsHubContextData } from "@/features/cms/agent-context/buildCmsHubContextData";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   CMS_SITE_DOMAIN_RULE,
   CMS_SITE_SLUG_RULE,

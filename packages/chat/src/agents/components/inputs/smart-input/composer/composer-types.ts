@@ -1,6 +1,6 @@
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import type { EditableContextMenuProps } from "@/features/context-menu-v3/types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import type { EditableContextMenuProps } from "@host/features/context-menu-v3/types";
+import type { ApplicationScope } from "../../../../types/scope.types";
 
 /**
  * The Composer presentation contract — the optional `composer` prop on

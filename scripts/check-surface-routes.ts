@@ -47,7 +47,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   SURFACE_ROUTE_MAPPINGS,
   surfaceFromPathname,
-} from "@/features/surfaces/utils/route-to-surface";
+} from "@ai-matrx/chat/surfaces/utils/route-to-surface";
 
 const CORE_ROOT = "app/(core)";
 

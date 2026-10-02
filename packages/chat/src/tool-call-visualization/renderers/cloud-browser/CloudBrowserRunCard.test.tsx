@@ -1,7 +1,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -11,7 +11,7 @@ jest.mock("@ai-matrx/media/react", () => ({
   InlineMediaRef: () => <div data-testid="inline-media" />,
 }));
 
-jest.mock("@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas", () => ({
+jest.mock("@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas", () => ({
   useOpenCloudBrowserCanvas: () => jest.fn(),
 }));
 

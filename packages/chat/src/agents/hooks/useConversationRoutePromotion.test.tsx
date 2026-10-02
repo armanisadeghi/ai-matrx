@@ -4,12 +4,12 @@ import {
   useAppDispatch,
   useAppSelector,
   useAppStore,
-} from "@/lib/redux/hooks";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
+} from "@host/lib/redux/hooks";
+import { waitForConversationPersisted } from "../redux/execution-system/conversations/conversation-persistence";
 import { useRouter } from "next/navigation";
 import { useConversationRoutePromotion } from "./useConversationRoutePromotion";
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: jest.fn(),
   useAppSelector: jest.fn(),
   useAppStore: jest.fn(),
@@ -20,7 +20,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversation-persistence",
+  "../redux/execution-system/conversations/conversation-persistence",
   () => ({
     waitForConversationPersisted: jest.fn(),
   }),

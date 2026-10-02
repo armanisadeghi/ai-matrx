@@ -6,8 +6,8 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+} from "@host/components/ui/tooltip";
+import { cn } from "@host/lib/utils";
 
 interface VersionIdBadgeProps {
   versionId: string;

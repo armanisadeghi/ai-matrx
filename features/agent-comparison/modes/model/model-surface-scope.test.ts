@@ -7,7 +7,7 @@ const mockInstances: Record<string, { status: string }> = {};
 const mockRuns: Record<string, Record<string, unknown>> = {};
 
 jest.mock(
-  "@/features/agents/redux/execution-system/messages/messages.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors",
   () => ({
     selectConversationMessages: (conversationId: string) => () =>
       mockMessages[conversationId],
@@ -15,14 +15,14 @@ jest.mock(
   }),
 );
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversations.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors",
   () => ({
     selectInstance: (conversationId: string) => () =>
       mockInstances[conversationId],
   }),
 );
 jest.mock(
-  "@/features/agents/redux/execution-system/selectors/aggregate.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors",
   () => ({
     selectIsExecuting: (id: string) => () => mockRuns[id].running,
     selectLatestAnswerText: (id: string) => () => mockRuns[id].answer,

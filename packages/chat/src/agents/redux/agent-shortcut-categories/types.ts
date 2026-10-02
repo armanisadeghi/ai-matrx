@@ -1,5 +1,5 @@
-import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
-import type { Scope } from "@/features/agents/redux/shared/scope";
+import type { FieldFlags } from "../shared/field-flags";
+import type { Scope } from "../shared/scope";
 
 export interface AgentShortcutCategoryDef {
   id: string;

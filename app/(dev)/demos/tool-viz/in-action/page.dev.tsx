@@ -56,12 +56,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
 import MarkdownStream from "@/components/MarkdownStream";
 import ThinkingTrace from "@/components/mardown-display/blocks/thinking-reasoning/ThinkingTrace";
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
-import { ChatResultColumn } from "@/features/tool-call-visualization/components/ChatResultColumn";
+import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
+import { ChatResultColumn } from "@ai-matrx/chat/tool-call-visualization/components/ChatResultColumn";
 import {
   toolRendererRegistry,
   getToolDisplayName,
-} from "@/features/tool-call-visualization/registry/registry";
+} from "@ai-matrx/chat/tool-call-visualization/registry/registry";
 import {
   buildSimpleRecording,
   buildResearchRecording,
@@ -69,10 +69,10 @@ import {
   buildScrapeRecording,
   type StreamRecording,
 } from "@/features/tool-call-visualization/simulator/streamRecording";
-import { resolveWebActionKind } from "@/features/tool-call-visualization/renderers/web/webAction";
+import { resolveWebActionKind } from "@ai-matrx/chat/tool-call-visualization/renderers/web/webAction";
 import { useSimulatedToolEntry } from "@/features/tool-call-visualization/simulator/useSimulatedToolEntry";
-import { cxToolCallToLifecycleEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { cxToolCallToLifecycleEntry } from "@ai-matrx/chat/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
+import type { CxToolCallRecord } from "@ai-matrx/chat/agents/redux/execution-system/observability/observability.slice";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";

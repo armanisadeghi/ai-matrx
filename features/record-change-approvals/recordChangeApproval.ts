@@ -27,7 +27,7 @@ import { fieldTypeLabel } from "@ai-matrx/records-ui";
 import type {
   ApprovalChange,
   ApprovalFieldDiff,
-} from "@/features/agents/ui-first-tools/ui/approval-types";
+} from "@ai-matrx/chat/agents/ui-first-tools/ui/approval-types";
 
 /** What `custom.agent_change_approval` decided, as the tool carries it. */
 export interface RecordChangeApprovalPolicy {

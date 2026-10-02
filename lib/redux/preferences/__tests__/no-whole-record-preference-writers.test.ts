@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const ROOTS = ["app", "lib", "features", "components", "providers", "hooks", "utils"];
+const ROOTS = ["app", "lib", "features", "packages/chat/src", "components", "providers", "hooks", "utils"];
 function* files(dir: string): Generator<string> {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;

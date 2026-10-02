@@ -6,7 +6,7 @@
 // called only when an agent actually runs, never on render.
 
 import type { RootState } from "@/lib/redux/store";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   createEducationFastfireScope,
   type FastFireCardGradeSummary,

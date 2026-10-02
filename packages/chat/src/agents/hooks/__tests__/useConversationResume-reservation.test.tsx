@@ -33,22 +33,22 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-import messages from "@/features/agents/redux/execution-system/messages/messages.slice";
-import conversations from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { CONVERSATION_NOT_MATERIALIZED } from "@/features/agents/redux/execution-system/thunks/conversation-bundle";
+import messages from "../../redux/execution-system/messages/messages.slice";
+import conversations from "../../redux/execution-system/conversations/conversations.slice";
+import { CONVERSATION_NOT_MATERIALIZED } from "../../redux/execution-system/thunks/conversation-bundle";
 import { useConversationResume } from "../useConversationResume";
 
 const mockFetchBundle = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: { auth: { getUser: async () => ({ data: { user: null } }) } },
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/conversation-bundle",
+  "../../redux/execution-system/thunks/conversation-bundle",
   () => {
     const actual = jest.requireActual(
-      "@/features/agents/redux/execution-system/thunks/conversation-bundle",
+      "../../redux/execution-system/thunks/conversation-bundle",
     );
     return {
       ...actual,
@@ -57,12 +57,12 @@ jest.mock(
   },
 );
 
-jest.mock("@/features/code/redux/codeEditHistoryHydration", () => ({
+jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
   loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/create-instance.thunk",
+  "../../redux/execution-system/thunks/create-instance.thunk",
   () => {
     const { createAsyncThunk } = jest.requireActual("@reduxjs/toolkit");
     return {
@@ -77,13 +77,13 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk",
+  "../../redux/execution-system/thunks/surface-cold-pending-calls.thunk",
   () => ({
     surfaceColdPendingCalls: () => ({ type: "test/surfaceColdPendingCalls" }),
   }),
 );
 jest.mock(
-  "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk",
+  "../../runtime-reconnect/reconnect-server-operation.thunk",
   () => ({
     reconnectServerOperation: () => ({ type: "test/reconnectServerOperation" }),
   }),

@@ -29,9 +29,9 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
-import type { SurfaceWriteTarget } from "@/features/surfaces/types";
+import type { SurfaceWriteTarget } from "@ai-matrx/chat/surfaces/types";
 
 const groups: SurfaceValueGroup[] = [
   {

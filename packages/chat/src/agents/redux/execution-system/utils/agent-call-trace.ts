@@ -26,11 +26,11 @@ import type {
   OperationEntry,
   TimelineEntry,
   ToolLifecycleEntry,
-} from "@/features/agents/types/request.types";
+} from "../../../types/request.types";
 import type {
   ContentSegment,
   ContentSegmentDbTool,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "../active-requests/active-requests.selectors";
 
 export type LiveTraceItem =
   | { kind: "thinking"; chunkStartIndex: number; chunkEndIndex?: number }

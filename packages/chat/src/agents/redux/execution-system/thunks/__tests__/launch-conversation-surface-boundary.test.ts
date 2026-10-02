@@ -1,4 +1,4 @@
-import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
+import type { ConversationInvocation } from "../../../../types/conversation-invocation.types";
 import { invocationToManagedOptions } from "../launch-conversation.thunk";
 
 function invocation(surfaceName?: string | null): ConversationInvocation {

@@ -5,11 +5,11 @@
  * read as success. Rule: pending, never optimistic; a refusal is said in words.
  */
 const setFavorite = jest.fn();
-jest.mock("@/features/scopes/service/favoritesService", () => ({
+jest.mock("@host/features/scopes/service/favoritesService", () => ({
   favoritesService: { setFavorite: (...a: unknown[]) => setFavorite(...a) },
 }));
 const chain = { update: jest.fn(), eq: jest.fn(), select: jest.fn() };
-jest.mock("@/utils/supabase/client", () => ({ supabase: { schema: () => ({ from: () => chain }) } }));
+jest.mock("@host/utils/supabase/client", () => ({ supabase: { schema: () => ({ from: () => chain }) } }));
 jest.mock("../../execution-system/message-crud/server/fork-conversation-server.thunk", () => ({ forkConversationServer: jest.fn() }));
 
 import {

@@ -42,7 +42,7 @@ let mandateState: MandateState;
 let docState: DocState;
 let interviewRows: unknown[] | "never-resolves";
 
-jest.mock("@/features/mandates/useMandate", () => ({
+jest.mock("@ai-matrx/chat/mandates/useMandate", () => ({
   useMandate: () => mandateState,
 }));
 

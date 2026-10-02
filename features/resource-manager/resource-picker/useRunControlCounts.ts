@@ -24,16 +24,16 @@
 
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectAgentIdFromInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import {
   selectAgentTools,
   selectAgentCustomTools,
   selectAgentSkillConfig,
   selectAgentReadyForCustomExecution,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchAgentExecutionFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@ai-matrx/chat/agents/types/instance.types";
 import type { ResourcePickerViewId } from "./resource-picker-menu-items";
 
 export type ResourcePickerCounts = Partial<

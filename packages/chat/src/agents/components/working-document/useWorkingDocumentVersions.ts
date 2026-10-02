@@ -23,7 +23,7 @@ import {
   getWorkingDocumentVersionContent,
   restoreWorkingDocumentVersion,
   type WorkingDocumentVersion,
-} from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
+} from "../../redux/execution-system/instance-working-document/cx-working-document.service";
 
 export interface UseWorkingDocumentVersions {
   versions: WorkingDocumentVersion[];

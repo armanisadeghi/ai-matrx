@@ -27,10 +27,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { attachmentKey } from "@/features/connectors/attachable-resources";
-import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
-import { useMcpCatalog } from "@/features/agents/hooks/useMcpTools";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { attachmentKey } from "@host/features/connectors/attachable-resources";
+import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";
+import { useMcpCatalog } from "../../hooks/useMcpTools";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 export function ConversationAttachmentsChip({
   conversationId,

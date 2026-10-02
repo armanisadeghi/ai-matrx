@@ -16,8 +16,8 @@
  * it never needs to parse, convert, or enrich — it just announces the callId.
  */
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
 import { ToolCallVisualization } from "./ToolCallVisualization";
 
 interface LiveToolCallCardProps {

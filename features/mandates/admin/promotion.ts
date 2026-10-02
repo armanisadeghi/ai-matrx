@@ -24,7 +24,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { MandateDoorError } from "@/features/mandates/door-error";
-import { invalidateMandateCache } from "@/features/mandates/service";
+import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
 import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 

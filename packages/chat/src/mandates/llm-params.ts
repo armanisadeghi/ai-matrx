@@ -6,14 +6,14 @@
  * are dropped LOUDLY (the server's apply_overrides stays the authority).
  */
 
-import type { JsonObject } from "@/types/json";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { JsonObject } from "@host/types/json";
+import type { FeLlmParams } from "../agents/types/agent-api-types";
 import {
   REASONING_EFFORT_OPTIONS,
   REASONING_SUMMARY_OPTIONS,
   THINKING_LEVEL_OPTIONS,
   VERBOSITY_OPTIONS,
-} from "@/types/python-generated/llm-enums";
+} from "@host/types/python-generated/llm-enums";
 
 export function toLlmParams(obj: JsonObject): Partial<FeLlmParams> {
   const out: Partial<FeLlmParams> = {};

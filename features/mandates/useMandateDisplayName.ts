@@ -33,7 +33,7 @@
 
 import { useEffect, useState } from "react";
 
-import { fetchMandateIdentities } from "@/features/mandates/service";
+import { fetchMandateIdentities } from "@ai-matrx/chat/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 

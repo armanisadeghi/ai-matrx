@@ -16,7 +16,7 @@
  * while the chips follow.
  */
 
-import type { Json } from "@/types/database.types";
+import type { Json } from "@host/types/database.types";
 
 function isTextBlock(block: unknown): boolean {
   return (

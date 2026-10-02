@@ -17,7 +17,7 @@ import { useState } from "react";
 
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { LiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
+import type { LiveRunProgressState } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 
 export type IllustrateFace = "front" | "back";
 

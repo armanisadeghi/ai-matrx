@@ -16,7 +16,7 @@
  * on an agent request.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import {
   DEFAULT_INLINE_CAP,
   DEFAULT_SURFACE_KEY,
@@ -30,22 +30,22 @@ import {
   systemRowsToResolved,
   withheldKeys,
 } from "@ai-matrx/agents/context";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
 import {
   BASELINE_VALUES,
   PAGELESS_CONTENT_INLINE_CEILING,
   POINTER_INLINE_CEILINGS,
-} from "@/features/surfaces/manifests/_baseline.manifest";
+} from "@host/features/surfaces/manifests/_baseline.manifest";
 import {
   selectAgentAutoContextDisabled,
   selectAgentContextPolicies,
   selectAgentReadyForExecution,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { selectResourceContextPayload } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+} from "../../agent-definition/selectors";
+import { selectResourceContextPayload } from "../instance-resources/instance-resources.selectors";
 import {
   buildAmbientContext,
   isFirstTurn,
-} from "@/features/agents/ui-first-tools/redux/build-ambient-context";
+} from "../../../ui-first-tools/redux/build-ambient-context";
 import { selectSavedContextRuleRows } from "./context-rules.thunks";
 import { toContextReceipt } from "./receipt-check";
 import { resolveClientSurface } from "../utils/build-tool-injection";

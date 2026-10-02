@@ -41,12 +41,12 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => organizationId,
 }));
-jest.mock("@/features/agents/redux/tools/tools.selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/tools/tools.selectors", () => ({
   selectAllTools: () => tools(),
   selectToolsStatus: () => toolsStatus(),
   selectToolsError: () => toolsError(),
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectAgentById: (_state: unknown, id: string) => agent(id),
   selectAgentReadyForCustomExecution: (_state: unknown, id: string) =>
     agentReady(id),
@@ -58,9 +58,9 @@ jest.mock("@/features/ai-models/redux/modelRegistrySlice", () => ({
   selectModelFullyLoaded: (_state: unknown, id: string | null) =>
     modelReady(id),
 }));
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => {
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => {
   const actual = jest.requireActual(
-    "@/features/agents/redux/agent-definition/thunks",
+    "@ai-matrx/chat/agents/redux/agent-definition/thunks",
   );
   return {
     ...actual,
@@ -71,10 +71,10 @@ jest.mock("@/features/agents/redux/agent-definition/thunks", () => {
     })),
   };
 });
-jest.mock("@/features/agents/redux/tools/tools.thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/tools/tools.thunks", () => ({
   fetchAvailableTools: jest.fn(() => ({ type: "tools" })),
 }));
-jest.mock("@/features/agents/hooks/useModelControls", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useModelControls", () => ({
   resolveModelControls: () => ({ normalizedControls: { tools: {} } }),
   supportsTools: () => toolSupport(),
 }));

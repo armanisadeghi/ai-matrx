@@ -32,8 +32,8 @@ import type { AppDispatch } from "@/lib/redux/store";
 import {
   ensureSurfaceConfig,
   selectSurfaceConfigEntry,
-} from "@/features/surfaces/redux/surfaceConfigSlice";
-import type { ListeningConfig } from "@/features/surfaces/config/namespace-registry";
+} from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
+import type { ListeningConfig } from "@ai-matrx/chat/surfaces/config/namespace-registry";
 import {
   resolveVoiceId,
   TTS_DEFAULT_SPEED,

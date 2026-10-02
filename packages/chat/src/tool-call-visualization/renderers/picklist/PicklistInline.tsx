@@ -9,14 +9,14 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
-import { GroupSection } from "@/features/user-lists/components/GroupSection";
-import type { GroupedItem } from "@/features/user-lists/types";
-import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
+import { GroupSection } from "@host/features/user-lists/components/GroupSection";
+import type { GroupedItem } from "@host/features/user-lists/types";
+import { useOpenStructuredListManagerV2Window } from "@host/features/overlays/openers/structuredListManagerV2Window";
 import type { ToolRendererProps } from "../../types";
 import { parsePicklist } from "./parsePicklist";
 import { usePicklistDetail } from "./usePicklistDetail";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for the `picklist` tool — a polished entity card (glossy

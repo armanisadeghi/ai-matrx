@@ -10,8 +10,8 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { destroyInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { destroyInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   loadComparisonSet,
   type UpsertEntryInput,

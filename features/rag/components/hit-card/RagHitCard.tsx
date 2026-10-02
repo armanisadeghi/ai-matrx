@@ -34,9 +34,9 @@ import {
 import { cn } from "@/lib/utils";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { FileIcon } from "@ai-matrx/media/react";
-import type { ToolAccent } from "@/features/tool-call-visualization/types";
-import { ToolGlyph } from "@/features/tool-call-visualization/renderers/_shared-entity/ToolGlyph";
-import { PartPeekPopover } from "@/features/tool-call-visualization/renderers/_shared-entity/PartPeekPopover";
+import type { ToolAccent } from "@ai-matrx/chat/tool-call-visualization/types";
+import { ToolGlyph } from "@ai-matrx/chat/tool-call-visualization/renderers/_shared-entity/ToolGlyph";
+import { PartPeekPopover } from "@ai-matrx/chat/tool-call-visualization/renderers/_shared-entity/PartPeekPopover";
 import { scoreTier, relativeStrength, type RelevanceTier } from "./scoreTier";
 import { kindGlyph } from "./kindGlyph";
 import { type RagHitView, isEntityOnly } from "./types";

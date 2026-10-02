@@ -18,7 +18,7 @@ import type { LaneSupport, ListScopeKind } from "@/lib/list-scope/types";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import type {
   MatrxDataTableCopyConfig,
   MatrxDataTableMobileCardControls,

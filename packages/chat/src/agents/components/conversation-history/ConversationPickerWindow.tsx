@@ -24,8 +24,8 @@
 
 import { useCallback } from "react";
 import dynamic from "next/dynamic";
-import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import { ConversationHistorySidebar } from "./ConversationHistorySidebar";
+import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
 
 // WindowPanel is an intentionally heavy shell and a guarded lazy boundary.
 // ConversationPickerWindow is imported by route-visible war-room components,
@@ -33,7 +33,7 @@ import type { ConversationListItem } from "@/features/agents/redux/conversation-
 // initial route boot even while the picker was closed.
 const WindowPanel = dynamic(
   () =>
-    import("@/features/window-panels/WindowPanel").then(
+    import("@host/features/window-panels/WindowPanel").then(
       (module) => module.WindowPanel,
     ),
   { ssr: false },

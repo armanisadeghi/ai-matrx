@@ -26,11 +26,11 @@
  * Contract: `common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md`.
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { sanitizeInboundEnvelopeMetadata } from "@/features/content-ir/redux/render-block-envelope";
+import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { sanitizeInboundEnvelopeMetadata } from "@host/features/content-ir/redux/render-block-envelope";
 import { sanitizeInboundPartialKindMetadata } from "@ai-matrx/content-ir/wire";
-import { fromRenderBlock } from "@/features/files/blocks/image/adapters/from-render-block";
+import { fromRenderBlock } from "@host/features/files/blocks/image/adapters/from-render-block";
 
 /** Per-stream staleness gate, as returned by `makePartialKindStalenessGate`. */
 export type PartialKindGate = (

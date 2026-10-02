@@ -13,23 +13,23 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentCallTrace } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectAgentCallTrace } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import {
   selectConversationMessages,
   selectMessagesInterleavedRuns,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { loadAgentCallChildConversation } from "@/features/agents/redux/execution-system/thunks/load-agent-call-child.thunk";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { loadAgentCallChildConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-agent-call-child.thunk";
 import {
   childConversationIdFromResult,
   persistedAgentCallTrace,
   type LiveAgentCallTrace,
-} from "@/features/agents/redux/execution-system/utils/agent-call-trace";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { useConversationTitle } from "@/features/agents/hooks/useConversationTitle";
+} from "@ai-matrx/chat/agents/redux/execution-system/utils/agent-call-trace";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
+import type { MessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import { useConversationTitle } from "@ai-matrx/chat/agents/hooks/useConversationTitle";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import ReasoningVisualization from "@/components/mardown-display/blocks/thinking-reasoning/ReasoningVisualization";
-import { isCollaborationAgentCall } from "@/features/tool-call-visualization/renderers/agent-call/collab";
+import { isCollaborationAgentCall } from "@ai-matrx/chat/tool-call-visualization/renderers/agent-call/collab";
 import { InlineThinkingSlot } from "./InlineThinkingSlot";
 import type { ToolCardProps } from "./ToolHandlers";
 

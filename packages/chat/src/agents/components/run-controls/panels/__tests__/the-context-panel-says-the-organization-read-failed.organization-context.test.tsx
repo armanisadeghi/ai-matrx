@@ -26,8 +26,8 @@ import { createRoot } from "react-dom/client";
   true;
 
 const { makeAppContextState } = jest.requireActual<
-  typeof import("@/lib/redux/slices/appContextSlice")
->("@/lib/redux/slices/appContextSlice");
+  typeof import("@host/lib/redux/slices/appContextSlice")
+>("@host/lib/redux/slices/appContextSlice");
 
 let appContext = makeAppContextState();
 const dispatched: unknown[] = [];
@@ -47,22 +47,22 @@ const dispatch = (action: unknown) => {
   return promise;
 };
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ appContext }),
   useAppDispatch: () => dispatch,
 }));
 
-jest.mock("@/lib/redux/store-singleton", () => ({
+jest.mock("@host/lib/redux/store-singleton", () => ({
   getStoreSingleton: () => ({ dispatch: () => {} }),
 }));
-jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
+jest.mock("@host/lib/redux/thunks/activeOrgBootstrap", () => ({
   retryActiveOrgBootstrap: () => ({ type: "test/retry-organization-read" }),
 }));
 
 /** No context snapshot exists — the state every branch under test starts from. */
 jest.mock(
-  "@/features/agents/redux/execution-system/context-state/context-state.selectors",
+  "../../../../redux/execution-system/context-state/context-state.selectors",
   () => ({
     selectContextState: () => () => null,
     selectEstimatedTokens: () => () => 0,
@@ -75,12 +75,12 @@ jest.mock(
   }),
 );
 
-jest.mock("@/lib/api/context-api", () => ({
+jest.mock("@host/lib/api/context-api", () => ({
   fetchContextState: (args: unknown) => ({ type: "test/fetchContextState", args }),
 }));
 
 /** The picker inside the terminal refusal is its own surface, tested elsewhere. */
-jest.mock("@/features/organizations/components/OrganizationPickerPanel", () => ({
+jest.mock("@host/features/organizations/components/OrganizationPickerPanel", () => ({
   OrganizationPickerPanel: () => <div data-organization-picker />,
 }));
 

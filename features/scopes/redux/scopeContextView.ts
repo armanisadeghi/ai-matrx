@@ -46,7 +46,7 @@ import type {
 } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { ReferenceSource } from "@/features/scopes/utils/referenceSource";
-import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type {
   ContextItem,
   ContextValueType,

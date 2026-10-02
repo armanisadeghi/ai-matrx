@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { removeAgentFromOrchestra, saveMemberMeta } from "@/features/agents/redux/orchestras/thunks";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";

@@ -1,6 +1,6 @@
 "use client";
 
-import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
+import { isSyntheticAgentId } from "@ai-matrx/chat/agents/redux/agent-definition/synthetic-id";
 import { UnsavedAgentAttachmentRow } from "./UnsavedAgentAttachmentRow";
 import { useEffect, useState } from "react";
 import { BookA, Check, ExternalLink, Loader2, Plus, X } from "lucide-react";

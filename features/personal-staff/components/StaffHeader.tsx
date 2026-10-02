@@ -20,7 +20,7 @@
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useResolvedStaffHolder } from "../staff-holder-store";
 
 export interface StaffHeaderProps {

@@ -54,20 +54,20 @@ import {
 } from "@/features/war-room/service/warRoomAgentContext";
 import { selectThreadById } from "@/features/war-room/redux/selectors";
 import { WAR_ROOM_THREAD_AGENT_MANDATE } from "@/features/war-room/constants";
-import { resolveMandate } from "@/features/mandates/service";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import { forkConversationServer } from "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { executeInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { forkConversationServer } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";
 import {
   setContextEntries,
   removeContextEntry,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import {
   setHostVariableValues,
   setUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectConversationMessages } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";

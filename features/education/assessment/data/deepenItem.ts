@@ -11,7 +11,7 @@ import {
   livePosture,
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ASSESSMENT_MANDATES } from "./mandates";
 import { asDepth, isDepth } from "./types";

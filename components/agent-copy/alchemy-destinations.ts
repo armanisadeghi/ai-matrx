@@ -6,11 +6,11 @@ import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { alchemyOrganizationId } from "./alchemy-organization";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
-import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import { bumpFreshSession } from "@/features/agents/redux/chat/chat-route.slice";
-import { chatRouteSurfaceKey } from "@/features/agents/components/chat/begin-fresh-chat";
-import { stashChatDraftTransfer } from "@/features/agents/components/chat/chat-draft-transfer";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { clearFocus } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { bumpFreshSession } from "@ai-matrx/chat/agents/redux/chat/chat-route.slice";
+import { chatRouteSurfaceKey } from "@ai-matrx/chat/agents/components/chat/begin-fresh-chat";
+import { stashChatDraftTransfer } from "@ai-matrx/chat/agents/components/chat/chat-draft-transfer";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 
 type Host = { getCurrentState(): RootState; dispatch: AppDispatch; navigate(href: string): void };
 
@@ -40,7 +40,7 @@ export function createAlchemyDestinationPorts(host: Host) {
     openCode: (content) => { host.dispatch(openOverlay({ overlayId: "saveToCode", instanceId: `alchemy-code:${crypto.randomUUID()}`, data: { initialContent: content.plainText, initialLanguage: "plaintext", suggestedName: content.label, defaultFolderId: null } })); },
     openAttachment: (target) => { host.dispatch(openOverlay({ overlayId: "contextAssignment", instanceId: `alchemy-attach:${target.id}`, data: { subject: { entityType: "note", entityId: target.id, title: target.label } } })); },
     openChat: async (content, mode, current) => {
-      const { resolveMandate } = await import("@/features/mandates/service");
+      const { resolveMandate } = await import("@ai-matrx/chat/mandates/service");
       const mandate = await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
       identity();
       const resource = { type: "text" as const, data: { id: crypto.randomUUID(), label: content.label, text: content.markdown } };

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { MessageSquare } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectGroupedMessages,
   selectMessages,
@@ -11,12 +11,12 @@ import {
 } from "./_legacy-stubs";
 import { chatConversationsActions } from "./_legacy-stubs";
 import dynamic from "next/dynamic";
-import { MessageErrorBoundary } from "@/features/cx-conversation/MessageErrorBoundary";
-import { UserMessage } from "@/features/cx-conversation/UserMessage";
+import { MessageErrorBoundary } from "./MessageErrorBoundary";
+import { UserMessage } from "./UserMessage";
 
 const AssistantMessage = dynamic(
   () =>
-    import("@/features/cx-conversation/AssistantMessage").then(
+    import("./AssistantMessage").then(
       (m) => m.AssistantMessage,
     ),
   { ssr: false },
@@ -53,7 +53,7 @@ function StreamingAssistantMessage({
             string,
             {
               messages?: Array<
-                import("@/features/cx-chat/types/conversation").ConversationMessage
+                import("../cx-chat/types/conversation").ConversationMessage
               >;
             }
           >;

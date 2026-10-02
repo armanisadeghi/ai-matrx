@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft } from "lucide-react";
-import { useResponseModeAgents } from "@/features/cx-chat/components/agent/useResponseModeAgents";
+import { useResponseModeAgents } from "../agent/useResponseModeAgents";
 
 // ── Response Mode Buttons ─────────────────────────────────────────────────────
 // Each mode is a MANDATE (RESPONSE_MODE_MANDATE_MAP), resolved for this user by

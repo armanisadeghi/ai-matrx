@@ -1,72 +1,72 @@
 "use client";
-import { logFailure } from "@/lib/errors/expectedRefusal";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { logFailure } from "@host/lib/errors/expectedRefusal";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { shallowEqual } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
-import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { selectAgentExecutionPayload } from "../../redux/agent-definition/selectors";
+import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
+import { selectAuthReady } from "@host/lib/redux/selectors/userSelectors";
+import { useAgentLauncher } from "../../hooks/useAgentLauncher";
+import { useConversationResume } from "../../hooks/useConversationResume";
+import { useCreatorOwnershipSync } from "../../hooks/useCreatorOwnershipSync";
+import { waitForConversationPersisted } from "../../redux/execution-system/conversations/conversation-persistence";
+import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
+import { setUserInputText } from "../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
   setFocus,
   clearFocus,
-} from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+} from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
 import { consumeChatDraftTransfer } from "./chat-draft-transfer";
 import { chatRouteSurfaceKey, stageChatAgentSwitch } from "./begin-fresh-chat";
 import { buildChatComposerTextMenu } from "./agent-context/chatComposerTextMenu";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
 import type {
   ComposerMode,
   ComposerPresentation,
-} from "@/features/agents/components/inputs/smart-input/composer/composer-types";
-import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
-import { selectChatFreshSessionNonce } from "@/features/agents/redux/chat/chat-route.slice";
+} from "../inputs/smart-input/composer/composer-types";
+import { selectChatIncognitoActive } from "../../redux/chat/chat-incognito.slice";
+import { selectChatFreshSessionNonce } from "../../redux/chat/chat-route.slice";
 import {
   acknowledgeDraftHandoff,
   selectChatDraftHandoff,
-} from "@/features/agents/redux/chat/chat-route.slice";
+} from "../../redux/chat/chat-route.slice";
 import {
   copyInstanceRequestDraft,
   syncInstanceRequestDraftResources,
-} from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
-import { syncHandoffPendingAttachments } from "@/features/connectors/redux/attachments.slice";
-import { attachmentKey } from "@/features/connectors/attachable-resources";
-import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { linkConversationDocumentThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
-import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";
+} from "../../redux/execution-system/thunks/copy-instance-request-draft.thunk";
+import { syncHandoffPendingAttachments } from "@host/features/connectors/redux/attachments.slice";
+import { attachmentKey } from "@host/features/connectors/attachable-resources";
+import { patchConversation } from "../../redux/execution-system/conversations/conversations.slice";
+import { linkConversationDocumentThunk } from "../../redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { useOpenWorkingDocumentPanel } from "@host/features/overlays/openers/workingDocumentPanel";
 import {
   registerSurface,
   unregisterSurface,
   selectPendingNavigation,
   clearPendingNavigation,
-} from "@/features/agents/redux/surfaces/surfaces.slice";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import type { TranscriptAudience } from "@/features/agents/components/shared/transcript-audience";
+} from "../../redux/surfaces/surfaces.slice";
+import { AgentConversationColumn } from "../shared/AgentConversationColumn";
+import type { TranscriptAudience } from "../shared/transcript-audience";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
-import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { AccessGate } from "@host/features/access-gate/components/AccessGate";
 import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
-import { ToolResultCanvasOpener } from "@/features/canvas/tool-results/ToolResultCanvasOpener";
-import { useConversationSandboxBindingSync } from "@/features/agents/hooks/useConversationSandboxBindingSync";
-import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
+import { ToolResultCanvasOpener } from "@host/features/canvas/tool-results/ToolResultCanvasOpener";
+import { useConversationSandboxBindingSync } from "../../hooks/useConversationSandboxBindingSync";
+import type { ConversationSandboxBinding } from "@host/lib/sandbox/conversation-binding-row";
 import { ChatConversationSurface } from "./ChatConversationSurface";
-import { selectUserInputEntryExists } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
-import { useRegisterChatAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
-import { selectUserId } from "@/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { toast } from "@/lib/toast";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import { selectUserInputEntryExists } from "../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { useAttachResource } from "../inputs/resources/attach-resource";
+import { useRegisterChatAttachTarget } from "@host/features/knowledge/command-bar/useKnowledgeAttachTarget";
+import { selectUserId } from "@host/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { toast } from "@host/lib/toast";
+import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
+import type { SourceFeature } from "@host/types/python-generated/source-attribution";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 interface ChatRoomClientProps {

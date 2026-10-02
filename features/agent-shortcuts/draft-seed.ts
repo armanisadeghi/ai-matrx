@@ -7,8 +7,8 @@
 // from it. Module scope, taken once — same lifetime as the client navigation
 // that carries its id.
 
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import type { ResultDisplayMode } from "@ai-matrx/chat/agents/utils/run-ui-utils";
+import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 
 export interface ShortcutDraftSeed {
   surfaceName: string | null;

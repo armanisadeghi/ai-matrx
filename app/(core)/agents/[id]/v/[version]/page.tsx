@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { getAgent } from "@/lib/agents/data";
-import { AgentVersionDiffPage } from "@/features/agents/components/diff/AgentVersionDiffPage";
+import { AgentVersionDiffPage } from "@ai-matrx/chat/agents/components/diff/AgentVersionDiffPage";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
+import { AgentHeader } from "@ai-matrx/chat/agents/components/shared/AgentHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export async function generateMetadata({

@@ -6,7 +6,7 @@
  * handler wiring still apply, loudly.
  */
 
-import { applySurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { applySurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import {
   registerAssistAction,
   type AssistActionResult,

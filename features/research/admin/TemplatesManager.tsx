@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useEffectEvent } from "react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_KNOWLEDGE_SURFACE_NAME,
   createAdminKnowledgeScope,
@@ -76,8 +76,8 @@ import {
   resolveBuiltinNames,
 } from "./service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { selectBuiltinAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { readOf } from "@/components/read-state/ReadGate";

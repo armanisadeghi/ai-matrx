@@ -28,8 +28,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchCodingSessionBindings } from "@/features/agent-connections/coding-sessions/service";
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
-import { fetchNewerConversationToolCalls } from "@/features/tool-call-visualization/service/fetchConversationToolCalls";
+import type { CxToolCallRecord } from "@ai-matrx/chat/agents/redux/execution-system/observability/observability.slice";
+import { fetchNewerConversationToolCalls } from "@ai-matrx/chat/tool-call-visualization/service/fetchConversationToolCalls";
 import { fetchNewerProviderMessages } from "../service/providerConversationClient";
 import type { ProviderConversationMessage } from "../lib/providerConversationMessage";
 import {

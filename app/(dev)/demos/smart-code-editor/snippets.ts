@@ -10,9 +10,9 @@ export const TYPESCRIPT_SNIPPET = `
  */
 
 import { Loader2 } from "lucide-react";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
-import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
+import type { ManagedAgentOptions } from "@ai-matrx/chat/agents/types/instance.types";
 
 interface AgentBuilderRightPanelProps {
   agentId: string;

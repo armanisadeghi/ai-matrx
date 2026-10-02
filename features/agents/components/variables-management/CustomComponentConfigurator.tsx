@@ -30,21 +30,21 @@ import type {
   StructuredListBinding,
   VariableComponentType,
   VariableCustomComponent,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   getComponentTypeOptions,
   getComponentTypeMeta,
-} from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
+} from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
 import {
   buildCustomComponent,
   extractEffectiveValues,
   type BuildCustomComponentInput,
-} from "@/features/agents/utils/variable-customcomponent";
+} from "@ai-matrx/chat/agents/utils/variable-customcomponent";
 import { OptionsEditor } from "./OptionsEditor";
 import { StructuredListBindingEditor } from "./StructuredListBindingEditor";
-import { hasRandomOptionSource } from "@/features/agents/utils/auto-assignment";
+import { hasRandomOptionSource } from "@ai-matrx/chat/agents/utils/auto-assignment";
 import { normalizeFileResourceId } from "@/features/files/api/resource-family";
-import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
+import { ResourceFamilyPolicyEditor } from "@ai-matrx/chat/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface CustomComponentConfiguratorProps {

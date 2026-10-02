@@ -1,23 +1,23 @@
 "use client";
 
-import { publishedToWebPatch } from "@/lib/row-access";
+import { publishedToWebPatch } from "@host/lib/row-access";
 import { qualifyValueKey } from "@ai-matrx/alchemy/declare";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@host/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
-import type { Database } from "@/types/database.types";
+import type { Database } from "@host/types/database.types";
 import type {
   SurfaceDriftReport,
   SurfaceValue,
-} from "@/features/surfaces/types";
-import type { ApplyManifestSyncResult } from "@/features/surfaces/services/manifest-sync.service";
-import { getManifest } from "@/features/surfaces/manifests/registry";
-import { associationsService } from "@/features/scopes/service/associationsService";
-import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+} from "../types";
+import type { ApplyManifestSyncResult } from "@host/features/surfaces/services/manifest-sync.service";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { associationsService } from "@host/features/scopes/service/associationsService";
+import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
 import {
   TOOL_BUNDLE,
   assocData,
-} from "@/features/tool-registry/bundles/services/bundleMemberEdge";
-import { writeOneRow } from "@/utils/supabase/writeOne";
+} from "@host/features/tool-registry/bundles/services/bundleMemberEdge";
+import { writeOneRow } from "@host/utils/supabase/writeOne";
 
 type UiTables = Database["ui"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
@@ -906,7 +906,7 @@ export type MirrorTable =
 export {
   RECENT_ROW_REFUSAL_PREFIX,
   RECENT_ROW_WINDOW_HOURS,
-} from "@/features/surfaces/services/mirror-recency";
+} from "@host/features/surfaces/services/mirror-recency";
 
 export interface DeleteMirrorRowResult {
   ok: true;

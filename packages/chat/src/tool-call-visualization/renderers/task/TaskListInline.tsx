@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { CheckCircle2, Circle, CircleDashed, ListTodo } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import type { ToolRendererProps } from "../../types";
 import { parseTaskCollection } from "./parseTask";
 

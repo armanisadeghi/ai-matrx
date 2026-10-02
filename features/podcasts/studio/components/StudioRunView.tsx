@@ -41,7 +41,7 @@ import { RunRecoveryBannerFor } from "@/features/podcasts/studio/components/RunR
 import { RunTruthInspector } from "@/features/podcasts/studio/components/RunTruthInspector";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 import { ResearchActivityFeed } from "@/features/podcasts/studio/components/ResearchActivityFeed";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { PodcastRunWriteTargets } from "@/features/podcasts/studio/components/PodcastRunWriteTargets";
 import {
   createPodcastRunScope,

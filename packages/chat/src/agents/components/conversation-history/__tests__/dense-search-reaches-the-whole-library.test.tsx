@@ -58,7 +58,7 @@ const CACHED_PAGE = [
 
 const mockRpcCalls: Array<{ name: string; args: unknown }> = [];
 
-jest.mock("@/utils/supabase/client", () => {
+jest.mock("@host/utils/supabase/client", () => {
   const page = { data: CACHED_PAGE, error: null, count: 0 };
   const chain: Record<string, unknown> = {};
   const self = () => chain;
@@ -97,14 +97,14 @@ jest.mock("@/utils/supabase/client", () => {
   return { supabase: client, createClient: () => client };
 });
 
-jest.mock("@/utils/auth/getUserId", () => ({
-  ...jest.requireActual("@/utils/auth/getUserId"),
+jest.mock("@host/utils/auth/getUserId", () => ({
+  ...jest.requireActual("@host/utils/auth/getUserId"),
   getUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
   requireUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
 }));
 
-import { makeStore } from "@/lib/redux/store";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { makeStore } from "@host/lib/redux/store";
+import { TooltipProvider } from "@host/components/ui/tooltip";
 import { ConversationHistorySidebar } from "../ConversationHistorySidebar";
 
 async function flush(ms: number) {
@@ -173,9 +173,9 @@ describe("every conversation-history search box asks the server", () => {
     const fs = require("node:fs") as typeof import("node:fs");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require("node:path") as typeof import("node:path");
-    const root = path.resolve(__dirname, "../../../../..");
+    const root = path.resolve(__dirname, "../../../../../../..");
     const out = execSync(
-      "git grep -l -e 'setScopeSearch(' -- '*.ts' '*.tsx' ':!**/__tests__/**' ':!features/agents/redux/conversation-history/slice.ts'",
+      "git grep -l -e 'setScopeSearch(' -- '*.ts' '*.tsx' ':!**/__tests__/**' ':!packages/chat/src/agents/redux/conversation-history/slice.ts'",
       { cwd: root, encoding: "utf8" },
     );
     const files = out.split("\n").filter(Boolean);

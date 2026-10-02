@@ -13,8 +13,8 @@
 import type {
   ContentType,
   ModelCapabilities,
-} from "@/features/ai-models/capabilities/types";
-import type { UserInputPart } from "@/features/agents/types/request.types";
+} from "@host/features/ai-models/capabilities/types";
+import type { UserInputPart } from "../types/request.types";
 
 /** Project a single outbound part onto the canonical input ContentType. */
 function messagePartToInputContentType(

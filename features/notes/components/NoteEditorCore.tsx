@@ -41,7 +41,7 @@ import type {
   ContentSource,
   RichDocumentActionsVariant,
 } from "@/features/rich-document/types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import {
   toastNoteWriteBlocked,
   NOTE_READONLY_SAVE_MESSAGE,

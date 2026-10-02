@@ -17,7 +17,7 @@ import { AudioResourcePicker } from "./AudioResourcePicker";
 import { WorkbooksResourcePicker } from "./WorkbooksResourcePicker";
 import { DocumentsResourcePicker } from "./DocumentsResourcePicker";
 import { ContextValuesResourcePicker } from "./ContextValuesResourcePicker";
-import { ComposerConnectorsPanel } from "@/features/agents/components/inputs/smart-input/composer/ComposerConnectorsPanel";
+import { ComposerConnectorsPanel } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/ComposerConnectorsPanel";
 import { ToolsResourcePicker } from "./ToolsResourcePicker";
 import { SkillsResourcePicker } from "./SkillsResourcePicker";
 import { ConversationReferencePicker } from "./ConversationReferencePicker";
@@ -27,7 +27,7 @@ import { toast } from "@/lib/toast";
 import type { GoogleWorkspaceResourceType } from "@/features/google-workspace/resource-types";
 import { GoogleResourcePicker } from "./GoogleResourcePicker";
 import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
-import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setContextEntry } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import {
   GOOGLE_FILES_CONTEXT_KEY,
   EMPTY_GOOGLE_FILE_IDS,
@@ -40,13 +40,13 @@ import {
   type ResourcePickerViewId,
 } from "./resource-picker-menu-items";
 import { useRunControlCounts } from "./useRunControlCounts";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import { useOpenKnowledgeCommandBar } from "@/features/overlays/openers/knowledgeCommandBar";
 import { useOpenResourcePickerWindow } from "@/features/overlays/openers/resourcePickerWindow";
 import { useKnowledgeAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
 import type { KnowledgeCommand } from "@/features/knowledge/command-bar/commands";
 import type { LucideIcon } from "lucide-react";
-import { useAttachedFileIds } from "@/features/agents/components/inputs/resources/useAttachedFileIds";
+import { useAttachedFileIds } from "@ai-matrx/chat/agents/components/inputs/resources/useAttachedFileIds";
 
 type FilesPickerProps = React.ComponentProps<typeof FilesResourcePicker>;
 
@@ -105,6 +105,13 @@ interface ResourcePickerMenuProps {
     resource: Resource,
   ): boolean | void | Promise<boolean | void>;
   onClose: () => void;
+  /**
+   * Called after a value is picked (note, file, chat, Google file) instead of
+   * `onClose`. A host that lets the person keep going — the phone "Chat
+   * options" sheet returns to its tab list — passes it; leaving actions
+   * (knowledge bar, Connections, Cloud browser, Settings) still call onClose.
+   */
+  onPicked?: () => void;
   /** Required for Tools / Skills / Settings in-place pickers. */
   conversationId?: string;
   attachmentCapabilities?: {
@@ -149,6 +156,7 @@ export function ResourcePickerMenu({
   onResourceSelected,
   onResourceDeselected,
   onClose,
+  onPicked,
   conversationId,
   attachmentCapabilities,
   onSettingsClick,
@@ -161,6 +169,7 @@ export function ResourcePickerMenu({
   onReopenAt,
   onExitInitialView,
 }: ResourcePickerMenuProps) {
+  const finishPick = onPicked ?? onClose;
   const [activeView, setActiveView] = useState<ResourcePickerViewId>(initialView);
   const goBack = () => {
     if (initialView && onExitInitialView) {
@@ -276,13 +285,13 @@ export function ResourcePickerMenu({
       }),
     );
     toast.success(`${file.name} attached.`);
-    onClose();
+    finishPick();
   };
 
   const selectResource = async (resource: Resource, listSelection: boolean) => {
     const selected = await onResourceSelected(resource);
     if (selected !== false && (!listSelection || selectionMode === "single")) {
-      onClose();
+      finishPick();
     }
     return selected;
   };
@@ -331,7 +340,7 @@ export function ResourcePickerMenu({
                     break;
                   }
                 }
-                if (completed && selectionMode === "single") onClose();
+                if (completed && selectionMode === "single") finishPick();
               }}
             />
           }
@@ -369,7 +378,7 @@ export function ResourcePickerMenu({
               conversationId,
               conversation,
             );
-            onClose();
+            finishPick();
           }}
         />
       );

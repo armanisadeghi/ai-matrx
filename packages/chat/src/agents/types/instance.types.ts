@@ -20,14 +20,14 @@ import type {
   SystemInstruction,
 } from "./agent-api-types";
 import type { ApplicationScope } from "./scope.types";
-import type { ValueMappingMap } from "@/features/surfaces/types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { ValueMappingMap } from "../../surfaces/types";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 import type { UserInputPart } from "./request.types";
-import type { MessagePart } from "@/types/python-generated/stream-events";
-import type { components } from "@/types/python-generated/api-types";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { components } from "@host/types/python-generated/api-types";
+import type { ResultDisplayMode } from "../utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
-import type { ServerOperationState } from "@/features/agents/runtime-reconnect/types";
+import type { ServerOperationState } from "../runtime-reconnect/types";
 
 import {
   SOURCE_APPS,
@@ -37,7 +37,7 @@ import {
   isSourceFeature,
   type SourceApp,
   type SourceFeature,
-} from "@/types/python-generated/source-attribution";
+} from "@host/types/python-generated/source-attribution";
 
 // =============================================================================
 // Completion Stats — re-exported from auto-generated stream-events.ts
@@ -47,7 +47,7 @@ import {
 // are the single source of truth.
 // =============================================================================
 
-export type { UserRequestResult as CompletionStats } from "@/types/python-generated/stream-events";
+export type { UserRequestResult as CompletionStats } from "@host/types/python-generated/stream-events";
 export type {
   AggregatedUsageResult,
   ModelUsageSummary,
@@ -55,7 +55,7 @@ export type {
   TimingStatsResult,
   ToolCallStatsResult,
   ToolCallByTool,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 
 /**
  * Durable resource identity carried on a run — the generated API contract's
@@ -1566,5 +1566,5 @@ export const AGENT_EXECUTION_DEFAULTS = {
   sourceFeature: "agent-runner" as SourceFeature,
 } as const;
 
-export type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-export type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+export type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
+export type { ResultDisplayMode } from "../utils/run-ui-utils";

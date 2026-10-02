@@ -20,9 +20,9 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
+} from "@host/components/ui/tooltip";
+import { cn } from "@host/lib/utils";
+import type { ComputeTarget } from "@host/hooks/sandbox/use-compute-targets";
 import {
   computeTargetIconColor,
   computeTargetKindLabel,
@@ -31,8 +31,8 @@ import {
 import {
   describeBoundTargetState,
   type BoundTargetView,
-} from "@/lib/sandbox/bound-target-view";
-import { splitIdentifyingName } from "@/lib/sandbox/format";
+} from "@host/lib/sandbox/bound-target-view";
+import { splitIdentifyingName } from "@host/lib/sandbox/format";
 
 export interface ComputeLensBarProps {
   conversationId: string;

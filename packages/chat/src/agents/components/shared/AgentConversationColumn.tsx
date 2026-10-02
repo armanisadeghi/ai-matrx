@@ -12,29 +12,29 @@ import { ArrowDown } from "lucide-react";
 import { motion } from "motion/react";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
-import type { ComposerPresentation } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+import type { ComposerPresentation } from "../inputs/smart-input/composer/composer-types";
 import type { AttachedContextRailItem } from "../inputs/smart-input/ConversationContextRail";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingSendMessage } from "../messages-display/user/PendingSendMessage";
 import { TranscriptIntegrityCopyButton } from "../messages-display/TranscriptIntegrityCopyButton";
-import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
-import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
-import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { PendingAsksZone } from "../../ui-first-tools/ui/PendingAsksZone";
+import { ServerOperationBanner } from "../../runtime-reconnect/ServerOperationBanner";
+import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components/ProposedDirectivesZone";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
 import {
   revealOlderGroups,
   setVisibleGroupLimit,
-} from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
+} from "../../redux/execution-system/messages/messages.slice";
+import { selectStreamPhase } from "../../redux/execution-system/selectors/aggregate.selectors";
+import { selectShowCreatorPanel } from "@host/lib/redux/preferences/creatorDebugSlice";
 import {
   TranscriptAudienceProvider,
   type TranscriptAudience,
 } from "./transcript-audience";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import {
   ASSISTANT_MESSAGE_COLUMN_CLASS,
   ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
@@ -42,7 +42,7 @@ import {
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
-} from "@/features/war-room/utils/renderPathTrace";
+} from "@host/features/war-room/utils/renderPathTrace";
 
 // CreatorRunPanel renders a <WindowPanel> as styling chrome (admin-gated
 // tab panel). Without `dynamic()` it would pull WindowPanel and the

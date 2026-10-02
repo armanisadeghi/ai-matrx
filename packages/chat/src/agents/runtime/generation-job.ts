@@ -7,17 +7,17 @@
 // job card (model · clock · estimated cost) never appeared — only the
 // builder's manual path set it. Both paths now label the request the same way.
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import {
   fetchModelById,
   selectModelById,
-} from "@/features/ai-models/redux/modelRegistrySlice";
-import type { AppDispatch } from "@/lib/redux/store";
-import { setRequestGenerationJob } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
-import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { isJobOutputKind, runOutputKindFromModalities } from "@/lib/api/run-wait";
-import type { RequestGenerationJob } from "@/features/agents/types/request.types";
+} from "@host/features/ai-models/redux/modelRegistrySlice";
+import type { AppDispatch } from "@host/lib/redux/store";
+import { setRequestGenerationJob } from "../redux/execution-system/active-requests/active-requests.slice";
+import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
+import { selectCurrentSettings } from "../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { isJobOutputKind, runOutputKindFromModalities } from "@host/lib/api/run-wait";
+import type { RequestGenerationJob } from "../types/request.types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** The model this conversation's next run uses: a run-time model override

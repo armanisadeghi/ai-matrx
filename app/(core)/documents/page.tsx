@@ -36,7 +36,7 @@ import {
   buildDocumentsLibraryContextData,
   DOCUMENTS_SURFACE_NAME,
 } from "@/features/data-tables/agent-context/buildDocumentsContextData";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
 import {

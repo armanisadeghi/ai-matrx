@@ -5,9 +5,9 @@ import {
   getSurfaceRuntimeForName,
   SurfaceRuntimeProvider,
 } from "./SurfaceRuntimeContext";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "../types";
 
-jest.mock("@/components/agent-copy/AlchemySurfaceBridge", () => ({
+jest.mock("@host/components/agent-copy/AlchemySurfaceBridge", () => ({
   AlchemySurfaceBridge: ({ children }: { children: ReactNode }) => children,
 }));
 

@@ -37,8 +37,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
+import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
 
 import type {
   ToolAccent,
@@ -51,7 +51,7 @@ import type {
 import { GenericRenderer } from "./GenericRenderer";
 import { withSurfaceWriteDiff } from "../surface-write/withSurfaceWriteDiff";
 import { DIFF_START_OPEN_KNOB, readSurfaceWrite } from "../surface-write/readSurfaceWrite";
-import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { getSessionKnob } from "@host/lib/scoped-config/sessionKnob";
 
 import { SearchInline } from "../renderers/search/SearchInline";
 import { SearchOverlay } from "../renderers/search/SearchOverlay";
@@ -133,7 +133,7 @@ import {
   getCachedToolMeta,
   isKnownNoToolRenderer,
 } from "../db-renderer/toolRendererCache";
-import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
+import { contextEntryLabel } from "../../agents/components/context-policies-display/contextEntryLabel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO header extras — ONE helper for every `seo` action + legacy tool name.

@@ -13,8 +13,8 @@ import { configureStore, type Middleware } from "@reduxjs/toolkit";
 import {
   clearCapturedErrors,
   getSnapshot,
-} from "@/lib/diagnostics/errorCaptureStore";
-import { reduxErrorCaptureMiddleware } from "@/lib/diagnostics/reduxErrorCaptureMiddleware";
+} from "@host/lib/diagnostics/errorCaptureStore";
+import { reduxErrorCaptureMiddleware } from "@host/lib/diagnostics/reduxErrorCaptureMiddleware";
 
 import {
   registerAbortController,

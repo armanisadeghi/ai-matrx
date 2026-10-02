@@ -17,7 +17,7 @@ import { closeMessaging } from "@/features/messaging/redux/messagingUiSlice";
 import { ConversationListPane } from "@/features/messaging/components/ConversationListPane";
 import { MessagesListHeader } from "@/features/messaging/components/shell/MessagesListHeader";
 import { useMessagesSurfaceScope } from "@/features/messaging/lib/useMessagesSurfaceScope";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 export default function MessagesPageClient() {
   const dispatch = useAppDispatch();

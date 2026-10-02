@@ -10,13 +10,13 @@
  * (Replaces the deleted Next.js /api/mcp/servers/[serverId]/* routes and the
  * deleted mcp-client/token-refresh.ts.)
  */
-import { createClient } from "@/utils/supabase/client";
-import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
-import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
-import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
-import type { components } from "@/types/python-generated/api-types";
-import type { AttachableAvailability } from "@/features/connectors/attachable-resources";
+import { createClient } from "@host/utils/supabase/client";
+import type { McpToolSchema } from "./mcp-client/tool-discovery";
+import { AIDREAM_PRODUCTION_URL } from "@host/lib/api/endpoints";
+import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@host/lib/organization/organization-gate";
+import type { components } from "@host/types/python-generated/api-types";
+import type { AttachableAvailability } from "@host/features/connectors/attachable-resources";
 
 function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;

@@ -6,15 +6,15 @@
  *   - `invalidateAgentCache` thunk (explicit user action with confirmation)
  */
 
-import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
+import { selectResolvedBaseUrl } from "@host/lib/redux/slices/apiConfigSlice";
 import {
   selectAccessToken,
   selectFingerprintId,
-} from "@/lib/redux/slices/userSlice";
-import type { RootState } from "@/lib/redux/store";
-import type { components } from "@/types/python-generated/api-types";
+} from "@host/lib/redux/slices/userSlice";
+import type { RootState } from "@host/lib/redux/store";
+import type { components } from "@host/types/python-generated/api-types";
 
 export type InvalidateAgentCacheResponse =
   components["schemas"]["InvalidateAgentCacheResponse"];

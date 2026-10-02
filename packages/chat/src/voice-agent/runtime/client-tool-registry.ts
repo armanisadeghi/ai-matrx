@@ -24,9 +24,9 @@
 
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import { extractErrorMessage } from "@/utils/errors";
-import { getUiFirstToolEntry } from "@/features/agents/ui-first-tools/tools/registry";
+import type { RootState } from "@host/lib/redux/store";
+import { extractErrorMessage } from "@host/utils/errors";
+import { getUiFirstToolEntry } from "../../agents/ui-first-tools/tools/registry";
 
 /**
  * Context handed to a client-tool runner. Mirrors the ui-first-tools

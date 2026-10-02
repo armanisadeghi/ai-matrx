@@ -67,7 +67,7 @@ Every file that imports from the TTS/audio system, organized by which hook/compo
 
 | File | Note |
 |------|------|
-| `features/public-chat/components/PublicMessageOptionsMenu.tsx` | No Cartesia — uses native browser API |
+| `packages/chat/src/public-chat/components/PublicMessageOptionsMenu.tsx` | No Cartesia — uses native browser API |
 
 ---
 

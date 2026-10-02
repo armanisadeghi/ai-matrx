@@ -48,7 +48,7 @@ jest.mock("@/components/official/CollapsibleText", () => ({
   CollapsibleTextGroupControls: () => null,
 }));
 const capturedHandlers: Array<Record<string, (raw: unknown) => Promise<unknown>>> = [];
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   useSurfaceWriteHandlers: (
     _surface: unknown,
     handlers: Record<string, (raw: unknown) => Promise<unknown>>,

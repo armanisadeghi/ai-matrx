@@ -7,7 +7,7 @@
  * Shown during interstitial phases between tool calls.
  */
 
-import { ShimmerText } from "@/components/loaders/ShimmerText";
+import { ShimmerText } from "@host/components/loaders/ShimmerText";
 
 interface AgentStatusIndicatorProps {
   message: string | null;

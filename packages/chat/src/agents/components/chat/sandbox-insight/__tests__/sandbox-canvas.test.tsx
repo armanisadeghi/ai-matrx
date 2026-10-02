@@ -33,8 +33,8 @@ import {
   NON_PERSISTABLE_CANVAS_TYPES,
   isPersistableCanvasType,
   type CanvasContent,
-} from "@/features/canvas/redux/canvasSlice";
-import { CanvasBody, getDefaultTitle } from "@/features/canvas/core/CanvasBody";
+} from "@host/features/canvas/redux/canvasSlice";
+import { CanvasBody, getDefaultTitle } from "@host/features/canvas/core/CanvasBody";
 import {
   buildSandboxCanvasContent,
   decideSandboxCanvasAction,
@@ -48,12 +48,12 @@ import {
 
 // The two leaves that would open a pty / fetch a file tree. Their PRESENCE is
 // what is asserted here, not their internals.
-jest.mock("@/features/code/terminal/SimpleTerminal", () => ({
+jest.mock("@host/features/code/terminal/SimpleTerminal", () => ({
   SimpleTerminal: ({ sandboxId }: { sandboxId: string | null }) => (
     <div data-testid="simple-terminal">{sandboxId}</div>
   ),
 }));
-jest.mock("@/features/agents/components/debug/SandboxFileViewer", () => ({
+jest.mock("../../../debug/SandboxFileViewer", () => ({
   SandboxFileViewer: ({ sandboxRowId }: { sandboxRowId: string }) => (
     <div data-testid="sandbox-file-viewer">{sandboxRowId}</div>
   ),

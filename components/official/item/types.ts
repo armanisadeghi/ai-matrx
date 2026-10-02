@@ -14,8 +14,8 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
 import type { ResolvedContextMenuContext } from "@/features/context-menu-v3/types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 
 // ── Menu entries ────────────────────────────────────────────────────────────
 

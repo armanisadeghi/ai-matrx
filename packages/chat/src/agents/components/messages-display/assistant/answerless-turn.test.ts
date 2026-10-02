@@ -4,8 +4,8 @@ import {
   rowAsksThePerson,
   type AnswerlessTurnInput,
 } from "./answerless-turn";
-import { selectRequestAwaitingPerson } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@/lib/redux/store";
+import { selectRequestAwaitingPerson } from "../../../redux/execution-system/active-requests/active-requests.selectors";
+import type { RootState } from "@host/lib/redux/store";
 
 /**
  * The witness for the production case found on 2026-09-18: `Quick Test Agent`

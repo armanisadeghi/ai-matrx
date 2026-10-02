@@ -7,11 +7,11 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import { submitToolResult } from "@/features/agents/api/submit-tool-results";
-import { upsertToolLifecycle } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import { invokeMatrxExtendTool } from "@/lib/extension-bridge/matrx-extend-client";
-import { extractErrorMessage } from "@/utils/errors";
+import type { RootState } from "@host/lib/redux/store";
+import { submitToolResult } from "../../../api/submit-tool-results";
+import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
+import { invokeMatrxExtendTool } from "@host/lib/extension-bridge/matrx-extend-client";
+import { extractErrorMessage } from "@host/utils/errors";
 
 export interface DispatchMatrxExtendToolPayload {
   conversationId: string;

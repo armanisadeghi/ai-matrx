@@ -25,7 +25,7 @@ import {
   usePageContent,
   useSavePageContent,
 } from "@/features/marketing/data/hooks";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
 import type { MarketingPage } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";

@@ -22,24 +22,24 @@ import {
   selectAgentOutputSchema,
   selectAgentReadyForBuilder,
   selectAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   findItemProperties,
   importColumnsFromAgentSchema,
 } from "@/features/page-extraction/utils/columns";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { fetchModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
 import {
   selectAllTools,
   selectToolsReady,
-} from "@/features/agents/redux/tools/tools.selectors";
-import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
+import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
+import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
 import type {
   AgentDefinition,
   AgentDefinitionRecord,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   ChevronDown,
   ChevronRight,

@@ -30,13 +30,13 @@ import { PlaySurface } from "../play/PlaySurface";
 import { ResultsSummary } from "../results/ResultsSummary";
 import type { BadgeKey } from "../../engine/badges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   EDUCATION_GAME_SOLO_SURFACE_NAME,
   createEducationGameSoloScope,
   mapSoloMisses,
 } from "@/features/surfaces/manifests/education-game-solo.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 /** Solo rounds are short + snappy — a tighter clock than a multiplayer match. */
 const SOLO_CONFIG = { ...DEFAULT_ROOM_CONFIG, durationMs: 90_000 };

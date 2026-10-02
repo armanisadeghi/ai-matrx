@@ -12,7 +12,7 @@
 import { useCallback, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { isScopesRpcErr } from "@/features/scopes/types";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { createOrchestra } from "@/features/agents/redux/orchestras/thunks";
 import type { OrchestraAccent } from "../constants";
 import { conductorService } from "./conductorService";

@@ -26,8 +26,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   setOverrides,
   resetOverride,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   selectActiveModels,
   fetchModelOptions,

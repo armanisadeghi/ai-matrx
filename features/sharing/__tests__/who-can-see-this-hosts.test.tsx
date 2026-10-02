@@ -66,7 +66,7 @@ jest.mock("@/components/ui/use-toast", () => ({ useToast: () => ({ toast: jest.f
 jest.mock("@/features/window-panels/WindowPanel", () => ({
   WindowPanel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({

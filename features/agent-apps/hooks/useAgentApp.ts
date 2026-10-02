@@ -32,12 +32,12 @@ import { logFailure } from "@/lib/errors/expectedRefusal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { useConversationRoutePromotion } from "@/features/agents/hooks/useConversationRoutePromotion";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { useConversationRoutePromotion } from "@ai-matrx/chat/agents/hooks/useConversationRoutePromotion";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { supabase } from "@/utils/supabase/client";
-import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
+import { reconnectServerOperation } from "@ai-matrx/chat/agents/runtime-reconnect/reconnect-server-operation.thunk";
 // The run's failure in words a person reads — `request.error` (ErrorPayload),
 // never `errorMessage` (a tool-call field). Shared with the app's run record.
 import {
@@ -45,56 +45,56 @@ import {
   requestIdsOf,
 } from "@/features/agent-apps/tracking/run-outcome";
 
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 
 import {
   setUserVariableValue,
   setUserVariableValues,
   resetUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 
 import {
   setContextEntries,
   clearInstanceContext,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import type { InstanceContextEntry } from "@ai-matrx/chat/agents/types/instance.types";
+import { selectInstanceContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.selectors";
 
 import {
   addResource,
   removeResource,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import type { ManagedResource } from "@/features/agents/types/instance.types";
-import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import type { ManagedResource } from "@ai-matrx/chat/agents/types/instance.types";
+import { selectInstanceResources } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 
 import {
   selectResultText,
   selectPrimaryRequest,
   selectRequest,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 
 import {
   selectStreamPhase,
   selectIsExecuting,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   selectConversationMessages,
   selectLatestAnswerText,
   EMPTY_CONVERSATION_MESSAGES,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 
-import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { fetchPublicAppExecutionPayload } from "@/features/agent-apps/lib/publicAppPayload";
 import { selectIsAuthenticated } from "@/lib/redux/slices/userSlice";
 import {
@@ -105,11 +105,11 @@ import {
   setShowUserMessageOptions,
   setShowAssistantMessageOptions,
   setBufferStream,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
-import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
 import {
   buildAgentAppSurfaceScope,

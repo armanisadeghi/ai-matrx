@@ -20,12 +20,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { removeRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   addRunToSet,
   clearRunSet,
-} from "@/features/agents/redux/execution-system/run-sets/run-sets.thunks";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+} from "@ai-matrx/chat/agents/redux/execution-system/run-sets/run-sets.thunks";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { callApi } from "@/lib/api/call-api";
 import {

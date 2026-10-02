@@ -22,10 +22,10 @@
 // file exists to remove.
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { fetchModelIdentityById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
+import { fetchFullAgent } from "../agents/redux/agent-definition/thunks";
+import { fetchModelIdentityById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { applyAgentConfig, setError } from "./state/voiceAgentSlice";
 
 /**

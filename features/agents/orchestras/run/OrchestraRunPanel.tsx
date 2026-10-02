@@ -22,7 +22,7 @@ import type { OrchestraAccent } from "../constants";
 // until the panel actually opens.
 const AgentRunnerPage = dynamic(
   () =>
-    import("@/features/agents/components/run/AgentRunnerPage").then(
+    import("@ai-matrx/chat/agents/components/run/AgentRunnerPage").then(
       (m) => m.AgentRunnerPage,
     ),
   {

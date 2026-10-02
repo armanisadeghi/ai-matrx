@@ -9,10 +9,10 @@
  * goes ahead regardless. Nothing here can stop a replacement.
  */
 
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
 import type { ModelConstraint } from "@/features/ai-models/types";
-import { resolveModelControls } from "@/features/agents/hooks/useModelControls";
+import { resolveModelControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { analyzeModelChange } from "@/features/agents/components/settings-management/reconciliation/analyze";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
 

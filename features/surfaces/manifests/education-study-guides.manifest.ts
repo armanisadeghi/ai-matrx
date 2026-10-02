@@ -5,7 +5,7 @@
  * `matrx-user/education-study-guide` (education-study-guide.manifest.ts); the
  * guide_* values here stay declared for stored bindings but are absent on this route.
  */
-import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup, SurfaceWriteTarget } from "@/features/surfaces/types";
+import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup, SurfaceWriteTarget } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [

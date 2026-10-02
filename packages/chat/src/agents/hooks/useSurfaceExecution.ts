@@ -25,9 +25,9 @@
  * reflect and cancel the run that is genuinely in flight on this surface.
  */
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectDisplayConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectIsExecuting } from "../redux/execution-system/selectors/aggregate.selectors";
+import { selectDisplayConversation } from "../redux/execution-system/conversation-focus/conversation-focus.selectors";
 
 interface SurfaceExecution {
   /** True when a run is in flight on this surface (input or display slot). */

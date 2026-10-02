@@ -22,7 +22,7 @@ jest.mock("@/utils/supabase/client", () => {
   };
   return { supabase: { schema: () => ({ from: (table: string) => chain(table) }) } };
 });
-jest.mock("@/features/cx-chat/utils/cx-content-converter", () => ({
+jest.mock("@ai-matrx/chat/cx-chat/utils/cx-content-converter", () => ({
   convertCxContentToDisplay: () => ({ content: "Here you go.\n\n| Exercise | Sets |\n|---|---|\n| Quad sets | 3 |" }),
 }));
 

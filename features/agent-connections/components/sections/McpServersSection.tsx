@@ -9,10 +9,10 @@ import { ListRow } from "../ListRow";
 import { SectionFooter } from "../SectionFooter";
 import { useMcpCatalog } from "../../hooks/useMcpCatalog";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
 import { githubConnectUrl } from "@/features/github-integration/service";
-import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
-import { useMcpServerTools } from "@/features/agents/hooks/useMcpTools";
+import { startMcpOAuthPopup } from "@ai-matrx/chat/agents/services/mcp-oauth/popup";
+import { useMcpServerTools } from "@ai-matrx/chat/agents/hooks/useMcpTools";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   mcpConnectionActionLabel,

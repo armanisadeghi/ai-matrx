@@ -38,9 +38,9 @@ import {
     Layers,
     ArrowRight,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { Badge } from "@host/components/ui/badge";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { ToolRendererProps } from "../../types";
 import { isTerminal, isSuccess, resultAsString } from "../_shared";
 import { useGraduatedReveal } from "../search/useGraduatedReveal";

@@ -16,7 +16,7 @@ import {
   ProTextarea,
   type ProTextareaProps,
 } from "@/components/official/ProTextarea";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 
 export type ProJsonIssueSeverity = "error" | "warning" | "info";
 export type ProJsonIssueKind =

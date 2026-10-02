@@ -59,7 +59,7 @@ import { parseRecordingOrigin } from "@/features/audio/recordingOrigin";
 import {
   HUMAN_AUTHORED_MESSAGE_COLUMNS,
   messageContentToText,
-} from "@/features/agents/utils/human-authored-text";
+} from "@ai-matrx/chat/agents/utils/human-authored-text";
 import { countWords, summariseExpertTurns } from "./format";
 import { callApi } from "@/lib/api/call-api";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
@@ -498,7 +498,7 @@ export function associateInterviewWhenPersisted(args: {
   void (async () => {
     try {
       const { waitForConversationPersisted } = await import(
-        "@/features/agents/redux/execution-system/conversations/conversation-persistence"
+        "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence"
       );
       const persisted = await waitForConversationPersisted(args.conversationId);
       if (!persisted) {

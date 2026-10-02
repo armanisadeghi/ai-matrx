@@ -10,50 +10,50 @@
  * This page only renders the header strip, conversation area, and mobile drawers.
  */
 
-import { logFailure } from "@/lib/errors/expectedRefusal";
+import { logFailure } from "@host/lib/errors/expectedRefusal";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import {
   selectAgentExecutionPayload,
   selectAgentName,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
-import { useConversationRoutePromotion } from "@/features/agents/hooks/useConversationRoutePromotion";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+} from "../../redux/agent-definition/selectors";
+import { selectAuthReady } from "@host/lib/redux/selectors/userSelectors";
+import { useAgentLauncher } from "../../hooks/useAgentLauncher";
+import { useCreatorOwnershipSync } from "../../hooks/useCreatorOwnershipSync";
+import { useConversationRoutePromotion } from "../../hooks/useConversationRoutePromotion";
+import { createManualInstance } from "../../redux/execution-system/thunks/create-instance.thunk";
+import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
+import { clearFocus } from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
-import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
+import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
+import { ChatRoomSkeleton } from "../chat/ChatRoomSkeleton";
 import { AlertTriangle, Loader2, RotateCw, TestTube2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@host/components/ui/button";
+import { useIsMobile } from "@host/hooks/use-mobile";
 import { AgentRunHeader } from "./AgentRunHeader";
-import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
+import { DebugSessionActivator } from "../debug/DebugSessionActivator";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   CHAT_CONVERSATION_TITLE_MAX,
   CHAT_DRAFT_WRITE_MODES,
   CHAT_INPUT_DRAFT_MAX,
   isChatDraftWriteMode,
-} from "@/features/surfaces/manifests/chat.manifest";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { useAgentRunSurfaceScope } from "@/features/agents/hooks/useAgentRunSurfaceScope";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+} from "@host/features/surfaces/manifests/chat.manifest";
+import { waitForConversationPersisted } from "../../redux/execution-system/conversations/conversation-persistence";
+import { renameConversation } from "../../redux/conversation-list/conversation-row-actions.thunks";
+import { setUserInputText } from "../../redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputText } from "../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserVariableValues } from "../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectInstanceVariableDefinitions } from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { useAgentRunSurfaceScope } from "../../hooks/useAgentRunSurfaceScope";
+import type { SourceFeature } from "../../types/instance.types";
 import { createAgentRunVariableValuesHandler } from "./agent-run-variable-write";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const RUN_INITIAL_MESSAGE_LIMIT = 12;
 

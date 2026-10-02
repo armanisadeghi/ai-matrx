@@ -20,7 +20,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   getFaviconUrl,
   getBreadcrumbParts,
-} from "@/features/tool-call-visualization/renderers/search/parseSearch";
+} from "@ai-matrx/chat/tool-call-visualization/renderers/search/parseSearch";
 
 /** Favicon for a page: favicon service derived from the URL → Globe. */
 export const SiteFavicon: React.FC<{ url?: string | null; className?: string }> = ({

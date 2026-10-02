@@ -7,7 +7,7 @@
 import {
   flagsOf,
   flagsShapeProblem,
-} from "@/features/agents/message-flags/flags";
+} from "../../message-flags/flags";
 import {
   VARIABLE_COMPONENT_TYPES,
   type AgentDefinition,
@@ -20,15 +20,15 @@ import {
   type VariableDefinition,
   type VariableResourceContextConfig,
   type VariableResourcePromotion,
-} from "@/features/agents/types/agent-definition.types";
-import type { components } from "@/types/python-generated/api-types";
-import { isMessagePart } from "@/types/python-generated/stream-events";
+} from "../../types/agent-definition.types";
+import type { components } from "@host/types/python-generated/api-types";
+import { isMessagePart } from "@host/types/python-generated/stream-events";
 import { isReferenceRole } from "@ai-matrx/agents";
-import { isSpeechScriptPart } from "@/features/agents/speech-script/types";
+import { isSpeechScriptPart } from "../../speech-script/types";
 import {
   DECISION_QUESTIONS_KIND,
   isDecisionQuestionsPart,
-} from "@/features/agents/decision-questions/types";
+} from "@host/features/agents/decision-questions/types";
 
 type DefinitionMessage = AgentDefinition["messages"][number];
 type DefinitionMessagePart = DefinitionMessage["content"][number];

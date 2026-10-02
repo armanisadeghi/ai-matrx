@@ -1,16 +1,16 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { NoteEditorCore } from "@/features/notes/components/NoteEditorCore";
-import type { ContentSource } from "@/features/rich-document/types";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectWorkingDocConflict } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { NoteEditorCore } from "@host/features/notes/components/NoteEditorCore";
+import type { ContentSource } from "@host/features/rich-document/types";
+import { buildApplicationScopeFromMenuContext } from "@host/features/context-menu-v3/utils/build-application-scope";
+import type { WorkingDocumentKind } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectWorkingDocConflict } from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import { useWorkingDocViewState } from "./workingDocumentViewStore";
 import { useWorkingDocumentSurfaceScope } from "./useWorkingDocumentSurfaceScope";
 import {
@@ -20,7 +20,7 @@ import {
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
-import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { EditableContextMenu } from "@host/features/context-menu-v3/EditableContextMenu";
 
 interface WorkingDocumentEditorProps {
   conversationId: string;

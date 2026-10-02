@@ -25,7 +25,7 @@ line, never the form, whatever any knob says.
 
 The same ask, answered where the person already is. When the chat renders an
 `ask_person` tool call, `AskPersonInline`
-(`features/tool-call-visualization/renderers/ask-person/`) finds the ask in
+(`packages/chat/src/tool-call-visualization/renderers/ask-person/`) finds the ask in
 aidream's authenticated `GET /action-requests/pending` (by the parked output's
 `action_request_id`, else this conversation + the kind) and draws the SAME form.
 The answer goes to `POST /action-requests/{id}/complete` with the person's own

@@ -13,14 +13,14 @@
  */
 
 const mockPromptForValues = jest.fn();
-jest.mock("@/components/dialogs/value-prompts/ValuePromptsDialogHost", () => ({
+jest.mock("@host/components/dialogs/value-prompts/ValuePromptsDialogHost", () => ({
   promptForValues: (...args: unknown[]) => mockPromptForValues(...args),
 }));
 
 const mockToast = { info: jest.fn(), error: jest.fn(), warning: jest.fn() };
-jest.mock("@/lib/toast", () => ({ toast: mockToast }));
+jest.mock("@host/lib/toast", () => ({ toast: mockToast }));
 
-jest.mock("@/features/surfaces/services/bind-agent-to-surface.service", () => ({
+jest.mock("../../../../../surfaces/services/bind-agent-to-surface.service", () => ({
   fetchSurfaceBindingLayers: jest.fn(),
 }));
 
@@ -28,8 +28,8 @@ import {
   LaunchCancelledByPerson,
   prepareLaunchMappings,
 } from "../surface-scope-mapping";
-import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import { resolveValueMappings } from "../../../../../surfaces/utils/value-mapping-resolver";
+import type { ValueMappingMap } from "../../../../../surfaces/types";
 
 const merged: ValueMappingMap = {
   text: { mapType: "surface_value", target: "selected_text", required: true },

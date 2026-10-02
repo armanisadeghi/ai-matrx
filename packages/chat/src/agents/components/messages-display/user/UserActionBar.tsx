@@ -26,29 +26,29 @@
  * it). That keeps dialog ownership in one place per message bubble.
  */
 
-import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
-import { useDocumentDialogsHost } from "@/features/rich-document/hosts/DocumentDialogsHost";
+import { buildChatMessageActions } from "@host/features/rich-document/chat/chatMessageActions";
+import { useDocumentDialogsHost } from "@host/features/rich-document/hosts/DocumentDialogsHost";
 import React, { useState, lazy, Suspense, useCallback } from "react";
 import { Copy, Check, Edit, Send, MoreHorizontal, Pin, PinOff, Loader2 } from "lucide-react";
 import {
   togglePinnedMessage,
   usePendingPinMessageIds,
   usePinnedMessageIds,
-} from "@/features/agents/message-pins/pinned-messages-store";
+} from "../../../message-pins/pinned-messages-store";
 import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
 } from "@ai-matrx/tap-target";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
-import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { useOpenFullScreenMarkdownEditorBridge } from "@/features/overlays/openers/fullScreenEditor";
-import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectShowUserMessageOptions } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { toast } from "@/lib/toast";
+import { copyToClipboard } from "@host/components/matrx/buttons/markdown-copy-utils";
+import { SpeakerButton } from "@host/features/tts/components/SpeakerButton";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useOpenFullScreenMarkdownEditorBridge } from "@host/features/overlays/openers/fullScreenEditor";
+import { selectMessagePosition } from "../../../redux/execution-system/messages/messages.selectors";
+import { selectShowUserMessageOptions } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { toast } from "@host/lib/toast";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
 import { openStructuredRawViewer } from "../message-options/openAssistantMessageEditor";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage } from "@host/utils/errors";
 import {
   USER_EDIT_ACTIONS,
   routeUserEditAction,
@@ -96,7 +96,7 @@ function serializeSaveError(error: unknown): {
 // The ⋯ menu is the ONE action registry (features/rich-document) rendered
 // through AdvancedMenu — the same actions a document gets on every surface.
 const RegistryActionMenu = lazy(() =>
-  import("@/features/rich-document/variants/RegistryActionMenu").then((m) => ({
+  import("@host/features/rich-document/variants/RegistryActionMenu").then((m) => ({
     default: m.RegistryActionMenu,
   })),
 );
@@ -230,7 +230,7 @@ export function UserActionBar({
   const handleConfirmDelete = useCallback(async () => {
     try {
       const { deleteMessage } =
-        await import("@/features/agents/redux/execution-system/message-crud/delete-message.thunk");
+        await import("../../../redux/execution-system/message-crud/delete-message.thunk");
       await dispatch(deleteMessage({ conversationId, messageId })).unwrap();
       toast.success("Message deleted");
     } catch (err) {
@@ -247,9 +247,9 @@ export function UserActionBar({
   const handleConfirmDeleteFork = useCallback(async () => {
     try {
       const { forkConversation } =
-        await import("@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk");
+        await import("../../../redux/execution-system/message-crud/fork-conversation.thunk");
       const { deleteMessage } =
-        await import("@/features/agents/redux/execution-system/message-crud/delete-message.thunk");
+        await import("../../../redux/execution-system/message-crud/delete-message.thunk");
       const forkPosition = Math.max(0, (messagePosition ?? 0) - 1);
       const forkResult = await dispatch(
         forkConversation({ conversationId, atPosition: forkPosition }),
@@ -276,7 +276,7 @@ export function UserActionBar({
 
       if (surfaceKey) {
         const { requestSurfaceNavigation } =
-          await import("@/features/agents/redux/surfaces/request-surface-navigation.thunk");
+          await import("../../../redux/surfaces/request-surface-navigation.thunk");
         await dispatch(
           requestSurfaceNavigation({
             surfaceKey,

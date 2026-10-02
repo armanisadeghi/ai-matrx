@@ -65,7 +65,7 @@ import {
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { formatGscDate } from "@/features/marketing/search-console/lib/format";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingBacklinksScope } from "@/features/surfaces/manifests/marketing-backlinks.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";

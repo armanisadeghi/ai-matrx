@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { nextNCronFires, validateCron } from "@/lib/scheduler-client/next-due";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_SCHEDULING_SURFACE_NAME,
   CRON_TESTER_TIMEZONES,

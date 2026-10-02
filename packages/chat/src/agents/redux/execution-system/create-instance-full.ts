@@ -24,17 +24,17 @@ import { createAction } from "@reduxjs/toolkit";
 import type {
   AgentType,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
-import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+} from "../../types/agent-definition.types";
+import type { FeLlmParams } from "../../types/agent-api-types";
+import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
 import type {
   ApiEndpointMode,
   ContextAnchor,
   InstanceOrigin,
   SourceFeature,
-} from "@/features/agents/types/instance.types";
+} from "../../types/instance.types";
 import type { InitInstanceUIStatePayload } from "./instance-ui-state/instance-ui-state.slice";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export interface CreateInstanceFullPayload {
   // ── Conversation record (conversations slice) ───────────────────────────────

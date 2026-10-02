@@ -15,7 +15,7 @@ import {
   xmlElement,
   xmlList,
   xmlText,
-} from "@/features/surfaces/runtime/context-bundle";
+} from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 
 export const APP_BUNDLE_CODE_MAX_CHARS = 3500;
 export const APP_BUNDLE_RESULT_MAX_CHARS = 2500;

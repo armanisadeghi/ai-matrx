@@ -52,7 +52,7 @@ jest.mock("@/components/official/ProTextarea", () => ({
   ProTextarea: (props: Record<string, unknown>) => <textarea {...props} />,
 }));
 
-jest.mock("@/features/agents/components/live-run/LiveRunDisplay", () => ({
+jest.mock("@ai-matrx/chat/agents/components/live-run/LiveRunDisplay", () => ({
   LiveRunDisplay: () => null,
 }));
 

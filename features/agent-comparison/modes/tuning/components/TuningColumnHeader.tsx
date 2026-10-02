@@ -21,7 +21,7 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentSettings } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentSettings } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { renameTuningColumn } from "../redux/slice";
 import { removeColumnFromTuningBattle } from "../redux/thunks";

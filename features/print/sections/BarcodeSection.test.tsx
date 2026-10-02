@@ -49,7 +49,7 @@ jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
     NonEditableContextMenu: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
     SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 

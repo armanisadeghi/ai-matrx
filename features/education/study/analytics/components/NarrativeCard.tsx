@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import type { StudyAnalyticsNarrative } from "@/features/content-ir/kinds/generated/kinds.generated";
 import { blockHref } from "../../planner/blockLinks";

@@ -5,7 +5,7 @@
 // includes all blocks, currently a chat-specific renderer feature).
 
 import { Printer, ScanLine } from "lucide-react";
-import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
+import { printMarkdownContent } from "@ai-matrx/chat/conversation/utils/markdown-print";
 import { registerAction } from "../provider";
 import { contentForDestination } from "../utils";
 

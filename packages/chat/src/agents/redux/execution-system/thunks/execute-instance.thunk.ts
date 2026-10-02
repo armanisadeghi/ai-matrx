@@ -1,7 +1,7 @@
 import {
   executionRejectionMeta,
   type ExecutionRejectionMeta,
-} from "@/lib/diagnostics/executionRejectionMeta";
+} from "@host/lib/diagnostics/executionRejectionMeta";
 /**
  * Execute Instance Thunk
  *
@@ -24,21 +24,21 @@ import {
  *   8. Updates request status throughout
  */
 
-import { mintClientTempId } from "@/lib/ids/durable-record-id";
+import { mintClientTempId } from "@host/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import type {
   AssembledAgentStartRequest,
   UserOverrides,
-} from "@/features/agents/types/request.types";
-import type { RequestInitiation } from "@/features/agents/types/instance.types";
-import { toast } from "@/lib/toast";
+} from "../../../types/request.types";
+import type { RequestInitiation } from "../../../types/instance.types";
+import { toast } from "@host/lib/toast";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import { buildContinuationBody } from "../utils/continuation-body";
-import type { MessagePart } from "@/types/python-generated/stream-events";
-import type { Json } from "@/types/database.types";
+import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { Json } from "@host/types/database.types";
 import { generateRequestId } from "../utils/ids";
 import {
   patchConversation,
@@ -64,7 +64,7 @@ import {
   consumePerTurnContext,
   setExpectedContextRows,
 } from "../instance-context/instance-context.slice";
-import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
+import { isFirstTurn } from "../../../ui-first-tools/redux/build-ambient-context";
 import {
   buildRequestContext,
   contextRowsForRequest,
@@ -78,25 +78,25 @@ import {
   selectActiveScopeTypeIds,
   selectScopeSelectionsContext,
   selectTaskId,
-} from "@/lib/redux/slices/appContextSlice";
+} from "@host/lib/redux/slices/appContextSlice";
 import {
   ensureExecutionOrganization,
   executionOrganizationForRequest,
 } from "../utils/required-organization";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
 import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
 } from "./resolve-base-url";
-import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
+import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
 import { resolveStartPath } from "../utils/resolve-start-path";
-import { selectEndpointOverrideConfig } from "@/lib/redux/slices/apiConfigSlice";
-import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
+import { selectEndpointOverrideConfig } from "@host/lib/redux/slices/apiConfigSlice";
+import { selectDesktopTargetInstanceId } from "@host/lib/redux/preferences/adminPreferencesSlice";
 import {
   createRequest,
   setRequestStatus,
 } from "../active-requests/active-requests.slice";
-import { labelGenerationJob } from "@/features/agents/runtime/generation-job";
+import { labelGenerationJob } from "../../../runtime/generation-job";
 import {
   addOptimisticUserMessage,
   shouldCreateOptimisticUserMessage,
@@ -113,8 +113,8 @@ import {
   StreamCancelledError,
   StreamPhaseError,
 } from "./run-ai-stream";
-import { validateMessageBlocks } from "@/features/agents/runtime/validation";
-import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
+import { validateMessageBlocks } from "../../../runtime/validation";
+import { getCapabilitiesForConversation } from "../../../runtime/get-model-capabilities";
 import {
   restoreVariableValues,
   stampSubmittedFirstTurnValues,
@@ -148,7 +148,7 @@ import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { persistInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
 import { persistConversationFlag } from "../conversations/surface-owns-output.persistence";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage } from "@host/utils/errors";
 
 /**
  * Build the three REQUIRED lifecycle fields for a first-turn request.
@@ -1191,7 +1191,7 @@ export const executeInstance = createAsyncThunk<
       // re-add scopes the user just chose to drop.
       if (!isEphemeral && !scopeIdsOverride && payload.scope_ids?.length) {
         const { syncConversationScopes } =
-          await import("@/features/scopes/redux/thunks/syncConversationScopes");
+          await import("@host/features/scopes/redux/thunks/syncConversationScopes");
         void dispatch(syncConversationScopes(conversationId));
       }
 

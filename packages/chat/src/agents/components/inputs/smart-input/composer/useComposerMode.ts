@@ -23,12 +23,12 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectComposerMode,
   setComposerMode,
-} from "@/features/agents/redux/chat/chat-route.slice";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
+} from "../../../../redux/chat/chat-route.slice";
+import { useEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs.client";
 import {
   COMPOSER_KNOBS,
   clearComposerModeCookie,

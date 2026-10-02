@@ -20,7 +20,7 @@ import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -30,12 +30,12 @@ import { formatText } from "@ai-matrx/kit/text-case";
 import {
   appLabel,
   featureLabel,
-} from "@/features/agents/redux/conversation-history/source-registry";
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
-import { ToolCallBatch } from "@/features/tool-call-visualization/components/ToolCallBatch";
-import { cxToolCallToLifecycleEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
-import { fetchConversationToolCallsPage } from "@/features/tool-call-visualization/service/fetchConversationToolCalls";
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+} from "@ai-matrx/chat/agents/redux/conversation-history/source-registry";
+import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
+import { ToolCallBatch } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallBatch";
+import { cxToolCallToLifecycleEntry } from "@ai-matrx/chat/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
+import { fetchConversationToolCallsPage } from "@ai-matrx/chat/tool-call-visualization/service/fetchConversationToolCalls";
+import type { CxToolCallRecord } from "@ai-matrx/chat/agents/redux/execution-system/observability/observability.slice";
 import { FullDownloadButton } from "@/features/ai-work/components/FullDownloadButton";
 import { fetchCodingSessionBindings } from "@/features/agent-connections/coding-sessions/service";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
@@ -65,7 +65,7 @@ import {
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
 import { AiMatrxReplyComposer } from "../conversations/components/AiMatrxReplyComposer";
 import { transcriptAuthorship } from "../lib/providerTranscriptAuthorship";
-import { AgentUserMessageContent } from "@/features/agents/components/messages-display/user/AgentUserMessage";
+import { AgentUserMessageContent } from "@ai-matrx/chat/agents/components/messages-display/user/AgentUserMessage";
 import {
   useLiveProviderTranscript,
   type LiveTranscriptArrival,

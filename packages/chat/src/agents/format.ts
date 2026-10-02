@@ -2,14 +2,14 @@ import type {
   AgentDefinition,
   AgentDefinitionRecord,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
+} from "./types/agent-definition.types";
 import type {
   ChangeType,
   DiffNode,
   DiffResult,
 } from "@ai-matrx/diff/structural";
-import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
-import { contextItemBindingOf } from "@/features/agents/utils/variable-binding";
+import type { AgentVersionHistoryItem } from "./redux/agent-definition/thunks";
+import { contextItemBindingOf } from "./utils/variable-binding";
 
 /**
  * Human-readable, multi-line summary of a full agent definition — the "Copy"

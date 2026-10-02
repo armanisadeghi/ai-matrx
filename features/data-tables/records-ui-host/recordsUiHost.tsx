@@ -33,7 +33,7 @@ import {
 } from "@ai-matrx/records-ui";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import { getOrganizationMembers } from "@/features/organizations/service";

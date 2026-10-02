@@ -11,7 +11,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const MASTERWORK_RULEBOOK_SURFACE_NAME =

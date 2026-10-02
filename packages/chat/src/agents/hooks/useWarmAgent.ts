@@ -13,9 +13,9 @@
  */
 
 import { useEffect } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { warmAgent } from "@/lib/api/warm-helpers";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectResolvedBaseUrl } from "@host/lib/redux/slices/apiConfigSlice";
+import { warmAgent } from "@host/lib/api/warm-helpers";
 
 interface UseWarmAgentOptions {
   /** Pass true when the id is an agx_version id rather than an agent.definition id. */

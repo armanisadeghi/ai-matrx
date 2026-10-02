@@ -27,12 +27,12 @@
  */
 
 import { useEffect } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   setContextEntries,
   clearInstanceContext,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
+} from "../redux/execution-system/instance-context/instance-context.slice";
+import type { ContextObjectType } from "../types/agent-api-types";
 
 // =============================================================================
 // Storage format

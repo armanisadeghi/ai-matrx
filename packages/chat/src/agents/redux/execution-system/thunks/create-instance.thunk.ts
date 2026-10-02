@@ -17,21 +17,21 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { createInstanceFull } from "../create-instance-full";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import type {
   AgentType,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+} from "../../../types/agent-definition.types";
+import type { LLMParams } from "../../../types/agent-api-types";
 import type {
   ApiEndpointMode,
   ContextAnchor,
-} from "@/features/agents/types/instance.types";
-import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
-import { fetchShortcutMandateKey } from "@/lib/supabase/shortcutStorage";
-import { supabase } from "@/utils/supabase/client";
-import { hasField } from "@/features/agents/redux/shared/field-flags";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
+} from "../../../types/instance.types";
+import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
+import { fetchShortcutMandateKey } from "@host/lib/supabase/shortcutStorage";
+import { supabase } from "@host/utils/supabase/client";
+import { hasField } from "../../shared/field-flags";
+import { fetchAgentExecutionFull } from "../../agent-definition/thunks";
 import { executeInstance } from "./execute-instance.thunk";
 
 import { generateConversationId } from "../utils/ids";
@@ -40,7 +40,7 @@ import {
   destroyInstance,
   patchConversation,
 } from "../conversations/conversations.slice";
-import { deriveConversationLifecycle } from "@/features/agents/types/instance.types";
+import { deriveConversationLifecycle } from "../../../types/instance.types";
 import {
   setFocus,
   setInputFocus,
@@ -51,7 +51,7 @@ import { selectDisplayConversation } from "../conversation-focus/conversation-fo
 import { initInstanceOverrides } from "../instance-model-overrides/instance-model-overrides.slice";
 import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
 import { initInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
-import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
 import { fetchInputCapabilitiesSnapshot } from "../instance-input-capabilities/input-capabilities-snapshot";
 import {
   initInstanceVariables,
@@ -67,7 +67,7 @@ import {
   replaceSurfaceContextEntries,
   setContextEntries,
 } from "../instance-context/instance-context.slice";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import type { InstanceContextEntry } from "../../../types/instance.types";
 import {
   initInstanceUserInput,
   setUserInputText,
@@ -84,10 +84,10 @@ import {
   type JsonExtractionConfig,
   type SourceFeature,
   type VariablesPanelStyle,
-} from "@/features/agents/types/instance.types";
-import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
-import type { ValueMappingMap } from "@/features/surfaces/types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+} from "../../../types/instance.types";
+import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
+import type { ValueMappingMap } from "../../../../surfaces/types";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 // =============================================================================
 // Shared helper — reads agent snapshot data. The ONLY place agentId is used.

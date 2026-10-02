@@ -65,7 +65,7 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import {
   SurfaceRuntimeProvider,
   useSurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationCreatorScope,
   EDUCATION_CREATOR_SURFACE_NAME,

@@ -13,15 +13,15 @@
  *  - Old CompletionStats replaced with UserRequestResult from completion.result
  */
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { CompletionStats } from "@/features/agents/types/instance.types";
-import type { ClientMetrics } from "@/features/agents/types/request.types";
-import type { ToolLifecycleStatus } from "@/features/agents/types/request.types";
-import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { isStreamTransportLost, StreamTransportError } from "@/lib/api/errors";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { CompletionStats } from "../../../types/instance.types";
+import type { ClientMetrics } from "../../../types/request.types";
+import type { ToolLifecycleStatus } from "../../../types/request.types";
+import { parseNdjsonStream } from "@host/lib/api/stream-parser";
+import { isStreamTransportLost, StreamTransportError } from "@host/lib/api/errors";
 import { monitorStream } from "@ai-matrx/data/net";
-import { mintClientTempId } from "@/lib/ids/durable-record-id";
-import { withPerformedScript } from "@/features/agents/speech-script/types";
+import { mintClientTempId } from "@host/lib/ids/durable-record-id";
+import { withPerformedScript } from "../../../speech-script/types";
 import {
   isChunkEvent,
   isReasoningChunkEvent,
@@ -65,7 +65,7 @@ import {
   type MemoryObserverCompletedData,
   type MemoryReflectorCompletedData,
   type UntypedDataPayload,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 import {
   appendChunk,
   appendReasoningChunk,
@@ -96,11 +96,11 @@ import {
 } from "../active-requests/active-requests.slice";
 import { parseNormalizedCitation } from "../messages/message-citations";
 import { confirmServerSync } from "../conversations/conversations.slice";
-import { receivedFsChange } from "@/features/code/redux/fsChangesSlice";
+import { receivedFsChange } from "@host/features/code/redux/fsChangesSlice";
 import {
   applySkillStreamEvent,
   isSkillStreamEvent,
-} from "@/features/skills/service/skillsStreamHandler";
+} from "@host/features/skills/service/skillsStreamHandler";
 import { invalidateActiveTools } from "../active-tools/active-tools.slice";
 import {
   applyContextState,
@@ -129,13 +129,13 @@ import {
   applyAgentCanvasItemDelta,
   syncCanvasItemContextFromAgentThunk,
 } from "../instance-context/sync-canvas-item-context.thunk";
-import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
-import { isCanvasItemContextKey } from "@/features/agents/utils/canvasItemContext";
-import { StreamingJsonTracker } from "@/utils/json/streaming-json-tracker";
+import { docKindForContextKey } from "../../../utils/workingDocumentContext";
+import { isCanvasItemContextKey } from "../../../utils/canvasItemContext";
+import { StreamingJsonTracker } from "@host/utils/json/streaming-json-tracker";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
 import { deriveAnswerText } from "../active-requests/active-requests.selectors";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { ExtractedJsonSnapshot } from "@/features/agents/types/request.types";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import type { ExtractedJsonSnapshot } from "../../../types/request.types";
 import {
   setConversationLabel,
   reserveMessage,
@@ -153,13 +153,13 @@ import {
   selectMessageCount,
   selectNextMessagePosition,
 } from "../messages/messages.selectors";
-import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from-image-output-data";
-import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
-import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
-import type { ContentType } from "@/features/ai-models/capabilities/types";
-import { toast } from "@/lib/toast";
-import { isDirectiveApplyEvent } from "@/features/matrx-envelope/envelope";
-import { proposeDirective } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
+import { fromImageOutputData } from "@host/features/files/blocks/image/adapters/from-image-output-data";
+import { fromPartialImageData } from "@host/features/files/blocks/image/adapters/from-partial-image-data";
+import { getCapabilitiesForConversation } from "../../../runtime/get-model-capabilities";
+import type { ContentType } from "@host/features/ai-models/capabilities/types";
+import { toast } from "@host/lib/toast";
+import { isDirectiveApplyEvent } from "@host/features/matrx-envelope/envelope";
+import { proposeDirective } from "@host/features/matrx-envelope/state/proposedDirectivesSlice";
 
 function readTransportCursor(event: unknown): {
   streamId: string | null;
@@ -202,14 +202,14 @@ function renderBlockToContentType(type: string): ContentType | null {
 import {
   fromMediaBlock,
   isMediaBlockData,
-} from "@/features/files/blocks/adapters/from-media-block";
+} from "@host/features/files/blocks/adapters/from-media-block";
 import type {
   ContextReceiptData,
   ImageOutputData,
   PartialImageData,
-} from "@/types/python-generated/stream-events";
-import type { UnifiedImageBlock } from "@/features/files/blocks/image/types";
-import type { UnifiedMediaBlock } from "@/features/files/blocks/types";
+} from "@host/types/python-generated/stream-events";
+import type { UnifiedImageBlock } from "@host/features/files/blocks/image/types";
+import type { UnifiedMediaBlock } from "@host/features/files/blocks/types";
 import {
   upsertUserRequest,
   patchUserRequest,
@@ -229,29 +229,29 @@ import {
   resetUserVariableValues,
   clearSubmittedFirstTurnValues,
 } from "../instance-variable-values/instance-variable-values.slice";
-import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
 import { setInstanceStatus } from "../conversations/conversations.slice";
-import { patchAgentConversationMetadata } from "@/features/agents/redux/conversation-list/conversation-list.slice";
+import { patchAgentConversationMetadata } from "../../conversation-list/conversation-list.slice";
 import {
   buildConversationListItemFromExecution,
   upsertAgentConversationFromExecutionAction,
-} from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
+} from "../../conversation-list/record-conversation-from-execution";
 import {
   patchConversationInScopes,
   upsertConversationIntoScopes,
-} from "@/features/agents/redux/conversation-history/slice";
-import { StreamProfiler } from "@/utils/stream-profiler";
+} from "../../conversation-history/slice";
+import { StreamProfiler } from "@host/utils/stream-profiler";
 import { makePartialKindStalenessGate } from "@ai-matrx/content-ir/wire";
 import { prepareInboundRenderBlock } from "../utils/inbound-render-block";
-import { progressDataRenderBlock } from "@/features/content-ir/redux/progress-data-block";
-import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
+import { progressDataRenderBlock } from "@host/features/content-ir/redux/progress-data-block";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
 import { recordContextReceipt } from "../context-rules/receipt-check";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
-import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
-import { callbackManager } from "@/utils/callbackManager";
-import { type WidgetHandle } from "@/features/agents/types/widget-handle.types";
+import { materializeMessageArtifacts } from "@host/features/canvas/materialization/materializeMessageArtifacts";
+import type { CxContentBlock } from "../../../../public-chat/types/cx-tables";
+import { callbackManager } from "@host/utils/callbackManager";
+import { type WidgetHandle } from "../../../types/widget-handle.types";
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
 import { surfaceDelegatedToolCall } from "./surface-delegated-tool-call.thunk";
 import {
@@ -260,10 +260,10 @@ import {
   reservationBelongsToConversation,
   type ReservedAssistantTurn,
 } from "../utils/handoff-stream-state";
-import { runToolStateEffects } from "@/features/tool-call-visualization/effects/toolStateEffects";
-import { noteBrowserActivity } from "@/features/cloud-browser/redux/cloudBrowserSlice";
-import { adoptCloudBrowserRunFromStream } from "@/features/cloud-browser/redux/adoptRunFromStream";
-import { readHumanRequiredSignal } from "@/features/cloud-browser/redux/streamHandoffSignal";
+import { runToolStateEffects } from "../../../../tool-call-visualization/effects/toolStateEffects";
+import { noteBrowserActivity } from "@host/features/cloud-browser/redux/cloudBrowserSlice";
+import { adoptCloudBrowserRunFromStream } from "@host/features/cloud-browser/redux/adoptRunFromStream";
+import { readHumanRequiredSignal } from "@host/features/cloud-browser/redux/streamHandoffSignal";
 
 // =============================================================================
 // Types

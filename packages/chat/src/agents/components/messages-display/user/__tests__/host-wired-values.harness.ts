@@ -2,8 +2,8 @@
  * The real reducer and the real instance-creation action, re-exported so the
  * guard beside this file drives production code rather than a fixture.
  */
-import reducer from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { createInstanceFull } from "@/features/agents/redux/execution-system/create-instance-full";
+import reducer from "../../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { createInstanceFull } from "../../../../redux/execution-system/create-instance-full";
 
 export default reducer;
 

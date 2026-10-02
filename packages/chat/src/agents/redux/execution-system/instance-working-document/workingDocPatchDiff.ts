@@ -30,7 +30,7 @@
 import {
   applyWorkingDocPatch,
   type WorkingDocPatchArgs,
-} from "@/features/tool-call-visualization/renderers/working-document/applyWorkingDocPatch";
+} from "../../../../tool-call-visualization/renderers/working-document/applyWorkingDocPatch";
 
 /** Commands that produce no text diff → a clean compact summary, not a spinner. */
 export const STRUCTURAL_PATCH_COMMANDS = new Set(["json_patch", "json_merge"]);

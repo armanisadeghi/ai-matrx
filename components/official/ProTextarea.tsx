@@ -187,12 +187,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/lib/toast";
 import { CLEANUP_SURFACE_NAME } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ProTextareaBoundAgentsMenuItems } from "./ProTextareaBoundAgentsMenuItems";
-import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
+import { useSurfaceBoundAgents } from "@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
+import type { SurfaceBoundAgentEntry } from "@ai-matrx/chat/surfaces/services/surface-bound-agents.service";
 import {
   isEmbeddedProTextareaAgentAction,
   isProTextareaAgentActionEnabled,
@@ -213,7 +213,7 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 // in-place panel has no route. Re-gating is a deliberate Arman tradeoff
 // (page weight vs build cost) — never a drive-by "optimization".
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
-import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
+import { sourceFeatureFromSurfaceName } from "@ai-matrx/chat/agents/utils/source-feature-from-surface";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import {
   ProTextFieldStatsBar,

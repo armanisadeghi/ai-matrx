@@ -40,7 +40,7 @@ import { unwrapScopesRpc } from "@/features/scopes/types";
 import type { ContextItemsEntry } from "@/features/scopes/types";
 import { SYSTEM_ITEMS_KEY } from "@/features/scopes/constants/contextItems";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { ReferenceSource } from "@/features/scopes/utils/referenceSource";
 import type {
   ContextValueType,

@@ -115,7 +115,7 @@ jest.mock("@/features/data-tables/components/DocumentsHubTable", () => ({
 jest.mock("@/features/data-tables/components/DocumentsHubToolbar", () => ({
   DocumentsHubToolbar: () => null,
 }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   ),

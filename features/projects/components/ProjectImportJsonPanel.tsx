@@ -22,7 +22,7 @@ import {
 } from "@/components/official/ProJsonTextarea";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";

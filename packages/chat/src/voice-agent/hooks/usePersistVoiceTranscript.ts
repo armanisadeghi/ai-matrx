@@ -10,7 +10,7 @@
 //     + latency summary into `cx_conversation.metadata.voice`).
 
 import { useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import {
   setConversationId,
   markTurnPersisted,

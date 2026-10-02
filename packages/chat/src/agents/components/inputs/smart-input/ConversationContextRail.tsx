@@ -47,83 +47,83 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { useIsMobile } from "@host/hooks/use-mobile";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { openAfterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
+} from "@host/components/ui/dropdown-menu";
+import { openAfterCurrentLayerCloses } from "@host/components/dialogs/confirm/after-current-layer-closes";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@host/components/ui/tooltip";
 import {
   openCanvas,
   closeCanvas,
   openArtifactInCanvas,
   selectCanvasIsOpen,
   selectCurrentCanvasItem,
-} from "@/features/canvas/redux/canvasSlice";
-import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
-import { selectCloudBrowserRunLive } from "@/features/cloud-browser/redux/cloudBrowserSlice";
+} from "@host/features/canvas/redux/canvasSlice";
+import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
+import { selectCloudBrowserRunLive } from "@host/features/cloud-browser/redux/cloudBrowserSlice";
 import {
   selectInstanceContextEntries,
   selectSurfaceContextKeys,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { useConversationFollowsPage } from "@/features/surfaces/runtime/useConversationFollowsPage";
+} from "../../../redux/execution-system/instance-context/instance-context.selectors";
+import { useConversationFollowsPage } from "../../../../surfaces/runtime/useConversationFollowsPage";
 import {
   ConversationContextChip,
   useConversationContextChipShown,
 } from "./ConversationContextChip";
-import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import { removeContextEntry } from "../../../redux/execution-system/instance-context/instance-context.slice";
+import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
+import type { InstanceContextEntry } from "../../../types/instance.types";
 import {
   CONTEXT_TYPE_ICON,
   FALLBACK_CONTEXT_ICON,
-} from "@/features/agents/components/context-policies-display/contextPolicyIcons";
-import { ContextRulesPanel } from "@/features/agents/components/context-policies-display/ContextRulesPanel";
-import { CloudBrowserHandoffCanvasOpener } from "@/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
+} from "../../context-policies-display/contextPolicyIcons";
+import { ContextRulesPanel } from "../../context-policies-display/ContextRulesPanel";
+import { CloudBrowserHandoffCanvasOpener } from "@host/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
 import {
   cloudBrowserCanvasSourceId,
   useOpenCloudBrowserCanvas,
-} from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
-import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
+} from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
+import { docKindForContextKey } from "../../../utils/workingDocumentContext";
 import {
   isCanvasItemContextKey,
   isCanvasItemContextValue,
-} from "@/features/agents/utils/canvasItemContext";
-import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
-import { scratchScopeId } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
-import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
+} from "../../../utils/canvasItemContext";
+import { useMachineFramesVisible } from "../../shared/transcript-audience";
+import { scratchScopeId } from "../../../redux/execution-system/instance-working-document/instance-working-document.slice";
+import { setConversationDocumentEnabledThunk } from "../../../redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { setScratchpadGateThunk } from "../../../redux/execution-system/instance-working-document/scratchpad.thunks";
 import {
   selectActiveScratchpadId,
   selectAttachedScratchpadIds,
   selectWorkingDocEnabled,
   selectWorkingDocSaving,
   selectWorkingDocTitle,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   selectHasAgentListsContent,
   selectAgentTaskCounts,
   selectUserTodoCounts,
-} from "@/features/agents/ui-first-tools/redux/agent-lists.selectors";
+} from "../../../ui-first-tools/redux/agent-lists.selectors";
 import {
   hydrateAgentLists,
   subscribeAgentLists,
   unsubscribeAgentLists,
-} from "@/features/agents/ui-first-tools/redux/agent-lists.thunks";
-import { TaskPanel } from "@/features/agents/ui-first-tools/ui/lists/TaskPanel";
-import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
-import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
-import { selectActiveScopeIdsByType } from "@/features/scopes/redux/selectors/active-context";
-import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
+} from "../../../ui-first-tools/redux/agent-lists.thunks";
+import { TaskPanel } from "../../../ui-first-tools/ui/lists/TaskPanel";
+import { selectAgentContextPolicies } from "../../../redux/agent-definition/selectors";
+import { ActiveContextButton } from "@host/features/scopes/components/active-context/ActiveContextButton";
+import { selectActiveScopeIdsByType } from "@host/features/scopes/redux/selectors/active-context";
+import { contextEntryLabel } from "../../context-policies-display/contextEntryLabel";
 
 interface ConversationContextRailProps {
   conversationId: string;

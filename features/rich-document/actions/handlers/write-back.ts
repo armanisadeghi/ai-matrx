@@ -9,9 +9,9 @@
 
 import { ArrowDownToLine, Replace } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { selectWidgetHandleIdFor } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { getSelectionWriteBack } from "@/features/agents/utils/launch-widget-handles";
-import type { SelectionWriteBack } from "@/features/agents/types/widget-handle.types";
+import { selectWidgetHandleIdFor } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { getSelectionWriteBack } from "@ai-matrx/chat/agents/utils/launch-widget-handles";
+import type { SelectionWriteBack } from "@ai-matrx/chat/agents/types/widget-handle.types";
 import { registerAction } from "../provider";
 import { contentForDestination } from "../utils";
 import type { RichDocumentActionContext } from "../../types";

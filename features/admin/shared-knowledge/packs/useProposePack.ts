@@ -17,17 +17,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { cancelExecution } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
+import { cancelExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
 import {
   selectLatestAccumulatedText,
   selectIsStreaming,
   selectStreamPhase,
   selectLatestError,
   type StreamPhase,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useRetainLatestRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { fetchPackCorpus, packFromProposal, type AdminPackRecord } from "./data";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 

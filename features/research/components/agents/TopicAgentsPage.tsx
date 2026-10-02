@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { OverriddenCountBadge } from "@/features/mandates/components/OverriddenCountBadge";
 import { MandateResolutionRibbon } from "@/features/mandates/components/MandateResolutionRibbon";
 import { useTopicContext } from "../../context/ResearchContext";

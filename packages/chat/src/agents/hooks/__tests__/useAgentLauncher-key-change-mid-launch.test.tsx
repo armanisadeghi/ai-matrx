@@ -30,14 +30,14 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import conversations, {
   createInstance,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+} from "../../redux/execution-system/conversations/conversations.slice";
 import conversationFocus, {
   setFocus,
-} from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import messages from "@/features/agents/redux/execution-system/messages/messages.slice";
-import instanceUserInput from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import instanceUIState from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
+} from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
+import messages from "../../redux/execution-system/messages/messages.slice";
+import instanceUserInput from "../../redux/execution-system/instance-user-input/instance-user-input.slice";
+import instanceUIState from "../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import type { ManagedAgentOptions } from "../../types/instance.types";
 import { useAgentLauncher } from "../useAgentLauncher";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -50,7 +50,7 @@ interface PendingLaunch {
 const pendingLaunches: PendingLaunch[] = [];
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk",
+  "../../redux/execution-system/thunks/launch-agent-execution.thunk",
   () => ({
     launchAgentExecution:
       (payload: ManagedAgentOptions) =>
@@ -86,11 +86,11 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/launch-conversation.thunk",
+  "../../redux/execution-system/thunks/launch-conversation.thunk",
   () => ({ invocationToManagedOptions: (x: unknown) => x }),
 );
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: jest.fn(), info: jest.fn(), warning: jest.fn() },
 }));
 

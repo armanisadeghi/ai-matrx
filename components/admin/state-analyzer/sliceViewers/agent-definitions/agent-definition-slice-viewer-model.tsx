@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type {
   AgentDefinitionRecord,
   AgentDefinitionSliceState,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 
 export function safeFormat(value: unknown, space = 2): string {

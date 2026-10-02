@@ -15,13 +15,13 @@ import {
   selectActiveSurfaces,
   selectSurfacesError,
   selectSurfacesStatus,
-} from "@/features/surfaces/redux/selectors";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
 import {
   loadBindingsForAgent,
   loadSurfaces,
-} from "@/features/surfaces/redux/thunks";
-import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+} from "@ai-matrx/chat/surfaces/redux/thunks";
+import type { SurfaceWithStats } from "@ai-matrx/chat/surfaces/services/surfaces.service";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isUuidShape } from "@ai-matrx/kit/uuid";

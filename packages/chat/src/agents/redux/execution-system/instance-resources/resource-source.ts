@@ -20,11 +20,11 @@
  * through `@/features/files/handler/*`.
  */
 
-import type { ResourceBlockType } from "@/features/agents/types/instance.types";
-import type { FileSource, NormalizedFile } from "@/features/files/handler/types";
-import type { MediaRef } from "@/features/files/types";
-import { normalize } from "@/features/files/handler/input/normalize";
-import { toMediaRef } from "@/features/files/handler/output/target";
+import type { ResourceBlockType } from "../../../types/instance.types";
+import type { FileSource, NormalizedFile } from "@host/features/files/handler/types";
+import type { MediaRef } from "@host/features/files/types";
+import { normalize } from "@host/features/files/handler/input/normalize";
+import { toMediaRef } from "@host/features/files/handler/output/target";
 
 const MEDIA_BLOCK_TYPES = new Set<ResourceBlockType>([
   "image",

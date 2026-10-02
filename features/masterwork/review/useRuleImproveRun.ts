@@ -22,8 +22,8 @@
 // 🚨 NO HARDCODED AGENTS: the Mandate key is the only agent identity named,
 // and it is resolved by the database.
 
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
-import type { HeadlessAgentJsonResult } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
+import type { HeadlessAgentJsonResult } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   coerceRuleImproveResult,
   MASTERWORK_RULE_IMPROVER_MANDATE,

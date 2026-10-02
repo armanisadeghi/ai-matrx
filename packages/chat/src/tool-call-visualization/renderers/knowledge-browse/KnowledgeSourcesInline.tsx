@@ -13,14 +13,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
-import { useFileNode } from "@/features/files/hooks/useFileNode";
-import { normalizeSourceName } from "@/features/rag/components/hit-card/adapters";
-import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
-import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useFileNode } from "@host/features/files/hooks/useFileNode";
+import { normalizeSourceName } from "@host/features/rag/components/hit-card/adapters";
+import { useOpenCitation } from "@host/features/rag/components/source-inspector/useOpenCitation";
+import { citationHrefFor, type RagSearchHit } from "@host/features/rag/api/search";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for `knowledge_browse(action="sources")` — the user's indexed knowledge as a

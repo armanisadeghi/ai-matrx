@@ -13,7 +13,7 @@ import reducer, {
   requestMemoryToggle,
 } from "../instance-ui-state.slice";
 import { selectMemoryToggleRequest } from "../instance-ui-state.selectors";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const asRoot = (instanceUIState: ReturnType<typeof reducer>) => ({ instanceUIState }) as unknown as RootState;
 

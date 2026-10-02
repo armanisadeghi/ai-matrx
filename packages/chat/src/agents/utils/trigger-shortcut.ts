@@ -10,18 +10,18 @@
  * dispatch plumbing for you.
  */
 
-import type { AppDispatch } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import type { AppDispatch } from "@host/lib/redux/store";
+import { launchAgentExecution } from "../redux/execution-system/thunks/launch-agent-execution.thunk";
 import type {
   JsonExtractionConfig,
   ManagedAgentOptions,
   SourceFeature,
-} from "@/features/agents/types/instance.types";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
+} from "../types/instance.types";
+import type { ApplicationScope } from "./scope-mapping";
 import type {
   AgentExecutionConfig,
   AgentExecutionRuntime,
-} from "@/features/agents/types/agent-execution-config.types";
+} from "../types/agent-execution-config.types";
 
 export interface TriggerShortcutArgs {
   shortcutId: string;

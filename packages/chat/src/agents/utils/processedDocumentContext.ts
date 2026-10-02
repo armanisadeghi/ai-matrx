@@ -12,8 +12,8 @@
  * `attached-documents.ts` + the chat FEATURE.md.)
  */
 
-import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
-import type { UseFileDocumentState } from "@/features/files/hooks/useFileDocument";
+import type { DocumentRepresentation } from "../types/instance.types";
+import type { UseFileDocumentState } from "@host/features/files/hooks/useFileDocument";
 
 type FileDocumentLookup = Extract<
   UseFileDocumentState,

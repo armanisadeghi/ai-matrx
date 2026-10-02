@@ -14,7 +14,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { invalidateMandateCache } from "@/features/mandates/service";
+import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 /** The ad-hoc run path + its transport shapes moved down to the shared
  * mandates feature so the (core) Mandate workspace can run a job too — ONE
  * implementation, two hosts. See features/mandates/test-run.ts. */
@@ -25,12 +25,12 @@ import {
 } from "@/features/mandates/test-run";
 import {
   versionSnapshotRowToAgentDefinition,
-} from "@/features/agents/redux/agent-definition/converters";
-import { parseAgentVersionSnapshot } from "@/features/agents/redux/agent-definition/parse-output-snapshot";
+} from "@ai-matrx/chat/agents/redux/agent-definition/converters";
+import { parseAgentVersionSnapshot } from "@ai-matrx/chat/agents/redux/agent-definition/parse-output-snapshot";
 import type {
   AgentDefinition,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, toJsonRecord, type JsonObject } from "@/types/json";
 import { callApi } from "@/lib/api/call-api";

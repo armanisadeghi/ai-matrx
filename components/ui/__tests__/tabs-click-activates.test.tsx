@@ -138,7 +138,7 @@ describe("tabs — one import path", () => {
         "TabsTrigger",
         "app",
         "components",
-        "features",
+        "features", "packages/chat/src",
         "lib",
         "providers",
       ],

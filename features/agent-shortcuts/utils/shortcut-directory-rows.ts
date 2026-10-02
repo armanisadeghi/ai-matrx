@@ -1,8 +1,8 @@
 import type { AgentShortcutCategory } from "../types";
-import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
-import type { AdminNonGlobalShortcutRow } from "@/features/agents/redux/agent-shortcuts/thunks";
-import type { UserShortcutItem } from "@/features/agents/redux/agent-shortcuts/types";
-import { isValidShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
+import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
+import type { AdminNonGlobalShortcutRow } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
+import type { UserShortcutItem } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
+import { isValidShortcutContext } from "@ai-matrx/chat/agents/utils/shortcut-context-utils";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type ShortcutDirectoryMode = "admin" | "user";

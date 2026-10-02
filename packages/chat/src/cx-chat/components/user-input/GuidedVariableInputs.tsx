@@ -7,4 +7,4 @@
 export {
   AgentVariablesGuided as GuidedVariableInputs,
   type AgentVariablesGuidedProps as GuidedVariableInputsProps,
-} from "@/features/agents/components/inputs/variable-input-variations/AgentVariablesGuided";
+} from "../../../agents/components/inputs/variable-input-variations/AgentVariablesGuided";

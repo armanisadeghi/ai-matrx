@@ -50,7 +50,7 @@ import {
   getUserRequestResult,
   makeSelectConversationRequests,
   type MutableTotals,
-} from "@/features/agents/components/run-controls/panels/shared";
+} from "@ai-matrx/chat/agents/components/run-controls/panels/shared";
 import { cn } from "@/lib/utils";
 import {
   clearRankForOthers,

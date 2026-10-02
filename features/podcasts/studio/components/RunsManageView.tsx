@@ -37,7 +37,7 @@ import {
 } from "@/features/podcasts/studio/runs/run-types";
 import { trueSummaryLiveness } from "@/features/podcasts/studio/runs/run-truth";
 import { deletePodcastRun } from "@/features/podcasts/studio/runs/runsRepository";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import { RunHistoryCard, runEditHref, runHistoryHref } from "./RunHistoryCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

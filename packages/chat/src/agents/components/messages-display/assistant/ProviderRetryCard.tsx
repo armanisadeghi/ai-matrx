@@ -13,9 +13,9 @@ import {
   ServerCrash,
   XCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { ProviderRetryPayload } from "@/types/python-generated/stream-events";
-import { cn } from "@/lib/utils";
+import { Button } from "@host/components/ui/button";
+import type { ProviderRetryPayload } from "@host/types/python-generated/stream-events";
+import { cn } from "@host/lib/utils";
 
 interface ProviderRetryCardProps {
   retry: ProviderRetryPayload;

@@ -22,12 +22,12 @@
 import React, { useState } from "react";
 import { Check, CircleAlert, Copy, FileCode2, Route, Settings2 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { Badge } from "@host/components/ui/badge";
+import { cn } from "@host/lib/utils";
+import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 import { getOverlayRenderer, hasCustomRenderer } from "../registry/registry";
 import type { ToolOverlayTabSpec, ToolRendererProps } from "../types";
@@ -41,7 +41,7 @@ import {
   entryHasError,
   toolEntryBundleToHuman,
 } from "../utils/toolEntryBundle";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 // ─── Copy payload helpers ──────────────────────────────────────────────────
 

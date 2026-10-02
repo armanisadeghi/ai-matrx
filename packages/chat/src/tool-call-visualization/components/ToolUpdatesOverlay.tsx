@@ -28,11 +28,11 @@ import React, { useMemo, useState } from "react";
 
 import FullScreenOverlay, {
   type TabDefinition,
-} from "@/components/official/FullScreenOverlay";
-import { cn } from "@/lib/utils";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+} from "@host/components/official/FullScreenOverlay";
+import { cn } from "@host/lib/utils";
+import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 import { getOverlayTabs, getToolDisplayName } from "../registry/registry";
 import type { ToolOverlayTabSpec } from "../types";

@@ -1,6 +1,6 @@
 import React from "react";
 import { ArrowUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 
 export function UninitializedShell({
   sendBtnClass,

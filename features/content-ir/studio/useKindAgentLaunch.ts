@@ -30,11 +30,11 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "@/lib/toast";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
-import { getSurfaceRuntimeForName } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { sourceFeatureFromSurfaceName } from "@ai-matrx/chat/agents/utils/source-feature-from-surface";
+import { useSurfaceAgentRoles } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
+import { getSurfaceRuntimeForName } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 
 export interface KindAgentLaunchInput {
   /** Declared-variable values (task_brief / kind_schema / user_data_sample). */

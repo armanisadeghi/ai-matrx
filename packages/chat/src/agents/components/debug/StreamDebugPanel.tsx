@@ -4,16 +4,16 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { shallowEqual } from "react-redux";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { setDebugSession } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { setDebugSession } from "../../redux/execution-system/conversations/conversations.slice";
 import {
   selectConversationRequestCount,
   selectConversationRequestIds,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { cn } from "@/lib/utils";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+} from "../../redux/execution-system/active-requests/active-requests.selectors";
+import { cn } from "@host/lib/utils";
+import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { ScrollArea } from "@host/components/ui/scroll-area";
+import { Badge } from "@host/components/ui/badge";
 import {
   Copy,
   Check,
@@ -49,14 +49,14 @@ import type {
   ClientMetrics,
   ToolLifecycleEntry,
   RawStreamEvent,
-} from "@/features/agents/types/request.types";
+} from "../../types/request.types";
 import type {
   Phase,
   RenderBlockPayload,
   CompletionPayload,
-} from "@/types/python-generated/stream-events";
-import type { InstanceStatus } from "@/features/agents/types/instance.types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "@host/types/python-generated/stream-events";
+import type { InstanceStatus } from "../../types/instance.types";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const DEBUG_PANEL_SHELL =
   "flex flex-col flex-1 min-h-0 h-full w-full bg-background text-foreground";
@@ -485,7 +485,7 @@ function timelineSummary(
   entry: TimelineEntry,
   renderBlocks: Record<
     string,
-    import("@/types/python-generated/stream-events").RenderBlockPayload
+    import("@host/types/python-generated/stream-events").RenderBlockPayload
   >,
   renderBlockOrder: string[],
   reasoningChunks?: string[],
@@ -628,7 +628,7 @@ function TimelineRow({
   baseTime: number;
   renderBlocks: Record<
     string,
-    import("@/types/python-generated/stream-events").RenderBlockPayload
+    import("@host/types/python-generated/stream-events").RenderBlockPayload
   >;
   renderBlockOrder: string[];
   reasoningChunks?: string[];

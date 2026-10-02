@@ -11,7 +11,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 
-jest.mock("@/components/ui/tooltip", () => ({
+jest.mock("@host/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children: React.ReactNode }) => (
@@ -32,7 +32,7 @@ import {
   type MessageFlagProfile,
 } from "../flags";
 import { readPrefillRecord, prefillSentence } from "../PrefillNote";
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -218,8 +218,8 @@ describe("MessageFlagToggles", () => {
 import {
   buildDisplayEntries,
   groupDisplayEntries,
-} from "@/features/agents/components/messages-display/display-groups";
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
+} from "../../components/messages-display/display-groups";
+import type { MessageRecord } from "../../redux/execution-system/messages/messages.slice";
 
 function rec(id: string, role: MessageRecord["role"], position: number, metadata: Record<string, unknown> = {}): MessageRecord {
   return {

@@ -2,15 +2,15 @@
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@host/components/ui/textarea";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@host/components/ui/button";
+import { Checkbox } from "@host/components/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
-import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import type { VariableDefinition as PromptVariable } from "../../agents/types/agent-definition.types";
+import { enterSendsHere } from "@host/components/official/composer/composerSubmit";
 
 // ============================================================================
 // TYPES

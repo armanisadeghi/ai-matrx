@@ -25,7 +25,7 @@ import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { SectionShell } from "@/features/print/components/shared";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { resolvePlatformReferences } from "@/features/print/document/platformReferences";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createMarkdownPdfScope,
   MARKDOWN_PDF_SURFACE_NAME,

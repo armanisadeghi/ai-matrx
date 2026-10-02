@@ -13,7 +13,7 @@ import {
   type RagDataStoreEntry,
   type RagDataStoreMemberEntry,
 } from "@/features/surfaces/manifests/rag-data-stores.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type {
   DataStore,
   DataStoreWithMemberCount,

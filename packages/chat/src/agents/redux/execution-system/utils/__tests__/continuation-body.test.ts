@@ -12,8 +12,8 @@ import {
   CONTINUATION_FIELD_ROUTING,
   buildContinuationBody,
 } from "../continuation-body";
-import type { AssembledAgentStartRequest } from "@/features/agents/types/request.types";
-import type { RootState } from "@/lib/redux/store";
+import type { AssembledAgentStartRequest } from "../../../../types/request.types";
+import type { RootState } from "@host/lib/redux/store";
 
 const CONV = "c027c75d-4b45-4b57-b830-75a72d90ca58";
 const AGENT = "fb92012c-5efd-47eb-9763-de8ec7542ce9";

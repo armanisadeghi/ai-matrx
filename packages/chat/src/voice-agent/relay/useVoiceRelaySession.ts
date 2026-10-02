@@ -20,12 +20,12 @@
 // unresolvable mandate refuses; there is no fallback persona.
 
 import { useEffect, useRef, useState } from "react";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import type { SourceFeature } from "@host/types/python-generated/source-attribution";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";
+import { setUserInputText } from "../../agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { smartExecute } from "../../agents/redux/execution-system/thunks/smart-execute.thunk";
+import { selectLatestAnswerText } from "../../agents/redux/execution-system/selectors/aggregate.selectors";
 import { useVoiceAgentInstance } from "../hooks/useVoiceAgentInstance";
 import { useRealtimeAgentConfig } from "../hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession, type VoiceSessionApi } from "../hooks/useXaiVoiceSession";
@@ -47,10 +47,10 @@ import {
 import {
   removeContextEntry,
   setContextEntry,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "../../agents/redux/execution-system/instance-context/instance-context.slice";
 import type { QuestionPacing } from "./types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
 
 /** The Communicator's Mandate — resolve it (and refuse loudly) in the surface. */
 export const VOICE_COMMUNICATOR_MANDATE_KEY = MANDATE_KEYS.voice__communicator;

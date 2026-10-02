@@ -33,7 +33,7 @@ jest.mock("@ai-matrx/design-system/data-table/url-state", () => ({
   }),
 }));
 
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({
     children,
     getScope,

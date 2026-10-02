@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import type { RichDocumentAction } from "../../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { CONVERSATION_TRANSFER_ROWS } from "@/features/agents/conversation-export/conversation-transfer-rows";
+import { CONVERSATION_TRANSFER_ROWS } from "@ai-matrx/chat/agents/conversation-export/conversation-transfer-rows";
 
 export interface MenuSection {
   /** Submenu label, or null for the promoted top-level group. */

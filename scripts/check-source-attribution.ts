@@ -18,7 +18,7 @@ const ROOTS = [
   "app",
   "components",
   "constants",
-  "features",
+  "features", "packages/chat/src",
   "hooks",
   "lib",
   "utils",

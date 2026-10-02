@@ -23,10 +23,10 @@ import {
   connectServer,
   fetchAvailability,
   fetchCatalog,
-} from "@/features/agents/redux/mcp/mcp.slice";
-import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
+} from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
+import { startMcpOAuthPopup } from "@ai-matrx/chat/agents/services/mcp-oauth/popup";
 import { githubConnectUrl } from "@/features/github-integration/service";
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { toast, recordToast } from "@/lib/toast";

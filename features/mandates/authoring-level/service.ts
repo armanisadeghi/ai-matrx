@@ -22,7 +22,7 @@ import { OrganizationContextError } from "@/lib/api/organization-context";
 import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { createClient } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { invalidateMandateCache } from "@/features/mandates/service";
+import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import type { CreateMandateInput, DraftInput } from "@/features/mandates/authoring/service";
 import type { MandateListLevel } from "@/features/mandates/member-list/types";
 import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";

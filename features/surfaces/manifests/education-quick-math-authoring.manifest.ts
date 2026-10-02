@@ -4,7 +4,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const EDUCATION_QUICK_MATH_AUTHORING_SURFACE_NAME = "matrx-user/education-quick-math-authoring";

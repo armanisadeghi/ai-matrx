@@ -24,18 +24,18 @@
 
 import { useMemo, useState } from "react";
 
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectPrimaryRequest,
   selectToolLifecycleMap,
   selectToolCallIdsInOrder,
   selectIsLatestToolActivity,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { PATCH_TOOLS } from "@/features/tool-call-visualization/registry/toolArtifact";
-import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
-import { isTerminal } from "@/features/tool-call-visualization/renderers/_shared";
-import type { WorkingDocPatchArgs } from "@/features/tool-call-visualization/renderers/working-document/applyWorkingDocPatch";
+} from "../active-requests/active-requests.selectors";
+import type { ToolLifecycleEntry } from "../../../types/request.types";
+import { PATCH_TOOLS } from "../../../../tool-call-visualization/registry/toolArtifact";
+import { WORKING_DOCUMENT_CONTEXT_KEY } from "../../../utils/workingDocumentContext";
+import { isTerminal } from "../../../../tool-call-visualization/renderers/_shared";
+import type { WorkingDocPatchArgs } from "../../../../tool-call-visualization/renderers/working-document/applyWorkingDocPatch";
 
 import { selectWorkingDocContent } from "./instance-working-document.selectors";
 import {

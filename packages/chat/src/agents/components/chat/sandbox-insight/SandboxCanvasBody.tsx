@@ -35,22 +35,22 @@
 import React from "react";
 import { Box, FolderTree, ListTree, TerminalSquare } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { SimpleTerminal } from "@/features/code/terminal/SimpleTerminal";
-import { SandboxFileViewer } from "@/features/agents/components/debug/SandboxFileViewer";
-import { sandboxDisplayName } from "@/lib/sandbox/format";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { SimpleTerminal } from "@host/features/code/terminal/SimpleTerminal";
+import { SandboxFileViewer } from "../../debug/SandboxFileViewer";
+import { sandboxDisplayName } from "@host/lib/sandbox/format";
 import {
   ACTIVE_EFFECTIVE_STATUSES,
   getEffectiveStatus,
   statusPillClasses,
   STATUS_LABELS,
-} from "@/lib/sandbox/status";
-import type { SandboxInstance } from "@/types/sandbox";
-import { selectLiveToolLifecycleByConversation } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "@host/lib/sandbox/status";
+import type { SandboxInstance } from "@host/types/sandbox";
+import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import { SandboxActivityFeed } from "./SandboxActivityFeed";
 import { isSandboxTool } from "./sandbox-activity";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /** The agent's working directory in every sandbox image. */
 const AGENT_HOME = "/home/agent";

@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   mergePartialAgent,
   setAgentFetchStatus,
   setAgentsStatus,
-} from "@/features/agents/redux/agent-definition/slice";
-import { overlayAgentFavoritesThunk } from "@/features/agents/redux/agent-definition/thunks";
-import type { AgentListRow } from "@/features/agents/types/agent-definition.types";
+} from "../redux/agent-definition/slice";
+import { overlayAgentFavoritesThunk } from "../redux/agent-definition/thunks";
+import type { AgentListRow } from "../types/agent-definition.types";
 
 export function AgentListHydrator({ seeds }: { seeds: AgentListRow[] }) {
   const dispatch = useAppDispatch();

@@ -18,8 +18,8 @@ import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
-import { useMandate } from "@/features/mandates/useMandate";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   assistantBlockedReasonLabel,
   SMS_ASSISTANT_OWNER_BETA_MANDATE,

@@ -28,7 +28,7 @@ import { SkillDetailEditor } from "@/features/skills/components/SkillDetailEdito
 import { SkillIngestPanel } from "@/features/skills/components/SkillIngestPanel";
 import { SkillCategoryTreeEditor } from "@/features/skills/components/SkillCategoryTreeEditor";
 import { ADMIN_SKILLS_SURFACE_NAME, createAdminSkillsScope } from "@/features/surfaces/manifests/admin-skills.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 type Mode = "list" | "detail" | "create" | "ingest" | "categories";
 

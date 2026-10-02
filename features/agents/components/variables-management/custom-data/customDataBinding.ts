@@ -6,7 +6,7 @@
 
 import type { Field, Table } from "@ai-matrx/records/react";
 import { isEntityReferenceConfig } from "@ai-matrx/records/react";
-import type { CustomDataBinding } from "@/features/agents/types/agent-definition.types";
+import type { CustomDataBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 export type CustomDataShape = CustomDataBinding["semantic_type"];
 

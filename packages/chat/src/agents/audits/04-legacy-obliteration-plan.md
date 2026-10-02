@@ -10,10 +10,10 @@ already uses the standard names.
 
 - [ ] `features/agents/redux/execution-system/conversations/index.ts` — remove `executionInstancesReducer` re-export.
 - [ ] `features/agents/redux/execution-system/messages/index.ts` — remove `instanceConversationHistoryReducer` re-export.
-- [ ] `features/agents/redux/conversation-list/conversation-list.types.ts` — remove `AgentConversationListItem` + `agentConversationsCacheKey` aliases.
-- [ ] `features/agents/redux/conversation-list/conversation-list.slice.ts` — remove `patchAgentConversationMetadata` + `upsertAgentConversationInCaches` aliases.
-- [ ] `features/agents/redux/conversation-list/conversation-list.selectors.ts` — remove `makeSelectAgentConversations`, `selectAgentConversationsEntry`, `selectAgentConversationsEntryForInstance`.
-- [ ] `features/agents/redux/conversation-list/record-conversation-from-execution.ts` — remove `upsertAgentConversationFromExecutionAction` + `buildAgentConversationListItemFromExecution` aliases.
+- [ ] `packages/chat/src/agents/redux/conversation-list/conversation-list.types.ts` — remove `AgentConversationListItem` + `agentConversationsCacheKey` aliases.
+- [ ] `packages/chat/src/agents/redux/conversation-list/conversation-list.slice.ts` — remove `patchAgentConversationMetadata` + `upsertAgentConversationInCaches` aliases.
+- [ ] `packages/chat/src/agents/redux/conversation-list/conversation-list.selectors.ts` — remove `makeSelectAgentConversations`, `selectAgentConversationsEntry`, `selectAgentConversationsEntryForInstance`.
+- [ ] `packages/chat/src/agents/redux/conversation-list/record-conversation-from-execution.ts` — remove `upsertAgentConversationFromExecutionAction` + `buildAgentConversationListItemFromExecution` aliases.
 - [ ] `lib/api/endpoints.ts` — remove the `chat: "/ai/manual"` alias (`ai.chat`).
 - [ ] Any `process-stream.ts` call sites using aliases → switch to canonical names.
 
@@ -32,7 +32,7 @@ Expected: zero matches outside the audit docs.
 ## Wave 3 — Type name consolidation (1–2 hrs, coordinated rename)
 
 - [ ] `ExecutionInstance` → `ConversationRecord`.
-  - Primary source: `features/agents/types/instance.types.ts`.
+  - Primary source: `packages/chat/src/agents/types/instance.types.ts`.
   - Followthrough: `conversations.slice.ts`, `conversations.selectors.ts`, the package `types/index.ts` barrel.
   - Grep: `grep -r "ExecutionInstance" --include="*.ts"` — confirm 0 outside a deprecation alias.
 
@@ -55,7 +55,7 @@ Expected: zero matches.
 
 ## Wave 5 — Folder renames (after Wave 4, ~100 imports)
 
-- [ ] `features/agents/redux/execution-system/instance-ui-state/` → `display/`
+- [ ] `packages/chat/src/agents/redux/execution-system/instance-ui-state/` → `display/`
 - [ ] `.../instance-variable-values/` → `variables/`
 - [ ] `.../instance-model-overrides/` → `model-config/`
 - [ ] `.../instance-resources/` → `resources/`
@@ -69,7 +69,7 @@ Expected: zero matches.
 
 Optional; cosmetic but large. Move slices to flat positions:
 
-- [ ] `features/agents/redux/execution-system/conversations/` → `features/agents/redux/conversations/` (alongside `conversation-list/`).
+- [ ] `packages/chat/src/agents/redux/execution-system/conversations/` → `features/agents/redux/conversations/` (alongside `conversation-list/`).
 - [ ] Same for `messages/`, `observability/`, `active-requests/`, `message-actions/`, `message-crud/`, `conversation-focus/`, and the renamed `display/` `variables/` etc.
 - [ ] Delete empty `execution-system/` folder.
 - [ ] Update ~100+ imports across the app.

@@ -14,22 +14,22 @@
  */
 
 import React from "react";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { ToggleGroup, ToggleGroupItem } from "@host/components/ui/toggle-group";
+import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
 import {
   selectConversationLanes,
   selectLaneCounts,
   selectSourceFacetsStatus,
-} from "@/features/agents/redux/conversation-history/selectors";
+} from "../../redux/conversation-history/selectors";
 import {
   CONVERSATION_LANES,
   DEFAULT_CONVERSATION_LANES,
   LANE_META,
   normalizeLanes,
   type ConversationLane,
-} from "@/features/agents/redux/conversation-history/lanes";
+} from "../../redux/conversation-history/lanes";
 
 /** Writes the viewer's lane choice (persisted by the preferences engine). */
 export function useSetConversationLanes(): (

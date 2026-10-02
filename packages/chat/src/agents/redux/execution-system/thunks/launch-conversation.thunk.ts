@@ -20,12 +20,12 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ConversationInvocation } from "../../../types/conversation-invocation.types";
 import type {
   ManagedAgentOptions,
   ApiEndpointMode,
-} from "@/features/agents/types/instance.types";
+} from "../../../types/instance.types";
 import {
   launchAgentExecution,
   type LaunchResult,

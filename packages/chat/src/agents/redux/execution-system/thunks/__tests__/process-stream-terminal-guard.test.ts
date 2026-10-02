@@ -29,7 +29,7 @@ if (typeof g.TextEncoder !== "function") g.TextEncoder = NodeTextEncoder;
 if (typeof g.TextDecoder !== "function") g.TextDecoder = NodeTextDecoder;
 
 import { processStream } from "../process-stream";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 jest.useFakeTimers();
 

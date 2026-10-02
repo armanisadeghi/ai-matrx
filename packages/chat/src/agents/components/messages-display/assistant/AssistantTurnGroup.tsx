@@ -35,7 +35,7 @@
  */
 
 import { useCallback, useEffect } from "react";
-import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
+import { useDomCapturePrint } from "../../../../conversation/hooks/useDomCapturePrint";
 import { AgentAssistantMessage } from "./AgentAssistantMessage";
 import {
   AssistantMessageContextMenu,
@@ -45,16 +45,16 @@ import {
   membersForRender,
   rendersFromPersistedRows,
 } from "./collapse-by-request-id";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   AgentWorkTurnProvider,
   AgentWorkMemberScope,
-} from "@/features/tool-call-visualization/components/agentWorkTurn";
-import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
+} from "../../../../tool-call-visualization/components/agentWorkTurn";
+import { MessageFilesStrip } from "@host/features/code/views/history/MessageFilesStrip";
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
-} from "@/features/war-room/utils/renderPathTrace";
+} from "@host/features/war-room/utils/renderPathTrace";
 
 export interface AssistantTurnGroupMember {
   /** Stable React key for this sub-message render. */

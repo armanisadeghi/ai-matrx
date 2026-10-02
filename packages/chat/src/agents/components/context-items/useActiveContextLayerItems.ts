@@ -13,19 +13,19 @@
  */
 
 import { Briefcase, Building2, CheckSquare, Layers } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectActiveOrganizationId,
   selectActiveOrganizationName,
   selectActiveProjectId,
   selectActiveScopeIds,
   selectActiveTaskId,
-} from "@/features/scopes/redux/selectors/active-context";
+} from "@host/features/scopes/redux/selectors/active-context";
 import {
   selectProjectName,
   selectTaskName,
-} from "@/lib/redux/slices/appContextSlice";
-import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+} from "@host/lib/redux/slices/appContextSlice";
+import { useScopeTree } from "@host/features/scopes/hooks/useScopeTree";
 import type { ContextDrawerItem } from "./types";
 
 export interface ActiveContextLayerSummary {

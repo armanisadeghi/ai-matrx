@@ -3,10 +3,10 @@
 import { ChatRoomClient } from "./ChatRoomClient";
 import { ChatMandateUnavailable, ChatNewLandingSkeleton } from "./ChatNewClient";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
-import { useMandate } from "@/features/mandates/useMandate";
-import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
-import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
-import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+import { useMandate } from "../../../mandates/useMandate";
+import type { ConversationSandboxBinding } from "@host/lib/sandbox/conversation-binding-row";
+import { WorkspaceGate } from "@host/features/organizations/components/WorkspaceGate";
+import type { ComposerMode } from "../inputs/smart-input/composer/composer-types";
 
 /**
  * `/chat/[conversationId]` — the room for an EXISTING conversation.

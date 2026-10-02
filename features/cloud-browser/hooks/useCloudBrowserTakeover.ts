@@ -28,13 +28,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   enqueueInboxMessage,
   retractInboxItem,
-} from "@/features/agents/redux/execution-system/inbox/inbox.thunks";
-import { selectInboxItemStatus } from "@/features/agents/redux/execution-system/inbox/inbox.selectors";
-import { cancelExecution } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+} from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.thunks";
+import { selectInboxItemStatus } from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.selectors";
+import { cancelExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { toast } from "@/lib/toast";
 import {
   TAKEOVER_INTERRUPT_NOTE,

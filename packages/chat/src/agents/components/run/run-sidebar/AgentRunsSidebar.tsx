@@ -4,23 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Loader2, ChevronRight, MessageSquare } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAgentById,
   selectAgentName,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { selectLatestConversationId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { fetchAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import { makeSelectAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+} from "../../../redux/agent-definition/selectors";
+import { selectLatestConversationId } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { fetchAgentConversations } from "../../../redux/conversation-list/conversation-list.thunks";
+import { makeSelectAgentConversations } from "../../../redux/conversation-list/conversation-list.selectors";
+import type { ConversationListItem } from "../../../redux/conversation-list/conversation-list.types";
 import { AgentLauncherSidebarTester } from "../../run-controls/AgentLauncherSidebarTester";
 import { SidebarHeader } from "./SidebarHeader";
-import { ConversationHoverPreview } from "@/features/agents/components/previews/ConversationHoverPreview";
-import { ItemRow } from "@/components/official/item/ItemRow";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ConversationHoverPreview } from "@host/features/agents/components/previews/ConversationHoverPreview";
+import { ItemRow } from "@host/components/official/item/ItemRow";
+import { buildConversationMenu } from "../../conversation-actions/conversationActionRegistry";
+import { renameConversation } from "../../../redux/conversation-list/conversation-row-actions.thunks";
+import { pushAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface AgentRunsSidebarProps {
   agentId: string;

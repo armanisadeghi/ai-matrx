@@ -28,7 +28,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 export const RUN_CONSOLE_GROUPS: SurfaceValueGroup[] = [
   {

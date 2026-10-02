@@ -18,18 +18,18 @@ import { isConversationRequestEmpty } from "@/features/agent-comparison/shared/b
 import {
   createInstance,
   destroyInstance,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   fetchFullAgent,
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,
@@ -42,8 +42,8 @@ import {
   persistForRun,
   type BattleSubmitResult,
 } from "@/features/agent-comparison/shared/battlePersistence";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectMessageCount } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   addRequestModColumn,
   removeRequestModColumn,
@@ -62,7 +62,7 @@ import {
   applyRequestDraft,
   isRequestDraftSnapshot,
   type OmittedAttachment,
-} from "@/features/agents/redux/execution-system/thunks/request-draft-snapshot";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/request-draft-snapshot";
 
 // =============================================================================
 // Page-wide constants

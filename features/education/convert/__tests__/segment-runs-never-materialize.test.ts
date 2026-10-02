@@ -8,17 +8,17 @@
  */
 import { configureStore } from "@reduxjs/toolkit";
 import { runAgentExtraction } from "../runAgentExtraction";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { runHeadlessAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import conversationsReducer, {
   createInstance,
   hydrateConversation,
   setInstanceSurfaceOwnsOutput,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { selectConversationSurfaceOwnsOutput } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { parsePersistedSurfaceOwnsOutput } from "@/features/agents/redux/execution-system/conversations/surface-owns-output.persistence";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { selectConversationSurfaceOwnsOutput } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { parsePersistedSurfaceOwnsOutput } from "@ai-matrx/chat/agents/redux/execution-system/conversations/surface-owns-output.persistence";
 import type { AppDispatch, AppStore, RootState } from "@/lib/redux/store";
 
-jest.mock("@/features/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
   runHeadlessAgentJson: jest.fn(),
 }));
 

@@ -13,8 +13,8 @@ import {
   resolveMandate,
   type ResolvedMandate,
 } from "./service";
-import { extractErrorMessage } from "@/utils/errors";
-import type { AnyMandateKey } from "./mandate-key";
+import { extractErrorMessage } from "@host/utils/errors";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export interface MandateState {
   mandate: ResolvedMandate | null;

@@ -50,7 +50,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { SQL_QUERY_WRITE_MAX_CHARS } from "@/features/administration/lib/sql-editor-write-targets";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

@@ -20,10 +20,10 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { Database } from "@/types/database.types";
-import { supabase } from "@/utils/supabase/client";
-import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { Database } from "@host/types/database.types";
+import { supabase } from "@host/utils/supabase/client";
+import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { waitForConversationPersisted } from "./conversation-persistence";
 

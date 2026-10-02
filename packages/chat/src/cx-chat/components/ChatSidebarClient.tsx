@@ -19,26 +19,26 @@ import dynamic from "next/dynamic";
 
 const AgentPickerSheet = dynamic(
   () =>
-    import("@/features/cx-chat/components/agent/AgentPickerSheet").then(
+    import("./agent/AgentPickerSheet").then(
       (m) => ({ default: m.AgentPickerSheet }),
     ),
   { ssr: false },
 );
-import { useChatCatalogueInit } from "@/features/cx-chat/hooks/useChatCatalogueInit";
+import { useChatCatalogueInit } from "../hooks/useChatCatalogueInit";
 import { ChevronDown } from "lucide-react";
-import { SidebarActions } from "@/features/cx-chat/components/sidebar/SidebarActions";
+import { SidebarActions } from "./sidebar/SidebarActions";
 import { SsrSidebarAgents } from "./SsrSidebarAgents";
 import { SsrSidebarChats } from "./SsrSidebarChats";
-import { SidebarUserFooter } from "@/features/cx-chat/components/sidebar/SidebarUserFooter";
+import { SidebarUserFooter } from "./sidebar/SidebarUserFooter";
 import {
   ChevronLeftTapButton,
   PanelLeftTapButton,
   PlusTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
-import { pushAppHref } from "@/lib/deployment/navigate";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
+import { initializeChatAgents } from "../../agents/redux/agent-definition/thunks";
+import { pushAppHref } from "@host/lib/deployment/navigate";
 
 // ============================================================================
 // NAVIGATION HELPERS

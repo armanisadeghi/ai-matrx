@@ -2,9 +2,9 @@
 import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import {
   agentForPromptKey,

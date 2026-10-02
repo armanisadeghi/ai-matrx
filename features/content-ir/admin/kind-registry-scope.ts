@@ -6,7 +6,7 @@
  * the same kind/schema/example/component data solely to orient itself.
  */
 
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { createAdminKindRegistryScope } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import type {
   KindDetailData,

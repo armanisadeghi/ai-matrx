@@ -1,5 +1,5 @@
 "use client";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 /**
  * Surface config resolution — the canonical reader/writer for agent roles
@@ -22,22 +22,22 @@ import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandat
  * one console.warn naming both.
  */
 
-import { createClient } from "@/utils/supabase/client";
-import { writeOne } from "@/utils/supabase/writeOne";
-import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { isJsonObject } from "@/types/json";
-import type { Database } from "@/types/database.types";
-import { fetchMandatePins } from "@/features/mandates/service";
-import type { SurfaceAgentRole } from "@/features/surfaces/types";
+import { createClient } from "@host/utils/supabase/client";
+import { writeOne } from "@host/utils/supabase/writeOne";
+import { getClaimsUser } from "@host/utils/supabase/claimsUser";
+import { isJsonObject } from "@host/types/json";
+import type { Database } from "@host/types/database.types";
+import { fetchMandatePins } from "../../mandates/service";
+import type { SurfaceAgentRole } from "../types";
 import {
   getNamespaceHandler,
   listRegisteredNamespaces,
-} from "@/features/surfaces/config/namespace-registry";
+} from "../config/namespace-registry";
 import {
   peekSystemOrgId,
   resolveSystemOrgId,
-} from "@/lib/organizations/systemOrg";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+} from "@host/lib/organizations/systemOrg";
+import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 
 const sb = () => createClient();
 

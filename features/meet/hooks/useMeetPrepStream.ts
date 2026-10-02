@@ -14,8 +14,8 @@
 import { useRef, useState } from "react";
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
-import { selectAnswerText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { selectAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 
 export interface AgendaDraftBody {

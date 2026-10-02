@@ -38,7 +38,7 @@ import activeRequestsReducer, {
 import { selectUnifiedSlots } from "../active-requests.selectors";
 import { StreamBlockAccumulator } from "../../utils/stream-block-accumulator";
 import { assembleMessageParts } from "../../utils/assemble-cx-content-blocks";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
+import type { ActiveRequest } from "../../../../types/request.types";
 
 type AnyState = Parameters<ReturnType<typeof selectUnifiedSlots>>[0];
 

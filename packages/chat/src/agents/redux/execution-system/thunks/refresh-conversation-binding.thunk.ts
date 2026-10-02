@@ -20,10 +20,10 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-import { supabase } from "@/utils/supabase/client";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { conversationSandboxBindingFromRow } from "@/lib/sandbox/conversation-binding-row";
-import { clearSandboxBindingCache } from "@/lib/sandbox/active-binding";
+import { supabase } from "@host/utils/supabase/client";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { conversationSandboxBindingFromRow } from "@host/lib/sandbox/conversation-binding-row";
+import { clearSandboxBindingCache } from "@host/lib/sandbox/active-binding";
 import { patchConversation } from "../conversations/conversations.slice";
 import {
   selectConversationSandboxBinding,

@@ -39,7 +39,7 @@ import type { Database, Json } from "@/types/database.types";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_TOOL_REGISTRY_SURFACE_NAME,
   createAdminToolRegistryScope,

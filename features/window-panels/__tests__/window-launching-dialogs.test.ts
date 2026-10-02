@@ -7,7 +7,7 @@ const coexistenceHosts = [
   "features/admin/users/components/OrganizationsAdminClient.tsx",
   "features/agents/components/builder/message-builders/AddBlockButton.tsx",
   "features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx",
-  "features/agents/components/messages-display/message-options/EditHistoryDialog.tsx",
+  "packages/chat/src/agents/components/messages-display/message-options/EditHistoryDialog.tsx",
   "features/cms/components/CmsPageAiActionDialog.tsx",
   "features/crm/components/SaveContactFromSelectionDialog.tsx",
   "features/marketing/change-tracking/SeoChangeTrackingWorkspace.tsx",

@@ -18,8 +18,8 @@
  * is the authority; this is the instant client-side pre-flight.
  */
 
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
+import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { MandateContract } from "./overrides";
 
 export interface ContractRow {

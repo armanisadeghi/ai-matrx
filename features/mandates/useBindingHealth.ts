@@ -44,8 +44,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   compareConsumptionAgainstOffer,
   compareStoredContract,
@@ -57,7 +57,7 @@ import type { ConsumptionMap } from "./provision-shapes";
 import {
   fetchAgentOutputSchemas,
   missingOutputKeys,
-} from "./output-contract";
+} from "@ai-matrx/chat/mandates/output-contract";
 
 /** One bound (mandate, agent) pair to verify. */
 export interface BoundAgentRef {

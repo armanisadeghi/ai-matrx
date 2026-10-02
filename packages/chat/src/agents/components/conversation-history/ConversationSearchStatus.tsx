@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { conversationSearchRangeLabel } from "@/features/agents/redux/conversation-history/conversation-search";
+import { conversationSearchRangeLabel } from "../../redux/conversation-history/conversation-search";
 import type { useConversationServerSearch } from "./useConversationServerSearch";
 
 type ServerSearchState = ReturnType<typeof useConversationServerSearch>;

@@ -39,7 +39,7 @@ export const chatMessageAdapter: ContentSourceAdapter = {
     // Lazy import — message-crud thunks are heavy (~MB of import graph)
     // and only chat surfaces need them.
     const { saveAnswerEdit } = await import(
-      "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk"
+      "@ai-matrx/chat/agents/redux/execution-system/message-crud/save-answer-edit.thunk"
     );
     // Every editor reaching a chat answer through this adapter opened on its
     // DISPLAY text (whitespace-normalized, reasoning scrubbed), so it MUST say

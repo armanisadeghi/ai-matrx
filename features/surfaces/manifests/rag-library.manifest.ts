@@ -44,7 +44,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { LIBRARY_STATUS_FILTER_VALUES } from "@/features/rag/constants/libraryStatusFilters";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

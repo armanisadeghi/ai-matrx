@@ -1,27 +1,27 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
-import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import type { SourceFeature } from "../../types/instance.types";
+import { selectInstanceStatus } from "../../redux/execution-system/conversations/conversations.selectors";
 import {
   selectAgentCustomExecutionPayload,
   selectAgentError,
   selectAgentFetchStatus,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+} from "../../redux/agent-definition/selectors";
+import { selectInstanceVariableDefinitions } from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   selectShowFreeformInput,
   selectShowVariablePanel,
   selectVariableInputStyle,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectShouldShowVariables } from "../../redux/execution-system/selectors/aggregate.selectors";
 import {
   isProjectCreateFlow,
   logProjectCreateAiSnapshot,
   logProjectCreateAiStage,
-} from "@/features/projects/debug/projectCreateAiDebug";
+} from "@host/features/projects/debug/projectCreateAiDebug";
 import { AgentRunner } from "./AgentRunner";
 
 interface AgentRunWrapperProps {

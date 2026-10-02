@@ -1,5 +1,5 @@
 import React from "react";
-import { isDeclarableVariableName } from "@/features/agents/utils/variable-utils";
+import { isDeclarableVariableName } from "@ai-matrx/chat/agents/utils/variable-utils";
 
 interface HighlightedTextProps {
     text: string;

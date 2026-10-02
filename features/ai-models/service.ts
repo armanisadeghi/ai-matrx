@@ -56,7 +56,7 @@ import type {
   UnconditionalRule,
 } from "./types";
 import { EMPTY_PROVIDER_SYNC_POLICY } from "./types";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import {
   requireCanonicalCapabilities,
   DEFAULT_CAPABILITIES,

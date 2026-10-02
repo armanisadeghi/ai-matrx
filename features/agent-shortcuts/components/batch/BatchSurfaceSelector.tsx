@@ -13,11 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
+import type { SurfaceWithStats } from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import {
   getSurfaceDisplayLabel,
   labelFromName,
-} from "@/features/surfaces/utils/surface-display";
+} from "@ai-matrx/chat/surfaces/utils/surface-display";
 
 const ALL_CLIENTS = "__all__";
 

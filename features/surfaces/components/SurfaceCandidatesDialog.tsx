@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
-import { bulkCreateSurfaces } from "@/features/surfaces/services/surfaces.service";
+import { bulkCreateSurfaces } from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import {
   SURFACE_CANDIDATES,
   type SurfaceCandidate,

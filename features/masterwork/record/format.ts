@@ -9,7 +9,7 @@ import { formatRelativeTime } from "@/utils/datetime";
 import {
   humanAuthoredTurns,
   type StoredUserMessage,
-} from "@/features/agents/utils/human-authored-text";
+} from "@ai-matrx/chat/agents/utils/human-authored-text";
 import { entityTokenNouns } from "../sourceTally";
 
 /** Past this age an interview reads as a calendar date, not an age. */

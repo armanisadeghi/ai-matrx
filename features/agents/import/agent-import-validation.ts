@@ -3,7 +3,7 @@
  * Pure functions — no React. Used for live paste feedback and pre-convert gates.
  */
 
-import { VARIABLE_COMPONENT_TYPES } from "@/features/agents/types/agent-definition.types";
+import { VARIABLE_COMPONENT_TYPES } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { REASONING_EFFORT_OPTIONS } from "@/types/python-generated/llm-enums";
 import type { ToolIndex } from "./import-types";
 import { parsePasted } from "./agent-import-parse";

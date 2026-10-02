@@ -33,7 +33,7 @@ Custom Dictionary — terminology + pronunciation entries attachable at four own
 
 **Redux slice(s)**
 - `features/dictionary/redux/dictionarySlice.ts` (`state.dictionary`) — owners catalogue, per-owner entry cache, per-surface resolved consumption. In-flight dedup + 30s TTL.
-- `features/surfaces/redux/userStateSlice.ts` (`state.surfaceUserState`) — the generic per-user, per-surface state store the selection rides on (see below).
+- `packages/chat/src/surfaces/redux/userStateSlice.ts` (`state.surfaceUserState`) — the generic per-user, per-surface state store the selection rides on (see below).
 
 ---
 

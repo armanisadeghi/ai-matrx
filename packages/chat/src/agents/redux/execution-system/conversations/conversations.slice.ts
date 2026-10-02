@@ -24,16 +24,16 @@ import type {
   RequestInitiation,
   ConversationLifecycle,
   ContextAnchor,
-} from "@/features/agents/types/instance.types";
+} from "../../../types/instance.types";
 import {
   SOURCE_APP,
   deriveConversationLifecycle,
-} from "@/features/agents/types/instance.types";
+} from "../../../types/instance.types";
 import { generateConversationId } from "../utils/ids";
-import type { AgentType } from "@/features/agents/types/agent-definition.types";
-import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import type { AgentType } from "../../../types/agent-definition.types";
+import type { ApiEndpointMode } from "../../../types/instance.types";
 import { createInstanceFull } from "../create-instance-full";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 // =============================================================================
 // Record alias

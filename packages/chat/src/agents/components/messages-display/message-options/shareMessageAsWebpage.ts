@@ -1,6 +1,6 @@
 "use client";
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@host/lib/ids/durable-record-id";
 
 /**
  * shareMessageAsWebpage — one-click "publish this response as a public
@@ -35,8 +35,8 @@ export async function shareMessageAsWebpage({
   conversationId,
 }: ShareMessageAsWebpageArgs): Promise<{ url: string }> {
   const [{ convertMarkdownToHtml }, { HTMLPageService }] = await Promise.all([
-    import("@/features/html-pages/utils/html-preview-utils"),
-    import("@/features/html-pages/services/htmlPageService"),
+    import("@host/features/html-pages/utils/html-preview-utils"),
+    import("@host/features/html-pages/services/htmlPageService"),
   ]);
 
   const bodyHtml = convertMarkdownToHtml(content);

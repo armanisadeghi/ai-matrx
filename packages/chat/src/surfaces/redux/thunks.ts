@@ -1,13 +1,13 @@
 "use client";
 
-import { serializeSurfaceBindingError } from "@/features/surfaces/services/surface-registration-error";
+import { serializeSurfaceBindingError } from "../services/surface-registration-error";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   listSurfacesWithStats,
   listSurfaceValues,
   type SurfaceWithStats,
-} from "@/features/surfaces/services/surfaces.service";
+} from "../services/surfaces.service";
 import {
   listAgentSurfaceBindings,
   upsertAgentSurfaceBinding,
@@ -17,12 +17,12 @@ import {
   type ScopeInput,
   type BulkUpsertBindingInput,
   type BulkUpsertResult,
-} from "@/features/surfaces/services/bind-agent-to-surface.service";
+} from "../services/bind-agent-to-surface.service";
 import type {
   SurfaceValue,
   ValueMappingMap,
   WritePolicyMap,
-} from "@/features/surfaces/types";
+} from "../types";
 import {
   setListStatus,
   setListError,

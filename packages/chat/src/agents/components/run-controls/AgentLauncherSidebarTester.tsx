@@ -10,19 +10,19 @@
 
 import { useState } from "react";
 import { getIconComponent } from "@ai-matrx/icons";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@host/components/ui/button";
+import { Separator } from "@host/components/ui/separator";
+import { Badge } from "@host/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { useAgentLauncherTester } from "@/features/agents/hooks/useAgentLauncherTester";
+} from "@host/components/ui/collapsible";
+import { useAgentLauncherTester } from "../../hooks/useAgentLauncherTester";
 import {
   getAllDisplayTypes,
   getDisplayMeta,
-} from "@/features/agents/utils/run-ui-utils";
+} from "../../utils/run-ui-utils";
 import { ChevronDown, TestTube2, TestTube } from "lucide-react";
 import { AgentExecutionTestModal } from "./AgentExecutionTestModal";
 import { TesterSettingsPanel } from "./TesterSettingsPanel";

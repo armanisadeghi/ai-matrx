@@ -22,16 +22,16 @@ import { ChevronDown, Layers, Star } from "lucide-react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
-import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { seedOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { knobRefusalSentence, setKnobOverride } from "@/lib/scoped-config/service";
-import { CHAT_DEFAULT_MODEL_KNOB } from "@/features/ai-models/preferredChatModel";
-import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { toast } from "@host/lib/toast";
+import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
+import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
+import { seedOverrides } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { knobRefusalSentence, setKnobOverride } from "@host/lib/scoped-config/service";
+import { CHAT_DEFAULT_MODEL_KNOB } from "@host/features/ai-models/preferredChatModel";
+import { selectModelLabelById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import {
   ComposerMenuDivider,
   ComposerMenuHelp,
@@ -41,9 +41,9 @@ import {
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerAgentControl, ComposerMode, ComposerSize } from "./composer-types";
 import { useComposerAgent, type ComposerAgentInfo } from "./useComposerAgent";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@host/lib/organization/selection-cancelled";
+import { presentOrganizationRefusal } from "@host/lib/organizations/organizationRefusalToast";
 
 interface ComposerAgentPillProps {
   conversationId: string;

@@ -41,8 +41,8 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { useMandate } from "@/features/mandates/useMandate";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
 import {
   coercePresentationDeck,

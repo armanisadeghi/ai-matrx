@@ -9,7 +9,7 @@
  * means a real bug got past authoring, so it screams rather than swallowing.
  */
 import React from "react";
-import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
+import { captureReactRenderError } from "@host/lib/diagnostics/captureReactError";
 
 interface Props {
   toolName: string;

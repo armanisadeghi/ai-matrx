@@ -27,7 +27,7 @@ import {
   Skeleton,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { DecisionAnswers } from "@/features/agents/decision-answers/DecisionAnswers";
+import { DecisionAnswers } from "@ai-matrx/chat/agents/decision-answers/DecisionAnswers";
 import { METHOD_LABELS, type DecisionMethod } from "@ai-matrx/agents/presentation/decision-answers";
 import {
   ALL_DECISIONS_REVIEW_HREF,

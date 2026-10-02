@@ -21,7 +21,7 @@ import {
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
-import { appLabel } from "@/features/agents/redux/conversation-history/source-registry";
+import { appLabel } from "@ai-matrx/chat/agents/redux/conversation-history/source-registry";
 import { fidelityVerdict } from "@/features/agent-connections/coding-sessions/verdict";
 import { formatText } from "@ai-matrx/kit/text-case";
 import {

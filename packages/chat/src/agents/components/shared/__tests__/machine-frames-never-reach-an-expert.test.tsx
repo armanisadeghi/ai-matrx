@@ -41,7 +41,7 @@ import { join } from "node:path";
 
 let creatorPanelOn = false;
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ creatorDebug: { showCreatorPanel: creatorPanelOn } }),
 }));
@@ -51,7 +51,7 @@ import {
   useMachineFramesVisible,
 } from "../transcript-audience";
 
-const REPO_ROOT = join(__dirname, "..", "..", "..", "..", "..");
+const REPO_ROOT = join(__dirname, "../../../../../../..", ".", ".", ".", ".");
 const read = (relative: string) =>
   readFileSync(join(REPO_ROOT, relative), "utf8");
 
@@ -192,7 +192,7 @@ describe("thinking is gated at the one block renderer", () => {
 describe("the composer's raw context chips are gated too", () => {
   it("does not build a chip from a raw context key for an Expert", () => {
     const source = read(
-      "features/agents/components/inputs/smart-input/ConversationContextRail.tsx",
+      "packages/chat/src/agents/components/inputs/smart-input/ConversationContextRail.tsx",
     );
     // The raw-entry branch names its chip through contextEntryLabel since lane HANDOVER
     // (2026-09-28); the gate this guards is unchanged — the branch still sits behind it.
@@ -211,7 +211,7 @@ describe("the composer's raw context chips are gated too", () => {
     // every mount asks (`useConversationContextChipShown`), so the rail and
     // every other composer that mounts the chip inherit it.
     const source = read(
-      "features/agents/components/inputs/smart-input/ConversationContextChip.tsx",
+      "packages/chat/src/agents/components/inputs/smart-input/ConversationContextChip.tsx",
     );
     const hookAt = source.indexOf(
       "export function useConversationContextChipShown(",
@@ -224,7 +224,7 @@ describe("the composer's raw context chips are gated too", () => {
 
   it("every composer mounts the context rules chip only behind that hook", () => {
     for (const path of [
-      "features/agents/components/inputs/smart-input/ConversationContextRail.tsx",
+      "packages/chat/src/agents/components/inputs/smart-input/ConversationContextRail.tsx",
       "features/ai-work/compose/components/AiWorkComposer.tsx",
     ]) {
       const source = read(path);
@@ -244,7 +244,7 @@ describe("a context snapshot is a builder's record, not the Expert's", () => {
     // gone, the interview still showed "CONTEXT · Context Items (13)" above
     // each of the Expert's own messages. Same class, one bubble higher.
     const source = read(
-      "features/agents/components/messages-display/user/AgentUserMessage.tsx",
+      "packages/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx",
     );
     // Since the server receipt landed, the bubble shows the receipt when one
     // exists and the snapshot strip otherwise — both branches carry the gate.
@@ -263,7 +263,7 @@ describe("a context snapshot is a builder's record, not the Expert's", () => {
     // story_time / Interview Context Mode: blank_slate" — the host's own
     // wiring, in the host's vocabulary, inside the Expert's message bubble.
     const source = read(
-      "features/agents/components/messages-display/user/AgentUserMessage.tsx",
+      "packages/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx",
     );
     expect(source).toContain(
       "{machineFramesVisible && isFirstTurnMessage && (",

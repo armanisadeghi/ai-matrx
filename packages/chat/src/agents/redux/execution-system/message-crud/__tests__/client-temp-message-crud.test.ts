@@ -13,7 +13,7 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
 import { createInstance } from "../../conversations/conversations.slice";
 import {
   hydrateMessages,
@@ -21,11 +21,11 @@ import {
 } from "../../messages/messages.slice";
 import { deleteMessage } from "../delete-message.thunk";
 import { editMessage } from "../edit-message.thunk";
-import { mintClientTempId } from "@/lib/ids/durable-record-id";
+import { mintClientTempId } from "@host/lib/ids/durable-record-id";
 
 const rpc = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpc(...args),
     schema: jest.fn(() => ({})),

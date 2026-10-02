@@ -13,10 +13,10 @@
 // lies. A refusal is said in words with a remedy (toastWriteFailure).
 
 import { useSyncExternalStore } from "react";
-import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { toast } from "@/lib/toast";
-import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { favoritesService } from "@host/features/scopes/service/favoritesService";
+import { toast } from "@host/lib/toast";
+import { toastWriteFailure } from "@host/lib/errors/toastWriteFailure";
+import { durableRecordId } from "@host/lib/ids/durable-record-id";
 
 export const MESSAGE_PIN_ENTITY_TYPE = "message";
 

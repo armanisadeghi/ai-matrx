@@ -38,9 +38,9 @@
 
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { ToolEventPayload } from "@/types/python-generated/stream-events";
-import { toast } from "@/lib/toast";
+import type { RootState } from "@host/lib/redux/store";
+import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
+import { toast } from "@host/lib/toast";
 
 import {
   addPendingToolCall,
@@ -50,19 +50,19 @@ import { setInstanceStatus } from "../conversations/conversations.slice";
 import {
   isWidgetActionName,
   type WidgetActionName,
-} from "@/features/agents/types/widget-handle.types";
+} from "../../../types/widget-handle.types";
 import { dispatchWidgetAction } from "./dispatch-widget-action.thunk";
-import { isUiFirstToolName } from "@/features/agents/ui-first-tools/tools/names";
-import { dispatchUiFirstTool } from "@/features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk";
-import { isWarRoomToolName } from "@/features/agents/war-room-tools/tools/names";
-import { dispatchWarRoomTool } from "@/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk";
-import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools/tools/names";
-import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
-import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
-import { dispatchScribeTool } from "@/features/agents/scribe-tools/dispatcher/dispatch-scribe-tool.thunk";
-import { isDeclaredSurfaceClientToolName } from "@/features/surfaces/runtime/surface-client-tools";
+import { isUiFirstToolName } from "../../../ui-first-tools/tools/names";
+import { dispatchUiFirstTool } from "../../../ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk";
+import { isWarRoomToolName } from "@host/features/agents/war-room-tools/tools/names";
+import { dispatchWarRoomTool } from "@host/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk";
+import { isWarRoomMasterToolName } from "@host/features/agents/war-room-master-tools/tools/names";
+import { dispatchWarRoomMasterTool } from "@host/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
+import { isScribeToolName } from "../../../scribe-tools/tools/names";
+import { dispatchScribeTool } from "../../../scribe-tools/dispatcher/dispatch-scribe-tool.thunk";
+import { isDeclaredSurfaceClientToolName } from "../../../../surfaces/runtime/surface-client-tools";
 import { dispatchSurfaceClientTool } from "./dispatch-surface-client-tool.thunk";
-import { SURFACE_WRITE_TOOL_NAME } from "@/features/surfaces/runtime/surface-writeback";
+import { SURFACE_WRITE_TOOL_NAME } from "../../../../surfaces/runtime/surface-writeback";
 import { dispatchSurfaceWrite } from "./dispatch-surface-write.thunk";
 import { getLiveDesktopInstance } from "../client-capabilities/desktop-presence";
 import { watchDesktopDelegation } from "./watch-desktop-delegation.thunk";
@@ -357,7 +357,7 @@ export const surfaceDelegatedToolCall = (
           errorMessage: noOwnerMessage,
         }),
       );
-      void import("@/features/agents/api/submit-tool-results").then(
+      void import("../../../api/submit-tool-results").then(
         ({ submitToolResult }) => {
           dispatch(
             submitToolResult({

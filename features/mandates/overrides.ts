@@ -32,7 +32,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
 import type { paths } from "@/types/python-generated/api-types";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
-import { invalidateMandateCache } from "./service";
+import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   peekSelectedOrganizationId,

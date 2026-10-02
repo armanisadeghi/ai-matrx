@@ -3,20 +3,20 @@
 import { CircleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppStore } from "@host/lib/redux/hooks";
 import { ChatRoomClient } from "./ChatRoomClient";
 import { chatRouteSurfaceKey, stageChatAgentSwitch } from "./begin-fresh-chat";
 import { ChatSplashComposerShell, NewChatGreeting } from "./NewChatGreeting";
 import {
   ComposerGreeting,
   ComposerQuickActionsSkeleton,
-} from "@/features/agents/components/inputs/smart-input/composer/ComposerSplash";
+} from "../inputs/smart-input/composer/ComposerSplash";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
-import { useMandate } from "@/features/mandates/useMandate";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
-import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
-import type { ComposerMode } from "@/features/agents/components/inputs/smart-input/composer/composer-types";
+import { useMandate } from "../../../mandates/useMandate";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@host/lib/text/asClause";
+import { WorkspaceGate } from "@host/features/organizations/components/WorkspaceGate";
+import type { ComposerMode } from "../inputs/smart-input/composer/composer-types";
 
 /**
  * `/chat/new` — landing surface.

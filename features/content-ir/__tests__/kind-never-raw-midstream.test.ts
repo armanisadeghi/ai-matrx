@@ -20,7 +20,7 @@
  */
 
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 import { drawsKindAsRawJson, drawsRawJsonCard } from "../render-paths/draws-raw-kind-json";
 import { applyIrKindRoute } from "../react/kind-route";
@@ -32,12 +32,12 @@ import {
 } from "node:util";
 import activeRequestsReducer, {
   createRequest,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   discardRetainedTransportConsumer,
   hasRetainedTransportConsumer,
   processStream,
-} from "@/features/agents/redux/execution-system/thunks/process-stream";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/process-stream";
 import type { RootState } from "@/lib/redux/store";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 

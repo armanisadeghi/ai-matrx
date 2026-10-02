@@ -3,35 +3,35 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquarePlus, PanelLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useSidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { ChatHistorySidebar } from "@/features/agents/components/chat/ChatHistorySidebar";
-import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
-import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { useMandate } from "@/features/mandates/useMandate";
-import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
+} from "@host/components/ui/tooltip";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useSidePanelSurface } from "@host/features/overlays/surfaces/SidePanelSurface";
+import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";
+import { AgentConversationColumn } from "../../agents/components/shared/AgentConversationColumn";
+import { ChatHistorySidebar } from "../../agents/components/chat/ChatHistorySidebar";
+import { ChatRoomSkeleton } from "../../agents/components/chat/ChatRoomSkeleton";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "../../agents/components/chat/chat-quick-actions.config";
+import { useMandate } from "../../mandates/useMandate";
+import { resumeConversation } from "../../agents/redux/execution-system/thunks/resume-conversation.thunk";
 import {
   registerSurface,
   unregisterSurface,
-} from "@/features/agents/redux/surfaces/surfaces.slice";
-import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { asClause } from "@/lib/text/asClause";
-import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
-import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
+} from "../../agents/redux/surfaces/surfaces.slice";
+import { clearFocus } from "../../agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import type { ConversationListItem } from "../../agents/redux/conversation-list/conversation-list.types";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@host/lib/text/asClause";
+import { WorkspaceGate } from "@host/features/organizations/components/WorkspaceGate";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { useComposerMode } from "../../agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 
 interface QuickChatSheetProps {
   className?: string;

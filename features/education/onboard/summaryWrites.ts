@@ -6,7 +6,7 @@ import {
   collectProblems,
   readCollectionList,
   repeatsProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 
 const MAX_SUMMARIES_PER_WRITE = 25;
 

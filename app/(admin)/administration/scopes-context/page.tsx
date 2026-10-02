@@ -1,5 +1,5 @@
 import { AdminDomainLanding } from "@/features/admin/components/AdminDomainLanding";
-import { ContextParityLastRun } from "@/features/agents/components/context-preview/inspector/ContextParityLastRun";
+import { ContextParityLastRun } from "@ai-matrx/chat/agents/components/context-preview/inspector/ContextParityLastRun";
 import { SystemItemDefaultsEditor } from "@/features/admin/system-context/SystemItemDefaultsEditor";
 
 export default function ScopesContextAdministrationPage() {

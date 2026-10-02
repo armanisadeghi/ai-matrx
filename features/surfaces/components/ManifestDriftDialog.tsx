@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   AlertCircle,
   AlertTriangle,
@@ -37,15 +37,15 @@ import {
   RECENT_ROW_REFUSAL_PREFIX,
   RECENT_ROW_WINDOW_HOURS,
   type MirrorTable,
-} from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
+import { countDriftIssues } from "@ai-matrx/chat/surfaces/utils/drift-report-count";
 import type {
   SurfaceDriftReport,
   SurfaceValue,
   BrokenMapping,
   UnknownNamespace,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { InfoHint } from "@/components/official/InfoHint";
 

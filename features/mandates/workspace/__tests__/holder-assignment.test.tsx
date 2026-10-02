@@ -48,10 +48,10 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => () => ({ unwrap: () => Promise.resolve([]) }),
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectBuiltinAgents: () => [{ id: "system-agent-1" }],
 }));
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
   fetchAgentVersionHistory: () => ({ type: "noop" }),
 }));
@@ -258,7 +258,7 @@ describe("the admin holder section is three controls and nothing else", () => {
  * guards in `admin/__tests__/admin-route-system-perspective.test.tsx`.
  */
 describe("exactly one module in the mandate screens mounts a holder picker", () => {
-  const TREES = ["features/mandates", "features/bindings"] as const;
+  const TREES = ["features/mandates", "packages/chat/src/mandates", "features/bindings"] as const;
 
   function sourceFilesUnder(tree: string): string[] {
     const out: string[] = [];

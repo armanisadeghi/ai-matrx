@@ -1,26 +1,26 @@
 "use client";
 
-import { toast } from "@/lib/toast";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppStore } from "@/lib/redux/hooks";
+import { toast } from "@host/lib/toast";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { useAppStore } from "@host/lib/redux/hooks";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from "@/components/ui/drawer";
+} from "@host/components/ui/drawer";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@host/components/ui/dialog";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
-import type { AgentConfig } from "@/features/cx-chat/types/agents";
+import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";
+import type { AgentDefinitionRecord } from "../../../agents/types/agent-definition.types";
+import type { AgentConfig } from "../../types/agents";
 
 interface AgentPickerSheetProps {
   open: boolean;

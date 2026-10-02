@@ -40,9 +40,9 @@ import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/
 import {
   refineBlockType,
   resourceDataToSource,
-} from "@/features/agents/redux/execution-system/instance-resources/resource-source";
-import type { Resource } from "@/features/agents/resources/types";
-import type { ResourceBlockType } from "@/features/agents/types/instance.types";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/resource-source";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
+import type { ResourceBlockType } from "@ai-matrx/chat/agents/types/instance.types";
 import type { MediaRef } from "@/features/files/types";
 
 // Map a Resource type → the closest ResourceBlockType so refineBlockType

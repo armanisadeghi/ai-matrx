@@ -1,4 +1,4 @@
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import { buildContextValueReferenceFence } from "@/features/matrx-envelope/compoundReference";
 import type { PickNode } from "@/features/scopes/components/active-context/quick-pick/engine";
 

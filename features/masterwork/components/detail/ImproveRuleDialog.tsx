@@ -31,8 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { applyRuleImprove } from "../../agent-context/ruleImprove";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";

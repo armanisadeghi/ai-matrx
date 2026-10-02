@@ -25,11 +25,11 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { setShowMicrophone } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { setShowMicrophone } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY } from "../constants";
-import { resolveMandate } from "@/features/mandates/service";
+import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { getSession, updateSession } from "../service/studioService";
 import { assistantConversationIdSet, sessionUpserted } from "./slice";
 import {

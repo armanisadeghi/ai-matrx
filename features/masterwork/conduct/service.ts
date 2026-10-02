@@ -125,7 +125,7 @@ export function associateConductorWhenPersisted(args: {
   void (async () => {
     try {
       const { waitForConversationPersisted } = await import(
-        "@/features/agents/redux/execution-system/conversations/conversation-persistence"
+        "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence"
       );
       const persisted = await waitForConversationPersisted(args.conversationId);
       if (!persisted) {

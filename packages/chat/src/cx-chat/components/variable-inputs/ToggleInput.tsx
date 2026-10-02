@@ -1,6 +1,6 @@
 import React from 'react';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Label } from '@host/components/ui/label';
+import { Switch } from '@host/components/ui/switch';
 
 interface ToggleInputProps {
   value: string;

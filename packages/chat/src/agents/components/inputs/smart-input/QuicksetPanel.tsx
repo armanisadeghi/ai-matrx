@@ -6,57 +6,57 @@
  * delegates to the same Redux actions/components as its full tab counterpart.
  */
 
-import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
+import { useComputeTargets } from "@host/hooks/sandbox/use-compute-targets";
 import { useEffect, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+import { Switch } from "@host/components/ui/switch";
+import { Separator } from "@host/components/ui/separator";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
-import { RunSettingsQuickControls } from "@/features/agents/components/run-controls/RunSettingsEditor";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { QuickRunModelSelect } from "../../run-controls/RunModelPicker";
+import { RunSettingsQuickControls } from "../../run-controls/RunSettingsEditor";
 import { RunToolPicker } from "./RunToolPicker";
 import { RunSkillPicker } from "./RunSkillPicker";
 import { ShapeChipsRow } from "./ShapeChipsRow";
-import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
-import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
+import { SandboxPanel } from "../../chat/SandboxPanel";
+import { ActiveContextLensChip } from "@host/features/scopes/components/active-context/ActiveContextLensChip";
 import {
   selectBuilderAdvancedSettings,
   selectShowVariablePanel,
   selectSubmitOnEnter,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   setBuilderAdvancedSettings,
   setShowVariablePanel,
   setSubmitOnEnter,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
-import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
-import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
-import { selectInstanceClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.selectors";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
+import { selectWorkingDocEnabled } from "../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { setConversationDocumentEnabledThunk } from "../../../redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { setScratchpadGateThunk } from "../../../redux/execution-system/instance-working-document/scratchpad.thunks";
+import { selectInstanceClientTools } from "../../../redux/execution-system/instance-client-tools/instance-client-tools.selectors";
 import {
   selectAgentIdFromInstance,
   selectConversationSandboxBinding,
-} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+} from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
   selectAgentCustomTools,
   selectAgentMcpServers,
   selectAgentTools,
   selectAgentReadyForCustomExecution,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../../../redux/agent-definition/selectors";
 import {
   selectAllTools,
   selectToolsStatus,
-} from "@/features/agents/redux/tools/tools.selectors";
-import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
-import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
+} from "../../../redux/tools/tools.selectors";
+import { fetchAvailableTools } from "../../../redux/tools/tools.thunks";
+import { fetchAgentExecutionFull } from "../../../redux/agent-definition/thunks";
+import { AiToolRef } from "@host/components/official/entity-ref/AiIdentityRef";
+import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
 
 /** Stable empty fallback for selectors — a fresh `[]` per call re-renders the subscriber on every dispatch. */
 const EMPTY_LIST: never[] = [];

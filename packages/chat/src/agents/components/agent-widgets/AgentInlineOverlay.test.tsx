@@ -29,10 +29,10 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-import messages from "@/features/agents/redux/execution-system/messages/messages.slice";
+import messages from "../../redux/execution-system/messages/messages.slice";
 import conversations, {
   createInstance,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+} from "../../redux/execution-system/conversations/conversations.slice";
 import { AgentInlineOverlay } from "./AgentInlineOverlay";
 
 jest.mock("../smart/AgentRunner", () => ({

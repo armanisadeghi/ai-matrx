@@ -22,7 +22,7 @@ import { CategoryTagPicker } from "@ai-matrx/associations/react";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";

@@ -59,8 +59,8 @@ import { FORMULA_FUNCTIONS, parseFormula } from "@ai-matrx/design-system/formula
 import {
   useSurfaceScopeContribution,
   useSurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import {
   createTableSettingsRowActionsScope,
   TABLE_SETTINGS_SURFACE_NAME,

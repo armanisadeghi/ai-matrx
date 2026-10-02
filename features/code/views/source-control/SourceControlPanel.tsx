@@ -45,8 +45,8 @@ import { openTab } from "../../redux/tabsSlice";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { useOpenFile } from "../../hooks/useOpenFile";
 import { codeWorkspaceSurfaceKey } from "../../chat/begin-fresh-code-chat";
-import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { selectFocusedConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { SidePanelAction, SidePanelHeader } from "../SidePanelChrome";
 import { HOVER_ROW, ROW_HEIGHT } from "../../styles/tokens";
 import {

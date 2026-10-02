@@ -58,7 +58,7 @@ import { resolveListScope, type ListScopeWord } from "@/lib/list-scope";
 import { adminDoorOpen } from "@/lib/api/adminDoor";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 import { getKindInputContractBySlug } from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { KindSchema } from "@ai-matrx/content-ir";

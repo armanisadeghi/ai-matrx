@@ -13,28 +13,28 @@
 import { useState } from "react";
 import { Share2, Blocks, Camera } from "lucide-react";
 import dynamic from "next/dynamic";
-import PageHeaderPortal from "@/features/shell/components/header/PageHeaderPortal";
-import IconButton from "@/features/shell/components/IconButton";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import PageHeaderPortal from "@host/features/shell/components/header/PageHeaderPortal";
+import IconButton from "@host/features/shell/components/IconButton";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectIsAuthenticated,
   selectIsSuperAdminDebugger,
-} from "@/lib/redux/slices/userSlice";
+} from "@host/lib/redux/slices/userSlice";
 import {
   selectIsBlockMode,
   selectIsSnapshot,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   setUseBlockMode,
   setUseSnapshot,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ContextGaugeWidget } from "./ContextGaugeWidget";
-import { ConversationPageMenu } from "@/features/agents/components/chat/ConversationPageMenu";
+import { ConversationPageMenu } from "../../agents/components/chat/ConversationPageMenu";
 
 const ShareModal = dynamic(
   () =>
-    import("@/features/sharing/components/ShareModal").then((m) => ({
+    import("@host/features/sharing/components/ShareModal").then((m) => ({
       default: m.ShareModal,
     })),
   { ssr: false },

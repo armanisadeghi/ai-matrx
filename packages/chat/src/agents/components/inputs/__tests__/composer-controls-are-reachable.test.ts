@@ -103,7 +103,7 @@ describe("the composer's controls are reachable by keyboard", () => {
     }
   });
 
-  it("no button under features/agents/components/inputs carries tabIndex={-1}", () => {
+  it("no button under packages/chat/src/agents/components/inputs carries tabIndex={-1}", () => {
     const report = allTsx(INPUTS_DIR).flatMap(findUnreachable).join("\n");
     expect(report).toBe("");
   });

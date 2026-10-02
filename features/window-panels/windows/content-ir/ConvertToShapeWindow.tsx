@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { JsonBlock } from "@/components/mardown-display/blocks/json/JsonBlock";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
 import {
   analyzeShapeSample,

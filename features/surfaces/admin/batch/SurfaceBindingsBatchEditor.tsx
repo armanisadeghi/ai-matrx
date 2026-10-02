@@ -45,24 +45,24 @@ import {
   loadSurfaces,
   loadBindingsForAgent,
   bulkUpsertAgentSurfaceBindingsThunk,
-} from "@/features/surfaces/redux/thunks";
+} from "@ai-matrx/chat/surfaces/redux/thunks";
 import {
   makeSelectBindingsErrorForAgent,
   makeSelectBindingsForAgent,
   makeSelectBindingsStatusForAgent,
   selectActiveSurfaces,
   selectSurfacesStatus,
-} from "@/features/surfaces/redux/selectors";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
 import { WritePolicyEditor } from "@/features/surfaces/components/bind/WritePolicyEditor";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
-import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import type { AgentSurfaceBinding } from "@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service";
 import type {
   SurfaceValue,
   ValueMappingMap,
   WritePolicyMap,
-} from "@/features/surfaces/types";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/surfaces/types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const BLANK = "blank";

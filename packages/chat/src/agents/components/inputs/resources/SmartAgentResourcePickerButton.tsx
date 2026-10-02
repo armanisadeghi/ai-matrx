@@ -14,17 +14,17 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
-import { useDialogContainer } from "@/components/ui/dialog";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { cn } from "@/lib/utils";
-import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
-import { PlusAttachMenu } from "@/features/agents/components/inputs/smart-input/PlusAttachMenu";
+import { useDialogContainer } from "@host/components/ui/dialog";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { selectAttachmentCapabilities } from "../../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
+import { PlusAttachMenu } from "../smart-input/PlusAttachMenu";
 import { useAttachResource, useDetachResource } from "./attach-resource";
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "../../../resources/types";
 
 const ResourcePickerWindow = dynamic(
   () =>
-    import("@/features/window-panels/windows/ResourcePickerWindow").then(
+    import("@host/features/window-panels/windows/ResourcePickerWindow").then(
       (m) => ({ default: m.ResourcePickerWindow }),
     ),
   { ssr: false },

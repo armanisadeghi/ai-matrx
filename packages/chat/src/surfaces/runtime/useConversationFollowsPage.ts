@@ -27,16 +27,16 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { replaceSurfaceVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { replaceSurfaceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { refreshSurfaceScope } from "@/features/agents/redux/execution-system/thunks/refresh-surface-scope.thunk";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { patchConversation } from "../../agents/redux/execution-system/conversations/conversations.slice";
+import { replaceSurfaceVariableValues } from "../../agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { replaceSurfaceContextEntries } from "../../agents/redux/execution-system/instance-context/instance-context.slice";
+import { selectPageContextOff } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setPageContextOff } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { refreshSurfaceScope } from "../../agents/redux/execution-system/thunks/refresh-surface-scope.thunk";
 import { isPageOwnConversation, useIsPageOwnConversation } from "./SurfaceRuntimeContext";
 import { useActivePageSurface } from "./useActivePageSurface";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "../utils/surface-display";
 
 export interface PageFollowState {
   /** The page surface the person is looking at; null on an unregistered page. */

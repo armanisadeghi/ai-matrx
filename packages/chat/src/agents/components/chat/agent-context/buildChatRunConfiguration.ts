@@ -1,14 +1,14 @@
-import type { RootState } from "@/lib/redux/store";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import type { RootState } from "@host/lib/redux/store";
+import type { ApplicationScope } from "../../../utils/scope-mapping";
+import { buildApplicationScopeFromMenuContext } from "@host/features/context-menu-v3/utils/build-application-scope";
 import { buildChatContextData } from "./buildChatContextData";
-import { getEffectiveSandboxRef } from "@/lib/sandbox/active-binding";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { getEffectiveSandboxRef } from "@host/lib/sandbox/active-binding";
+import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectInstanceOverrideState } from "../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import type {
   ChatRunConfigurationRef,
   ChatSandboxBindingRef,
-} from "@/features/surfaces/manifests/chat.manifest";
+} from "@host/features/surfaces/manifests/chat.manifest";
 
 /**
  * Pure store-read of the `run_configuration` surface value — how the user

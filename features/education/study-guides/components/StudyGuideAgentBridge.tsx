@@ -22,9 +22,9 @@ import { addComment, createHighlight } from "@/features/rich-document/annotation
 import { newRequestId } from "@/features/rich-document/annotations/useAnnotationSidecar";
 import type { ResolvedItem } from "@/features/rich-document/annotations/types";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import {
   EDUCATION_STUDY_GUIDE_SURFACE_NAME,
   type GuideCommentScope,

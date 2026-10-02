@@ -1,7 +1,7 @@
 import { getAgent } from "@/lib/agents/data";
-import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
+import { AgentHeader } from "@ai-matrx/chat/agents/components/shared/AgentHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AgentVersionDiffPage } from "@/features/agents/components/diff/AgentVersionDiffPage";
+import { AgentVersionDiffPage } from "@ai-matrx/chat/agents/components/diff/AgentVersionDiffPage";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export const metadata = { title: "Versions | System Agents" };

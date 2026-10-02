@@ -29,7 +29,7 @@ import { selectSettingsOverridesForApi } from "../../instance-model-overrides/in
 import { copyInstanceRequestDraft } from "../copy-instance-request-draft.thunk";
 
 // The knob read is the external dependency (settings ladder over the network).
-jest.mock("@/lib/scoped-config/sessionKnob", () => ({
+jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
   resolveSessionKnob: jest.fn(async () => GEMINI_FLASH),
 }));
 

@@ -94,7 +94,7 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversation-persistence",
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence",
   () => ({ waitForConversationPersisted: () => Promise.resolve(true) }),
 );
 
@@ -122,7 +122,7 @@ jest.mock("@ai-matrx/tap-target/buttons", () => ({
 jest.mock("@/features/access-gate/components/AccessGate", () => ({
   AccessGate: () => <div>access gate</div>,
 }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   ),

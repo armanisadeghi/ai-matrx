@@ -1,4 +1,4 @@
-import type { DesktopPresence } from "@/features/agents/redux/execution-system/client-capabilities/desktop-presence";
+import type { DesktopPresence } from "@ai-matrx/chat/agents/redux/execution-system/client-capabilities/desktop-presence";
 
 export interface CodexUsageMetrics {
   input_tokens?: number;

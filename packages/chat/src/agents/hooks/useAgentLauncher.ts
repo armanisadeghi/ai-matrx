@@ -25,19 +25,19 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import {
   destroyInstanceIfAllowed,
   destroyInstanceIfAbandoned,
-} from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { setFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+} from "../redux/execution-system/conversations/conversations.thunks";
+import { setFocus } from "../redux/execution-system/conversation-focus/conversation-focus.slice";
 import {
   selectFocusedConversation,
   selectDisplayConversation,
-} from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+} from "../redux/execution-system/conversation-focus/conversation-focus.selectors";
 import { generateConversationId } from "../redux/execution-system/utils/ids";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
+import type { ApplicationScope } from "../utils/scope-mapping";
 import type { ManagedAgentOptions } from "../types/instance.types";
 import type { ConversationInvocation } from "../types/conversation-invocation.types";
 import { invocationToManagedOptions } from "../redux/execution-system/thunks/launch-conversation.thunk";
@@ -49,8 +49,8 @@ import {
   isProjectCreateFlow,
   logProjectCreateAiStage,
   warnProjectCreateAi,
-} from "@/features/projects/debug/projectCreateAiDebug";
-import { toast } from "@/lib/toast";
+} from "@host/features/projects/debug/projectCreateAiDebug";
+import { toast } from "@host/lib/toast";
 
 // =============================================================================
 // ConversationInvocation type guard

@@ -10,7 +10,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { registerAction } from "../provider";
 import { chatExtensions, chatWriteBackBlocked } from "../utils";
-import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
+import { updateMessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import { getErrorMessage, serializeError } from "../utils";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 

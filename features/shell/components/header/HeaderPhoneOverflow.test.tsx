@@ -41,7 +41,7 @@ jest.mock("@/features/knowledge/command-bar/OpenCommandBarButtons", () => ({
 jest.mock("@/features/overlays/openers/authGate", () => ({
   useOpenAuthGateDialog: () => openAuthGate,
 }));
-jest.mock("@/features/surfaces/components/chrome/SurfaceAgentsHeaderButton", () => ({
+jest.mock("@ai-matrx/chat/surfaces/components/chrome/SurfaceAgentsHeaderButton", () => ({
   AGENTS_AUTH_GATE: { featureName: "Agents", featureDescription: "x" },
   SurfaceAgentsPanelImpl: () => <div data-testid="agents-panel">agents</div>,
 }));

@@ -29,14 +29,14 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAccumulatedText,
   selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   selectIsExecuting,
   selectLatestRequestId,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectConversationMessages } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import type { MessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import {
   parseCodeEdits,
   validateEdits,

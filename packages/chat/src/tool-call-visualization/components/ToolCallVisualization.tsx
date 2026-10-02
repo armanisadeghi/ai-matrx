@@ -23,11 +23,11 @@ import {
   PanelRightOpen,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { ShimmerText } from "@/components/loaders/ShimmerText";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { ShimmerText } from "@host/components/loaders/ShimmerText";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 import {
   getInlineRenderer,
@@ -41,7 +41,7 @@ import {
 } from "../registry/registry";
 import { readSurfaceWrite } from "../surface-write/readSurfaceWrite";
 import { ToolGlyph } from "../renderers/_shared-entity/ToolGlyph";
-import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectToolDisplayPreference } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
 import { useAutoScrollOnStream } from "../renderers/useAutoScrollOnStream";
 import {
@@ -58,21 +58,21 @@ import {
 } from "../result-fields/ToolErrorCard";
 import { guardRoutingOf } from "../result-fields/guard-routing";
 import { resultAsObject } from "../renderers/_shared";
-import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
-import { ParkedOnPersonCard } from "@/features/action-requests/components/ParkedOnPersonCard";
+import { RecordChangeApprovalCard } from "@host/features/record-change-approvals/RecordChangeApprovalCard";
+import { ParkedOnPersonCard } from "@host/features/action-requests/components/ParkedOnPersonCard";
 import {
   heldWriteHeadline,
   readRecordChangeWait,
   type RecordChangeWait,
-} from "@/features/record-change-approvals/recordChangeApproval";
-import { useHeldWriteTableName } from "@/features/record-change-approvals/useHeldWriteTableName";
+} from "@host/features/record-change-approvals/recordChangeApproval";
+import { useHeldWriteTableName } from "@host/features/record-change-approvals/useHeldWriteTableName";
 import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
 import { getToolArtifact } from "../registry/toolArtifact";
 import { ArtifactResultBar } from "./ArtifactResultBar";
 import { resolveToolShellDisplayMode } from "./resolveToolShellDisplayMode";
 import { withoutCorrectedFailures } from "./correctedFailures";
-import { selectCorrectedToolCallIds } from "@/features/agents/redux/execution-system/observability/observability.selectors";
-import { selectSuspendedCallIds } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectCorrectedToolCallIds } from "../../agents/redux/execution-system/observability/observability.selectors";
+import { selectSuspendedCallIds } from "../../agents/redux/execution-system/active-requests/active-requests.selectors";
 
 // ─── Public props ─────────────────────────────────────────────────────────────
 

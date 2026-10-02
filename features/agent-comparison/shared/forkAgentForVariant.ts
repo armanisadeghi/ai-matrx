@@ -21,9 +21,9 @@
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { upsertAgent } from "@/features/agents/redux/agent-definition/slice";
-import { SYNTHETIC_AGENT_ID_PREFIX } from "@/features/agents/redux/agent-definition/synthetic-id";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import { upsertAgent } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { SYNTHETIC_AGENT_ID_PREFIX } from "@ai-matrx/chat/agents/redux/agent-definition/synthetic-id";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 /**
  * Returns a fresh synthetic agent id. Caller is responsible for seeding

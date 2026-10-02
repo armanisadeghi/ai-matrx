@@ -58,10 +58,10 @@ import type {
   VariableComponentType,
   VariableCustomComponent,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
-import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
-import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
+import { sanitizeVariableName } from "@ai-matrx/chat/agents/utils/variable-utils";
+import { readStructuredList } from "@ai-matrx/chat/agents/utils/variable-customcomponent";
 
 // ---------------------------------------------------------------------------
 // Shared shapes

@@ -34,15 +34,15 @@ import {
 } from "node:util";
 import activeRequestsReducer, {
   createRequest,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import { selectUnifiedSlotRange } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import messagesReducer from "@/features/agents/redux/execution-system/messages/messages.slice";
-import observabilityReducer from "@/features/agents/redux/execution-system/observability/observability.slice";
+} from "../../../redux/execution-system/active-requests/active-requests.slice";
+import { selectUnifiedSlotRange } from "../../../redux/execution-system/active-requests/active-requests.selectors";
+import messagesReducer from "../../../redux/execution-system/messages/messages.slice";
+import observabilityReducer from "../../../redux/execution-system/observability/observability.slice";
 import {
   selectMessageInterleavedContent,
   selectMessagesInterleavedRuns,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { processStream } from "@/features/agents/redux/execution-system/thunks/process-stream";
+} from "../../../redux/execution-system/messages/messages.selectors";
+import { processStream } from "../../../redux/execution-system/thunks/process-stream";
 import {
   buildDisplayEntries,
   groupDisplayEntries,
@@ -51,11 +51,11 @@ import {
   membersForRender,
   rendersFromPersistedRows,
 } from "../assistant/collapse-by-request-id";
-import { renderSettledFromRecord } from "@/components/mardown-display/chat-markdown/settle-stream-blocks";
-import { persistedToolEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
-import { readSurfaceWrite } from "@/features/tool-call-visualization/surface-write/readSurfaceWrite";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import type { RootState } from "@/lib/redux/store";
+import { renderSettledFromRecord } from "@host/components/mardown-display/chat-markdown/settle-stream-blocks";
+import { persistedToolEntry } from "../../../../tool-call-visualization/utils/cxToolCallToLifecycleEntry";
+import { readSurfaceWrite } from "../../../../tool-call-visualization/surface-write/readSurfaceWrite";
+import type { ToolLifecycleEntry } from "../../../types/request.types";
+import type { RootState } from "@host/lib/redux/store";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;

@@ -2,14 +2,14 @@
 
 /** Resolve a set of mandate keys in parallel with independent per-key state. */
 import { useEffect, useState } from "react";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage } from "@host/utils/errors";
 import {
   onMandateCacheInvalidated,
   resolveMandate,
   type ResolvedMandate,
 } from "./service";
 import type { MandateState } from "./useMandate";
-import type { AnyMandateKey } from "./mandate-key";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export type MandateSetState = Readonly<Record<string, MandateState>>;
 

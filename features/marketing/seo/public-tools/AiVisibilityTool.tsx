@@ -6,8 +6,8 @@ import { AlertTriangle, PanelRightOpen, Play, ScanSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
-import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { removeRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   useOpenLiveRunWindow,
   type LiveRunWindowHandle,
@@ -17,7 +17,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import type {
   LiveRunProgressItem,
   LiveRunProgressState,
-} from "@/features/agents/components/live-run/LiveRunProgress";
+} from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 import { isJsonObject, type JsonObject } from "@/types/json";
 
 import {

@@ -9,7 +9,7 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { selectComposerHasSomethingToSend } from "../aggregate.selectors";
 
 const C = "c-kiln";

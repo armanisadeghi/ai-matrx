@@ -33,8 +33,8 @@
 
 import type { Json } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
-import type { ValueMapping } from "@/features/surfaces/types";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import type { ValueMapping } from "@ai-matrx/chat/surfaces/types";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 // ── Kind vocabulary (mirrors aidream provisions.py — the one law) ────────────

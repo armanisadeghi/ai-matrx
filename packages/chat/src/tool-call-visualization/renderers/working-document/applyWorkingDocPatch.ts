@@ -17,7 +17,7 @@
  * matcher (`matchText`) rather than reinventing match logic.
  */
 
-import { matchText } from "@/features/text-diff/lib/matchText";
+import { matchText } from "@host/features/text-diff/lib/matchText";
 
 /** The `ctx_patch` command vocabulary (mirrors the backend). */
 export type WorkingDocPatchCommand =

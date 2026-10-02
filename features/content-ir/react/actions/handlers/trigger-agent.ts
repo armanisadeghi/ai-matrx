@@ -14,7 +14,7 @@
  *     llmOverrides?: object; label?: string; displayMode?: string }
  */
 
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type {
   KindActionContext,
   KindActionResult,

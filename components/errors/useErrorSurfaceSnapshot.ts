@@ -28,9 +28,9 @@ import {
   getSurfaceRuntime,
   getSurfaceRuntimeForName,
   getRegisteredSurfaceScopeContributions,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { surfaceFromPathname } from "@/features/surfaces/utils/route-to-surface";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { surfaceFromPathname } from "@ai-matrx/chat/surfaces/utils/route-to-surface";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   pickDeclaredSurfaceValues,
   type ErrorSurfaceSnapshot,

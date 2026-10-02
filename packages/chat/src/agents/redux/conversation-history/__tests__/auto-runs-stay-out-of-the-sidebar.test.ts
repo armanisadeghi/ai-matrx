@@ -4,7 +4,7 @@
  * the Auto lane, never a chat in the person's sidebar. Before this the live
  * insert put every section run ("…section 3 of 6: Chunk…") into /chat's list.
  */
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import type { ConversationListItem } from "../../conversation-list/conversation-list.types";
 import { DEFAULT_CONVERSATION_LANES, laneOfClientMintedRow } from "../lanes";
 import reducer, {
   setScopeLanes,

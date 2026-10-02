@@ -15,25 +15,25 @@
 
 import React, { useCallback, useState } from "react";
 import { ArrowUp, Braces, CircleStop, AudioLines } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { Button } from "@host/components/ui/button";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import { RunControlsMenu } from "./RunControlsMenu";
 import { InputButton } from "./InputActionButtons";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import { DesktopPresenceIndicator } from "./DesktopPresenceIndicator";
-import { announceComingSoon } from "@/lib/coming-soon/announce";
+import { announceComingSoon } from "@host/lib/coming-soon/announce";
 import {
   selectShowVariablePanel,
   selectShowAttachments,
   selectShowMicrophone,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { toggleVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { useSurfaceExecution } from "@/features/agents/hooks/useSurfaceExecution";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { toggleVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectShouldShowVariables } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { useSurfaceExecution } from "../../../hooks/useSurfaceExecution";
 import {
   smartExecute,
   cancelExecution,
-} from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+} from "../../../redux/execution-system/thunks/smart-execute.thunk";
 
 interface SingleRowActionButtonsProps {
   conversationId: string;

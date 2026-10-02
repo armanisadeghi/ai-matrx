@@ -1,4 +1,4 @@
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "../types/agent-definition.types";
 
 /**
  * THE MODEL A NEW AGENT STARTS ON.

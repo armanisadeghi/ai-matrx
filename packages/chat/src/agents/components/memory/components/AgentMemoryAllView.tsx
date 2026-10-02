@@ -8,15 +8,15 @@
  */
 
 import { Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "@host/components/ui/badge";
+import { cn } from "@host/lib/utils";
 import {
   displayTitleForMemory,
   importanceScore,
   importanceTier,
 } from "../types";
 import type { UseAgentMemoriesReturn } from "../hooks/useAgentMemories";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const TIER_BADGE_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
   high: "bg-primary/15 text-primary",

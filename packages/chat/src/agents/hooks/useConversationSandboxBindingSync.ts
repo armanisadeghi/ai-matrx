@@ -23,9 +23,9 @@
 
 import { useEffect, useRef } from "react";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsStreaming } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { refreshConversationSandboxBinding } from "@/features/agents/redux/execution-system/thunks/refresh-conversation-binding.thunk";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectIsStreaming } from "../redux/execution-system/selectors/aggregate.selectors";
+import { refreshConversationSandboxBinding } from "../redux/execution-system/thunks/refresh-conversation-binding.thunk";
 
 export function useConversationSandboxBindingSync(
   conversationId: string | null,

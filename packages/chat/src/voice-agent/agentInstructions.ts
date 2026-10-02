@@ -12,12 +12,12 @@
 // loudly and refuse to run; none of them substitutes a prompt of its own.
 
 import { useEffect, useState } from "react";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
-import { useMandate } from "@/features/mandates/useMandate";
-import type { RootState } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { fetchFullAgent } from "../agents/redux/agent-definition/thunks";
+import { selectAgentReadyForBuilder } from "../agents/redux/agent-definition/selectors";
+import { useMandate } from "../mandates/useMandate";
+import type { RootState } from "@host/lib/redux/store";
 
 /** The agent row's system message, or "" when it has none. */
 export function readInstructionsFromAgent(messages: unknown): string {

@@ -35,29 +35,29 @@
 import { useRef } from "react";
 import { ClipboardCopy, Download, MoreHorizontal, Pin, Search, Send, Share, X } from "lucide-react";
 import { useAssociations } from "@ai-matrx/associations/react";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { openConversationRename } from "@/features/agents/components/conversation-actions/conversation-verbs";
-import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
-import type { ItemMenuSection } from "@/components/official/item/types";
+import { ItemMenu } from "@host/components/official/item/ItemMenu";
+import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { openConversationRename } from "../conversation-actions/conversation-verbs";
+import { useOpenGmailComposeWindow } from "@host/features/overlays/openers/gmailComposeWindow";
+import type { ItemMenuSection } from "@host/components/official/item/types";
 import { conversationEmailEntrances } from "./conversation-email-entrance";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { selectConversationMessages } from "../../redux/execution-system/messages/messages.selectors";
 import {
   usePinnedMessageIds,
   usePinnedMessagesReadFailed,
-} from "@/features/agents/message-pins/pinned-messages-store";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+} from "../../message-pins/pinned-messages-store";
+import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
 import {
   CONVERSATION_TRANSFER_ROWS,
   type ConversationTransferRow,
-} from "@/features/agents/conversation-export/conversation-transfer-rows";
+} from "../../conversation-export/conversation-transfer-rows";
 import {
   setConversationFindOpen,
   setConversationPinnedOnly,
   useConversationViewState,
-} from "@/features/agents/components/messages-display/conversation-tools/conversation-view-state";
+} from "../messages-display/conversation-tools/conversation-view-state";
 
 interface ConversationPageMenuProps {
   conversationId: string;
@@ -153,7 +153,7 @@ export function ConversationPageMenu({
     // A thunk hands the runner a live getState without subscribing the
     // header to the whole store. The runner loads on click.
     dispatch((d: AppDispatch, getState: () => RootState) => {
-      void import("@/features/agents/conversation-export/conversation-transfer").then(
+      void import("../../conversation-export/conversation-transfer").then(
         ({ runConversationTransfer }) => runConversationTransfer({ dispatch: d, getState }, conversationId, row),
       );
     });

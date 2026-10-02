@@ -21,7 +21,7 @@ import {
   cancelAssignmentDemo,
   runAssignmentDemo,
 } from "@/features/agents/redux/agent-assignments/agent-assignments.thunks";
-import { selectLiveAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { selectLiveAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useAppDispatch, useAppSelector, useDispatchThunk } from "@/lib/redux/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

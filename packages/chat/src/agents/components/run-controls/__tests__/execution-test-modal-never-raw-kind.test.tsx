@@ -11,24 +11,24 @@ import { createRoot, type Root } from "react-dom/client";
 const SET_JSON = JSON.stringify({ __kind: "flashcard_set", title: "Cell biology", cards: [] });
 let answer = SET_JSON;
 
-jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
-jest.mock("@/features/agents/redux/execution-system/selectors/aggregate.selectors", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
+jest.mock("../../../redux/execution-system/selectors/aggregate.selectors", () => ({
   selectLatestAccumulatedText: () => () => answer,
   selectLatestRequestStatus: () => () => "complete",
 }));
-jest.mock("@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer", () => ({
+jest.mock("../../../redux/execution-system/active-requests/useRetainRequestForViewer", () => ({
   useRetainLatestRequestForViewer: () => undefined,
 }));
-jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({
+jest.mock("../../../hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({ launchAgent: async () => ({ conversationId: "c1" }), close: () => {} }),
 }));
-jest.mock("@/features/agents/hooks/useWidgetHandle", () => ({ useWidgetHandle: () => ({}) }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({ selectAgentName: () => () => "" }));
-jest.mock("@/components/official/entity-ref/EntityDoorControls", () => ({ EntityDoorControls: () => null }));
-jest.mock("@/components/ui/scroll-area", () => ({
+jest.mock("../../../hooks/useWidgetHandle", () => ({ useWidgetHandle: () => ({}) }));
+jest.mock("../../../redux/agent-definition/selectors", () => ({ selectAgentName: () => () => "" }));
+jest.mock("@host/components/official/entity-ref/EntityDoorControls", () => ({ EntityDoorControls: () => null }));
+jest.mock("@host/components/ui/scroll-area", () => ({
   ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
-jest.mock("@/components/official/structured-value/AnswerValueView", () => ({
+jest.mock("@host/components/official/structured-value/AnswerValueView", () => ({
   AnswerValueView: () => <div data-testid="answer-value-view" />,
 }));
 

@@ -1,4 +1,4 @@
-import { getAgent } from "@/lib/agents/data";
+import { getAgent } from "@host/lib/agents/data";
 import { AgentHydrator } from "./AgentHydrator";
 
 /**

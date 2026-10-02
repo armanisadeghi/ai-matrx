@@ -18,7 +18,7 @@
  * one renderer, every payload this platform has ever produced.
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { resultAsObject } from "../_shared";
 import {
   batchItemToEntry,
@@ -28,15 +28,15 @@ import {
   type MetaTagBatchItem,
   type SerpEntry,
   type TitleAnalysisItem,
-} from "@/features/marketing/seo/serp/types";
+} from "@host/features/marketing/seo/serp/types";
 import {
   parseSeoKeywordData,
   type SeoKeywordDataResult,
-} from "@/features/marketing/seo/keyword-research/types";
+} from "@host/features/marketing/seo/keyword-research/types";
 import {
   parseSeoCollectionReceipt,
   type SeoCollectionReceipt,
-} from "@/features/marketing/seo/rank/types";
+} from "@host/features/marketing/seo/rank/types";
 
 /** A meta check (batch / titles / descriptions) reduced to SERP entries. */
 export interface SeoMetaVariant {

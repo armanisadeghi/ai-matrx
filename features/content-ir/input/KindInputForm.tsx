@@ -36,7 +36,7 @@
 
 import { useEffect, useState } from "react";
 import { CircleAlert, Loader2, Send, X } from "lucide-react";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
+import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { KIND_KEY, type KindSchema } from "@ai-matrx/content-ir";
 import {

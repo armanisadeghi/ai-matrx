@@ -30,7 +30,7 @@ import {
   type DatabaseToolSection,
   DEFAULT_DATABASE_SCHEMA,
 } from "./database-tools";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   ADMIN_DATABASE_SURFACE_NAME,

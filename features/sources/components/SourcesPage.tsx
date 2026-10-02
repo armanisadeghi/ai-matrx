@@ -111,7 +111,7 @@ import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import { ProcessingProgressSheet } from "@/features/rag/components/library/ProcessingProgressSheet";
 import { LibraryTrashSheet } from "@/features/rag/components/library/LibraryTrashSheet";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import type { LibraryDocSummary } from "@/features/rag/types/library";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";

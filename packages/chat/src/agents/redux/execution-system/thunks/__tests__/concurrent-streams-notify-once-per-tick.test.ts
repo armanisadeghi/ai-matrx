@@ -32,7 +32,7 @@ import activeRequestsReducer, {
 import { deriveAnswerText } from "../../active-requests/active-requests.selectors";
 import { processStream } from "../process-stream";
 import { STREAM_FLUSH_INTERVAL_MS } from "../stream-flush-scheduler";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;

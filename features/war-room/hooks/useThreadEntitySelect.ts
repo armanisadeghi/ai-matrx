@@ -29,8 +29,8 @@ import {
   selectSessionsById,
 } from "@/features/transcript-studio/redux/selectors";
 import { updateSessionThunk } from "@/features/transcript-studio/redux/thunks";
-import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { renameConversation } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-row-actions.thunks";
 import {
   selectActiveAudioSessionId,
   selectActiveConversationId,

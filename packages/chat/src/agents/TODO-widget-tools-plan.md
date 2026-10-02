@@ -9,7 +9,7 @@ todos:
     content: Execute the seed SQL against automation-matrix project (brsgrqvjdzwihsvnfqkf) via user-supabase MCP in a single transaction; verify with a SELECT.
     status: pending
   - id: phase1-widget-types
-    content: "Create features/agents/types/widget-handle.types.ts: WIDGET_ACTION_NAMES, WidgetActionName, WidgetActionInput (discriminated), WidgetActionResult, WidgetHandle, WIDGET_TOOL_NAME_TO_HANDLE_METHOD, deriveClientToolsFromHandle, payload types."
+    content: "Create packages/chat/src/agents/types/widget-handle.types.ts: WIDGET_ACTION_NAMES, WidgetActionName, WidgetActionInput (discriminated), WidgetActionResult, WidgetHandle, WIDGET_TOOL_NAME_TO_HANDLE_METHOD, deriveClientToolsFromHandle, payload types."
     status: pending
   - id: phase1-invocation-types
     content: Simplify ConversationInvocationCallbacks to {widgetHandleId?, originalText?}. Remove per-action *Id slots from the prior turn.
@@ -21,7 +21,7 @@ todos:
     content: Add registerWidgetHandle(handle) helper to utils/callbackManager.ts.
     status: pending
   - id: phase3-hook
-    content: "Create features/agents/hooks/useWidgetHandle.ts: registers handle once, ref-stable call forwarding, unregisters on unmount."
+    content: "Create packages/chat/src/agents/hooks/useWidgetHandle.ts: registers handle once, ref-stable call forwarding, unregisters on unmount."
     status: pending
   - id: phase4-launch-thunk
     content: "launch-agent-execution.thunk.ts: delete registerCallbacks, replace onComplete trigger with handle lookup, derive widgetClientTools and dispatch setClientTools, thread widgetHandleId through create thunks."
@@ -39,7 +39,7 @@ todos:
     content: "process-stream.ts: branch on tool_name ∈ WIDGET_ACTION_NAMES in tool_delegated handler; dispatch dispatchWidgetAction without pausing the instance."
     status: pending
   - id: phase6-submit-tool-results
-    content: Create features/agents/api/submit-tool-results.ts + thunk wrapper that POSTs to /ai/conversations/{id}/tool_results and handles 404 gracefully.
+    content: Create packages/chat/src/agents/api/submit-tool-results.ts + thunk wrapper that POSTs to /ai/conversations/{id}/tool_results and handles 404 gracefully.
     status: pending
   - id: phase7-consumer-migrations
     content: Migrate useAgentLauncher, useAgentLauncherTester, AgentBuilderRightPanel, agent-generator.constants, UnifiedContextMenu, and all features/prompts/** callers to useWidgetHandle.
@@ -140,7 +140,7 @@ Insertion happens via `user-supabase` MCP `execute_sql` in a single transaction 
 
 ## Phase 1 — TypeScript types
 
-### New file: [`features/agents/types/widget-handle.types.ts`](features/agents/types/widget-handle.types.ts)
+### New file: [`packages/chat/src/agents/types/widget-handle.types.ts`](packages/chat/src/agents/types/widget-handle.types.ts)
 
 Contains:
 
@@ -152,7 +152,7 @@ Contains:
 - `deriveClientToolsFromHandle(handle: WidgetHandle): string[]` — pure helper. Returns the subset of the 10 tool names whose corresponding handle method is implemented. This is THE function that drives per-request capability negotiation.
 - Payload types: `TextPatch`, `AttachedMedia`, `CreatedArtifact`.
 
-### Modify: [`features/agents/types/conversation-invocation.types.ts`](features/agents/types/conversation-invocation.types.ts)
+### Modify: [`packages/chat/src/agents/types/conversation-invocation.types.ts`](packages/chat/src/agents/types/conversation-invocation.types.ts)
 
 Replace the current `ConversationInvocationCallbacks` (which has per-action `*Id` fields from last turn) with:
 
@@ -165,7 +165,7 @@ export interface ConversationInvocationCallbacks {
 
 Delete `onCompleteId`, `onTextReplaceId`, `onTextInsertBeforeId`, `onTextInsertAfterId`.
 
-### Modify: [`features/agents/types/instance.types.ts`](features/agents/types/instance.types.ts)
+### Modify: [`packages/chat/src/agents/types/instance.types.ts`](packages/chat/src/agents/types/instance.types.ts)
 
 - `InstanceUIStateRecord.callbackGroupId` → `widgetHandleId: string | null` (rename, same shape).
 - `ManagedAgentOptions`: delete function-ref fields (`onComplete`, `onTextReplace`, `onTextInsertBefore`, `onTextInsertAfter`). Add `widgetHandleId?: string`. Keep `originalText?: string`.
@@ -182,7 +182,7 @@ No other changes — the ID-addressed `register` / `get` / `trigger` API from th
 
 ## Phase 3 — `useWidgetHandle` React hook
 
-New file: [`features/agents/hooks/useWidgetHandle.ts`](features/agents/hooks/useWidgetHandle.ts).
+New file: [`packages/chat/src/agents/hooks/useWidgetHandle.ts`](packages/chat/src/agents/hooks/useWidgetHandle.ts).
 
 - Takes a `WidgetHandle` literal (the widget's method implementations).
 - On first render, calls `callbackManager.registerWidgetHandle(handleRef)` and stashes the ID in a ref.
@@ -209,7 +209,7 @@ const widgetHandleId = useWidgetHandle({
 
 ## Phase 4 — Launch + create-instance thunk refactor
 
-### Modify: [`features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts`](features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts)
+### Modify: [`packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts`](packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts)
 
 - Delete `registerCallbacks()` (lines 115–156) entirely.
 - Replace the `onComplete?.(launchResult)` call (line 439) with:
@@ -222,15 +222,15 @@ const widgetHandleId = useWidgetHandle({
 - After resolving `widgetHandleId`, derive the client-tool set: `const widgetClientTools = handle ? deriveClientToolsFromHandle(handle) : [];`. Merge with any existing `client_tools` the caller passed. Dispatch `setClientTools({ conversationId, tools: [...existing, ...widgetClientTools] })` immediately after `createInstance*` returns.
 - Thread `widgetHandleId` (not `callbackGroupId`) through the three create-instance thunks.
 
-### Modify: [`features/agents/redux/execution-system/thunks/launch-conversation.thunk.ts`](features/agents/redux/execution-system/thunks/launch-conversation.thunk.ts)
+### Modify: [`packages/chat/src/agents/redux/execution-system/thunks/launch-conversation.thunk.ts`](packages/chat/src/agents/redux/execution-system/thunks/launch-conversation.thunk.ts)
 
 - Remove the `makeUnary` helper and all per-action callback forwarding. The adapter maps `callbacks.widgetHandleId` → `ManagedAgentOptions.widgetHandleId` and `callbacks.originalText` → `ManagedAgentOptions.originalText`. That's it.
 
-### Modify: [`features/agents/redux/execution-system/thunks/create-instance.thunk.ts`](features/agents/redux/execution-system/thunks/create-instance.thunk.ts)
+### Modify: [`packages/chat/src/agents/redux/execution-system/thunks/create-instance.thunk.ts`](packages/chat/src/agents/redux/execution-system/thunks/create-instance.thunk.ts)
 
 - All three create thunks (`createManualInstance`, `createInstanceFromShortcut`, `createManualInstanceNoAgent`) + both `startNewConversation*` thunks: rename arg + stored field `callbackGroupId` → `widgetHandleId`. Pass it into `initInstanceUIState`.
 
-### Modify: [`features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`](features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts) + [`instance-ui-state.selectors.ts`](features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors.ts)
+### Modify: [`packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`](packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts) + [`instance-ui-state.selectors.ts`](packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors.ts)
 
 - Rename `callbackGroupId` → `widgetHandleId` on the record and every reducer that touches it.
 - Add `selectWidgetHandleId(conversationId)` memoized selector.
@@ -239,7 +239,7 @@ const widgetHandleId = useWidgetHandle({
 
 ## Phase 5 — Dispatcher thunk (the firing path)
 
-### New file: [`features/agents/redux/execution-system/thunks/dispatch-widget-action.thunk.ts`](features/agents/redux/execution-system/thunks/dispatch-widget-action.thunk.ts)
+### New file: [`packages/chat/src/agents/redux/execution-system/thunks/dispatch-widget-action.thunk.ts`](packages/chat/src/agents/redux/execution-system/thunks/dispatch-widget-action.thunk.ts)
 
 Exports `dispatchWidgetAction({ conversationId, callId, toolName, args })`. Flow:
 
@@ -252,7 +252,7 @@ Exports `dispatchWidgetAction({ conversationId, callId, toolName, args })`. Flow
 7. Dispatch `submitToolResults({ conversationId, callId, toolName, result })` (new API helper — see Phase 6) regardless of outcome.
 8. Also dispatch a local UI event so `toolLifecycle` in `active-requests.slice` flips the delegated call to `completed`/`error`. Reuse the existing `upsertToolLifecycle` action the stream already uses.
 
-### Modify: [`features/agents/redux/execution-system/thunks/process-stream.ts`](features/agents/redux/execution-system/thunks/process-stream.ts)
+### Modify: [`packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts`](packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts)
 
 In the `tool_delegated` branch (around line 507):
 
@@ -263,7 +263,7 @@ In the `tool_delegated` branch (around line 507):
 
 ## Phase 6 — `POST /tool_results` client
 
-### New file: [`features/agents/api/submit-tool-results.ts`](features/agents/api/submit-tool-results.ts)
+### New file: [`packages/chat/src/agents/api/submit-tool-results.ts`](packages/chat/src/agents/api/submit-tool-results.ts)
 
 - Function `submitToolResults({ conversationId, results })` posts to `/ai/conversations/{conversationId}/tool_results`.
 - `results` is an array of `{ call_id, tool_name, output?, is_error?, error_message? }` matching the `CLIENT_SIDE_TOOLS.md` contract exactly.
@@ -277,8 +277,8 @@ In the `tool_delegated` branch (around line 507):
 
 Every caller that currently passes `onComplete`/`onTextReplace`/`onTextInsertBefore`/`onTextInsertAfter` to the launcher/invocation must migrate to `useWidgetHandle`. Confirmed call sites from the prior grep pass:
 
-- [`features/agents/hooks/useAgentLauncher.ts`](features/agents/hooks/useAgentLauncher.ts)
-- [`features/agents/hooks/useAgentLauncherTester.ts`](features/agents/hooks/useAgentLauncherTester.ts)
+- [`packages/chat/src/agents/hooks/useAgentLauncher.ts`](packages/chat/src/agents/hooks/useAgentLauncher.ts)
+- [`packages/chat/src/agents/hooks/useAgentLauncherTester.ts`](packages/chat/src/agents/hooks/useAgentLauncherTester.ts)
 - [`features/agents/components/builder/AgentBuilderRightPanel.tsx`](features/agents/components/builder/AgentBuilderRightPanel.tsx)
 - [`features/agents/agent-creators/interactive-builder/agent-generator.constants.ts`](features/agents/agent-creators/interactive-builder/agent-generator.constants.ts)
 - Text-shortcut callers under `features/prompts/**` (several hits from the earlier grep) that wire `onTextReplace`/`onTextInsertBefore`/`onTextInsertAfter` for the `UnifiedContextMenu` flow — e.g. [`features/prompts/components/smart/SmartPromptInput.tsx`](features/prompts/components/smart/SmartPromptInput.tsx), [`features/prompts/components/results-display/PromptRunner.tsx`](features/prompts/components/results-display/PromptRunner.tsx), [`features/prompts/components/smart/SmartPromptRunner.tsx`](features/prompts/components/smart/SmartPromptRunner.tsx), [`features/prompts/components/results-display/ContextAwarePromptRunner.tsx`](features/prompts/components/results-display/ContextAwarePromptRunner.tsx), [`features/prompts/examples/ContextMenuExample.tsx`](features/prompts/examples/ContextMenuExample.tsx), [`features/prompts/components/configuration/SystemMessage.tsx`](features/prompts/components/configuration/SystemMessage.tsx), [`features/prompts/components/dynamic/PromptExecutionCard.tsx`](features/prompts/components/dynamic/PromptExecutionCard.tsx). Each gets a `useWidgetHandle({ onTextReplace, onTextInsertBefore, onTextInsertAfter })` and passes the returned id.
@@ -313,7 +313,7 @@ Each migration also updates type imports and drops the old callback destructurin
 
 ## Open items confirmed closed
 
-- **Submit body assembler:** already forwards `client_tools` from `instanceClientTools` slice (confirmed in [`execute-instance.thunk.ts`](features/agents/redux/execution-system/thunks/execute-instance.thunk.ts) and [`execute-chat-instance.thunk.ts`](features/agents/redux/execution-system/thunks/execute-chat-instance.thunk.ts)). No change needed there beyond Phase 4's `setClientTools` dispatch.
+- **Submit body assembler:** already forwards `client_tools` from `instanceClientTools` slice (confirmed in [`execute-instance.thunk.ts`](packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts) and [`execute-chat-instance.thunk.ts`](features/agents/redux/execution-system/thunks/execute-chat-instance.thunk.ts)). No change needed there beyond Phase 4's `setClientTools` dispatch.
 - **tool_results endpoint typed:** already in `lib/api/call-api.ts` path extraction; need a thin helper, not new OpenAPI types.
 - **tool_delegated stream handling:** already wired; Phase 5 just adds a branch for `widget_*` names.
 

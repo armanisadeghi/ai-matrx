@@ -18,14 +18,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Megaphone } from "lucide-react";
 
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { resumeConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/resume-conversation.thunk";
+import { selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectMessageCount } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 

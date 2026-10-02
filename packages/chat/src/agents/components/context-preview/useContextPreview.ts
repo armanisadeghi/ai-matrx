@@ -18,13 +18,13 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
-import { selectScopeSelectionsContext } from "@/lib/redux/slices/appContextSlice";
-import { selectConversationScopeIds } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { extractErrorMessage } from "@/utils/errors";
-import type { components } from "@/types/python-generated/api-types";
-import type { ContextReceiptData } from "@/types/python-generated/stream-events";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { callApi } from "@host/lib/api/call-api";
+import { selectScopeSelectionsContext } from "@host/lib/redux/slices/appContextSlice";
+import { selectConversationScopeIds } from "../../redux/execution-system/conversations/conversations.selectors";
+import { extractErrorMessage } from "@host/utils/errors";
+import type { components } from "@host/types/python-generated/api-types";
+import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 
 export type ContextSelection = components["schemas"]["ContextSelection"];
 

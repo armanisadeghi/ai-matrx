@@ -25,19 +25,19 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { loadSurfaceValues } from "@/features/surfaces/redux/thunks";
+import { loadSurfaceValues } from "@ai-matrx/chat/surfaces/redux/thunks";
 import {
   makeSelectSurfaceValues,
   makeSelectSurfaceValuesStatus,
-} from "@/features/surfaces/redux/selectors";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import {
   SurfaceVariableBinding,
   type BindingTarget,
   type SourceLabels,
 } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
-import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
+import type { SurfaceValue, ValueMapping } from "@ai-matrx/chat/surfaces/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Four-way mode plumbing (mirrors SurfaceVariableBinding so inline + advanced

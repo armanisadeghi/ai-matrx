@@ -42,7 +42,7 @@ import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
-const SCAN_DIRS = ["app", "features", "components"];
+const SCAN_DIRS = ["app", "features", "packages/chat/src", "components"];
 
 /** Running a mandate — the signals that mean "this file drives an agent". */
 const RUN_SIGNALS: RegExp[] = [
@@ -72,7 +72,7 @@ const FORBIDDEN_INLINE_DISCLOSURE = /\bPageAgents\b/;
  */
 const SURFACE_MANDATES_SECTION = join(
   ROOT,
-  "features/surfaces/components/chrome/SurfaceMandatesSection.tsx",
+  "packages/chat/src/surfaces/components/chrome/SurfaceMandatesSection.tsx",
 );
 const FORBIDDEN_SCOPE_EXPANSION: RegExp[] = [
   /\bfamilySurfaceNames\b/,
@@ -84,6 +84,13 @@ const FORBIDDEN_SCOPE_EXPANSION: RegExp[] = [
  * Paths with no fixed surface worker. Each entry is a prefix plus the reason it
  * is exempt — never add one without the reason.
  */
+// chat-package move: a file under packages/chat/src is matched as its features/ twin
+import { featureRootOf } from "./lib/source-roots.cjs";
+const asFeaturePath = (rel: string): string => {
+  const hit = featureRootOf(rel);
+  return hit ? `features/${hit.rest}` : rel;
+};
+
 const DISCLOSURE_EXEMPT: Array<{ prefix: string; why: string }> = [
   {
     prefix: "features/mandates/",
@@ -197,7 +204,7 @@ function main(): void {
     if (signals.length === 0) continue;
 
     if (
-      DISCLOSURE_EXEMPT.some((entry) => rel.startsWith(entry.prefix)) ||
+      DISCLOSURE_EXEMPT.some((entry) => asFeaturePath(rel).startsWith(entry.prefix)) ||
       !rendersUi(rel, source)
     ) {
       exempt += 1;

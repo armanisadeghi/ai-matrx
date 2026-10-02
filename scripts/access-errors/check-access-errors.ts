@@ -159,7 +159,7 @@ const PRAGMA = /(?:\/\/|\{\/\*)\s*access-errors:\s*ok\s*[—-]\s*\S/;
 
 function listFiles(): string[] {
   const out = execSync(
-    "git ls-files 'app/**/*.ts' 'app/**/*.tsx' 'features/**/*.ts' 'features/**/*.tsx' " +
+    "git ls-files 'app/**/*.ts' 'app/**/*.tsx' 'features/**/*.ts' 'packages/chat/src/**/*.ts' 'features/**/*.tsx' 'packages/chat/src/**/*.tsx' " +
       "'components/**/*.ts' 'components/**/*.tsx' 'lib/**/*.ts' 'lib/**/*.tsx' 'hooks/**/*.ts'",
     { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );

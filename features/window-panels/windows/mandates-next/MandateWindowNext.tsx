@@ -34,7 +34,7 @@ import {
   fetchMandateConsoleData,
   type MandateDefinitionRow,
 } from "@/features/mandates/admin/service";
-import { onMandateCacheInvalidated } from "@/features/mandates/service";
+import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
 import { mandateRoute } from "@/features/mandates/browse/types";

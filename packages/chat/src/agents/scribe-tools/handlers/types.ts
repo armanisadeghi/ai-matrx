@@ -7,7 +7,7 @@
 
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 export interface ScribeToolHandlerContext {
   /** The conversation that issued the tool call (used to resolve the session). */

@@ -18,12 +18,12 @@ import { toast } from "@/lib/toast";
 import {
   getDriftReport,
   syncManifests,
-} from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import {
   countDriftIssues,
   countStaleDbRows,
-} from "@/features/surfaces/utils/drift-report-count";
-import type { SurfaceDriftReport } from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/utils/drift-report-count";
+import type { SurfaceDriftReport } from "@ai-matrx/chat/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type SyncResult = Awaited<ReturnType<typeof syncManifests>>;

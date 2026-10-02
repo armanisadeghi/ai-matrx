@@ -27,7 +27,7 @@ import {
   type EntityFacets,
 } from "@/lib/entity-list/types";
 import type { EntityListController } from "@/lib/entity-list/config";
-import { appLabel } from "@/features/agents/redux/conversation-history/source-registry";
+import { appLabel } from "@ai-matrx/chat/agents/redux/conversation-history/source-registry";
 import { codePluginFeatureLabel } from "@/features/ai-work/lib/providerSource";
 import { audienceLabel, conversationTypeLabel } from "../presentation";
 import {

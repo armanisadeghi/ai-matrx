@@ -12,7 +12,7 @@
  * live in `history.row_versions` via the panel's History view.
  */
 
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 import { useCallback, useEffect, useState } from "react";
 import { Check, ChevronDown, NotebookPen, Plus, Trash2 } from "lucide-react";
 import {
@@ -21,27 +21,27 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { scratchScopeId } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+} from "@host/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { scratchScopeId } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   selectActiveScratchpadId,
   selectWorkingDocTitle,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+} from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   createScratchpadThunk,
   deleteScratchpadThunk,
   hydrateActiveScratchpadThunk,
   setActiveScratchpadThunk,
-} from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
+} from "../../redux/execution-system/instance-working-document/scratchpad.thunks";
 import {
   listUserDocuments,
   type CxWorkingDocument,
-} from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
+} from "../../redux/execution-system/instance-working-document/cx-working-document.service";
 import { WorkingDocumentPanel } from "./WorkingDocumentPanel";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 
 export function ScratchpadQuickPanel({ className }: { className?: string }) {
   const dispatch = useAppDispatch();

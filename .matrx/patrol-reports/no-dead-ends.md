@@ -15,7 +15,7 @@
 ## Routed machinery gaps
 
 - `features/agent-connections/components/sections/ResourcesSection.tsx:101` remains open. Its `SklResource.id` belongs to the retired `skill.resource` identity, not Matrx files; linking it through `token="file"` would open the wrong record. The normal repair is to migrate or retire this inert section against canonical `code_file` resources, then render the `code_file` door.
-- `features/agents/ui-first-tools/ui/lists/TaskPanel.tsx` now opens the real inline editor for `cx_agent_task`. That entity still lacks a canonical route/new-tab target, peek, action registry, or shared window opener; do not alias it to workbench `task` because the tables and ids differ.
+- `packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx` now opens the real inline editor for `cx_agent_task`. That entity still lacks a canonical route/new-tab target, peek, action registry, or shared window opener; do not alias it to workbench `task` because the tables and ids differ.
 
 ## Verification
 

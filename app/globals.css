@@ -23,6 +23,7 @@
 @source "../config";
 @source "../constants";
 @source "../features";
+@source "../packages/chat/src";
 @source "../hooks";
 @source "../lib";
 @source "../providers";

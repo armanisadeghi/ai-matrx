@@ -14,12 +14,12 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { RequestStatsPanel } from "@/features/agents/components/run-controls/panels/RequestStatsPanel";
-import { SessionStatsPanel } from "@/features/agents/components/run-controls/panels/SessionStatsPanel";
-import { ClientMetricsPanel } from "@/features/agents/components/run-controls/panels/ClientMetricsPanel";
-import { cn } from "@/lib/utils";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { RequestStatsPanel } from "../../../agents/components/run-controls/panels/RequestStatsPanel";
+import { SessionStatsPanel } from "../../../agents/components/run-controls/panels/SessionStatsPanel";
+import { ClientMetricsPanel } from "../../../agents/components/run-controls/panels/ClientMetricsPanel";
+import { cn } from "@host/lib/utils";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 
 type TabId = "request" | "client" | "session";
 

@@ -16,9 +16,9 @@
  * raw text so the user can see what they typed and fix it.
  */
 
-import { Youtube as YoutubeIcon } from "@/components/icons/brand-icons";
+import { Youtube as YoutubeIcon } from "@host/components/icons/brand-icons";
 import { Input } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 const ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 

@@ -9,9 +9,9 @@
  */
 
 import { Loader2, RefreshCw, Save } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
+import { Button } from "@host/components/ui/button";
+import { Slider } from "@host/components/ui/slider";
+import { cn } from "@host/lib/utils";
 import { importanceScore, importanceTier } from "../types";
 import {
   ALL_MEMORIES_ID,

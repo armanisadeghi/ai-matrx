@@ -20,8 +20,8 @@ import {
   Search,
   Video,
 } from "lucide-react";
-import type { ResponseMode } from "@/features/cx-chat/components/agent/local-agents";
-import { useResponseModeAgents } from "@/features/cx-chat/components/agent/useResponseModeAgents";
+import type { ResponseMode } from "../../cx-chat/components/agent/local-agents";
+import { useResponseModeAgents } from "../../cx-chat/components/agent/useResponseModeAgents";
 
 /**
  * Each mode is a MANDATE — the ONE map lives in cx-chat's `local-agents.ts`

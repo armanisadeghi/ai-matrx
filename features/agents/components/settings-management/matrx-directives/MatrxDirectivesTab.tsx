@@ -26,9 +26,9 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentMatrxDirectives } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentMatrxDirectives } from "@/features/agents/redux/agent-definition/slice";
-import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-directives.types";
+import { selectAgentMatrxDirectives } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentMatrxDirectives } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import type { MatrxDirectivesConfig } from "@ai-matrx/chat/agents/types/matrx-directives.types";
 import { useDirectiveCatalog } from "@/features/directive-catalog/hooks/useDirectiveCatalog";
 import {
   buildDirectiveOptions,

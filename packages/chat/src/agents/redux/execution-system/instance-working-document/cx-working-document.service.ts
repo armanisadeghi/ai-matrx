@@ -33,17 +33,17 @@
  * owner-scoped (`created_by = auth.uid()`) via the entity-variant RLS.
  */
 
-import { supabase } from "@/utils/supabase/client";
+import { supabase } from "@host/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
-import { associationsService } from "@/features/scopes/service/associationsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
+import { associationsService } from "@host/features/scopes/service/associationsService";
+import { isScopesRpcErr } from "@host/features/scopes/types";
 import {
   resolveResourceAccess,
   type ResourceAccess,
-} from "@/utils/permissions/access-core";
-import type { Json } from "@/types/database.types";
+} from "@host/utils/permissions/access-core";
+import type { Json } from "@host/types/database.types";
 
-import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { getClaimsUser } from "@host/utils/supabase/claimsUser";
 export type WorkingDocumentKind = "working" | "scratch";
 
 export interface CxWorkingDocumentRow {

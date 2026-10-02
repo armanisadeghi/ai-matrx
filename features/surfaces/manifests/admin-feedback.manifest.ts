@@ -39,7 +39,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   ANNOUNCEMENT_TYPES,
   type AnnouncementType,

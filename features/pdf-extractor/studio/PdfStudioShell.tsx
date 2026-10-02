@@ -53,7 +53,7 @@ import { PdfBatchExtractDebugTrigger } from "../components/PdfBatchExtractDebugT
 import { CopyPagesOverlay } from "../components/CopyPagesOverlay";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { KnowledgeAssetPanel } from "@/features/rag/components/library/KnowledgeAssetPanel";
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { useShortcutTrigger } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -84,7 +84,7 @@ import {
   selectSelectedJobForFile,
 } from "@/features/page-extraction/redux/selectors";
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   buildPdfExtractorScope,
   type ExtractionOutputColumnValue,
@@ -94,7 +94,7 @@ import {
   PDF_EXTRACTOR_WRITE_TARGETS,
   pdfExtractorManifest,
 } from "@/features/surfaces/manifests/pdf-extractor.manifest";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 interface PdfStudioShellProps {
   initialDocumentId?: string;

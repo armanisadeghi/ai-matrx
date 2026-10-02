@@ -12,52 +12,52 @@
  * a display mode is clicked.
  */
 
-import { logFailure } from "@/lib/errors/expectedRefusal";
+import { logFailure } from "@host/lib/errors/expectedRefusal";
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import Link from "next/link";
 import { DynamicIcon } from "@ai-matrx/icons";
 import { Loader2, TestTube, ChevronDown, Rocket } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import {
   selectAgentExecutionPayload,
   selectAgentVariableDefinitions,
   selectAgentError,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { AgentSelectorIsland } from "@/features/agents/components/shared/AgentSelectorIsland";
-import { AgentModeController } from "@/features/agents/components/shared/AgentModeController";
-import { AgentSaveStatus } from "@/features/agents/components/shared/AgentSaveStatus";
-import { AgentOptionsMenu } from "@/features/agents/components/shared/AgentOptionsMenu";
+} from "../../redux/agent-definition/selectors";
+import { useAgentLauncher } from "../../hooks/useAgentLauncher";
+import { AgentSelectorIsland } from "../shared/AgentSelectorIsland";
+import { AgentModeController } from "../shared/AgentModeController";
+import { AgentSaveStatus } from "../shared/AgentSaveStatus";
+import { AgentOptionsMenu } from "../shared/AgentOptionsMenu";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   getAllDisplayTypes,
   getDisplayMeta,
-} from "@/features/agents/utils/run-ui-utils";
-import type { ResultDisplayMode } from "@/features/agents/types/instance.types";
-import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+} from "../../utils/run-ui-utils";
+import type { ResultDisplayMode } from "../../types/instance.types";
+import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
+import type { ApiEndpointMode } from "../../types/instance.types";
 import {
   TesterSettingsPanel,
   type TesterSettingsController,
-} from "@/features/agents/components/run-controls/TesterSettingsPanel";
+} from "../run-controls/TesterSettingsPanel";
 import { WidgetVariableInputs } from "./WidgetVariableInputs";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import {
   buildWidgetLaunchDraft,
   sealWidgetLaunchOptions,
   type WidgetLaunchState,
 } from "./build-widget-launch";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { csvExportItem, jsonExportItem } from "@host/components/agent-copy/export";
 import {
   agentWidgetTesterKpis,
   agentWidgetTesterSummary,
   buildAgentWidgetVariableRows,
-} from "@/features/agents/format";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from "../../format";
+import { Label } from "@host/components/ui/label";
+import { Button } from "@host/components/ui/button";
+import { Badge } from "@host/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,9 +65,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ProTextarea } from "@/components/official/ProTextarea";
-import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
+} from "@host/components/ui/dropdown-menu";
+import { ProTextarea } from "@host/components/official/ProTextarea";
+import { afterCurrentLayerCloses } from "@host/components/dialogs/confirm/after-current-layer-closes";
 
 const SURFACE_KEY_PREFIX = "agent-widgets-page";
 

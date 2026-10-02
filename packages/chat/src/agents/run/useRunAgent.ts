@@ -38,8 +38,8 @@
 import { useCallback, useRef, useState } from "react";
 import type { Action } from "redux";
 import type { ThunkAction } from "redux-thunk";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
 import {
   startAgentRun,
   type MatrxAgentStartRequest,
@@ -54,11 +54,11 @@ import {
   waitForAuthReady,
   type CallScope,
   type LLMParamsBody,
-} from "@/lib/api/call-api";
-import { createMatrxTransport } from "@/lib/api/matrx-transport";
-import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
-import type { components } from "@/types/python-generated/api-types";
-import { extractErrorMessage } from "@/utils/errors";
+} from "@host/lib/api/call-api";
+import { createMatrxTransport } from "@host/lib/api/matrx-transport";
+import { applyDesktopTargetToRequestBody } from "@host/lib/api/desktop-target-request";
+import type { components } from "@host/types/python-generated/api-types";
+import { extractErrorMessage } from "@host/utils/errors";
 
 export interface RunAgentArgs {
   /** Live agent id (UUID) or slug. */

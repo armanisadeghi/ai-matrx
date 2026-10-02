@@ -60,7 +60,7 @@ import type { TaskLabel } from "@/features/tasks/services/taskService";
 import { CommentThread } from "@ai-matrx/associations/react";
 import { TaskContextPicker } from "./TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
 import type { QuickTasksTaskDraft } from "@/features/surfaces/manifests/quick-tasks.manifest";
 import type { TaskWithProject } from "@/features/tasks/types";

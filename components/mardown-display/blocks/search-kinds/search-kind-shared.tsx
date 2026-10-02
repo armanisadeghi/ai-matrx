@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import {
   getFaviconUrl,
   getBreadcrumbParts,
-} from "@/features/tool-call-visualization/renderers/search/parseSearch";
+} from "@ai-matrx/chat/tool-call-visualization/renderers/search/parseSearch";
 
 /**
  * 3-stage favicon: explicit provider-supplied icon URL → Google favicon

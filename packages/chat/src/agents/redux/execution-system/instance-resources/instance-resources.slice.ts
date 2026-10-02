@@ -21,8 +21,8 @@ import type {
   ResourceBlockType,
   ResourceOptions,
   ResourceStatus,
-} from "@/features/agents/types/instance.types";
-import type { UserInputPart } from "@/features/agents/types/request.types";
+} from "../../../types/instance.types";
+import type { UserInputPart } from "../../../types/request.types";
 import { generateResourceId } from "../utils/ids";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";

@@ -26,18 +26,18 @@
  * throw-on-failure semantics use the hook (or check `.success` themselves).
  */
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { MessagePart } from "@host/types/python-generated/stream-events";
 import type {
   ContextAnchor,
   SourceFeature,
   RequestInitiation,
-} from "@/features/agents/types/instance.types";
-import { extractFirstJson } from "@/utils/json/extract-json";
-import { extractErrorMessage } from "@/utils/errors";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+} from "../../../types/instance.types";
+import { extractFirstJson } from "@host/utils/json/extract-json";
+import { extractErrorMessage } from "@host/utils/errors";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { destroyInstanceIfAllowed } from "../conversations/conversations.thunks";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import {
   selectAnswerText,
   selectConversationRequestIds,
@@ -46,19 +46,19 @@ import {
   selectJsonExtractionComplete,
   selectRequestError,
   selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "../active-requests/active-requests.selectors";
 import {
   selectLatestAnswerText,
   selectLatestRequestId,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../selectors/aggregate.selectors";
 import {
   releaseRequestForViewer,
   retainRequestForViewer,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+} from "../active-requests/active-requests.slice";
+import { setUserInputMessageParts } from "../instance-user-input/instance-user-input.slice";
 import { launchAgentExecution } from "./launch-agent-execution.thunk";
-import { resolveMandate } from "@/features/mandates/service";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { resolveMandate } from "../../../../mandates/service";
+import { selectAgentName } from "../../agent-definition/selectors";
 import {
   judgeDeclaredFlattening,
   judgeHarvestedFlattening,

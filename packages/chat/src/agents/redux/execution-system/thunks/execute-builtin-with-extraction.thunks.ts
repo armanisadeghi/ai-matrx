@@ -8,18 +8,18 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   mandateKeyForBuiltin,
   type SystemAgentKey,
-} from "@/features/agents/constants/system-agent-registry";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+} from "../../../constants/system-agent-registry";
+import { destroyInstanceIfAllowed } from "../conversations/conversations.thunks";
 import {
   selectLatestAnswerText,
   selectLatestRequestId,
   selectStreamPhase,
   type StreamPhase,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../selectors/aggregate.selectors";
 import { launchAgentExecution } from "./launch-agent-execution.thunk";
 import { runHeadlessAgentJson } from "./run-headless-agent-json";
 import { formatDurationMs } from "@ai-matrx/kit/format";

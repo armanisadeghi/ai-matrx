@@ -1,6 +1,6 @@
 const mockRpc = jest.fn();
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     rpc: (...args: unknown[]) => mockRpc(...args),
     schema: jest.fn(() => ({})),
@@ -12,7 +12,7 @@ jest.mock("uuid", () => ({ v4: () => "unused-generated-id" }));
 import { configureStore } from "@reduxjs/toolkit";
 import agentDefinitionReducer, {
   mergePartialAgent,
-} from "@/features/agents/redux/agent-definition/slice";
+} from "../../../agent-definition/slice";
 import instanceModelOverridesReducer from "../../instance-model-overrides/instance-model-overrides.slice";
 import { createManualInstance } from "../create-instance.thunk";
 

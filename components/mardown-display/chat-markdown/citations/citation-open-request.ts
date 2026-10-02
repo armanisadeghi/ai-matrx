@@ -16,7 +16,7 @@
  */
 
 import type { CitationInput } from "@/features/rag/components/source-inspector/useOpenCitation";
-import type { MessageCitationSource } from "@/features/agents/redux/execution-system/messages/message-citations";
+import type { MessageCitationSource } from "@ai-matrx/chat/agents/redux/execution-system/messages/message-citations";
 
 /** Does this source have any click-through target? */
 export function citationSourceIsOpenable(

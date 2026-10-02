@@ -2,12 +2,12 @@
 
 import React, { useState, useMemo } from "react";
 import { Newspaper, Calendar, ExternalLink, Filter, SortAsc, AlertCircle, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@host/components/ui/button";
+import { Badge } from "@host/components/ui/badge";
 import type { ToolRendererProps } from "../../types";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { getArg, resultAsObject } from "../_shared";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface NewsArticle {
     source: { id: string | null; name: string };

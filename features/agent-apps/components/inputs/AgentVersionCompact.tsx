@@ -25,8 +25,8 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   fetchAgentVersionHistory,
   type AgentVersionHistoryItem,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { cn } from "@/lib/utils";
 
 interface AgentVersionCompactProps {

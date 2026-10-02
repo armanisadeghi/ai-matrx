@@ -10,12 +10,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { resolveDocumentContentView } from "./documentContentView";
 import { useMediaResolution } from "@ai-matrx/media/core";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for `document_content` — random access into a processed

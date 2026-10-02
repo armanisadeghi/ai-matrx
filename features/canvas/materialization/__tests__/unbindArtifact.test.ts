@@ -11,7 +11,7 @@ import { KIND_KEY } from "@ai-matrx/content-ir";
 import type {
   CxContentBlock,
   CxTextContent,
-} from "@/features/public-chat/types/cx-tables";
+} from "@ai-matrx/chat/public-chat/types/cx-tables";
 import { exportArtifactMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import type { CanvasArtifactRow } from "@/features/canvas/services/canvasArtifactService";
 import { getArtifactDef, ARTIFACT_TYPE_DEFS } from "@/features/canvas/artifact-types/artifact-type-registry";

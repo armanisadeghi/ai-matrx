@@ -5,7 +5,7 @@ import {
   replaceModelReferencesAdmin,
   type SettingSwap,
 } from "@/features/ai-models/server/replace-model-references";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 
 export const dynamic = "force-dynamic";
 

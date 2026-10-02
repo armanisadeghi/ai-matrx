@@ -55,7 +55,7 @@ jest.mock("@/features/files/handler/handler", () => ({
   },
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/run-headless-agent-json",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json",
   () => ({
     runHeadlessAgentJson: (...args: unknown[]) => runHeadlessAgentJson(...args),
     mandateOutputUnusableSentence: () => null,

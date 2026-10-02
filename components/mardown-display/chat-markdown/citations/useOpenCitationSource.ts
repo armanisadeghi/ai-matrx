@@ -17,7 +17,7 @@
 
 import { useCallback } from "react";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
-import type { MessageCitationSource } from "@/features/agents/redux/execution-system/messages/message-citations";
+import type { MessageCitationSource } from "@ai-matrx/chat/agents/redux/execution-system/messages/message-citations";
 import { citationOpenRequest } from "./citation-open-request";
 
 const warnedUnopenable = new Set<string>();

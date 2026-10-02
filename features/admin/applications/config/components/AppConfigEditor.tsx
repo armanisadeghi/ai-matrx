@@ -46,7 +46,7 @@ import {
   type ConfigDraft,
 } from "@/features/admin/applications/config/schema";
 import { buildNoticeDraftWrite } from "@/features/admin/applications/config/notice-write-targets";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_APPLICATIONS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-applications.manifest";
 import type {
   AppConfigHistoryRow,

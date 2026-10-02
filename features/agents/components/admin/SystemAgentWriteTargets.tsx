@@ -39,12 +39,12 @@ import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_SYSTEM_AGENTS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-system-agents.manifest";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { RootState } from "@/lib/redux/store";
 
 /** A non-empty trimmed string, or a throw naming the target. */

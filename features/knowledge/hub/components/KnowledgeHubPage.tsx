@@ -184,7 +184,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import { ProcessingProgressSheet } from "@/features/rag/components/library/ProcessingProgressSheet";

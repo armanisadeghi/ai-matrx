@@ -41,7 +41,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
+import { AgentComingSoonContent } from "@ai-matrx/chat/agents/components/coming-soon/AgentComingSoonContent";
 import { ShortcutQuickCreateBody } from "@/features/agent-shortcuts/components/ShortcutQuickCreateBody";
 import {
   isQuickCreateTab,
@@ -50,10 +50,10 @@ import {
   type ShortcutQuickCreateState,
 } from "@/features/agent-shortcuts/hooks/useShortcutQuickCreate";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

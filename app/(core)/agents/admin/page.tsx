@@ -146,7 +146,7 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       name: "AgentsListHeader (drift indicator)",
-      filePath: "features/agents/components/shell/AgentsListHeader.tsx",
+      filePath: "packages/chat/src/agents/components/shell/AgentsListHeader.tsx",
       description:
         "Agents gallery header — severity-colored Drift report link when weekly-scan alerts are active.",
       tier: "official",

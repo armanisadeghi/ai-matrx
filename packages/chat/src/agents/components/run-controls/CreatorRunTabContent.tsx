@@ -21,29 +21,29 @@ import {
   type ReactNode,
 } from "react";
 import { RotateCcw, AppWindow, SlidersHorizontal, Brain } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   restoreWindow,
   focusWindow,
   selectWindow,
-} from "@/lib/redux/slices/windowManagerSlice";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+} from "@host/lib/redux/slices/windowManagerSlice";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { selectIsSuperAdmin } from "@host/lib/redux/slices/userSlice";
 import {
   selectIsMemoryEnabledForConversation,
   selectMemoryCounters,
   selectMemoryDegraded,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { startNewConversation } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectUseStructuredSystemInstruction } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../redux/execution-system/observational-memory/observational-memory.selectors";
+import { Switch } from "@host/components/ui/switch";
+import { Label } from "@host/components/ui/label";
+import { startNewConversation } from "../../redux/execution-system/thunks/create-instance.thunk";
+import { setBuilderAdvancedSettings } from "../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectUseStructuredSystemInstruction } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { RunSettingsEditor } from "./RunSettingsEditor";
 import { ContextPoliciesTab } from "./ContextPoliciesTab";
 import { PayloadTab } from "./PayloadTab";
-import { SystemInstructionEditor } from "../builder/message-builders/system-instructions/SystemInstructionEditor";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { SystemInstructionEditor } from "@host/features/agents/components/builder/message-builders/system-instructions/SystemInstructionEditor";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { StreamDebugPanel } from "../debug/StreamDebugPanel";
 import { AgentWidgetInvokerTester } from "./AgentWidgetInvokerTester";
 import { RequestStatsPanel } from "./panels/RequestStatsPanel";
@@ -51,7 +51,7 @@ import { SessionStatsPanel } from "./panels/SessionStatsPanel";
 import { ClientMetricsPanel } from "./panels/ClientMetricsPanel";
 import { BackendTargetPanel } from "./panels/BackendTargetPanel";
 import { ModelContextPanel } from "./panels/ModelContextPanel";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 // =============================================================================
 // Tab ids + labels (shared source of truth for both hosts' tab lists)

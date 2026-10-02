@@ -33,7 +33,7 @@ import {
   type AdminServerLogsSelectedRange,
   type AdminServerLogsViewRange,
 } from "@/features/surfaces/manifests/admin-server-logs.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   ALL_LEVELS,
   type LogFilters,

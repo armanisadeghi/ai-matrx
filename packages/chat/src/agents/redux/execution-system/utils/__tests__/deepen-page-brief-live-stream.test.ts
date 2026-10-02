@@ -11,8 +11,8 @@
  * drifts (server stops tagging, or the accumulator stops kind-routing bare
  * JSON), this fails with the real traffic shape, not a synthetic one.
  */
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { StreamBlockAccumulator } from "../stream-block-accumulator";
+import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
 
 const PROD_CHUNKS: string[] = [
   "{\"",

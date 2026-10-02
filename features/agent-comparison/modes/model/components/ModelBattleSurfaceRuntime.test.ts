@@ -1,11 +1,11 @@
 import { CHAT_INPUT_DRAFT_MAX } from "@/features/surfaces/manifests/chat.manifest";
 import type { RootState } from "@/lib/redux/store";
-import { initInstanceUserInput } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { initInstanceVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { createInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import { initInstanceUserInput } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { initInstanceVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { createInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { createModelBattleWriteHandlers } from "./ModelBattleSurfaceRuntime";
-import type { SurfaceWriteApply, SurfaceWriteHandler } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteApply, SurfaceWriteHandler } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 /** A handler is a plain apply function or `{ validate?, apply }` (7abe79cd12) — call its apply. */
 function applyOf(h: SurfaceWriteHandler | undefined): SurfaceWriteApply {

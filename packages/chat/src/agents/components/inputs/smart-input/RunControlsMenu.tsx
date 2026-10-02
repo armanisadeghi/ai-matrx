@@ -40,12 +40,12 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { useDialogContainer } from "@/components/ui/dialog";
-import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useDialogContainer } from "@host/components/ui/dialog";
+import { usePopoutContainer } from "@host/features/window-panels/popout/usePopoutContainer";
+import { cn } from "@host/lib/utils";
+import { useIsMobile } from "@host/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
-import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
+import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
 import { PlusAttachMenu } from "./PlusAttachMenu";
 import { ComposerPlusMenu } from "./composer/ComposerPlusMenu";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
@@ -53,19 +53,19 @@ import { mobileSheetShowsTab } from "./composer/composer-mode-visibility";
 import {
   useAttachResource,
   useDetachResource,
-} from "@/features/agents/components/inputs/resources/attach-resource";
-import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorkingDocument";
+} from "../resources/attach-resource";
+import { useConversationDocumentsBridge } from "../../../hooks/useWorkingDocument";
 import {
   RunControlsTabPanel,
   useRunControlsState,
   type RunControlsTab,
 } from "./RunControlsTabPanel";
-import type { Resource } from "@/features/agents/resources/types";
-import { SmartInputMessageTemplatePicker } from "@/features/message-templates/components/SmartInputMessageTemplatePicker";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { prependTemplateToDraft } from "@/features/message-templates/utils/prepend-template-to-draft";
+import type { Resource } from "../../../resources/types";
+import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
+import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";
 
 export interface RunControlsMenuProps {
   conversationId: string;

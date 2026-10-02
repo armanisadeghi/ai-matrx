@@ -40,9 +40,9 @@ import {
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
 import { shortcutSaveRefusals } from "@/features/agent-shortcuts/save-refusal";
-import { packShortcutMappingColumns } from "@/features/agents/redux/agent-shortcuts/converters";
-import { buildSurfaceBindingPayload } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import { packShortcutMappingColumns } from "@ai-matrx/chat/agents/redux/agent-shortcuts/converters";
+import { buildSurfaceBindingPayload } from "@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service";
+import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 
 /** The state the walker produced: an input on Prompt User, question blank. */
 const BLANK_QUESTION: ValueMappingMap = {

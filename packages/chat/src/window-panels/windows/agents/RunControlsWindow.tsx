@@ -17,28 +17,28 @@
  */
 
 import { useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { closeOverlay } from "@host/lib/redux/slices/overlaySlice";
+import { useIsMobile } from "@host/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@host/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import {
   RunControlsTabPanel,
   useRunControlsState,
   type RunControlsTab,
-} from "@/features/agents/components/inputs/smart-input/RunControlsTabPanel";
+} from "../../../agents/components/inputs/smart-input/RunControlsTabPanel";
 import {
   useAttachResource,
   useDetachResource,
-} from "@/features/agents/components/inputs/resources/attach-resource";
-import { cn } from "@/lib/utils";
-import type { Resource } from "@/features/agents/resources/types";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceAgentId } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+} from "../../../agents/components/inputs/resources/attach-resource";
+import { cn } from "@host/lib/utils";
+import type { Resource } from "../../../agents/resources/types";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceAgentId } from "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectAgentName } from "../../../agents/redux/agent-definition/selectors";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";
 
 const OVERLAY_ID = "runControlsWindow" as const;
 

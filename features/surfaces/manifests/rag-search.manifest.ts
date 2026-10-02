@@ -37,7 +37,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   FILTERABLE_SOURCE_KIND_ENUM_TEXT,
   MULTI_QUERY_MAX,

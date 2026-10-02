@@ -14,7 +14,7 @@ import {
   GatedActionButton,
 } from "@/components/official/GatedActionButton";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { LiveRunProgress } from "@/features/agents/components/live-run/LiveRunProgress";
+import { LiveRunProgress } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { masterworkHref } from "../masterworkDoors";
 import { toast } from "@/lib/toast";

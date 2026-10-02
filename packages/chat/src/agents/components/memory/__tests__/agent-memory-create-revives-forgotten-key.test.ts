@@ -30,7 +30,7 @@ function builder(op: string, payload?: Row) {
   return b;
 }
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     schema: () => ({
       from: () => ({
@@ -41,7 +41,7 @@ jest.mock("@/utils/supabase/client", () => ({
     }),
   },
 }));
-jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-clinic" }));
+jest.mock("@host/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-clinic" }));
 
 import { createAgentMemory } from "../service/agent-memory.service";
 

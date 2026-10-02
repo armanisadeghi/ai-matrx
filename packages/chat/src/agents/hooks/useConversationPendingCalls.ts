@@ -16,11 +16,11 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   fetchConversationPendingCalls,
   type PendingCallSummary,
-} from "@/features/agents/api/fetch-pending-calls";
+} from "../api/fetch-pending-calls";
 
 export interface UseConversationPendingCallsResult {
   /** All client-delegated calls currently awaiting the user's response. */

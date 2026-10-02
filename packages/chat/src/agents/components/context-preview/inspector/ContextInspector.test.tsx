@@ -64,15 +64,15 @@ const TREE = [
 
 // The page capture reads the store's request log and publishes to the admin
 // debug context; both are Redux-backed, so the test hands them a stand-in store.
-jest.mock("@/lib/redux/hooks", () => {
+jest.mock("@host/lib/redux/hooks", () => {
   const store = { getState: () => ({ apiConfig: { recentCalls: [] } }) };
-  return { ...jest.requireActual("@/lib/redux/hooks"), useAppStore: () => store };
+  return { ...jest.requireActual("@host/lib/redux/hooks"), useAppStore: () => store };
 });
-jest.mock("@/hooks/useDebugContext", () => ({
+jest.mock("@host/hooks/useDebugContext", () => ({
   useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
 }));
-jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () => {
-  const actual = jest.requireActual("@/features/scopes/components/active-context/quick-pick/engine");
+jest.mock("@host/features/scopes/components/active-context/quick-pick/engine", () => {
+  const actual = jest.requireActual("@host/features/scopes/components/active-context/quick-pick/engine");
   return {
     ...actual,
     useUniverse: () => ({
@@ -88,7 +88,7 @@ jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () =>
     }),
   };
 });
-jest.mock("@/features/scopes/components/context-assignment/data", () => ({
+jest.mock("@host/features/scopes/components/context-assignment/data", () => ({
   fetchTypeItems: jest.fn(async (typeId: string) =>
     typeId === "0b6f1c1e-6a1f-4c55-9d7e-1f2a3b4c5d6e"
       ? [
@@ -100,7 +100,7 @@ jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
 }));
-jest.mock("@/features/scopes/service/scopesService", () => ({
+jest.mock("@host/features/scopes/service/scopesService", () => ({
   scopesService: {
     getScopeHome: jest.fn(),
     listContextItems: jest.fn(),
@@ -115,10 +115,10 @@ jest.mock("../ContextCompareView", () => ({
   },
 }));
 
-import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopesService } from "@host/features/scopes/service/scopesService";
 import { ContextInspector } from "./ContextInspector";
-import { getActivePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
-import { pageCaptureMarkdown, pageCapturePayload } from "@/components/agent-copy/page-capture/pageCapture";
+import { getActivePageCapture } from "@host/components/agent-copy/page-capture/usePageCapture";
+import { pageCaptureMarkdown, pageCapturePayload } from "@host/components/agent-copy/page-capture/pageCapture";
 import { EMPTY_SELECTION, type InspectorSelection } from "./selection";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

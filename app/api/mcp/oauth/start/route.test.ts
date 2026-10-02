@@ -4,7 +4,7 @@ import {
   discoverOAuthEndpoints,
   DynamicClientRegistrationError,
   registerDynamicClient,
-} from "@/features/agents/services/mcp-oauth/discovery";
+} from "@ai-matrx/chat/agents/services/mcp-oauth/discovery";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { cookies } from "next/headers";
@@ -12,14 +12,14 @@ import { cookies } from "next/headers";
 jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn() }));
 jest.mock("@/utils/supabase/resolveUser", () => ({ getClaimsUser: jest.fn() }));
 jest.mock("next/headers", () => ({ cookies: jest.fn() }));
-jest.mock("@/features/agents/services/mcp-oauth/pkce", () => ({
+jest.mock("@ai-matrx/chat/agents/services/mcp-oauth/pkce", () => ({
   generateCodeVerifier: () => "verifier",
   generateCodeChallenge: async () => "challenge",
   generateState: () => "state",
 }));
-jest.mock("@/features/agents/services/mcp-oauth/discovery", () => {
+jest.mock("@ai-matrx/chat/agents/services/mcp-oauth/discovery", () => {
   const actual = jest.requireActual(
-    "@/features/agents/services/mcp-oauth/discovery",
+    "@ai-matrx/chat/agents/services/mcp-oauth/discovery",
   );
   return {
     ...actual,

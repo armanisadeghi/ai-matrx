@@ -22,26 +22,26 @@ import {
   CONTEXT_RULES_FEATURE,
   type SavedContextRule,
 } from "@ai-matrx/agents/context";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { ensureSurfaceFeatureLoaded } from "@/features/surfaces/redux/userStateSlice";
-import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setPageContextEnabled } from "@/features/agents/redux/execution-system/thunks/page-context.thunk";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { ensureSurfaceFeatureLoaded } from "../../../../surfaces/redux/userStateSlice";
+import { selectPageContextOff } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setPageContextEnabled } from "../../../redux/execution-system/thunks/page-context.thunk";
+import { getSurfaceDisplayLabel } from "../../../../surfaces/utils/surface-display";
 import { useConversationDisplayRows } from "./useConversationDisplayRows";
-import { useIsPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useIsPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   agentContextLayerKnown,
   selectContextInlineCap,
-} from "@/features/agents/redux/execution-system/context-rules/request-context";
+} from "../../../redux/execution-system/context-rules/request-context";
 import {
   ensureAgentContextLayer,
   reloadContextRules,
   saveContextRule,
-} from "@/features/agents/redux/execution-system/context-rules/context-rules.thunks";
-import { resolveMandateKillSwitch } from "@/features/agents/redux/execution-system/context-rules/mandate-kill-switch";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
-import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
+} from "../../../redux/execution-system/context-rules/context-rules.thunks";
+import { resolveMandateKillSwitch } from "../../../redux/execution-system/context-rules/mandate-kill-switch";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
+import { useMachineFramesVisible } from "../../shared/transcript-audience";
 
 /** The Mandate's context kill switch for this conversation (false until known). */
 export function useMandateKillSwitch(mandateKey: AnyMandateKey | null | undefined): boolean {

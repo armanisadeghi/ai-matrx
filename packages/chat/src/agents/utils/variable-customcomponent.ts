@@ -15,8 +15,8 @@ import type {
   VariableComponentType,
   VariableCustomComponent,
   VariableResourceContextConfig,
-} from "@/features/agents/types/agent-definition.types";
-import { getComponentTypeMeta } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
+} from "../types/agent-definition.types";
+import { getComponentTypeMeta } from "../components/inputs/variable-input-variations/variable-input-options";
 
 type StashableKey =
   | "options"

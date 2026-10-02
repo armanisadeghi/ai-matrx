@@ -11,11 +11,11 @@
  */
 
 import { useEffect } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   initializeChatAgents,
   isChatListStale,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "../../agents/redux/agent-definition/thunks";
 
 export function useChatCatalogueInit() {
   const dispatch = useAppDispatch();

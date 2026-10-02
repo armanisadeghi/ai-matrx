@@ -29,23 +29,23 @@ import {
   selectShortcutById,
   selectShortcutsByAgentId,
   selectShortcutsSliceError,
-} from "@/features/agents/redux/agent-shortcuts/selectors";
-import { fetchFullShortcut } from "@/features/agents/redux/agent-shortcuts/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
+import { fetchFullShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import {
   bulkCreateShortcuts,
   bulkUpdateShortcuts,
-} from "@/features/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk";
-import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
-import { fetchAllReadableCategories } from "@/features/agents/redux/agent-shortcut-categories/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk";
+import { selectAllCategoriesArray } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
+import { fetchAllReadableCategories } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/thunks";
 import {
   selectActiveSurfaces,
   selectSurfacesStatus,
-} from "@/features/surfaces/redux/selectors";
-import { loadSurfaces } from "@/features/surfaces/redux/thunks";
+} from "@ai-matrx/chat/surfaces/redux/selectors";
+import { loadSurfaces } from "@ai-matrx/chat/surfaces/redux/thunks";
 
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { AgentShortcut } from "@/features/agent-shortcuts/types";
-import type { ValueMapping } from "@/features/surfaces/types";
+import type { ValueMapping } from "@ai-matrx/chat/surfaces/types";
 
 import {
   BatchSurfaceSelector,

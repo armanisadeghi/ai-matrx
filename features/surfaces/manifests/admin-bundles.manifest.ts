@@ -96,7 +96,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   BUNDLE_DESCRIPTION_MAX_CHARS,
   BUNDLE_NAME_MAX_CHARS,

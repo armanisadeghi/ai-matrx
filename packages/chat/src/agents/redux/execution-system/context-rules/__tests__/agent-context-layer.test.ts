@@ -18,7 +18,7 @@ const AGENT = "5a8f3c2e-7b14-4e0d-9c61-2d4b8e1f7a90";
 const CHAT = "3ec7bfe6-1f2a-4c3b-8d4e-5f6a7b8c9d0e";
 
 const rpc = jest.fn();
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: {
     rpc: (...a: unknown[]) => rpc(...a),
     schema: () => ({
@@ -34,16 +34,16 @@ jest.mock("@/utils/supabase/client", () => ({
     }),
   },
 }));
-jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "user-1" }));
+jest.mock("@host/utils/auth/getUserId", () => ({ requireUserId: () => "user-1" }));
 
 import agentDefinitionReducer, {
   mergePartialAgent,
   setAgentFetchStatus,
-} from "@/features/agents/redux/agent-definition/slice";
-import { surfaceUserStateReducer } from "@/features/surfaces/redux/userStateSlice";
+} from "../../../agent-definition/slice";
+import { surfaceUserStateReducer } from "../../../../../surfaces/redux/userStateSlice";
 import { ensureContextRulesReady } from "../context-rules.thunks";
 import { buildRequestContext } from "../request-context";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 const fixed = <T,>(v: T) => (s: T = v) => s;
 

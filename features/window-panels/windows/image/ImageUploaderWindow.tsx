@@ -19,7 +19,7 @@ import {
     ImageAssetUploader,
     type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
     IMAGE_UPLOADER_SURFACE_NAME,
     createImageUploaderScope,

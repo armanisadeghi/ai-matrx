@@ -23,15 +23,15 @@
 import type { RootState } from "@/lib/redux/store";
 import {
   selectPendingAsksForConversation,
-} from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
-import { resolveAskByCallId } from "@/features/agents/ui-first-tools/redux/ask-resolver-registry";
-import { EMPTY_ASK_RESPONSE } from "@/features/agents/ui-first-tools/tools/schemas";
-import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
+} from "@ai-matrx/chat/agents/ui-first-tools/redux/pending-asks.slice";
+import { resolveAskByCallId } from "@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry";
+import { EMPTY_ASK_RESPONSE } from "@ai-matrx/chat/agents/ui-first-tools/tools/schemas";
+import type { ApprovalChange } from "@ai-matrx/chat/agents/ui-first-tools/ui/approval-types";
 import {
   requestInlineApproval,
   type ApprovalDecision,
   type RequestInlineApprovalInput,
-} from "@/features/agents/ui-first-tools/redux/request-approval";
+} from "@ai-matrx/chat/agents/ui-first-tools/redux/request-approval";
 
 export type WarRoomApprovalDecision = ApprovalDecision;
 

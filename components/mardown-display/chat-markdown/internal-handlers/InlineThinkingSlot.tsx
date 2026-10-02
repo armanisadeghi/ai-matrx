@@ -18,7 +18,7 @@
 
 import React from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectReasoningRunText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectReasoningRunText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { InlineStatusIndicator } from "./InlineStatusIndicator";
 
 export interface InlineThinkingSlotProps {

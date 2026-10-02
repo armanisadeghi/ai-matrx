@@ -1,13 +1,13 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { Wrench } from "lucide-react";
 import type {
   FieldAdapter,
   FieldDiffProps,
   EnrichmentContext,
 } from "@ai-matrx/diff/react";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@host/components/official/entity-ref/AiIdentityRef";
 
 function resolveTool(id: string, enrichment?: EnrichmentContext): string {
   return enrichment?.resolveToolId(id) ?? id;

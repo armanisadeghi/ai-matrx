@@ -10,8 +10,8 @@
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { refetchSingleMessage } from "@/features/agents/redux/execution-system/message-crud/refetch-single-message.thunk";
+import { updateMessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import { refetchSingleMessage } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/refetch-single-message.thunk";
 
 export async function flipMessageToDbRender(
   args: { conversationId: string; messageId: string },

@@ -2,7 +2,7 @@
 
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import type { AppDispatch } from "@/lib/redux/store";
-import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { clearFocus } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { bumpFreshSession } from "../redux/codeWorkspaceSlice";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 

@@ -1,12 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { syncConversationScopes } from "./syncConversationScopes";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
+import { waitForConversationPersisted } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence";
 import { ensureEntityScopes } from "./ensureEntityScopes";
 import { setEntityScopes } from "./setEntityScopes";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversation-persistence",
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversation-persistence",
   () => ({ waitForConversationPersisted: jest.fn() }),
 );
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({

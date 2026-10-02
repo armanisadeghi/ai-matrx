@@ -4,14 +4,14 @@ import { createClient } from "@/utils/supabase/server";
 import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { redirect } from "next/navigation";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { Database } from "@/types/database.types";
 import { stripNullish } from "@/utils/supabase/payload";
 import { pgErrorToError } from "@ai-matrx/data";
-import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
+import { sanitizeAgentToolIds } from "@ai-matrx/chat/agents/redux/agent-definition/sanitize-tool-ids";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import { agentNameTaken } from "@/features/agents/redux/agent-definition/agentNameTaken";
+import { agentNameTaken } from "@ai-matrx/chat/agents/redux/agent-definition/agentNameTaken";
 
 type AgentInsert = Omit<
   Database["agent"]["Tables"]["definition"]["Insert"],

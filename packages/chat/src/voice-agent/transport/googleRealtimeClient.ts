@@ -1,4 +1,4 @@
-import { getAccessTokenOrNull, resolveBaseUrl } from "@/lib/python-client";
+import { getAccessTokenOrNull, resolveBaseUrl } from "@host/lib/python-client";
 
 export type GoogleRealtimeChannel = "live" | "music";
 export type GoogleRealtimeConnectionState =

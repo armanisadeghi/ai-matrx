@@ -34,7 +34,7 @@ jest.mock("@/lib/toast", () => ({
   recordToast: { success: jest.fn() },
   toast: { error: jest.fn(), success: jest.fn() },
 }));
-jest.mock("@/features/agents/hooks/useAgentUsages", () => ({
+jest.mock("@ai-matrx/chat/agents/hooks/useAgentUsages", () => ({
   useAgentUsages: () => ({
     groups: [{ items: [immutableUsage, eligibleUsage] }],
     aggregates: [],

@@ -36,8 +36,8 @@ import {
 } from "@/components/ui/select";
 import { HolderAssignment } from "@/features/bindings/HolderAssignment";
 import type { HolderDraft } from "@/features/bindings/ScopeHolderBar";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
-import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
+import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import { PropertyRow, CONFIGURATION_CHOICE_SIZE } from "@/components/official/ConfigurationFields";
@@ -45,7 +45,7 @@ import { ServerNotes } from "@/components/official/ServerNotes";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
 import {
@@ -53,7 +53,7 @@ import {
   SCALAR_VALUE_KINDS,
 } from "@/features/mandates/provision-shapes";
 import type { ServedInput } from "@/features/workflow-runtime/served-form/served-input";
-import { RunFailureCard } from "@/features/mandates/RunFailureCard";
+import { RunFailureCard } from "@ai-matrx/chat/mandates/RunFailureCard";
 import {
   describeMandateRunFailure,
   readMandateRunHolder,

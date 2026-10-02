@@ -20,13 +20,13 @@
 import {
   registerLoadedValueDeclarations,
   type LoadedValueDeclarationLookup,
-} from "@/features/surfaces/runtime/loaded-value-check";
+} from "@ai-matrx/chat/surfaces/runtime/loaded-value-check";
 import { createDeclarationRegistry } from "@ai-matrx/alchemy/declare";
 import type {
   ResolvedSurfaceManifest,
   SurfaceManifest,
-} from "@/features/surfaces/types";
-import { agentRolesExtension } from "@/features/surfaces/declare/surface-declare";
+} from "@ai-matrx/chat/surfaces/types";
+import { agentRolesExtension } from "@ai-matrx/chat/surfaces/declare/surface-declare";
 import { BASELINE_VALUES, PLATFORM_RESERVED_NAMES } from "./_baseline.manifest";
 import { notesEditorManifest } from "./notes-editor.manifest";
 import { agentShortcutsManifest } from "./agent-shortcuts.manifest";

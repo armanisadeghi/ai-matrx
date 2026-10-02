@@ -35,7 +35,7 @@ jest.mock("@/components/loaders/MatrxMiniLoader", () => ({
   default: () => null,
 }));
 
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) =>
     children,
 }));

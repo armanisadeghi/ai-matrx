@@ -102,12 +102,12 @@ For each of the 13 deletions, every external importer + replacement.
 
 #### `features/agents/hooks/useAiImageUrl.ts` (252-line hook, plan §6.3 explicit delete)
 - `components/mardown-display/blocks/images/ImageOutputBlock.tsx:42–43,110` → `useFile(ref, { signedUrlTtl: 8 * 3600 }).url` + use the same expiry-wheel for auto-refresh.
-- `features/agents/components/notifications/ImageArrivalPeek.tsx:23,50` → `useFile(ref).url`
+- `packages/chat/src/agents/components/notifications/ImageArrivalPeek.tsx:23,50` → `useFile(ref).url`
 
 #### `features/file-handler/hooks/useFileSrc.ts` (kept by name, but signature changes from `FileSource` to `MediaRef`)
 After the merge it lives at `features/files/hooks/useFileSrc.ts`. Callers migrate `useFileSrc({ kind: "file_id", fileId })` → `useFileSrc(fileIdToMediaRef(fileId))` (use the converter, not a manual literal).
 - `features/transcripts/components/TranscriptViewer.tsx:13,48`
-- `features/agents/components/inputs/input-components/MediaVariableInput.tsx:37,137`
+- `packages/chat/src/agents/components/inputs/input-components/MediaVariableInput.tsx:37,137`
 
 #### `features/files/hooks/useFileDocument.ts`
 Plan §6.3: "folded into `useFileBlob`". After the merge, callers use the asset envelope (`useFile(ref).asset.metadata.document_state`) for the state and `useFileBlob(ref)` for the bytes.
@@ -196,7 +196,7 @@ User profile photos, contact avatars, message-author chips, share-target user ch
 - `components/user-nav.tsx:28` — header user nav
 - `components/matrx/PublicHeaderAuth.tsx:68` — public layout header auth chip
 - `components/layout/UserAvatar.tsx` — auth-aware layout avatar
-- `features/cx-chat/components/sidebar/SidebarUserFooter.tsx:54` — chat sidebar footer
+- `packages/chat/src/cx-chat/components/sidebar/SidebarUserFooter.tsx:54` — chat sidebar footer
 - `features/public-chat/components/sidebar/SidebarUserFooter.tsx:54` — public chat sidebar footer (duplicate of cx-chat)
 - `features/landing/components/AuthAwareButton.tsx:80` — landing CTA
 - `features/tasks/components/TaskAssigneePicker.tsx:88,190` — assignee picker (current + list)
@@ -267,7 +267,7 @@ The "let user upload an image, optionally crop, then persist as an asset" flow l
 **Today (3 parallel implementations):**
 - `components/ui/file-upload/usePasteImageUpload.ts` (legacy hook — Plan §6.3 deletes) — used by `components/ui/file-upload/PasteImageHandler.tsx` and demoed in `app/(authenticated)/(admin-auth)/administration/ui/official-components/component-displays/paste-image-handler.tsx`.
 - `components/official/ImageAssetUploader.tsx` (inline paste handler in lines ~580–593) — listens for `paste` events on the dropzone.
-- `features/cx-chat/components/user-input/ConversationInput.tsx` + `features/cx-conversation/ConversationInput.tsx` + `features/public-chat/components/ChatInputWithControls.tsx` + `features/agents/components/inputs/smart-input/AgentTextarea.tsx` + `features/prompts/components/smart/CompactPromptInput.tsx` + `features/prompts/components/smart/SmartPromptInput.tsx` + `features/prompts/components/PromptInput.tsx` — each chat-input component has its own paste-image listener.
+- `packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx` + `packages/chat/src/cx-conversation/ConversationInput.tsx` + `features/public-chat/components/ChatInputWithControls.tsx` + `packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx` + `features/prompts/components/smart/CompactPromptInput.tsx` + `features/prompts/components/smart/SmartPromptInput.tsx` + `features/prompts/components/PromptInput.tsx` — each chat-input component has its own paste-image listener.
 - `components/ui/file-upload/useClipboardPaste.ts` — yet another paste-from-clipboard hook.
 - `features/window-panels/windows/FeedbackWindow.tsx` — uses `useFileUpload` directly with a paste handler.
 
@@ -290,7 +290,7 @@ The "let user upload an image, optionally crop, then persist as an asset" flow l
 | `features/agent-apps/components/inputs/AgentAppImageField.tsx` | Agent app image input |
 | `features/resource-manager/resource-picker/UploadResourcePicker.tsx` | Resource picker upload |
 | `features/public-chat/components/resource-picker/PublicUploadResourcePicker.tsx` | Public chat resource picker upload |
-| `features/agents/components/inputs/input-components/MediaVariableInput.tsx` | Agent variable input |
+| `packages/chat/src/agents/components/inputs/input-components/MediaVariableInput.tsx` | Agent variable input |
 | `features/applet/builder/modules/container-builder/ContainerCard.tsx` | Applet container builder |
 | `features/rag/components/data-stores/DataStoresPage.tsx` | RAG data store add docs |
 | `features/podcasts/components/admin/AssetUploader.tsx` | Podcast cover upload |
@@ -351,7 +351,7 @@ The "let user upload an image, optionally crop, then persist as an asset" flow l
 
 ### 2.10 Inline file mention in markdown / text
 
-**Today:** Markdown blocks render `![alt](url)` directly. `components/mardown-display/blocks/images/ImageOutputBlock.tsx` is the AI-image-output block that calls `useAiImageUrl` (deleted hook). Other markdown image renderers (`features/cx-chat/**`, `features/agents/components/messages-display/**`) parse markdown without going through a media block.
+**Today:** Markdown blocks render `![alt](url)` directly. `components/mardown-display/blocks/images/ImageOutputBlock.tsx` is the AI-image-output block that calls `useAiImageUrl` (deleted hook). Other markdown image renderers (`features/cx-chat/**`, `packages/chat/src/agents/components/messages-display/**`) parse markdown without going through a media block.
 
 **After:** `<InlineMediaRef>` is the universal — markdown image renderers emit a normalized `MediaRef` and `<InlineMediaRef>` renders it.
 
@@ -403,7 +403,7 @@ The canonical `<FilePreview>` is the registry-based previewer at `features/files
 | `features/prompts/components/resource-display/ResourcePreviewSheet.tsx` | full file | Resource preview sheet (legacy prompts) — replaced post-migration. |
 | `features/pdf-demo/components/PdfWorkbench.tsx` | full file | Standalone PDF workbench demo. |
 | `components/image/shared/ImagePreviewRow.tsx`, `ImageGrid.tsx` | full file | Image preview row/grid — inline image previewers. |
-| `features/agents/components/messages-display/user/AgentUserMessage.tsx` | (search ref) | User-message attachment renderer. |
+| `packages/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx` | (search ref) | User-message attachment renderer. |
 | `features/window-panels/windows/cloud-files/FilePreviewWindow.tsx` | (kept) | Already uses `<FilePreview>` — keep, but verify single path. |
 
 ### `<FileUploadDropzone>` target — every place that today implements `useDropzone` directly

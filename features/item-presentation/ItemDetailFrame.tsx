@@ -28,7 +28,7 @@ import {
   createItemDetailScope,
   ITEM_DETAIL_SURFACE_NAME,
 } from "@/features/surfaces/manifests/item-detail.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
 

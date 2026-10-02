@@ -15,12 +15,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import AdvancedMenu from "@/components/official/AdvancedMenu";
+} from "@host/components/ui/dropdown-menu";
+import AdvancedMenu from "@host/components/official/AdvancedMenu";
 import { Pin, Copy } from "lucide-react";
 import { openActions } from "../useMessageListInteractions";
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@host/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 
 // jsdom has no ResizeObserver; the menu only uses it for its scroll fade.
 (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
@@ -29,7 +29,7 @@ jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
   disconnect() {}
 };
 
-jest.mock("@/features/agents/message-pins/pinned-messages-store", () => ({ togglePinnedMessage: jest.fn() }));
+jest.mock("../../../../message-pins/pinned-messages-store", () => ({ togglePinnedMessage: jest.fn() }));
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

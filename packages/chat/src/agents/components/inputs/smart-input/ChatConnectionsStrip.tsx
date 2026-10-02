@@ -48,24 +48,24 @@
 import { Fragment, useState } from "react";
 import { AlertTriangle, Check, Paperclip, Plus, Server } from "lucide-react";
 import { BottomSheet } from "@ai-matrx/design-system";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
-import { selectChatConnections } from "@/features/connectors/chat-connections";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { cn } from "@host/lib/utils";
+import { selectChatConnections } from "@host/features/connectors/chat-connections";
 import {
   indexRunMcpAttachments,
   mcpChipPresentation,
   readRunMcpAttachments,
-} from "@/features/connectors/run-attachments";
-import { useMcpCatalog } from "@/features/agents/hooks/useMcpTools";
-import { selectAgentMcpServers } from "@/features/agents/redux/agent-definition/selectors";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
-import { attachActionLabel } from "@/features/connectors/attachable-resources";
-import { useAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
-import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
+} from "@host/features/connectors/run-attachments";
+import { useMcpCatalog } from "../../../hooks/useMcpTools";
+import { selectAgentMcpServers } from "../../../redux/agent-definition/selectors";
+import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
+import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectPrimaryRequest } from "../../../redux/execution-system/active-requests/active-requests.selectors";
+import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { attachActionLabel } from "@host/features/connectors/attachable-resources";
+import { useAttachResourcePicker } from "@host/features/connectors/useAttachResourcePicker";
+import { useConversationAttachments } from "@host/features/connectors/useConversationAttachments";
 import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
 import { COMPOSER_CHIP_CLASS } from "./composer/composer-chip";
 

@@ -47,7 +47,7 @@ second symptom instead of deduping the incident.
   Non-retryable package failures point to error details instead of asking the
   person to repeat a refused write.
 
-- **Mandate fast paths** — `features/mandates/fast-path-guard.ts`
+- **Mandate fast paths** — `packages/chat/src/mandates/fast-path-guard.ts`
   (`verifyFastPathAgainstMandate`, and `<FastPathMandateGuard>` for Server
   Components). A hard-coded agent fast path (SSR seed fallback, manifest role
   default) is re-checked against its Mandate's resolved Holder; a mismatch or an
@@ -489,7 +489,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 - 2026-09-25 — **New `mandate-fast-path` source.** The one compliant exception to
   "nothing works around the mandate system" is a hard-coded fast path verified at
-  runtime; `features/mandates/fast-path-guard.ts` is that verification and files
+  runtime; `packages/chat/src/mandates/fast-path-guard.ts` is that verification and files
   here (red) on a mismatch. Wired at the `/demos/chat` SSR seed fallbacks and the
   Transcript Studio assistant role's manifest default.
 - 2026-09-20 — **New `url-panel-unopened` source: a deep-linked window that never
@@ -612,7 +612,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
   the server error dashboard. No new table — merged into the universal sink.
 - 2026-07-01 — **New `data-shape` source: stored data violated the generated
   wire/DB contract at a read ingress.** First producer:
-  `features/agents/redux/agent-definition/parse-custom-tools.ts` (validates
+  `packages/chat/src/agents/redux/agent-definition/parse-custom-tools.ts` (validates
   `custom_tools` JSONB against the OpenAPI `CustomTool` schema; non-conforming
   entries are excluded + reported, never passed through). A `data-shape` firing
   means a write path produced a bad shape — find and fix the writer.

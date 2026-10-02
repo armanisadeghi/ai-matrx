@@ -10,7 +10,7 @@
  */
 
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { applyIrKindRoute } from "../react/kind-route";
 import { normalizeJsonRegion, isCanonicalBlockIR } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";

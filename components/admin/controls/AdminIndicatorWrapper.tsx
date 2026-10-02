@@ -27,7 +27,7 @@ import dynamic from "next/dynamic";
 
 const StreamProfilerOverlay = dynamic(
   () =>
-    import("@/features/agents/components/shared/StreamProfilerOverlay").then(
+    import("@ai-matrx/chat/agents/components/shared/StreamProfilerOverlay").then(
       (mod) => mod.StreamProfilerOverlay,
     ),
   { ssr: false },

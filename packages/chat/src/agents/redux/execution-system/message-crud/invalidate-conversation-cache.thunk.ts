@@ -15,7 +15,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import { resolveBackendForConversation } from "../thunks/resolve-base-url";
 import { clearCacheBypass } from "./cache-bypass.slice";
 

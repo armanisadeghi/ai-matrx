@@ -9,16 +9,16 @@
  * same state. Body renders content only; everything else is a slot.
  */
 
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { Brain, Copy, RefreshCw } from "lucide-react";
-import { useAgentMemories } from "@/features/agents/components/memory/hooks/useAgentMemories";
-import { AgentMemorySidebar } from "@/features/agents/components/memory/components/AgentMemorySidebar";
-import { AgentMemoryBody } from "@/features/agents/components/memory/components/AgentMemoryBody";
-import { AgentMemoryFooter } from "@/features/agents/components/memory/components/AgentMemoryFooter";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { CONTEXT_MENU_ENTITY_KEY, type ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { toast } from "@/lib/toast";
-import { displayTitleForMemory } from "@/features/agents/components/memory/types";
+import { useAgentMemories } from "../../../agents/components/memory/hooks/useAgentMemories";
+import { AgentMemorySidebar } from "../../../agents/components/memory/components/AgentMemorySidebar";
+import { AgentMemoryBody } from "../../../agents/components/memory/components/AgentMemoryBody";
+import { AgentMemoryFooter } from "../../../agents/components/memory/components/AgentMemoryFooter";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY, type ContextMenuExtraSection } from "@host/features/context-menu-v3/types";
+import { toast } from "@host/lib/toast";
+import { displayTitleForMemory } from "../../../agents/components/memory/types";
 
 interface AgentMemoryWindowProps {
   isOpen: boolean;

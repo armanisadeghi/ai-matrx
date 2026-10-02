@@ -52,8 +52,8 @@ import {
   SurfaceRuntimeProvider,
   useSurfaceWriteHandlers,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   createEducationLearnAuthoringScope,
   educationLearnAuthoringManifest,

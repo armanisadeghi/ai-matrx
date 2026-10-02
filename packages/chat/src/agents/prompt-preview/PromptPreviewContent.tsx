@@ -17,12 +17,12 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Copy, RefreshCw, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
-import { useAppStore } from "@/lib/redux/hooks";
+import { Button } from "@host/components/ui/button";
+import { toast } from "@host/lib/toast";
+import { useAppStore } from "@host/lib/redux/hooks";
 import { requestPromptPreview } from "./service";
 import type { PromptPreview } from "./types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface PromptPreviewContentProps {
   conversationId: string;

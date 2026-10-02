@@ -14,7 +14,7 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { RunControlsTab } from "@/features/agents/components/inputs/smart-input/RunControlsTabPanel";
+import type { RunControlsTab } from "@ai-matrx/chat/agents/components/inputs/smart-input/RunControlsTabPanel";
 
 const OVERLAY_ID = "runControlsWindow" as const;
 

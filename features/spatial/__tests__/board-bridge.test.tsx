@@ -68,8 +68,8 @@ import {
   useSurfaceClientTools,
   useSurfaceWriteHandlers,
   type SurfaceToolCall,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { executeSurfaceClientTool } from "@/features/surfaces/runtime/surface-client-tools";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { executeSurfaceClientTool } from "@ai-matrx/chat/surfaces/runtime/surface-client-tools";
 import { SPATIAL_BOARD_SURFACE_NAME } from "@/features/surfaces/manifests/spatial-board.manifest";
 import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
 import { SpatialStore } from "../engine/spatial-store";

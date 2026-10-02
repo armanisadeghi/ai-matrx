@@ -4,12 +4,12 @@ import { createClient } from "@/utils/supabase/server";
 import {
   classifyMcpBackendFailure,
   persistMcpOAuthTokens,
-} from "@/features/agents/services/mcp-oauth/backend-failure";
+} from "@ai-matrx/chat/agents/services/mcp-oauth/backend-failure";
 import {
   buildTokenEndpointClientAuthentication,
   type DcrTokenEndpointAuthMethod,
-} from "@/features/agents/services/mcp-oauth/discovery";
-import { isValidOAuthState } from "@/features/agents/services/mcp-oauth/state";
+} from "@ai-matrx/chat/agents/services/mcp-oauth/discovery";
+import { isValidOAuthState } from "@ai-matrx/chat/agents/services/mcp-oauth/state";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 

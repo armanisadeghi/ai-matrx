@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import type { RootState } from "@host/lib/redux/store";
+import type { InstanceContextEntry } from "../../../types/instance.types";
 
 const EMPTY_CONTEXT_ENTRIES: InstanceContextEntry[] = [];
 

@@ -8,11 +8,11 @@ import {
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
+import { useMachineFramesVisible } from "@ai-matrx/chat/agents/components/shared/transcript-audience";
 import {
   selectHideReasoning,
   selectHideToolResults,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/react/kind-route";
 import {
   routeBlockAtRegistryVersion,

@@ -16,7 +16,7 @@
 
 import React from "react";
 import { ExternalLink } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 /** Percent-decode a path segment for display; junk stays as-is. */
 function decodeSegment(segment: string): string {

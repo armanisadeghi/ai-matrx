@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import {
   fetchSurfaceMenuAgentsGrouped,
   peekSurfaceMenuAgentsGrouped,
   type SurfaceBoundAgentSection,
-} from "@/features/surfaces/services/surface-bound-agents.service";
-import { withMenuDeadline } from "@/features/context-menu-v3/utils/menu-deadline";
+} from "../services/surface-bound-agents.service";
+import { withMenuDeadline } from "@host/features/context-menu-v3/utils/menu-deadline";
 
 export interface UseSurfaceBoundAgentsOptions {
   /**

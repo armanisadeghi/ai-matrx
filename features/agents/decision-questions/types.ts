@@ -17,7 +17,7 @@
  * loose-record readers.
  */
 
-import type { UserInputPart } from "@/features/agents/types/request.types";
+import type { UserInputPart } from "@ai-matrx/chat/agents/types/request.types";
 
 /** `noul` is the platform's yes/no answer type (Yes/No in the UI). */
 export type DecisionQuestionType = "noul" | "choice" | "score";

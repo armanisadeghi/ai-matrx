@@ -27,14 +27,14 @@ import activeRequestsReducer, {
   createRequest,
   setRequestStatus,
   upsertRenderBlock,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   selectAnswerText,
   selectConversationRequestIds,
   selectKindEnvelope,
   selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { flashcardsServerDataFromEnvelope } from "@/features/content-ir/kinds/flashcard-set";
 import { generatedSetFromEnvelope } from "../data/generated-set-from-envelope";
 

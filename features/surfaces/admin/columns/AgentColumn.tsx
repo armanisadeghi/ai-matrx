@@ -20,9 +20,9 @@ import type {
   AgentDefinition,
   VariableDefinition,
   VariableComponentType,
-} from "@/features/agents/types/agent-definition.types";
-import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
+import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 
 /**
  * Column 2 — Agent.

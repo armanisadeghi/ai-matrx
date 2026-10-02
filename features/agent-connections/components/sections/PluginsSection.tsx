@@ -23,7 +23,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";

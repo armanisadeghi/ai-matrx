@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { FileText, NotebookText, Code2, BookOpen, Mic, Globe, ClipboardType } from "lucide-react";
-import type { ToolAccent } from "@/features/tool-call-visualization/types";
+import type { ToolAccent } from "@ai-matrx/chat/tool-call-visualization/types";
 
 /**
  * Canonical source-kind → glossy glyph mapping for Knowledge hits. One place so every

@@ -53,8 +53,8 @@ import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import {
   selectAccumulatedText,
   selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

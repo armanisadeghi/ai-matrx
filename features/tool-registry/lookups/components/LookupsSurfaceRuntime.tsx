@@ -53,8 +53,8 @@ import {
   createAdminLookupsScope,
   type AdminLookupOpenEditor,
 } from "@/features/surfaces/manifests/admin-lookups.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 /**
  * A live row editor, exposed entirely as getters + the dialog's OWN setters.

@@ -42,7 +42,7 @@ import type {
   CatalogEntryRow,
   EntryPrefill,
 } from "@/features/admin/applications/catalogs/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_APPLICATIONS_SURFACE_NAME,
   createAdminApplicationsScope,

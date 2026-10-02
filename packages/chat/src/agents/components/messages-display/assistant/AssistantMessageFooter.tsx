@@ -19,20 +19,20 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
-import { cn } from "@/lib/utils";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
-import { RegistryContextMenu } from "@/features/rich-document/RegistryContextMenu";
-import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
+import { cn } from "@host/lib/utils";
+import { RichDocumentActions } from "@host/features/rich-document/RichDocumentActions";
+import { RegistryContextMenu } from "@host/features/rich-document/RegistryContextMenu";
+import { buildChatMessageActions } from "@host/features/rich-document/chat/chatMessageActions";
 import {
   convertOriginForSource,
   useDocumentDialogsHost,
-} from "@/features/rich-document/hosts/DocumentDialogsHost";
-import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
-import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
-import { RulebookNudge } from "@/features/masterwork/oracle/RulebookNudge";
-import { precedingQuestion } from "@/features/masterwork/oracle/service";
+} from "@host/features/rich-document/hosts/DocumentDialogsHost";
+import { useOutputFeedback } from "@host/lib/output-feedback/useOutputFeedback";
+import { NegativeVerdictFollowUp } from "@host/features/review-walk/components/NegativeVerdictFollowUp";
+import { RulebookNudge } from "@host/features/masterwork/oracle/RulebookNudge";
+import { precedingQuestion } from "@host/features/masterwork/oracle/service";
 import {
   selectMessageById,
   selectOrderedMessageIds,
@@ -40,17 +40,17 @@ import {
   selectIsLatestAssistantMessage,
   extractFlatText,
   extractInspectableText,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "../../../redux/execution-system/messages/messages.selectors";
 import {
   selectAgentIdFromInstance,
   selectConversationTitle,
-} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectAgentIsConfirmedOwner } from "@/features/agents/redux/agent-definition/selectors";
+} from "../../../redux/execution-system/conversations/conversations.selectors";
+import { selectAgentIsConfirmedOwner } from "../../../redux/agent-definition/selectors";
 import {
   selectResponseDensity,
   selectShowAssistantMessageOptions,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { buildConversationMessageTitle } from "../../../utils/conversation-message-title";
 import { resolveAssistantEditTarget } from "../message-options/resolveAssistantEditTarget";
 import { MessageTimestamp } from "../MessageTimestamp";
 

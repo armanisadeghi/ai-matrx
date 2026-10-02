@@ -25,13 +25,13 @@ import {
   type WarRoomReadResourceArgs,
   type WarRoomReadResourceResult,
 } from "../tools/schemas";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { selectConversationMessages } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { messageRecordToText } from "../service/messageText";
 import {
   getCxWorkingDocumentById,
   listConversationDocuments,
-} from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/cx-working-document.service";
 import {
   getEntityContentAdapter,
   readEntityRowGeneric,

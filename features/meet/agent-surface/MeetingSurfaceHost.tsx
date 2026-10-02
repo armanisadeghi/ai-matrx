@@ -27,7 +27,7 @@ import {
   SurfaceRuntimeProvider,
   useSurfaceScopeContribution,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMeetingScope } from "@/features/surfaces/manifests/meeting.manifest";
 import { meetingOrigin } from "@/features/meet/components/invite/MeetingInviteButton";
 import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";

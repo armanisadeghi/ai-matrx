@@ -93,7 +93,7 @@ export function useAssistRunner(): AssistRunnerApi {
         // every route and has repeatedly exhausted Vercel's 60 GB build worker.
         // The machinery is only needed after the user accepts this action.
         const { launchAgentExecution } = await import(
-          "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk"
+          "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk"
         );
         const instanceId = `assist:${options.assistId || crypto.randomUUID()}`;
         dispatch(

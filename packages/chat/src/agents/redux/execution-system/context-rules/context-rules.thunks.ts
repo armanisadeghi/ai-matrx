@@ -24,18 +24,18 @@
  *      hold-and-set gate a send uses: the person is asked, then it saves.
  */
 
-import type { AppDispatch, AppThunk, RootState } from "@/lib/redux/store";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import type { AppDispatch, AppThunk, RootState } from "@host/lib/redux/store";
+import { fetchAgentExecutionMinimal } from "../../agent-definition/thunks";
 import {
   CONTEXT_RULES_FEATURE,
   type SavedContextRule,
   type SavedContextRuleRows,
 } from "@ai-matrx/agents/context";
-import { surfaceUserStateActions } from "@/features/surfaces/redux/userStateSlice";
-import { surfaceUserStateService } from "@/features/surfaces/user-state/service";
-import { requireUserId } from "@/utils/auth/getUserId";
-import { toast } from "@/lib/toast";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { surfaceUserStateActions } from "../../../../surfaces/redux/userStateSlice";
+import { surfaceUserStateService } from "../../../../surfaces/user-state/service";
+import { requireUserId } from "@host/utils/auth/getUserId";
+import { toast } from "@host/lib/toast";
+import { isOrganizationSelectionCancelled } from "@host/lib/organization/selection-cancelled";
 
 const EMPTY_ROWS: SavedContextRuleRows = {};
 

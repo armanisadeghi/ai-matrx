@@ -1,9 +1,9 @@
 import type {
   ContextObjectType,
   ContextPolicy,
-} from "@/features/agents/types/agent-api-types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
+} from "../../../types/agent-api-types";
+import type { InstanceContextEntry } from "../../../types/instance.types";
+import type { PreFetchedUrl } from "@host/types/python-generated/stream-events";
 
 export const DEMO_WEBPAGE_TEXT = `# TikTok Algorithm in 2026: The 7 Signals That Decide If You Go Viral
 Completion rate under 70% is why your TikTok views cratered in 2026. Here are the 7 signals TikTok checks first, and the exact fix to try this week.
@@ -455,7 +455,7 @@ export const DEMO_CONV_ALL_RESOURCES = "demo-user-msg-all-resources";
 
 export const DEMO_ALL_RESOURCES: {
   resourceId: string;
-  blockType: import("@/features/agents/types/instance.types").ResourceBlockType;
+  blockType: import("../../../types/instance.types").ResourceBlockType;
   preview: string;
   source: Record<string, unknown>;
 }[] = [

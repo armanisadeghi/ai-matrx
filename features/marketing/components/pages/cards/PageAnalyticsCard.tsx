@@ -17,7 +17,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import type { MarketingPage } from "@/features/marketing/types";
 import { webAnalyticsTotals } from "@/features/marketing/lib/marketing-page-scope";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   BackendFailureDetails,
   CondensedFieldGrid,

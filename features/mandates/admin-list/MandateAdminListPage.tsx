@@ -37,7 +37,7 @@ import {
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
-import { onMandateCacheInvalidated } from "@/features/mandates/service";
+import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import {
   batchEligibilityOf,
   groupImpactByMandate,
@@ -47,11 +47,11 @@ import {
 } from "@/features/mandates/admin/impact";
 import { useImpactAdvance } from "@/features/mandates/admin/impact-advance";
 import { AdvanceResultsCard, ImpactLegend } from "@/features/mandates/admin/impact-cells";
-import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { selectBuiltinAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   AGENT_MANDATES_WRITE_TARGETS,
   MANDATES_SURFACE_NAME,
@@ -64,7 +64,7 @@ import {
 import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
 import { recordToast, toast } from "@/lib/toast";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
-import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { adminMandateListConfig, supportMandateListConfig } from "./listConfig";
 import type { MandateAdminLane } from "./rpc";
 import { MandateAdminPagesNav } from "./MandateAdminPagesNav";

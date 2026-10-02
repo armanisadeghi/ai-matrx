@@ -18,8 +18,8 @@
 
 import { useContext, useEffect, useState, useSyncExternalStore } from "react";
 import { ReactReduxContext } from "react-redux";
-import type { RootState } from "@/lib/redux/store";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import type { RootState } from "@host/lib/redux/store";
+import { selectIsAdmin } from "@host/lib/redux/selectors/userSelectors";
 import {
   type AgentAddressViewer,
   agentDoorFor,

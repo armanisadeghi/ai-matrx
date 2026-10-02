@@ -10,22 +10,22 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { ManagedResource } from "@/features/agents/types/instance.types";
+import type { RootState } from "@host/lib/redux/store";
+import type { ManagedResource } from "../../../types/instance.types";
 import {
   isMessagePart,
   parseMessageContent,
   type MessagePart,
   type PreFetchedUrl,
-} from "@/types/python-generated/stream-events";
-import type { UserInputPart } from "@/features/agents/types/request.types";
-import { isPreFetchedUrl } from "@/features/resource-manager/webpage/webpage-snapshot";
+} from "@host/types/python-generated/stream-events";
+import type { UserInputPart } from "../../../types/request.types";
+import { isPreFetchedUrl } from "@host/features/resource-manager/webpage/webpage-snapshot";
 import {
   isEditorXmlResource,
   serializeEditorResourcesAsXml,
-} from "@/features/agents/utils/editor-resource-xml";
+} from "../../../utils/editor-resource-xml";
 import { isEditableCapableBlockType } from "./editable-resource-types";
-import { createResourceReference } from "@/features/agents/agent-context/resource-reference";
+import { createResourceReference } from "../../../agent-context/resource-reference";
 
 const EMPTY_RESOURCES: ManagedResource[] = [];
 const EMPTY_EDITOR_RESOURCES: ManagedResource[] = [];

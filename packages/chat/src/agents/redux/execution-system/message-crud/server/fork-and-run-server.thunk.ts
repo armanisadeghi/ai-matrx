@@ -27,17 +27,17 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import {
   callConversationForkAndRun,
   type ApiCallError,
   type ConversationForkAndRunBody,
-} from "@/lib/api/call-api";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+} from "@host/lib/api/call-api";
+import type { TypedStreamEvent } from "@host/types/python-generated/stream-events";
 import {
   isConversationForkedEvent,
   type ConversationForkedEvent,
-} from "@/features/agents/types/conversation-stream-events";
+} from "../../../../types/conversation-stream-events";
 import { loadConversation } from "../../thunks/load-conversation.thunk";
 import { setFocus } from "../../conversation-focus/conversation-focus.slice";
 import { markCacheBypass } from "../cache-bypass.slice";

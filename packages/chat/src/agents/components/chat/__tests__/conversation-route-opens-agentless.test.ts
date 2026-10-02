@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const root = join(__dirname, "../../../../..");
+const root = join(__dirname, "../../../../../../..");
 const page = readFileSync(
   join(root, "app/(core)/chat/[conversationId]/page.tsx"),
   "utf8",
@@ -10,7 +10,7 @@ const room = readFileSync(join(__dirname, "../ChatConversationRoom.tsx"), "utf8"
 const persistence = readFileSync(
   join(
     root,
-    "features/agents/redux/execution-system/conversations/conversation-persistence.ts",
+    "packages/chat/src/agents/redux/execution-system/conversations/conversation-persistence.ts",
   ),
   "utf8",
 );

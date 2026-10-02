@@ -4,7 +4,7 @@
 // a right-side <Sheet> exposing voice picker, tool toggles, and instructions
 // editor. Useful for prompt iteration and provider QA.
 
-import { VoiceAgentSurface } from "@/features/voice-agent/components/VoiceAgentSurface";
+import { VoiceAgentSurface } from "@ai-matrx/chat/voice-agent/components/VoiceAgentSurface";
 
 export default function VoicePlaygroundPage() {
   return <VoiceAgentSurface preset="playground" />;

@@ -1,13 +1,13 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import type { MessageRole } from "@/features/agents/types/agent-message-types";
+import type { RootState } from "@host/lib/redux/store";
+import type { MessageRecord } from "../../redux/execution-system/messages/messages.slice";
+import type { MessageRole } from "../../types/agent-message-types";
 import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
 import {
   extractFlatText,
   isFailedRecord,
   selectConversationMessages,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "../../redux/execution-system/messages/messages.selectors";
 
 export interface DisplayEntry {
   key: string;

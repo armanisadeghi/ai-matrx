@@ -21,9 +21,9 @@
 
 import { PenLine } from "lucide-react";
 
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { cn } from "@/lib/utils";
 
 import type { MapAgentChangeMode, MapDescriptionRegenerationMode } from "../../knobs";

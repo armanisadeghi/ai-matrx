@@ -29,7 +29,7 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import {
   NODE_OUTCOME_KIND,
@@ -52,7 +52,7 @@ import {
   selectRequest,
   selectRequestCarriesKindEnvelope,
   selectRequestStreamingPartialValue,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { explainRunFailure } from "../run-failure-explanation";
 import {

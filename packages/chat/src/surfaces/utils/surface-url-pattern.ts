@@ -11,8 +11,8 @@
  * the sync pipeline.
  */
 
-import type { SurfaceManifest } from "@/features/surfaces/types";
-import { SURFACE_ROUTE_MAPPINGS } from "@/features/surfaces/utils/route-to-surface";
+import type { SurfaceManifest } from "../types";
+import { SURFACE_ROUTE_MAPPINGS } from "./route-to-surface";
 
 /** Explicit overrides where the route prefix alone is not the right pattern. */
 const URL_PATTERN_OVERRIDES: Readonly<Record<string, string>> = {

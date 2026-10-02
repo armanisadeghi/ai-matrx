@@ -38,7 +38,7 @@ import {
   PanelRight,
 } from "lucide-react";
 import AiModelForm from "./AiModelForm";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_AI_MODELS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-ai-models.manifest";
 import {
   normalizeModelCommonName,

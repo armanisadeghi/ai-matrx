@@ -1,6 +1,6 @@
 import { getAgent } from "@/lib/agents/data";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
-import { AgentHydratorServer } from "@/features/agents/route/AgentHydratorServer";
+import { AgentHydratorServer } from "@ai-matrx/chat/agents/route/AgentHydratorServer";
 import { SystemAgentSurfaceEmitter } from "@/features/agents/components/admin/SystemAgentSurfaceEmitter";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 

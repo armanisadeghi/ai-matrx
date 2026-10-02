@@ -62,7 +62,7 @@ app/(a)/agents/
 
 Single cached function per concern. One DB hit per server request regardless of how many components call it.
 
-**Thunk alignment (client):** Reads use Redux thunks in `features/agents/redux/agent-definition/thunks.ts`. Server Components cannot `dispatch` those thunks; use the **same Supabase calls** below with `createClient()` from `@/utils/supabase/server`. That keeps SSR, metadata, and client refetches consistent.
+**Thunk alignment (client):** Reads use Redux thunks in `packages/chat/src/agents/redux/agent-definition/thunks.ts`. Server Components cannot `dispatch` those thunks; use the **same Supabase calls** below with `createClient()` from `@/utils/supabase/server`. That keeps SSR, metadata, and client refetches consistent.
 
 | Cached helper (SSR) | Client thunk | Supabase source |
 |----------------------|--------------|-----------------|
@@ -79,8 +79,8 @@ import { cache } from 'react'
 import 'server-only'
 import { createClient } from '@/utils/supabase/server'
 import { notFound } from 'next/navigation'
-import { dbRowToAgentDefinition } from '@/features/agents/redux/agent-definition/converters'
-import type { AgentDefinition } from '@/features/agents/types/agent-definition.types'
+import { dbRowToAgentDefinition } from '@ai-matrx/chat/agents/redux/agent-definition/converters'
+import type { AgentDefinition } from '@ai-matrx/chat/agents/types/agent-definition.types'
 
 /** Same RPC as fetchAgentsList — owned + shared agents with access metadata. */
 export const getAgentList = cache(async () => {
@@ -159,8 +159,8 @@ A thin client component that dispatches once on mount. Lives in the `[id]` layou
 
 import { useRef } from 'react'
 import { useAppDispatch } from '@/lib/redux/hooks'
-import { upsertAgent } from '@/features/agents/redux/agent-definition/slice'
-import type { AgentDefinition } from '@/features/agents/types/agent-definition.types'
+import { upsertAgent } from '@ai-matrx/chat/agents/redux/agent-definition/slice'
+import type { AgentDefinition } from '@ai-matrx/chat/agents/types/agent-definition.types'
 
 // useRef persists across Strict Mode remount — dispatch fires exactly once.
 // Do NOT convert to useEffect or useState.
@@ -182,7 +182,7 @@ export function AgentHydrator({ definition }: { definition: AgentDefinition }) {
 - This pattern hydrates during the first render pass, before any child reads from the store.
 - `useRef` ensures it runs exactly once even with Strict Mode double-renders.
 
-**Slice:** `upsertAgent` lives in `features/agents/redux/agent-definition/slice.ts`. It is synchronous (not a thunk). Thunks such as `fetchFullAgent` / `fetchAgentVersionSnapshot` end with the same `upsertAgent` after their network call.
+**Slice:** `upsertAgent` lives in `packages/chat/src/agents/redux/agent-definition/slice.ts`. It is synchronous (not a thunk). Thunks such as `fetchFullAgent` / `fetchAgentVersionSnapshot` end with the same `upsertAgent` after their network call.
 
 **Layout vs version URL:** The `[id]` layout typically hydrates the **live** row (`getAgent`). If the user is on `/agents/{id}/3/...`, add a small client hydrator on the page that dispatches `upsertAgent` for the snapshot from `getAgentVersion` (or `dispatch(fetchAgentVersionSnapshot({ agentId, versionNumber }))`) so selectors keyed by `version_id` match the thunk behavior.
 

@@ -16,7 +16,7 @@ jest.mock("@ai-matrx/data/db", () => ({
     return result.data ?? [];
   },
 }));
-jest.mock("@/features/surfaces/config/namespace-registry", () => ({
+jest.mock("@ai-matrx/chat/surfaces/config/namespace-registry", () => ({
   listRegisteredNamespaces: () => [],
 }));
 

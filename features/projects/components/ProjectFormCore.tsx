@@ -42,7 +42,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { createProject } from "../service";
 import {
   generateProjectSlug,

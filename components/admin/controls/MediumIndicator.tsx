@@ -40,8 +40,8 @@ import {
 } from "@/lib/redux/slices/apiConfigSlice";
 import { useRequestLedger } from "@/lib/diagnostics/stream-capture/useRequestLedger";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
-import { setUseSnapshot } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectIsSnapshot } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setUseSnapshot } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectIsSnapshot } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Debug module ids that open a WindowPanel instead of the modal DebugModulePanel. */

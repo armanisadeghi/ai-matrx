@@ -27,9 +27,9 @@ import {
   isChatUserMessage,
   serializeError,
 } from "../utils";
-import { openStructuredRawViewer } from "@/features/agents/components/messages-display/message-options/openAssistantMessageEditor";
+import { openStructuredRawViewer } from "@ai-matrx/chat/agents/components/messages-display/message-options/openAssistantMessageEditor";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
-import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
+import { updateMessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 
 registerAction({
   id: "edit",
@@ -220,7 +220,7 @@ registerAction({
 
     try {
       const { forkConversation } = await import(
-        "@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/fork-conversation.thunk"
       );
       // Position-aware fork: read position from state at fire-time so we
       // capture the message itself. Imported from the chat module because
@@ -256,7 +256,7 @@ registerAction({
 
       if (ctx.surfaceKey && newConvId) {
         const { promptForkOutcome } = await import(
-          "@/features/agents/components/messages-display/message-options/promptForkOutcome"
+          "@ai-matrx/chat/agents/components/messages-display/message-options/promptForkOutcome"
         );
         await promptForkOutcome({
           dispatch: ctx.dispatch,
@@ -320,7 +320,7 @@ registerAction({
       // Structured payload: faithful read-only raw view — the text editor
       // would save the JSON string back as a text block.
       const { openStructuredRawViewer } = await import(
-        "@/features/agents/components/messages-display/message-options/openAssistantMessageEditor"
+        "@ai-matrx/chat/agents/components/messages-display/message-options/openAssistantMessageEditor"
       );
       openStructuredRawViewer(ctx.dispatch, {
         content,
@@ -330,7 +330,7 @@ registerAction({
       return;
     }
     const { USER_EDIT_ACTIONS, routeUserEditAction } = await import(
-      "@/features/agents/components/messages-display/message-options/userEditActions"
+      "@ai-matrx/chat/agents/components/messages-display/message-options/userEditActions"
     );
     const surfaceKey = ctx.surfaceKey;
     const { callbackGroupId } = createFullScreenEditorCallbackGroup({
@@ -386,7 +386,7 @@ registerAction({
     const { conversationId, messageId } = ctx.source;
     try {
       const { forkAndResubmitFromMessage } = await import(
-        "@/features/agents/redux/execution-system/message-crud/fork-and-resubmit-from-message.thunk"
+        "@ai-matrx/chat/agents/redux/execution-system/message-crud/fork-and-resubmit-from-message.thunk"
       );
       await ctx
         .dispatch(

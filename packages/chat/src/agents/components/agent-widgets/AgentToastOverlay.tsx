@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   selectLatestAccumulatedText,
   selectIsExecuting,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
-import { Button } from "@/components/ui/button";
+} from "../../redux/execution-system/selectors/aggregate.selectors";
+import { useRetainLatestRequestForViewer } from "../../redux/execution-system/active-requests/useRetainRequestForViewer";
+import { Button } from "@host/components/ui/button";
 import { Check, Loader2, Minimize2, X } from "lucide-react";
 import { AgentRunner } from "../smart/AgentRunner";
-import { AnswerTextPreview } from "@/components/official/structured-value/AnswerTextPreview";
+import { AnswerTextPreview } from "@host/components/official/structured-value/AnswerTextPreview";
 
 interface AgentToastOverlayProps {
   conversationId: string;

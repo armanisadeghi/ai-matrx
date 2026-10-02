@@ -45,17 +45,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SendHorizonal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { chatRouteSurfaceKey } from "@/features/agents/components/chat/begin-fresh-chat";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectUserInputEntryExists } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { chatRouteSurfaceKey } from "@ai-matrx/chat/agents/components/chat/begin-fresh-chat";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputEntryExists } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { selectMessageCount } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
 import {
   setDisplayDescriptionOverride,
   setDisplayIconNameOverride,
   setDisplayNameOverride,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import type { AppStore } from "@/lib/redux/store";
 import { ROLES, STAGES, type RoleBinding, type RoleKey } from "../types";
 

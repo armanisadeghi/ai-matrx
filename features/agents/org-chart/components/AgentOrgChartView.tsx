@@ -15,7 +15,7 @@ import Link from "next/link";
 import { ArrowDownToLine, ArrowUpToLine, MoreHorizontal, Network, Plus, Unlink } from "lucide-react";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   removeManualManager,
   setManualManager,

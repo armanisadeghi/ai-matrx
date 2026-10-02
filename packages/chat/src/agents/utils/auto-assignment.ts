@@ -1,7 +1,7 @@
 import type {
   AutoAssignValue,
   VariableCustomComponent,
-} from "@/features/agents/types/agent-definition.types";
+} from "../types/agent-definition.types";
 import { readOptions, readStructuredList } from "./variable-customcomponent";
 
 export const RANDOM_AUTO_ASSIGN_VALUE: AutoAssignValue = Object.freeze({

@@ -10,14 +10,14 @@
  * Pure TS (no React): statically importable from registry handlers.
  */
 
-import { toast } from "@/lib/toast";
-import { toastDoor } from "@/components/official/entity-ref/toastDoor";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { toast } from "@host/lib/toast";
+import { toastDoor } from "@host/components/official/entity-ref/toastDoor";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { openOverlay } from "@host/lib/redux/slices/overlaySlice";
 import {
   duplicateConversation,
   renameConversation,
-} from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+} from "../../redux/conversation-list/conversation-row-actions.thunks";
 import { conversationRenameOpener } from "./rename/conversationRenameOpener";
 
 export function displayConversationTitle(title: string | null | undefined): string {

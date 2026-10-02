@@ -30,7 +30,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   LiveRunProgress,
   type LiveRunProgressState,
-} from "@/features/agents/components/live-run/LiveRunProgress";
+} from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 
 const textOf = (markup: string) =>
   markup.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -160,10 +160,10 @@ describe("every consumer of the canonical renderer inherits the honesty", () => 
     const source = readFileSync(
       join(
         __dirname,
-        "..",
-        "..",
-        "..",
-        "features/agents/components/live-run/LiveRunProgress.tsx",
+        "../../../packages/chat/src/agents/components/live-run/LiveRunProgress.tsx",
+        ".",
+        ".",
+        ".",
       ),
       "utf8",
     );

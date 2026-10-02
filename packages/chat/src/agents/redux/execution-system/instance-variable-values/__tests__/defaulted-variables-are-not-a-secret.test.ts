@@ -5,7 +5,7 @@
 
 import reducer, {
   createInstanceFullPayloadForTest,
-} from "@/features/agents/components/messages-display/user/__tests__/host-wired-values.harness";
+} from "../../../../components/messages-display/user/__tests__/host-wired-values.harness";
 import {
   initInstanceVariables,
   setUserVariableValues,
@@ -13,8 +13,8 @@ import {
 } from "../instance-variable-values.slice";
 import { selectOwnSubmittedFirstTurnValues } from "../instance-variable-values.selectors";
 import { resolveVariablesForRequest } from "../resolve-variables-for-request";
-import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { buildVariableDisplayLines } from "../../../../utils/variable-display-lines";
+import type { VariableDefinition } from "../../../../types/agent-definition.types";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 

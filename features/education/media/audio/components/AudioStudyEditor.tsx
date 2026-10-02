@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { getFileMetadata } from "@/features/files/api/files";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationAudioStudyScope } from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { audioWriteHandlers, createAudioStudy, parseAudioUpdate, updateAudioStudy } from "../audioWrites";
 import type { StudyMediaRow } from "../../types";

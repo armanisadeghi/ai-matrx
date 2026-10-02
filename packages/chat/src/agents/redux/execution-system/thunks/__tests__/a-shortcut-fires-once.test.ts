@@ -46,7 +46,7 @@ import {
   refusesEmptyTurn,
 } from "../execute-instance.thunk";
 import { isExecutionClaimed } from "../submit-claims";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 type AnyAction = { type: string; payload?: unknown };
 

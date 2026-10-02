@@ -25,10 +25,10 @@ async function settledNames(fileIds: string[]): Promise<Record<string, string>> 
 }
 
 const resolve = jest.fn();
-jest.mock("@/features/files/handler/handler", () => ({
+jest.mock("@host/features/files/handler/handler", () => ({
   fileHandler: { resolve: (...a: unknown[]) => resolve(...a) },
 }));
-jest.mock("@/features/files/handler/hooks/useFile", () => ({ useFile: () => ({ file: null }) }));
+jest.mock("@host/features/files/handler/hooks/useFile", () => ({ useFile: () => ({ file: null }) }));
 
 import {
   attachedDocumentFileId,

@@ -37,7 +37,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   SITE_DESCRIPTION_MAX,
   SITE_NAME_MAX,

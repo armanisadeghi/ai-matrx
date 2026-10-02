@@ -12,7 +12,7 @@
 import { getAgentApp } from "@/lib/agent-apps/data";
 import { getAgent } from "@/lib/agents/data";
 import { AgentAppHydrator } from "./AgentAppHydrator";
-import { AgentHydrator } from "@/features/agents/route/AgentHydrator";
+import { AgentHydrator } from "@ai-matrx/chat/agents/route/AgentHydrator";
 
 /**
  * Server-component layout helper. Fetches the app row, plus the live

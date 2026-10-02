@@ -5,15 +5,15 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "@host/components/ui/select";
+import { cn } from "@host/lib/utils";
 import { calcCols } from "./useContainerColumns";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProTextarea } from "@host/components/official/ProTextarea";
 import { focusWithoutScroll } from "./focusWithoutScroll";
-import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
-import { AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRatioSelect";
-import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
-import { choiceControlFor } from "@/features/agents/utils/choice-rule";
+import { afterCurrentLayerCloses } from "@host/components/dialogs/confirm/after-current-layer-closes";
+import { AspectRatioSelect } from "@host/components/official/aspect-ratio/AspectRatioSelect";
+import { OptionCombobox } from "@host/components/official/option-combobox/OptionCombobox";
+import { choiceControlFor } from "../../../utils/choice-rule";
 
 /** Overrides base SelectTrigger nowrap/line-clamp so long values wrap in-panel. */
 const dropdownTriggerClassName = (compact: boolean) =>

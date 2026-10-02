@@ -30,14 +30,14 @@ const CONVERSATION_ID = "11111111-1111-1111-1111-111111111111";
 
 const openPicker = jest.fn();
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
   useAppDispatch: () => jest.fn(),
 }));
 
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@host/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 
-jest.mock("@/features/overlays/openers/runControlsWindow", () => ({
+jest.mock("@host/features/overlays/openers/runControlsWindow", () => ({
   useOpenRunControlsWindow: () => jest.fn(),
 }));
 
@@ -48,28 +48,28 @@ jest.mock("@ai-matrx/design-system", () => ({
 jest.mock("../composer/ComposerConnectorsPanel", () => ({ ComposerConnectorsPanel: () => null }));
 
 jest.mock(
-  "@/features/agents/redux/agent-definition/selectors",
+  "../../../../redux/agent-definition/selectors",
   () => ({ selectAgentMcpServers: () => ["github", "context7"] }),
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/conversations/conversations.selectors",
+  "../../../../redux/execution-system/conversations/conversations.selectors",
   () => ({ selectAgentIdFromInstance: () => () => "agent-1" }),
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
+  "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({ selectBuilderAdvancedSettings: () => () => undefined }),
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/active-requests/active-requests.selectors",
+  "../../../../redux/execution-system/active-requests/active-requests.selectors",
   () => ({ selectPrimaryRequest: () => () => undefined }),
 );
 
 // The payload under test. GitHub offers repositories from our synced
 // inventory; Context7 is a pure MCP server with nothing to choose.
-jest.mock("@/features/agents/hooks/useMcpTools", () => ({
+jest.mock("../../../../hooks/useMcpTools", () => ({
   useMcpCatalog: () => ({
     serverStates: [
       {
@@ -94,11 +94,11 @@ jest.mock("@/features/agents/hooks/useMcpTools", () => ({
   }),
 }));
 
-jest.mock("@/features/connectors/useAttachResourcePicker", () => ({
+jest.mock("@host/features/connectors/useAttachResourcePicker", () => ({
   useAttachResourcePicker: () => openPicker,
 }));
 
-jest.mock("@/features/connectors/useConversationAttachments", () => ({
+jest.mock("@host/features/connectors/useConversationAttachments", () => ({
   useConversationAttachments: () => ({
     items: [],
     status: "succeeded",

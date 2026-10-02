@@ -13,14 +13,14 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { info: jest.fn(), error: jest.fn(), success: jest.fn(), warning: jest.fn() },
 }));
 
 import agentDefinitionReducer, {
   mergePartialAgent,
   setAgentFetchStatus,
-} from "@/features/agents/redux/agent-definition/slice";
+} from "../../redux/agent-definition/slice";
 import { useAgentAutoSave } from "../useAgentAutoSave";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =

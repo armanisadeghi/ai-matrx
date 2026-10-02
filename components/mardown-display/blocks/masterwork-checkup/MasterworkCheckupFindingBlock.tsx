@@ -52,7 +52,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
-import { useCurrentSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import { useCurrentSurfaceUiState } from "@ai-matrx/chat/surfaces/runtime/surface-ui-state";
 import {
   CHECKUP_DECISION_UI_STATE_KEY,
   CHECKUP_DECISION_WRITE_TARGET,

@@ -35,9 +35,9 @@ import {
   readWindowForms,
   SURFACE_LAYER_ATTRIBUTE,
 } from "./window-forms";
-import { assertNoPlatformReservedNames } from "@/features/surfaces/manifests/registry";
+import { assertNoPlatformReservedNames } from "@host/features/surfaces/manifests/registry";
 
-jest.mock("@/components/agent-copy/AlchemySurfaceBridge", () => ({
+jest.mock("@host/components/agent-copy/AlchemySurfaceBridge", () => ({
   AlchemySurfaceBridge: ({ children }: { children: ReactNode }) => children,
 }));
 
@@ -175,8 +175,8 @@ describe("the surface chain carries every other open screen (ARE-010)", () => {
 
   it("both chokepoints that build a run's scope add the chain", () => {
     for (const file of [
-      "features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
-      "features/agents/redux/execution-system/thunks/refresh-surface-scope.thunk.ts",
+      "packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
+      "packages/chat/src/agents/redux/execution-system/thunks/refresh-surface-scope.thunk.ts",
     ]) {
       const source = readFileSync(join(process.cwd(), file), "utf8");
       expect({ file, calls: /await withLiveSurfaceContext\(/.test(source) }).toEqual({ file, calls: true });

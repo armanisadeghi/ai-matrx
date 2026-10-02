@@ -37,34 +37,34 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import {
   fetchUnifiedMenu,
   ensureShortcutLoaded,
-} from "@/features/agents/redux/agent-shortcuts/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import {
   selectAllShortcutsArray,
   selectShortcutsInitialLoaded,
   selectShortcutsSliceError,
   selectShortcutsSliceStatus,
-} from "@/features/agents/redux/agent-shortcuts/selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import {
   selectInstanceSummary,
   makeSelectAssembledRequest,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectInstanceUIState } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   selectResolvedVariables,
   selectVariableProvenance,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectInstanceContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.selectors";
+import { selectInstanceResources } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import {
   selectRequestsForInstance,
   selectAccumulatedText,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import type { ResultDisplayMode } from "@ai-matrx/chat/agents/utils/run-ui-utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

@@ -20,9 +20,9 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useSurfaceConfig } from "@/features/surfaces/hooks/useSurfaceConfig";
-import { setNamespaceConfig } from "@/features/surfaces/services/surface-config.service";
-import type { ListeningConfig } from "@/features/surfaces/config/namespace-registry";
+import { useSurfaceConfig } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
+import { setNamespaceConfig } from "@ai-matrx/chat/surfaces/services/surface-config.service";
+import type { ListeningConfig } from "@ai-matrx/chat/surfaces/config/namespace-registry";
 import { setKnobOverride } from "@/lib/scoped-config/service";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";

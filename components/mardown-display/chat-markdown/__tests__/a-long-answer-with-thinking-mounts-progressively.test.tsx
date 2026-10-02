@@ -27,8 +27,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     }),
   useAppDispatch: () => () => undefined,
 }));
-jest.mock("@/features/agents/redux/execution-system/messages/messages.selectors", () => ({
-  ...jest.requireActual("@/features/agents/redux/execution-system/messages/messages.selectors"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors"),
   selectMessageInterleavedContent: () => () => SEGMENTS,
 }));
 jest.mock("next/dynamic", () => ({ __esModule: true, default: () => () => null }));
@@ -41,7 +41,7 @@ jest.mock("@/components/mardown-display/chat-markdown/internal-handlers/SafeBloc
 }));
 jest.mock("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/components/mardown-display/blocks/json/useBoundAgentOutputSchema", () => ({ useBoundAgentOutputSchema: () => null }));
-jest.mock("@/features/agents/components/shared/transcript-audience", () => ({ useMachineFramesVisible: () => true }));
+jest.mock("@ai-matrx/chat/agents/components/shared/transcript-audience", () => ({ useMachineFramesVisible: () => true }));
 
 import { EnhancedChatMarkdownInternal } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
 import { PROGRESSIVE_AUTO_LIMIT } from "@/components/mardown-display/chat-markdown/progressive-mount";

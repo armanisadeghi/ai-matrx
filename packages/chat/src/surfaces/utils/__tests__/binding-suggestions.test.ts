@@ -12,7 +12,7 @@ import {
   describeSuggestion,
   parseMapperResult,
   suggestionSourceKeys,
-} from "@/features/surfaces/utils/binding-suggestions";
+} from "../binding-suggestions";
 
 
 // ── D18.2 — MANY-TO-ONE PROPOSALS ───────────────────────────────────────────

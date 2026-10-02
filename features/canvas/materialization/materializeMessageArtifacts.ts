@@ -16,12 +16,12 @@
  *     Archives the original into content_history so it's fully reversible).
  */
 
-import { selectConversationSurfaceOwnsOutput } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectConversationSurfaceOwnsOutput } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
 import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
 
-import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
+import type { CxContentBlock } from "@ai-matrx/chat/public-chat/types/cx-tables";
 import { materializeBlocks, type PersistRewrite } from "./materializeBlocks";
 
 export interface MaterializeParams {

@@ -9,21 +9,21 @@ import {
   Check,
   Save,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import MarkdownStream from "@/components/MarkdownStream";
-import AudioOutputBlockSkeleton from "@/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
-import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { Button } from "@host/components/ui/button";
+import MarkdownStream from "@host/components/MarkdownStream";
+import AudioOutputBlockSkeleton from "@host/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
+import { useDomCapturePrint } from "../../../conversation/hooks/useDomCapturePrint";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import { selectMessageHasUnsavedChanges } from "../../_legacy-stubs";
 import { editMessage } from "../../_legacy-stubs";
-import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
+import { buildContentBlocksForSave } from "../../utils/buildContentBlocksForSave";
 import { useMediaLoadRecovery } from "@ai-matrx/media/core";
-import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
+import { recognizeOurFileUrl } from "@host/lib/media/our-file-sources";
 import { chatConversationsActions } from "../../_legacy-stubs";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
-import { MessageTimestamp } from "@/features/agents/components/messages-display/MessageTimestamp";
-import type { ConversationMessage } from "@/features/cx-chat/types/conversation";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { RichDocumentActions } from "@host/features/rich-document/RichDocumentActions";
+import { MessageTimestamp } from "../../../agents/components/messages-display/MessageTimestamp";
+import type { ConversationMessage } from "../../types/conversation";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 // ============================================================================
 // PROPS

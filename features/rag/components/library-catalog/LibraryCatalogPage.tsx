@@ -68,7 +68,7 @@ import {
 import { PackDetailPanel } from "@/features/rag/components/library-catalog/PackDetailPanel";
 import { RulebookDetailPanel } from "@/features/rag/components/library-catalog/RulebookDetailPanel";
 import { LibraryLabelChip } from "@/features/rag/components/library-catalog/LibraryLabelChip";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import {
   MOBILE_TABLE,

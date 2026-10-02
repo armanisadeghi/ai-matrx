@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { LiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
+import type { LiveRunProgressState } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
 import type { paths } from "@/types/python-generated/api-types";
 import type { DurableRunStatus } from "@/lib/durable-run/useDurableRun";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";

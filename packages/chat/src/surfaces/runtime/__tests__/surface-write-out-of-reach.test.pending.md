@@ -60,7 +60,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import activeRequestsReducer, {
   createRequest,
   upsertToolLifecycle,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
 
 import { registerSurfaceRuntime } from "../SurfaceRuntimeContext";

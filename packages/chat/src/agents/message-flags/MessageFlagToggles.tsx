@@ -8,10 +8,10 @@
  */
 
 import { BookMarked, DatabaseZap, TextCursorInput, type LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@host/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@host/components/ui/tooltip";
 import type { FlagVerdict, MessageFlagKey, MessageFlags } from "./flags";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 export interface FlagToggleState {
   /** Absent (not rendered) — e.g. Prefill on a user message. */

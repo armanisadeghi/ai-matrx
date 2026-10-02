@@ -20,12 +20,12 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { Download, ExternalLink, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { FileIcon } from "@ai-matrx/media/react";
-import { formatFileSize } from "@/features/files/utils/format";
-import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
+import { formatFileSize } from "@host/features/files/utils/format";
+import { useFileActions } from "@host/features/files/components/core/FileActions/useFileActions";
 import { useMediaResolution } from "@ai-matrx/media/core";
-import type { FileSource } from "@/features/files/handler/types";
+import type { FileSource } from "@host/features/files/handler/types";
 import type { ResultFileRef } from "./shape";
 
 export interface ResultFileProps {

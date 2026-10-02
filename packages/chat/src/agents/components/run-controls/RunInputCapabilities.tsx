@@ -1,18 +1,18 @@
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { InputCapabilitiesEditor } from "@/features/agents/components/settings-management/ui-gates/InputCapabilitiesEditor";
-import { selectInputCapabilitiesState } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { InputCapabilitiesEditor } from "@host/features/agents/components/settings-management/ui-gates/InputCapabilitiesEditor";
+import { selectInputCapabilitiesState } from "../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import {
   resetInputCapabilityOverride,
   setInputCapabilityOverride,
-} from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.slice";
-import { persistInputCapabilities } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.persistence";
+} from "../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.slice";
+import { persistInputCapabilities } from "../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.persistence";
 import {
   UI_GATE_EDITABLE_KEYS,
   type UiGateEditableKey,
-} from "@/lib/redux/slices/agent-settings/ui-gates";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "@host/lib/redux/slices/agent-settings/ui-gates";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface RunInputCapabilitiesProps {
   conversationId: string;

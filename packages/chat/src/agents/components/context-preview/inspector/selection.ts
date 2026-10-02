@@ -12,7 +12,7 @@
  * Pure: no React, no network — the suite drives it directly.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@host/types/python-generated/api-types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export interface InspectorSelection {

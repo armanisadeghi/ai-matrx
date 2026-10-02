@@ -29,7 +29,7 @@ import { Boxes, CircleAlert, Hammer, Loader2 } from "lucide-react";
 import type { KindStatusBoardModel } from "@/features/content-ir/admin/kind-detail-types";
 import KindStatusBoard from "@/features/content-ir/admin/KindStatusBoard";
 import KindCatalogTable from "@/features/content-ir/admin/KindCatalogTable";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { buildAdminKindCatalogScope } from "@/features/content-ir/admin/kind-registry-scope";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

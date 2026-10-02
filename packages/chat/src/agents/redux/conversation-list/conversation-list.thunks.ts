@@ -8,15 +8,15 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import { getUserId } from "@/utils/auth/getUserId";
-import type { Database } from "@/types/database.types";
-import type { AppThunk, RootState } from "@/lib/redux/store";
-import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
+import { supabase } from "@host/utils/supabase/client";
+import { getUserId } from "@host/utils/auth/getUserId";
+import type { Database } from "@host/types/database.types";
+import type { AppThunk, RootState } from "@host/lib/redux/store";
+import { favoritesService } from "@host/features/scopes/service/favoritesService";
+import { isScopesRpcErr } from "@host/features/scopes/types";
 import type { ConversationListItem } from "./conversation-list.types";
 import { conversationListCacheKey } from "./conversation-list.types";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectAgentIdFromInstance } from "../execution-system/conversations/conversations.selectors";
 import {
   setAgentCacheLoading,
   setAgentCacheSuccess,
@@ -26,7 +26,7 @@ import {
   setGlobalListError,
 } from "./conversation-list.slice";
 import { CONVERSATION_LIST_PAGE_SIZE } from "./conversation-list.types";
-import { HIDDEN_CONVERSATION_LANE } from "@/features/agents/redux/conversation-history/lanes";
+import { HIDDEN_CONVERSATION_LANE } from "../conversation-history/lanes";
 
 type GetAgentConversationsReturns =
   Database["public"]["Functions"]["get_agent_conversations"]["Returns"];

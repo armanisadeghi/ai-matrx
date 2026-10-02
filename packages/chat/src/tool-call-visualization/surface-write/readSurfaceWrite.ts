@@ -9,7 +9,7 @@
  * reload, from this one reader, for every tool.
  */
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 /** Knobs (platform.feature_knob, seeded by aidream db/migrations/1321). */
 export const DIFF_VIEW_KNOB = { feature: "agents.tool_cards", key: "diff_default_view" } as const;

@@ -1,14 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { openAfterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
+import { openAfterCurrentLayerCloses } from "@host/components/dialogs/confirm/after-current-layer-closes";
 
 describe("ConversationContextRail modal layer handoff", () => {
   it("closes the overflow menu before opening its selected detail surface", () => {
     const source = readFileSync(
       join(
         process.cwd(),
-        "features/agents/components/inputs/smart-input/ConversationContextRail.tsx",
+        "packages/chat/src/agents/components/inputs/smart-input/ConversationContextRail.tsx",
       ),
       "utf8",
     );

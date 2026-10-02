@@ -13,7 +13,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@host/lib/utils';
 import { CapabilityGrid } from './CapabilityGrid';
 import { ReasoningLevelSelector } from './ReasoningLevelSelector';
 import {

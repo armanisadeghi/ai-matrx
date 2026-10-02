@@ -243,7 +243,7 @@ rejection routes the item to a normal P4 repair.
 
 26. **P4-PENDING-026** — [Open review surface](https://aimatrx.com/context-items)
 
-   - Source: `features/agents/components/context-items/bodies/MediaBody.tsx:73`
+   - Source: `packages/chat/src/agents/components/context-items/bodies/MediaBody.tsx:73`
    - Exact raw tokens by line: `73: bg-white`
    - Why it may be legitimate: Document and file_output items render inside an iframe with a fixed white document matte.
    - Review state: Select or open a real context item of media kind and inspect its media body background in both themes.
@@ -252,7 +252,7 @@ rejection routes the item to a normal P4 repair.
 
 27. **P4-PENDING-027 — RESOLVED BEFORE PATROL**
 
-   - Source: `features/agents/components/context-items/bodies/WebpageBody.tsx:49`
+   - Source: `packages/chat/src/agents/components/context-items/bodies/WebpageBody.tsx:49`
    - Exact raw tokens by line: `49: bg-white`
    - Why it may be legitimate: External webpages render in an iframe with a fixed white fallback matte.
    - Review state: Select or open a real webpage context item and inspect the iframe/document matte in both themes.

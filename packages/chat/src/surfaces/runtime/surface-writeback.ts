@@ -40,14 +40,14 @@
  *    returns as `{ summary?, data? }` rides back on the success result.
  */
 
-import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import { kindValidator } from "@host/features/content-ir/registry/kind-schema-source";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
 import {
   isSurfaceWritePatch,
   resolveSurfaceWritePatch,
   type SurfaceWritePatch,
-} from "@/features/surfaces/runtime/surface-write-patch";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+} from "./surface-write-patch";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import {
   applyWindowFormChanges,
   hasWindowForms,
@@ -74,8 +74,8 @@ import {
   validateCustomFieldsSetWrite,
   validateCustomFieldsWrite,
 } from "./custom-field-targets";
-import { toast } from "@/lib/toast";
-import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
+import { toast } from "@host/lib/toast";
+import { awaitEffectiveOrganizationId } from "@host/features/organizations/awaitWorkspace";
 
 import type {
   SurfaceWritePolicy,

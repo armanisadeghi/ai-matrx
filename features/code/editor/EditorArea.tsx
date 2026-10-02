@@ -31,7 +31,7 @@ import { selectDiagnosticsByTabId } from "../redux/diagnosticsSlice";
 import { CodeWorkspaceContextMenu } from "../agent-context/CodeWorkspaceContextMenu";
 import { CodeReadonlyContextMenu } from "../agent-context/CodeReadonlyContextMenu";
 import { codeWorkspaceSurfaceKey } from "../chat/begin-fresh-code-chat";
-import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { selectFocusedConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import type { RootState } from "@/lib/redux/store";
 import { useEnvironmentForActiveTab } from "./monaco-environments";
 import { EditorTabs } from "./EditorTabs";

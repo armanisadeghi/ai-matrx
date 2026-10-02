@@ -35,10 +35,10 @@ import {
   TextDiff,
   type TextDiffView,
 } from "@ai-matrx/diff/react";
-import MarkdownStream from "@/components/MarkdownStream";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { cn } from "@/lib/utils";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
+import { cn } from "@host/lib/utils";
 
 import {
   DIFF_VIEW_KNOB,

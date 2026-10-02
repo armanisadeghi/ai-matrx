@@ -31,11 +31,11 @@ import {
   Layers,
   type LucideIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "@host/components/ui/badge";
+import { cn } from "@host/lib/utils";
 
 import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
-import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
+import { contextEntryLabel } from "../../../agents/components/context-policies-display/contextEntryLabel";
 
 // ---------------------------------------------------------------------------
 // Type → icon. Keyed by the raw server `type` string (not the strict

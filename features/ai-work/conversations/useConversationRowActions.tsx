@@ -14,9 +14,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AssociationPicker } from "@ai-matrx/associations/react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
 import { toast } from "@/lib/toast";
-import { setConversationFavorite } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { setConversationFavorite } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import type {
   EntityListController,

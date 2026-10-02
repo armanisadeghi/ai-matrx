@@ -13,7 +13,7 @@ import {
   readUnsentLaunch,
   writeUnsentLaunch,
 } from "../unsent-launch-store";
-import type { RootState } from "@/lib/redux/rootReducer";
+import type { RootState } from "@host/lib/redux/rootReducer";
 
 function stateWith(opts: {
   cacheOnly?: boolean;

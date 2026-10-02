@@ -4,7 +4,7 @@
 // which creates the instance and renders ChatWelcomeClient.
 
 import { ChatInstanceManager } from "./ChatInstanceManager";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "../../agents/types/agent-definition.types";
 
 export interface WelcomeAgent {
   promptId: string;

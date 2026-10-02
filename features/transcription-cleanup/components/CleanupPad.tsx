@@ -98,7 +98,7 @@ import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerW
 import {
   useFloatingRunWindow,
   type FloatingRunTrackState,
-} from "@/features/agents/hooks/useFloatingAgentRun";
+} from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -113,7 +113,7 @@ import {
 import {
   useSurfaceAgentRoles,
   type RoleView,
-} from "@/features/surfaces/hooks/useSurfaceConfig";
+} from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import type {
   CleanupCustomSlot,
   SessionContextItem,
@@ -123,7 +123,7 @@ import {
   reattachStudioRun,
   studioRunTarget,
 } from "@/features/transcript-studio/redux/reattachStudioRun";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   CLEANUP_TEXT_WRITE_MODES,
   CLEANUP_TEXT_WRITE_MODE_DEFAULT,

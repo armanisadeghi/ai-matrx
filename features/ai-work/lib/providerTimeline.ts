@@ -1,4 +1,4 @@
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import type { CxToolCallRecord } from "@ai-matrx/chat/agents/redux/execution-system/observability/observability.slice";
 import type { ProviderConversationMessage } from "./providerConversationMessage";
 
 export type ProviderTimelineItem =

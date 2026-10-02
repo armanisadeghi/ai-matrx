@@ -1,7 +1,7 @@
 "use client";
 
 import { createSelector } from "reselect";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import type {
   AgentShortcut,
   AgentShortcutRecord,
@@ -500,6 +500,6 @@ export {
   selectContentBlocksByScope,
   selectContentBlocksByScopeRef,
   selectActiveContentBlocks,
-} from "@/features/agent-connections/redux/skl/content-block-compat";
+} from "@host/features/agent-connections/redux/skl/content-block-compat";
 
 export type { CategoryTree } from "../agent-shortcut-categories/selectors";

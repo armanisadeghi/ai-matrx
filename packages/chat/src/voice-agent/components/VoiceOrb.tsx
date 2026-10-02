@@ -43,7 +43,7 @@
 // scale becomes constant, breath disabled.
 
 import { motion, useReducedMotion, useTransform } from "motion/react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { useAudioAmplitude } from "../hooks/useAudioAmplitude";
 import type { VoiceStatus } from "../types";
 

@@ -16,7 +16,7 @@ import {
   type ThunkDispatch,
   type UnknownAction,
 } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import inboxReducer, { addInboxItem, type ConversationInboxItem } from "../inbox.slice";
 import instanceUserInputReducer, {
   setUserInputText,
@@ -25,7 +25,7 @@ import instanceUserInputReducer, {
 const CONV = "e2acdae2-eb77-4c99-9511-f3d591d4841c";
 const deleteOutcome = new Map<string, number>(); // injection id → HTTP status
 
-jest.mock("@/lib/api/call-api", () => ({
+jest.mock("@host/lib/api/call-api", () => ({
   callApi: (args: { pathParams: { injection_id: string } }) => async () => {
     const status = deleteOutcome.get(args.pathParams.injection_id) ?? 200;
     return status === 200
@@ -33,7 +33,7 @@ jest.mock("@/lib/api/call-api", () => ({
       : { error: { status, message: "already drained" } };
   },
 }));
-jest.mock("@/lib/toast", () => ({ toast: { info: jest.fn(), error: jest.fn() } }));
+jest.mock("@host/lib/toast", () => ({ toast: { info: jest.fn(), error: jest.fn() } }));
 
 import { returnQueuedToComposer } from "../inbox.thunks";
 

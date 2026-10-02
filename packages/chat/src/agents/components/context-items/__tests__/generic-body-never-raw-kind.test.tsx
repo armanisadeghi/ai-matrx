@@ -9,7 +9,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/components/official/structured-value/AnswerValueView", () => ({
+jest.mock("@host/components/official/structured-value/AnswerValueView", () => ({
   AnswerValueView: () => <div data-testid="answer-value-view" />,
 }));
 

@@ -21,10 +21,10 @@ import {
   type ReactNode,
   type MouseEvent,
 } from "react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Separator } from "@/components/ui/separator";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { CHAT_VOICE_SURFACE } from "@/features/surfaces/manifests/chat-voice.manifest";
+import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
+import { Separator } from "@host/components/ui/separator";
+import { useSurfaceWriteHandlers } from "../../../surfaces/runtime/SurfaceRuntimeContext";
+import { CHAT_VOICE_SURFACE } from "@host/features/surfaces/manifests/chat-voice.manifest";
 import { useVoicePlaygroundWriteHandlers } from "../../hooks/useVoicePlaygroundWriteHandlers";
 import { VoicePicker } from "./VoicePicker";
 import { ToolToggleList } from "./ToolToggleList";

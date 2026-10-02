@@ -33,7 +33,7 @@ jest.mock(
 );
 
 jest.mock(
-  "@/features/agents/redux/execution-system/messages/messages.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors",
   () => ({
     selectMessageInterleavedContent: () => () => mockDbSegments,
   }),
@@ -111,18 +111,18 @@ jest.mock("../internal-handlers/InlineAssistantError", () => ({
 }));
 
 jest.mock(
-  "@/features/tool-call-visualization/components/AgentWorkGroup",
+  "@ai-matrx/chat/tool-call-visualization/components/AgentWorkGroup",
   () => ({
     AgentWorkGroup: ({ children }: { children: React.ReactNode }) => children,
   }),
 );
 
-jest.mock("@/features/tool-call-visualization/registry/registry", () => ({
+jest.mock("@ai-matrx/chat/tool-call-visualization/registry/registry", () => ({
   getToolDisplayMode: () => "auto",
 }));
 
 jest.mock(
-  "@/features/tool-call-visualization/components/LiveToolCallCard",
+  "@ai-matrx/chat/tool-call-visualization/components/LiveToolCallCard",
   () => ({
     LiveToolCallCard: () => null,
   }),
@@ -131,7 +131,7 @@ jest.mock(
 import { EnhancedChatMarkdownInternal } from "../EnhancedChatMarkdown";
 import { StreamAwareChatMarkdown } from "../StreamAwareChatMarkdown";
 import type { TypedStreamEvent } from "../types";
-import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 
 // Controlled guard fixture: generic wrappers must retain author Markdown

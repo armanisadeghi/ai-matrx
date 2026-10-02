@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
-import { Label } from "@/components/ui/label";
+import { Label } from "@host/components/ui/label";
 import {
   Popover,
   PopoverContent,
@@ -10,9 +10,9 @@ import {
 } from "@ai-matrx/design-system";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
-import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { VariableInputComponent } from "../../agents/components/inputs/input-components/VariableInputComponent";
+import type { VariableDefinition as PromptVariable } from "../../agents/types/agent-definition.types";
+import { enterSendsHere } from "@host/components/official/composer/composerSubmit";
 
 // ============================================================================
 // TYPES

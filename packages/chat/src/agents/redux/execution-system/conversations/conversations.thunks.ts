@@ -1,4 +1,4 @@
-import type { AppThunk } from "@/lib/redux/store";
+import type { AppThunk } from "@host/lib/redux/store";
 import {
   destroyInstance,
   destroyInstancesForAgent,

@@ -1,6 +1,6 @@
-import { supabase } from "@/utils/supabase/client";
-import type { Database } from "@/types/database.types";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import { supabase } from "@host/utils/supabase/client";
+import type { Database } from "@host/types/database.types";
+import type { ConversationListItem } from "../conversation-list/conversation-list.types";
 import type { ConversationHistoryScopeState, SourceFacet } from "./types";
 
 export type ConversationSearchRange = "7d" | "30d" | "90d" | "all";

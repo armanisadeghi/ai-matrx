@@ -20,11 +20,11 @@ import type { RichDocumentActionContext } from "@/features/rich-document/types";
 import {
   deriveClientToolsFromHandle,
   type WidgetHandle,
-} from "@/features/agents/types/widget-handle.types";
+} from "@ai-matrx/chat/agents/types/widget-handle.types";
 import { callbackManager } from "@/utils/callbackManager";
 import { buildEditableWidgetHandle } from "../utils/widget-handle";
 import { buildSelectionWriteBack } from "../utils/selection-write-back";
-import { registerLaunchWidgetHandle } from "@/features/agents/utils/launch-widget-handles";
+import { registerLaunchWidgetHandle } from "@ai-matrx/chat/agents/utils/launch-widget-handles";
 
 const JUNK = "Skip to main content | Patient portal | Cookie settings";
 const CLEAN = "Patient portal";

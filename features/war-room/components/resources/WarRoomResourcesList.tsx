@@ -39,7 +39,7 @@ import { deleteFile } from "@/features/files/redux/thunks";
 import { deleteNote } from "@/features/notes/redux/thunks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { AssociationPicker, UnresolvedRef } from "@ai-matrx/associations/react";
-import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
+import { ConversationPickerWindow } from "@ai-matrx/chat/agents/components/conversation-history/ConversationPickerWindow";
 import {
   UniversalAssociationPicker,
   attachedKey,

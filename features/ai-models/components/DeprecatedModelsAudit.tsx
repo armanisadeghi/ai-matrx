@@ -45,7 +45,7 @@ import {
 } from "@/features/mandates/admin/ImpactBatchPanel";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import { toast } from "@/lib/toast";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
 import { usageSettingsList } from "./unionUsageSettings";
 import {

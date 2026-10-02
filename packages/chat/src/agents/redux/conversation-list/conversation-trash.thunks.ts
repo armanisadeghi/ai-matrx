@@ -17,12 +17,12 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import { getUserId } from "@/utils/auth/getUserId";
-import { operationFailed } from "@/utils/errors";
-import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { supabase } from "@host/utils/supabase/client";
+import { getUserId } from "@host/utils/auth/getUserId";
+import { operationFailed } from "@host/utils/errors";
+import { ensureEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs";
+import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
 import type { ConversationListItem } from "./conversation-list.types";
 import {
   setTrashLoading,

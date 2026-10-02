@@ -9,12 +9,12 @@
 // conversation: a recipe exists only while a conversation is unsent, so there
 // is nothing on the server to load.
 
-import type { AppDispatch } from "@/lib/redux/store";
-import { isSourceFeature } from "@/features/agents/types/instance.types";
+import type { AppDispatch } from "@host/lib/redux/store";
+import { isSourceFeature } from "../../../types/instance.types";
 import { launchAgentExecution } from "../thunks/launch-agent-execution.thunk";
 import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { readUnsentLaunch } from "./unsent-launch-store";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 /** True when a recipe existed and the window is being rebuilt from it. */
 export function restoreUnsentLaunch(

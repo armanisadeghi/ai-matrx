@@ -19,7 +19,7 @@
 // manifest — mock it so the module under test stays light.
 // The live SurfaceRuntime registry — mocked so these tests can drive the
 // runtime UNDERLAY deterministically (Phase 0, 2026-08-25).
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   getSurfaceRuntime: jest.fn(() => null),
   getSurfaceRuntimeForName: jest.fn(() => null),
 }));
@@ -211,7 +211,7 @@ describe("resolveApplicationScope", () => {
 import {
   getSurfaceRuntime,
   getSurfaceRuntimeForName,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 const mockRuntimeForName = getSurfaceRuntimeForName as jest.Mock;
 const mockRuntimeGlobal = getSurfaceRuntime as jest.Mock;

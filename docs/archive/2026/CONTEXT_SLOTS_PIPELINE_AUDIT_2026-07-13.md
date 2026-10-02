@@ -41,7 +41,7 @@ changing it would touch every consumer of a heavily shared migration for no rema
 — not fixed in this pass, flagged in §6.
 
 Terminology used consistently below: **"context slot"** = what the user calls "contact slot" = a
-`ContextSlot` an agent declares it needs (`features/agents/types/agent-api-types.ts:300-382`). Not to be
+`ContextSlot` an agent declares it needs (`packages/chat/src/agents/types/agent-api-types.ts:300-382`). Not to be
 confused with a **scope** (the user-authored Client/Department/Case dimension) or a **context item** (a
 column within a scope). A context slot is how an agent *pins itself* to a scope's context item.
 
@@ -49,7 +49,7 @@ column within a scope). A context slot is how an agent *pins itself* to a scope'
 
 ## 1. The data model (confirmed)
 
-- `ContextSlot` (`features/agents/types/agent-api-types.ts:300-382`):
+- `ContextSlot` (`packages/chat/src/agents/types/agent-api-types.ts:300-382`):
   ```ts
   interface ContextSlot {
     key: string;
@@ -178,7 +178,7 @@ Two independent UI surfaces exist, and they've diverged:
   wired into the pre-send composer, even historically, per its own FEATURE.md invariant.
 
 - **`ConversationContextRail`**
-  (`features/agents/components/inputs/smart-input/ConversationContextRail.tsx`) — the *current* live
+  (`packages/chat/src/agents/components/inputs/smart-input/ConversationContextRail.tsx`) — the *current* live
   composer rail, wired into both composer layouts (`SmartAgentInputStacked.tsx:109`,
   `SmartAgentInputSingleRow.tsx:76`), which sit under both `/chat` and the agent `/run` page. This is
   the intended successor described in its own header comment: "the ONE rail — adding a future source is
@@ -239,7 +239,7 @@ So: "used to work a bit, then stopped a few days ago" lines up almost exactly wi
 
 ## 5. What shipped (2026-07-13)
 
-- `matrx-frontend`: [ConversationContextRail.tsx](../features/agents/components/inputs/smart-input/ConversationContextRail.tsx)
+- `matrx-frontend`: [ConversationContextRail.tsx](../packages/chat/src/agents/components/inputs/smart-input/ConversationContextRail.tsx)
   — per-scope-type "set your scope" nudge (amber-ringed for visibility), reusing `ActiveContextButton`.
 - `aidream`: [scope_binding_resolution.py](../../aidream/aidream/services/conversation_context/scope_binding_resolution.py)
   `_apply_missing_slot` — surfaces a missing slot as null instead of omitting it.

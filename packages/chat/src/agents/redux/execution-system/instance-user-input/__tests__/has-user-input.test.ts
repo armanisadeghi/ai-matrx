@@ -1,4 +1,4 @@
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { selectHasUserInput } from "../instance-user-input.selectors";
 
 const CID = "11111111-1111-4111-8111-111111111111";

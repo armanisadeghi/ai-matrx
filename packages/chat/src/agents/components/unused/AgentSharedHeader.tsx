@@ -3,13 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Eye, Pencil, Play, History, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAgentIsDirty,
   selectAgentById,
   selectAgentVersion,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "../../redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { AgentSaveStatus } from "../shared/AgentSaveStatus";
 import { AgentOptionsMenu } from "../shared/AgentOptionsMenu";
@@ -22,7 +22,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@host/components/ui/alert-dialog";
 
 type AgentPageMode = "view" | "edit" | "run" | "versions";
 type ModeOption = AgentPageMode | "new";

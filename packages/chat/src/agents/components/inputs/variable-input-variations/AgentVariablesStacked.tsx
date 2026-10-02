@@ -8,17 +8,17 @@
 
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
-import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { VariableInputComponent } from "../input-components/VariableInputComponent";
+import { BoundVariableChips } from "../BoundVariableChips";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
-import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { selectShouldShowVariables } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { setUserVariableValue } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { useCallback } from "react";
 
 interface AgentVariablesStackedProps {

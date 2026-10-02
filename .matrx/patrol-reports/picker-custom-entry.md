@@ -36,7 +36,7 @@ Latest run `20260830T083100Z` · ERADICATION · closed 2026-08-30
 
 ## EXCEPTION APPROVAL REQUIRED
 
-- `features/agents/components/run-controls/SurfaceSimulatorSelect.tsx`: proposed existing-record exception because it selects registered `ui.ui_surface` records whose creation belongs to the canonical surface registry; an ad-hoc value would bypass server tool resolution. Stable review path: `/chat/new` → input `+` → Run controls → Creator/advanced settings → Surface. The detector allowlist predates this run; P13 did not approve, clear, or add an exception. Arman must approve or reject it explicitly.
+- `packages/chat/src/agents/components/run-controls/SurfaceSimulatorSelect.tsx`: proposed existing-record exception because it selects registered `ui.ui_surface` records whose creation belongs to the canonical surface registry; an ad-hoc value would bypass server tool resolution. Stable review path: `/chat/new` → input `+` → Run controls → Creator/advanced settings → Surface. The detector allowlist predates this run; P13 did not approve, clear, or add an exception. Arman must approve or reject it explicitly.
 
 ## Recursive learning
 

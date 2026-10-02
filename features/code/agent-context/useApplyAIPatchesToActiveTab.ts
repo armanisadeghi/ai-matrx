@@ -37,9 +37,9 @@
 import { useEffect } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAccumulatedText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { selectAccumulatedText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectLatestRequestId } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { parseCodeEdits } from "@/features/code-editor/agent-code-editor/utils/parseCodeEdits";
 import { applyCodeEdits } from "@/features/code-editor/agent-code-editor/utils/applyCodeEdits";
 import { selectCodeTabs, type CodeTabsState } from "../redux/tabsSlice";

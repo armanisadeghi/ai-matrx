@@ -1,6 +1,6 @@
 "use client";
-import { logFailure } from "@/lib/errors/expectedRefusal";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { logFailure } from "@host/lib/errors/expectedRefusal";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 /**
  * AgentRunWindow
@@ -34,59 +34,59 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Brain, Loader2, Plus, RotateCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
-import { toast } from "@/lib/toast";
-import { selectAllWindows } from "@/lib/redux/slices/windowManagerSlice";
-import { selectUserId } from "@/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { Button } from "@host/components/ui/button";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
+import { toast } from "@host/lib/toast";
+import { selectAllWindows } from "@host/lib/redux/slices/windowManagerSlice";
+import { selectUserId } from "@host/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
   selectAgentById,
   selectAgentExecutionPayload,
   selectAgentName,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+} from "../../../agents/redux/agent-definition/selectors";
+import { fetchAgentExecutionMinimal } from "../../../agents/redux/agent-definition/thunks";
+import type { ConversationListItem } from "../../../agents/redux/conversation-list/conversation-list.types";
 import {
   ConversationHistoryRow,
   ConversationHistorySection,
   ConversationHistorySidebar,
-} from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
-import { selectConversationListItemById } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import { selectLatestConversationId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { startNewConversation } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
+} from "../../../agents/components/conversation-history/ConversationHistorySidebar";
+import { selectConversationListItemById } from "../../../agents/redux/conversation-list/conversation-list.selectors";
+import { selectLatestConversationId } from "../../../agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectFocusedConversation } from "../../../agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { useAgentLauncher } from "../../../agents/hooks/useAgentLauncher";
+import { startNewConversation } from "../../../agents/redux/execution-system/thunks/create-instance.thunk";
+import { useConversationResume } from "../../../agents/hooks/useConversationResume";
 import {
   registerSurface,
   unregisterSurface,
-} from "@/features/agents/redux/surfaces/surfaces.slice";
+} from "../../../agents/redux/surfaces/surfaces.slice";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
-import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
-import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectUserInputEntryExists } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
-import { usePreparedResourceSeed } from "@/features/agents/components/chat/usePreparedResourceSeed";
-import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
-import type { Resource } from "@/features/agents/resources/types";
+import { AgentConversationColumn } from "../../../agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "../../../agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "../../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
+import { DebugSessionActivator } from "../../../agents/components/debug/DebugSessionActivator";
+import { setUserInputText } from "../../../agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputEntryExists } from "../../../agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserVariableValues } from "../../../agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectInstanceVariableDefinitions } from "../../../agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import type { SourceFeature } from "../../../agents/types/instance.types";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";
+import { fetchFullAgent } from "../../../agents/redux/agent-definition/thunks";
+import { useOpenRunControlsWindow } from "@host/features/overlays/openers/runControlsWindow";
+import { usePreparedResourceSeed } from "../../../agents/components/chat/usePreparedResourceSeed";
+import { useAttachResource } from "../../../agents/components/inputs/resources/attach-resource";
+import type { Resource } from "../../../agents/resources/types";
 import {
   AGENT_RUN_WINDOW_AGENT_ARG,
   AGENT_RUN_WINDOW_CONVERSATION_ARG,
   AGENT_RUN_WINDOW_URL_MODE,
 } from "./agentRunWindowAddress";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
 

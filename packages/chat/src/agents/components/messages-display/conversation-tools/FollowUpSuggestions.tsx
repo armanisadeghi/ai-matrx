@@ -18,9 +18,9 @@
 
 import React from "react";
 import { CornerDownRight } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectMessageById } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectMessageById } from "../../../redux/execution-system/messages/messages.selectors";
+import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 
 export const FOLLOW_UP_METADATA_KEY = "follow_up_suggestions";
 

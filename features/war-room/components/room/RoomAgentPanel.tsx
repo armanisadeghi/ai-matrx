@@ -24,10 +24,10 @@
 
 import { Loader2, MessageCircle, Plus } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { AssociationEntitySelect } from "@ai-matrx/associations/react";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { WAR_ROOM_ROOM_AGENT_MANDATE } from "@/features/war-room/constants";
 import { useRoomAgent } from "@/features/war-room/hooks/useRoomAgent";

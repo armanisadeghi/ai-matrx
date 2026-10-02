@@ -65,11 +65,11 @@ const ARTIFACT_REGISTRY_PATH = resolve(
 );
 const ACCUMULATOR_PATH = resolve(
   ROOT,
-  "features/agents/redux/execution-system/utils/stream-block-accumulator.ts",
+  "packages/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
 );
 const PREFILTER_PATH = resolve(
   ROOT,
-  "features/agents/redux/execution-system/utils/content-prefilter.ts",
+  "packages/chat/src/agents/redux/execution-system/utils/content-prefilter.ts",
 );
 const SPLITTER_PATH = resolve(
   ROOT,

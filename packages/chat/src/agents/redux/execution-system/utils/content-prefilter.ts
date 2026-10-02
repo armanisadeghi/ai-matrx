@@ -11,7 +11,7 @@
  * If no candidates are found → the line is guaranteed to be plain text.
  */
 
-import { OUR_FILE_URL_MARKERS } from "@/lib/media/our-file-sources";
+import { OUR_FILE_URL_MARKERS } from "@host/lib/media/our-file-sources";
 
 // ============================================================================
 // CANDIDATE CATEGORIES

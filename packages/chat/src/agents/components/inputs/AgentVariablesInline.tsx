@@ -12,40 +12,40 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
+import { readStructuredList } from "../../utils/variable-customcomponent";
 import { ChevronRight, ChevronUp } from "lucide-react";
-import { Label } from "@/components/ui/label";
+import { Label } from "@host/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
-import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+} from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "../../redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { selectShouldShowVariables } from "../../redux/execution-system/selectors/aggregate.selectors";
+import { setUserVariableValue } from "../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   selectExpandedVariableId,
   selectShowVariablePanel,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setExpandedVariableId } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setExpandedVariableId } from "../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { VariableInputComponent } from "./input-components/VariableInputComponent";
 import { BoundVariableChips } from "./BoundVariableChips";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunHint, variableRunLabel } from "@ai-matrx/agents";
-import { variableValueToDisplay, variableValueToInputText } from "@/features/agents/utils/variable-utils";
-import { readMediaVariableFileId } from "@/features/agents/utils/media-variable-value";
-import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
-import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
-import { calculateVisualViewportLift } from "@/lib/dom/visual-viewport-lift";
+import { variableValueToDisplay, variableValueToInputText } from "../../utils/variable-utils";
+import { readMediaVariableFileId } from "../../utils/media-variable-value";
+import { isMediaVariableType } from "../../types/agent-definition.types";
+import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
+import { calculateVisualViewportLift } from "@host/lib/dom/visual-viewport-lift";
 import { collapsedRowChoices, collapsedRowKind } from "./collapsed-row";
 import { RowChoicesButton } from "./RowChoicesButton";
 import { isControlVariable } from "@ai-matrx/agents";
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@host/components/official/composer/composerSubmit";
 
 interface AgentVariablesInlineProps {
   conversationId: string;

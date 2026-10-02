@@ -40,7 +40,7 @@ import {
   PUBLIC_AGENT_APP_SURFACE_NAME,
   createPublicAgentAppScope,
 } from "@/features/surfaces/manifests/public-agent-app.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 /**
  * The values only the RENDERING HOST knows: which published app is open and

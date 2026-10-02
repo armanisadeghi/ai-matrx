@@ -20,14 +20,14 @@
  */
 
 import { useCallback, useState } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectConversationRequestIds } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { selectConversationRequestIds } from "../redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "../redux/execution-system/active-requests/useRetainRequestForViewer";
 import {
   runHeadlessAgentJson,
   type HeadlessAgentJsonOptions,
   type HeadlessAgentJsonResult,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "../redux/execution-system/thunks/run-headless-agent-json";
 
 /**
  * What `run()` throws. It carries the run's TECHNICAL reason (when the run

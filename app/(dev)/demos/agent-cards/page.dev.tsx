@@ -14,17 +14,17 @@ import { useEffect, useState } from "react";
 import { Database, LayoutGrid, RefreshCw, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MediumComponentLoading } from "@/components/matrx/LoadingComponents";
-import { AskCard } from "@/features/agents/ui-first-tools/ui/AskCard";
-import { ApprovalCard } from "@/features/agents/ui-first-tools/ui/ApprovalCard";
-import { BatchAskCard } from "@/features/agents/ui-first-tools/ui/BatchAskCard";
+import { AskCard } from "@ai-matrx/chat/agents/ui-first-tools/ui/AskCard";
+import { ApprovalCard } from "@ai-matrx/chat/agents/ui-first-tools/ui/ApprovalCard";
+import { BatchAskCard } from "@ai-matrx/chat/agents/ui-first-tools/ui/BatchAskCard";
 import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
 import {
   groupPendingAsks,
   type PendingAsk,
-} from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
-import { registerAskResolver } from "@/features/agents/ui-first-tools/redux/ask-resolver-registry";
-import type { AskUserResponse } from "@/features/agents/ui-first-tools/tools/schemas";
-import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
+} from "@ai-matrx/chat/agents/ui-first-tools/redux/pending-asks.slice";
+import { registerAskResolver } from "@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry";
+import type { AskUserResponse } from "@ai-matrx/chat/agents/ui-first-tools/tools/schemas";
+import type { ApprovalChange } from "@ai-matrx/chat/agents/ui-first-tools/ui/approval-types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CONV = "demo-agent-cards";

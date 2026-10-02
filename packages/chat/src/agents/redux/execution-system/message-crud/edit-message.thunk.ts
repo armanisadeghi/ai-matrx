@@ -22,11 +22,11 @@
  * bodies stay mounted without a re-render.
  */
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@host/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { Database, Json } from "@/types/database.types";
+import { supabase } from "@host/utils/supabase/client";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { Database, Json } from "@host/types/database.types";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { extractFlatText } from "../messages/messages.selectors";
 import {
@@ -35,7 +35,7 @@ import {
 } from "../active-requests/active-requests.slice";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 
 interface EditMessageArgs {
   conversationId: string;
@@ -301,7 +301,7 @@ export const editMessage = createAsyncThunk<
         try {
           const [{ saveOutputFeedback }, { extractFlatText }] =
             await Promise.all([
-              import("@/lib/output-feedback/service"),
+              import("@host/lib/output-feedback/service"),
               import("../messages/messages.selectors"),
             ]);
           const originalText = extractFlatText(prevRecord);

@@ -21,9 +21,9 @@ import { Loader2, MessageCircle, MessagesSquare, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@ai-matrx/associations/react";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
+import { ConversationPickerWindow } from "@ai-matrx/chat/agents/components/conversation-history/ConversationPickerWindow";
 import { selectAssistantConversationId } from "@/features/transcript-studio/redux/selectors";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { WAR_ROOM_THREAD_AGENT_MANDATE } from "@/features/war-room/constants";
 import {

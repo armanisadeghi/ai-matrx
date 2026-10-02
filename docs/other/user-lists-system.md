@@ -136,7 +136,7 @@ Tool name **`get_user_lists`**; renderers expect a result like:
 
 Each `UserList` in UI code includes: `id`, `list_name`, `description`, `user_id`, `is_public`, `public_read`, `created_at`, `updated_at`, `item_count`.
 
-Visibility badges treat **`is_public` or `public_read`** as “Public”; both false → “Users Only” / private-style states (see `features/tool-call-visualization/renderers/get-user-lists/*`).
+Visibility badges treat **`is_public` or `public_read`** as “Public”; both false → “Users Only” / private-style states (see `packages/chat/src/tool-call-visualization/renderers/get-user-lists/*`).
 
 ---
 

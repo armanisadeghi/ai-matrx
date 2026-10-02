@@ -18,7 +18,7 @@ import {
   getUndoShortcutHint,
   getRedoShortcutHint,
   type Platform,
-} from "@/features/agents/hooks/useAgentUndoRedo";
+} from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
 
 interface UseNoteUndoRedoOptions {
   noteId: string | null;

@@ -1,5 +1,5 @@
-import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
-import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
+import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { readStructuredList } from "@ai-matrx/chat/agents/utils/variable-customcomponent";
 import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 
 /**

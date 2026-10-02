@@ -24,7 +24,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ORGANIZATIONS_SURFACE_NAME } from "@/features/surfaces/manifests/organizations.manifest";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";

@@ -10,7 +10,7 @@ import { useCallback, useRef, useState } from "react";
 import {
   AGENT_BUILDER_CONTEXT_MENU_PROPS,
   buildAgentBuilderContextData,
-} from "@/features/agents/agent-context/buildAgentBuilderContextData";
+} from "@ai-matrx/chat/agents/agent-context/buildAgentBuilderContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import type { EditableContextMenuProps } from "@/features/context-menu-v3/types";

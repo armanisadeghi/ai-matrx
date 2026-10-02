@@ -22,7 +22,7 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentSystemMessage } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentSystemMessage } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { renameSystemPromptColumn } from "../redux/slice";
 import { removeColumnFromSystemPromptBattle } from "../redux/thunks";

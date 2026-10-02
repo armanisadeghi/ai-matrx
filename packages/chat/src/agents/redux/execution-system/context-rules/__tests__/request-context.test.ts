@@ -10,7 +10,7 @@
  * the agent's kill switch withholds; the rows ARE the wire.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { attachmentContextKey } from "@ai-matrx/agents/context";
 import {
   ambientIncluded,
@@ -24,7 +24,7 @@ import {
   selectResolvedContextRows,
 } from "../request-context";
 
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: (name: string) =>
     name === "matrx-user/demo"
       ? {

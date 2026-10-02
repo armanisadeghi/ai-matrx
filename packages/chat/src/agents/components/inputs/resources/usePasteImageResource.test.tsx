@@ -1,4 +1,4 @@
-import { renderHook } from "@/test-utils/renderHook";
+import { renderHook } from "@host/test-utils/renderHook";
 
 const upload = jest.fn();
 const attachResource = jest.fn();
@@ -22,31 +22,31 @@ const state = {
   },
 };
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatch,
   useAppStore: () => ({ getState: () => state }),
 }));
 
-jest.mock("@/features/files/handler/hooks/useFileUpload", () => ({
+jest.mock("@host/features/files/handler/hooks/useFileUpload", () => ({
   useFileUpload: () => ({ upload }),
 }));
 
 jest.mock(
-  "@/features/agents/components/inputs/resources/attach-resource",
+  "./attach-resource",
   () => ({
     useAttachResource: () => attachResource,
   }),
 );
 
-jest.mock("@/features/agents/redux/execution-system/utils/ids", () => ({
+jest.mock("../../../redux/execution-system/utils/ids", () => ({
   generateResourceId: () => "resource-1",
 }));
 
-jest.mock("@/features/files/handler/input/normalize", () => ({
+jest.mock("@host/features/files/handler/input/normalize", () => ({
   normalize: () => ({ meta: { category: "DOCUMENT" }, url: null }),
 }));
 
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: jest.fn() },
 }));
 

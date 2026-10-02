@@ -8,9 +8,9 @@ import {
   selectAgentById,
   selectAgentIsReadOnly,
   selectAllAgentsArray,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
-import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
+import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Input } from "@ai-matrx/design-system";
 import { AgentCategoryPicker } from "@/features/agents/components/settings/AgentCategoryPicker";
@@ -33,14 +33,14 @@ import { InfoHint } from "@/components/official/InfoHint";
 import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
 import { EMPTY_ENGAGEMENT_SELECTION } from "@/features/scopes/components/active-context/quick-pick/engine";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { parseAgentCatalogProfile } from "@/features/agents/surface-catalog-profile";
-import { SETTINGS_CATALOG_PROFILE_TARGET } from "@/features/agents/constants/agent-settings-surface";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { parseAgentCatalogProfile } from "@ai-matrx/chat/agents/surface-catalog-profile";
+import { SETTINGS_CATALOG_PROFILE_TARGET } from "@ai-matrx/chat/agents/constants/agent-settings-surface";
 import {
   clearAgentSettingsDraft,
   publishAgentSettingsDraft,
 } from "./agentSettingsDraftRegistry";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { selectModelNameById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 

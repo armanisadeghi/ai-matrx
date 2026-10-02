@@ -1,4 +1,4 @@
-import { SurfaceWriteRefusalError } from "@/features/surfaces/runtime/surface-writeback";
+import { SurfaceWriteRefusalError } from "../../../surfaces/runtime/surface-writeback";
 import { createAgentRunVariableValuesHandler } from "./agent-run-variable-write";
 
 describe("createAgentRunVariableValuesHandler", () => {

@@ -34,21 +34,21 @@ import {
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@/lib/redux/rootReducer";
-import { createInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { addOptimisticUserMessage } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { createRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import { processStream } from "@/features/agents/redux/execution-system/thunks/process-stream";
-import { BoundColumn } from "@/features/agent-comparison/shared/BoundColumn";
-import { setShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
+import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { createInstance } from "../../../redux/execution-system/conversations/conversations.slice";
+import { addOptimisticUserMessage } from "../../../redux/execution-system/messages/messages.slice";
+import { createRequest } from "../../../redux/execution-system/active-requests/active-requests.slice";
+import { processStream } from "../../../redux/execution-system/thunks/process-stream";
+import { BoundColumn } from "@host/features/agent-comparison/shared/BoundColumn";
+import { setShowCreatorPanel } from "@host/lib/redux/preferences/creatorDebugSlice";
 
-jest.mock("@/features/agents/components/inputs/smart-input/SmartAgentInput", () => ({
+jest.mock("../../inputs/smart-input/SmartAgentInput", () => ({
   SmartAgentInput: () => null,
 }));
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@host/components/ui/tooltip";
 // The app root's one Alchemy action registry (AlchemyHost, ALC-15): the
 // assistant turn's rich-document action bar reads it.
-import { AlchemyActionsTestHost } from "@/test-utils/alchemy-actions-host";
+import { AlchemyActionsTestHost } from "@host/test-utils/alchemy-actions-host";
 
 // The user bubble's variable chips need the associations store; this test is
 // about the assistant turn, so that one leaf is stubbed.
@@ -64,7 +64,7 @@ jest.mock("next/dynamic", () => ({
   default: (loader: () => Promise<unknown>) => {
     if (String(loader).includes("block-registry/BlockRenderer")) {
       const { BlockRenderer } = jest.requireActual(
-        "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer",
+        "@host/components/mardown-display/chat-markdown/block-registry/BlockRenderer",
       ) as { BlockRenderer: React.ComponentType<Record<string, unknown>> };
       const Dynamic = (props: Record<string, unknown>) =>
         React.createElement(BlockRenderer, props);
@@ -72,7 +72,7 @@ jest.mock("next/dynamic", () => ({
     }
     if (String(loader).includes("CreatorRunPanel")) {
       const { CreatorRunPanel } = jest.requireActual(
-        "@/features/agents/components/run-controls/CreatorRunPanel",
+        "../../run-controls/CreatorRunPanel",
       ) as { CreatorRunPanel: React.ComponentType<Record<string, unknown>> };
       const Dynamic = (props: Record<string, unknown>) =>
         React.createElement(CreatorRunPanel, props);
@@ -80,7 +80,7 @@ jest.mock("next/dynamic", () => ({
     }
     if (String(loader).includes("MarkdownStreamImpl")) {
       const Impl = (
-        jest.requireActual("@/components/MarkdownStreamImpl") as {
+        jest.requireActual("@host/components/MarkdownStreamImpl") as {
           default: React.ComponentType<Record<string, unknown>>;
         }
       ).default;

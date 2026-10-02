@@ -8,20 +8,20 @@
  * "Recall interval" to every message template.
  */
 const mockToastSuccess = jest.fn();
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: jest.fn(), success: mockToastSuccess },
 }));
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: () => undefined,
 }));
-jest.mock("@/features/content-ir/registry/schema-source-kind-tables", () => ({
+jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({
   getKindInputContractBySlug: jest.fn(),
 }));
 
 import {
   applySurfaceWrite,
   listAgentWritableTargets,
-} from "@/features/surfaces/runtime/surface-writeback";
+} from "../surface-writeback";
 import {
   __resetCustomFieldsDoors,
   customFieldsScopeValue,
@@ -31,7 +31,7 @@ import {
   registerCustomFieldsDoor,
   type CustomFieldAddRequest,
   type CustomFieldsAgentDoor,
-} from "@/features/surfaces/runtime/custom-field-targets";
+} from "../custom-field-targets";
 
 const TYPES = [
   { value: "text", label: "Text" },

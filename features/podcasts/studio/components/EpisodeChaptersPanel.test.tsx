@@ -11,7 +11,7 @@ jest.mock("@/features/podcasts/generator/useEpisodeChapters", () => ({
 jest.mock("@/features/podcasts/service", () => ({
   podcastService: { fetchEpisodeById: jest.fn(), saveEpisodeChapters: jest.fn() },
 }));
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
   useSurfaceWriteHandlers: jest.fn(),
 }));
 jest.mock("@/components/mardown-display/blocks/media-chapters/MediaChaptersBlock", () => ({
@@ -23,7 +23,7 @@ jest.mock("@/components/mardown-display/blocks/media-chapters/MediaChaptersBlock
 
 import { useEpisodeChapters } from "@/features/podcasts/generator/useEpisodeChapters";
 import { podcastService } from "@/features/podcasts/service";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { EpisodeChaptersPanel } from "@/features/podcasts/studio/components/EpisodeChaptersPanel";
 
 const mockGenerate = jest.fn();

@@ -14,7 +14,7 @@
  */
 
 import { KIND_KEY } from "@ai-matrx/content-ir";
-import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
+import { kindValidator } from "@host/features/content-ir/registry/kind-schema-source";
 import type { SurfaceWritePolicy, SurfaceWriteTarget } from "../types";
 
 /**

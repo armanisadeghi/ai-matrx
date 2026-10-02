@@ -19,19 +19,19 @@
 import type { ConversationTransferRow } from "./conversation-transfer-rows";
 import type { Coverage, Payload, Section, Source } from "@ai-matrx/alchemy/operate";
 import type { FormatAdapter } from "@ai-matrx/kit/content-transfer";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { toast } from "@/lib/toast";
-import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
-import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
-import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { isMessagePinned } from "@/features/agents/message-pins/pinned-messages-store";
-import { stripTurnTrust } from "@/features/education/tutor/turnTrust";
-import { openAlchemySession } from "@/components/agent-copy/alchemy-session";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { toast } from "@host/lib/toast";
+import { unwrapKindEnvelopes } from "@host/lib/markdown/plain-text";
+import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
+import { extractFlatText } from "../redux/execution-system/messages/messages.selectors";
+import { selectConversationTitle } from "../redux/execution-system/conversations/conversations.selectors";
+import { isMessagePinned } from "../message-pins/pinned-messages-store";
+import { stripTurnTrust } from "@host/features/education/tutor/turnTrust";
+import { openAlchemySession } from "@host/components/agent-copy/alchemy-session";
 import { buildConversationMarkdown } from "./conversation-markdown";
 import { documentMarkdown } from "./document-markdown";
 import { loadFullConversationHistory } from "./load-full-history";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage } from "@host/utils/errors";
 
 // ─── The one source ──────────────────────────────────────────────────────────
 

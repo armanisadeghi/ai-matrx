@@ -40,7 +40,7 @@ import {
   Webhook,
 } from "lucide-react";
 
-import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinitionRecord } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type {
   ExecutionInstance,
   InstanceUIState,
@@ -48,28 +48,28 @@ import type {
   ManagedResource,
   InstanceContextEntry,
   InstanceUserInputState,
-} from "@/features/agents/types/instance.types";
-import type { ConversationsState } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+} from "@ai-matrx/chat/agents/types/instance.types";
+import type { ConversationsState } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import type {
   MessagesState,
   MessagesEntry,
   MessageRecord,
-} from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { extractInspectableText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import type { InstanceUIStateSlice } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import { extractInspectableText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import type { InstanceUIStateSlice } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import type {
   InstanceVariableValuesState,
   InstanceVariableValuesEntry,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import type { InstanceModelOverridesState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import type { InstanceResourcesState } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import type { InstanceContextState } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import type { InstanceUserInputSliceState } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import type { InstanceClientToolsState } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
-import type { ActiveRequestsState } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
-import type { ConversationFocusState } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import type { AgentDefinitionSliceState } from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import type { InstanceModelOverridesState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import type { InstanceResourcesState } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import type { InstanceContextState } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import type { InstanceUserInputSliceState } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import type { InstanceClientToolsState } from "@ai-matrx/chat/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import type { ActiveRequestsState } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
+import type { ActiveRequest } from "@ai-matrx/chat/agents/types/request.types";
+import type { ConversationFocusState } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import type { AgentDefinitionSliceState } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";

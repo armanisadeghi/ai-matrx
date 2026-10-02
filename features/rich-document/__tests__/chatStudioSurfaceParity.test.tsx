@@ -68,7 +68,7 @@ import { RichDocument } from "../RichDocument";
 import { RichDocumentActionProvider } from "../RichDocumentActionProvider";
 import { buildChatMessageActions } from "../chat/chatMessageActions";
 import { getAction } from "../actions/provider";
-import { hydrateMessages } from "@/features/agents/redux/execution-system/messages/messages.slice";
+import { hydrateMessages } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 enableMapSet();

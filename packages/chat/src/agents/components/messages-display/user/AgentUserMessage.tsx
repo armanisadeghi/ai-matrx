@@ -13,9 +13,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { Button } from "@host/components/ui/button";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectMessageById,
   selectFirstMessageId,
@@ -24,40 +24,40 @@ import {
   extractFlatText,
   extractInspectableText,
   extractContentBlocks,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+} from "../../../redux/execution-system/messages/messages.selectors";
 import { UserActionBar } from "./UserActionBar";
 import {
   FirstTurnLaunchInputs,
   FirstTurnVariables,
   UserMessageVariables,
 } from "./FirstTurnVariables";
-import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
-import { MessageContextReceipt } from "@/features/agents/components/context-policies-display/MessageContextReceipt";
+import { ContextPolicyChipStrip } from "../../context-policies-display/ContextPolicyChipStrip";
+import { MessageContextReceipt } from "../../context-policies-display/MessageContextReceipt";
 import {
   selectMessageContextMismatches,
   selectMessageContextReceipt,
-} from "@/features/agents/redux/execution-system/messages/message-context-receipt";
-import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
+} from "../../../redux/execution-system/messages/message-context-receipt";
+import { useMachineFramesVisible } from "../../shared/transcript-audience";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
 import {
   selectHostSubmittedFirstTurnValues,
   selectOwnSubmittedFirstTurnValues,
-} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+} from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
-import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
-import MarkdownStream from "@/components/MarkdownStream";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { RootState } from "@/lib/redux/store";
-import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
+import { isAttachmentMessagePart } from "../../context-items/normalize";
+import MarkdownStream from "@host/components/MarkdownStream";
+import type { InstanceContextEntry } from "../../../types/instance.types";
+import type { RootState } from "@host/lib/redux/store";
+import { buildVariableDisplayLines } from "../../../utils/variable-display-lines";
 import type {
   MessagePart,
   RenderBlockPayload,
-} from "@/types/python-generated/stream-events";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+} from "@host/types/python-generated/stream-events";
+import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 import {
   recordTranscriptEvent,
   shortId,
-} from "@/features/agents/redux/execution-system/messages/transcript-journal";
+} from "../../../redux/execution-system/messages/transcript-journal";
 
 export function AgentUserMessageContent({
   conversationId,

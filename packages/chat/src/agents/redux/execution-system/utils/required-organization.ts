@@ -1,6 +1,6 @@
-import type { RootState } from "@/lib/redux/store";
-import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import type { RootState } from "@host/lib/redux/store";
+import { adminLaneOrganizationId } from "@host/lib/api/admin-lane";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 
 /**
  * THE ONE GUEST EXCEPTION (aidream `enforce_conversation_start_organization`).
@@ -95,7 +95,7 @@ export async function ensureExecutionOrganization(
   const {
     ensureOrganizationContext,
     isOrganizationSelectionCancelled: cancelled,
-  } = await import("@/lib/organization/organization-gate");
+  } = await import("@host/lib/organization/organization-gate");
 
   try {
     return await ensureOrganizationContext({ organizationId: declared });

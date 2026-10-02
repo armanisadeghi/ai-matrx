@@ -33,7 +33,7 @@ import {
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ServerNotes } from "@/components/official/ServerNotes";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
+import { RunConfigOverrides } from "@ai-matrx/chat/agents/components/run-controls/RunConfigOverrides";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -48,7 +48,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { isJsonObject, toJsonRecord } from "@/types/json";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MANDATES_SURFACE_NAME,
   AGENT_MANDATES_WRITE_TARGETS,
@@ -61,15 +61,15 @@ import {
 } from "@/lib/supabase/mandateStorage";
 import { defaultAnswerSettingsOf } from "@/features/bindings/system-answer-record";
 import { ProvisionOfferComposer } from "./ProvisionOfferComposer";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
-import { initInstanceOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { fetchAgentExecutionFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentCustomExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { initInstanceOverrides } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
   selectInstanceOverrideState,
   selectOverriddenKeys,
   selectSettingsOverridesForApi,
-} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { buildInstanceBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/base-settings";
 import { OutputPreview } from "./bench-output-preview";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { TryItNowPanel } from "./TryItNowPanel";
@@ -105,7 +105,7 @@ import {
   FieldHelp,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

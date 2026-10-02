@@ -42,16 +42,16 @@ import visionInterviewReducer, {
 } from "../../redux/vision-interview.slice";
 import instanceUIStateReducer, {
   initInstanceUIState,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import instanceUserInputReducer, {
   initInstanceUserInput,
-} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import instanceContextReducer from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import instanceContextReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import conversationsReducer, {
   createInstance,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import messagesReducer from "@/features/agents/redux/execution-system/messages/messages.slice";
-import activeRequestsReducer from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import messagesReducer from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import activeRequestsReducer from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 // The document pane really renders once a record is open, and `RichDocument`
 // reads the app context. Including the real slice is what lets these cases
 // assert the landing against the component that actually draws it.
@@ -67,7 +67,7 @@ jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => true }));
 
 /** Not the subject — but its PROPS are, so the stub records every mount. */
 const mountedChatProps: Array<Record<string, unknown>> = [];
-jest.mock("@/features/agents/components/chat/ChatRoomClient", () => ({
+jest.mock("@ai-matrx/chat/agents/components/chat/ChatRoomClient", () => ({
   ChatRoomClient: (props: Record<string, unknown>) => {
     mountedChatProps.push(props);
     return null;
@@ -79,7 +79,7 @@ jest.mock("../../hooks/useObserveRoleTurns", () => ({
 }));
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/smart-execute.thunk",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk",
   () => ({ smartExecute: () => async () => {} }),
 );
 
@@ -305,7 +305,7 @@ describe("every embedded conversation surface declares its own URL", () => {
 
   it("no mount outside the chat route falls back to /chat/<id>", () => {
     const offenders: string[] = [];
-    for (const dir of ["features", "app", "components"]) {
+    for (const dir of ["features", "packages/chat/src", "app", "components"]) {
       for (const file of walk(join(REPO_ROOT, dir))) {
         const source = readFileSync(file, "utf8");
         const mount = source.indexOf("<ChatRoomClient");
@@ -313,7 +313,7 @@ describe("every embedded conversation surface declares its own URL", () => {
         const relative = file.slice(REPO_ROOT.length + 1);
         // The chat route IS the default's owner.
         if (relative.startsWith("app/(core)/chat/")) continue;
-        if (relative.startsWith("features/agents/components/chat/")) continue;
+        if (relative.startsWith("packages/chat/src/agents/components/chat/")) continue;
         // Read to the end of the JSX element, not the file.
         const end = source.indexOf("/>", mount);
         const element = source.slice(mount, end === -1 ? undefined : end);

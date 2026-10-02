@@ -26,7 +26,7 @@ import {
   PROJECT_STATUS_META,
   PROJECT_PRIORITY_META,
 } from "@/features/projects/components/ProjectInlineEditors";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type {
   Project,
   ProjectStatus,

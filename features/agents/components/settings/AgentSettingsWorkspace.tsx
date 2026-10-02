@@ -3,7 +3,7 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 
 /** Redux consumer slot for sidebar search / sort / filter state. */

@@ -1,5 +1,5 @@
 import { applyContextDeltaToContent } from "../contextDelta";
-import type { ContextDeltaData } from "@/types/python-generated/stream-events";
+import type { ContextDeltaData } from "@host/types/python-generated/stream-events";
 
 const splice = (
   overrides: Partial<ContextDeltaData>,

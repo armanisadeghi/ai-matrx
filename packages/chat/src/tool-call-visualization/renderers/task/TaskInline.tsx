@@ -2,9 +2,9 @@
 
 import { useMemo } from "react";
 import { SquareCheckBig, PanelRight, ExternalLink, Maximize2 } from "lucide-react";
-import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
-import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
-import { formatDateOnly } from "@/utils/dateOnly";
+import { useEnsureTaskLoaded } from "@host/features/tasks/hooks/useEnsureTaskLoaded";
+import { useOpenTaskEditorWindow } from "@host/features/overlays/openers/taskEditorWindow";
+import { formatDateOnly } from "@host/utils/dateOnly";
 import type { ToolRendererProps } from "../../types";
 import { parseSingleTask } from "./parseTask";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";

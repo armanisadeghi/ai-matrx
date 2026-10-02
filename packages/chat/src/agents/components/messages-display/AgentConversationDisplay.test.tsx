@@ -25,13 +25,13 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import messages, {
   setMessagesHydrationFailure,
-} from "@/features/agents/redux/execution-system/messages/messages.slice";
-import conversations from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+} from "../../redux/execution-system/messages/messages.slice";
+import conversations from "../../redux/execution-system/conversations/conversations.slice";
+import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
 import { AgentConversationDisplay } from "./AgentConversationDisplay";
 
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/load-conversation.thunk",
+  "../../redux/execution-system/thunks/load-conversation.thunk",
   () => ({
     loadConversation: jest.fn((args: { conversationId: string }) => ({
       type: "test/loadConversation",

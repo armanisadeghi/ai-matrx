@@ -15,7 +15,7 @@
 
 import { printMarkdown, printMarkdownWhenReady } from "@ai-matrx/print/markdown";
 import type { PrintOutcome } from "@ai-matrx/print/core";
-import { notifyPrintOutcome } from "@/lib/print/print-outcome-toast";
+import { notifyPrintOutcome } from "@host/lib/print/print-outcome-toast";
 
 const HAS_MERMAID = /^\s*(?:`{3,}|~{3,})\s*mermaid\b/m;
 
@@ -39,18 +39,18 @@ export function printMarkdownContent(
         prepare: async () => {
             let drawn: { pictures: Map<string, string>; failed: number };
             try {
-                const { drawMermaidForPrint } = await import("@/components/mermaid/print-render");
+                const { drawMermaidForPrint } = await import("@host/components/mermaid/print-render");
                 drawn = await drawMermaidForPrint(markdown);
             } catch (error) {
                 // The diagram engine could not load: print the source, and say so.
                 console.error("[print] diagrams could not be drawn", error);
-                const { toast } = await import("@/lib/toast");
+                const { toast } = await import("@host/lib/toast");
                 toast.warning("Diagrams could not be drawn, so they print as source.");
                 return {};
             }
             const { pictures, failed } = drawn;
             if (failed > 0) {
-                const { toast } = await import("@/lib/toast");
+                const { toast } = await import("@host/lib/toast");
                 toast.warning(
                     `${failed} diagram${failed === 1 ? "" : "s"} could not be drawn and print${failed === 1 ? "s" : ""} as source.`,
                 );

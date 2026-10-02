@@ -2,20 +2,20 @@ import React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
-jest.mock("@/lib/redux/hooks", () => ({
+jest.mock("@host/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => "default",
 }));
-jest.mock("@/lib/redux/slices/overlaySlice", () => ({
+jest.mock("@host/lib/redux/slices/overlaySlice", () => ({
   openOverlay: jest.fn(),
 }));
-jest.mock("@/components/loaders/ShimmerText", () => ({
+jest.mock("@host/components/loaders/ShimmerText", () => ({
   ShimmerText: ({ text }: { text: string }) => <span>{text}</span>,
 }));
 jest.mock(
-  "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
+  "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({ selectToolDisplayPreference: jest.fn() }),
 );
 jest.mock("../registry/registry", () => ({

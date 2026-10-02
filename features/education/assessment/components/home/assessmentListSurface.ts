@@ -11,16 +11,16 @@ import type { EntityListSurfaceController } from "@/lib/entity-list/components/E
 import type {
   SurfaceWriteHandlerEntry,
   SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
-import { xmlElement, xmlList } from "@/features/surfaces/runtime/context-bundle";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import {
   createAssessmentListScope,
   type AssessmentListSummaryRow,
   type MyAssessmentSummary,
 } from "@/features/surfaces/manifests/_assessment-list.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
 import { assessmentService } from "../../data/assessmentService";
 import { fetchEditableAssessmentsFor } from "../../data/assessmentListService";

@@ -14,16 +14,16 @@
 import React from "react";
 import { AlertTriangle, ChevronRight, Loader2, Terminal } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectToolCallsForConversation } from "@/features/agents/redux/execution-system/observability/observability.selectors";
-import { selectLiveToolLifecycleByConversation } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { cn } from "@host/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectToolCallsForConversation } from "../../../redux/execution-system/observability/observability.selectors";
+import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import {
   buildSandboxActivity,
   type SandboxActivityRow,
 } from "./sandbox-activity";
-import { DURABLE_VFS_BADGE_TEXT } from "@/features/tool-call-visualization/renderers/shell/ShellInline";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { DURABLE_VFS_BADGE_TEXT } from "../../../../tool-call-visualization/renderers/shell/ShellInline";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 function formatDuration(ms: number | null): string | null {
   if (ms === null) return null;

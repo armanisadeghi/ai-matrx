@@ -14,8 +14,8 @@
  */
 
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectAgentUiGates } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentUiGates } from "@/features/agents/redux/agent-definition/slice";
+import { selectAgentUiGates } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { setAgentUiGates } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import type { UiGateEditableKey } from "@/lib/redux/slices/agent-settings/ui-gates";
 import { InputCapabilitiesEditor } from "./InputCapabilitiesEditor";
 

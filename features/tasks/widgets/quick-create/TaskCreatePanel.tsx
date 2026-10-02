@@ -25,8 +25,8 @@ import { loadProjectsWithTasks } from "@/features/tasks/redux/thunks";
 import {
   CreateWithAiTabs,
   type CreateWithAiMode,
-} from "@/features/agents/components/smart/CreateWithAiTabs";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+} from "@ai-matrx/chat/agents/components/smart/CreateWithAiTabs";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import {
   TaskQuickCreateCore,
   type TaskQuickCreateCoreProps,

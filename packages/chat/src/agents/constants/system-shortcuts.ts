@@ -1,4 +1,4 @@
-import type { JsonExtractionConfig } from "@/features/agents/types/instance.types";
+import type { JsonExtractionConfig } from "../types/instance.types";
 
 /**
  * System shortcut registry — hard-coded references to shortcuts that the

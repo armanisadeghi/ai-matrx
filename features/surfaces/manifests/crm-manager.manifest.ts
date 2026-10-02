@@ -16,7 +16,7 @@
  * `crm.manifest.ts` for what earned a target and what did not.
  */
 
-import type { SurfaceManifest } from "@/features/surfaces/types";
+import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import {
   CRM_SURFACE_NAME,
   crmGroups,

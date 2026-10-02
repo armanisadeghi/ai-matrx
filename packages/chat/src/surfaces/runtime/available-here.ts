@@ -35,17 +35,17 @@ import {
   requirementsOf,
   type GateableItem,
   type OfferRefusal,
-} from "@/features/context-menu-v3/model/requirement-gate";
-import { BASELINE_VALUE_NAMES } from "@/features/surfaces/manifests/_baseline.manifest";
-import { getManifest } from "@/features/surfaces/manifests/registry";
-import { useSurfaceConfig } from "@/features/surfaces/hooks/useSurfaceConfig";
-import type { MenuConfig } from "@/features/surfaces/config/namespace-registry";
-import { useLiveSurfaceScope } from "@/features/surfaces/runtime/useLiveSurfaceScope";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
-import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
-import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+} from "@host/features/context-menu-v3/model/requirement-gate";
+import { BASELINE_VALUE_NAMES } from "@host/features/surfaces/manifests/_baseline.manifest";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { useSurfaceConfig } from "../hooks/useSurfaceConfig";
+import type { MenuConfig } from "../config/namespace-registry";
+import { useLiveSurfaceScope } from "./useLiveSurfaceScope";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectAllShortcutsArray } from "../../agents/redux/agent-shortcuts/selectors";
+import { fetchUnifiedMenu } from "../../agents/redux/agent-shortcuts/thunks";
+import type { AgentShortcutRecord } from "../../agents/redux/agent-shortcuts/types";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 /** One item the requirement gate says this surface can run. */
 export interface AvailableHereItem {

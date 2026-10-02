@@ -7,13 +7,13 @@
  * each resulting issue into an actionable row.
  */
 
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
-import type { NormalizedControls } from "@/features/agents/hooks/useModelControls";
+import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
+import type { NormalizedControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import type { ValidationIssue } from "../validation/types";
 import { validateConfig } from "../validation/engine";
 import { resolveConfig, getControlForKey } from "../validation/resolve-config";
-import { getModelDefaults } from "@/features/agents/hooks/useModelControls";
+import { getModelDefaults } from "@ai-matrx/chat/agents/hooks/useModelControls";
 
 export type IncompatibilityKind =
   | "out-of-range"

@@ -5,17 +5,17 @@ import { ChevronRight } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentError,
   selectAgentConversationMessageIndices,
   selectAgentMessages,
   selectAgentModelId,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { MessageItem } from "@/features/agents/components/builder/message-builders/MessageItem";
-import { exampleRuns, flagPreview } from "@/features/agents/message-flags/flags";
-import { useMessageFlagProfile } from "@/features/agents/message-flags/useMessageFlagProfile";
-import { MessageFlagsPreview } from "@/features/agents/message-flags/MessageFlagsPreview";
+import { exampleRuns, flagPreview } from "@ai-matrx/chat/agents/message-flags/flags";
+import { useMessageFlagProfile } from "@ai-matrx/chat/agents/message-flags/useMessageFlagProfile";
+import { MessageFlagsPreview } from "@ai-matrx/chat/agents/message-flags/MessageFlagsPreview";
 import { estimateTokensForText } from "@/lib/tokens/estimate";
 import { formatCount } from "@ai-matrx/kit/format";
 

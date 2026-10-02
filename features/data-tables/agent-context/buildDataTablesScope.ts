@@ -17,7 +17,7 @@ import {
   createDataTablesScope,
   type DataTableColumnEntry,
 } from "@/features/surfaces/manifests/data-tables.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 import {
   describeValidationRules,

@@ -17,10 +17,10 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectConversationTitle } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { cn } from "@/lib/utils";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectConversationTitle } from "../../redux/execution-system/messages/messages.selectors";
+import { selectInstanceUIState } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { cn } from "@host/lib/utils";
 import CreatorRunTabContent, {
   useCreatorRunWindows,
   ALL_RUN_TABS,

@@ -9,10 +9,10 @@
  * the compatibility verdict the editor shows.
  */
 
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
-import type { UserInputPart } from "@/features/agents/types/request.types";
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
-import { partKind } from "@/features/agents/decision-questions/types";
+import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import type { UserInputPart } from "../types/request.types";
+import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
+import { partKind } from "@host/features/agents/decision-questions/types";
 
 export const SPEECH_SCRIPT_KIND = "speech_script" as const;
 

@@ -20,7 +20,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import {
   buildRecentInteractionSamples,
   type PersistedInteractionRow,
-} from "@/features/agents/ui-first-tools/demo/recent-interaction-samples";
+} from "@ai-matrx/chat/agents/ui-first-tools/demo/recent-interaction-samples";
 import { extractErrorMessage } from "@/utils/errors";
 
 // Columns the renderer needs to rebuild a ToolLifecycleEntry, plus owner context.

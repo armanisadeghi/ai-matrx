@@ -1,10 +1,10 @@
-import type { ManagedResource } from "@/features/agents/types/instance.types";
+import type { ManagedResource } from "../../../types/instance.types";
 import type {
   MessagePart,
   PreFetchedUrl,
-} from "@/types/python-generated/stream-events";
+} from "@host/types/python-generated/stream-events";
 import type { ContextDrawerItem } from "../types";
-import { readWebpageInputs } from "@/features/resource-manager/webpage/webpage-snapshot";
+import { readWebpageInputs } from "@host/features/resource-manager/webpage/webpage-snapshot";
 import { DEMO_WEBPAGE_SNAPSHOT } from "../../messages-display/user/userMessageChipsDemoData";
 
 jest.mock("../registry", () => ({

@@ -22,8 +22,8 @@ import reducer, {
   setScopePageSuccess,
 } from "../slice";
 import { makeSelectConversationHistoryItems } from "../selectors";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import type { RootState } from "@/lib/redux/store";
+import type { ConversationListItem } from "../../conversation-list/conversation-list.types";
+import type { RootState } from "@host/lib/redux/store";
 
 const row = (id: string, status: string): ConversationListItem =>
   ({
@@ -92,10 +92,10 @@ describe("archive is never silent", () => {
 
 describe("the server read and the verb", () => {
   const read = (p: string) =>
-    require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "..", "..", "..", "..", p), "utf8") as string;
+    require("node:fs").readFileSync(require("node:path").join(__dirname, "../../../../../../..", ".", ".", ".", ".", p), "utf8") as string;
 
   it("the history read filters on the archive view, both ways", () => {
-    const src = read("features/agents/redux/conversation-history/thunks.ts");
+    const src = read("packages/chat/src/agents/redux/conversation-history/thunks.ts");
     expect(src).toMatch(/query\.eq\("status", "archived"\)/);
     expect(src).toMatch(/query\.neq\("status", "archived"\)/);
   });
@@ -103,9 +103,9 @@ describe("the server read and the verb", () => {
   it("the ⋯ Archive verb confirms success with an Undo", async () => {
     jest.resetModules();
     const success = jest.fn();
-    jest.doMock("@/lib/toast", () => ({ toast: { success, error: jest.fn(), info: jest.fn() } }));
-    const { buildConversationMenu } = require("@/features/agents/components/conversation-actions/conversationActionRegistry");
-    const { setConversationArchived } = require("@/features/agents/redux/conversation-list/conversation-row-actions.thunks");
+    jest.doMock("@host/lib/toast", () => ({ toast: { success, error: jest.fn(), info: jest.fn() } }));
+    const { buildConversationMenu } = require("../../../components/conversation-actions/conversationActionRegistry");
+    const { setConversationArchived } = require("../../conversation-list/conversation-row-actions.thunks");
     const dispatch = jest.fn(async () =>
       setConversationArchived.fulfilled({ conversationId: "c1", status: "archived" }, "r", { conversationId: "c1", archived: true }),
     );
@@ -124,8 +124,8 @@ describe("the server read and the verb", () => {
 
 describe("per-agent conversation lists (Chat window, runner, test history)", () => {
   it("the per-agent selector never mixes archived rows into the live list", () => {
-    const { makeSelectAgentConversationList } = require("@/features/agents/redux/conversation-list/conversation-list.selectors");
-    const { conversationListCacheKey } = require("@/features/agents/redux/conversation-list/conversation-list.types");
+    const { makeSelectAgentConversationList } = require("../../conversation-list/conversation-list.selectors");
+    const { conversationListCacheKey } = require("../../conversation-list/conversation-list.types");
     const key = conversationListCacheKey("a1", null);
     const state = {
       conversationList: {
@@ -141,10 +141,10 @@ describe("per-agent conversation lists (Chat window, runner, test history)", () 
   it("every list built on it offers the one Archived (N) control", () => {
     const fs = require("node:fs");
     const path = require("node:path");
-    const root = path.join(__dirname, "..", "..", "..", "..", "..");
+    const root = path.join(__dirname, "../../../../../../..", ".", ".", ".", ".");
     const { execSync } = require("node:child_process");
     const consumers = execSync(
-      "git grep -l -e makeSelectAgentConversations -e makeSelectAgentConversationList -- 'features/**/*.tsx' 'components/**/*.tsx' 'app/**/*.tsx'",
+      "git grep -l -e makeSelectAgentConversations -e makeSelectAgentConversationList -- 'features/**/*.tsx' 'packages/chat/src/**/*.tsx' 'components/**/*.tsx' 'app/**/*.tsx'",
       { cwd: root, encoding: "utf8" },
     ).trim().split("\n").filter(Boolean);
     expect(consumers.length).toBeGreaterThanOrEqual(5);

@@ -29,7 +29,7 @@
 
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   AGENT_WRITABLE_VALUE_TYPES,
   CONTEXT_ITEMS_SURFACE_NAME,

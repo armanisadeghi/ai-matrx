@@ -15,12 +15,12 @@ jest.mock("../redux/workflow-runs.selectors", () => ({
   selectRunResult: () => () => null,
   selectRunStickyFacts: () => () => ({ heldNodes: {}, refusedNodes: {} }),
 }));
-jest.mock("@/features/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({
   selectRequest: () => () => ({ currentTextRunRaw: rawText }),
   selectRequestCarriesKindEnvelope: () => () => false,
   selectRequestStreamingPartialValue: () => () => null,
 }));
-jest.mock("@/features/agents/components/live-run/LiveRunDisplay", () => ({
+jest.mock("@ai-matrx/chat/agents/components/live-run/LiveRunDisplay", () => ({
   LiveRunDisplay: () => <div>Live agent words</div>,
 }));
 jest.mock("@/features/content-ir/react/slot/KindSlot", () => ({

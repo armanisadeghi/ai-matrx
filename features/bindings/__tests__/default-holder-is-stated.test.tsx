@@ -42,10 +42,10 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => () => ({ unwrap: () => Promise.resolve([]) }),
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectBuiltinAgents: () => [],
 }));
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
   // The version control reads the agent's history through this thunk.
   fetchAgentVersionHistory: () => ({ type: "noop" }),

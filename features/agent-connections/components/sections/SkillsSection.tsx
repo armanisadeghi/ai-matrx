@@ -22,7 +22,7 @@ import {
   type ConnectionsSkillsDraftSnapshot,
   type ConnectionsSkillsListEntry,
 } from "@/features/surfaces/manifests/connections-skills.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { SectionFooter } from "../SectionFooter";
 import { selectSelectedItemId, setSelectedItemId, selectViewScope } from "../../redux/ui/slice";
 import { SIDEBAR_SECTIONS } from "../../constants";

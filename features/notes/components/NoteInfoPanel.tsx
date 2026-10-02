@@ -49,7 +49,7 @@ import { CreateFolderDialog } from "./CreateFolderDialog";
 import { notesEditorManifest } from "@/features/surfaces/manifests/notes-editor.manifest";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 
 interface NoteInfoPanelProps {
   noteId: string;

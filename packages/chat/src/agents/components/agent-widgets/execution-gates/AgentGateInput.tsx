@@ -9,25 +9,25 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeftFromLine, ArrowRight, ArrowUp, X } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
 import {
   selectPreExecutionMessage,
   selectInstanceAgentName,
   selectBypassGateSeconds,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setPreExecutionSatisfied } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setPreExecutionSatisfied } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { destroyInstanceIfAllowed } from "../../../redux/execution-system/conversations/conversations.thunks";
+import { closeOverlay, openOverlay } from "@host/lib/redux/slices/overlaySlice";
 import { SmartAgentInput } from "../../inputs/smart-input/SmartAgentInput";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { PaperPlaneIcon } from "@radix-ui/react-icons";
-import { Button } from "@/components/ui/button";
-import type { OverlayId } from "@/features/overlays/catalogue";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { Button } from "@host/components/ui/button";
+import type { OverlayId } from "@host/features/overlays/catalogue";
+import { SurfaceRuntimeProvider } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   AGENT_GATE_SURFACE_NAME,
   createAgentGateScope,
-} from "@/features/surfaces/manifests/agent-gate.manifest";
+} from "@host/features/surfaces/manifests/agent-gate.manifest";
 
 // ─── WindowPanel body — used by AgentGateWindow ───────────────────────────────
 

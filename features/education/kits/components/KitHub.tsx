@@ -57,7 +57,7 @@ import { MakeMoreFromKit } from "./MakeMoreFromKit";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/education-kits.manifest";
 import {
   artifactActionHref,
@@ -67,8 +67,8 @@ import {
   STUDY_PATH,
   TRACKED_KINDS,
 } from "../kitSurfaceScope";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseKitDeletes, parseKitUpdates } from "../kitWrites";
 
 const FORMAT_PROMISE: Record<TargetKind, string> = {

@@ -25,7 +25,7 @@ import { callApi } from "@/lib/api/call-api";
 import { parseCallApiError } from "@/lib/api/errors";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
-import { invalidateMandateCache } from "@/features/mandates/service";
+import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import {
   MandateRunRefusal,
   isMandateTestResult,

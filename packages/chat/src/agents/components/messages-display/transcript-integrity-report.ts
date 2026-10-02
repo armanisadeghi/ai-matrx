@@ -16,18 +16,18 @@
  */
 
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import type { RootState } from "@/lib/redux/store";
-import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import type { RootState } from "@host/lib/redux/store";
+import type { MessageRecord } from "../../redux/execution-system/messages/messages.slice";
+import { extractFlatText } from "../../redux/execution-system/messages/messages.selectors";
 import {
   selectLatestRequestId,
   selectStreamPhase,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+} from "../../redux/execution-system/selectors/aggregate.selectors";
 import {
   readTranscriptJournal,
   shortId,
   type TranscriptJournalEvent,
-} from "@/features/agents/redux/execution-system/messages/transcript-journal";
+} from "../../redux/execution-system/messages/transcript-journal";
 import {
   applyDisplayGroupWindow,
   buildDisplayEntries,

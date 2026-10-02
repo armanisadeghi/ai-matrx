@@ -10,7 +10,7 @@
  */
 
 import { useMemo } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   EmptyStats,

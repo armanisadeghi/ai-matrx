@@ -29,7 +29,7 @@
 // voice-agent feature folder.
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 
 export interface LaunchRealtimeSessionOpts {
   /** The `agx_agent.id` whose runtime config drives the realtime session. */

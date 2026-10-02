@@ -13,7 +13,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(__dirname, "..", "..", "..");
-const SCAN = ["app", "components", "features", "lib", "hooks", "utils"];
+const SCAN = ["app", "components", "features", "packages/chat/src", "lib", "hooks", "utils"];
 const OWNER = "features/content-ir/registry/kind-correctors.ts";
 
 function files(dir: string, out: string[] = []): string[] {

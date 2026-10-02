@@ -39,9 +39,9 @@ import {
  * suspend→submit→resume round-trip this runner powers.
  */
 
-import type { RootState } from "@/lib/redux/store";
-import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
-import { toast } from "@/lib/toast";
+import type { RootState } from "@host/lib/redux/store";
+import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
+import { toast } from "@host/lib/toast";
 
 /**
  * Loose dispatch type that matches whatever `createAsyncThunk` hands us at the
@@ -58,16 +58,16 @@ import {
   hasRetainedTransportConsumer,
   processStream,
 } from "./process-stream";
-import { captureStreamClientError } from "@/lib/diagnostics/captureStreamError";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { captureStreamClientError } from "@host/lib/diagnostics/captureStreamError";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import {
   isRecordUnavailableError,
   recordUnavailable,
-} from "@/lib/records/recordUnavailable";
-import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
-import { isStreamTransportLost } from "@/lib/api/errors";
+} from "@host/lib/records/recordUnavailable";
+import { isV2Path, toV1FallbackUrl } from "@host/lib/api/ai-api-version";
+import { isStreamTransportLost } from "@host/lib/api/errors";
 import type { JsonExtractionConfig } from "./process-stream";
-import { logApiTarget } from "@/lib/api/log-api-target";
+import { logApiTarget } from "@host/lib/api/log-api-target";
 import {
   registerAbortController,
   ownsAbortController,
@@ -75,8 +75,8 @@ import {
   unregisterAbortController,
 } from "./abort-registry";
 import type { BackendChannel } from "./resolve-base-url";
-import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
-import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
+import { selectActiveServer } from "@host/lib/redux/slices/apiConfigSlice";
+import { resolveAgentSandboxRef } from "@host/lib/sandbox/active-binding";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import {
   setRequestStatus,
@@ -86,7 +86,7 @@ import {
 } from "../active-requests/active-requests.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage } from "@host/utils/errors";
 
 /**
  * Thrown when the underlying fetch is aborted (user cancel, heartbeat-driven
@@ -888,7 +888,7 @@ export async function runAiStream(
     // when the spine has no operation. Fire-and-forget; the follower stands
     // down by itself if the user retries or sends a new message.
     if (isConnectionLoss) {
-      void import("@/features/agents/runtime-reconnect/reconnect-server-operation.thunk").then(
+      void import("../../../runtime-reconnect/reconnect-server-operation.thunk").then(
         ({ reconnectServerOperation }) => {
           dispatch(
             reconnectServerOperation({

@@ -17,18 +17,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdminDebugger } from "@/lib/redux/slices/userSlice";
+} from "@host/components/ui/dialog";
+import { Label } from "@host/components/ui/label";
+import { Switch } from "@host/components/ui/switch";
+import { Separator } from "@host/components/ui/separator";
+import { Badge } from "@host/components/ui/badge";
+import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
 import {
   toggleDebugMode,
   selectIsDebugMode,
-} from "@/lib/redux/preferences/adminDebugSlice";
+} from "@host/lib/redux/preferences/adminDebugSlice";
 import { chatConversationsActions } from "./_legacy-stubs";
 import {
   selectShowDebugInfo,

@@ -20,27 +20,27 @@
  * false/null defaults.
  */
 
-import type { Database } from "@/types/database.types";
-import { parseCustomTools } from "@/features/agents/redux/agent-definition/parse-custom-tools";
+import type { Database } from "@host/types/database.types";
+import { parseCustomTools } from "./parse-custom-tools";
 import {
   parseAgentMessages,
   parseAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/parse-messages-variables";
+} from "./parse-messages-variables";
 import {
   parseAgentOutputSchema,
   parseSkillConfig,
-} from "@/features/agents/redux/agent-definition/parse-output-snapshot";
+} from "./parse-output-snapshot";
 import {
   parseAgentContextPolicies,
   parseAgentSettings,
-} from "@/features/agents/redux/agent-definition/parse-settings-context";
-import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
-import { stripNullish } from "@/utils/supabase/payload";
+} from "./parse-settings-context";
+import { sanitizeAgentToolIds } from "./sanitize-tool-ids";
+import { stripNullish } from "@host/utils/supabase/payload";
 import { OrganizationContextError } from "@ai-matrx/agents/matrx";
-import type { SkillConfig } from "@/features/skills/types";
-import { parseUiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
-import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-directives.types";
-import { isJsonObject } from "@/types/json";
+import type { SkillConfig } from "@host/features/skills/types";
+import { parseUiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import type { MatrxDirectivesConfig } from "../../types/matrx-directives.types";
+import { isJsonObject } from "@host/types/json";
 import type {
   AgentDefinition,
   AgentDefinitionDataIssue,
@@ -53,7 +53,7 @@ import {
   recordAgentDataIssue,
   recoverAgentDataField,
 } from "./data-issue-recovery";
-import { persistableVariableDefinitions } from "@/features/agents/utils/variable-binding";
+import { persistableVariableDefinitions } from "../../utils/variable-binding";
 
 // ---------------------------------------------------------------------------
 // settings sanitizer — settings holds ONLY server-consumed model params.

@@ -24,19 +24,19 @@
  * surface (page grows downward only) or inside a fixed-size window body.
  */
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import MarkdownStream from "@/components/MarkdownStream";
-import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { cn } from "@host/lib/utils";
 
 import { LiveRunDisplay } from "./LiveRunDisplay";
-import { selectRunSetEntries } from "@/features/agents/redux/execution-system/run-sets/run-sets.slice";
+import { selectRunSetEntries } from "../../redux/execution-system/run-sets/run-sets.slice";
 import {
   addDataToSet,
   addRunToSet,
   clearRunSet,
   removeRunSetEntry,
-} from "@/features/agents/redux/execution-system/run-sets/run-sets.thunks";
-import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
+} from "../../redux/execution-system/run-sets/run-sets.thunks";
+import { useFloatingLiveRun } from "@host/features/overlays/openers/liveRunWindow";
 
 export interface RunSetDisplayProps {
   /** Stable identity of this surface's set ("keyword-research:brain:org123"). */

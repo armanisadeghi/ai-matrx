@@ -55,7 +55,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import { usePageAnalyzer } from "@/features/marketing/components/pages/usePageAnalyzer";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { MarketingPageWriteTargets } from "@/features/marketing/components/pages/MarketingPageWriteTargets";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import {
@@ -64,7 +64,7 @@ import {
   MARKETING_PAGE_SURFACE_NAME,
 } from "@/features/marketing/lib/marketing-page-scope";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { type SerpDevice } from "@/features/marketing/seo/serp/SerpResult";
 import { useOpenSerpAnalyzerWindow } from "@/features/overlays/openers/serpAnalyzerWindow";
 import { useOpenSocialCardWindow } from "@/features/overlays/openers/socialCardAnalyzerWindow";

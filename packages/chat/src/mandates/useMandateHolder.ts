@@ -14,16 +14,16 @@
  */
 
 import { useEffect, useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
   MandateOrganizationUnresolvedError,
   onMandateCacheInvalidated,
   resolveMandateHolder,
   type ResolvedMandateHolder,
 } from "./service";
-import { extractErrorMessage } from "@/utils/errors";
-import type { AnyMandateKey } from "./mandate-key";
+import { extractErrorMessage } from "@host/utils/errors";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export interface MandateHolderState {
   holder: ResolvedMandateHolder | null;

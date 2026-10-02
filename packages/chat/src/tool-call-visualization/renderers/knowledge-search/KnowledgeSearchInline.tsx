@@ -7,8 +7,8 @@ import { isTerminal } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { canonicalNormalizedSourceName, RagSourceCard } from "./RagSourceCard";
 import { parseRag } from "./parseRag";
-import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useFilesLibraryProvenance } from "@host/features/rag/hooks/useLibraryProvenance";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for `knowledge_search` — the answer's SOURCES as a polished entity

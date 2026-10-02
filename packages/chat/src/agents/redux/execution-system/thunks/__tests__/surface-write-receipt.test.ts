@@ -28,26 +28,26 @@ const mockSubmitToolResult = jest.fn((payload: unknown) => ({
 }));
 const mockGetManifest = jest.fn();
 
-jest.mock("@/features/agents/api/submit-tool-results", () => ({
+jest.mock("../../../../api/submit-tool-results", () => ({
   submitToolResult: (payload: unknown) => mockSubmitToolResult(payload),
 }));
-jest.mock("@/features/agents/ui-first-tools/redux/request-approval", () => ({
+jest.mock("../../../../ui-first-tools/redux/request-approval", () => ({
   requestInlineApproval: async () => ({ kind: "approved" }),
 }));
-jest.mock("@/features/surfaces/hooks/useAgentNames", () => ({
+jest.mock("../../../../../surfaces/hooks/useAgentNames", () => ({
   resolveAgentName: async () => "Employer setup",
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("../../../agent-definition/selectors", () => ({
   selectAgentById: () => undefined,
 }));
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 
@@ -55,10 +55,10 @@ import { dispatchSurfaceWrite } from "../dispatch-surface-write.thunk";
 import {
   registerSurfaceRuntime,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceWriteTarget } from "@/features/surfaces/types";
+} from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteTarget } from "../../../../../surfaces/types";
 import { buildContextWire, resolveContextRow } from "@ai-matrx/agents/context";
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import activeRequestsReducer, {
   createRequest,
 } from "../../active-requests/active-requests.slice";

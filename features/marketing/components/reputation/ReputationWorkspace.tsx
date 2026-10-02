@@ -59,7 +59,7 @@ import {
   REPUTATION_RULING_NOTE_MAX_LENGTH,
 } from "@/features/marketing/data/reputation-types";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingReputationScope } from "@/features/surfaces/manifests/marketing-reputation.manifest";
 import type { Json } from "@/types/database.types";
 import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";

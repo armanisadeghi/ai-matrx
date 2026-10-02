@@ -28,7 +28,7 @@ import { formatChars, formatTokens } from "@/lib/tokens/estimate";
 import { getResourceManifest } from "@/features/research/service/resources";
 import { resolveBundle } from "@/features/research/resources/resolve";
 import { kindDef } from "@/features/research/resources/catalog";
-import type { AgentResourceReference } from "@/features/agents/agent-context/resource-reference";
+import type { AgentResourceReference } from "@ai-matrx/chat/agents/agent-context/resource-reference";
 import type {
   ContextBundle,
   ResolutionReport,

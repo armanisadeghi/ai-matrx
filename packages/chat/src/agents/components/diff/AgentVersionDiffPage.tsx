@@ -2,22 +2,22 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
   promoteAgentVersion,
-} from "@/features/agents/redux/agent-definition/thunks";
-import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
+} from "../../redux/agent-definition/thunks";
+import type { AgentVersionHistoryItem } from "../../redux/agent-definition/thunks";
 import {
   selectAgentById,
   selectVersionsByParentAgentId,
-} from "@/features/agents/redux/agent-definition/selectors";
-import SearchableSelect from "@/components/matrx/SearchableSelect";
-import type { Option } from "@/components/matrx/SearchableSelect";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from "../../redux/agent-definition/selectors";
+import SearchableSelect from "@host/components/matrx/SearchableSelect";
+import type { Option } from "@host/components/matrx/SearchableSelect";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
+import { Badge } from "@host/components/ui/badge";
+import { Button } from "@host/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
   AlertDialog,
@@ -28,7 +28,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@host/components/ui/alert-dialog";
 import {
   Loader2,
   ArrowUpCircle,
@@ -37,19 +37,19 @@ import {
   History,
   AlertTriangle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast-service";
+import { cn } from "@host/lib/utils";
+import { toast } from "@host/lib/toast-service";
 import { AgentDiffViewer, buildAgentAdapterRegistry } from "./AgentDiffViewer";
 import { VersionHistoryTimeline } from "./VersionHistoryTimeline";
 import { VersionIdBadge } from "./VersionIdBadge";
 import { promoteFailureMessage } from "./promote-failure-message";
 import { compareAgentDefinitions } from "./compare-agent-definitions";
-import { useDiffEnrichment } from "@/features/agents/hooks/useDiffEnrichment";
+import { useDiffEnrichment } from "../../hooks/useDiffEnrichment";
 import { DefaultFieldAdapter } from "@ai-matrx/diff/react";
 import { formatChangeType } from "@ai-matrx/diff/structural";
 import type { DiffNode, DiffResult } from "@ai-matrx/diff/structural";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { csvExportItem, jsonExportItem } from "@host/components/agent-copy/export";
 import {
   agentVersionDiffKpis,
   agentVersionDiffReviewPrompt,
@@ -60,10 +60,10 @@ import {
   buildAgentVersionHistoryRows,
   type AgentDiffFieldRenderer,
   type AgentVersionDiffSides,
-} from "@/features/agents/format";
-import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
-import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "../../format";
+import { buildAgentPayload } from "@host/components/agent-copy/buildAgentPayload";
+import { pushAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface AgentVersionDiffPageProps {
   agentId: string;

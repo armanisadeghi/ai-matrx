@@ -79,7 +79,7 @@ class Query implements PromiseLike<{ data: unknown; error: null }> {
 jest.mock("../supabase-typed", () => ({
   db: { schema: () => ({ from: () => new Query() }) },
 }));
-jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));
+jest.mock("@host/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));
 
 import {
   clearAllTasks,

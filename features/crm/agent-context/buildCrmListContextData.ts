@@ -11,7 +11,7 @@
  */
 
 import { createCrmScope } from "@/features/surfaces/manifests/crm.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 import type {

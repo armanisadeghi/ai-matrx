@@ -48,12 +48,12 @@ import { cn } from "@/lib/utils";
 import {
   ResultValue,
   type ResultDensity,
-} from "@/features/tool-call-visualization/result-fields/ResultValue";
-import { ResultJson } from "@/features/tool-call-visualization/result-fields/ResultJson";
+} from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
+import { ResultJson } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultJson";
 import {
   humanizeKey,
   isPlainObject,
-} from "@/features/tool-call-visualization/result-fields/shape";
+} from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 
 /**

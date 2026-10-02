@@ -19,16 +19,16 @@
 
 import { useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import type { MessageRole } from "@/features/agents/types/agent-message-types";
+import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { selectConversationMessages } from "../../../redux/execution-system/messages/messages.selectors";
+import type { MessageRole } from "../../../types/agent-message-types";
 import {
   selectStreamPhase,
   selectLatestRequestId,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
+} from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { selectInstanceVariableDefinitions } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { executeInstance } from "../../../redux/execution-system/thunks/execute-instance.thunk";
 import { AgentUserMessage } from "../../messages-display/user/AgentUserMessage";
 import { collapseByRequestId } from "../../messages-display/assistant/collapse-by-request-id";
 import { AgentPlanningIndicator } from "../../shared/AgentPlanningIndicator";

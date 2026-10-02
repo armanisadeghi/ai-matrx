@@ -36,7 +36,7 @@
  * own, its values are declared here and not before.
  */
 
-import type { SurfaceManifest } from "@/features/surfaces/types";
+import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const STAFF_SURFACE_NAME = "matrx-user/staff";

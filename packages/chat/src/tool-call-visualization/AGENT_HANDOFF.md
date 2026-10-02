@@ -119,7 +119,7 @@ The owner's exact words: *"when you say the current one is not working, it makes
 
 ## 3. Other hard lessons
 
-- **Field library is the keeper.** `features/tool-call-visualization/result-fields/` (shape detection → recursive `ResultValue` → table/key-value/markdown/media/json/url/scalar/UUID/empty/error) is the shared render vocabulary — reuse it from in-code renderers, the generic, AND (eventually) the runtime-rendered ones. Built, type-clean, semantic-token-only.
+- **Field library is the keeper.** `packages/chat/src/tool-call-visualization/result-fields/` (shape detection → recursive `ResultValue` → table/key-value/markdown/media/json/url/scalar/UUID/empty/error) is the shared render vocabulary — reuse it from in-code renderers, the generic, AND (eventually) the runtime-rendered ones. Built, type-clean, semantic-token-only.
 - **`text-success` / `text-warning` / `text-info` are NOT tailwind utilities here** — use `<Badge variant="success|warning|info">`. `text-destructive`/`text-primary`/`text-muted-foreground`/`text-foreground` are fine.
 - **Media must render via `<InlineMediaRef>`** (durability) — never raw `<img>` for owned media.
 - **Parallel sessions edit & sweep-commit `main`** (including my uncommitted files) and cause transient compile breakages that clear fast. Don't fix other people's WIP; commit my own files by explicit path; re-check `git status` before assuming what's staged.

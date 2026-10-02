@@ -10,29 +10,29 @@
 
 import { createAsyncThunk, type ThunkDispatch, type UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
+import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
 import {
   createInstance,
   destroyInstance,
-} from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
   fetchFullAgent,
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   setContextEntry,
   removeContextEntry,
-} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import type { BuilderAdvancedSettings } from "@/features/agents/types/instance.types";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { setBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import type { BuilderAdvancedSettings } from "@ai-matrx/chat/agents/types/instance.types";
 import { MASTER_INPUT_TARGET } from "../types";
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
+import type { ContextObjectType } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   addColumn,

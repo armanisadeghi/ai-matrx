@@ -23,7 +23,7 @@ import {
 import { StreamBlockAccumulator } from "../../utils/stream-block-accumulator";
 import { assembleMessageParts } from "../../utils/assemble-cx-content-blocks";
 import { upsertToolLifecycle } from "../active-requests.slice";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
+import type { ActiveRequest } from "../../../../types/request.types";
 
 type AnyState = Parameters<ReturnType<typeof selectUnifiedSlots>>[0];
 

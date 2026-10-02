@@ -276,7 +276,7 @@ The exact active-directive comparison below uses the 2026-07-02 hatch-baseline c
 - `eslint-disable` also spread from 343 to 363 files (**+20 files**). Only 62 of 496 directives carry an inline `-- reason`; 434 lack an inline reason. Some have an adjacent rationale and need per-file review, so the 434 count is a triage queue rather than an automatic violation verdict.
 - Active ESLint rule concentrations: 217 `react-hooks/exhaustive-deps`, 119 `no-console`, 51 `@next/next/no-img-element`, 38 `@typescript-eslint/no-explicit-any`, 27 `react-hooks/set-state-in-effect`, and 25 `no-restricted-syntax`.
 - Seven raw `eslint-disable` text matches were comments, documentation, a string, or commented-out code and were removed from the active count.
-- Five `as any` detector matches are prose/JSDoc/JSX false positives: `app/(public)/privacy-policy/page.tsx:158`, `components/animated/glare-card.tsx:5`, `features/transcripts/service/audioStorageService.ts:5`, `features/agents/redux/shared/field-flags.ts:53`, and `features/content-ir/admin/KindTryInputTab.tsx:7`. Verified executable `as any` debt is therefore 102 occurrences.
+- Five `as any` detector matches are prose/JSDoc/JSX false positives: `app/(public)/privacy-policy/page.tsx:158`, `components/animated/glare-card.tsx:5`, `features/transcripts/service/audioStorageService.ts:5`, `packages/chat/src/agents/redux/shared/field-flags.ts:53`, and `features/content-ir/admin/KindTryInputTab.tsx:7`. Verified executable `as any` debt is therefore 102 occurrences.
 - `lib/api/typed-client.contract-test.ts` contributes five raw `@ts-expect-error` matches: two prose mentions and three intentional negative compile-time assertions. The three directives are a false-positive class for suppression debt. After excluding those, the only current production `@ts-expect-error` is the pre-existing annotated `webkitdirectory` line at `features/files/components/surfaces/desktop/NewMenu.tsx:279`; the earlier production suppression in `CleanedMarkdownPane.tsx` was removed. Production `@ts-expect-error` debt therefore fell from 2 to 1 even though the raw detector category rose.
 - After the verified prose/negative-test exclusions, the production explicit-suppression inventory is 628 occurrences across 425 files.
 
@@ -299,11 +299,11 @@ The production agent-app Redux slice is highest risk: it combines whole-file typ
 
 ### Rank 2 — unguarded generated-boundary casts
 
-- `features/agents/redux/agent-definition/converters.ts` — 30 `as unknown as` casts across DB JSON reads and insert/update writes.
+- `packages/chat/src/agents/redux/agent-definition/converters.ts` — 30 `as unknown as` casts across DB JSON reads and insert/update writes.
 - `features/ai-models/service.ts` — 20 `as unknown as` casts directly after Supabase reads/writes, with no `DbRpcRow` guard in the file.
 - `features/dictionary/service/dictionaryService.ts` — 9 casts.
 - `features/transcript-studio/service/studioService.ts` — 8 casts.
-- `features/agents/redux/execution-system/thunks/process-stream.ts` — 8 casts.
+- `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts` — 8 casts.
 
 ### Rank 3 — executable `as any` concentrations
 
@@ -325,7 +325,7 @@ The production agent-app Redux slice is highest risk: it combines whole-file typ
 ### Rank 5 — React lifecycle suppressions
 
 - 246 active React-hook disables: 217 `exhaustive-deps`, 27 `set-state-in-effect`, and 2 `rules-of-hooks`.
-- Highest concentrations: `lib/entity-list/useEntityList.ts` (5), `features/agents/components/diff/AgentVersionDiffPage.tsx` (4), `features/education/engage/data/useGamePlay.ts` (4), `features/pdf-extractor/studio/PdfStudioReader.tsx` (4), and `features/transcription-cleanup/components/CleanupPad.tsx` (4).
+- Highest concentrations: `lib/entity-list/useEntityList.ts` (5), `packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx` (4), `features/education/engage/data/useGamePlay.ts` (4), `features/pdf-extractor/studio/PdfStudioReader.tsx` (4), and `features/transcription-cleanup/components/CleanupPad.tsx` (4).
 - These require behavioral review; no hook dependency list may be changed mechanically by P10.
 
 ## Precise Tier-R chips
@@ -340,7 +340,7 @@ Audit all 20 casts in `features/ai-models/service.ts` (first at line 111; last a
 
 ### Chip P10-3 — make agent-definition JSON conversion honest end to end
 
-Audit the 30 casts in `features/agents/redux/agent-definition/converters.ts` across `dbRowToAgentDefinition`, insert construction, and update construction. Trace each JSON field to the generated DB column and its terminal renderer/server consumer; add field-level runtime guards or schemas, correct every writer, and backfill malformed rows if found. The normal fix must remove the casts because the data conforms, not replace them with a different assertion.
+Audit the 30 casts in `packages/chat/src/agents/redux/agent-definition/converters.ts` across `dbRowToAgentDefinition`, insert construction, and update construction. Trace each JSON field to the generated DB column and its terminal renderer/server consumer; add field-level runtime guards or schemas, correct every writer, and backfill malformed rows if found. The normal fix must remove the casts because the data conforms, not replace them with a different assertion.
 
 ### Chip P10-4 — type the hierarchy mutation and thunk-dispatch boundaries
 
@@ -352,7 +352,7 @@ Audit the seven full-file `no-explicit-any` disables under `lib/sync/engine/` pl
 
 ### Chip P10-6 — review the highest-risk React-hook suppressions
 
-Create one behavior trace per file for `lib/entity-list/useEntityList.ts`, `features/agents/components/diff/AgentVersionDiffPage.tsx`, `features/education/engage/data/useGamePlay.ts`, `features/pdf-extractor/studio/PdfStudioReader.tsx`, and `features/transcription-cleanup/components/CleanupPad.tsx`. For every suppressed dependency, identify the captured value, event that should rerun the effect, and loop/staleness risk. Propose file-specific repairs; do not batch-edit dependency arrays.
+Create one behavior trace per file for `lib/entity-list/useEntityList.ts`, `packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx`, `features/education/engage/data/useGamePlay.ts`, `features/pdf-extractor/studio/PdfStudioReader.tsx`, and `features/transcription-cleanup/components/CleanupPad.tsx`. For every suppressed dependency, identify the captured value, event that should rerun the effect, and loop/staleness risk. Propose file-specific repairs; do not batch-edit dependency arrays.
 
 ### Chip P10-7 — remove the temporary task-debug cast honestly
 

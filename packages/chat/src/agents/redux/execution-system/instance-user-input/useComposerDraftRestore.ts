@@ -13,7 +13,7 @@
 // than pretending they are.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import {
   isComposerDraftStorageAvailable,
   peekComposerDraft,

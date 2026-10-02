@@ -25,7 +25,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => mockDispatch,
 }));
 
-import instanceContextReducer from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import instanceContextReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import {
   CLOUD_BROWSER_PROFILE_CONTEXT_KEY,
   useCloudBrowserProfileContextSync,

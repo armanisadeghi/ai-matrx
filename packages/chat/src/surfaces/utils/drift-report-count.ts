@@ -20,7 +20,7 @@
  * Reporting a healthy state for a problem you already detected is worse than
  * not checking at all — it actively tells the operator to stop looking.
  */
-import type { SurfaceDriftReport } from "@/features/surfaces/types";
+import type { SurfaceDriftReport } from "../types";
 
 export function countDriftIssues(
   report: SurfaceDriftReport | null | undefined,

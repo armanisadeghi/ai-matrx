@@ -1,6 +1,6 @@
 "use client";
 
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import { VoicePadEmbed } from "@/components/official-candidate/voice-pad/components/VoicePadEmbed";
 import {
   RESOURCE_PICKER_RUN_CONTROL_HEIGHT_CLASS,

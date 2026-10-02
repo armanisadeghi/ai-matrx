@@ -15,10 +15,10 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { callApi } from "@/lib/api/call-api";
-import { toast } from "@/lib/toast";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { components } from "@/types/python-generated/api-types";
+import { callApi } from "@host/lib/api/call-api";
+import { toast } from "@host/lib/toast";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { components } from "@host/types/python-generated/api-types";
 import {
   addInboxItem,
   confirmInboxItem,

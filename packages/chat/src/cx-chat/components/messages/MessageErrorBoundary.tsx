@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { TriangleAlert } from 'lucide-react';
-import { captureReactRenderError } from '@/lib/diagnostics/captureReactError';
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { captureReactRenderError } from '@host/lib/diagnostics/captureReactError';
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface MessageErrorBoundaryProps {
     children: React.ReactNode;

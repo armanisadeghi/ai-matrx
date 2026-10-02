@@ -27,11 +27,11 @@
  * where history is rebuilt (matrx-ai `db/edited_answers.py`).
  */
 
-import { durableRecordId } from "@/lib/ids/durable-record-id";
+import { durableRecordId } from "@host/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { Json } from "@/types/database.types";
-import { supabase } from "@/utils/supabase/client";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { Json } from "@host/types/database.types";
+import { supabase } from "@host/utils/supabase/client";
 import { editMessage } from "./edit-message.thunk";
 import { projectAnswerText, spliceAnswerText, spliceDisplayEdit } from "./answer-text-splice";
 

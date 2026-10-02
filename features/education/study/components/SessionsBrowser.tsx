@@ -41,10 +41,10 @@ import {
 } from "../utils/sessionListDisplay";
 import { ScoreRing, scoreAccentBgClasses } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   collectionWriteHandlers,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { parseSessionDeletes } from "./sessionAgentWrites";
 import {
   createEducationSessionsScope,

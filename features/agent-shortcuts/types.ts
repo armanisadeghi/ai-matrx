@@ -1,18 +1,18 @@
-import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
-import type { AgentShortcutCategoryDef } from "@/features/agents/redux/agent-shortcut-categories/types";
+import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
+import type { AgentShortcutCategoryDef } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/types";
 import type { AgentContentBlockDef } from "@/features/agent-connections/redux/skl/content-block-compat";
 import type { AgentScope, PlacementType, ScopeLevel } from "./constants";
-import type { ShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
+import type { ShortcutContext } from "@ai-matrx/chat/agents/utils/shortcut-context-utils";
 
 export type {
   AgentShortcut,
   AgentShortcutRecord,
-} from "@/features/agents/redux/agent-shortcuts/types";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 
 export type {
   AgentShortcutCategoryDef,
   AgentShortcutCategoryRecord,
-} from "@/features/agents/redux/agent-shortcut-categories/types";
+} from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/types";
 
 // Content blocks are canonical `skill.render_definition` rows (skl slice).
 export type {

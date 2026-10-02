@@ -26,8 +26,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { Json } from "@/types/database.types";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
 import { composeKindSampleFillIntent } from "@/features/content-ir/studio/kind-agent-intents";
@@ -38,7 +38,7 @@ import KindInstanceRender, {
 import { isValidatorDrift } from "@/features/content-ir/studio/instance-service";
 import { storeKindRecord } from "@/features/content-ir/studio/store-kind-record";
 import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

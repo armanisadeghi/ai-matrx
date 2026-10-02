@@ -10,7 +10,7 @@
 import type {
   CxContentBlock,
   CxTextContent,
-} from "@/features/public-chat/types/cx-tables";
+} from "@ai-matrx/chat/public-chat/types/cx-tables";
 
 /** A surface's markdown string → the content-blocks shape the primitives take. */
 export function textToContentBlocks(text: string): CxContentBlock[] {

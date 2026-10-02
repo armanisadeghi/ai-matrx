@@ -87,7 +87,7 @@ function selfTest(): void {
 function main(): void {
   if (process.argv.includes("--self-test")) return selfTest();
   const files: Array<{ name: string; text: string }> = [];
-  for (const f of tracked(ROOT, ["app", "features", "components", "lib", "utils", "hooks", "providers", "packages", "scripts", "migrations/campaign", "migrations/inverse"])) {
+  for (const f of tracked(ROOT, ["app", "features", "packages/chat/src", "components", "lib", "utils", "hooks", "providers", "packages", "scripts", "migrations/campaign", "migrations/inverse"])) {
     files.push({ name: f, text: readFileSync(resolve(ROOT, f), "utf8") });
   }
   if (existsSync(RECORDS)) {

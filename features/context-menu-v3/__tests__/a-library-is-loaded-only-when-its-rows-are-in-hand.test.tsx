@@ -23,11 +23,11 @@ jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema: () => ({ from: () => ({ select: () => ({ in: () => new Promise(() => undefined) }) }) }) },
 }));
 
-import { setShortcutScopeLoaded } from "@/features/agents/redux/agent-shortcuts/slice";
+import { setShortcutScopeLoaded } from "@ai-matrx/chat/agents/redux/agent-shortcuts/slice";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
-import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
+import { fetchUnifiedMenu } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import { useUnifiedAgentContextMenu } from "../hooks/useUnifiedAgentContextMenu";
-import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
+import { useSurfaceBoundAgents } from "@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

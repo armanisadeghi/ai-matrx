@@ -8,7 +8,7 @@
  * items were held back — never evaluated, never fed.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@host/types/python-generated/api-types";
 
 type SystemItems = components["schemas"]["ContextSystemItems"];
 

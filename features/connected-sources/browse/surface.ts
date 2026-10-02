@@ -11,13 +11,13 @@ import type {
   EntityListSurface,
   EntityListSurfaceController,
 } from "@/lib/entity-list/components/EntityListPage";
-import { xmlElement, xmlList, xmlText } from "@/features/surfaces/runtime/context-bundle";
+import { xmlElement, xmlList, xmlText } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import {
   CONNECTED_SOURCES_SURFACE_NAME,
   createConnectedSourcesScope,
 } from "@/features/surfaces/manifests/connected-sources.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { ConnectedAdapterRow, ConnectedSourceRow } from "../types";
 import {

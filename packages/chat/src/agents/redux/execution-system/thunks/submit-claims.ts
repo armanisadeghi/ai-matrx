@@ -8,7 +8,7 @@
  * server turn lock remains the cross-tab/process backstop.
  */
 
-import type { InstanceUserInputState } from "@/features/agents/types/instance.types";
+import type { InstanceUserInputState } from "../../../types/instance.types";
 
 const claims = new Set<string>();
 

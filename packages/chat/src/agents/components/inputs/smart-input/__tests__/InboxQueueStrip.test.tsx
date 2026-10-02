@@ -9,24 +9,24 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@host/components/ui/tooltip";
 import inboxReducer, {
   addInboxItem,
   type ConversationInboxItem,
-} from "@/features/agents/redux/execution-system/inbox/inbox.slice";
+} from "../../../../redux/execution-system/inbox/inbox.slice";
 import { InboxQueueStrip } from "../InboxQueueStrip";
-import { promoteQueuedToSteer } from "@/features/agents/redux/execution-system/inbox/inbox.thunks";
+import { promoteQueuedToSteer } from "../../../../redux/execution-system/inbox/inbox.thunks";
 
 // Editing itself has separate dialog coverage; this strip test exercises the
 // availability of its entry point without depending on jsdom media queries.
-jest.mock("@/components/dialogs/text-input/TextInputDialog", () => ({
+jest.mock("@host/components/dialogs/text-input/TextInputDialog", () => ({
   TextInputDialog: () => null,
 }));
 
 // The real promotion does a DELETE followed by a POST. Keep that boundary
 // pending: this is the interval in which a second click used to be possible.
 jest.mock(
-  "@/features/agents/redux/execution-system/inbox/inbox.thunks",
+  "../../../../redux/execution-system/inbox/inbox.thunks",
   () => ({
     promoteQueuedToSteer: jest.fn(
       () => () => new Promise<void>(() => undefined),

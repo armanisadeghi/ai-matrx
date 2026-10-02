@@ -14,8 +14,8 @@
  * shell, not a new editor.
  */
 
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-import { toast } from "@/lib/toast";
+import { StaleDataNotice } from "@host/components/official/stale-data/StaleDataNotice";
+import { toast } from "@host/lib/toast";
 import { useCallback, useEffect, useState } from "react";
 import {
   FileText,
@@ -26,40 +26,40 @@ import {
   Unlink,
   X,
 } from "lucide-react";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuExtraSection,
   type ResolvedContextMenuContext,
-} from "@/features/context-menu-v3/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@host/features/context-menu-v3/types";
+import { SurfaceRuntimeProvider } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   DOCUMENTS_WORKSPACE_SURFACE_NAME,
   createDocumentsWorkspaceScope,
-} from "@/features/surfaces/manifests/documents-workspace.manifest";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { useIsMobile } from "@/hooks/use-mobile";
+} from "@host/features/surfaces/manifests/documents-workspace.manifest";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useIsMobile } from "@host/hooks/use-mobile";
 import {
   isScratchScope,
   scratchScopeId,
   type WorkingDocumentKind,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   selectActiveScratchpadId,
   selectWorkingDocBinding,
   selectWorkingDocContent,
   selectWorkingDocTitle,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   detachWorkspaceDocumentThunk,
   listAttachedDocumentTabsThunk,
   openWorkspaceDocumentThunk,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+} from "../../../redux/execution-system/instance-working-document/instance-working-document.thunks";
 import {
   createScratchpadThunk,
   hydrateActiveScratchpadThunk,
-} from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
+} from "../../../redux/execution-system/instance-working-document/scratchpad.thunks";
 import { WorkingDocumentPanel } from "../WorkingDocumentPanel";
 import type { WorkingDocumentSurfaceContext } from "../workingDocumentSurface";
 import {

@@ -35,7 +35,7 @@ import {
   newAgentHref,
   type AgentAddressViewer,
   type AgentPathRow,
-} from "@/features/agents/addressing/agentAddress";
+} from "@ai-matrx/chat/agents/addressing/agentAddress";
 
 export {
   AGENT_BASE_PATH,

@@ -7,9 +7,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectFullInstanceUIStateSlice,
   selectAllUIStateConversationIds,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { InstanceUIStateList } from "@/features/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateList";
-import { InstanceUIStateCore } from "@/features/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateCore";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { InstanceUIStateList } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateList";
+import { InstanceUIStateCore } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateCore";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 

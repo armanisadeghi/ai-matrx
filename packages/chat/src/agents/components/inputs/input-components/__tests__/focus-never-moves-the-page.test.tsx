@@ -23,7 +23,7 @@ import { createRoot } from "react-dom/client";
 // The text control itself is a different subsystem (voice, agent menu, redux).
 // Stood in by a plain textarea that forwards its ref and every prop — so a
 // mount-time `autoFocus` attribute behaves exactly as the browser's would.
-jest.mock("@/components/official/ProTextarea", () => {
+jest.mock("@host/components/official/ProTextarea", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const R = require("react") as typeof React;
   const ProTextarea = R.forwardRef<HTMLTextAreaElement, Record<string, unknown>>(
@@ -42,7 +42,7 @@ jest.mock("@/components/official/ProTextarea", () => {
   );
   return { ProTextarea };
 });
-jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
+jest.mock("@host/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
 // The modules under test can be swapped for a pre-fix copy to prove this
 // suite fails without the fix (same seam as a-date-shows-in-a-date-and-time-input).
@@ -52,10 +52,10 @@ const { TextareaInput } = require(
 ) as typeof import("../TextareaInput");
 const { ServedFieldControl } = require(
   process.env.SERVED_FIELDS_UNDER_TEST ??
-    "@/features/workflow-runtime/served-form/ServedInputFields",
-) as typeof import("@/features/workflow-runtime/served-form/ServedInputFields");
+    "@host/features/workflow-runtime/served-form/ServedInputFields",
+) as typeof import("@host/features/workflow-runtime/served-form/ServedInputFields");
 /* eslint-enable @typescript-eslint/no-require-imports */
-import { parseServedInput } from "@/features/workflow-runtime/served-form/served-input";
+import { parseServedInput } from "@host/features/workflow-runtime/served-form/served-input";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 globalThis.ResizeObserver ??= class {

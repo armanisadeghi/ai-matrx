@@ -12,7 +12,7 @@ import {
   ProblemList,
   readCollectionList,
   repeatsProblem,
-} from "@/features/surfaces/runtime/collection-write-targets";
+} from "../runtime/collection-write-targets";
 
 export const DEFAULT_PARENT = "matrx-default/default";
 export const DEFAULT_SORT_ORDER = 150;

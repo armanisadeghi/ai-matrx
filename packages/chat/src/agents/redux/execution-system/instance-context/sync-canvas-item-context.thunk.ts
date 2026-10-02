@@ -5,21 +5,21 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { setContextEntry } from "./instance-context.slice";
 import {
   buildCanvasItemContextValue,
   isCanvasItemContextValue,
-} from "@/features/agents/utils/canvasItemContext";
-import { applyContextDeltaToContent } from "@/features/agents/redux/execution-system/instance-working-document/contextDelta";
-import type { ContextDeltaData } from "@/types/python-generated/stream-events";
+} from "../../../utils/canvasItemContext";
+import { applyContextDeltaToContent } from "../instance-working-document/contextDelta";
+import type { ContextDeltaData } from "@host/types/python-generated/stream-events";
 import {
   CANVAS_ITEM_UPDATED_EVENT,
   invalidateCanvasItemCache,
-} from "@/features/canvas/hooks/useCanvasItem";
-import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
-import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
+} from "@host/features/canvas/hooks/useCanvasItem";
+import { canvasArtifactService } from "@host/features/canvas/services/canvasArtifactService";
+import { isMaterializedArtifactId } from "@host/features/canvas/artifact-types/artifactId";
+import { recordUnavailable } from "@host/lib/records/recordUnavailable";
 
 interface ThunkApi {
   dispatch: AppDispatch;

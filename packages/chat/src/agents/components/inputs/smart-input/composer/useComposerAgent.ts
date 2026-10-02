@@ -15,17 +15,17 @@ import { useEffect } from "react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useMandate } from "@/features/mandates/useMandate";
-import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useMandate } from "../../../../../mandates/useMandate";
+import { selectAgentIdFromInstance } from "../../../../redux/execution-system/conversations/conversations.selectors";
 import {
   selectAgentModelId,
   selectAgentName,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
-import { useModelOptions } from "@/features/ai-models/hooks/useModels";
-import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
+} from "../../../../redux/agent-definition/selectors";
+import { selectInstanceOverrideState } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectModelLabelById } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { useModelOptions } from "@host/features/ai-models/hooks/useModels";
+import { initializeChatAgents } from "../../../../redux/agent-definition/thunks";
 
 /** The tag that makes an agent a Chat-mode preset (A2: "rules later; for now read the tag"). */
 export const CHAT_AGENT_TAG = "chat-agent";

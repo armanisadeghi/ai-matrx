@@ -18,23 +18,23 @@ let mockOrganizationId: string | null = "org-1";
 
 // "None yet" waits for boot's answer; the test scripts that answer.
 const mockAwaitOrganization = jest.fn();
-jest.mock("@/features/organizations/awaitWorkspace", () => ({
+jest.mock("@host/features/organizations/awaitWorkspace", () => ({
   awaitEffectiveOrganizationId: () => mockAwaitOrganization(),
 }));
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: mockToastError, success: mockToastSuccess },
 }));
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: mockCaptureError,
 }));
-jest.mock("@/features/surfaces/manifests/registry", () => ({
+jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
-jest.mock("@/actions/feedback.actions", () => ({
+jest.mock("@host/actions/feedback.actions", () => ({
   submitFeedback: (...args: unknown[]) => mockSubmitFeedback(...args),
 }));
-jest.mock("@/lib/redux/store-singleton", () => ({
+jest.mock("@host/lib/redux/store-singleton", () => ({
   getStoreSingleton: () => ({
     getState: () => ({ appContext: { organization_id: mockOrganizationId } }),
   }),

@@ -19,7 +19,7 @@ import { createStreamingPcmPlayer } from "@/features/audio/streamingPcmPlayer";
 import {
   createGoogleRealtimeClient,
   type GoogleRealtimeConnectionState,
-} from "@/features/voice-agent/transport/googleRealtimeClient";
+} from "@ai-matrx/chat/voice-agent/transport/googleRealtimeClient";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PromptChannel {

@@ -5,7 +5,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrmListPage } from "@/features/crm/components/CrmListPage";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 
 /**
  * /crm — the CRM entry list: People and Companies (crm.party), table-first,

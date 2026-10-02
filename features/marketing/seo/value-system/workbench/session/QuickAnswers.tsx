@@ -69,8 +69,8 @@ import {
   createKeywordQuickAnswersScope,
   keywordQuickAnswersManifest,
 } from "@/features/surfaces/manifests/keyword-quick-answers.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface QuickAnswersSurfaceHandle {

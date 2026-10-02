@@ -16,20 +16,20 @@
  */
 
 import type { ReactNode } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { waitForConversationPersisted } from "../../redux/execution-system/conversations/conversation-persistence";
+import { setUserInputText } from "../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
   buildChatContextData,
   CHAT_CONTEXT_MENU_PROPS,
 } from "./agent-context/buildChatContextData";
 import { buildChatRunConfiguration } from "./agent-context/buildChatRunConfiguration";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@host/features/context-menu-v3/utils/build-application-scope";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { CHAT_CONVERSATION_TITLE_MAX } from "@/features/surfaces/manifests/chat.manifest";
+} from "../../../surfaces/runtime/SurfaceRuntimeContext";
+import { CHAT_CONVERSATION_TITLE_MAX } from "@host/features/surfaces/manifests/chat.manifest";
 import {
   buildChatConversationRecord,
   buildChatTranscript,
@@ -45,40 +45,40 @@ import {
   type ChatMessageEditPlan,
   type ChatMessageSnapshot,
 } from "./agent-context/chatAgentWrites";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
-import { editMessageText } from "@/features/agents/redux/execution-system/message-crud/edit-message-text.thunk";
+import { collectionWriteHandlers } from "../../../surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "../../../surfaces/runtime/surface-writeback";
+import { editMessageText } from "../../redux/execution-system/message-crud/edit-message-text.thunk";
 import {
   fetchStoredAnswer,
   saveAnswerEdit,
-} from "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk";
-import { deleteMessage } from "@/features/agents/redux/execution-system/message-crud/delete-message.thunk";
-import { regenerateAnswer } from "@/features/agents/redux/execution-system/message-crud/regenerate-answer";
-import { selectRegenerateAnchor } from "@/features/agents/redux/execution-system/message-crud/regenerate-anchor";
-import { forkConversation } from "@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk";
+} from "../../redux/execution-system/message-crud/save-answer-edit.thunk";
+import { deleteMessage } from "../../redux/execution-system/message-crud/delete-message.thunk";
+import { regenerateAnswer } from "../../redux/execution-system/message-crud/regenerate-answer";
+import { selectRegenerateAnchor } from "../../redux/execution-system/message-crud/regenerate-anchor";
+import { forkConversation } from "../../redux/execution-system/message-crud/fork-conversation.thunk";
 import {
   cancelExecution,
   smartExecute,
-} from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+} from "../../redux/execution-system/thunks/smart-execute.thunk";
+import { renameConversation } from "../../redux/conversation-list/conversation-row-actions.thunks";
+import { selectUserInputText } from "../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   extractFlatText,
   selectConversationMessages,
   selectHasMoreOlderMessages,
   selectMessagesHydrationFailure,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectIsStreaming } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+} from "../../redux/execution-system/messages/messages.selectors";
+import { selectConversationTitle } from "../../redux/execution-system/conversations/conversations.selectors";
+import { selectIsStreaming } from "../../redux/execution-system/selectors/aggregate.selectors";
+import { selectAgentName } from "../../redux/agent-definition/selectors";
+import { selectCurrentSettings } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { selectInstanceResources } from "../../redux/execution-system/instance-resources/instance-resources.selectors";
+import { selectResolvedVariables } from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   selectActiveScratchpadId,
   selectAttachedScratchpadIds,
   selectWorkingDocEntry,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+} from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 
 /**
  * Opens the "open the branch?" prompt, lazily (it is only needed after a
@@ -87,11 +87,11 @@ import {
  */
 function promptForkOutcomeLazily(
   args: Parameters<
-    typeof import("@/features/agents/components/messages-display/message-options/promptForkOutcome").promptForkOutcome
+    typeof import("../messages-display/message-options/promptForkOutcome").promptForkOutcome
   >[0],
 ): void {
   void import(
-    "@/features/agents/components/messages-display/message-options/promptForkOutcome"
+    "../messages-display/message-options/promptForkOutcome"
   ).then(({ promptForkOutcome }) => promptForkOutcome(args));
 }
 

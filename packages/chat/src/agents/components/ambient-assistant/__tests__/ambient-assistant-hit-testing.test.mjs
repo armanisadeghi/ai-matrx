@@ -8,10 +8,10 @@ const read = (path) => readFileSync(new URL(path, root), "utf8");
 test("ambient dock is transparent outside explicit interactive islands", () => {
   const css = read("styles/shell.css").replace(/\/\*[\s\S]*?\*\//g, "");
   const text = read(
-    "features/agents/components/ambient-assistant/ScrollAssistantLauncherImpl.tsx",
+    "packages/chat/src/agents/components/ambient-assistant/ScrollAssistantLauncherImpl.tsx",
   );
   const voice = read(
-    "features/agents/components/ambient-assistant/ScrollVoiceAssistantLauncherImpl.tsx",
+    "packages/chat/src/agents/components/ambient-assistant/ScrollVoiceAssistantLauncherImpl.tsx",
   );
 
   assert.match(

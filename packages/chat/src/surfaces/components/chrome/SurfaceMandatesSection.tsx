@@ -42,21 +42,21 @@ import {
   StickyNote,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { Skeleton } from "@ai-matrx/design-system";
-import { getManifest } from "@/features/surfaces/manifests/registry";
-import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
-import { useAvailableHere } from "@/features/surfaces/runtime/available-here";
+import { getManifest } from "@host/features/surfaces/manifests/registry";
+import { useLiveSurfaceMandates } from "../../runtime/surface-mandates";
+import { useAvailableHere } from "../../runtime/available-here";
 import {
   fetchMandateIdentities,
   type MandateIdentity,
-} from "@/features/mandates/service";
-import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
-import { mandateDisplayName } from "@/features/mandates/mandate-words";
-import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
-import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+} from "../../../mandates/service";
+import { MandateNotesPanel } from "@host/features/mandates/components/MandateNotesPanel";
+import { mandateDisplayName } from "@host/features/mandates/mandate-words";
+import { useOpenMandateWindow } from "@host/features/overlays/openers/mandateWindow";
+import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export interface SurfaceMandatesSectionProps {
   /** The surface the user is standing on. */

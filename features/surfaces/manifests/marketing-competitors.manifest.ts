@@ -4,7 +4,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   AUTOPSY_MAX_DOMAIN_ENTRIES,
   AUTOPSY_RUN_BOUND_LIST,

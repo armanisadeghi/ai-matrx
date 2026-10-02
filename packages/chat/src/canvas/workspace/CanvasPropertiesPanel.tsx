@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 
 export interface CanvasPropertiesTab {
   id: string;

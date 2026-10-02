@@ -14,8 +14,8 @@
  */
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "@host/components/ui/badge";
+import { cn } from "@host/lib/utils";
 
 export interface ResultScalarProps {
     value: string | number | boolean;

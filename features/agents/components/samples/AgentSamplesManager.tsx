@@ -46,7 +46,7 @@ import {
   type CandidateRun,
   type SampleFreshness,
 } from "@/features/agents/samples/service";
-import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
+import { isAttachmentMessagePart } from "@ai-matrx/chat/agents/components/context-items/normalize";
 import { isJsonObject } from "@/types/json";
 import {
   buildTestCaseParts,

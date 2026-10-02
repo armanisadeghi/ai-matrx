@@ -19,7 +19,7 @@ jest.mock("@/hooks/sandbox/use-sandbox", () => ({
   }),
 }));
 jest.mock("@/features/shell/components/header/RouteHeader", () => () => null);
-jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({ SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
+jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({ SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 jest.mock("@/features/surfaces/manifests/sandboxes.manifest", () => ({ createSandboxesScope: jest.fn() }));
 jest.mock("@/features/code/views/sandboxes/CreateSandboxFormFields", () => ({ CreateSandboxFormFields: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 jest.mock("@/features/code/views/sandboxes/useSandboxCreate", () => ({ useSandboxCreate: () => ({ loadingTemplates: false, persistChoices: jest.fn(), buildRequest: jest.fn() }) }));

@@ -13,7 +13,7 @@
 
 import { useCallback } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { DocumentsWorkspace } from "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace";
+import { DocumentsWorkspace } from "@ai-matrx/chat/agents/components/working-document/documents-workspace/DocumentsWorkspace";
 
 interface WorkingDocumentWindowProps {
   isOpen: boolean;

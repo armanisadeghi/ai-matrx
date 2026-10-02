@@ -16,7 +16,7 @@
  */
 
 import type { ReactNode } from "react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { SPATIAL_BOARD_SURFACE_NAME } from "@/features/surfaces/manifests/spatial-board.manifest";
 import type { BoardTileBase } from "../board/useBoard";
 import { boardItemsOverview } from "../tools/item-surfaces";

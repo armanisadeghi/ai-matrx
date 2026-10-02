@@ -26,7 +26,7 @@
  */
 
 import { useTopicContext } from "@/features/research/context/ResearchContext";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { RESEARCH_CONTEXT_MENU_PROPS } from "@/features/research/agent-context/buildResearchContextData";
 import {
   addKeywords,

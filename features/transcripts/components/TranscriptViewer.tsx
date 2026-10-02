@@ -68,7 +68,7 @@ import { createTranscriptsExtraSections } from "@/features/transcripts/agent-con
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
 // lightweight shell (imported statically); MenuContent lazy-loads on first

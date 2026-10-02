@@ -7,7 +7,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { type PageAnalyzerState } from "@/features/marketing/components/pages/usePageAnalyzer";
 import type { MarketingPage } from "@/features/marketing/types";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import {
   CondensedFieldGrid,
   SectionCard,

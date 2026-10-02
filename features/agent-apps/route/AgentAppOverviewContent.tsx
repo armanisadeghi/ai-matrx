@@ -64,7 +64,7 @@ import {
   selectAgentById,
   selectAgentContextPolicies,
   selectAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { formatNumber } from "@/features/agent-apps/format";
 import { formatPercentFromFraction, isKnownNumber } from "@ai-matrx/kit/format";

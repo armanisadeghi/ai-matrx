@@ -9,12 +9,12 @@
  * it as JSON without calling the model or persisting anything.
  */
 
-import type { RootState } from "@/lib/redux/store";
-import { selectEndpointOverrideConfig } from "@/lib/redux/slices/apiConfigSlice";
-import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
-import { ENDPOINTS } from "@/lib/api/endpoints";
-import { resolveBackendForConversation } from "@/features/agents/redux/execution-system/thunks/resolve-base-url";
-import { assembleManualRequest } from "@/features/agents/redux/execution-system/thunks/execute-manual-instance.thunk";
+import type { RootState } from "@host/lib/redux/store";
+import { selectEndpointOverrideConfig } from "@host/lib/redux/slices/apiConfigSlice";
+import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
+import { ENDPOINTS } from "@host/lib/api/endpoints";
+import { resolveBackendForConversation } from "../redux/execution-system/thunks/resolve-base-url";
+import { assembleManualRequest } from "../redux/execution-system/thunks/execute-manual-instance.thunk";
 import type { PromptPreview } from "./types";
 
 const trimRoot = (baseUrl: string): string => baseUrl.replace(/\/+$/, "");

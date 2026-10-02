@@ -25,18 +25,18 @@
 
 import React from "react";
 
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import { cn } from "@/styles/themes/utils";
-import { useLiveRunStatus } from "@/features/agents/components/live-run/useLiveRunStatus";
-import { RunSetDisplay } from "@/features/agents/components/live-run/RunSetDisplay";
-import { selectRunSetEntries } from "@/features/agents/redux/execution-system/run-sets/run-sets.slice";
+import { LiveRunDisplay } from "../../../agents/components/live-run/LiveRunDisplay";
+import { cn } from "@host/styles/themes/utils";
+import { useLiveRunStatus } from "../../../agents/components/live-run/useLiveRunStatus";
+import { RunSetDisplay } from "../../../agents/components/live-run/RunSetDisplay";
+import { selectRunSetEntries } from "../../../agents/redux/execution-system/run-sets/run-sets.slice";
 import {
   LiveRunProgress,
   type LiveRunProgressState,
-} from "@/features/agents/components/live-run/LiveRunProgress";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+} from "../../../agents/components/live-run/LiveRunProgress";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 
 /**
  * 🚨 THE SIZING RULE — the reading column must match `/chat`, exactly.

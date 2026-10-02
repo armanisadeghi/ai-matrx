@@ -27,17 +27,17 @@ import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 import React, { useState } from "react";
 import { Copy, Check } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import type { BackendChannel } from "@/features/agents/redux/execution-system/thunks/resolve-base-url";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceUIState } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectResolvedBaseUrl } from "@host/lib/redux/slices/apiConfigSlice";
+import type { BackendChannel } from "../../../redux/execution-system/thunks/resolve-base-url";
 import {
   selectActiveSandboxId,
   selectActiveSandboxProxyUrl,
   selectEditorMode,
-} from "@/features/code/redux/codeWorkspaceSlice";
-import { cn } from "@/lib/utils";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+} from "@host/features/code/redux/codeWorkspaceSlice";
+import { cn } from "@host/lib/utils";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface BackendTargetPanelProps {
   conversationId: string;

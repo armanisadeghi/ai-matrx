@@ -34,7 +34,7 @@ import {
   selectHydrationStatus,
 } from "../../redux/codeEditHistorySlice";
 import { loadCodeEditHistoryThunk } from "../../redux/codeEditHistoryHydration";
-import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { selectFocusedConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import { codeWorkspaceSurfaceKey } from "../../chat/begin-fresh-code-chat";
 import { openTab, setActiveTab } from "../../redux/tabsSlice";
 import {

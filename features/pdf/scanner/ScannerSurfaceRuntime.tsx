@@ -24,8 +24,8 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef } from "react";
 
 import { createScannerScope } from "@/features/surfaces/manifests/scanner.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 import {
   SCAN_PAGE_LABEL_MAX_LENGTH,

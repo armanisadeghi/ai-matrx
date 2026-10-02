@@ -21,7 +21,7 @@ import {
   selectSecondaryCanvasItem,
   selectSecondaryCanvasItemId,
 } from "@/features/canvas/redux/canvasSlice";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CANVAS_SURFACE_NAME } from "@/features/surfaces/manifests/canvas.manifest";
 import { buildCanvasScope } from "@/features/canvas/lib/canvas-scope";
 import {

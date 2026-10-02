@@ -12,8 +12,8 @@
 // prose with the formula's opener and corrupted the answer (verify-RC-B10 F2);
 // never add one back.
 
-import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
-import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { unwrapKindEnvelopes } from "@host/lib/markdown/plain-text";
+import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
 
 /** A `__kind` region prints as its kind's markdown, never its JSON. */
 export function documentMarkdown(markdown: string): string {

@@ -9,7 +9,7 @@ import type {
 } from "@/features/tasks/widgets/quick-create/TaskQuickCreateCore";
 import { TaskCreatePanel } from "@/features/tasks/widgets/quick-create/TaskCreatePanel";
 import { emitTaskQuickCreateSaved } from "@/features/overlays/openers/taskQuickCreateWindow";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   TASK_CREATE_SURFACE_NAME,
   createTaskCreateScope,

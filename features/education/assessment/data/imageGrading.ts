@@ -24,8 +24,8 @@ import {
   livePosture,
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
+import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import {
   coerceStepGradeVerdict,
   type StepGradeVerdict,

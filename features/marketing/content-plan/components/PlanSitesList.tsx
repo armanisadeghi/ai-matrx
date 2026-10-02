@@ -78,7 +78,7 @@ import { createContentPlanListScope } from "@/features/surfaces/manifests/conten
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";

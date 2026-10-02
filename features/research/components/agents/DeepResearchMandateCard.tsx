@@ -18,7 +18,7 @@ import { Loader2, Play, Telescope } from "lucide-react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { getSources } from "../../service";

@@ -39,7 +39,7 @@ import { knobNumber } from "@/lib/knobs/featureKnobs";
 import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
 import {
   SurfaceRuntimeProvider,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 import { fetchSpendOverview, viewerTimezone } from "./service";
 import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";

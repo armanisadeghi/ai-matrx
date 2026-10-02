@@ -21,7 +21,7 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { METHOD_LABELS, type DecisionMethod } from "@ai-matrx/agents/presentation/decision-answers";
 import {
   loadCalibration,

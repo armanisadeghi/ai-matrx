@@ -28,7 +28,7 @@ import { usePointsRate } from "@/components/cost/pointsRate.client";
 import { count, usdPrecise } from "@/features/admin/spend/format";
 import { buildBillingBatchSavingsScope } from "@/features/admin/spend/spend-surface-scope";
 import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
-import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 import { fetchBatchSavings } from "./service";
 import type { BatchSavingsRow, BatchSavingsSummary } from "./types";

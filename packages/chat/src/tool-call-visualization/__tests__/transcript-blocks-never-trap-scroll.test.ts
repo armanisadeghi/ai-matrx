@@ -16,7 +16,7 @@
 import { execSync } from "node:child_process";
 
 const TRANSCRIPT_BLOCK_ROOTS = [
-  "features/tool-call-visualization",
+  "features/tool-call-visualization", "packages/chat/src/tool-call-visualization",
   "components/mardown-display/chat-markdown",
 ];
 

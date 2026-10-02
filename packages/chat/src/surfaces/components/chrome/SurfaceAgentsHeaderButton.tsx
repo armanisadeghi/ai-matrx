@@ -23,7 +23,7 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
 import { TapTargetButton } from "@ai-matrx/tap-target";
-import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
+import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
 import {
   Popover,
   PopoverContent,
@@ -34,10 +34,10 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-} from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
-import { GRID_COMPANION_ATTR } from "@/features/data-tables/grid-companion";
+} from "@host/components/ui/drawer";
+import { useIsMobile } from "@host/hooks/use-mobile";
+import { useOpenAuthGateDialog } from "@host/features/overlays/openers/authGate";
+import { GRID_COMPANION_ATTR } from "@host/features/data-tables/grid-companion";
 
 export const SurfaceAgentsPanelImpl = dynamic(
   () => import("./SurfaceAgentsPanelImpl"),

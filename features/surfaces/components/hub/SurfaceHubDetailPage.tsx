@@ -37,25 +37,25 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { useOpenDictionarySelectorWindow } from "@/features/overlays/openers/dictionarySelectorWindow";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
-import { useSurfaceConfig } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import { useSurfaceConfig } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import {
   deleteRolePref,
   setNamespaceConfig,
   setRoleSelection,
   type PrefScopeInput,
   type ResolvedRole,
-} from "@/features/surfaces/services/surface-config.service";
-import type { DictionaryConfig } from "@/features/surfaces/config/namespace-registry";
+} from "@ai-matrx/chat/surfaces/services/surface-config.service";
+import type { DictionaryConfig } from "@ai-matrx/chat/surfaces/config/namespace-registry";
 import {
   getSurfaceUsage,
   type SurfaceUsage,
-} from "@/features/surfaces/services/surfaces.service";
+} from "@ai-matrx/chat/surfaces/services/surfaces.service";
 import { Button } from "@/components/ui/button";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";

@@ -11,7 +11,7 @@
 import {
   useDeclaredSurfaceMandates,
   type SurfaceMandateRef,
-} from "@/features/surfaces/runtime/surface-mandates";
+} from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { FC_MANDATES, type FcMandateKey } from "./mandates";
 
 const FLASHCARDS_SURFACE = "matrx-user/education-flashcards";

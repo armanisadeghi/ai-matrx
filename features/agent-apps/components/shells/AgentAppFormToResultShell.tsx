@@ -23,14 +23,14 @@ import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import { Button } from "@/components/ui/button";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import MarkdownStream from "@/components/MarkdownStream";
-import { SmartAgentVariables } from "@/features/agents/components/inputs/variable-input-variations/SmartAgentVariables";
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { SmartAgentVariables } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/SmartAgentVariables";
+import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
 import {
   setAutoRun,
   setAllowChat,
   setShowVariablePanel,
   setInputPlaceholder,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import type {
   AgentAppShellConfigCommon,
   PublicAgentApp,

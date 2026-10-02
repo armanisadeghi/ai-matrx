@@ -21,7 +21,7 @@
  * content embedded inside is XML-escaped on serialize and unescaped on parse.
  */
 
-import type { ManagedResource } from "@/features/agents/types/instance.types";
+import type { ManagedResource } from "../types/instance.types";
 
 // =============================================================================
 // Source shapes

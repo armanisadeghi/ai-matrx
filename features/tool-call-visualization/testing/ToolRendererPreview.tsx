@@ -4,9 +4,9 @@ import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Info, Eye } from "lucide-react";
 
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
-import { hasCustomRenderer } from "@/features/tool-call-visualization/registry/registry";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
+import { hasCustomRenderer } from "@ai-matrx/chat/tool-call-visualization/registry/registry";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 import type { ToolStreamEvent, FinalPayload } from "./types";
 

@@ -13,8 +13,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchAgentVersionHistory,
   type AgentVersionHistoryItem,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const LATEST_VALUE = "__latest__";

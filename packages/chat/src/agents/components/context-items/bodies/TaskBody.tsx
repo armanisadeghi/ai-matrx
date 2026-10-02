@@ -7,14 +7,14 @@
  */
 
 import { useEffect } from "react";
-import TaskEditor from "@/features/tasks/components/TaskEditor";
-import { useAppSelector } from "@/lib/redux/hooks";
+import TaskEditor from "@host/features/tasks/components/TaskEditor";
+import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectTaskById,
   type TaskRecord,
-} from "@/features/agent-context/redux/tasksSlice";
+} from "@host/features/agent-context/redux/tasksSlice";
 import type { ContextItemBodyProps } from "../types";
-import { TaskPreviewContent } from "@/features/agents/components/previews/TaskHoverPreview";
+import { TaskPreviewContent } from "@host/features/agents/components/previews/TaskHoverPreview";
 import { ResourceSnapshotView } from "./ResourceSnapshotView";
 
 export function TaskBody({ item, setTitle }: ContextItemBodyProps) {

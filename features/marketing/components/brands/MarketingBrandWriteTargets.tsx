@@ -22,7 +22,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useUpdateBrand } from "@/features/marketing/data/hooks";
 import {
   mergeBrandProfileWrite,

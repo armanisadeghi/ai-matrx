@@ -21,9 +21,9 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   selectAgentById,
   selectAgentReadyForBuilder,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { agentGoHref } from "@/features/agents/addressing/agentAddress";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { duplicateAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { agentGoHref } from "@ai-matrx/chat/agents/addressing/agentAddress";
 import { toast } from "@/lib/toast";
 import { getUserMessage } from "@/lib/api/errors";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";

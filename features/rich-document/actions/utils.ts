@@ -8,9 +8,9 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { extractErrorMessage } from "@/utils/errors";
-import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
+import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectMessagePosition } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { buildConversationMessageTitle } from "@ai-matrx/chat/agents/utils/conversation-message-title";
 import type {
   ChatMessageExtensions,
   RichDocumentActionContext,

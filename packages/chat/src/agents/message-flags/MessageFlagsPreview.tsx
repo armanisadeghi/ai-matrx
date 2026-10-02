@@ -8,7 +8,7 @@
  */
 
 import { DatabaseZap } from "lucide-react";
-import { Cost } from "@/components/cost/Cost";
+import { Cost } from "@host/components/cost/Cost";
 import type { FlagPreview, MessageFlagProfile } from "./flags";
 import { ANTHROPIC_MIN_CACHEABLE_TOKENS } from "./flags";
 import { formatCount } from "@ai-matrx/kit/format";

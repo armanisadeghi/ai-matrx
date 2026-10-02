@@ -27,7 +27,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => () => ({ unwrap: () => Promise.resolve([]) }),
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
   fetchAgentVersionHistory: () => ({ type: "noop" }),
 }));

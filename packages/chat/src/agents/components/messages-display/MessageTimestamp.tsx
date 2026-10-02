@@ -5,7 +5,7 @@ import {
   formatAbsoluteDate,
   formatRelativeTime,
   type TimestampInput,
-} from "@/utils/datetime";
+} from "@host/utils/datetime";
 
 interface MessageTimestampProps {
   timestamp: TimestampInput;

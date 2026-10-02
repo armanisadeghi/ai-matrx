@@ -21,8 +21,8 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import {
   selectAllRenderBlocks,
   selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { RequestStream } from "./stream-source";
 
 export function useRequestSource(requestId: string, viewerLabel = "spatial-tile"): RequestStream<RootState> {

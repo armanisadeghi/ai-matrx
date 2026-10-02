@@ -107,31 +107,31 @@ function table() {
   return builder;
 }
 
-jest.mock("@/utils/supabase/client", () => ({
+jest.mock("@host/utils/supabase/client", () => ({
   supabase: { schema: () => ({ from: () => table() }) },
 }));
-jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => PERSON_ID }));
+jest.mock("@host/utils/auth/getUserId", () => ({ requireUserId: () => PERSON_ID }));
 const toastError = jest.fn();
-jest.mock("@/lib/toast", () => ({
+jest.mock("@host/lib/toast", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), warning: jest.fn(), success: jest.fn() },
 }));
 
 import {
   ensureSurfaceFeatureLoaded,
   surfaceUserStateReducer,
-} from "@/features/surfaces/redux/userStateSlice";
+} from "../../../../../surfaces/redux/userStateSlice";
 import {
   registerOrganizationPicker,
   settleOrganizationSelection,
-} from "@/lib/organization/organization-gate";
+} from "@host/lib/organization/organization-gate";
 import {
   ensureContextRulesReady,
   reloadContextRules,
   saveContextRule,
   selectSavedContextRuleRows,
 } from "../context-rules.thunks";
-import type { RootState } from "@/lib/redux/store";
-import { setStoreSingleton } from "@/lib/redux/store-singleton";
+import type { RootState } from "@host/lib/redux/store";
+import { setStoreSingleton } from "@host/lib/redux/store-singleton";
 
 /** The app's own store, as the organization gate reads it: which workspace is selected. */
 function selectWorkspace(organizationId: string | null) {

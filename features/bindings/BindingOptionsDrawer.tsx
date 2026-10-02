@@ -33,8 +33,8 @@ import {
 } from "@/features/agent-shortcuts/components/next/AdvancedSection";
 import { WritePolicyEditor } from "@/features/surfaces/components/bind/WritePolicyEditor";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import type { WritePolicyMap } from "@/features/surfaces/types";
-import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
+import type { WritePolicyMap } from "@ai-matrx/chat/surfaces/types";
+import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 
 import {
   defaultPresentation,

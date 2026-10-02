@@ -12,7 +12,7 @@ import {
 import { MarkdownErrorBoundary } from "@/components/mardown-display/chat-markdown/internal-handlers/MarkdownErrorBoundary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 // One user-triggered boundary for the picker family, never loaded for a closed menu.
 const Tools = dynamic(() => import("./MessagesComposerTools"), {

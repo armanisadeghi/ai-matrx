@@ -44,7 +44,7 @@ import {
   type UiSurfaceRow,
   type ToolExecutorRow,
 } from "@/features/tool-registry/lookups/services/lookups.service";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_LOOKUPS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-lookups.manifest";
 import { LOOKUP_NAME_RULES } from "@/features/tool-registry/lookups/lookupsVocabulary";
 import {

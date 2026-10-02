@@ -34,12 +34,12 @@
  * (`PLATFORM_CONTEXT_VALUES`); a manifest may not claim either name.
  */
 
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "../../agents/types/scope.types";
 import {
   getManifest,
   getSurfaceAncestry,
-} from "@/features/surfaces/manifests/registry";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+} from "@host/features/surfaces/manifests/registry";
+import type { SurfaceScopePayload } from "../types";
 import {
   getSurfaceRuntimeStack,
   type SurfaceRuntimeValue,

@@ -8,10 +8,10 @@
  * Built from the real /notes scope builder so a new page value can't slip
  * past the test by name.
  */
-import { buildNotesEditorContextData } from "@/features/notes/agent-context/buildNotesEditorContextData";
-import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
+import { buildNotesEditorContextData } from "@host/features/notes/agent-context/buildNotesEditorContextData";
+import { withBaselineScope } from "../../../surfaces/utils/baseline-scope";
 import { mapScopeToInstanceWithSurface } from "../scope-mapping";
-import { alwaysOnSurfaceKeys } from "@/features/surfaces/utils/always-on-context";
+import { alwaysOnSurfaceKeys } from "../../../surfaces/utils/always-on-context";
 
 const PARAGRAPH = "Teodoro Vashti will meet the crew at the loading dock.";
 const BODY = [

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { AgentDefinitionSliceState } from "@/features/agents/types/agent-definition.types";
+import type { AgentDefinitionSliceState } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   safeFormat,
   setToSortedArray,

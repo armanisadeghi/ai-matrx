@@ -16,16 +16,16 @@
 import React from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectHideToolResults } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectHideToolResults } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   selectToolLifecycle,
   selectToolLifecycleMap,
   type ContentSegmentDbTool,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
-import { ToolCallBatch } from "@/features/tool-call-visualization/components/ToolCallBatch";
-import { persistedToolEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
+import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
+import { ToolCallBatch } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallBatch";
+import { persistedToolEntry } from "@ai-matrx/chat/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 import { AgentCallChildTrace } from "./AgentCallChildTrace";
 
 // ============================================================================

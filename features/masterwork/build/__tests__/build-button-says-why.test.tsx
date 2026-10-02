@@ -82,7 +82,7 @@ jest.mock("@/features/window-panels/WindowPanel", () => ({
     </div>
   ),
 }));
-jest.mock("@/features/agents/components/live-run/LiveRunProgress", () => ({
+jest.mock("@ai-matrx/chat/agents/components/live-run/LiveRunProgress", () => ({
   LiveRunProgress: () => null,
 }));
 jest.mock("../../components/masterworks/TryMasterworkBox", () => ({

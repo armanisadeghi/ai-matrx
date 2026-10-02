@@ -35,7 +35,7 @@ import {
   selectUnifiedSlots,
 } from "../active-requests.selectors";
 import { StreamBlockAccumulator } from "../../utils/stream-block-accumulator";
-import type { ActiveRequest } from "@/features/agents/types/request.types";
+import type { ActiveRequest } from "../../../../types/request.types";
 
 type AnyState = Parameters<ReturnType<typeof selectUnifiedSlots>>[0];
 

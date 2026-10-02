@@ -26,7 +26,7 @@ import {
   toggleTaskEnabled,
   updateScheduledTask,
 } from "../../redux/tasks/thunks";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
 import { useTaskDetail } from "../../hooks/useTaskDetail";

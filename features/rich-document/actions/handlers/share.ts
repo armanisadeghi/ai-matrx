@@ -40,7 +40,7 @@ registerAction({
     const toastId = toast.loading("Publishing webpage…");
     try {
       const { shareMessageAsWebpage } = await import(
-        "@/features/agents/components/messages-display/message-options/shareMessageAsWebpage"
+        "@ai-matrx/chat/agents/components/messages-display/message-options/shareMessageAsWebpage"
       );
       const { conversationId, messageId } = chatIds(ctx);
       const { url } = await shareMessageAsWebpage({

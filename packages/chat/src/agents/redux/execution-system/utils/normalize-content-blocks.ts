@@ -7,15 +7,15 @@ import type {
   VideoMediaPart,
   DocumentMediaPart,
   YouTubeMediaPart,
-} from "@/types/python-generated/stream-events";
-import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
+} from "@host/types/python-generated/stream-events";
+import { fromCxMediaPart } from "@host/features/files/blocks/image/adapters/from-cx-media-part";
 import {
   fromCxAudioPart,
   fromCxVideoPart,
-} from "@/features/files/blocks/adapters/from-cx-av-part";
-import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
-import { withPerformedScript } from "@/features/agents/speech-script/types";
-import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
+} from "@host/features/files/blocks/adapters/from-cx-av-part";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
+import { withPerformedScript } from "../../../speech-script/types";
+import { seedPersistedEnvelopeCache } from "@host/features/content-ir/registry/region-envelope-memo";
 
 /**
  * Normalizes `cx_message.content[]` items into the canonical `RenderBlockPayload`

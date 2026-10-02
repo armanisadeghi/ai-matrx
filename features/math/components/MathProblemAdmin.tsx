@@ -12,9 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useRead } from "@/components/read-state/useRead";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { collectionWriteHandlers } from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import {
   createEducationQuickMathAuthoringScope,
   EDUCATION_QUICK_MATH_AUTHORING_SURFACE_NAME,

@@ -113,17 +113,17 @@ Weekly structural-novelty scope plus a full detector pass:
 
 1. **Human decision:** `features/agent-comparison/components/RunsComparisonTable.tsx:912` names each revealed agent but `ColumnStats` drops `agentId`. A repair must carry the id only in revealed mode and guarantee that no identity-bearing href, peek, title, or accessible text enters the blind DOM. This remains Tier C because anonymity behavior is product-sensitive.
 2. **Missing evidence:** `features/skills/components/SkillResourcesPanel.tsx:293` renders a real `code_file` filename inertly, but the prior live read found zero populated `code_file` → `skill` resource associations. Keep the focused task open until a populated relationship or dedicated fixture can prove drag/edit/delete and editor-state behavior.
-3. **Fixed and certified this run:** `features/agents/components/context-policies-display/ContextPolicyDetailSheet.tsx` now renders the summary sub-agent through `EntityRef`, preserves the full wrapping UUID, opens the label in a new tab, and exposes the registered agent peek.
+3. **Fixed and certified this run:** `packages/chat/src/agents/components/context-policies-display/ContextPolicyDetailSheet.tsx` now renders the summary sub-agent through `EntityRef`, preserves the full wrapping UUID, opens the label in a new tab, and exposes the registered agent peek.
 4. **Fixed and certified this run:** `features/surfaces/components/bind/SurfaceAgentBindPanel.tsx` now renders the selected agent through `EntityRef` without changing locked/unlocked selection, mapping, scope, reset, seeding, or save behavior.
 5. **Previously fixed:** `features/agent-comparison/components/MasterInputWindow.tsx` uses the canonical new-tab `EntityRef` for configured agents while preserving inert unconfigured labels and mapping state.
 
 ### False positives — excluded from the findings total
 
-1. `features/agents/route/AgentViewContent.tsx` is the current agent’s own detail page; the id control copies the page subject rather than referring to a foreign record.
-2. `features/agents/components/inputs/smart-input/RunSkillPicker.tsx` is a selection surface; its rows toggle run injection and expand descriptions. Selection controls are an explicit detector exclusion, and `skill` has no `hrefFor`.
+1. `packages/chat/src/agents/route/AgentViewContent.tsx` is the current agent’s own detail page; the id control copies the page subject rather than referring to a foreign record.
+2. `packages/chat/src/agents/components/inputs/smart-input/RunSkillPicker.tsx` is a selection surface; its rows toggle run injection and expand descriptions. Selection controls are an explicit detector exclusion, and `skill` has no `hrefFor`.
 3. `features/scopes/components/entity-context/EntityScopeTagger.tsx` is a selection/tagging surface; clicking a scope chip performs the surface’s primary action.
 4. `features/code/views/library/LibraryTreeNode.tsx` gives the folder name the correct tree-node door (expand/collapse) and uses the canonical v3 context menu; `code_folder` has no detail route.
-5. `features/agents/ui-first-tools/ui/lists/TaskPanel.tsx` edits a `chat.agent_task`, not the canonical task entity reached by the registry’s `task` route. Treating the ids as interchangeable would fabricate a wrong door.
+5. `packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx` edits a `chat.agent_task`, not the canonical task entity reached by the registry’s `task` route. Treating the ids as interchangeable would fabricate a wrong door.
 
 ## Primitive adoption baseline
 

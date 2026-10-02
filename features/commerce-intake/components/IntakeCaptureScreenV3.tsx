@@ -56,7 +56,7 @@ import { NotesPanel } from "@/features/product-capture/components/NotesPanel";
 import { VoiceNoteButton } from "@/features/product-capture/components/VoiceNoteButton";
 import { InstantProcessSheet } from "@/features/product-capture/components/InstantProcessSheet";
 import { useQrAutoScan } from "@/features/product-capture/hooks/useQrAutoScan";
-import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { fetchFileBlobUrl } from "@/features/files/hooks/useFileBlob";
 
 import { CameraCaptureV3, CaptureExpandingField } from "@ai-matrx/capture/react";

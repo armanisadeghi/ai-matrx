@@ -12,9 +12,9 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "@/lib/toast";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { toast } from "@host/lib/toast";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectUserId } from "@host/lib/redux/slices/userSlice";
 import {
   createAgentMemory,
   listAgentMemories,

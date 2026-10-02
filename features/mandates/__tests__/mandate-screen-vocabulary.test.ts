@@ -44,7 +44,7 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
  * one-binding workspace; those two trees are swept whole, so a component added
  * to either tomorrow is covered without being listed.
  */
-const SWEPT_TREES = ["features/mandates", "features/bindings"] as const;
+const SWEPT_TREES = ["features/mandates", "packages/chat/src/mandates", "features/bindings"] as const;
 
 /**
  * Shared modules OUTSIDE those trees whose prose reaches a mandate screen.
@@ -55,7 +55,7 @@ const SWEPT_TREES = ["features/mandates", "features/bindings"] as const;
 const SWEPT_FILES = [
   // `describeSuggestion` — the AI map's own prose, printed beside every
   // proposal in the one-binding workspace. The third source V2 named.
-  "features/surfaces/utils/binding-suggestions.ts",
+  "packages/chat/src/surfaces/utils/binding-suggestions.ts",
 ] as const;
 
 /**
@@ -209,7 +209,7 @@ function sweep(): Finding[] {
  */
 const AGENT_DOOR_TREES = [
   "features/agent-shortcuts",
-  "features/agents/components/run-controls",
+  "packages/chat/src/agents/components/run-controls",
 ] as const;
 
 /** "Holder" is the mandate system's word. On an agent door it is foreign. */
@@ -371,7 +371,7 @@ describe("no mandate screen speaks the old system's nouns", () => {
 
   it("does not fire on comments, imports, class names or mapTypes", () => {
     const notCopy = [
-      "@/features/surfaces/types",
+      "@ai-matrx/chat/surfaces/types",
       "surface_value",
       "flex items-center gap-2 rounded-md border-surface",
       "data-surface-value",

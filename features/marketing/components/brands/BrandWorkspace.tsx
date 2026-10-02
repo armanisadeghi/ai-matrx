@@ -55,7 +55,7 @@ import { GscPortfolioClassBar } from "@/features/marketing/search-console/compon
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingBrandScope } from "@/features/surfaces/manifests/marketing-brand.manifest";
 import { buildBrandContextXml } from "@/features/marketing/lib/surface-context";
 import {

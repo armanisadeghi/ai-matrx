@@ -26,8 +26,8 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 
 import { useNoteUndoRedo } from "@/features/notes/hooks/useNoteUndoRedo";
-import { useInstanceInputUndoRedo } from "@/features/agents/hooks/useInstanceInputUndoRedo";
-import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
+import { useInstanceInputUndoRedo } from "@ai-matrx/chat/agents/hooks/useInstanceInputUndoRedo";
+import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
 
 type HookName = "note" | "composer" | "agent";
 

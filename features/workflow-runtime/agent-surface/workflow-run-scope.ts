@@ -17,7 +17,7 @@ import {
   type WorkflowRunExcerptEntry,
   type WorkflowRunStepEntry,
 } from "@/features/surfaces/manifests/workflow-run.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { WorkflowRunState } from "../redux/workflow-runs.slice";
 import type { RunStepPresentation } from "../components/run/node-presentation";
 import {

@@ -25,15 +25,15 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   deleteAgent,
   saveAgentField,
-} from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { buildAgentDeleteConfirm } from "@/features/agents/deletion/agentDeleteConfirm";
-import { toast } from "@/lib/toast";
+} from "../redux/agent-definition/thunks";
+import { selectAgentById } from "../redux/agent-definition/selectors";
+import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
+import { buildAgentDeleteConfirm } from "@host/features/agents/deletion/agentDeleteConfirm";
+import { toast } from "@host/lib/toast";
 
 export interface AgentLifecycleActions {
   /** Whether the agent is archived right now (false while it is still loading). */

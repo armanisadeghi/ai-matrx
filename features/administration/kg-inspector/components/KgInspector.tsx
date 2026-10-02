@@ -17,7 +17,7 @@
  * Pure reads through the typed kgInspectorService → Python backend.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import AppLink from "@/components/navigation/AppLink";
 import {

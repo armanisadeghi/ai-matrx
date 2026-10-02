@@ -4,7 +4,7 @@ import {
   createKnowledgeRepositoriesScope,
   type KnowledgeRepositoryEntry,
 } from "@/features/surfaces/manifests/knowledge-repositories.manifest";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 const CONTENT_CHARS = 6000;
 

@@ -28,14 +28,14 @@ import React, { useMemo, useState } from "react";
 import { Layers, AlertCircle } from "lucide-react";
 
 import type { ToolRendererProps } from "../../types";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { isTerminal, resultAsObject } from "../_shared";
 import type { ResultDensity } from "../../result-fields/ResultValue";
 import { ToolResultValue } from "../../result-fields/ToolResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { CtxItemCard, type CtxItem } from "./CtxItemCard";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { contextEntryLabel } from "../../../agents/components/context-policies-display/contextEntryLabel";
 
 const INLINE_ITEM_CAP = 4;
 

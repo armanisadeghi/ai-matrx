@@ -13,7 +13,7 @@
  * Matrx Alchemy ALC-14 S2: this row had no declaring owner (CONTRACT §2.1a).
  */
 
-import type { SurfaceManifest, SurfaceValue } from "@/features/surfaces/types";
+import type { SurfaceManifest, SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 
 const values: SurfaceValue[] = [
   {

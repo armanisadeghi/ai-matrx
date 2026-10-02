@@ -23,7 +23,7 @@
  * Nested providers (e.g. split-pane notes) stack — the topmost wins.
  */
 
-import { announceUndeclaredLoadedValues } from "@/features/surfaces/runtime/loaded-value-check";
+import { announceUndeclaredLoadedValues } from "./loaded-value-check";
 import {
   createContext,
   useCallback,
@@ -34,12 +34,12 @@ import {
   type ReactNode,
 } from "react";
 import { useSyncExternalStore } from "react";
-import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import type { SurfaceScopePayload } from "../types";
+import type { InstanceContextEntry } from "../../agents/types/instance.types";
 import {
   AlchemySurfaceBridge,
   useAlchemySurfaceHandle,
-} from "@/components/agent-copy/AlchemySurfaceBridge";
+} from "@host/components/agent-copy/AlchemySurfaceBridge";
 import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
 import type { ApplySurfaceWriteOptions } from "./surface-writeback";
 

@@ -11,7 +11,7 @@
  * bearer token is bound, and these are the guards for that.
  */
 
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import { resolveAgentCacheBustBackend } from "../agent-cache-bust-request";
 
 const ORGANIZATION_ID = "f9cb3e35-1b2c-4d5e-8f60-71a2b3c4d5e6";

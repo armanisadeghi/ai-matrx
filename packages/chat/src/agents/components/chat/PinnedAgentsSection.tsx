@@ -4,16 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   FavoriteAgentButton,
   useAgentCatalogRows,
   useAgentConsumer,
 } from "@ai-matrx/agents/catalog/react";
 import { makeSelectFilteredAgents } from "@ai-matrx/agents/catalog";
-import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
-import { useAppStore } from "@/lib/redux/hooks";
+import { initializeChatAgents } from "../../redux/agent-definition/thunks";
+import { useAppStore } from "@host/lib/redux/hooks";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";
 
 interface PinnedAgentsSectionProps {

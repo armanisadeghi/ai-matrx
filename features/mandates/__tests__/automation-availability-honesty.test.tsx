@@ -32,7 +32,7 @@ import {
   missingAutomationMandateLine,
   unavailableAutomationMandateLine,
 } from "../authoring/AutomationButton";
-import * as useMandateModule from "../useMandate";
+import * as useMandateModule from "@ai-matrx/chat/mandates/useMandate";
 import * as inputSurfaceModule from "../input-surface";
 
 (

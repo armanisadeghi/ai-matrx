@@ -3,8 +3,8 @@
 import { createSelector } from "reselect";
 import type { RootState } from "@/lib/redux/store";
 import type { AgentApp, AgentAppRecord } from "./types";
-import type { FieldFlags } from "../shared/field-flags";
-import { hasField } from "../shared/field-flags";
+import type { FieldFlags } from "@ai-matrx/chat/agents/redux/shared/field-flags";
+import { hasField } from "@ai-matrx/chat/agents/redux/shared/field-flags";
 
 // ---------------------------------------------------------------------------
 // Slice root

@@ -22,31 +22,31 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useSelector } from "react-redux";
-import { selectUser } from "@/lib/redux/slices/userSlice";
+import { selectUser } from "@host/lib/redux/slices/userSlice";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ShareModal } from "@/features/sharing/components/ShareModal";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+} from "@host/components/ui/dropdown-menu";
+import { ShareModal } from "@host/features/sharing/components/ShareModal";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@host/components/read-state/ReadFailure";
 // The main list reads the REAL conversation list — the same slice and fetch
 // the chat-history sidebar uses (features/agents/redux/conversation-list).
 // It used to read inert stub selectors whose status was always "idle", so
 // the list never loaded, never said it was empty, and its retry did nothing.
-import type { RootState } from "@/lib/redux/store";
+import type { RootState } from "@host/lib/redux/store";
 import {
   selectConversationIsPending,
   selectGlobalConversationList,
   selectGlobalListError,
   selectGlobalListHasMore,
   selectGlobalListStatus,
-} from "@/features/agents/redux/conversation-list/conversation-list.selectors";
-import { fetchGlobalConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+} from "../../agents/redux/conversation-list/conversation-list.selectors";
+import { fetchGlobalConversations } from "../../agents/redux/conversation-list/conversation-list.thunks";
+import type { ConversationListItem } from "../../agents/redux/conversation-list/conversation-list.types";
 
 interface CxConversationListItem {
   id: string;
@@ -63,7 +63,7 @@ const toSidebarItem = (c: ConversationListItem): CxConversationListItem => ({
   status: c.status,
 });
 const selectSidebarConversations = (state: RootState) => selectGlobalConversationList(state);
-import type { SharedCxConversationSummary } from "@/features/cx-chat/types/cx-tables";
+import type { SharedCxConversationSummary } from "../types/cx-tables";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

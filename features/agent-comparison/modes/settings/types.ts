@@ -8,7 +8,7 @@
  * can compare quality / speed / cost / behavior across configurations.
  */
 
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 
 export interface SettingsColumn {
   /** Stable local id — survives instance recreation. */

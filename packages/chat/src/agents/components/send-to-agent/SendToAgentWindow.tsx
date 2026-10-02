@@ -16,20 +16,20 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
-import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
-import { extractErrorMessage } from "@/utils/errors";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import { Button } from "@host/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@host/components/ui/radio-group";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { toast } from "@host/lib/toast";
+import { cn } from "@host/lib/utils";
+import { extractErrorMessage } from "@host/utils/errors";
+import { useAgentLauncher } from "../../hooks/useAgentLauncher";
+import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import {
   selectAgentAutoContextDisabled,
   selectAgentContextPolicies,
   selectAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { AgentPickerFrame } from "@/features/window-panels/windows/agents/AgentPickerWindow";
+} from "../../redux/agent-definition/selectors";
+import { AgentPickerFrame } from "@host/features/window-panels/windows/agents/AgentPickerWindow";
 import {
   IMPORTANT_CONTEXT_INLINE_CHARS,
   buildDestinationOptions,
@@ -37,7 +37,7 @@ import {
   defaultDestination,
   type SendToAgentDestinationOption,
 } from "./send-to-agent-plan";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { formatCount } from "@ai-matrx/kit/format";
 
 export interface SendToAgentWindowProps {

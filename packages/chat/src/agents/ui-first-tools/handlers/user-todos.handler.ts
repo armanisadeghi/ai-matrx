@@ -8,7 +8,7 @@
  * notices that the agent has assigned them something.
  */
 
-import { toast } from "@/lib/toast";
+import { toast } from "@host/lib/toast";
 import type { ToolHandler } from "./types";
 import type { UserTodosArgs } from "../tools/schemas";
 import type { UserTodosResult, CxUserTodoRow } from "../tools/types";

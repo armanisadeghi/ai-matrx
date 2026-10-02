@@ -1,9 +1,9 @@
-jest.mock("@/features/mandates/service", () => ({
+jest.mock("../../../mandates/service", () => ({
   resolveMandate: jest.fn(),
 }));
 
-import { resolveMandate } from "@/features/mandates/service";
-import type { RootState } from "@/lib/redux/store";
+import { resolveMandate } from "../../../mandates/service";
+import type { RootState } from "@host/lib/redux/store";
 import {
   beginFreshChat,
   interceptChatAgentLink,

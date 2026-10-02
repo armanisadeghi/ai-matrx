@@ -13,15 +13,15 @@
  */
 
 import { useEffect } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { SmartAgentResourceChips } from "@/features/agents/components/inputs/resources/SmartAgentResourceChips";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { SmartAgentResourceChips } from "../../inputs/resources/SmartAgentResourceChips";
 import {
   initInstanceResources,
   addResource,
   setResourcePreview,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { initInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
+} from "../../../redux/execution-system/instance-resources/instance-resources.slice";
+import { initInstanceUIState } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { isEditableCapableBlockType } from "../../../redux/execution-system/instance-resources/editable-resource-types";
 import {
   DEMO_CONV_ALL_RESOURCES,
   DEMO_ALL_RESOURCES,

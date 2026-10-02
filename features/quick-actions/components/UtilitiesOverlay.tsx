@@ -8,7 +8,7 @@ import FullScreenOverlay, {
 import TaskApp from "@/features/tasks/components/TaskApp";
 import dynamic from "next/dynamic";
 import { NotesView } from "@/features/notes/components/NotesView";
-import { QuickChatSheet } from "./QuickChatSheet";
+import { QuickChatSheet } from "@ai-matrx/chat/quick-actions/components/QuickChatSheet";
 import { QuickDataSheet } from "./QuickDataSheet";
 import { WindowPanelShell } from "@/features/files/components/surfaces/WindowPanelShell";
 
@@ -24,7 +24,7 @@ const LazyNotesView = NotesView;
 // (a static import is blocked by the no-restricted-imports window-path rule).
 const ChatHistoryWorkspace = dynamic(
   () =>
-    import("@/features/window-panels/windows/agents/ChatHistoryWindow").then(
+    import("@ai-matrx/chat/window-panels/windows/agents/ChatHistoryWindow").then(
       (m) => ({ default: m.ChatHistoryWorkspace }),
     ),
   { ssr: false },

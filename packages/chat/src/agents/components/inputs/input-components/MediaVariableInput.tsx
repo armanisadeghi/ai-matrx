@@ -33,27 +33,27 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
-import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
+import { Dialog, DialogContent, DialogTitle } from "@host/components/ui/dialog";
+import { FileRagBadge } from "@host/features/files/components/core/FileBadges/FileRagBadge";
+import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { useFileDocument } from "@/features/files/hooks/useFileDocument";
+import { useFileDocument } from "@host/features/files/hooks/useFileDocument";
 import { useMediaResolution } from "@ai-matrx/media/core";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
 import {
   FilesResourcePicker,
   type FilesResourcePickerFilter,
-} from "@/features/resource-manager/resource-picker/FilesResourcePicker";
-import { cn } from "@/lib/utils";
-import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
-import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setRuntimeVariableResourcePolicy } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectRuntimeVariableResourcePolicies } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readMediaVariableValue } from "@/features/agents/utils/media-variable-value";
+} from "@host/features/resource-manager/resource-picker/FilesResourcePicker";
+import { cn } from "@host/lib/utils";
+import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
+import { ResourceFamilyPolicyEditor } from "../resources/ResourceFamilyPolicyEditor";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { setRuntimeVariableResourcePolicy } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectRuntimeVariableResourcePolicies } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { readMediaVariableValue } from "../../../utils/media-variable-value";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type MediaKind = "image" | "audio" | "video" | "document";

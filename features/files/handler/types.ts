@@ -33,7 +33,7 @@ import type {
   ImageBlock,
   VideoBlock,
   YouTubeVideoBlock,
-} from "@/features/agents/types/message-types";
+} from "@ai-matrx/chat/agents/types/message-types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 
 // ===========================================================================

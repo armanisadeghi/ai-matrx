@@ -7,7 +7,7 @@
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { FeaturePlaces } from "@/features/mandates/feature-intelligence/types";
 import { TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY } from "./constants";
-import { SCRIBE_LIVE_MANDATE_KEY } from "@/features/voice-agent/constants";
+import { SCRIBE_LIVE_MANDATE_KEY } from "@ai-matrx/chat/voice-agent/constants";
 
 export const TRANSCRIPT_STUDIO_PLACES: FeaturePlaces = {
   feature: "transcript_studio",

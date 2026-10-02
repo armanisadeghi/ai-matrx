@@ -5,22 +5,22 @@
  */
 
 import { useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
-import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
-import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
-import { ImageVariableInput } from "@/features/agents/components/inputs/input-components/ImageVariableInput";
-import { AudioVariableInput } from "@/features/agents/components/inputs/input-components/AudioVariableInput";
-import { VideoVariableInput } from "@/features/agents/components/inputs/input-components/VideoVariableInput";
-import { DocumentVariableInput } from "@/features/agents/components/inputs/input-components/DocumentVariableInput";
-import { YoutubeVariableInput } from "@/features/agents/components/inputs/input-components/YoutubeVariableInput";
-import { Button } from "@/components/ui/button";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceVariableDefinitions } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { BoundVariableChips } from "../BoundVariableChips";
+import { selectShouldShowVariables } from "../../../redux/execution-system/selectors/aggregate.selectors";
+import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setUserVariableValue } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectUserVariableValues } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import type { VariableDefinition } from "../../../types/agent-definition.types";
+import { isMediaVariableType } from "../../../types/agent-definition.types";
+import { ImageVariableInput } from "../input-components/ImageVariableInput";
+import { AudioVariableInput } from "../input-components/AudioVariableInput";
+import { VideoVariableInput } from "../input-components/VideoVariableInput";
+import { DocumentVariableInput } from "../input-components/DocumentVariableInput";
+import { YoutubeVariableInput } from "../input-components/YoutubeVariableInput";
+import { Button } from "@host/components/ui/button";
 import { ArrowRight, Minus, Plus } from "lucide-react";
 
 interface AgentVariableInputCardProps {

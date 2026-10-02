@@ -21,7 +21,7 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { FC_MANDATES } from "./mandates";
 import type { CardWithDetails } from "./types";

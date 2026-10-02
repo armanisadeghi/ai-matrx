@@ -36,12 +36,12 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import MarkdownStream from "@/components/MarkdownStream";
-import { RichDocument } from "@/features/rich-document/RichDocument";
-import type { ContentSource } from "@/features/rich-document/types";
+import { cn } from "@host/lib/utils";
+import MarkdownStream from "@host/components/MarkdownStream";
+import { RichDocument } from "@host/features/rich-document/RichDocument";
+import type { ContentSource } from "@host/features/rich-document/types";
 import { useAutoScrollOnStream } from "../useAutoScrollOnStream";
-import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { AGENT_ICON } from "@host/components/icons/domain-icons";
 
 /** Collapse state of the report viewport. */
 type ReportView = "none" | "partial" | "full";

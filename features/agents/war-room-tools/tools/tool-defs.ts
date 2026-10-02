@@ -18,7 +18,7 @@
  * the user's approval, so the agent proposes deliberate, well-formed changes.
  */
 
-import type { ToolSpecInline } from "@/features/agents/types/tool-injection.types";
+import type { ToolSpecInline } from "@ai-matrx/chat/agents/types/tool-injection.types";
 import { WAR_ROOM_TOOL_NAMES, type WarRoomToolName } from "./names";
 
 const TASK_STATUS = ["inbox", "planned", "active", "completed", "cancelled", "dismissed"] as const;

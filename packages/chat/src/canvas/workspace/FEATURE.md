@@ -50,7 +50,7 @@ such layout in the app.
 - **Cookies** — `workspace-cookies.ts` (chat `side` · `floating` · `…:closed`, properties open/closed, sizes,
   panel ids) + `workspace-cookies.server.ts` (`readCanvasWorkspaceLayout`).
 - **Navigation** — the shell sidebar + account rail (never a page-local nav). The page registers itself with
-  `registerInPlaceChatHost` (`features/agents/components/chat/in-place-chat-host.ts`) so the sidebar's Chats
+  `registerInPlaceChatHost` (`packages/chat/src/agents/components/chat/in-place-chat-host.ts`) so the sidebar's Chats
   side opens history and New chat in this panel; on a phone the header's menu button opens the shell drawer
   (`openShellMobileMenu`). Full screen hides the sidebar too (`useShellCanvasFullScreen`).
 - **Shell mode** — `ShellChromeMode` / `ShellChromeRouteSync` (`features/shell/components/ShellChromeMode.tsx`)

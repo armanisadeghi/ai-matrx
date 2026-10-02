@@ -6,20 +6,20 @@ import {
   selectShortcutsByScope,
   selectShortcutsSliceStatus,
   selectShortcutsSliceError,
-} from "@/features/agents/redux/agent-shortcuts/selectors";
-import { fetchShortcutsForScope } from "@/features/agents/redux/agent-shortcuts/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
+import { fetchShortcutsForScope } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 import {
   selectCategoryTreeByScope,
   selectCategoriesStatus,
   selectCategoriesError,
-} from "@/features/agents/redux/agent-shortcut-categories/selectors";
-import { fetchCategoriesForScope } from "@/features/agents/redux/agent-shortcut-categories/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
+import { fetchCategoriesForScope } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/thunks";
 import { selectContentBlocksByScope } from "@/features/agent-connections/redux/skl/content-block-compat";
 import { fetchRenderDefinitions } from "@/features/agent-connections/redux/skl/thunks";
 import type { Scope as ConnectionsScope } from "@/features/agent-connections/types";
 import type { AgentScope } from "../constants";
-import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
-import type { AgentShortcutCategoryRecord } from "@/features/agents/redux/agent-shortcut-categories/types";
+import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
+import type { AgentShortcutCategoryRecord } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/types";
 import type { AgentContentBlockRecord } from "@/features/agent-connections/redux/skl/content-block-compat";
 
 export interface UseAgentShortcutsArgs {

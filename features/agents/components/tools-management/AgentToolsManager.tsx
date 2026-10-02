@@ -69,14 +69,14 @@ import {
   selectAgentCustomTools,
   selectAgentMcpServers,
   selectAgentAutoToolsDisabled,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   setAgentTools,
   setAgentCustomTools,
   setAgentMcpServers,
-} from "@/features/agents/redux/agent-definition/slice";
-import { setAgentAutoToolsDisabled } from "@/features/agents/redux/agent-definition/thunks";
-import { AutoInjectionSwitch } from "@/features/agents/components/shared/AutoInjectionSwitch";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { setAgentAutoToolsDisabled } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { AutoInjectionSwitch } from "@ai-matrx/chat/agents/components/shared/AutoInjectionSwitch";
 import {
   selectMcpCatalog,
   selectMcpCatalogStatus,
@@ -87,14 +87,14 @@ import {
   fetchCatalog,
   connectServerWithCredentials,
   disconnectServer,
-} from "@/features/agents/redux/mcp/mcp.slice";
+} from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
 import type {
   McpCatalogEntry,
   McpServerConfigEntry,
   McpEnvSchemaField,
-} from "@/features/agents/types/mcp.types";
-import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
-import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
+} from "@ai-matrx/chat/agents/types/mcp.types";
+import { MCP_CATEGORY_META } from "@ai-matrx/chat/agents/types/mcp.types";
+import { startMcpOAuthPopup } from "@ai-matrx/chat/agents/services/mcp-oauth/popup";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
 import {
   MCP_STATE_LABEL,
@@ -103,23 +103,23 @@ import {
 import {
   useMcpServerToolCount,
   useMcpServerTruth,
-} from "@/features/agents/hooks/useMcpTools";
+} from "@ai-matrx/chat/agents/hooks/useMcpTools";
 import { githubConnectUrl } from "@/features/github-integration/service";
-import { fetchMcpServerConfigs } from "@/features/agents/services/mcp.service";
-import { headerFieldKey } from "@/features/agents/services/mcp-connections.service";
+import { fetchMcpServerConfigs } from "@ai-matrx/chat/agents/services/mcp.service";
+import { headerFieldKey } from "@ai-matrx/chat/agents/services/mcp-connections.service";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import type {
   CustomToolDefinition,
   CustomToolInputSchema,
   JsonSchemaProperty,
-} from "@/features/agents/types/agent-api-types";
+} from "@ai-matrx/chat/agents/types/agent-api-types";
 import { createClient } from "@/utils/supabase/client";
 import {
   selectAllTools,
   selectToolsStatus,
-} from "@/features/agents/redux/tools/tools.selectors";
-import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
+} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
+import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -129,7 +129,7 @@ import {
 } from "@/lib/knobs/toolKnobGating";
 import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { supportsTools } from "@/features/agents/hooks/useModelControls";
+import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { AgentBundlesPanel } from "./AgentBundlesPanel";
 import { useAgentBundleOptions } from "./useAgentBundleOptions";
 import { useToolRuntimes } from "./useToolRuntimes";

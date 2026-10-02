@@ -16,10 +16,10 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
-import { faviconRouteData } from "@/constants/favicon-route-data";
+import { faviconRouteData } from "@host/constants/favicon-route-data";
 import {
   selectNoteById,
   selectNoteContent,
@@ -28,13 +28,13 @@ import {
   selectNoteFetchStatus,
   selectNoteIsLoading,
   selectNoteSaveState,
-} from "@/features/notes/redux/selectors";
-import { fetchNoteContent, saveNote } from "@/features/notes/redux/thunks";
-import { updateNoteContent } from "@/features/notes/redux/slice";
+} from "@host/features/notes/redux/selectors";
+import { fetchNoteContent, saveNote } from "@host/features/notes/redux/thunks";
+import { updateNoteContent } from "@host/features/notes/redux/slice";
 import {
   computeNoteStats,
   type NoteStats,
-} from "@/features/notes/utils/noteStats";
+} from "@host/features/notes/utils/noteStats";
 
 import { resultAsObject } from "../_shared";
 

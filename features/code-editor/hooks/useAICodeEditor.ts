@@ -3,20 +3,20 @@ import { buildCodeEditorSessionOffer } from "@/features/code-editor/utils/codeEd
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { shallowEqual } from "react-redux";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
+import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   selectLatestAccumulatedText,
   selectStreamPhase,
   selectIsExecuting,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+} from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   selectConversationMessages,
   EMPTY_CONVERSATION_MESSAGES,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
+import { useRetainLatestRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { selectPromptsPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
   parseCodeEdits,

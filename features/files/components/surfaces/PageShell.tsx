@@ -132,7 +132,7 @@ import {
 } from "@/features/files/agent-context/FilesSurfaceScopeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useFileShortcuts } from "./useFileShortcuts";
 import { useFilesSurfaceWriteHandlers } from "./useFilesSurfaceWriteHandlers";
 import { RenameHost } from "@/features/files/components/core/RenameDialog/RenameHost";

@@ -1,6 +1,6 @@
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
-import { getFaviconUrl } from "@/features/tool-call-visualization/renderers/search/parseSearch";
+import type { McpCatalogEntry } from "@ai-matrx/chat/agents/types/mcp.types";
+import { getFaviconUrl } from "@ai-matrx/chat/tool-call-visualization/renderers/search/parseSearch";
 import { connectorsFor, getConnector } from "./registry";
 import type { ConnectorDefinition } from "./types";
 

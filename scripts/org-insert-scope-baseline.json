@@ -28,25 +28,25 @@
       "signature": "insert"
     },
     {
-      "file": "features/agents/redux/agent-definition/thunks.ts",
+      "file": "packages/chat/src/agents/redux/agent-definition/thunks.ts",
       "table": "agent.definition",
       "status": "UNRESOLVED",
       "signature": "agentDefinitionToInsert(draft)"
     },
     {
-      "file": "features/agents/redux/agent-shortcuts/thunks.ts",
+      "file": "packages/chat/src/agents/redux/agent-shortcuts/thunks.ts",
       "table": "<unresolved>",
       "status": "UNRESOLVED",
       "signature": "agentShortcutToInsert(draft)"
     },
     {
-      "file": "features/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk.ts",
+      "file": "packages/chat/src/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk.ts",
       "table": "<unresolved>",
       "status": "UNRESOLVED",
       "signature": "rows"
     },
     {
-      "file": "features/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk.ts",
+      "file": "packages/chat/src/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk.ts",
       "table": "<unresolved>",
       "status": "UNRESOLVED",
       "signature": "rows"
@@ -190,13 +190,13 @@
       "signature": "{ episode_id: episode.id, show_id: episode.show_id, kind, // Blog gets a public, globally-unique slug (the suffix guards the DB // unique co"
     },
     {
-      "file": "features/public-chat/services/cx-chat.ts",
+      "file": "packages/chat/src/public-chat/services/cx-chat.ts",
       "table": "chat.message",
       "status": "UNRESOLVED",
       "signature": "message"
     },
     {
-      "file": "features/public-chat/services/cx-chat.ts",
+      "file": "packages/chat/src/public-chat/services/cx-chat.ts",
       "table": "chat.message",
       "status": "UNRESOLVED",
       "signature": "messages"

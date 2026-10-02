@@ -24,13 +24,13 @@
  */
 
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@host/components/ui/button";
 import { X } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { useAppSelector } from "@host/lib/redux/hooks";
+import { selectInstanceStatus } from "../../redux/execution-system/conversations/conversations.selectors";
+import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { AgentRunner } from "../smart/AgentRunner";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface AgentInlineOverlayProps {
   conversationId: string;

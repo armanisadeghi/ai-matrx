@@ -28,7 +28,7 @@ import {
 import type {
   VariableCustomComponent,
   VariableDefinition,
-} from "@/features/agents/types/agent-definition.types";
+} from "@ai-matrx/chat/agents/types/agent-definition.types";
 import fixtures from "./fixtures/live-agent-variables.json";
 
 type Fixture = {

@@ -12,7 +12,7 @@ import {
   Boxes,
   type LucideIcon,
 } from "lucide-react";
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
+import type { ContextObjectType } from "../../types/agent-api-types";
 
 export const CONTEXT_TYPE_ICON: Record<ContextObjectType, LucideIcon> = {
   text: Type,

@@ -13,8 +13,8 @@ import type {
   TextBlock,
 } from "@/lib/chat-protocol/types";
 import { MarkdownErrorBoundary } from "./internal-handlers/MarkdownErrorBoundary";
-import { LiveToolCallCard } from "@/features/tool-call-visualization/components/LiveToolCallCard";
-import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { LiveToolCallCard } from "@ai-matrx/chat/tool-call-visualization/components/LiveToolCallCard";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 
 // ---------------------------------------------------------------------------
 // Server-processed block state — used when backend sends render_block events

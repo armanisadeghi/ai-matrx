@@ -1,6 +1,6 @@
 "use client";
 
-import type { Resource } from "@/features/agents/resources/types";
+import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import { DrillDeck } from "@/features/scopes/components/active-context/drill-deck/DrillDeck";
 import { useSelectionEngine } from "@/features/scopes/components/active-context/quick-pick/engine";
 import { contextValueResourceFromNode } from "./context-value-resource";

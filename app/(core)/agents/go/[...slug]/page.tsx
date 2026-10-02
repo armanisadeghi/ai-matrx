@@ -25,7 +25,7 @@ import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createClient } from "@/utils/supabase/server";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { agentPathFor } from "@/features/agents/addressing/agentAddress";
+import { agentPathFor } from "@ai-matrx/chat/agents/addressing/agentAddress";
 
 interface ResolveRow {
   input_id: string;

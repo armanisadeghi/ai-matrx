@@ -30,7 +30,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import type { WorkflowNodeStreamEntry } from "@/features/agents/types/request.types";
+import type { WorkflowNodeStreamEntry } from "@ai-matrx/chat/agents/types/request.types";
 import { ROLES, type InterviewTurnRow, type RoleKey } from "../types";
 import { LiveTurnCard } from "./LiveTurnCard";
 import { RoleAvatar } from "./RoleAvatar";

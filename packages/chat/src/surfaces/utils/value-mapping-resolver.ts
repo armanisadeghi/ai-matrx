@@ -19,15 +19,15 @@
  * once every shortcut migrates to the new shape.
  */
 
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "../../agents/types/scope.types";
 import type {
   ContextObjectType,
   ContextPolicy,
-} from "@/features/agents/types/agent-api-types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
-import { isValueMappingMap } from "@/features/surfaces/types";
+} from "../../agents/types/agent-api-types";
+import type { InstanceContextEntry } from "../../agents/types/instance.types";
+import type { VariableDefinition } from "../../agents/types/agent-definition.types";
+import type { ValueMapping, ValueMappingMap } from "../types";
+import { isValueMappingMap } from "../types";
 import { parseQualifiedValueKey } from "@ai-matrx/alchemy/declare";
 import { assertNativeContextValue } from "./context-value-contract";
 

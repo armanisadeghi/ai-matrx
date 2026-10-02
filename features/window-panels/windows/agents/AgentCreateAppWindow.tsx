@@ -26,18 +26,18 @@ import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import {
   selectAgentById,
   selectLiveAgents,
-} from "@/features/agents/redux/agent-definition/selectors";
-import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
-import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { initializeChatAgents } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { AgentComingSoonContent } from "@ai-matrx/chat/agents/components/coming-soon/AgentComingSoonContent";
 import { CreateAgentAppForm } from "@/features/agent-apps/components/CreateAgentAppForm";
 import type { CreateAgentAppInput } from "@/features/agent-apps/types";
 import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 
 interface AgentCreateAppWindowProps {
   isOpen: boolean;

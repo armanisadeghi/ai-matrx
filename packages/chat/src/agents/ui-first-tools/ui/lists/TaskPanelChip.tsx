@@ -14,7 +14,7 @@
 
 import { useEffect, useState } from "react";
 import { ListChecks } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectHasAgentListsContent,
   selectAgentTaskCounts,
@@ -25,7 +25,7 @@ import {
   subscribeAgentLists,
   unsubscribeAgentLists,
 } from "../../redux/agent-lists.thunks";
-import { cn } from "@/lib/utils";
+import { cn } from "@host/lib/utils";
 import { TaskPanel } from "./TaskPanel";
 
 interface TaskPanelChipProps {

@@ -425,7 +425,7 @@ describe("PageHeader is server-rendered", () => {
 const CLIENT_ONLY_HEADER_BASELINE = new Set([
   "app/(core)/tools/pdf-extractor/PdfStudioRouteClient.tsx -> features/pdf-extractor/studio/PdfStudioShell.tsx",
   "app/(core)/tools/pdf-extractor/PdfStudioRouteClient.tsx -> features/pdf-extractor/studio/PdfStudioMobile.tsx",
-  "features/agents/components/context-items/bodies/ProcessedDocumentBody.tsx -> features/rag/components/library/LibraryPreviewPage.tsx",
+  "packages/chat/src/agents/components/context-items/bodies/ProcessedDocumentBody.tsx -> features/rag/components/library/LibraryPreviewPage.tsx",
   "features/notes/components/NotesLayout.tsx -> features/notes/components/NotesHeaderPortal.tsx",
   "features/notes/components/NotesView.tsx -> features/notes/components/mobile/MobileNotesView.tsx",
   "features/war-room/components/thread/ThreadAudioTab.tsx -> features/transcription-cleanup/components/CleanupPad.tsx",
@@ -479,7 +479,7 @@ function findClientOnlyHeaders(files: string[], read: (f: string) => string): st
 }
 
 describe("no route header is client-only", () => {
-  const files = execSync("git ls-files 'app/*.tsx' 'features/*.tsx' 'components/*.tsx' 'lib/*.tsx'", {
+  const files = execSync("git ls-files 'app/*.tsx' 'features/*.tsx' 'packages/chat/src/*.tsx' 'components/*.tsx' 'lib/*.tsx'", {
     encoding: "utf8",
   })
     .split("\n")
@@ -497,8 +497,8 @@ describe("no route header is client-only", () => {
 
   it("counts a client-only header as covered when its loading fallback draws one (self-test)", () => {
     const fake: Record<string, string> = {
-      "features/x/Covered.tsx": `const H = dynamic(() => import("@/features/shell/components/header/RouteHeader"), { ssr: false, loading: () => <XHeaderFallback /> });`,
-      "features/x/Bare.tsx": `const H = dynamic(() => import("@/features/shell/components/header/RouteHeader"), { ssr: false, loading: () => <Spinner /> });`,
+      "features/x/Covered.tsx": `const H = dynamic(() => import("@host/features/shell/components/header/RouteHeader"), { ssr: false, loading: () => <XHeaderFallback /> });`,
+      "features/x/Bare.tsx": `const H = dynamic(() => import("@host/features/shell/components/header/RouteHeader"), { ssr: false, loading: () => <Spinner /> });`,
     };
     const all = ["features/x/Covered.tsx", "features/x/Bare.tsx", "features/shell/components/header/RouteHeader.tsx"];
     expect(findClientOnlyHeaders(all, (f) => fake[f] ?? read(f))).toEqual([
@@ -509,7 +509,7 @@ describe("no route header is client-only", () => {
   it("detects the class (self-test)", () => {
     // RouteHeader renders <PageHeader>, so loading it client-only is the class.
     const fake: Record<string, string> = {
-      "features/x/Route.tsx": `const H = dynamic(() => import("@/features/shell/components/header/RouteHeader"), { ssr: false });`,
+      "features/x/Route.tsx": `const H = dynamic(() => import("@host/features/shell/components/header/RouteHeader"), { ssr: false });`,
     };
     const all = ["features/x/Route.tsx", "features/shell/components/header/RouteHeader.tsx"];
     const readFake = (f: string) => fake[f] ?? read(f);

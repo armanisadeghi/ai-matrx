@@ -3,7 +3,7 @@ import {
   groupRatioOptions,
   isAspectRatioOptionSet,
   ratioShapeName,
-} from "@/components/official/aspect-ratio/aspect-ratio-options";
+} from "@host/components/official/aspect-ratio/aspect-ratio-options";
 
 // The 23 ratios gpt-image / Gemini image models expose (Product Shot Studio).
 const MANY_RATIOS = [

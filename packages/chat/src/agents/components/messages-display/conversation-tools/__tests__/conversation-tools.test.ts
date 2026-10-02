@@ -14,7 +14,7 @@ import {
 import { filterGroupsToPinned, groupMessageIds, groupsToRender } from "../pinned-filter";
 import { findStatusText } from "../find-in-conversation";
 import { nextMessageIndex } from "../message-keyboard-nav";
-import { findRegenerateAnchor } from "@/features/agents/redux/execution-system/message-crud/regenerate-anchor";
+import { findRegenerateAnchor } from "../../../../redux/execution-system/message-crud/regenerate-anchor";
 import type { DisplayGroup } from "../../display-groups";
 
 describe("findTextMatches", () => {

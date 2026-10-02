@@ -1,5 +1,5 @@
-import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
-import { useModelControls } from "@/features/agents/hooks/useModelControls";
+import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { useModelControls } from "../useModelControls";
 
 describe("useModelControls", () => {
   afterEach(() => {

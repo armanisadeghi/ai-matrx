@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import {
   displayLabelForKey,
   formatVariableDisplayName,
-} from "@/features/agents/utils/variable-utils";
+} from "@ai-matrx/chat/agents/utils/variable-utils";
 import {
   FieldHelp,
   PropertyRow,

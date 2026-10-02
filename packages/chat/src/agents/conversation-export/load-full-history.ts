@@ -4,8 +4,8 @@
 // RPC's ceiling) until the server says there is none, reporting progress so
 // the caller can say "Loading all messages… 120 loaded".
 
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { loadOlderMessages } from "../redux/execution-system/thunks/load-older-messages.thunk";
 
 const PAGE_SIZE = 200;
 /** Bound on pages (40k messages) so a server that never says "done" cannot spin. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   fetchAvailability,
   fetchCatalog,
@@ -15,21 +15,21 @@ import {
   selectMcpDiscoveries,
   selectMcpAvailabilityForOrganization,
   selectMcpAvailabilityStatusForOrganization,
-} from "@/features/agents/redux/mcp/mcp.slice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+} from "../redux/mcp/mcp.slice";
+import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
   deriveMcpConnectionState,
   type McpConnectionTruth,
-} from "@/features/connectors/connection-state";
+} from "@host/features/connectors/connection-state";
 import {
   normalizeAttachable,
   type AttachableResource,
-} from "@/features/connectors/attachable-resources";
-import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
-import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
-import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
-import { invokeMcpServerTool } from "@/features/agents/services/mcp-connections.service";
-import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
+} from "@host/features/connectors/attachable-resources";
+import { mcpConnectionRouteFor } from "@host/features/agent-connections/mcp-connection-route";
+import type { McpCatalogEntry } from "../types/mcp.types";
+import type { McpToolSchema } from "../services/mcp-client/tool-discovery";
+import { invokeMcpServerTool } from "../services/mcp-connections.service";
+import { useGitHubConnection } from "@host/features/github-integration/useGitHubConnection";
 
 const EMPTY_MCP_TOOLS: McpToolSchema[] = [];
 

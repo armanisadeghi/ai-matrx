@@ -37,17 +37,17 @@ import type { RootState } from "@/lib/redux/store";
 import {
   selectLiveAgents,
   selectAgentExecutionPayload,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchAgentsListFull,
   fetchAgentExecutionMinimal,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import type { ManagedAgentOptions } from "@ai-matrx/chat/agents/types/instance.types";
+import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
-import { adoptHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { adoptHeadlessAgentJson } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   DOMAIN_OUTPUTS,
   domainOutputForBundleSlug,

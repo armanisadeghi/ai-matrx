@@ -23,15 +23,15 @@ import {
   selectAgentMessages,
   selectAgentModelId,
   selectAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useModelFull } from "@/features/ai-models/hooks/useModels";
 import { isDecisionQuestionsPart } from "@/features/agents/decision-questions/types";
 import { modelTakesDecisions } from "@/features/agents/decision-questions/budget";
-import { modelProducesSpeech } from "@/features/agents/speech-script/types";
+import { modelProducesSpeech } from "@ai-matrx/chat/agents/speech-script/types";
 import {
   setAgentMessages,
   setAgentVariableDefinitions,
-} from "@/features/agents/redux/agent-definition/slice";
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import {
   isReferenceRole,
   variableNameOfMediaUrl,
@@ -53,13 +53,13 @@ import {
 import type {
   AgentDefinitionMessage,
   PrimingMessageRole,
-} from "@/features/agents/types/agent-message-types";
-import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
-import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
+} from "@ai-matrx/chat/agents/types/agent-message-types";
+import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
+import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import MarkdownStream from "@/components/MarkdownStream";
-import { MessageFlagToggles } from "@/features/agents/message-flags/MessageFlagToggles";
-import { useMessageFlags } from "@/features/agents/message-flags/useMessageFlags";
+import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";
+import { useMessageFlags } from "@ai-matrx/chat/agents/message-flags/useMessageFlags";
 
 /** Extract text from a TextBlock. */
 function extractTextFromBlock(block: Record<string, unknown>): string {

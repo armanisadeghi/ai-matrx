@@ -24,13 +24,13 @@
 // owns provider admission (2026-08-18 ruling, features/flashcards/FEATURE.md).
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
+import { selectLatestRequestId } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   mandateOutputUnusableSentence,
   runHeadlessAgentJson,
-} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import { coerceDetails } from "@/features/flashcards/data/enhanceCard";

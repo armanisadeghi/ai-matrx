@@ -25,24 +25,24 @@
 
 import React, { useCallback } from "react";
 import { Beaker } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { Label } from "@host/components/ui/label";
+import { Switch } from "@host/components/ui/switch";
+import { Separator } from "@host/components/ui/separator";
+import { cn } from "@host/lib/utils";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   clearMemoryToggleRequest,
   requestMemoryToggle,
   setMemoryScope,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
   selectMemoryScope,
   selectMemoryToggleRequest,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+} from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   selectIsMemoryEnabledForConversation,
   selectMemoryMetadata,
-} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
+} from "../../../redux/execution-system/observational-memory/observational-memory.selectors";
 
 interface MemoryControlsProps {
   conversationId: string;

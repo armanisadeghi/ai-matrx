@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useSpokenPractice } from "../hooks/useSpokenPractice";
 import { buildSpokenPracticeScope } from "../spokenPracticeScope";
 import { MODE_VOCABULARY } from "../vocabulary";

@@ -1,6 +1,6 @@
 import { getAgent } from "@/lib/agents/data";
 import { AgentSamplesManager } from "@/features/agents/components/samples/AgentSamplesManager";
-import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
+import { AgentHeader } from "@ai-matrx/chat/agents/components/shared/AgentHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 

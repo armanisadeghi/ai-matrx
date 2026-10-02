@@ -22,7 +22,7 @@ import { organizationRefusalMessage } from "@/lib/organizations/organizationRefu
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
+import { useFloatingRunWindow } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { studyService } from "@/features/education/study/service/studyService";
 import { buildGradeScore } from "@/features/education/study/utils/gradeScore";
 import { gradeAnswerImage, type GradedAnswer } from "../data/grading";

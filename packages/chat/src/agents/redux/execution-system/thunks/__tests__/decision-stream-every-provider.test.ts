@@ -38,8 +38,8 @@ import activeRequestsReducer, {
 import { selectUnifiedSlotRange } from "../../active-requests/active-requests.selectors";
 import messagesReducer from "../../messages/messages.slice";
 import { processStream } from "../process-stream";
-import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
-import type { RootState } from "@/lib/redux/store";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
+import type { RootState } from "@host/lib/redux/store";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;

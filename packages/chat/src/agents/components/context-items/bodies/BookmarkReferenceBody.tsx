@@ -12,8 +12,8 @@
  */
 
 import type { ContextItemBodyProps } from "../types";
-import { bookmarksToReferenceDirectives } from "@/features/matrx-envelope/bookmarkToReference";
-import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
+import { bookmarksToReferenceDirectives } from "@host/features/matrx-envelope/bookmarkToReference";
+import MatrxEnvelopeBlock from "@host/features/matrx-envelope/MatrxEnvelopeBlock";
 
 export function BookmarkReferenceBody({ item }: ContextItemBodyProps) {
   const directives = bookmarksToReferenceDirectives(item.refs.bookmarks ?? []);

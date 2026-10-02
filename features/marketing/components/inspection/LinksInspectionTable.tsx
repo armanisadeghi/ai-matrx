@@ -26,7 +26,7 @@ import {
   type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { createMarketingLinksScope } from "@/features/surfaces/manifests/marketing-links.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";

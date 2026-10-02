@@ -17,9 +17,9 @@ import {
 } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectLatestAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 export interface UseProTextareaAgentActionResult {

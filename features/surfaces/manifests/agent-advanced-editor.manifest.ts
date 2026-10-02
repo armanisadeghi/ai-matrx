@@ -116,8 +116,8 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
-import { agentCatalogProfileTargetDescription } from "@/features/agents/surface-catalog-profile";
+} from "@ai-matrx/chat/surfaces/types";
+import { agentCatalogProfileTargetDescription } from "@ai-matrx/chat/agents/surface-catalog-profile";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [

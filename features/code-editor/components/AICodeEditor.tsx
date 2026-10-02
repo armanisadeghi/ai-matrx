@@ -29,8 +29,8 @@ import {
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import MarkdownStream from "@/components/MarkdownStream";
 import { DiffView } from "./DiffView";
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
-import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
+import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { cn } from "@/lib/utils";
 import {
   useAICodeEditor,

@@ -21,12 +21,12 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import { assertWriteLanded, describeWriteFailure } from "@/lib/errors/writeFailure";
+import { supabase } from "@host/utils/supabase/client";
+import { tryWriteOne } from "@host/utils/supabase/writeOne";
+import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { favoritesService } from "@host/features/scopes/service/favoritesService";
+import { isScopesRpcErr } from "@host/features/scopes/types";
+import { assertWriteLanded, describeWriteFailure } from "@host/lib/errors/writeFailure";
 import {
   patchConversation,
   renameConversation as renameConversationListItem,

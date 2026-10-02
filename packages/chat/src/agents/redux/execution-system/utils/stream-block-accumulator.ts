@@ -14,35 +14,35 @@
  * accumulator never re-reads completed blocks.
  */
 
-import { QuotedKindLift } from "@/features/content-ir/surfaces/quoted-kind-lift";
-import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
+import { QuotedKindLift } from "@host/features/content-ir/surfaces/quoted-kind-lift";
+import { FENCE_META_KEY, splitFenceInfo } from "@host/components/markdown-core/fence-meta";
 import {
   hasUnclosedBacktickRun,
   indexOutsideInlineCode,
-} from "@/components/mardown-display/markdown-classification/processors/utils/inline-code-span";
+} from "@host/components/mardown-display/markdown-classification/processors/utils/inline-code-span";
 import {
   hasKindKey,
   isJsonFenceLanguage,
   jsonKindSignal,
-} from "@/features/content-ir/surfaces/json-kind-signal";
+} from "@host/features/content-ir/surfaces/json-kind-signal";
 import {
   findBalancedXmlClose,
   initialXmlBalance,
   type XmlBalanceState,
-} from "@/components/mardown-display/markdown-classification/processors/utils/xml-tag-balance";
+} from "@host/components/mardown-display/markdown-classification/processors/utils/xml-tag-balance";
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
   FenceReader,
   trimFenceLine,
 } from "@ai-matrx/content-ir/source";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
 import {
   DIRECTIVE_CONTAINER_OPEN,
   DirectiveContainerTracker,
-} from "@/components/markdown-core/directive-container";
-import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
-import { continuesTable, lineIndent, startsPipelessTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+} from "@host/components/markdown-core/directive-container";
+import { TITLED_IMAGE_LINE } from "@host/components/markdown-core/image-figure";
+import { continuesTable, lineIndent, startsPipelessTable } from "@host/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import {
   classifyLine,
   isPlainText,
@@ -64,28 +64,28 @@ import {
   type UnrecognizedXmlContainerTracker,
   normalizeCodeLanguage,
   SPECIAL_CODE_LANGUAGES,
-} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+} from "@host/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { disposeParseSession, openParseSession } from "@ai-matrx/content-ir";
 import type { ParseSession } from "@ai-matrx/content-ir";
-import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
-import { componentRegistry } from "@/features/content-ir/registry/component-registry";
+import { kindRegistry } from "@host/features/content-ir/registry/kind-registry";
+import { componentRegistry } from "@host/features/content-ir/registry/component-registry";
 import {
   IR_ENVELOPE_KEY,
   type CanonicalBlockIR,
 } from "@ai-matrx/content-ir";
-import { envelopeMatchesParsedSource } from "@/features/content-ir/redux/render-block-envelope";
+import { envelopeMatchesParsedSource } from "@host/features/content-ir/redux/render-block-envelope";
 import {
   envelopeForCompletedFenceRegion,
   envelopeForCompletedXmlRegion,
-} from "@/features/content-ir/surfaces/xml-finalize";
+} from "@host/features/content-ir/surfaces/xml-finalize";
 import {
   normalizeRecoveredContainerPiece,
   splitAroundEmbeddedKindJson,
-} from "@/features/content-ir/surfaces/embedded-kind-json";
-import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
-import { sessionEnvelope } from "@/features/content-ir/registry/kind-correctors";
-import { canonicalizeCompletedLegacyQuizEnvelope } from "@/features/content-ir/registry/legacy-quiz-envelope";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+} from "@host/features/content-ir/surfaces/embedded-kind-json";
+import { withIrEnvelope } from "@host/features/content-ir/registry/region-envelope-memo";
+import { sessionEnvelope } from "@host/features/content-ir/registry/kind-correctors";
+import { canonicalizeCompletedLegacyQuizEnvelope } from "@host/features/content-ir/registry/legacy-quiz-envelope";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 
 // ============================================================================
 // Types

@@ -26,7 +26,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   CRAWL_COMMAND_TOGGLES,
   CRAWL_CONCURRENCY_BOUNDS,

@@ -14,8 +14,8 @@ import {
   Music,
   FileText,
 } from "lucide-react";
-import { Youtube } from "@/components/icons/brand-icons";
-import { cn } from "@/lib/utils";
+import { Youtube } from "@host/components/icons/brand-icons";
+import { cn } from "@host/lib/utils";
 import type { DemoAttachmentSpec } from "./userMessageChipsDemoData";
 import {
   resolveResourceAttachmentTileTheme,

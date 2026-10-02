@@ -7,15 +7,15 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchAgentUsages } from "@/features/agents/redux/usages/usages.thunks";
+import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { fetchAgentUsages } from "@host/features/agents/redux/usages/usages.thunks";
 import {
   makeSelectUsageCache,
   makeSelectUsageGroups,
   makeSelectUsageAggregates,
   makeSelectRedFlagSummary,
-} from "@/features/agents/redux/usages/usages.selectors";
-import type { UsageScope } from "@/features/agents/redux/usages/usages.slice";
+} from "@host/features/agents/redux/usages/usages.selectors";
+import type { UsageScope } from "@host/features/agents/redux/usages/usages.slice";
 import { useMemo } from "react";
 
 export function useAgentUsages(agentId: string | null, scope: UsageScope) {

@@ -56,7 +56,7 @@ import {
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   EDUCATION_CLASS_SURFACE_NAME,
   type ClassHubView,

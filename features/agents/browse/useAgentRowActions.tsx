@@ -22,7 +22,7 @@ import {
   duplicateAgent,
   saveAgentField,
   setAgentFavorite,
-} from "@/features/agents/redux/agent-definition/thunks";
+} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

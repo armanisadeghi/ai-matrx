@@ -25,7 +25,7 @@ import type {
     CxTextContent,
     CxThinkingContent,
     CxMediaContent,
-} from '@/features/public-chat/types/cx-tables';
+} from '@ai-matrx/chat/public-chat/types/cx-tables';
 
 import type {
     CanonicalMessage,

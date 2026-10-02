@@ -51,7 +51,7 @@ import type {
   ApiMode,
   ChatModeConfig,
 } from "./_legacy-stubs";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { VariableDefinition } from "../agents/types/agent-definition.types";
 
 // ============================================================================
 // PROPS

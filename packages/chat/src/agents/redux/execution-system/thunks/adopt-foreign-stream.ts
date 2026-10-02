@@ -46,10 +46,10 @@
  * Never a parse session, never a hand-picked component.
  */
 
-import type { AppThunk } from "@/lib/redux/store";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { isStreamTransportLost } from "@/lib/api/errors";
+import type { AppThunk } from "@host/lib/redux/store";
+import type { TypedStreamEvent } from "@host/types/python-generated/stream-events";
+import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { isStreamTransportLost } from "@host/lib/api/errors";
 
 import {
   createRequest,

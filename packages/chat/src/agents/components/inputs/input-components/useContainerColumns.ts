@@ -1,4 +1,4 @@
-import { useMeasure } from "@/hooks/usehooks";
+import { useMeasure } from "@host/hooks/usehooks";
 
 /**
  * Attach to a stable parent container to get its live width.

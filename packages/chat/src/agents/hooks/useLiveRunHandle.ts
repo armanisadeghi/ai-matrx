@@ -20,8 +20,8 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { useAppDispatch } from "@host/lib/redux/hooks";
+import { destroyInstanceIfAllowed } from "../redux/execution-system/conversations/conversations.thunks";
 
 export interface LiveRunHandle {
   /** The claimed conversation — feed to `<LiveRunDisplay conversationId>`. */

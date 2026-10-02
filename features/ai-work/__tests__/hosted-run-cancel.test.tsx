@@ -39,7 +39,7 @@ jest.mock("@/lib/api/typed-client", () => ({
 // system and the Redux store into a unit suite. Neither is exercised here.
 jest.mock("@/lib/api/call-api", () => ({ callApi: jest.fn() }));
 jest.mock(
-  "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream",
+  "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream",
   () => ({ adoptForeignStream: jest.fn() }),
 );
 

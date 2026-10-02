@@ -100,7 +100,7 @@ import {
   formatRelativeTime,
   toEpochMs,
 } from "@/utils/datetime";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";

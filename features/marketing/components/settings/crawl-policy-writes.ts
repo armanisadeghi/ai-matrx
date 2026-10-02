@@ -12,7 +12,7 @@
  * — the description prose there is the contract the agent actually sees.
  */
 
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { CrawlStartOptions } from "@/features/marketing/crawler/direct-client";
 import type { MarketingSite } from "@/features/marketing/types";
 

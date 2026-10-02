@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Gauge, Globe2, SearchCheck } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { Badge } from "@/components/ui/badge";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";

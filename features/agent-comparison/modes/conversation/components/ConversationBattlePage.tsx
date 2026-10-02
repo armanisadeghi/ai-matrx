@@ -13,10 +13,10 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { destroyInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { forkConversationServer } from "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";
-import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import { destroyInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import { forkConversationServer } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";
+import { ConversationPickerWindow } from "@ai-matrx/chat/agents/components/conversation-history/ConversationPickerWindow";
+import type { ConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.types";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 import { BattleHeader } from "@/features/agent-comparison/shared/BattleHeader";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";

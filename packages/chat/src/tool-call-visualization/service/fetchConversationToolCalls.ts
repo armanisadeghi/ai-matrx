@@ -4,12 +4,12 @@
  * holds a partial cache (recent page / live stream).
  */
 
-import { supabase } from "@/utils/supabase/client";
-import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { supabase } from "@host/utils/supabase/client";
+import type { CxToolCallRecord } from "../../agents/redux/execution-system/observability/observability.slice";
 import {
   toolCallRowToRecord,
   type CxToolCallRow,
-} from "@/features/agents/redux/execution-system/thunks/conversation-bundle";
+} from "../../agents/redux/execution-system/thunks/conversation-bundle";
 
 export const CONVERSATION_TOOL_CALL_PAGE_SIZE = 50;
 

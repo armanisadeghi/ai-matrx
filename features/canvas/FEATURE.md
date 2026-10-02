@@ -424,7 +424,7 @@ path updates the node's `STATE.md` in the same session.
   rules.
 
 - `2026-09-13` — **the bound SANDBOX is a canvas content type** (`sandbox`, NON_PERSISTABLE): Terminal / Files / Activity for a
-  conversation's box, rendered by `features/agents/components/chat/sandbox-insight/SandboxCanvasBody`, opened through `useOpenSandboxCanvas`.
+  conversation's box, rendered by `packages/chat/src/agents/components/chat/sandbox-insight/SandboxCanvasBody`, opened through `useOpenSandboxCanvas`.
   It replaced a bespoke permanently-open chat side panel — the chat's right-hand region is SHARED (browser, documents, artifacts), and a
   content type inherits the canvas's collapse, resize, split, switcher and z-order instead of competing with them. New reducer
   **`offerCanvasItem`**: adds an item to the canvas (and so to the switcher) WITHOUT setting `isOpen` and without stealing `currentItemId`

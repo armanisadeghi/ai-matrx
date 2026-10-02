@@ -16,7 +16,7 @@ import { Copy, ExternalLink, Eye, Share2, Trash2 } from "lucide-react";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { softDeleteMandate } from "@/features/mandates/admin/service";
-import { invalidateMandateCache } from "@/features/mandates/service";
+import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type {

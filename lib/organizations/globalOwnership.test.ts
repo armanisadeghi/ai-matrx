@@ -18,8 +18,8 @@ import {
   platformCategoryToLegacyRow,
   coerceLegacyCategoryIsActive,
 } from "@/app/api/agent-shortcut-categories/_lib/categoryRow";
-import { categoryRowToDef } from "@/features/agents/redux/agent-shortcut-categories/converters";
-import { matchesScope } from "@/features/agents/redux/shared/scope";
+import { categoryRowToDef } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/converters";
+import { matchesScope } from "@ai-matrx/chat/agents/redux/shared/scope";
 
 // The live values, read out of the platform DB on 2026-08-31.
 const SYSTEM_ORG_ID = "39c38960-d30c-4840-b0c1-c9960de95582";

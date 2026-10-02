@@ -21,11 +21,11 @@
  * mappings unless the new column addresses the same target.
  */
 
-import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
+import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import type {
   ValueMapping,
   ValueMappingMap,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 
 /**
  * Promote a legacy inverse-direction map (surface key → agent target name)

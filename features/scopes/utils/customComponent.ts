@@ -7,7 +7,7 @@
 // (null, primitives, arrays) renders as the plain primitive input.
 
 import { isJsonObject } from "@/types/json";
-import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 export function customComponentOf(item: {
   custom_component: unknown;

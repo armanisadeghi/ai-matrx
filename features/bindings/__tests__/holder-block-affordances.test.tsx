@@ -46,10 +46,10 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => () => ({ unwrap: () => Promise.resolve([]) }),
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
-jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectBuiltinAgents: () => [{ id: SYSTEM_AGENT }],
 }));
-jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
   fetchAgentVersionHistory: () => ({ type: "noop" }),
 }));
@@ -67,7 +67,7 @@ import { ScopeHolderBar } from "@/features/bindings/ScopeHolderBar";
 import {
   __resetAgentAddressCache,
   seedAgentAddress,
-} from "@/features/agents/addressing/agentAddressCache";
+} from "@ai-matrx/chat/agents/addressing/agentAddressCache";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 

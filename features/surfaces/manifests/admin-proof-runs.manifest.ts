@@ -1,4 +1,4 @@
-import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup } from "@/features/surfaces/types";
+import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues } from "./_baseline.manifest";
 
 export const ADMIN_PROOF_RUNS_SURFACE_NAME = "matrx-admin/proof-runs";

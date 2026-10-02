@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
-import { fetchMandateAssignments } from "@/features/mandates/service";
+import { fetchMandateAssignments } from "@ai-matrx/chat/mandates/service";
 import { agentHref } from "@/features/mandates/admin/mandate-health";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
@@ -37,7 +37,7 @@ import {
   type SettingsScope,
 } from "./data";
 import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
-import { useAgentAddressViewer } from "@/features/agents/addressing/useAgentHref";
+import { useAgentAddressViewer } from "@ai-matrx/chat/agents/addressing/useAgentHref";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MODES: Array<{ value: AutonomyMode; label: string; hint: string }> = [

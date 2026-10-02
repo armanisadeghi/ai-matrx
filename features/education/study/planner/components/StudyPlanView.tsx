@@ -60,13 +60,13 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   useSurfaceWriteHandlers,
   type SurfaceWriteHandlerEntry,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   collectionWriteHandlers,
   readCollectionList,
   refuseRepeats,
-} from "@/features/surfaces/runtime/collection-write-targets";
-import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+} from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 
 const MS_PER_DAY = 86_400_000;
 const SURFACE_NAME = "matrx-user/education-planner";

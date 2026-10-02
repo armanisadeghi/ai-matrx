@@ -48,7 +48,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@/features/surfaces/types";
+} from "@ai-matrx/chat/surfaces/types";
 import {
   TOOL_CATEGORY_MAX_CHARS,
   TOOL_DESCRIPTION_MAX_CHARS,

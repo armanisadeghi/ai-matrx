@@ -21,32 +21,32 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Flame, History } from "lucide-react";
 
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import type { RootState } from "@host/lib/redux/store";
 
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import type { HistoryGrouping } from "@/features/agents/redux/conversation-history/types";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
-import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { hydrateConversationForReading } from "@/features/agents/components/messages-display/hydrateConversationForReading";
-import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
-import { makeSelectConversationHistoryScope } from "@/features/agents/redux/conversation-history/selectors";
+import type { ConversationListItem } from "../../../agents/redux/conversation-list/conversation-list.types";
+import type { HistoryGrouping } from "../../../agents/redux/conversation-history/types";
+import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";
+import { AgentConversationDisplay } from "../../../agents/components/messages-display/AgentConversationDisplay";
+import { AgentConversationColumn } from "../../../agents/components/shared/AgentConversationColumn";
+import { hydrateConversationForReading } from "../../../agents/components/messages-display/hydrateConversationForReading";
+import { ConversationHistorySidebar } from "../../../agents/components/conversation-history/ConversationHistorySidebar";
+import { makeSelectConversationHistoryScope } from "../../../agents/redux/conversation-history/selectors";
 import {
   extractInspectableText,
   selectLatestAssistantMessageId,
   selectMessageById,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+} from "../../../agents/redux/execution-system/messages/messages.selectors";
+import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   AI_RESULTS_SURFACE_NAME,
   createAiResultsScope,
-} from "@/features/surfaces/manifests/ai-results.manifest";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useComposerMode } from "@/features/agents/components/inputs/smart-input/composer/useComposerMode";
-import { useCompactInputMaxHeight } from "@/features/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
+} from "@host/features/surfaces/manifests/ai-results.manifest";
+import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { useComposerMode } from "../../../agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "../../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 
 const SURFACE_KEY = "ai-results-window";
 const WORKSPACE_INPUT_SURFACE_KEY = "ai-results-workspace";

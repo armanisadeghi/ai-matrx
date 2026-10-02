@@ -39,7 +39,7 @@
  *     origin?: "user" | "agent"; actorLabel?: string }
  */
 
-import { applySurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import { applySurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import type { KindActionResult } from "../kind-action-registry";
 import { registerKindAction } from "../kind-action-registry";
 

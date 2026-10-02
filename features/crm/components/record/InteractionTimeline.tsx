@@ -38,8 +38,8 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
-import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
 import { selectActiveProjectId } from "@/features/scopes/redux/selectors/active-context";
 import { useAppSelector } from "@/lib/redux/hooks";

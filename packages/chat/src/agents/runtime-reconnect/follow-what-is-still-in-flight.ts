@@ -16,8 +16,8 @@
  * refused "Conversation already exists … Pass is_new=false".
  */
 
-import type { AppDispatch } from "@/lib/redux/store";
-import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
+import type { AppDispatch } from "@host/lib/redux/store";
+import { surfaceColdPendingCalls } from "../redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { reconnectServerOperation } from "./reconnect-server-operation.thunk";
 
 export function followWhatIsStillInFlight(

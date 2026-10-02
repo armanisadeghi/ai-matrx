@@ -21,7 +21,7 @@ import {
   type CodexUsageRow,
   type CodexUsageSnapshot,
 } from "@/features/admin/codex-usage/service";
-import { useDesktopPresence } from "@/features/agents/hooks/useDesktopPresence";
+import { useDesktopPresence } from "@ai-matrx/chat/agents/hooks/useDesktopPresence";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
