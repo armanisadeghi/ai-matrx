@@ -1,6 +1,7 @@
 /**
  * Frame-parsing tests for the fetch-based SSE client.
  *
+ * The host door (`requestRaw`) is mocked to a fetch pass-through, and
  * fetch is mocked to return an object whose body's getReader() yields
  * scripted Uint8Array chunks — no network, no timers. run-event-source
  * timing (stall/reconnect/poll cadence) is deliberately NOT tested here.
@@ -14,6 +15,13 @@ if (typeof globalThis.TextEncoder === "undefined") {
 if (typeof globalThis.TextDecoder === "undefined") {
   globalThis.TextDecoder = NodeTextDecoder as unknown as typeof globalThis.TextDecoder;
 }
+
+// The host door is exercised by its own tests; here it is a pass-through to
+// the scripted fetch so the frame parsing is what is under test.
+jest.mock("@/lib/python-client", () => ({
+  requestRaw: (path: string, init: RequestInit, opts: { signal?: AbortSignal }) =>
+    fetch(path, { ...init, signal: opts.signal }),
+}));
 
 import { streamSse } from "@/features/workflow-runtime/transport/sse";
 
@@ -55,7 +63,7 @@ async function runStream(
   const events: CollectedEvent[] = [];
   const controller = new AbortController();
   await streamSse(
-    "https://example.test/runs/r1/events/stream",
+    "/runs/r1/events/stream",
     (eventType, data, id) => events.push({ eventType, data, id }),
     {
       headers: { Authorization: "Bearer test-token" },
@@ -113,7 +121,7 @@ describe("streamSse frame parsing", () => {
     const fetchMock = mockFetchWithChunks(["data: {}\n\n"]);
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     const controller = new AbortController();
-    await streamSse("https://example.test/stream", () => undefined, {
+    await streamSse("/stream", () => undefined, {
       headers: { Authorization: "Bearer tok" },
       lastEventId: "17",
       signal: controller.signal,
@@ -135,7 +143,7 @@ describe("streamSse frame parsing", () => {
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     const controller = new AbortController();
     await expect(
-      streamSse("https://example.test/stream", () => undefined, {
+      streamSse("/stream", () => undefined, {
         headers: {},
         signal: controller.signal,
       }),

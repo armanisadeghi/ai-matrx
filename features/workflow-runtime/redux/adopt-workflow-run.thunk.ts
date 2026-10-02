@@ -33,8 +33,7 @@
 // GET /runs/{id} reads the super-admin twin inside the admin section (lib/api/adminDoor.ts).
 import { adminDoorPath } from "@/lib/api/adminDoor";
 import type { AppThunk } from "@/lib/redux/store";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
+import { getJson } from "@/lib/python-client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 import {
@@ -51,10 +50,6 @@ import {
   startRunEventSource,
   type RunTransportMode,
 } from "../transport/run-event-source";
-import {
-  awaitRunStreamOrganizationContext,
-  stampRunStreamOrganizationContext,
-} from "../transport/organization-context";
 import { RenderBlockFrameAssembler } from "../transport/render-block-frames";
 import { createWorkflowMediaRouter } from "../transport/live-media";
 import {
@@ -125,44 +120,18 @@ export function adoptWorkflowRun(
       stopped: false,
     };
 
-    const baseUrl = selectResolvedBaseUrl(getState());
-    if (!baseUrl) {
-      throw new Error(
-        "[workflow-runtime] No backend URL configured — cannot adopt a workflow run.",
-      );
-    }
-
-    const getHeaders = (): Record<string, string> => {
-      const state = getState();
-      const token = selectAccessToken(state);
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-      // Mandatory org admission on every authed run fetch/SSE — see the
-      // helper's header comment for the non-throwing stream-lane posture.
-      return stampRunStreamOrganizationContext(state, headers);
-    };
+    // The host door (`lib/python-client.ts`) resolves the active server and
+    // stamps Authorization + X-Organization-Id on every run read and on the
+    // SSE stream. A GET waits, bounded, for the organization bootstrap before
+    // it stamps (W39, run-permalink instance: a cold-load read used to beat
+    // the bootstrap and come back 400 `organization_required`), and with no
+    // organization at all it is sent org-less so the server's own answer
+    // stands — the same posture the run transports always had.
+    const getHeaders = (): Record<string, string> => ({});
 
     const fetchJson = async <T>(path: string): Promise<T> => {
-      // WAIT FOR THE WORKSPACE (W39, run-permalink instance). This read fires
-      // at page load, and on a cold load it used to beat the organization
-      // bootstrap, come back 400 `organization_required`, and leave the page
-      // narrating "GETTING READY" over a run that finished hours ago. The wait
-      // is bounded and returns instantly once an organization is selected.
-      const headers = await awaitRunStreamOrganizationContext(getState, {
-        "Content-Type": "application/json",
-        ...(selectAccessToken(getState())
-          ? { Authorization: `Bearer ${selectAccessToken(getState())}` }
-          : {}),
-      });
-      const response = await fetch(`${baseUrl}${path}`, { headers });
-      if (!response.ok) {
-        throw new Error(
-          `[workflow-runtime] GET ${path} failed: ${response.status}`,
-        );
-      }
-      return (await response.json()) as T;
+      const { data } = await getJson<T>(path);
+      return data;
     };
 
     // ── Tracked-tier meta batching (adversarial finding 7) ────────────────
@@ -571,7 +540,9 @@ export function adoptWorkflowRun(
 
           const source = startRunEventSource({
             runId,
-            baseUrl,
+            // Empty: run-event-source then hands the server-relative stream
+            // path to streamSse, whose host door prepends the base URL.
+            baseUrl: "",
             getHeaders,
             initialCursor: cursor,
             fetchJson,
