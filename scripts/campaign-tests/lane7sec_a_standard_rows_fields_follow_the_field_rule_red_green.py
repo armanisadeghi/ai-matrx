@@ -101,10 +101,15 @@ with conn() as c:
     q = cur.fetchone(); assert q == (0, 0), q
     print('clone quarantine ok', q, 'mode', MODE, 'plant', PLANT)
 
+    # The DDL below waits for the registry table behind other sessions' reads on the shared clone.
+    cur.execute("set local lock_timeout = '90s'")
+    cur.execute("select exists(select 1 from information_schema.columns where table_schema='platform' and table_name='entity_types' and column_name='custom_fields_free_form')")
+    r1_live = cur.fetchone()[0]
     if MODE == 'pre':
-        cur.execute(R1_DOWN.read_text()); cur.execute(SEC_DOWN.read_text())
+        if r1_live: cur.execute(R1_DOWN.read_text())
+        cur.execute(SEC_DOWN.read_text())
     elif MODE == 'r0':
-        cur.execute(R1_DOWN.read_text())
+        if r1_live: cur.execute(R1_DOWN.read_text())
     elif MODE == 'r1':
         cur.execute(R1.read_text())
     elif MODE != 'current':
