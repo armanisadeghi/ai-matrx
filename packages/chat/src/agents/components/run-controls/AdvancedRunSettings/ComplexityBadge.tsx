@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { cn } from '@host/lib/utils';
+import { cn } from '@ai-matrx/design-system';
 import type { AlgorithmResult, ComplexityBand } from './algorithm';
 
 const BAND_DOT: Record<ComplexityBand, string> = {

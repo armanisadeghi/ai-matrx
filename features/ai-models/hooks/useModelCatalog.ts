@@ -183,9 +183,11 @@ export interface CatalogModel {
   description: string | null;
   releaseDate: string | null;
   /**
-   * Serving tiers (priority-ordered, preferred first) — user variant only.
-   * Multi-tier models (e.g. GPT OSS 120B on Matrx Lightning / Matrx Fast /
-   * Matrx Standard) list every brand; the first is the server's default.
+   * Serving CLASSES (priority-ordered, preferred first), one tier per class —
+   * equivalent offerings within a class are collapsed to its preferred one.
+   * Multi-class models (e.g. GPT OSS 120B on Matrx Lightning / Matrx Fast /
+   * Matrx Standard) are separate choices; the picker lists one row per class
+   * and the chosen class travels as the offering pin (`offering_id`).
    */
   tiers: CatalogTier[];
   /** admin-only extras — present only for variant === "admin" */
@@ -310,6 +312,32 @@ function pricingOutputCost(pricing: Json | null): number | null {
   return parsePricingBands(pricing)[0]?.outputPrice ?? null;
 }
 
+/**
+ * A model's CLASS is the endpoint serving it ("Matrx Fast", "Matrx Lightning",
+ * ...). Two classes of one model are different products the person chooses
+ * between; only equivalent offerings inside ONE class collapse to its
+ * preferred (lowest-priority) offering.
+ */
+function sameClass(
+  tier: CatalogTier,
+  endpointId: string | null,
+  servedVia: string | null,
+): boolean {
+  if (tier.endpointId && endpointId) return tier.endpointId === endpointId;
+  return tier.servedVia === (servedVia ?? "");
+}
+
+/** Keep the preferred tier per class, priority-ordered. */
+export function collapseTiersByClass(tiers: CatalogTier[]): CatalogTier[] {
+  const out: CatalogTier[] = [];
+  for (const t of [...tiers].sort((a, b) => a.priority - b.priority)) {
+    if (!out.some((kept) => sameClass(kept, t.endpointId, t.servedVia))) {
+      out.push(t);
+    }
+  }
+  return out;
+}
+
 function normalizeAdmin(
   row: ModelAdminRow,
   offerings: AdminOffering[],
@@ -320,14 +348,16 @@ function normalizeAdmin(
     // the branded endpoint display name doubles as the tier brand. Falls back
     // to the RPC's preferred-offering columns if the offerings read was empty.
     tiers: offerings.length
-      ? offerings.map((o) => ({
-          offeringId: o.offeringId,
-          servedVia: o.endpointDisplayName ?? o.vendor ?? "",
-          endpointId: o.endpointId,
-          priority: o.priority,
-          pointsInput: o.pointsInput,
-          pointsOutput: o.pointsOutput,
-        }))
+      ? collapseTiersByClass(
+          offerings.map((o) => ({
+            offeringId: o.offeringId,
+            servedVia: o.endpointDisplayName ?? o.vendor ?? "",
+            endpointId: o.endpointId,
+            priority: o.priority,
+            pointsInput: o.pointsInput,
+            pointsOutput: o.pointsOutput,
+          })),
+        )
       : row.offering_id && row.endpoint_display_name
         ? [
             {
@@ -473,6 +503,12 @@ async function loadCatalog(
         continue;
       }
       const list = tiersByModel.get(r.model_id) ?? [];
+      // One tier per CLASS (endpoint): equivalent offerings inside the same
+      // class collapse to the preferred one (rows arrive priority-ordered).
+      // Different classes stay separate, selectable choices.
+      if (list.some((t) => sameClass(t, r.served_via_endpoint_id, r.served_via))) {
+        continue;
+      }
       list.push({
         offeringId: r.offering_id,
         servedVia: r.served_via ?? "",

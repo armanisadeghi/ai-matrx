@@ -39,7 +39,7 @@ import { useEffect, useState } from "react";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { AlertTriangle, ChevronDown, GitCompareArrows, MessageSquareText, RefreshCw } from "lucide-react";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { Textarea } from "@ai-matrx/design-system";

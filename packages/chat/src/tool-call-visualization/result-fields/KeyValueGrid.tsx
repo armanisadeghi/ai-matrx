@@ -35,7 +35,7 @@
  */
 
 import React from "react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   detectResultShape,
   humanizeEnumValue,

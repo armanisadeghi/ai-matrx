@@ -18,7 +18,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Youtube } from "@host/components/icons/brand-icons";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@host/lib/redux/hooks";
 import {
   initInstanceContext,

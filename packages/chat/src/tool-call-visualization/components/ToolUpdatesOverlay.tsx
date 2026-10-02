@@ -29,7 +29,7 @@ import React, { useMemo, useState } from "react";
 import FullScreenOverlay, {
   type TabDefinition,
 } from "@host/components/official/FullScreenOverlay";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
 
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";

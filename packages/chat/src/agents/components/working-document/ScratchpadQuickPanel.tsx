@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import { scratchScopeId } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import {

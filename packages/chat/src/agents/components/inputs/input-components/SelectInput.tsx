@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { calcCols } from "./useContainerColumns";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 import { focusWithoutScroll } from "./focusWithoutScroll";

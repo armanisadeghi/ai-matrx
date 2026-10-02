@@ -24,7 +24,7 @@ import {
 import { Check, ChevronRight } from "lucide-react";
 import { Popover, PopoverAnchor, PopoverContent } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 type IconType = ComponentType<{ className?: string }>;
 

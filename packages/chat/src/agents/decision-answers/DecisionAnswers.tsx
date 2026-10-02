@@ -15,7 +15,7 @@
 
 import { AlertTriangle, Ban } from "lucide-react";
 import { Cost } from "@host/components/cost/Cost";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   answerProbability,
   formatAnswerHeadline,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 interface AskCardCountdownProps {
   expiresAtMs: number;

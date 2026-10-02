@@ -5,7 +5,8 @@
  *
  * Layer 1 of the Smart Input override UX (the model is the common, simple
  * change; deeper settings live behind the advanced disclosure). Writes to the
- * instance override layer (`config_overrides.model`), scoped to THIS
+ * instance override layer (`config_overrides.model`, plus the chosen class
+ * as `config_overrides.offering_id` — offering-pin.ts), scoped to THIS
  * conversation — it never edits the stored agent.
  *
  * Genuine-delta by construction: picking the agent's own model clears the
@@ -15,7 +16,7 @@
  */
 
 import { RotateCcw } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { selectAgentModelId } from "../../redux/agent-definition/selectors";
@@ -25,6 +26,11 @@ import {
   setOverrides,
   resetOverride,
 } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import {
+  effectiveOfferingPin,
+  resetModelChoice,
+  setOfferingPin,
+} from "../../redux/execution-system/instance-model-overrides/offering-pin";
 import { selectIsManualExecutionMode } from "../../redux/execution-system/selectors/aggregate.selectors";
 
 const MANUAL_MODE_MODEL_HINT =
@@ -46,7 +52,12 @@ function useModelOverride(conversationId: string) {
   const baseModel = overrideState?.baseSettings?.model ?? null;
   const overrideModel = overrideState?.overrides?.model ?? null;
   const effectiveModel = overrideModel ?? baseModel;
-  const isOverridden = effectiveModel !== baseModel;
+  // The class (offering) pin travels with the model — a different class of
+  // the agent's own model is an override too.
+  const pinnedOfferingId = effectiveOfferingPin(overrideState);
+  const baseOfferingId = overrideState?.baseSettings?.offering_id ?? undefined;
+  const isOverridden =
+    effectiveModel !== baseModel || pinnedOfferingId !== baseOfferingId;
 
   const handleChange = (modelId: string) => {
     // Picking the agent's own model is not an override — clear it.
@@ -57,14 +68,18 @@ function useModelOverride(conversationId: string) {
     dispatch(setOverrides({ conversationId, changes: { model: modelId } }));
   };
 
-  const handleReset = () =>
-    dispatch(resetOverride({ conversationId, key: "model" }));
+  const handleOfferingPinChange = (offeringId: string | undefined) =>
+    dispatch(setOfferingPin({ conversationId, offeringId }));
+
+  const handleReset = () => dispatch(resetModelChoice(conversationId));
 
   return {
     baseModel,
     effectiveModel,
+    pinnedOfferingId,
     isOverridden,
     handleChange,
+    handleOfferingPinChange,
     handleReset,
   };
 }
@@ -89,8 +104,15 @@ export function QuickRunModelSelect({
   const agentModelId = useAppSelector((state) =>
     agentId ? selectAgentModelId(state, agentId) : null,
   );
-  const { baseModel, effectiveModel, isOverridden, handleChange, handleReset } =
-    useModelOverride(conversationId);
+  const {
+    baseModel,
+    effectiveModel,
+    pinnedOfferingId,
+    isOverridden,
+    handleChange,
+    handleOfferingPinChange,
+    handleReset,
+  } = useModelOverride(conversationId);
 
   const displayModelId = isManualMode
     ? (agentModelId ?? effectiveModel ?? baseModel ?? null)
@@ -101,6 +123,8 @@ export function QuickRunModelSelect({
       <ModelListDropdown
         value={displayModelId}
         onValueChange={handleChange}
+        pinnedOfferingId={pinnedOfferingId}
+        onOfferingPinChange={handleOfferingPinChange}
         inputModalities={[]}
         outputModalities={["text"]}
         className="min-w-0 flex-1"
@@ -123,8 +147,15 @@ export function QuickRunModelSelect({
 }
 
 export function RunModelPicker({ conversationId }: { conversationId: string }) {
-  const { baseModel, effectiveModel, isOverridden, handleChange, handleReset } =
-    useModelOverride(conversationId);
+  const {
+    baseModel,
+    effectiveModel,
+    pinnedOfferingId,
+    isOverridden,
+    handleChange,
+    handleOfferingPinChange,
+    handleReset,
+  } = useModelOverride(conversationId);
 
   return (
     <div className="flex flex-col gap-2 px-3 py-3">
@@ -145,6 +176,8 @@ export function RunModelPicker({ conversationId }: { conversationId: string }) {
       <ModelListDropdown
         value={effectiveModel ?? baseModel ?? null}
         onValueChange={handleChange}
+        pinnedOfferingId={pinnedOfferingId}
+        onOfferingPinChange={handleOfferingPinChange}
         inputModalities={[]}
         outputModalities={["text"]}
       />

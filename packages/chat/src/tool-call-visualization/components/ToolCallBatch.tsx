@@ -30,7 +30,7 @@
 import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { ShimmerText } from "@host/components/loaders/ShimmerText";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";

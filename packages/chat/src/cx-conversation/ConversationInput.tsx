@@ -520,6 +520,32 @@ export function ConversationInput({
     [dispatch, sessionId],
   );
 
+  // The chosen class travels in the session's model settings (the
+  // config_overrides blob) as `offering_id`, beside the model override.
+  const modelSettings =
+    (uiState?.modelSettings as Record<string, unknown> | undefined) ?? {};
+  const pinnedOfferingId =
+    typeof modelSettings.offering_id === "string" && modelSettings.offering_id
+      ? modelSettings.offering_id
+      : undefined;
+  const handleOfferingPinChange = useCallback(
+    (offeringId: string | undefined) => {
+      const { offering_id: _previous, ...rest } = modelSettings;
+      dispatch(
+        chatConversationsActions.updateUIState({
+          sessionId,
+          updates: {
+            modelSettings:
+              offeringId === undefined
+                ? rest
+                : { ...rest, offering_id: offeringId },
+          },
+        }),
+      );
+    },
+    [dispatch, sessionId, modelSettings],
+  );
+
   // ── Settings dialog ────────────────────────────────────────────────────────
   // Build PromptSettings from current uiState for the dialog
   const settingsForDialog: PromptSettings = {
@@ -780,6 +806,8 @@ export function ConversationInput({
             <ModelListDropdown
               value={currentModelId}
               onValueChange={handleModelSelect}
+              pinnedOfferingId={pinnedOfferingId}
+              onOfferingPinChange={handleOfferingPinChange}
               inputModalities={[]}
               className="text-muted-foreground hover:text-foreground"
             />

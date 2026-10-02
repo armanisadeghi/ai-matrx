@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { MessageSquare } from "lucide-react";
 import type {
   FieldAdapter,

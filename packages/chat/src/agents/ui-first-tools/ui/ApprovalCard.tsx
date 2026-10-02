@@ -45,7 +45,7 @@ import { Textarea } from "@ai-matrx/design-system";
 import { ChangeDiff } from "@host/components/ui/change-diff";
 import KindInstanceRender from "@host/features/content-ir/studio/components/KindInstanceRender";
 import { StructuredValueView } from "@host/components/official/structured-value/StructuredValueView";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@host/lib/redux/hooks";
 import type { PendingAsk } from "../redux/pending-asks.slice";
 import { resolvePendingAsk } from "../redux/pending-asks.slice";

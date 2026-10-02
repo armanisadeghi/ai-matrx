@@ -35,7 +35,7 @@
 import React from "react";
 import { Box, FolderTree, ListTree, TerminalSquare } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { SimpleTerminal } from "@host/features/code/terminal/SimpleTerminal";
 import { SandboxFileViewer } from "../../debug/SandboxFileViewer";

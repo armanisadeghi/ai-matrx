@@ -5618,6 +5618,36 @@
         "title": "ContextDecidedBy",
         "type": "object"
       },
+      "ContextDeliveredText": {
+        "additionalProperties": false,
+        "description": "Text the model actually read for one value — copied from what the server rendered,\nnever rebuilt from the client's copy (RULES.md §5 ``delivered`` / ``on_request``).",
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "chars": {
+            "title": "Chars",
+            "type": "integer"
+          },
+          "truncated": {
+            "default": false,
+            "title": "Truncated",
+            "type": "boolean"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "chars",
+          "sha256"
+        ],
+        "title": "ContextDeliveredText",
+        "type": "object"
+      },
       "ContextReceiptRow": {
         "additionalProperties": false,
         "description": "One context value this turn: whether it reached the model, and how.",
@@ -5737,6 +5767,28 @@
             },
             "title": "Consumed Into",
             "type": "array"
+          },
+          "delivered": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ContextDeliveredText"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "on_request": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ContextDeliveredText"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [

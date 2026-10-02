@@ -58,6 +58,9 @@ export default function GenerateShellClient() {
   const preferredModelId = useAppSelector(
     (s) => s.userPreferences.imageGeneration.defaultModel,
   );
+  const preferredOfferingId = useAppSelector(
+    (s) => s.userPreferences.imageGeneration.defaultOfferingId,
+  );
   const { models } = useModels();
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState(() => preferredStyle ?? "");
@@ -83,6 +86,8 @@ export default function GenerateShellClient() {
         style: style.trim() || undefined,
         count,
         model: modelId ?? undefined,
+        // The chosen class rides with the chosen model, never alone.
+        offering_id: (modelId && preferredOfferingId) || undefined,
       });
       setResults(res.files);
       toast.success(

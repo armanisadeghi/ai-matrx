@@ -56,6 +56,10 @@ import {
   resetOverride,
 } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
+  resetModelChoice,
+  setOfferingPin,
+} from "../../redux/execution-system/instance-model-overrides/offering-pin";
+import {
   buildSettingsRows,
   humanizeSettingKey,
   type SettingsRow,
@@ -63,7 +67,7 @@ import {
 import type { ControlDefinition } from "@host/lib/redux/slices/agent-settings/types";
 import { SettingControlInput } from "@host/features/agents/components/settings-management/controls/SettingControlInput";
 import { Label } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
 import { Textarea } from "@ai-matrx/design-system";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
@@ -240,6 +244,18 @@ export function RunConfigOverrides({
     : (overrides.model ?? base.model);
   const effectiveModelId =
     typeof effectiveModel === "string" ? effectiveModel : "";
+  // The class (offering) pin rides beside `model` — same three states.
+  const effectiveOffering = removals.includes("offering_id")
+    ? nullDefaults?.offering_id
+    : (overrides.offering_id ?? base.offering_id);
+  const pinnedOfferingId =
+    typeof effectiveOffering === "string" && effectiveOffering
+      ? effectiveOffering
+      : undefined;
+  const modelChoiceOverridden =
+    "model" in overrides ||
+    "offering_id" in overrides ||
+    removals.includes("offering_id");
 
   // The rows need the model's FULL controls. The registry may hold only the
   // lightweight "options" record (no controls), and a picker-triggered
@@ -298,7 +314,9 @@ export function RunConfigOverrides({
   // Overridden keys the effective model does NOT declare — typically left
   // behind by a per-run model switch. Surfaced loudly, never silently kept.
   const orphanedKeys = Object.keys(overrides).filter(
-    (key) => isFull && key !== "model" && !controlsMap?.[key],
+    // `offering_id` is the model's class, chosen in the model picker.
+    (key) =>
+      isFull && key !== "model" && key !== "offering_id" && !controlsMap?.[key],
   );
 
   const overriddenCount = Object.keys(wireOverrides).length;
@@ -377,7 +395,7 @@ export function RunConfigOverrides({
                   cells={{
                     setting: <span className="font-semibold">Model</span>,
                     source:
-                      removals.includes("model") || "model" in overrides
+                      removals.includes("model") || modelChoiceOverridden
                         ? overrideSource
                         : (inheritedSources?.model ??
                           (base.model != null
@@ -387,7 +405,7 @@ export function RunConfigOverrides({
                       ? nullDefaults
                         ? baselineDefaultLabel
                         : "Removed"
-                      : "model" in overrides
+                      : modelChoiceOverridden
                         ? "Overridden"
                         : "Inherited",
                     value: (
@@ -396,10 +414,12 @@ export function RunConfigOverrides({
                         onValueChange={(model) =>
                           handleChange("model", null, model)
                         }
+                        pinnedOfferingId={pinnedOfferingId}
+                        onOfferingPinChange={(offeringId) =>
+                          dispatch(setOfferingPin({ conversationId, offeringId }))
+                        }
                         onClear={() =>
-                          dispatch(
-                            resetOverride({ conversationId, key: "model" }),
-                          )
+                          dispatch(resetModelChoice(conversationId))
                         }
                         emptyOptionLabel={
                           w.modelEmptyChoiceLabel ??

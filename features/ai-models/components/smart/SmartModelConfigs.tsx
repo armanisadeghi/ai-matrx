@@ -11,6 +11,9 @@
  * Props:
  *   model                     — currently selected model ID
  *   onModelChange             — called with new model ID on selection
+ *   offeringId                — chosen class (LLMParams.offering_id) of the model
+ *   onOfferingIdChange        — called with the class's offering id, or
+ *                               undefined for the preferred class
  *   modelConfig               — LLMParams for badge rendering
  *   onSettingsClick           — opens the settings panel / modal
  *   showSettingsDetails       — show/hide the badge strip (default: true)
@@ -176,6 +179,13 @@ function formatLlmParamValue(
 interface SmartModelConfigsProps {
   model: string;
   onModelChange: (value: string) => void;
+  /**
+   * The chosen class of `model` — `LLMParams.offering_id`. A model offered in
+   * several classes (Matrx Fast, Matrx Lightning, ...) is several products;
+   * without the pin the server runs the preferred class.
+   */
+  offeringId: string | null | undefined;
+  onOfferingIdChange: (offeringId: string | undefined) => void;
   llmParams: FeLlmParams;
   onSettingsClick: () => void;
   showSettingsDetails?: boolean;
@@ -186,6 +196,8 @@ interface SmartModelConfigsProps {
 export function SmartModelConfigs({
   model,
   onModelChange,
+  offeringId,
+  onOfferingIdChange,
   llmParams,
   onSettingsClick,
   showSettingsDetails = true,
@@ -228,6 +240,8 @@ export function SmartModelConfigs({
           <ModelListDropdown
             value={model}
             onValueChange={onModelChange}
+            pinnedOfferingId={offeringId}
+            onOfferingPinChange={onOfferingIdChange}
             inputModalities={[]}
           />
         </div>

@@ -28,7 +28,7 @@ import { useAgentLauncher } from "../../../agents/hooks/useAgentLauncher";
 import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";
 import { useSurfaceAgentRoles } from "../../hooks/useSurfaceConfig";
 import { useSurfaceRuntime } from "../../runtime/SurfaceRuntimeContext";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { AGENT_ICON } from "@host/components/icons/domain-icons";
 
 export function SurfaceRoleAgentButton({

@@ -18,7 +18,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { EditorMode } from "@host/features/notes/components/NoteEditorCore";
 import {
   setWorkingDocEditorMode,

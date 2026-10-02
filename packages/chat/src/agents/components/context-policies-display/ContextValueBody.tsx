@@ -16,7 +16,7 @@ import {
   classifyContextValue,
   unwrapRichContextValue,
 } from "./contextValueUtils";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 // FRAGMENTATION LAW: this surface is always beneath an existing ssr:false
 // boundary — wrapping MarkdownStream (itself already a dynamic front door) and

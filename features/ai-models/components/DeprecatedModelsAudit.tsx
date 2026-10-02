@@ -571,6 +571,7 @@ export default function DeprecatedModelsAudit({
             </span>
           ) : (
             <ModelListDropdown
+              modelOnly
               value={entry.replacementId || undefined}
               onValueChange={(replacementId) =>
                 updateEntry(entry.model.id, { replacementId })

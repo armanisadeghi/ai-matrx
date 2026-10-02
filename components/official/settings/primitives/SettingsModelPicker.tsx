@@ -15,7 +15,27 @@ import type { SettingsCommonProps } from "../types";
 
 type Scope = "all" | "active" | "inactive";
 
-export type SettingsModelPickerProps = SettingsCommonProps & {
+/**
+ * A model offered in several CLASSES (Matrx Fast, Matrx Lightning, ...) is
+ * several products. A setting whose model configures a call stores the chosen
+ * class beside it (`offeringId`); one that only NAMES a model passes
+ * `modelOnly`. Same contract as `ModelListDropdown`.
+ */
+type SettingsModelClassProps =
+  | {
+      /** Chosen class (`ai.offering` uuid); null = the preferred class. */
+      offeringId: string | null;
+      onOfferingIdChange: (offeringId: string | null) => void;
+      modelOnly?: never;
+    }
+  | {
+      modelOnly: true;
+      offeringId?: never;
+      onOfferingIdChange?: never;
+    };
+
+export type SettingsModelPickerProps = SettingsCommonProps &
+  SettingsModelClassProps & {
   /** Selected model id; null = platform default (catalog-resolved). */
   value: string | null;
   onValueChange: (value: string | null) => void;
@@ -56,6 +76,9 @@ export function SettingsModelPicker({
   defaultModality = "text",
   placeholder,
   last,
+  offeringId,
+  onOfferingIdChange,
+  modelOnly: _modelOnly,
   ...rowProps
 }: SettingsModelPickerProps) {
   const generatedId = useId().replace(/:/g, "");
@@ -85,12 +108,21 @@ export function SettingsModelPicker({
       ? `Platform default (${platformDefaultName})`
       : "Platform default");
 
+  const classProps = onOfferingIdChange
+    ? {
+        pinnedOfferingId: offeringId,
+        onOfferingPinChange: (next: string | undefined) =>
+          onOfferingIdChange(next ?? null),
+      }
+    : { modelOnly: true as const };
+
   return (
     <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>
       <ModelListDropdown
         id={id}
         value={value}
         onValueChange={onValueChange}
+        {...classProps}
         inputModalities={[]}
         outputModalities={[defaultModality]}
         allowedModelIds={filtered.map((model) => model.id)}
@@ -98,7 +130,13 @@ export function SettingsModelPicker({
           allowPlatformDefault ? platformDefaultLabel : undefined
         }
         onClear={
-          allowPlatformDefault ? () => onValueChange(null) : undefined
+          allowPlatformDefault
+            ? () => {
+                // The platform default has no class of the person's choosing.
+                onOfferingIdChange?.(null);
+                onValueChange(null);
+              }
+            : undefined
         }
         placeholder={placeholder ?? "Choose a model"}
         disabled={rowProps.disabled}

@@ -34,7 +34,7 @@ import {
   type TranscriptAudience,
 } from "./transcript-audience";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   ASSISTANT_MESSAGE_COLUMN_CLASS,
   ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,

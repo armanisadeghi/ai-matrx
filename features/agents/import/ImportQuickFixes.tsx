@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Wrench } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelList
 import {
   applyAutoFixes,
   applyImportFix,
+  applyOfferingPin,
+  readOfferingIdFromPaste,
   readValidModelIdFromPaste,
 } from "./agent-import-fixes";
 import type {
@@ -85,6 +87,9 @@ export function ImportQuickFixes({
       : "Imported Agent";
 
   const [nameDraft, setNameDraft] = useState(nameSuggestion);
+  // The picker reports the model and its class in one click (either order);
+  // each patch must build on the text the previous one produced in that click.
+  const clickTextRef = useRef<string | null>(null);
 
   if (
     !showModel &&
@@ -98,10 +103,23 @@ export function ImportQuickFixes({
   }
 
   const modelId = readValidModelIdFromPaste(pastedText);
+  const offeringId = readOfferingIdFromPaste(pastedText);
 
   const patch = (action: ImportFixAction, value?: string) => {
     const next = applyImportFix(pastedText, action, value);
     if (next) onPatchedText(next);
+  };
+
+  const patchInClick = (apply: (text: string) => string | null) => {
+    const next = apply(clickTextRef.current ?? pastedText);
+    if (!next) return;
+    if (clickTextRef.current === null) {
+      queueMicrotask(() => {
+        clickTextRef.current = null;
+      });
+    }
+    clickTextRef.current = next;
+    onPatchedText(next);
   };
 
   const runAutoFixes = () => {
@@ -130,7 +148,13 @@ export function ImportQuickFixes({
             </Label>
             <ModelListDropdown
               value={modelId}
-              onValueChange={(id) => patch({ kind: "pick-model" }, id)}
+              onValueChange={(id) =>
+                patchInClick((t) => applyImportFix(t, { kind: "pick-model" }, id))
+              }
+              pinnedOfferingId={offeringId}
+              onOfferingPinChange={(pin) =>
+                patchInClick((t) => applyOfferingPin(t, pin))
+              }
               inputModalities={[]}
               className="min-w-[200px] flex-1"
             />

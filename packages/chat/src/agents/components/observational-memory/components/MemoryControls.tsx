@@ -28,7 +28,7 @@ import { Beaker } from "lucide-react";
 import { Label } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
 import { Separator } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   clearMemoryToggleRequest,

@@ -27,7 +27,7 @@ import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { toast } from "../../../host/notify";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { Input } from "@ai-matrx/design-system";
 import { fetchConversationHistory } from "../../../agents/redux/conversation-history/thunks";

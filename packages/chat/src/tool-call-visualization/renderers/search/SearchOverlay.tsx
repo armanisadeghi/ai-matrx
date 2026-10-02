@@ -33,7 +33,7 @@ import {
     FileText,
     Lightbulb,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import type { ToolRendererProps } from "../../types";
 import { PartPeekPopover } from "../_shared-entity/PartPeekPopover";

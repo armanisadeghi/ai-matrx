@@ -22,7 +22,7 @@
 import React from "react";
 import { LibraryBig } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";

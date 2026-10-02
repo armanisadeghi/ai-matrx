@@ -20,7 +20,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { Download, ExternalLink, Loader2 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { FileIcon } from "@ai-matrx/media/react";
 import { formatFileSize } from "@host/features/files/utils/format";
 import { useFileActions } from "@host/features/files/components/core/FileActions/useFileActions";

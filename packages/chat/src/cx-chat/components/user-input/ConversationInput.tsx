@@ -54,6 +54,7 @@ import {
 } from "../../../agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectCurrentSettings } from "../../../agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { setOverrides } from "../../../agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { setOfferingPin } from "../../../agents/redux/execution-system/instance-model-overrides/offering-pin";
 import { smartExecute } from "../../../agents/redux/execution-system/thunks/smart-execute.thunk";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { selectIsDebugMode } from "@host/lib/redux/preferences/adminDebugSlice";
@@ -253,6 +254,11 @@ export function ConversationInput({
 
   const currentModelId = (settingsForDialog as Record<string, unknown>)
     ?.model as string | undefined;
+  // The chosen class rides beside the model (config_overrides.offering_id).
+  const offeringRaw = (settingsForDialog as Record<string, unknown>)
+    ?.offering_id;
+  const pinnedOfferingId =
+    typeof offeringRaw === "string" && offeringRaw ? offeringRaw : undefined;
 
   // ── File upload ────────────────────────────────────────────────────────────
   const { upload, uploading: isUploading } = useFileUpload();
@@ -391,6 +397,12 @@ export function ConversationInput({
   const handleModelSelect = useCallback(
     (modelId: string) => {
       dispatch(setOverrides({ conversationId, changes: { model: modelId } }));
+    },
+    [dispatch, conversationId],
+  );
+  const handleOfferingPinChange = useCallback(
+    (offeringId: string | undefined) => {
+      dispatch(setOfferingPin({ conversationId, offeringId }));
     },
     [dispatch, conversationId],
   );
@@ -536,6 +548,8 @@ export function ConversationInput({
             <ModelListDropdown
               value={currentModelId}
               onValueChange={handleModelSelect}
+              pinnedOfferingId={pinnedOfferingId}
+              onOfferingPinChange={handleOfferingPinChange}
               inputModalities={[]}
               className="text-muted-foreground hover:text-foreground"
             />

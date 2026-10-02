@@ -6,7 +6,7 @@
  */
 
 import { createElement, forwardRef, type ComponentType } from "react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { RESOURCE_ATTACHMENT_TILE_SHELL_ADAPTIVE } from "../messages-display/user/resourceAttachmentTile.theme";
 import { resolveContextPolicyTileTheme } from "./contextPolicyTile.theme";
 

@@ -57,7 +57,7 @@ import type {
   InstanceContextEntry,
   ManagedResource,
 } from "../../types/instance.types";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { contextEntryLabel } from "../context-policies-display/contextEntryLabel";
 
 /** Hover copy that stays visible on touch devices. */

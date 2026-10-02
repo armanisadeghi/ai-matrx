@@ -15,7 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Youtube } from "@host/components/icons/brand-icons";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { DemoAttachmentSpec } from "./userMessageChipsDemoData";
 import {
   resolveResourceAttachmentTileTheme,

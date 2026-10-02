@@ -20,7 +20,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectConversationTitle } from "../../redux/execution-system/messages/messages.selectors";
 import { selectInstanceUIState } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import CreatorRunTabContent, {
   useCreatorRunWindows,
   ALL_RUN_TABS,

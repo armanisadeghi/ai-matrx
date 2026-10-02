@@ -46,7 +46,7 @@ import { useCanvas } from "@host/features/canvas/hooks/useCanvas";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
 import { useOpenNotesWindow } from "../../host/window-openers";
 import { useOpenWorkingDocumentWindow } from "../../host/window-openers";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { ToolArtifact, ToolArtifactKind } from "../registry/toolArtifact";
 
 interface ArtifactResultBarProps {

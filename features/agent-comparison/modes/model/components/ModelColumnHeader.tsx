@@ -29,6 +29,10 @@ import {
   resetOverride,
   setOverrides,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import {
+  effectiveOfferingPin,
+  setOfferingPin,
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { renameModelColumn } from "../redux/slice";
 import { removeColumnFromModelBattle } from "../redux/thunks";
@@ -81,6 +85,9 @@ export function ModelColumnHeader({
   // it used to read "Pick a model..." while answering with the agent default.
   const displayModel = overrideModel ?? baseModel;
   const usingAgentDefault = !overrideModel && Boolean(baseModel);
+  // The column's class (offering) — same override layer as `model`, so it
+  // reaches the run as config_overrides.offering_id.
+  const pinnedOfferingId = effectiveOfferingPin(overrideState);
 
   const commitLabel = () => {
     const trimmed = labelDraft.trim();
@@ -122,6 +129,12 @@ export function ModelColumnHeader({
         );
       }
     }
+  };
+
+  const handleOfferingPinChange = (offeringId: string | undefined) => {
+    dispatch(
+      setOfferingPin({ conversationId: column.conversationId, offeringId }),
+    );
   };
 
   return (
@@ -241,6 +254,8 @@ export function ModelColumnHeader({
           <ModelListDropdown
             value={displayModel}
             onValueChange={handleModelChange}
+            pinnedOfferingId={pinnedOfferingId}
+            onOfferingPinChange={handleOfferingPinChange}
             inputModalities={[]}
             placeholder="Pick a model..."
             className="!h-7 !text-[11px]"

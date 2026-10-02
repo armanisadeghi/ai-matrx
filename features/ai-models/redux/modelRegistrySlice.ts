@@ -89,7 +89,21 @@ interface ModelRegistryState {
     string,
     "idle" | "loading" | "succeeded" | "failed"
   >;
+  /**
+   * Resolved controls/constraints for ONE serving class (pinned offering) of
+   * a model, keyed by offering id. A model's classes run through different
+   * APIs with different rules, so a pinned Matrx Lightning offering must not
+   * show the preferred Matrx Fast offering's controls.
+   */
+  classConfigByOffering: Record<string, ModelClassConfig>;
+  classConfigStatusByOffering: Record<string, "loading" | "succeeded" | "failed">;
 }
+
+export type ModelClassConfig = {
+  modelId: string;
+  controls: Json | null;
+  constraints: Json | null;
+};
 
 const initialState: ModelRegistryState = {
   entities: {},
@@ -103,6 +117,8 @@ const initialState: ModelRegistryState = {
   detailErrorById: {},
   identityById: {},
   identityStatusById: {},
+  classConfigByOffering: {},
+  classConfigStatusByOffering: {},
 };
 
 // ---------------------------------------------------------------------------
@@ -237,6 +253,56 @@ export const fetchModelOptions = createAsyncThunk(
         // );
       }
       return shouldFetch;
+    },
+  },
+);
+
+/**
+ * Resolved controls/constraints for ONE serving class of a model — the pinned
+ * offering — via `ai.resolve_model_config(p_model_id, p_offering_id)`. The
+ * one-argument form (behind `ai.model_config`) resolves the preferred class
+ * only. A pin that is not an available offering of the model is REFUSED by the
+ * database (P0002) and surfaces as a failed status, never as another class's
+ * controls.
+ */
+export const fetchModelClassConfig = createAsyncThunk(
+  "modelRegistry/fetchModelClassConfig",
+  async (
+    { modelId, offeringId }: { modelId: string; offeringId: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .schema("ai")
+        .rpc("resolve_model_config", {
+          p_model_id: modelId,
+          p_offering_id: offeringId,
+        });
+      if (error) throw error;
+      const cfg =
+        data && typeof data === "object" && !Array.isArray(data)
+          ? (data as { controls?: Json; constraints?: Json })
+          : null;
+      return {
+        offeringId,
+        config: {
+          modelId,
+          controls: cfg?.controls ?? null,
+          constraints: cfg?.constraints ?? null,
+        } satisfies ModelClassConfig,
+      };
+    } catch (err: unknown) {
+      return rejectWithValue(
+        `Model class configuration ${modelId} / ${offeringId}: ${extractErrorMessage(err)}`,
+      );
+    }
+  },
+  {
+    condition: ({ offeringId }, { getState }) => {
+      const status = (getState() as StateWithModelRegistry).modelRegistry
+        ?.classConfigStatusByOffering?.[offeringId];
+      return status !== "loading" && status !== "succeeded" && status !== "failed";
     },
   },
 );
@@ -512,6 +578,19 @@ const modelRegistrySlice = createSlice({
           typeof action.payload === "string"
             ? action.payload
             : (action.error.message ?? "Model configuration request failed");
+      });
+
+    // ── fetchModelClassConfig ──────────────────────────────────────
+    builder
+      .addCase(fetchModelClassConfig.pending, (state, action) => {
+        state.classConfigStatusByOffering[action.meta.arg.offeringId] = "loading";
+      })
+      .addCase(fetchModelClassConfig.fulfilled, (state, action) => {
+        state.classConfigStatusByOffering[action.payload.offeringId] = "succeeded";
+        state.classConfigByOffering[action.payload.offeringId] = action.payload.config;
+      })
+      .addCase(fetchModelClassConfig.rejected, (state, action) => {
+        state.classConfigStatusByOffering[action.meta.arg.offeringId] = "failed";
       });
 
     // ── fetchModelIdentityById ─────────────────────────────────────

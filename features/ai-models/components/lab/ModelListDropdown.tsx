@@ -187,7 +187,41 @@ const INTERACTION_LABEL: Record<Interaction, string> = {
   decision: "Decision",
 };
 
-interface ModelListDropdownProps {
+/**
+ * A model offered in several CLASSES (Matrx Fast, Matrx Lightning, ...) is
+ * several products. A picker that configures a call MUST carry the chosen
+ * class as the offering pin, or the server runs the preferred class and the
+ * person's choice is silently lost. So every caller declares one of:
+ *  - `pinnedOfferingId` + `onOfferingPinChange` — one row per class, the
+ *    selected class's offering travels with the model; or
+ *  - `modelOnly` — the picker names a MODEL as a relationship target
+ *    (fallback, alias, audit), so one row per model.
+ */
+type ModelClassSelectionProps =
+  | {
+      /**
+       * Currently pinned `ai.offering` uuid (agent settings `offering_id`).
+       * null/undefined = Auto — the server picks the preferred offering.
+       */
+      pinnedOfferingId: string | null | undefined;
+      /**
+       * Called with the chosen class's offering uuid, or `undefined` to clear
+       * the pin (Auto). Selecting a single-class model clears it.
+       */
+      onOfferingPinChange: (offeringId: string | undefined) => void;
+      modelOnly?: never;
+    }
+  | {
+      /** The value is a model as a relationship target — never a call. */
+      modelOnly: true;
+      pinnedOfferingId?: never;
+      onOfferingPinChange?: never;
+    };
+
+type ModelListDropdownProps = ModelListDropdownBaseProps &
+  ModelClassSelectionProps;
+
+interface ModelListDropdownBaseProps {
   value: string | null | undefined;
   onValueChange: (modelId: string) => void;
   /** REQUIRED — input modalities the model must accept (seeds the filter). */
@@ -225,18 +259,6 @@ interface ModelListDropdownProps {
   placeholder?: string;
   /** Eligible ids to float ahead of the normal alphabetical order. */
   priorityModelIds?: readonly string[];
-  /**
-   * Currently pinned `ai.offering` uuid (agent settings `offering_id`).
-   * Only meaningful together with `onOfferingPinChange`. null/undefined =
-   * "Auto (preferred)" — the server picks the preferred offering.
-   */
-  pinnedOfferingId?: string | null;
-  /**
-   * Enables the Service-chip pinning UI in the detail card. Called with the
-   * offering uuid to pin, or `undefined` to clear the pin (back to Auto).
-   * Selecting a model whose offerings don't include the current pin clears it.
-   */
-  onOfferingPinChange?: (offeringId: string | undefined) => void;
   className?: string;
   /** Settings rows use the same standard select trigger as other setting controls. */
   triggerVariant?: "default" | "settings";
@@ -1355,6 +1377,7 @@ function FiltersPanel({
 
 function ModelRow({
   model,
+  classTier,
   tier,
   variant,
   selected,
@@ -1364,6 +1387,8 @@ function ModelRow({
   onToggleFavorite,
 }: {
   model: CatalogModel;
+  /** Set when this row is ONE class of a multi-class model. */
+  classTier?: CatalogTier | null;
   tier: PriceTier | null;
   variant: ModelCatalogVariant;
   selected: boolean;
@@ -1468,8 +1493,15 @@ function ModelRow({
             off
           </span>
         )}
-        {/* Availability: how many branded Services offer this model. */}
-        {model.tiers.length > 1 && (
+        {/* A class row names its class; a collapsed row counts them. */}
+        {classTier ? (
+          <span
+            className="shrink-0 rounded border border-primary/40 bg-primary/10 px-1 text-[9px] font-medium text-foreground/80"
+            title={`Runs on ${classTier.servedVia}`}
+          >
+            {classTier.servedVia}
+          </span>
+        ) : model.tiers.length > 1 && (
           <span
             className="shrink-0 rounded border border-primary/40 bg-primary/10 px-1 text-[9px] font-medium text-foreground/80"
             title={model.tiers.map((t) => t.servedVia).join(" · ")}
@@ -1523,6 +1555,7 @@ export function ModelListDropdown({
   priorityModelIds,
   pinnedOfferingId,
   onOfferingPinChange,
+  modelOnly,
   className,
   triggerVariant = "default",
   id,
@@ -1555,6 +1588,7 @@ export function ModelListDropdown({
   const [rightPanel, setRightPanel] = useState<RightPanel>(null);
   const [hovered, setHovered] = useState<CatalogModel | null>(null);
   const [mobileDetail, setMobileDetail] = useState<CatalogModel | null>(null);
+  const [mobileDetailClass, setMobileDetailClass] = useState<CatalogTier | null>(null);
   const [mobileFilters, setMobileFilters] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -1834,6 +1868,34 @@ export function ModelListDropdown({
     value,
   ]);
 
+  // One row per CLASS for a model served in several (unless the caller picks
+  // a model only). A Service filter keeps just the matching classes.
+  const listRows = useMemo(
+    () =>
+      filtered.flatMap((m) => {
+        if (modelOnly || m.tiers.length < 2) {
+          return [{ model: m, classTier: null as CatalogTier | null }];
+        }
+        const classes =
+          filters.services.size > 0
+            ? m.tiers.filter((t) => filters.services.has(t.servedVia))
+            : m.tiers;
+        return classes.map((t) => ({ model: m, classTier: t as CatalogTier | null }));
+      }),
+    [filtered, modelOnly, filters.services],
+  );
+
+  // The class the current value runs on: the pinned one, else the preferred.
+  const selectedClass: CatalogTier | null = selected
+    ? (selected.tiers.find((t) => t.offeringId === pinnedOfferingId) ??
+      selected.tiers[0] ??
+      null)
+    : null;
+  const selectedClassLabel =
+    !modelOnly && selected && selected.tiers.length > 1
+      ? selectedClass?.servedVia
+      : undefined;
+
   const activeFilterCount =
     filters.input.size +
     filters.output.size +
@@ -1873,23 +1935,33 @@ export function ModelListDropdown({
     return true;
   };
 
-  const handleSelect = (id: string) => {
-    if (refuseIfRetired(id)) return;
-    // A pinned offering belongs to exactly one model — selecting a model whose
-    // offerings don't include the pin clears it (back to Auto), loudly.
-    if (onOfferingPinChange && pinnedOfferingId) {
-      const next = models.find((m) => m.id === id);
-      const pinStillValid =
-        next?.tiers.some((t) => t.offeringId === pinnedOfferingId) ?? false;
-      if (!pinStillValid) {
-        console.warn(
-          `[ModelListDropdown] Cleared pinned Service offering ${pinnedOfferingId} — it does not belong to the newly selected model ${id}; routing returns to Auto (preferred).`,
-        );
-        onOfferingPinChange(undefined);
-      }
+  /**
+   * Select ONE class of a model: the model and that class's offering move
+   * together. A single-class model clears the pin (Auto) — nothing to choose.
+   */
+  const handleSelectClass = (model: CatalogModel, classTier: CatalogTier | null) => {
+    if (refuseIfRetired(model.id)) return;
+    if (onOfferingPinChange) {
+      const nextPin =
+        classTier && model.tiers.length > 1 ? classTier.offeringId : undefined;
+      if (nextPin !== (pinnedOfferingId ?? undefined)) onOfferingPinChange(nextPin);
     }
-    onValueChange(id);
+    onValueChange(model.id);
     handleOpen(false);
+  };
+
+  /**
+   * Select a model from the detail card / mobile sheet. Keeps the class the
+   * person tapped (mobile) or already pinned on this model; otherwise a
+   * multi-class model takes its preferred class EXPLICITLY, so the choice
+   * never drifts when classes are re-prioritized.
+   */
+  const handleSelect = (id: string, tappedClass?: CatalogTier | null) => {
+    const next = models.find((m) => m.id === id);
+    if (!next) return;
+    const pinnedHere =
+      next.tiers.find((t) => t.offeringId === pinnedOfferingId) ?? null;
+    handleSelectClass(next, tappedClass ?? pinnedHere ?? next.tiers[0] ?? null);
   };
 
   const handleClear = () => {
@@ -1946,6 +2018,9 @@ export function ModelListDropdown({
               />
               <span className="min-w-0 whitespace-normal text-left leading-tight">
                 {selected.name}
+                {selectedClassLabel && (
+                  <span className="text-muted-foreground"> · {selectedClassLabel}</span>
+                )}
               </span>
             </>
           ) : (
@@ -1967,7 +2042,12 @@ export function ModelListDropdown({
                 colored
                 className="h-3.5 w-3.5 shrink-0"
               />
-              <span className="min-w-0 truncate">{selected.name}</span>
+              <span className="min-w-0 truncate">
+                {selected.name}
+                {selectedClassLabel && (
+                  <span className="text-muted-foreground"> · {selectedClassLabel}</span>
+                )}
+              </span>
             </>
           ) : (
             <span className="min-w-0 truncate text-muted-foreground">
@@ -2111,17 +2191,24 @@ export function ModelListDropdown({
                 No models match your filters.
               </div>
             ) : (
-              filtered.map((m) => (
+              listRows.map(({ model: m, classTier }) => (
                 <ModelRow
-                  key={m.id}
+                  key={classTier ? `${m.id}:${classTier.offeringId}` : m.id}
                   model={m}
+                  classTier={classTier}
                   tier={costRatingTier(m.costRating)}
                   variant={variant}
-                  selected={m.id === value}
+                  selected={
+                    m.id === value &&
+                    (classTier == null ||
+                      classTier.offeringId === selectedClass?.offeringId)
+                  }
                   isFavorite={favoriteSet.has(m.id)}
                   onToggleFavorite={() => toggleFavorite(m.id)}
                   onSelect={() =>
-                    isMobile ? setMobileDetail(m) : handleSelect(m.id)
+                    isMobile
+                      ? (setMobileDetail(m), setMobileDetailClass(classTier))
+                      : handleSelectClass(m, classTier)
                   }
                   onHover={
                     isMobile
@@ -2151,7 +2238,7 @@ export function ModelListDropdown({
             <>
               {/* Only what this picker can offer is counted — never the
                   whole catalog with retired models in it. */}
-              {filtered.length} model{filtered.length === 1 ? "" : "s"}
+              {listRows.length} model{listRows.length === 1 ? "" : "s"}
               {variant === "user" && (hiddenModelIds?.length ?? 0) > 0 ? (
                 <>
                   {" · "}
@@ -2216,7 +2303,7 @@ export function ModelListDropdown({
                       model={mobileDetail}
                       tier={costRatingTier(mobileDetail.costRating)}
                       variant={variant}
-                      onSelect={() => handleSelect(mobileDetail.id)}
+                      onSelect={() => handleSelect(mobileDetail.id, mobileDetailClass)}
                       isCurrentModel={mobileDetail.id === value}
                       pinnedOfferingId={pinnedOfferingId}
                       onPinOffering={

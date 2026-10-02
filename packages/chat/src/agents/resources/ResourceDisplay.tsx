@@ -27,7 +27,7 @@ import { Youtube } from "@host/components/icons/brand-icons";
 import { ParsedResource } from "./types";
 import { Badge } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { VideoPublishDate } from "@host/features/files/blocks/video/VideoPublishDate";
 
 interface ResourceDisplayProps {

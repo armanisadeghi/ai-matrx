@@ -48,7 +48,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import {
   DropdownMenu,

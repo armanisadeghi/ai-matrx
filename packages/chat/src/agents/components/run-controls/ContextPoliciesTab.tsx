@@ -40,7 +40,7 @@ import {
   deleteBuilderContextEntry,
   clearBuilderContext,
 } from "../../hooks/useBuilderContextSeed";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 

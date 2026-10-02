@@ -25,7 +25,7 @@ import {
   Search,
   Unlink,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { ItemRow } from "@host/components/official/item/ItemRow";
 import {
   listRecentUserDocuments,

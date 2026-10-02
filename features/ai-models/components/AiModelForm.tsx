@@ -263,6 +263,7 @@ export default function AiModelForm({
                         description="Substitute model when calls keep failing."
                     >
                         <ModelListDropdown
+                            modelOnly
                             value={data.retry_fallback_id}
                             onValueChange={(modelId) =>
                                 onChange({ ...data, retry_fallback_id: modelId })
@@ -312,6 +313,7 @@ export default function AiModelForm({
                         description="Used when an authenticated user is past their soft limit (e.g. Opus → Sonnet)."
                     >
                         <ModelListDropdown
+                            modelOnly
                             value={data.mid_fallback_id}
                             onValueChange={(modelId) =>
                                 onChange({ ...data, mid_fallback_id: modelId })
@@ -331,6 +333,7 @@ export default function AiModelForm({
                         description="Used when the caller is an anonymous guest (X-Fingerprint-ID, no Bearer)."
                     >
                         <ModelListDropdown
+                            modelOnly
                             value={data.guest_fallback_id}
                             onValueChange={(modelId) =>
                                 onChange({ ...data, guest_fallback_id: modelId })

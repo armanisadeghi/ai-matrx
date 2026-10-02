@@ -36,7 +36,7 @@ import {
   PopoverTrigger,
   SelectChevron,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { setBuilderAdvancedSettings } from "../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectBuilderAdvancedSettings } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../types/instance.types";

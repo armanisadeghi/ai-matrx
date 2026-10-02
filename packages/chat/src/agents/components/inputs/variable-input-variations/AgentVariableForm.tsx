@@ -29,7 +29,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { VoiceTextarea } from "@host/components/official/VoiceTextarea";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { motion } from "motion/react";
 import type {
   VariableDefinition,

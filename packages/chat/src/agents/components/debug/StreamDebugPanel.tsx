@@ -10,7 +10,7 @@ import {
   selectConversationRequestCount,
   selectConversationRequestIds,
 } from "../../redux/execution-system/active-requests/active-requests.selectors";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { ScrollArea } from "@ai-matrx/design-system";
 import { Badge } from "@ai-matrx/design-system";

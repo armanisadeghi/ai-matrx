@@ -18,7 +18,7 @@ import {
   PowerOff,
   User,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectMemoryDegraded,

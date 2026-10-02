@@ -17,7 +17,7 @@ import { supabase } from "@host/utils/supabase/client";
 import { db } from "../../service/supabase-typed";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   upsertPlan,
   upsertTask,

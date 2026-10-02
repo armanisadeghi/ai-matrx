@@ -2,7 +2,7 @@
 
 import { PanelRight, ExternalLink } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 /**
  * The shared "take it further" action pair for entity tool renderers:

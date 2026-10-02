@@ -38,7 +38,7 @@ import {
 import MarkdownStream from "@host/components/MarkdownStream";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 import {
   DIFF_VIEW_KNOB,

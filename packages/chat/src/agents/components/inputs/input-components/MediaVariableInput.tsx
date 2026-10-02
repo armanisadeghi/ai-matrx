@@ -46,7 +46,7 @@ import {
   FilesResourcePicker,
   type FilesResourcePickerFilter,
 } from "@host/features/resource-manager/resource-picker/FilesResourcePicker";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
 import { ResourceFamilyPolicyEditor } from "../resources/ResourceFamilyPolicyEditor";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";

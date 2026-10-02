@@ -28,7 +28,7 @@ import {
   RefreshCw,
   Hammer,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { supabase } from "@host/utils/supabase/client";
 import type { Tables } from "@host/types/database.types";
 import { formatDateTime, formatRelativeTime, formatTokens } from "./format";

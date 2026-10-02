@@ -46,7 +46,7 @@ import {
   X,
 } from "lucide-react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { useMediaQueryState } from "@host/hooks/use-media-query";
 import { MatrxFloatingFrame } from "@host/components/matrx/resizable/MatrxFloatingFrame";

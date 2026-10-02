@@ -23,11 +23,16 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../../../host/notify";
 import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { seedOverrides } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { selectInstanceOverrideState } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import {
+  effectiveOfferingPin,
+  setOfferingPin,
+} from "../../../../redux/execution-system/instance-model-overrides/offering-pin";
 import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
 import { knobRefusalSentence, setKnobOverride } from "@host/lib/scoped-config/service";
 import { CHAT_DEFAULT_MODEL_KNOB } from "@host/features/ai-models/preferredChatModel";
@@ -160,6 +165,10 @@ function ChatPresetsPanel({
   const personalModel = useSessionKnob(CHAT_DEFAULT_MODEL_KNOB);
   const personalModelId = typeof personalModel === "string" && personalModel.trim() ? personalModel : null;
   const personalModelLabel = useAppSelector((s) => selectModelLabelById(s, personalModelId)) ?? null;
+  // The class (offering) of the Custom model, for THIS chat — seeded beside
+  // the model so it rides config_overrides.offering_id.
+  const overrideState = useAppSelector(selectInstanceOverrideState(conversationId));
+  const pinnedOfferingId = effectiveOfferingPin(overrideState);
   const onSelectAgent = agentControl?.onSelectAgent;
 
   if (!onSelectAgent) {
@@ -271,6 +280,10 @@ function ChatPresetsPanel({
           <ModelListDropdown
             value={personalModelId}
             onValueChange={(modelId) => void setPersonalModel(modelId)}
+            pinnedOfferingId={pinnedOfferingId}
+            onOfferingPinChange={(offeringId) =>
+              dispatch(setOfferingPin({ conversationId, offeringId, seeded: true }))
+            }
             inputModalities={[]}
             outputModalities={["text"]}
             placeholder={personalModelLabel ?? "Pick a model"}

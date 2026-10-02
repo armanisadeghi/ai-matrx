@@ -15,7 +15,7 @@
 
 import { Globe, TrendingUp } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   KeywordCompetitionBadge,
   KeywordTrendBadge,

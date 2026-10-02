@@ -54,7 +54,7 @@ import {
     ArrowRight,
     BookOpen,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { useOpenScraperWindow } from "../../../host/window-openers";

@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
 } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { NotePickerPopover } from "@host/features/notes/components/NotePickerPopover";
 import { useWorkingDocument } from "../../hooks/useWorkingDocument";
 import { DocumentLinkPicker } from "./DocumentLinkPicker";

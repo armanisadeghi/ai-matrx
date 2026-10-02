@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from "@ai-matrx/design-system";
 import { AgentSettingsModal } from "@host/features/agents/components/settings-management/AgentSettingsModal";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAgentSaveAction } from "./useAgentSaveAction";
 
 interface AgentSaveTapButtonProps {

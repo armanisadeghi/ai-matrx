@@ -47,7 +47,7 @@ import { SessionStatsPanel } from "./panels/SessionStatsPanel";
 import { ClientMetricsPanel } from "./panels/ClientMetricsPanel";
 import { BackendTargetPanel } from "./panels/BackendTargetPanel";
 import { ModelContextPanel } from "./panels/ModelContextPanel";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 // =============================================================================
 // Tab ids + labels (shared source of truth for both hosts' tab lists)

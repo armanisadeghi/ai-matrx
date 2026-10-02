@@ -53,11 +53,17 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/base-settings";
 import {
+  effectiveOfferingPin,
+  resetModelChoice,
+  setOfferingPin,
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
+import {
   fetchModelById,
   selectAllModels,
   selectModelFullyLoaded,
 } from "@/features/ai-models/redux/modelRegistrySlice";
-import { useModelControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
+import { useModelControls
+import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls"; } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { buildSettingsRows } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types";
 import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
@@ -410,7 +416,15 @@ function OverridesBody({
       dispatch(fetchModelById(effectiveModelId));
     }
   }, [dispatch, effectiveModelId, isFull, registryLoading]);
-  const { normalizedControls } = useModelControls(models, effectiveModelId);
+  const classControls = useModelClassControls(
+    effectiveModelId,
+    effectiveOfferingPin(entry),
+  );
+  const { normalizedControls } = useModelControls(
+    models,
+    effectiveModelId,
+    classControls,
+  );
   // MATRX-EXCEPTION: settings-catalogue keys are dynamic; buildSettingsRows validates each control.
   const controlsMap = normalizedControls as unknown as Record<
     string,
@@ -451,6 +465,15 @@ function OverridesBody({
     setOpened((prev) => {
       const next = new Set(prev);
       next.delete(key);
+      return next;
+    });
+  }
+  /** The model and its class (offering) reset together. */
+  function resetModel() {
+    dispatch(resetModelChoice(instanceId));
+    setOpened((prev) => {
+      const next = new Set(prev);
+      next.delete("model");
       return next;
     });
   }
@@ -685,10 +708,10 @@ function OverridesBody({
         <div className="divide-y divide-border rounded-lg border border-border bg-card">
           <SettingRow
             label="Model"
-            overridden={isOverridden("model")}
-            open={isOpen("model")}
+            overridden={isOverridden("model") || isOverridden("offering_id")}
+            open={isOpen("model") || isOverridden("offering_id")}
             onOverride={() => open("model")}
-            onReset={() => reset("model")}
+            onReset={resetModel}
             disabled={busy}
             inheritedFrom={sourceWord(sources.model)}
             display={
@@ -702,7 +725,13 @@ function OverridesBody({
               <ModelListDropdown
                 value={effectiveModelId || null}
                 onValueChange={(model) => change("model", model)}
-                onClear={() => reset("model")}
+                pinnedOfferingId={effectiveOfferingPin(entry)}
+                onOfferingPinChange={(offeringId) =>
+                  dispatch(
+                    setOfferingPin({ conversationId: instanceId, offeringId }),
+                  )
+                }
+                onClear={resetModel}
                 emptyOptionLabel="Use the agent's model"
                 placeholder="Use the agent's model"
                 inputModalities={[]}

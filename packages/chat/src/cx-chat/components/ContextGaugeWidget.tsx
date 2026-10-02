@@ -24,7 +24,7 @@ import {
   selectEstimatedTokens,
   DEFAULT_CONTEXT_WINDOW_TOKENS,
 } from "../../agents/redux/execution-system/context-state/context-state.selectors";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { formatCount } from "@ai-matrx/kit/format";
 
 export interface ContextGaugeWidgetProps {

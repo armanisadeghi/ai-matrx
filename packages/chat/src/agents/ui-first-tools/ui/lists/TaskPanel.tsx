@@ -27,7 +27,7 @@ import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDyn
 import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@host/components/ui/checkbox";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   selectAgentListsError,

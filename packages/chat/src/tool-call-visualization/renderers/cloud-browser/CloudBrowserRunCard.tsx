@@ -14,7 +14,7 @@ import { Button } from "@ai-matrx/design-system";
 import type { MediaRef } from "@host/features/files/types";
 import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 import type { ToolRendererProps } from "../../types";
 import { ResultMedia } from "../../result-fields/ResultMedia";

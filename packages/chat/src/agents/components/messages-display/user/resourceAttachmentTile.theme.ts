@@ -1,4 +1,4 @@
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 export interface ResourceAttachmentTileTheme {
   /** Single surface string — gradient with light + dark stops (no stacked bg-* + dark:gradient). */

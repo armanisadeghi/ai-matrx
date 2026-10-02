@@ -27,7 +27,7 @@ import {
     Globe,
     Link2,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import MarkdownStream from "@host/components/MarkdownStream";
 import { RichDocument } from "@host/features/rich-document/RichDocument";
 import type { ContentSource } from "@host/features/rich-document/types";

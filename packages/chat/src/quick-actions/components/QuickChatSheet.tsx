@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { useSidePanelSurface } from "@host/features/overlays/surfaces/SidePanelSurface";
 import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";

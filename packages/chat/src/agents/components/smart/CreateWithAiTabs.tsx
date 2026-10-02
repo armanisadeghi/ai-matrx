@@ -27,7 +27,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Cpu, PencilLine, type LucideIcon } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { SourceFeature } from "../../types/instance.types";
 import {
   isProjectCreateFlow,

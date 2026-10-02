@@ -14,7 +14,7 @@ import {
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
 import type { DocumentRepresentation } from "../../../types/instance.types";
 import { useFileResourceFamily } from "@host/features/files/hooks/useFileResourceFamily";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   addFamilyPromotion,
   MAX_RESOURCE_PROMOTIONS,

@@ -23,7 +23,7 @@ import {
   CommandItem,
   CommandList,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { toggleMultiValue, type RowChoices } from "./collapsed-row";
 
 interface RowChoicesButtonProps extends RowChoices {

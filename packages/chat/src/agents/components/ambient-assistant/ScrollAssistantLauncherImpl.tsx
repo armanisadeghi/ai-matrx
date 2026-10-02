@@ -22,7 +22,7 @@ import { selectIsAuthenticated } from "@host/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { CHAT_WINDOWS } from "../../../host/windows";
 import { useIsChatWindowOpen } from "../../../host/windows-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { IntelligenceIndicator } from "@host/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";

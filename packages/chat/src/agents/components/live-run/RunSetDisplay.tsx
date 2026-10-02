@@ -26,7 +26,7 @@
 
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import MarkdownStream from "@host/components/MarkdownStream";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 import { LiveRunDisplay } from "./LiveRunDisplay";
 import { selectRunSetEntries } from "../../redux/execution-system/run-sets/run-sets.slice";

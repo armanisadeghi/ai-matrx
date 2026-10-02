@@ -77,6 +77,7 @@ export const defaultUserPreferences: UserPreferences = {
   imageGeneration: {
     // null = platform default (catalog-resolved) — see prompts.defaultModel.
     defaultModel: null,
+    defaultOfferingId: null,
     resolution: "1080p",
     style: "",
     useAiEnhancements: true,

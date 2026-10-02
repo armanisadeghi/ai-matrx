@@ -46,8 +46,12 @@ import {
   setOverrides,
   markRemoved,
   removeInstanceOverrides,
-  resetOverride,
 } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import {
+  effectiveOfferingPin,
+  resetModelChoice,
+  setOfferingPin,
+} from "../../redux/execution-system/instance-model-overrides/offering-pin";
 import {
   selectInstanceOverrideState,
   selectSettingsOverridesForApi,
@@ -171,6 +175,8 @@ export function StoredModelOverridesField({
   const overrides = (entry?.overrides ?? {}) as Record<string, unknown>;
   const currentModel =
     typeof overrides.model === "string" ? overrides.model : null;
+  // The chosen class travels in the blob as `offering_id`, beside `model`.
+  const pinnedOfferingId = effectiveOfferingPin(entry);
 
   return (
     <div className="space-y-2 py-2.5">
@@ -193,6 +199,10 @@ export function StoredModelOverridesField({
               }),
             )
           }
+          pinnedOfferingId={pinnedOfferingId}
+          onOfferingPinChange={(offeringId) =>
+            dispatch(setOfferingPin({ conversationId: instanceKey, offeringId }))
+          }
           // "No override" is a FIRST-CLASS choice, not the absence of one: it
           // is what hands the decision back to the runner's own configuration.
           // 🚨 IN THIS HOST'S NOUN (V1 round 4, O3). This was hardcoded
@@ -201,11 +211,7 @@ export function StoredModelOverridesField({
           // model". The word now comes from the host's words, defaulting to
           // the agent noun.
           emptyOptionLabel={emptyChoiceLabel}
-          onClear={() =>
-            dispatch(
-              resetOverride({ conversationId: instanceKey, key: "model" }),
-            )
-          }
+          onClear={() => dispatch(resetModelChoice(instanceKey))}
           placeholder={emptyChoiceLabel}
           inputModalities={[]}
           outputModalities={["text"]}

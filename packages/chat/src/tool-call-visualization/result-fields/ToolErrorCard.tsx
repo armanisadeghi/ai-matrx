@@ -13,7 +13,7 @@
 
 import React from "react";
 import { CircleAlert, Route } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import { humanizeKey } from "./shape";
 import { guardRoutingOf } from "./guard-routing";

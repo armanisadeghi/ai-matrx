@@ -19,7 +19,7 @@ import type { ContextPolicy } from "../../types/agent-api-types";
 import type { InstanceContextEntry } from "../../types/instance.types";
 import { ContextPolicyChip } from "./ContextPolicyChip";
 import { ContextPolicyItemsPopover } from "./ContextPolicyItemsPopover";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 interface ContextPolicyChipStripProps {
   conversationId: string;

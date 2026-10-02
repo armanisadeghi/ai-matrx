@@ -42,7 +42,7 @@ import {
   X,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { ErrorNotice } from "@host/components/errors/ErrorNotice";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";

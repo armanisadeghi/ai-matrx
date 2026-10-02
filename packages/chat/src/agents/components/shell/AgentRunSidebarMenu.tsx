@@ -7,7 +7,7 @@ import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Loader2, ChevronRight, ChevronDown } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { selectAgentById } from "../../redux/agent-definition/selectors";
 import { fetchAgentConversations } from "../../redux/conversation-list/conversation-list.thunks";

@@ -20,7 +20,7 @@ import { Button } from "@ai-matrx/design-system";
 import { RadioGroup, RadioGroupItem } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { toast } from "../../../host/notify";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { extractErrorMessage } from "@host/utils/errors";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";

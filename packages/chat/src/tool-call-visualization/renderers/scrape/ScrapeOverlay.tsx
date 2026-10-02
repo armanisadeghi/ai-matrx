@@ -19,7 +19,7 @@ import {
   FileText,
   BookOpenText,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import type { ToolRendererProps } from "../../types";

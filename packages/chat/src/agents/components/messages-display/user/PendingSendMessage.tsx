@@ -21,7 +21,7 @@ import { selectPreSend } from "../../../redux/execution-system/instance-user-inp
 import { setPreSend } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { smartExecute } from "../../../redux/execution-system/thunks/smart-execute.thunk";
 import { Button } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 /**
  * A preparation that finishes faster than this never draws (no flash before

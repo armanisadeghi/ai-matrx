@@ -26,7 +26,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { AlertCircle, ExternalLink, Loader2, Lock, Pencil, X } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipContent,

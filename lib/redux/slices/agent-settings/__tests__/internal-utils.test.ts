@@ -1,4 +1,8 @@
-import { buildApiPayload, parseModelControls } from "../internal-utils";
+import {
+  buildApiPayload,
+  detectConflicts,
+  parseModelControls,
+} from "../internal-utils";
 
 describe("parseModelControls", () => {
   it("preserves an explicit integer control when no default is declared", () => {
@@ -48,5 +52,17 @@ describe("buildApiPayload", () => {
     expect(
       buildApiPayload({ output_format: "png" }, {}, "builder"),
     ).toEqual({ output_format: "png" });
+  });
+});
+
+describe("detectConflicts", () => {
+  it("never flags the class pin (offering_id) as an unsupported control", () => {
+    const controls = parseModelControls({ temperature: { type: "number" } });
+    const { conflicts } = detectConflicts(
+      { temperature: 0.5, offering_id: "29874e67-5683-40c2-9adb-fb797ea9a176" },
+      controls,
+      {},
+    );
+    expect(conflicts.map((c) => c.key)).not.toContain("offering_id");
   });
 });

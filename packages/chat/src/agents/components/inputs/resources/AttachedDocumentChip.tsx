@@ -2,7 +2,7 @@
 
 import { createElement, useState } from "react";
 import { ChevronDown, FileText, Loader2, X, ArrowUpRight } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,

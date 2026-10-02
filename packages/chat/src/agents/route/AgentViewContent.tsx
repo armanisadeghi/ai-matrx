@@ -64,7 +64,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "../../host/notify";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { AgentDefinitionMessage } from "../types/agent-message-types";
 import { RichDocument } from "@host/features/rich-document/RichDocument";
 import type { ContentSource } from "@host/features/rich-document/types";

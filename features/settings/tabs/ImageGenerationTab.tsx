@@ -25,6 +25,11 @@ export default function ImageGenerationTab() {
   const [model, setModel] = useSetting<string | null>(
     "userPreferences.imageGeneration.defaultModel",
   );
+  // The chosen class of that model (Matrx Fast vs Matrx Lightning are separate
+  // products); sent as `offering_id` beside `model`. null = preferred class.
+  const [offeringId, setOfferingId] = useSetting<string | null>(
+    "userPreferences.imageGeneration.defaultOfferingId",
+  );
   const [style, setStyle] = useSetting<string>(
     "userPreferences.imageGeneration.style",
   );
@@ -42,6 +47,8 @@ export default function ImageGenerationTab() {
             label="Model"
             value={model}
             onValueChange={setModel}
+            offeringId={offeringId ?? null}
+            onOfferingIdChange={setOfferingId}
             scope="all"
             allowPlatformDefault
             platformDefaultLabel="AI Matrx default (chosen by the platform)"

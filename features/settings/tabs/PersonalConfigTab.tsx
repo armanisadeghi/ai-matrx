@@ -25,6 +25,7 @@ import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isCompanionKnob } from "@/lib/scoped-config/modelClassCompanion";
 
 export default function PersonalConfigTab() {
   const userId = useAppSelector(selectUserId);
@@ -47,7 +48,10 @@ export default function PersonalConfigTab() {
   });
 
   const personal = useMemo(
-    () => knobs.filter((knob) => knob.overridable_by.includes("user")),
+    () =>
+      knobs.filter(
+        (knob) => knob.overridable_by.includes("user") && !isCompanionKnob(knob),
+      ),
     [knobs],
   );
   const byFeature = useMemo(() => {

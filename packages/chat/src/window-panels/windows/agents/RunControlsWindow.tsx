@@ -32,7 +32,7 @@ import {
   useAttachResource,
   useDetachResource,
 } from "../../../agents/components/inputs/resources/attach-resource";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { Resource } from "../../../agents/resources/types";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectInstanceAgentId } from "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";

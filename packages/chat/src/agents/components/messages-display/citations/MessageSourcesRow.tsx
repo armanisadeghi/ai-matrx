@@ -16,7 +16,7 @@
  */
 
 import { FileText, Globe } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import CitationChip from "@host/components/official/citation-chip/CitationChip";
 import {
   citationSourceDisplayKind,

@@ -42,7 +42,7 @@ import {
   StickyNote,
 } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { getManifest } from "@host/features/surfaces/manifests/registry";
 import { useLiveSurfaceMandates } from "../../runtime/surface-mandates";

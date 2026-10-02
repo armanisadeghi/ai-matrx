@@ -14,7 +14,7 @@ import React from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { Collapsible, CollapsibleContent } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 export interface ResultMarkdownProps {
     content: string;

@@ -2,7 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, Circle, Loader2 } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   honestProgressSummary,
   type RunShape,

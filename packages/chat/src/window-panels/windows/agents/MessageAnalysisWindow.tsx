@@ -18,7 +18,7 @@ import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { RequestStatsPanel } from "../../../agents/components/run-controls/panels/RequestStatsPanel";
 import { SessionStatsPanel } from "../../../agents/components/run-controls/panels/SessionStatsPanel";
 import { ClientMetricsPanel } from "../../../agents/components/run-controls/panels/ClientMetricsPanel";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { CHAT_WINDOWS } from "../../../host/windows";
 

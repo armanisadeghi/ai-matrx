@@ -32,7 +32,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
 import { contextEntryLabel } from "../../../agents/components/context-policies-display/contextEntryLabel";

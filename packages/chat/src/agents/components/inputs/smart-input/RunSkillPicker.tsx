@@ -34,7 +34,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { ProInput } from "@host/components/official/ProInput";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
   selectAgentError,

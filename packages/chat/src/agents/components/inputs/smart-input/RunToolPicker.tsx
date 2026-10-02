@@ -38,7 +38,7 @@ import {
 import type { DatabaseTool } from "@host/utils/supabase/tools-service";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { ProInput } from "@host/components/official/ProInput";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   selectAllTools,
   selectToolsStatus,

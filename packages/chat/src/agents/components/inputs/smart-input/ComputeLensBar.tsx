@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { ComputeTarget } from "@host/hooks/sandbox/use-compute-targets";
 import {
   computeTargetIconColor,

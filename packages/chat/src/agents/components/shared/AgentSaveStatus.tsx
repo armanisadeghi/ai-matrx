@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Save, Loader2, AlertTriangle, Eye } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import { UnsavedChangesDiff } from "../diff/UnsavedChangesDiff";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   AlertDialog,
   AlertDialogAction,

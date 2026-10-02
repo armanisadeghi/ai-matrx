@@ -312,8 +312,10 @@ export function detectConflicts(
   const conflicts: ConflictItem[] = [];
   const supportedKeys: Array<keyof AgentSettings> = [];
 
-  // Fields to skip from conflict analysis
-  const skipKeys = new Set<string>(["model"]);
+  // Fields to skip from conflict analysis. `offering_id` is routing (which
+  // class runs the model), never a model control — the picker sets it with
+  // the model, so it must not be flagged "unsupported" and dropped.
+  const skipKeys = new Set<string>(["model", "offering_id"]);
 
   for (const [rawKey, currentValue] of Object.entries(currentSettings)) {
     const key = rawKey as keyof AgentSettings;

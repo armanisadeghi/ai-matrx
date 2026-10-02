@@ -56,7 +56,7 @@ import {
   PackagePlus,
 } from "lucide-react";
 import { toast } from "../../../host/notify";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { TapTargetButton } from "@ai-matrx/tap-target";

@@ -144,6 +144,10 @@ export interface ImageGenerationPreferences {
   /** Model id, or null = platform default (resolved from the AI catalog at
    *  consumption time — features/ai-models/redux/platformDefaultModel.ts). */
   defaultModel: string | null;
+  /** The chosen CLASS (`ai.offering` uuid) of `defaultModel` — a model offered
+   *  in several classes is several products. null = the preferred class.
+   *  Sent as `offering_id` with `model` to POST /images/generate. */
+  defaultOfferingId: string | null;
   resolution: string;
   style: string;
   useAiEnhancements: boolean;
@@ -1186,6 +1190,7 @@ export const initializeUserPreferencesState = (
     imageGeneration: {
       // null = platform default (catalog-resolved) — see prompts.defaultModel.
       defaultModel: null,
+      defaultOfferingId: null,
       resolution: "1080p",
       style: "",
       useAiEnhancements: true,

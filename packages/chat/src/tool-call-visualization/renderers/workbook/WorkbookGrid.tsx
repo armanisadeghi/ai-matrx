@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   MOBILE_TABLE,
 } from "@host/components/official/mobile-table/mobileTable";

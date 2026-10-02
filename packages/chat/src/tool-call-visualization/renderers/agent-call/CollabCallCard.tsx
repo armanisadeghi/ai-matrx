@@ -29,7 +29,7 @@ import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import MarkdownStream from "@host/components/MarkdownStream";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
 import { stripThinkingStreaming } from "@host/components/content-refine/utils/stripThinking";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { ToolRendererProps } from "../../types";
 import { getCollabCallInfo, type CollabCallInfo } from "./collab";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";

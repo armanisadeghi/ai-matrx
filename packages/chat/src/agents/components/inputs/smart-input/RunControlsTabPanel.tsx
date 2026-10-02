@@ -32,7 +32,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAppSelector, useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { CHAT_CONTEXT_MENU_PROPS } from "../../chat/agent-context/buildChatContextData";

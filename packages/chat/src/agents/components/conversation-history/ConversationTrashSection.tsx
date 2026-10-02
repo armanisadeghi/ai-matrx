@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2, Trash2, Undo2 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../host/notify";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {

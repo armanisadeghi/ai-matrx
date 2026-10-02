@@ -14,7 +14,7 @@
 import { AlertTriangle, CheckCircle, FileText } from "lucide-react";
 
 import { CopyButton } from "@host/components/matrx/buttons/CopyButton";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { SerpResult } from "@host/features/marketing/seo/serp/SerpResult";
 import { SerpFieldChips } from "@host/features/marketing/seo/serp/SerpValidation";
 import { ApplyMetaToPage } from "@host/features/marketing/seo/serp/ApplyMetaToPage";

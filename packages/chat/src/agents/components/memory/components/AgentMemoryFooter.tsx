@@ -11,7 +11,7 @@
 import { Loader2, RefreshCw, Save } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { Slider } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { importanceScore, importanceTier } from "../types";
 import {
   ALL_MEMORIES_ID,

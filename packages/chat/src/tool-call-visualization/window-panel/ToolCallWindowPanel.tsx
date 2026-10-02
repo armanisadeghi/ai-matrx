@@ -34,7 +34,7 @@ import {
   LoaderCircle,
 } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
 import { ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";

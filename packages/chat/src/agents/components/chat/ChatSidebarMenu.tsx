@@ -61,7 +61,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { useInPlaceChatHost } from "./in-place-chat-host";

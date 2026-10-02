@@ -25,7 +25,7 @@ import {
   subscribeAgentLists,
   unsubscribeAgentLists,
 } from "../../redux/agent-lists.thunks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { TaskPanel } from "./TaskPanel";
 
 interface TaskPanelChipProps {

@@ -26,7 +26,7 @@ import type {
   UserRequestResult,
   UsageTotals,
 } from "@host/types/python-generated/stream-events";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { currentCostUnit } from "@host/components/cost/costUnit";
 
 // ── Selectors ──────────────────────────────────────────────────────────────

@@ -1,5 +1,7 @@
 import {
   applyImportFix,
+  applyOfferingPin,
+  readOfferingIdFromPaste,
   parseImportObject,
   patchModelId,
   stringifyImportObject,
@@ -56,5 +58,27 @@ describe("agent-import-fixes", () => {
     )[0];
     expect(block.text).toBe("hello");
     expect(block.content).toBeUndefined();
+  });
+});
+
+describe("class pin beside the model", () => {
+  const LIGHTNING = "29874e67-5683-40c2-9adb-fb797ea9a176";
+  const raw = JSON.stringify({ name: "A", settings: { temperature: 0.3 } });
+
+  it("writes settings.offering_id and reads it back", () => {
+    const next = applyOfferingPin(raw, LIGHTNING);
+    expect(next).not.toBeNull();
+    expect(readOfferingIdFromPaste(next as string)).toBe(LIGHTNING);
+    expect(parseImportObject(next as string)?.settings).toEqual({
+      temperature: 0.3,
+      offering_id: LIGHTNING,
+    });
+  });
+
+  it("clearing removes the key, keeping other settings", () => {
+    const pinned = applyOfferingPin(raw, LIGHTNING) as string;
+    const cleared = applyOfferingPin(pinned, undefined) as string;
+    expect(parseImportObject(cleared)?.settings).toEqual({ temperature: 0.3 });
+    expect(readOfferingIdFromPaste(cleared)).toBeNull();
   });
 });

@@ -32,7 +32,7 @@ import { selectShowFreeformInput } from "../../../redux/execution-system/instanc
 import { selectIsExecuting } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { selectAllResourcesResolved } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
 import { Button } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { VariablesPanelStyle } from "../../../types/instance.types";
 import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 import type { ComposerPresentation } from "./composer/composer-types";

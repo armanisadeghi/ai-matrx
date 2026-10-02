@@ -39,7 +39,7 @@ import {
   WorkingDocumentBody,
   buildWorkingDocumentDrawerItem,
 } from "../context-items/bodies/WorkingDocumentBody";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 interface ContextPolicyDetailSheetProps {
   open: boolean;

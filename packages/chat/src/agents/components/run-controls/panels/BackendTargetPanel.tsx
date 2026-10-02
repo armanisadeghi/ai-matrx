@@ -36,7 +36,7 @@ import {
   selectActiveSandboxProxyUrl,
   selectEditorMode,
 } from "@host/features/code/redux/codeWorkspaceSlice";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface BackendTargetPanelProps {

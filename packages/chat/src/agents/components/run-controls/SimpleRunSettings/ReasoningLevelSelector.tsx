@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { cn } from '@host/lib/utils';
+import { cn } from '@ai-matrx/design-system';
 import {
   REASONING_LEVELS,
   findReasoningLevel,

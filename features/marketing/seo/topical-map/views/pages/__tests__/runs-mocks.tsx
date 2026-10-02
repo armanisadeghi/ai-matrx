@@ -77,6 +77,10 @@ export function designSystemMock() {
     Input,
     Switch: toggle("switch"),
     Checkbox: toggle("checkbox"),
+    // the real class merger: chat components import `cn` from design-system (P11a)
+    cn: jest.requireActual<typeof import("@ai-matrx/design-system")>(
+      "@ai-matrx/design-system",
+    ).cn,
   };
 }
 

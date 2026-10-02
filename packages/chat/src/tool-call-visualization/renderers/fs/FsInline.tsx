@@ -26,7 +26,7 @@ import React from "react";
 import { ChevronRight, File, Folder, FolderOpen } from "lucide-react";
 import { formatFileSize } from "@ai-matrx/kit/format";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";

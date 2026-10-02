@@ -37,7 +37,7 @@ import {
   DOCUMENTS_WORKSPACE_SURFACE_NAME,
   createDocumentsWorkspaceScope,
 } from "@host/features/surfaces/manifests/documents-workspace.manifest";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import {

@@ -16,7 +16,7 @@ import { ComposerEffortPill } from "./ComposerEffortPill";
 import { ComposerOutputPill } from "./ComposerOutput";
 import { composerShows } from "./composer-mode-visibility";
 import { COMPOSER_ROW_CLASS } from "./composer-chip";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { ComposerPresentation } from "./composer-types";
 import { useEffectiveModelId } from "./useComposerAgent";
 

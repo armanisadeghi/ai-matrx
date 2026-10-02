@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
 import { ContextItemDrawer } from "../context-items/ContextItemDrawer";
 import { useContextItemDrawer } from "../context-items/useContextItemDrawer";

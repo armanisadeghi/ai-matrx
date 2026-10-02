@@ -14,7 +14,7 @@
 import React from "react";
 import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 import { KindDataGate } from "@host/components/official/structured-value/KindDataGate";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 export interface ResultJsonProps {
     data: unknown;

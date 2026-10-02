@@ -13,7 +13,7 @@
  * grows above it and unmounts the moment the stream ends.
  */
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 export interface BreathingOrbProps {
   className?: string;

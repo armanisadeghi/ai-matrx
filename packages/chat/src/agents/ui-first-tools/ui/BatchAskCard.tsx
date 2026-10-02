@@ -35,7 +35,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { Textarea } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@host/lib/redux/hooks";
 import type { PendingAsk } from "../redux/pending-asks.slice";
 import {

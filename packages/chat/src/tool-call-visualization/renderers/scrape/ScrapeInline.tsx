@@ -41,7 +41,7 @@ import {
   ArrowRight,
   ScanText,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";

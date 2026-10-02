@@ -40,7 +40,7 @@ import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
 import { useAppDispatch } from "@host/lib/redux/hooks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { setContextEntry } from "../../../agents/redux/execution-system/instance-context/instance-context.slice";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { filterStepEvents, isTerminal, resultAsObject } from "../_shared";

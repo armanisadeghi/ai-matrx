@@ -320,6 +320,7 @@ export default function AliasesContainer() {
                 Target Model <span className="text-destructive">*</span>
               </Label>
               <ModelListDropdown
+                modelOnly
                 value={form.model_id}
                 onValueChange={(modelId) =>
                   setForm({ ...form, model_id: modelId })

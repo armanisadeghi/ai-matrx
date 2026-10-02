@@ -17,7 +17,7 @@ import {
   History,
   Workflow,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";

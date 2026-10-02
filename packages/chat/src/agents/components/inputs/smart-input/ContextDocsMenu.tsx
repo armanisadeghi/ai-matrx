@@ -26,7 +26,7 @@ import {
 import { useDialogContainer } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import {
   BottomSheet,

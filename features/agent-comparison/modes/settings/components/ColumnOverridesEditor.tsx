@@ -29,6 +29,11 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
+  effectiveOfferingPin,
+  resetModelChoice,
+  setOfferingPin,
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
+import {
   selectActiveModels,
   fetchModelOptions,
 } from "@/features/ai-models/redux/modelRegistrySlice";
@@ -78,6 +83,12 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
     dispatch(resetOverride({ conversationId, key }));
   };
 
+  // The model and its class (offering) clear together — a pin belongs to
+  // exactly one model.
+  const clearModel = () => {
+    dispatch(resetModelChoice(conversationId));
+  };
+
   const allowedModelIds = models
     .filter((model) => !model.is_deprecated)
     .map((model) => model.id);
@@ -87,17 +98,21 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label className="text-[11px] font-semibold">Model</Label>
-          {isOverridden("model") && (
-            <ClearChip onClear={() => clearKey("model")} />
+          {(isOverridden("model") || isOverridden("offering_id")) && (
+            <ClearChip onClear={clearModel} />
           )}
         </div>
         <ModelListDropdown
           value={(effective.model as string | null) ?? null}
           onValueChange={(modelId) => update({ model: modelId })}
+          pinnedOfferingId={effectiveOfferingPin(overrideState)}
+          onOfferingPinChange={(offeringId) =>
+            dispatch(setOfferingPin({ conversationId, offeringId }))
+          }
           inputModalities={[]}
           allowedModelIds={allowedModelIds}
           emptyOptionLabel="Agent default"
-          onClear={() => clearKey("model")}
+          onClear={clearModel}
           className="h-7 w-full justify-between text-xs"
         />
       </div>

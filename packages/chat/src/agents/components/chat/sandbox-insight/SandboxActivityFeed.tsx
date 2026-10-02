@@ -14,7 +14,7 @@
 import React from "react";
 import { AlertTriangle, ChevronRight, Loader2, Terminal } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectToolCallsForConversation } from "../../../redux/execution-system/observability/observability.selectors";
 import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-system/active-requests/active-requests.selectors";

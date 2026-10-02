@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   IMAGE_REFERENCE_ROLES,
   IMAGE_ROLE_META,

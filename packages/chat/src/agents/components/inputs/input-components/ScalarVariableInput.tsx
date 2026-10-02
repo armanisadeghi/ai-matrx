@@ -16,7 +16,7 @@
 import { datetimeLocalValue } from "@host/lib/dates/datetimeLocalValue";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@host/components/official/ProTextarea";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 export type ScalarInputKind =
   | "datetime"

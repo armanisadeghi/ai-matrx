@@ -31,7 +31,7 @@ import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { CHAT_WINDOWS } from "../../../host/windows";
 import { useIsChatWindowOpen } from "../../../host/windows-react";
 import type { SourceFeature } from "@host/types/python-generated/source-attribution";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface ActiveAmbientVoiceAssistantProps {

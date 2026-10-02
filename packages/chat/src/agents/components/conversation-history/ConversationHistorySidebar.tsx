@@ -42,7 +42,7 @@ import {
   StarOff,
   X,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import {
   fetchConversationHistory,

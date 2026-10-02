@@ -17,7 +17,7 @@
 
 import React from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { TableColumn } from "./shape";
 import {
     detectResultShape,

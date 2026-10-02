@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";

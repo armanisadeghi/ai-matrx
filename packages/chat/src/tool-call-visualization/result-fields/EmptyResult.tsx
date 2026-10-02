@@ -7,7 +7,7 @@
 
 import React from "react";
 import { Inbox } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 export interface EmptyResultProps {
     /** Override the default message. */

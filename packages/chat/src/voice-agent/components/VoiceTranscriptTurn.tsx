@@ -6,7 +6,7 @@
 // where the conversation was cut off.
 
 import { motion } from "motion/react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { VoiceTurn } from "../types";
 import { answerPreviewText } from "@host/components/official/structured-value/AnswerTextPreview";
 

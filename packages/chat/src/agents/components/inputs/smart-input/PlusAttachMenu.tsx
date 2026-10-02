@@ -58,7 +58,7 @@ import { CHAT_WINDOWS } from "../../../../host/windows";
 import { useIsChatWindowOpen } from "../../../../host/windows-react";
 import { useConversationDocumentsBridge } from "../../../hooks/useWorkingDocument";
 import { selectIsManualExecutionMode } from "../../../redux/execution-system/selectors/aggregate.selectors";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { Resource } from "../../../resources/types";
 import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
 import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";

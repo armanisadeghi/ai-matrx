@@ -23,7 +23,7 @@ import { useIsMobile } from "@ai-matrx/design-system";
 import RichEditor from "@host/components/rich-editor/RichEditor";
 import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
 import { useAppDispatch } from "@host/lib/redux/hooks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { updateMessageRecord } from "../../../redux/execution-system/messages/messages.slice";
 import {
   fetchStoredAnswer,

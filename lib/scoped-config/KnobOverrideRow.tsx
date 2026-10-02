@@ -17,7 +17,7 @@
 //     the model picker and a voice key gets the voice picker at every rung —
 //     this row never decides what a control looks like, only what it says.
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Lock, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +44,11 @@ import {
 } from "./ladder";
 import { voiceDisplayName, voiceSetOf } from "@/lib/voices/voiceSets";
 import {
+  classPinOf,
+  modelClassKnobFor,
+} from "./modelClassCompanion";
+import {
+  fetchKnobIndex,
   setKnobOverride,
   setKnobRungLock,
   writeKnobOverrideThroughDoor,
@@ -317,10 +322,124 @@ export function KnobOverrideRow(props: {
     setDraft(overrideText);
   }
 
-  const write = async (value: unknown) => {
+  // ONE KEY'S WRITE AT THIS RUNG, through the same door the row uses — the
+  // row's own key, or its companion (a default model's class). Refusals come
+  // back as the envelope; nothing here toasts.
+  const persistAtRung = async (key: string, value: unknown) => {
+    if (system) {
+      const result = await setFeatureKnob(knob.feature, key, value);
+      return result.ok
+        ? { ok: true as const }
+        : {
+            ok: false as const,
+            detail: result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`,
+          };
+    }
+    const target = { feature: knob.feature, key, scopeKind, scopeId, organizationId, value };
+    const result = writeDoor
+      ? await writeKnobOverrideThroughDoor({ door: writeDoor, ...target })
+      : await setKnobOverride(target);
+    return result.ok
+      ? { ok: true as const }
+      : {
+          ok: false as const,
+          detail: result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`,
+        };
+  };
+
+  // THE CLASS OF A MODEL KEY (model classes, 2026-10-01): a model offered as
+  // Matrx Fast and Matrx Lightning is two products, so the row carries the
+  // chosen class as its companion knob AT THIS RUNG. Read through the index
+  // (the same resolver the rows come from), never from the override table.
+  const classKnob = modelClassKnobFor(knob.full_key);
+  const [classSibling, setClassSibling] = useState<ScopedKnob | null>(null);
+  const [classReadNonce, setClassReadNonce] = useState(0);
+  useEffect(() => {
+    if (!classKnob) return;
+    let active = true;
+    fetchKnobIndex({
+      organizationId: system ? organizationId || null : organizationId,
+      featurePrefix: classKnob.feature,
+      userId: scopeKind === "user" && !system ? scopeId : undefined,
+    })
+      .then((keys) => {
+        if (!active) return;
+        setClassSibling(keys.find((k) => k.full_key === classKnob.fullKey) ?? null);
+      })
+      .catch((error: unknown) => {
+        console.error(
+          `[KnobOverrideRow] ${classKnob.fullKey} could not be read — the class picker shows the preferred class:`,
+          error,
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, [classKnob?.fullKey, organizationId, scopeKind, scopeId, system, classReadNonce]);
+  // The class stored AT this rung, and the class a clear here would inherit.
+  const classHere: unknown = !classSibling
+    ? null
+    : system
+      ? classSibling.platform_default
+      : scopeKind === "user"
+        ? classSibling.user_override
+        : classSibling.org_override;
+  const classAbove: unknown = !classSibling
+    ? null
+    : !system && scopeKind === "user" && classSibling.org_override != null
+      ? classSibling.org_override
+      : system
+        ? null
+        : classSibling.platform_default;
+  // The class shown with the model on screen: this rung's own when the model
+  // is set here, else the class of the rung the model is inherited from.
+  const pinnedOfferingId = classPinOf(
+    system || isSetHere ? classHere : hasOrgParent ? classSibling?.org_override : classAbove,
+  );
+
+  const writeModelAndClass = async (modelId: string, offeringId: string | undefined) => {
+    if (!classKnob) return write(modelId);
+    // The model lands at THIS rung even when it equals what is inherited — a
+    // class here must never pair with a model from another rung.
+    const modelHere = system ? knob.platform_default : overrideValue;
+    if (!(isSetHere || system) || !sameKnobValue(modelHere, modelId)) {
+      const ok = await write(modelId, { force: true });
+      if (!ok) return false;
+    }
+    // "Preferred class" is a clear — unless a rung above holds a class this
+    // rung would then inherit, in which case it is said explicitly ("").
+    const classValue = offeringId ?? (classPinOf(classAbove) ? "" : null);
+    if (sameKnobValue(classHere ?? null, classValue)) return true;
+    setBusy(true);
+    try {
+      const result = await persistAtRung(classKnob.key, classValue);
+      if (!result.ok) {
+        setInlineError(result.detail);
+        toast.error(result.detail);
+        return false;
+      }
+      if (!(isSetHere || system) || !sameKnobValue(modelHere, modelId)) {
+        // The model write already announced the save.
+      } else {
+        toast.success(`${knob.label} saved. ${blastRadius}`);
+      }
+      setClassReadNonce((n) => n + 1);
+      onChanged();
+      return true;
+    } catch (err) {
+      const detail = extractErrorMessage(err);
+      setInlineError(detail);
+      toast.error(detail);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const write = async (value: unknown, options?: { force?: boolean }) => {
     // A personal control is initialized from its effective value. This guard
     // makes opening it, or pressing Save without changing it, a true no-op.
-    if (scopeKind === "user" && sameKnobValue(value, editableValue)) {
+    if (!options?.force && scopeKind === "user" && sameKnobValue(value, editableValue)) {
       return true;
     }
     setBusy(true);
@@ -447,6 +566,27 @@ export function KnobOverrideRow(props: {
     }
   };
 
+  // Clearing a model key clears its class at the same rung: a class left
+  // behind would pair with whatever model this rung inherits next.
+  const clearWithClass = async () => {
+    const ok = await write(null);
+    if (!ok || !classKnob || classHere === null || classHere === undefined) return;
+    try {
+      const result = await persistAtRung(classKnob.key, null);
+      if (!result.ok) {
+        setInlineError(result.detail);
+        toast.error(result.detail);
+        return;
+      }
+      setClassReadNonce((n) => n + 1);
+      onChanged();
+    } catch (err) {
+      const detail = extractErrorMessage(err);
+      setInlineError(detail);
+      toast.error(detail);
+    }
+  };
+
   const clear = async () => {
     if (system) {
       const confirmed = await confirm({
@@ -454,7 +594,7 @@ export function KnobOverrideRow(props: {
         description: `The platform value becomes ${displayValue(system.registeredDefault)}.`,
         confirmLabel: "Restore registered default",
       });
-      if (confirmed) await write(null);
+      if (confirmed) await clearWithClass();
       return;
     }
     // 🚨 F2 (V-57). A destructive click names its TARGET, not only its
@@ -471,7 +611,7 @@ export function KnobOverrideRow(props: {
         : `The override is removed and this setting falls back to ${displayValue(inheritedValue)}.`,
       confirmLabel: scopeLabel ? `Remove ${scopeLabel}’s value` : "Inherit it",
     });
-    if (confirmed) await write(null);
+    if (confirmed) await clearWithClass();
   };
 
   // On the personal tab, a key the org has locked renders read-only: the org
@@ -658,6 +798,11 @@ export function KnobOverrideRow(props: {
               identityKey={`${knob.full_key}:${organizationId}:${scopeKind}:${scopeId}`}
               disabled={busy || !canWrite}
               onCommit={(value) => write(value)}
+              modelClass={
+                classKnob
+                  ? { pinnedOfferingId, onPick: writeModelAndClass }
+                  : undefined
+              }
             />
           ) : (
             <div className="flex w-full min-w-0 flex-wrap items-start gap-2">

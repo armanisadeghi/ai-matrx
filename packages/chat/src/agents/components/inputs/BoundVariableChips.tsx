@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../host/notify";
 import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";

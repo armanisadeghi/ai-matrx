@@ -26,7 +26,7 @@ import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectActiveUserName } from "@host/lib/redux/selectors/userSelectors";
 import { useMandateSet } from "../../../../../mandates/useMandateSet";
 import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { COMPOSER_KNOBS } from "./composer-mode-cookie";
 
 function timeOfDayGreeting(hour: number): string {

@@ -11,7 +11,7 @@
  */
 
 import { Badge } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   importanceScore,
   importanceTier,

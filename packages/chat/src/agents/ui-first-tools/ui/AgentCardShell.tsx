@@ -33,7 +33,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { X } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { useScrollFade } from "@host/components/ui/scroll-fade";
 

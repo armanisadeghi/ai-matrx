@@ -42,7 +42,7 @@ import {
 } from "@ai-matrx/design-system";
 import { useDialogContainer } from "@ai-matrx/design-system";
 import { usePopoutContainer } from "@host/features/window-panels/popout/usePopoutContainer";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
 import { useOpenRunControlsWindow } from "../../../../host/window-openers";

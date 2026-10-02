@@ -37,7 +37,7 @@ import {
   DEFAULT_CONTEXT_WINDOW_TOKENS,
 } from "../../../redux/execution-system/context-state/context-state.selectors";
 import { EmptyStats, StatRow, StatSection, fmtTokens } from "./shared";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 
 export interface ModelContextPanelProps {

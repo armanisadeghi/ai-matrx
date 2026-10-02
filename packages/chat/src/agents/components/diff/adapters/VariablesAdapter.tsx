@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { Variable } from "lucide-react";
 import type {
   FieldAdapter,

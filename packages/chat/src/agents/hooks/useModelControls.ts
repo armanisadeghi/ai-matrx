@@ -5,6 +5,7 @@
  * Keeps snake_case naming for compatibility with Python backend
  */
 
+import type { ModelClassControls } from "@host/features/ai-models/hooks/useModelClassControls";
 import { LLM_PARAMS_KEYS } from "@host/types/python-generated/llm-enums";
 import { UI_GATE_KEYS } from "@host/lib/redux/slices/agent-settings/ui-gates";
 import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
@@ -239,13 +240,21 @@ export function supportsTools(
 export function useModelControls(
   models: AIModelRecord[],
   selectedModelId: string,
+  classControls?: ModelClassControls,
 ) {
-  return resolveModelControls(models, selectedModelId);
+  return resolveModelControls(models, selectedModelId, classControls);
 }
 
+/**
+ * `classControls` (from `useModelClassControls`) is the pinned CLASS's
+ * resolved controls. `undefined` = no pin, the model's own (preferred-class)
+ * controls apply. While a pinned class loads — or when its pin is refused —
+ * there are NO controls rather than another class's.
+ */
 export function resolveModelControls(
   models: AIModelRecord[],
   selectedModelId: string,
+  classControls?: ModelClassControls,
 ) {
   // If no ID provided, just return empty state without error
   if (!selectedModelId) {
@@ -257,7 +266,24 @@ export function resolveModelControls(
   }
 
   // Find the selected model by ID (UUID)
-  const selectedModel = models.find((m) => m.id === selectedModelId);
+  const catalogModel = models.find((m) => m.id === selectedModelId);
+  if (catalogModel && classControls && !classControls.config) {
+    return {
+      normalizedControls: null,
+      selectedModel: catalogModel,
+      error: classControls.failed
+        ? "The chosen class is not available for this model"
+        : null,
+    };
+  }
+  const selectedModel =
+    catalogModel && classControls?.config
+      ? {
+          ...catalogModel,
+          controls: classControls.config.controls,
+          constraints: classControls.config.constraints,
+        }
+      : catalogModel;
 
   if (!selectedModel) {
     // A persisted agent/conversation can legitimately reference a model that

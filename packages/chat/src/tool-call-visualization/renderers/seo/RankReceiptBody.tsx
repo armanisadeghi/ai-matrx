@@ -12,7 +12,7 @@
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { Database, MapPin, Monitor, Smartphone, Timer } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   formatCacheAge,
   type SeoCollectionReceipt,

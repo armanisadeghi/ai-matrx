@@ -10,7 +10,7 @@ import React from "react";
 import { ExternalLink } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaRef } from "@host/features/files/types";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { ResultMediaElement } from "./shape";
 
 export interface ResultMediaProps {

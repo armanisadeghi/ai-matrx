@@ -100,6 +100,13 @@ export type KnobUiHints = {
   format?: string;
   /** Opaque preview token — e.g. which engine plays a voice sample. */
   preview?: string;
+  /**
+   * The key (same feature) this knob is a companion of. A companion is never a
+   * row of its own: the named key's row reads and writes it at the same rung
+   * (`./modelClassCompanion` — e.g. a default model's class), and generic
+   * settings lists drop it.
+   */
+  companion_of?: string;
 };
 
 /** The registry node a key is filed under — the product's own vocabulary. */

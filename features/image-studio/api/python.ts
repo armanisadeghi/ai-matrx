@@ -433,6 +433,8 @@ export interface GenerateImageBody {
   style?: string;
   count?: number;
   model?: string;
+  /** The chosen class (`ai.offering` uuid) of `model`; ignored without it. */
+  offering_id?: string;
 }
 
 /** One generated file — DERIVED from the generated stream-event contract. */

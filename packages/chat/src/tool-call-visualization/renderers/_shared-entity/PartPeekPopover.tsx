@@ -5,7 +5,7 @@ import {
   HoverCardTrigger,
   HoverCardContent,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 /**
  * A delicate hover "peek" for an individual listed part inside an entity card —

@@ -249,6 +249,7 @@ export default function AddProviderModelDialog({
                   Template model
                 </Label>
                 <ModelListDropdown
+                  modelOnly
                   value={templateId}
                   onValueChange={setTemplateId}
                   inputModalities={[]}

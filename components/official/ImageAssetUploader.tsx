@@ -648,6 +648,8 @@ function GenerateTabContent({
         style: style.trim() || undefined,
         count: 2,
         model: modelId ?? undefined,
+        // The chosen class rides with the chosen model, never alone.
+        offering_id: (modelId && genPrefs?.defaultOfferingId) || undefined,
       });
       setResults(res.files);
       setGenState("picking");
@@ -661,7 +663,14 @@ function GenerateTabContent({
       setGenState("error");
       if (!isNotImpl) onError?.(msg);
     }
-  }, [prompt, size, style, onError, genPrefs?.defaultModel]);
+  }, [
+    prompt,
+    size,
+    style,
+    onError,
+    genPrefs?.defaultModel,
+    genPrefs?.defaultOfferingId,
+  ]);
 
   const handlePick = useCallback(
     async (result: GeneratedImageFile) => {

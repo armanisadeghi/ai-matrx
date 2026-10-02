@@ -38,6 +38,7 @@ import type { ViewerEffect } from "@/lib/scoped-config/ladder";
 import { isJsonObject } from "@/types/json";
 import { extractErrorMessage } from "@/utils/errors";
 import { pickableRungsFor } from "./scopeRows";
+import { isCompanionKnob } from "@/lib/scoped-config/modelClassCompanion";
 import {
   fetchTaxonomyIndex,
   resolveKnobTaxonomy,
@@ -97,8 +98,11 @@ export function filterKnobsForTarget(
   knobs: ScopedKnob[],
   target: "user" | "organization" | "system",
 ): ScopedKnob[] {
+  // A companion knob (a default model's class) is written by its model's row,
+  // never listed as a row of its own (`lib/scoped-config/modelClassCompanion`).
   return knobs.filter((knob) =>
-    target === "system" || knob.overridable_by.includes(target),
+    !isCompanionKnob(knob) &&
+    (target === "system" || knob.overridable_by.includes(target)),
   );
 }
 

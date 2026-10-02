@@ -17,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@ai-matrx/design-system';
-import { cn } from '@host/lib/utils';
+import { cn } from '@ai-matrx/design-system';
 import { SimpleRunSettings, type SimpleRunSettingsValue } from './SimpleRunSettings';
 import {
   DEFAULT_CAPABILITY_ID,

@@ -24,7 +24,7 @@
 import React from "react";
 import { CornerDownRight, MessageCircleQuestionMark } from "lucide-react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";

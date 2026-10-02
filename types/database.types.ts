@@ -3697,7 +3697,9 @@ export type Database = {
           supports_prefill: boolean
         }[]
       }
-      resolve_model_config: { Args: { p_model_id: string }; Returns: Json }
+      resolve_model_config:
+        | { Args: { p_model_id: string }; Returns: Json }
+        | { Args: { p_model_id: string; p_offering_id: string }; Returns: Json }
       set_endpoint_admin_columns: {
         Args: { p_id: string; p_values: Json }
         Returns: undefined

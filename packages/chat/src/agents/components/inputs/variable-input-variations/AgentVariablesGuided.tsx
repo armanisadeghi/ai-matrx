@@ -10,7 +10,7 @@ import { Button } from "@ai-matrx/design-system";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { VariableDefinition } from "../../../types/agent-definition.types";
 import { isMediaVariableType } from "../../../types/agent-definition.types";
 import { ImageVariableInput } from "../input-components/ImageVariableInput";

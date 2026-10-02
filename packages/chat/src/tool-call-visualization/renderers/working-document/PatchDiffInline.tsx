@@ -31,7 +31,7 @@
 
 import React, { useMemo, useState } from "react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 import { useAppSelector } from "@host/lib/redux/hooks";
 import { selectWorkingDocContent } from "../../../agents/redux/execution-system/instance-working-document/instance-working-document.selectors";

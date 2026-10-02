@@ -21,7 +21,7 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { Skeleton } from "@ai-matrx/design-system";
 import SuspenseLoader from "@host/components/loaders/SuspenseLoader";
 import { ChevronDown } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 const AgentDiffViewer = dynamic(

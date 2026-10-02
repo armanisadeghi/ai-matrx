@@ -6,7 +6,7 @@
 // overkill here and historically left the span stuck at opacity:0 under
 // strict mode / HMR. Pure CSS transitions are unconditionally reliable.
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { VoiceStatus } from "../types";
 
 interface VoiceStatusPillProps {

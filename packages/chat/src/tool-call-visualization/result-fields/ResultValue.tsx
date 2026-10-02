@@ -17,7 +17,7 @@
  */
 
 import React from "react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { detectResultShape, looksLikeMarkdown, type ResultMediaElement } from "./shape";
 import { ResultScalar } from "./ResultScalar";
 import { ResultMarkdown } from "./ResultMarkdown";

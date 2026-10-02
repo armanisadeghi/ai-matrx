@@ -43,6 +43,7 @@ import {
   ControlDefinition,
   NormalizedControls,
 } from "@ai-matrx/chat/agents/hooks/useModelControls";
+import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectAgentSettings,
@@ -66,6 +67,7 @@ import {
   selectModelRegistryLoading,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
 import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
 import type {
   LLMParams,
@@ -1072,7 +1074,17 @@ export function AgentSettingsCore({
     }
   }, [dispatch, modelId, isModelFull, registryLoading]);
 
-  const { normalizedControls, error } = useModelControls(models, modelId ?? "");
+  // The pinned CLASS's controls (Matrx Lightning ≠ Matrx Fast), not the
+  // preferred class's.
+  const classControls = useModelClassControls(
+    modelId,
+    typeof settings?.offering_id === "string" ? settings.offering_id : null,
+  );
+  const { normalizedControls, error } = useModelControls(
+    models,
+    modelId ?? "",
+    classControls,
+  );
 
   // Model catalog (ai.model_offering tiers) — the client source of each
   // model's offering uuids. The model-swap reconciliation checks a pinned
@@ -1169,10 +1181,50 @@ export function AgentSettingsCore({
     newModelName: string;
     oldModelName: string;
     plan: ModelChangePlan;
+    /** The class picked with the model; re-applied on commit. */
+    offeringPin?: { offeringId: string | undefined };
   } | null>(null);
+
+  // The picker reports the class (offering pin) and the model in the SAME
+  // click, in either order, so the second handler still sees the render-time
+  // settings. The pin is parked here for that one click and read by the model
+  // handler; a microtask drops it once the click's handlers have run.
+  const clickOfferingPinRef = useRef<{ offeringId: string | undefined } | null>(
+    null,
+  );
+
+  const handleOfferingPinChange = (offeringId: string | undefined) => {
+    // settings === null → the agent record hasn't hydrated; writing over it
+    // would drop every real setting on save (same guard as the builder row).
+    if (settings === null) {
+      console.error(
+        `[AgentSettingsCore] Refused to pin offering ${String(offeringId)} — agent ${agentId} settings not hydrated yet.`,
+      );
+      return;
+    }
+    const pin = { offeringId };
+    clickOfferingPinRef.current = pin;
+    queueMicrotask(() => {
+      if (clickOfferingPinRef.current === pin) clickOfferingPinRef.current = null;
+    });
+    // Model reported first and a reconciliation is pending → carry the class
+    // into that commit too.
+    setPendingModelChange((p) => (p ? { ...p, offeringPin: pin } : p));
+    dispatch(
+      setAgentSettings({
+        id: agentId,
+        settings: withOfferingPin(currentSettings, offeringId),
+      }),
+    );
+  };
 
   const handleModelChange = (newModelId: string) => {
     if (!newModelId || newModelId === modelId) return;
+    // Class picked in this same click (pin reported before the model).
+    const clickPin = clickOfferingPinRef.current;
+    const planSettings: FeLlmParams = clickPin
+      ? withOfferingPin(currentSettings, clickPin.offeringId)
+      : currentSettings;
 
     const newModel = models.find((m) => m.id === newModelId);
     if (!newModel) {
@@ -1196,7 +1248,7 @@ export function AgentSettingsCore({
       : null;
 
     const plan = analyzeModelChange(
-      currentSettings,
+      planSettings,
       newModelId,
       newModel,
       newControls,
@@ -1222,6 +1274,7 @@ export function AgentSettingsCore({
       newModelName: newModel.common_name ?? newModel.name ?? newModelId,
       oldModelName: oldModel?.common_name ?? oldModel?.name ?? "current model",
       plan,
+      ...(clickPin ? { offeringPin: clickPin } : {}),
     });
   };
 
@@ -1234,7 +1287,17 @@ export function AgentSettingsCore({
         value: pendingModelChange.newModelId,
       }),
     );
-    dispatch(setAgentSettings({ id: agentId, settings: nextSettings }));
+    // The class chosen with the model survives every resolution (incl. reset
+    // to the new model's defaults).
+    const { offeringPin } = pendingModelChange;
+    dispatch(
+      setAgentSettings({
+        id: agentId,
+        settings: offeringPin
+          ? withOfferingPin(nextSettings, offeringPin.offeringId)
+          : nextSettings,
+      }),
+    );
     setPendingModelChange(null);
   };
 
@@ -1954,6 +2017,8 @@ export function AgentSettingsCore({
                   value={modelId}
                   onValueChange={handleModelChange}
                   inputModalities={[]}
+                  pinnedOfferingId={settings?.offering_id}
+                  onOfferingPinChange={handleOfferingPinChange}
                 />
               </div>
             </div>

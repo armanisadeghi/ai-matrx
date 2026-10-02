@@ -30,7 +30,7 @@
 
 import type { ReactNode } from "react";
 
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { COMPOSER_CHIP_CLASS } from "./composer/composer-chip";
 
 /** The attribute `AgentTextarea` stamps on the real composer input. */

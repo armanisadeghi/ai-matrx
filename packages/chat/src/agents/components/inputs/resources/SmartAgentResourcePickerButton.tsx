@@ -16,7 +16,7 @@ import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { useDialogContainer } from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { selectAttachmentCapabilities } from "../../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import { PlusAttachMenu } from "../smart-input/PlusAttachMenu";
 import { useAttachResource, useDetachResource } from "./attach-resource";

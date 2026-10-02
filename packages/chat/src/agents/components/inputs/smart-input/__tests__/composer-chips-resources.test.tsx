@@ -29,6 +29,7 @@ jest.mock("../../../../../host/window-openers", () => ({ ...jest.requireActual("
 
 jest.mock("@ai-matrx/design-system", () => ({
   BottomSheet: () => null,
+  cn: jest.requireActual<typeof import("@ai-matrx/design-system")>("@ai-matrx/design-system").cn,
 }));
 
 jest.mock("../composer/ComposerConnectorsPanel", () => ({ ComposerConnectorsPanel: () => null }));

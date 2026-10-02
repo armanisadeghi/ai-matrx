@@ -25,7 +25,7 @@ import {
   BottomSheetHeader,
   BottomSheetBody,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { HeaderActionsSlot, usePhonePageActions } from "../../../host/chrome";
 import { AgentOptionsMenu } from "./AgentOptionsMenu";

@@ -5,12 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
 import {
   selectEffectiveModelId,
   selectEffectiveSettings,
   selectHasPendingSwitch,
 } from "@/lib/redux/slices/agent-settings/selectors";
-import { requestModelSwitch } from "@/lib/redux/slices/agent-settings/agentSettingsSlice";
+import {
+  applySettingsFromDialog,
+  requestModelSwitch,
+} from "@/lib/redux/slices/agent-settings/agentSettingsSlice";
 import type { AgentSettings } from "@/lib/redux/slices/agent-settings/types";
 
 // Fields shown as active-setting badges in the compact summary row
@@ -64,6 +68,17 @@ export function ModelSelectorRow({
     dispatch(requestModelSwitch({ agentId, newModelId }));
   };
 
+  // The class (offering) pin rides with the model in the same settings entry;
+  // `undefined` removes the key so the server routes to the preferred class.
+  const handleOfferingPinChange = (offeringId: string | undefined) => {
+    dispatch(
+      applySettingsFromDialog({
+        agentId,
+        newSettings: withOfferingPin(effectiveSettings, offeringId),
+      }),
+    );
+  };
+
   const activeBadges = showSettingsBadges
     ? BADGE_FIELDS.filter(
         ({ key }) =>
@@ -80,6 +95,8 @@ export function ModelSelectorRow({
           value={effectiveModelId}
           onValueChange={handleModelChange}
           inputModalities={[]}
+          pinnedOfferingId={effectiveSettings.offering_id}
+          onOfferingPinChange={handleOfferingPinChange}
           className="h-7 text-xs flex-1 min-w-0"
         />
 

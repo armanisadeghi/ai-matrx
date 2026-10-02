@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { AgentTab } from "@ai-matrx/agents/catalog";
 
 // Prompt-filter types inlined here so this component has no dependency on

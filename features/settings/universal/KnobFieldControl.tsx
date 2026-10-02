@@ -25,7 +25,7 @@
 //   secret    → state only, from `knob.secret`; the value never comes here
 //               and is never asked for here (see the note on the case below).
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -171,6 +171,18 @@ export type KnobFieldControlProps = {
   inputId?: string;
   /** Row label id for composite or read-only controls. */
   labelId?: string;
+  /**
+   * A model key's CLASS, carried by its row at the same rung
+   * (`lib/scoped-config/modelClassCompanion`). Present → the picker shows one
+   * row per class and `onPick` commits the model and its class together.
+   */
+  modelClass?: {
+    pinnedOfferingId: string | undefined;
+    onPick: (
+      modelId: string,
+      offeringId: string | undefined,
+    ) => void | boolean | Promise<void | boolean>;
+  };
 };
 
 export function KnobFieldControl(props: KnobFieldControlProps) {
@@ -434,6 +446,7 @@ function ModelField({
   onCommit,
   inputId,
   labelId,
+  modelClass,
 }: KnobFieldControlProps) {
   const isBuilderKey =
     knob.full_key === "agents.model_prefs.agent_authoring_default_model";
@@ -467,6 +480,27 @@ function ModelField({
           : null);
   const isBuilderDefault = !configuredValue && isBuilderKey;
   const dispatch = useAppDispatch();
+  // The dropdown reports a class pick BEFORE the model pick of the same
+  // gesture (pin, then value), and reports a class-only change (same model)
+  // with no value call at all. Hold the pin for one microtask so one gesture
+  // commits ONE (model, class) pair; a pin nobody claimed commits alone.
+  const pendingPin = useRef<{ offeringId: string | undefined } | null>(null);
+  const classSelection = modelClass
+    ? {
+        pinnedOfferingId: modelClass.pinnedOfferingId,
+        onOfferingPinChange: (offeringId: string | undefined) => {
+          const held = { offeringId };
+          pendingPin.current = held;
+          queueMicrotask(() => {
+            if (pendingPin.current !== held) return;
+            pendingPin.current = null;
+            if (value) void modelClass.onPick(value, offeringId);
+          });
+        },
+      }
+    : // No class carrier (a caller that renders the control without its row):
+      // one row per model, never a class choice that would be dropped on save.
+      ({ modelOnly: true } as const);
   return (
     <>
       <ModelListDropdown
@@ -475,10 +509,22 @@ function ModelField({
         aria-labelledby={labelId}
         value={value}
         onValueChange={(next) => {
+          const pin = pendingPin.current;
+          pendingPin.current = null;
+          if (modelClass && pin) {
+            if (next) void modelClass.onPick(next, pin.offeringId);
+            return;
+          }
           // A rendered runtime default is already the effective choice. Picking
           // that same catalog row must not materialize a redundant user override.
-          if (next && next !== value) void onCommit(next);
+          if (!next || next === value) return;
+          if (modelClass) {
+            void modelClass.onPick(next, modelClass.pinnedOfferingId);
+          } else {
+            void onCommit(next);
+          }
         }}
+        {...classSelection}
         inputModalities={[]}
         outputModalities={isDecisionKey ? ["decision"] : ["text"]}
         selectionPurpose={isDecisionKey ? "decision" : undefined}

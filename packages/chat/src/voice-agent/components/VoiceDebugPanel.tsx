@@ -15,7 +15,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { Bug, Check, ChevronDown, ChevronUp, Copy, Trash2 } from "lucide-react";
 import { toast } from "../../host/notify";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   voiceDebugClear,
   voiceDebugGetEntries,

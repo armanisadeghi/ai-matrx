@@ -76,6 +76,7 @@ export default function OfferingForm({
       <div className="grid grid-cols-2 gap-3">
         <FormField label="Model" required>
           <ModelListDropdown
+            modelOnly
             value={data.model_id}
             onValueChange={(modelId) =>
               onChange({ ...data, model_id: modelId })

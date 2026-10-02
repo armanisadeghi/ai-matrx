@@ -8,7 +8,7 @@ import { selectHasUserInput } from "../../../redux/execution-system/instance-use
 import { setPreExecutionSatisfied } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { destroyInstanceIfAllowed } from "../../../redux/execution-system/conversations/conversations.thunks";
 import { SmartAgentInput } from "../../inputs/smart-input/SmartAgentInput";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 // ─── Pre-execution compact card (portalled, no WindowPanel) ──────────────────
 

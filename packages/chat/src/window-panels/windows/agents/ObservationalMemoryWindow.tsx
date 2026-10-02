@@ -33,7 +33,7 @@ import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@host/lib/redux/hooks";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { ObservationalMemoryCore } from "../../../agents/components/observational-memory/ObservationalMemoryCore";
 import {
   selectAllObservationalMemoryConversations,

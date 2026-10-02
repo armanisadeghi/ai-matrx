@@ -26,7 +26,7 @@ import { setContextEntries } from "../../agents/redux/execution-system/instance-
 import { useAppDispatch } from "@host/lib/redux/hooks";
 import { Button } from "@ai-matrx/design-system";
 import { ErrorNotice } from "@host/components/errors/ErrorNotice";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import type { ContextObjectType } from "../../agents/types/agent-api-types";
 import type { CanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
 import { useComposerMode } from "../../agents/components/inputs/smart-input/composer/useComposerMode";

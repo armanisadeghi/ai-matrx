@@ -44,7 +44,7 @@ import {
 } from "@ai-matrx/agents";
 import { EmptyStats, StatRow, StatSection } from "./panels/shared";
 import { TYPE_COLORS } from "./ContextPoliciesTab";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 // =============================================================================
 // Selectors

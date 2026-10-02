@@ -82,6 +82,37 @@ export function patchModelId(
   }
 }
 
+/** Read `settings.offering_id` (the model's class pin) from pasted JSON. */
+export function readOfferingIdFromPaste(raw: string): string | null {
+  const obj = parseImportObject(raw);
+  const s = obj?.settings;
+  if (!s || typeof s !== "object" || Array.isArray(s)) return null;
+  const id = (s as Record<string, unknown>).offering_id;
+  return typeof id === "string" && id ? id : null;
+}
+
+/**
+ * Set or clear the class pin beside the model. `undefined` removes the key so
+ * the server routes to the preferred class.
+ */
+export function applyOfferingPin(
+  raw: string,
+  offeringId: string | undefined,
+): string | null {
+  const obj = parseImportObject(raw);
+  if (!obj) return null;
+  if (offeringId) {
+    patchSettingsField(obj, "offering_id", offeringId);
+  } else if (
+    obj.settings &&
+    typeof obj.settings === "object" &&
+    !Array.isArray(obj.settings)
+  ) {
+    delete (obj.settings as Record<string, unknown>).offering_id;
+  }
+  return stringifyImportObject(obj);
+}
+
 export function patchName(obj: Record<string, unknown>, name: string): void {
   obj.name = name;
 }

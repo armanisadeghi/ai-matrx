@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Activity, X, Copy } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 /**
  * Shape written by `utils/stream-profiler.ts` (`StreamProfiler.stopAndReport`)

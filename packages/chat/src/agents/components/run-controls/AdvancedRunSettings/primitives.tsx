@@ -19,7 +19,7 @@
 
 import React from 'react';
 import { Check } from 'lucide-react';
-import { cn } from '@host/lib/utils';
+import { cn } from '@ai-matrx/design-system';
 import { LEVELS, type Level } from './constants';
 
 // ── Accent colors per section ────────────────────────────────────────────────

@@ -206,6 +206,7 @@ export default function ModelUsageAudit({
             <span className="opacity-40">2 Review settings</span>
           </div>
           <ModelListDropdown
+            modelOnly
             value={replacementId}
             onValueChange={setReplacementId}
             inputModalities={[]}

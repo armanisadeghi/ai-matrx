@@ -37,7 +37,7 @@ import {
   History,
   AlertTriangle,
 } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../host/notify";
 import { AgentDiffViewer, buildAgentAdapterRegistry } from "./AgentDiffViewer";
 import { VersionHistoryTimeline } from "./VersionHistoryTimeline";

@@ -11,7 +11,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   FIND_HIGHLIGHT,
   FIND_HIGHLIGHT_CURRENT,

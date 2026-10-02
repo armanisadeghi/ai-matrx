@@ -17,7 +17,7 @@ import { selectStreamPhase } from "../../redux/execution-system/selectors/aggreg
 import { writeClipboard } from "@host/components/agent-copy/clipboard";
 import { toast } from "../../../host/notify";
 import { useDebugContext } from "@host/hooks/useDebugContext";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import {
   buildTranscriptIntegrityReport,
   formatTranscriptIntegrityReport,

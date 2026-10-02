@@ -21,7 +21,7 @@
 
 import { useEffect, useRef } from "react";
 import { Loader2, TriangleAlert, X } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@host/lib/redux/hooks";
 import MarkdownStream from "@host/components/MarkdownStream";
 import { AgentAssistantMessage } from "../messages-display/assistant/AgentAssistantMessage";

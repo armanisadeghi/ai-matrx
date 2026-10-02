@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { Flame } from "lucide-react";
-import { cn } from "@host/lib/utils";
+import { cn } from "@ai-matrx/design-system";
 
 interface AgentComingSoonContentProps {
   icon?: LucideIcon;
