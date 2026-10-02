@@ -11,6 +11,7 @@ import type { ComponentType } from "react";
 import * as S from "./specimens";
 import * as OC from "./one-control";
 import * as R2 from "./round2";
+import * as TS from "./toast-system";
 
 export interface DecisionOption {
   id: string;
@@ -59,6 +60,7 @@ export const DECISIONS: Decision[] = [
     options: [
       { id: "a", label: "Today, mixed", stat: "as shipped", Specimen: OC.OneToday },
       { id: "b", label: "One system at 32px", stat: "today's tap pill", Specimen: OC.OneAt32 },
+      { id: "d", label: "One system at 30px", stat: "in between", Specimen: OC.OneAt30 },
       { id: "c", label: "One system at 28px", stat: "recommended", Specimen: OC.OneAt28 },
     ],
   },
@@ -117,17 +119,17 @@ export const DECISIONS: Decision[] = [
   },
   {
     id: "D6b",
-    title: "Delete inside a row",
-    question: "How loud is a row's destructive action?",
-    status: "open",
-    round1: "Undecided",
-    mine: "Quiet red glyph",
+    title: "Delete",
+    question: "Three tiers, each with a rule for when",
+    status: "rule",
+    round1: "Trash icon mostly; big red when it matters",
+    mine: "Same — three tiers",
     wide: true,
     options: [
-      { id: "a", label: "Solid red button", Specimen: R2.DestructiveSolidRow },
-      { id: "b", label: "Quiet red glyph", stat: "recommended", Specimen: R2.DestructiveQuietRow },
+      { id: "a", label: "Quiet · Confirm · Danger zone", stat: "recommended", Specimen: R2.DeleteTiers },
     ],
   },
+
   {
     id: "D8",
     title: "Tabs",
@@ -185,14 +187,41 @@ export const DECISIONS: Decision[] = [
   },
   {
     id: "D13",
-    title: "Toasts",
-    question: "One toast API — which look?",
-    status: "open",
-    round1: "Legacy useToast",
-    mine: "lib/toast (1,550 files)",
+    title: "Toast",
+    question: "One component, four layers",
+    status: "new",
+    round1: "Neither look; copy-for-AI on every toast; layers",
+    mine: "Your four-layer spec",
+    wide: true,
     options: [
-      { id: "a", label: "lib/toast look", stat: "1,550 files", Specimen: S.ToastCanonical },
-      { id: "b", label: "Legacy look", stat: "your round 1", Specimen: S.ToastLegacy },
+      { id: "a", label: "Four-layer toast (prototype)", stat: "your spec", Specimen: TS.ToastSystemSpecimen },
+    ],
+  },
+
+  {
+    id: "D0f",
+    title: "Inner padding",
+    question: "Edge to first glyph, the same everywhere?",
+    status: "new",
+    round1: "Buttons and fields look padded wider than tap",
+    mine: "Matched: icon 6px, text 10px",
+    wide: true,
+    options: [
+      { id: "a", label: "Today: 12–14px", Specimen: OC.PadToday },
+      { id: "b", label: "Matched to the tap pill", stat: "recommended", Specimen: OC.PadMatched },
+      { id: "c", label: "Tight: 8px", Specimen: OC.PadTight },
+    ],
+  },
+  {
+    id: "D0g",
+    title: "Selected inside a group",
+    question: "One outline, even inset on every side",
+    status: "new",
+    round1: "Double border at the ends",
+    mine: "Fixed: even inset, fill not ring",
+    wide: true,
+    options: [
+      { id: "a", label: "Tap group + segmented", stat: "after the fix", Specimen: R2.SelectedInGroup },
     ],
   },
   {

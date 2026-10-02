@@ -48,7 +48,7 @@ import { cn } from "@/lib/utils";
 /* ------------------------------------------------------------------ */
 
 const ONE_CONTROL_CSS = `
-.uc { --uc-label: 0.8125rem; --uc-field-radius: 9999px; }
+.uc { --uc-label: 0.8125rem; --uc-field-radius: 9999px; --uc-pad-text: 0.875rem; --uc-pad-icon: 0.75rem; --uc-pad-field: 0.75rem; }
 .uc-row { display: flex; flex-wrap: wrap; align-items: center; row-gap: var(--matrx-tap-gap); }
 .uc-btn, .uc-field, .uc-select, .uc-seg {
   box-sizing: border-box; height: var(--matrx-tap-wide-size);
@@ -57,34 +57,41 @@ const ONE_CONTROL_CSS = `
 }
 .uc-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem;
-  padding-inline: 0.875rem; border-radius: 9999px; white-space: nowrap; cursor: pointer;
+  padding-inline: var(--uc-pad-text); border-radius: 9999px; white-space: nowrap; cursor: pointer;
   color: hsl(var(--foreground));
   transition: background-color 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.uc-btn:has(svg) { padding-inline: 0.75rem 0.875rem; }
+.uc-btn:has(svg) { padding-inline: var(--uc-pad-icon) var(--uc-pad-text); }
 .uc-btn svg { width: var(--matrx-tap-icon-size); height: var(--matrx-tap-icon-size); flex-shrink: 0; }
 .uc-btn:active { transform: scale(0.97); }
 .uc-btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
 .uc-btn-primary:hover { background: hsl(var(--primary) / 0.9); }
 .uc-btn-quiet { background: transparent; }
+.uc-btn-danger { background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
+.uc-btn-danger:hover { background: hsl(var(--destructive) / 0.9); }
 .uc-btn-quiet:hover { background: hsl(var(--accent)); }
 .uc-field, .uc-select {
-  display: inline-flex; align-items: center; gap: 0.375rem; padding-inline: 0.75rem;
+  display: inline-flex; align-items: center; gap: 0.375rem; padding-inline: var(--uc-pad-field);
   border: 1px solid hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground));
   border-radius: var(--uc-field-radius); font-weight: 400; min-width: 0;
 }
 .uc-field input { all: unset; flex: 1 1 auto; min-width: 0; font-size: inherit; }
 .uc-field input::placeholder { color: hsl(var(--muted-foreground)); }
+.uc-field:has(svg) { padding-inline-start: var(--uc-pad-icon); }
 .uc-field:focus-within, .uc-select:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 1px; }
 .uc-field svg, .uc-select svg { width: var(--matrx-tap-icon-size); height: var(--matrx-tap-icon-size); color: hsl(var(--muted-foreground)); flex-shrink: 0; }
 .uc-select { justify-content: space-between; cursor: pointer; }
-.uc-seg { display: inline-flex; align-items: center; padding: 2px; border-radius: 9999px; }
+/* The track's thin glass border (1.5px) sits INSIDE its height, so the thumb is
+   inset from the OUTER edge equally on both axes (2px): pad = 2px - border. A
+   thumb with its own ring inside a bordered track reads as two outlines at the
+   rounded ends — the selected state is a fill and a hairline shadow, no ring. */
+.uc-seg { display: inline-flex; align-items: center; gap: 2px; padding-inline: calc(2px - var(--matrx-glass-border-width-thin, 1.5px)); border-radius: 9999px; }
 .uc-seg-item {
   box-sizing: border-box; height: calc(var(--matrx-tap-wide-size) - 4px); padding-inline: 0.625rem;
   border-radius: 9999px; display: inline-flex; align-items: center; cursor: pointer;
   color: hsl(var(--muted-foreground)); font-size: var(--uc-label); font-weight: 500;
 }
-.uc-seg-item[data-on] { background: hsl(var(--primary) / 0.14); box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.28); color: hsl(var(--foreground)); }
+.uc-seg-item[data-on] { background: hsl(var(--background)); box-shadow: 0 1px 2px hsl(var(--foreground) / 0.12); color: hsl(var(--foreground)); }
 .uc-meta { font-size: 0.6875rem; color: hsl(var(--muted-foreground)); }
 .uc-badge { display: inline-flex; align-items: center; height: 1.125rem; padding-inline: 0.375rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 500; border: 1px solid hsl(var(--border)); color: hsl(var(--muted-foreground)); }
 @media (pointer: coarse) { .uc-field input { font-size: 16px; } }
@@ -99,23 +106,42 @@ function OneControlStyles() {
 /* sanctioned density scope at a 34px control size.                     */
 /* ------------------------------------------------------------------ */
 
+export type PadMode = "today" | "matched" | "tight";
+
 export interface ScaleProps {
-  scale: 28 | 32;
+  scale: 28 | 30 | 32;
+  pad?: PadMode;
   icon?: 12 | 14 | 16;
   label?: 12 | 13;
   fieldRadius?: "capsule" | "rounded";
   children: ReactNode;
 }
 
-export function Scale({ scale, icon = 16, label = 13, fieldRadius = "capsule", children }: ScaleProps) {
+/** Inner padding. "matched": the space from the edge to the first glyph equals
+ *  the space above and below it — a 16px icon in a 28px control sits 6px in on
+ *  every side, the same as a round tap pill; text gets the same optical inset
+ *  measured to its cap height (≈10px). */
+const PAD: Record<PadMode, { text: string; icon: string; field: string }> = {
+  today: { text: "0.875rem", icon: "0.75rem", field: "0.75rem" },
+  matched: { text: "0.625rem", icon: "calc((var(--matrx-tap-wide-size) - var(--matrx-tap-icon-size)) / 2)", field: "0.625rem" },
+  tight: { text: "0.5rem", icon: "0.375rem", field: "0.5rem" },
+};
+
+export function Scale({ scale, icon = 16, label = 13, fieldRadius = "capsule", pad = "today", children }: ScaleProps) {
   const vars = {
     "--uc-label": label === 13 ? "0.8125rem" : "0.75rem",
     "--uc-field-radius": fieldRadius === "capsule" ? "9999px" : "0.5rem",
+    "--uc-pad-text": PAD[pad].text,
+    "--uc-pad-icon": PAD[pad].icon,
+    "--uc-pad-field": PAD[pad].field,
+    ...(scale === 30
+      ? { "--matrx-table-control-size": "2.25rem", "--matrx-table-action-icon-size": icon === 12 ? "0.75rem" : icon === 14 ? "0.875rem" : "1rem" }
+      : {}),
     ...(scale === 28
       ? { "--matrx-table-control-size": "2.125rem", "--matrx-table-action-icon-size": icon === 12 ? "0.75rem" : icon === 14 ? "0.875rem" : "1rem" }
       : {}),
   } as CSSProperties;
-  const scoped = scale === 28 ? { "data-matrx-table": "", "data-matrx-table-density": "" } : {};
+  const scoped = scale !== 32 ? { "data-matrx-table": "", "data-matrx-table-density": "" } : {};
   return (
     <div className="uc" style={vars} {...scoped}>
       <OneControlStyles />
@@ -251,6 +277,11 @@ export function OneToday() {
 
 export const OneAt32 = () => (
   <Scale scale={32}>
+    <UnifiedToolbar />
+  </Scale>
+);
+export const OneAt30 = () => (
+  <Scale scale={30}>
     <UnifiedToolbar />
   </Scale>
 );
@@ -390,3 +421,49 @@ function MoreGlyph() {
     </svg>
   );
 }
+
+/* Inner padding options at 28px — the row without a labelled tap pill, so
+   every control's inset is judged against the round tap buttons (6px). */
+function PadToolbar() {
+  const [scope, setScope] = useState("all");
+  return (
+    <MeasuredBare>
+      <button type="button" className="uc-btn uc-btn-primary">
+        <PlusGlyph /> New
+      </button>
+      <button type="button" className="uc-btn matrx-glass-thin-border">Export</button>
+      <label className="uc-field" style={{ width: "11rem" }}>
+        <Search aria-hidden />
+        <input placeholder="Search" aria-label="Search" />
+      </label>
+      <button type="button" className="uc-select" style={{ width: "7rem" }} aria-label="Status">
+        Open <ChevronDown aria-hidden />
+      </button>
+      <div className="uc-seg matrx-glass-thin-border" role="group" aria-label="Scope">
+        {["all", "mine"].map((v) => (
+          <button key={v} type="button" className="uc-seg-item" data-on={scope === v ? "" : undefined} onClick={() => setScope(v)}>
+            {v === "all" ? "All" : "Mine"}
+          </button>
+        ))}
+      </div>
+      <SettingsTapButton variant="transparent" ariaLabel="Settings" />
+      <MoreHorizontalTapButton variant="glass" ariaLabel="More" />
+    </MeasuredBare>
+  );
+}
+
+export const PadToday = () => (
+  <Scale scale={28} pad="today">
+    <PadToolbar />
+  </Scale>
+);
+export const PadMatched = () => (
+  <Scale scale={28} pad="matched">
+    <PadToolbar />
+  </Scale>
+);
+export const PadTight = () => (
+  <Scale scale={28} pad="tight">
+    <PadToolbar />
+  </Scale>
+);

@@ -15,7 +15,10 @@
 import { useState, type ReactNode } from "react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
+  LayoutGridTapButton,
+  ListTapButton,
   MoreHorizontalTapButton,
   PencilTapButton,
   TrashTapButton,
@@ -463,3 +466,80 @@ export const EmptyCombinedSpecimen = () => (
   </Scale>
 );
 
+
+/* ------------------------------ Delete tiers ----------------------- */
+/* One system, three tiers — each with a one-line rule for when to use it.  */
+
+function TierLabel({ n, title, rule }: { n: number; title: string; rule: string }) {
+  return (
+    <div className="flex items-baseline gap-2 px-3 pt-2 text-xs">
+      <span className="font-mono text-muted-foreground">{n}</span>
+      <span className="font-semibold text-foreground">{title}</span>
+      <span className="truncate text-muted-foreground">{rule}</span>
+    </div>
+  );
+}
+
+export function DeleteTiers() {
+  return (
+    <Scale scale={28}>
+      <Frame width={560}>
+        <TierLabel n={1} title="Quiet" rule="Default. Archived, undo in the toast" />
+        <div className="flex min-h-9 items-center gap-1 pl-3 pr-1">
+          <div className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium">Quarterly client report</div>
+          <TrashTapButton variant="transparent" ariaLabel="Delete" iconColor="text-destructive" />
+        </div>
+        <div className="border-t border-border" />
+        <TierLabel n={2} title="Confirm" rule="Permanent or affects others. Names the cost" />
+        <div className="mx-3 mb-2 mt-1 flex flex-col gap-2 rounded-lg border border-border bg-card p-3">
+          <div className="text-[0.8125rem] font-semibold">Delete “Intake form — dental”?</div>
+          <div className="text-xs text-muted-foreground">Removes 214 responses for 3 people. This can't be undone.</div>
+          <div className="uc-row justify-end">
+            <button type="button" className="uc-btn uc-btn-quiet">Cancel</button>
+            <button type="button" className="uc-btn uc-btn-danger">
+              Delete form
+            </button>
+          </div>
+        </div>
+        <div className="border-t border-border" />
+        <TierLabel n={3} title="Danger zone" rule="Irreversible, account-level. Settings only" />
+        <div className="mx-3 mb-3 mt-1 flex items-center gap-3 rounded-lg border border-destructive/40 p-3">
+          <div className="min-w-0 flex-1">
+            <div className="text-[0.8125rem] font-semibold">Delete this organization</div>
+            <div className="text-xs text-muted-foreground">Every project, agent and file, for everyone.</div>
+          </div>
+          <button type="button" className="uc-btn uc-btn-danger">
+            <Trash2 aria-hidden /> Delete
+          </button>
+        </div>
+      </Frame>
+    </Scale>
+  );
+}
+
+/* ------------------------------ Selected inside a group ------------- */
+/* The real tap group with its first toggle pressed, beside the prototype
+   segmented control — the selected thumb must sit evenly inside the track on
+   every side, with one outline, not two. */
+
+export function SelectedInGroup() {
+  const [view, setView] = useState<"list" | "grid">("list");
+  const [scope, setScope] = useState("all");
+  return (
+    <Scale scale={28}>
+      <MeasuredBare>
+        <TapTargetButtonGroup>
+          <ListTapButton variant="group" ariaLabel="List view" pressed={view === "list"} onClick={() => setView("list")} />
+          <LayoutGridTapButton variant="group" ariaLabel="Grid view" pressed={view === "grid"} onClick={() => setView("grid")} />
+        </TapTargetButtonGroup>
+        <div className="uc-seg matrx-glass-thin-border" role="group" aria-label="Scope">
+          {["all", "mine", "shared"].map((v) => (
+            <button key={v} type="button" className="uc-seg-item" data-on={scope === v ? "" : undefined} onClick={() => setScope(v)}>
+              {v === "all" ? "All" : v === "mine" ? "Mine" : "Shared"}
+            </button>
+          ))}
+        </div>
+      </MeasuredBare>
+    </Scale>
+  );
+}
