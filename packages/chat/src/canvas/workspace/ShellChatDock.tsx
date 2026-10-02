@@ -24,7 +24,6 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { PanelLeftClose } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -53,9 +52,6 @@ import {
 
 const COMPACT_QUERY = "(max-width: 1023px)";
 const SURFACE_KEY = "canvas-workspace:shell";
-
-const ICON_BUTTON =
-  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
 
 /** The person's remembered choice for one family, read from the cookie in the browser. */
 function readFamilyChoice(family: string): boolean | null {
@@ -244,20 +240,13 @@ export function ShellChatDock({ initialOpen, initialWidth, initialMode = null, s
           outerClassName="shell-chat-dock max-lg:hidden"
           className="bg-card"
         >
-          <div className="flex h-11 shrink-0 items-center gap-1 px-2">
+          {/* The header's chat button sits fixed over this row's left edge
+              (ShellChatToggle) — it opens AND closes the chat from one place. */}
+          <div className="shell-chat-dock-header flex h-11 shrink-0 items-center gap-1 pr-2">
             <div className="min-w-0 flex-1">
               <ChatPanelTitleMenu conversationId={conversationId} onNewChat={chat.startNew} />
             </div>
             <ComposerModeSwitch size="panel" initialMode={initialMode} />
-            <button
-              type="button"
-              aria-label="Hide chat"
-              title="Hide chat (Ctrl/Cmd + \)"
-              onClick={() => setOpen(false)}
-              className={`${ICON_BUTTON} ml-1`}
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
           </div>
           <div className="flex min-h-0 flex-1 flex-col">
             {chatOnScreen || conversationId ? column : null}

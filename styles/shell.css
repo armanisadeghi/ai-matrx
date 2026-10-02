@@ -2837,14 +2837,56 @@ html[data-board-embed] .shell-main {
   display: none !important;
 }
 
-/* The header's chat button: present only where the shell chat can open. */
+/* THE CHAT BUTTON NEVER MOVES (owner, 2026-10-02): one button, fixed at the
+   chat column's left edge on the header's line. Closed, it is the first thing
+   in the header; open, the same pixel sits inside the chat's own header row.
+   Nothing reflows around it — the header and the dock's top row each reserve
+   its room. It follows only the sidebar's edge, which it must. The offset
+   lands the VISIBLE circle on the shell gutter (no padding around the tap
+   button: the tap-target guard). */
+.shell-root {
+  --shell-chat-toggle-x: calc(var(--shell-edge-gutter) - var(--matrx-tap-gap, 0px) / 2);
+  --shell-chat-toggle-room: calc(var(--shell-chat-toggle-x) + var(--matrx-tap-box, 2.375rem));
+}
+
 .shell-chat-toggle {
   display: none;
   flex-shrink: 0;
+  pointer-events: auto;
 }
 
 .shell-root[data-shell-chat-available] .shell-chat-toggle {
   display: flex;
+}
+
+@media (min-width: 1024px) {
+  .shell-root[data-shell-chat-available] .shell-chat-toggle {
+    position: fixed;
+    top: 0;
+    left: calc(var(--shell-sidebar-w) + var(--shell-chat-toggle-x));
+    z-index: 31;
+    height: 2.75rem;
+    align-items: center;
+    transition: left 600ms var(--shell-ease-smooth);
+  }
+
+  .shell-root > #shell-sidebar-toggle:checked ~ * .shell-chat-toggle {
+    left: calc(var(--shell-sidebar-w-expanded) + var(--shell-chat-toggle-x));
+  }
+
+  .shell-root[data-settings-route] .shell-chat-toggle,
+  .shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ * .shell-chat-toggle {
+    left: calc(15rem + var(--shell-chat-toggle-x));
+  }
+
+  .shell-root[data-shell-chat-available] .shell-header {
+    padding-left: var(--shell-chat-toggle-room);
+  }
+}
+
+/* The dock's top row starts after the button that sits over it. */
+.shell-chat-dock-header {
+  padding-left: var(--shell-chat-toggle-room);
 }
 
 /* The phone's left control gets the same gutter, so both ends match there
