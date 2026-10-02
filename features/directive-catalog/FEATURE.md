@@ -109,6 +109,15 @@ alias map. Consequences here:
 
 ## Change Log
 
+- 2026-10-02 — G3 review: the header badge says where calls LAND (`lib/api/server-identity.ts`
+  `describeServerTarget` — "Clone" on the clone preview, never the slot name "production");
+  Create/Update/Delete ask the SAME confirm the action cards use (`matrxDirectiveHost.ask`) before
+  anything runs, and Delete is a destructive button; the result line reads the receipts
+  (`executeResult.ts` — a deduped repeat says "Already applied — nothing new was written.", no
+  duplicate toast); the JSON view says "The JSON breaks at line 3, column 3." (kit
+  `describeJsonParseError`). Guards: `__tests__/executeResult.test.ts`,
+  `lib/api/__tests__/server-identity.test.ts`.
+
 - 2026-10-02 — Builder usability pass (lane E): common-types-first noun picker on the shared
   knob, no default noun, form before envelope for writes, update/delete target leads the form
   and is named by type (`schemaFields.ts` ranks `id` first), receipts offer "Update it" /

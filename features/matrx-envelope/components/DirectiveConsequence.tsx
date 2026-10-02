@@ -29,9 +29,11 @@ import {
   type DirectiveNounCatalog,
 } from "@ai-matrx/content-ir";
 import {
+  DirectiveChangeList,
   itemChanges,
   itemRecordId,
   recordFallbackName,
+  useRecordValues,
   type DirectiveAskRequest,
   type DirectiveRecordProps,
   type DirectiveRecordRef,
@@ -45,6 +47,10 @@ import {
   referenceChipLabel,
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
+import {
+  readDirectiveRecord,
+  useDirectiveRecordTrashed,
+} from "@/features/matrx-envelope/directiveRecordRow";
 
 /** The live name of `{noun, id}`, or `fallback` until/unless it resolves. */
 export function useDirectiveRecordName(noun: string, id: string, fallback: string) {
@@ -69,8 +75,14 @@ export function DirectiveRecordName({
 }
 
 /** The `renderRecord` seam: a row's target, or a record the apply wrote. */
-export function DirectiveRecordLink({ noun, id, fallback, context, trashed }: DirectiveRecordProps) {
+export function DirectiveRecordLink({ noun, id, fallback, context, trashed: aboutToBeTrashed }: DirectiveRecordProps) {
   const { name, loading } = useDirectiveRecordName(noun, id, fallback);
+  // The package says "in trash" only for the delete it just ran. A record that
+  // went to the trash ANY other way (a Delete card further down the note, the
+  // Tasks page) is read live, so a Create card never offers a door to a record
+  // that is gone (reviewer, 2026-10-02).
+  const liveTrashed = useDirectiveRecordTrashed(noun, id);
+  const trashed = aboutToBeTrashed === true || liveTrashed === true;
   // The same door ladder every reference chip climbs (`referenceDoor`).
   const door = useReferenceDoor(noun, { id }, name);
 
@@ -158,7 +170,15 @@ function namedItems(request: DirectiveAskRequest, nouns: DirectiveNounCatalog): 
   });
 }
 
-function NameList({ named, withChanges }: { named: NamedItem[]; withChanges: boolean }) {
+function NameList({
+  named,
+  withChanges,
+  noun,
+}: {
+  named: NamedItem[];
+  withChanges: boolean;
+  noun: string;
+}) {
   const shown = named.slice(0, DIALOG_NAMES_MAX);
   const more = named.length - shown.length;
   return (
@@ -166,7 +186,7 @@ function NameList({ named, withChanges }: { named: NamedItem[]; withChanges: boo
       {shown.map((entry) => (
         <li key={entry.key} className="min-w-0">
           <div className="truncate">{entry.name}</div>
-          {withChanges ? <ChangeList item={entry.item} /> : null}
+          {withChanges ? <ChangeList noun={noun} item={entry.item} /> : null}
         </li>
       ))}
       {more > 0 ? <li className="text-muted-foreground">and {more} more</li> : null}
@@ -174,23 +194,20 @@ function NameList({ named, withChanges }: { named: NamedItem[]; withChanges: boo
   );
 }
 
-function ChangeList({ item }: { item: Record<string, unknown> }) {
-  const changes = itemChanges(item);
-  if (changes.length === 0) {
-    return <p className="text-xs text-muted-foreground">Sets no fields — nothing would change.</p>;
-  }
+/**
+ * Every field an update sets, as "old → new" — the package's ONE change list
+ * (`DirectiveChangeList`, the same one the card row draws), fed the record as
+ * it is now (`readDirectiveRecord`). Until the record is read it lists the new
+ * values alone; it never blocks the question.
+ */
+function ChangeList({ noun, item }: { noun: string; item: Record<string, unknown> }) {
+  const id = itemRecordId(item);
+  const current = useRecordValues(readDirectiveRecord, id ? { noun, id } : null);
   return (
-    <ul className="mx-auto mt-1 w-fit max-w-full space-y-0.5 text-left sm:mx-0 sm:pl-3">
-      {changes.map((change) => (
-        <li key={change.key} className="flex min-w-0 gap-1.5 text-xs" title={change.full}>
-          <span className="shrink-0 text-muted-foreground">{change.label}</span>
-          <span aria-hidden className="shrink-0 text-muted-foreground">→</span>
-          <span className={cn("min-w-0 truncate", change.clears && "italic text-muted-foreground")}>
-            {change.value}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <DirectiveChangeList
+      changes={itemChanges(item, current.values)}
+      className="mx-auto mt-1 w-fit max-w-full text-left sm:mx-0 sm:pl-3"
+    />
   );
 }
 
@@ -206,6 +223,12 @@ function ChangeList({ item }: { item: Record<string, unknown> }) {
 export function directiveConsequenceDialog(
   request: DirectiveAskRequest,
   nouns: DirectiveNounCatalog,
+  /**
+   * The organization the write lands in — the one every directive write is sent
+   * with (`authedDirectiveHeaders`, `personWrite`). Named, never "your
+   * workspace" (reviewer, 2026-10-02). Unknown → "your organization".
+   */
+  organizationName?: string | null,
 ): ConfirmOptions {
   const { directive, items, nounLabel } = request;
   const noun = nounLabel.toLowerCase();
@@ -234,7 +257,7 @@ export function directiveConsequenceDialog(
               {again ? `${ranBefore} ` : null}Moves these {many} to the trash — the records
               themselves, not just this text.
             </p>
-            <NameList named={named} withChanges={false} />
+            <NameList named={named} withChanges={false} noun={directive.noun} />
           </>
         ),
         confirmLabel: again ? "Delete again" : one ? "Delete" : `Delete ${named.length}`,
@@ -252,7 +275,7 @@ export function directiveConsequenceDialog(
                 ? `${ranBefore} Writes these fields again, as you.`
                 : `Overwrites ${one ? "these fields" : "the fields below"} as you. The old values are not kept.`}
             </p>
-            {one ? <ChangeList item={one.item} /> : <NameList named={named} withChanges />}
+            {one ? <ChangeList noun={directive.noun} item={one.item} /> : <NameList named={named} withChanges noun={directive.noun} />}
           </>
         ),
         confirmLabel: again ? "Update again" : "Update",
@@ -271,9 +294,9 @@ export function directiveConsequenceDialog(
             <p>
               {again
                 ? `${ranBefore} Running it again adds a second copy${one ? "" : " of each"}.`
-                : `Adds ${one ? `this ${noun}` : `these ${many}`} to your workspace, as you — not just to this text.`}
+                : `Adds ${one ? `this ${noun}` : `these ${many}`} to ${organizationName?.trim() || "your organization"}, as you — not just to this text.`}
             </p>
-            {one ? null : <NameList named={named} withChanges={false} />}
+            {one ? null : <NameList named={named} withChanges={false} noun={directive.noun} />}
           </>
         ),
         confirmLabel: again ? "Create another" : "Create",
@@ -290,7 +313,7 @@ export function directiveConsequenceDialog(
                 ? `${ranBefore} Running it again repeats it, as you.`
                 : "Runs now, as you, and changes data outside this text. Continue only if you trust its source."}
             </p>
-            <NameList named={named} withChanges={false} />
+            <NameList named={named} withChanges={false} noun={directive.noun} />
           </>
         ),
         confirmLabel: again ? "Run again" : "Run it",

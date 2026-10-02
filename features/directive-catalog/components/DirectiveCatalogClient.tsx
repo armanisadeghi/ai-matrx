@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
+import { describeServerTarget } from "@/lib/api/server-identity";
 import { useDirectiveCatalog } from "@/features/directive-catalog/hooks/useDirectiveCatalog";
 import { DirectiveCatalogGrid } from "@/features/directive-catalog/components/DirectiveCatalogGrid";
 import {
@@ -55,6 +56,11 @@ export function DirectiveCatalogClient() {
   const activeServer = useAppSelector(selectActiveServer);
   const { catalog, isLoading, error, baseUrl, lastUpdatedAt, refresh } =
     useDirectiveCatalog(POLL_MS);
+  const target = describeServerTarget({
+    activeServer,
+    baseUrl,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  });
   const canvas = useOptionalCanvas();
   const inspect = (selection: DirectiveShapeSelection) => {
     openCanvasItem(canvas, directiveShapeOpenInput(selection));
@@ -107,12 +113,16 @@ export function DirectiveCatalogClient() {
         <div className="ml-auto flex shrink-0 items-center gap-2 text-xs text-muted-foreground sm:gap-3">
           <span
             className="inline-flex items-center gap-1"
-            aria-label={`Active server: ${activeServer}${baseUrl ? `, ${baseUrl}` : ", no base URL"}`}
+            aria-label={`Server: ${target.label}${target.host ? `, ${target.host}` : ", no base URL"}`}
+            data-server-kind={target.kind}
           >
             <Server className="h-3.5 w-3.5" />
-            <span className="font-medium text-foreground">{activeServer}</span>
-            {baseUrl ? (
-              <span className="hidden font-mono xl:inline">{baseUrl}</span>
+            {/* Where the calls LAND, never the selected slot's name: in clone
+                mode the "production" slot points at the clone-wired local
+                server (reviewer, 2026-10-02). */}
+            <span className="font-medium text-foreground">{target.label}</span>
+            {target.host ? (
+              <span className="hidden font-mono xl:inline">{target.host}</span>
             ) : (
               // read-gate-exempt: server-config label (the active server has no base URL configured); not a read's answer
               <span className="hidden text-amber-600 dark:text-amber-400 sm:inline">

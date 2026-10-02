@@ -38,7 +38,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { buildDirectiveSlug, buildKindDirective } from "@ai-matrx/content-ir";
+import {
+  buildDirectiveSlug,
+  buildKindDirective,
+  nounLabel as directiveNounLabel,
+  tryDecodeDirectiveContent,
+} from "@ai-matrx/content-ir";
+import { describeJsonParseError } from "@ai-matrx/kit/json-format";
+import {
+  matrxDirectiveHost,
+  matrxDirectiveNouns,
+} from "@/features/matrx-envelope/directiveHost";
+import { executeResultHeadline } from "@/features/directive-catalog/executeResult";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
 import { StateBadge } from "@/features/directive-catalog/components/StateCell";
@@ -288,10 +299,9 @@ export function DirectiveBuilderPanel({
       }
       return { value: v as Record<string, unknown>, error: null };
     } catch (e) {
-      return {
-        value: {},
-        error: e instanceof Error ? e.message : "Invalid JSON",
-      };
+      // A line and a column in one sentence — never the engine's
+      // "at position 42" (reviewer, 2026-10-02).
+      return { value: {}, error: describeJsonParseError(text, e).sentence };
     }
   }, [isReference, writePayload]);
 
@@ -463,6 +473,20 @@ export function DirectiveBuilderPanel({
 
   const handleExecute = async () => {
     if (!canExecute || !nounName) return;
+    const slug = `directive_v${catalog.directive_version}_${verb}_${nounName}`;
+    const items = [effectivePayload];
+    // A WRITE STATES ITS CONSEQUENCE FIRST (reviewer, 2026-10-02: Create and
+    // Delete ran on one click). The SAME question an action card asks — the
+    // directive host's `ask` (`directiveConsequenceDialog`) — never a second one.
+    const directive = tryDecodeDirectiveContent({ __kind: slug, items });
+    if (directive && matrxDirectiveHost.ask) {
+      const ok = await matrxDirectiveHost.ask({
+        directive,
+        items: directive.items,
+        nounLabel: directiveNounLabel(directive.noun, matrxDirectiveNouns),
+      });
+      if (!ok) return;
+    }
     setExecuting(true);
     setExecError(null);
     setResult(null);
@@ -473,13 +497,14 @@ export function DirectiveBuilderPanel({
       const chosen = payloadValues.id?.recordTitle ?? null;
       setSentTitle(typeof sent === "string" && sent.trim() ? sent : chosen);
       const res = await executeDirective(baseUrl, {
-        directive: `directive_v${catalog.directive_version}_${verb}_${nounName}`,
-        items: [effectivePayload],
+        directive: slug,
+        items,
         force,
       });
+      // The result panel below says what happened, in the receipts' own
+      // terms ("Already applied — nothing new was written."); a toast
+      // repeating it was the second, wrong, copy ("Applied 1 item(s)").
       setResult(res);
-      if (res.failed === 0) toast.success(`Applied ${res.applied} item(s)`);
-      else toast.error(`${res.failed} item(s) failed`);
     } catch (e) {
       // A server refusal carries a sentence written for a person
       // (`user_message`) and a technical `detail`; show the first, keep the
@@ -854,8 +879,11 @@ export function DirectiveBuilderPanel({
                 <Button
                   type="button"
                   size="sm"
+                  // A delete looks like one before the click, not only in
+                  // its confirm (reviewer, 2026-10-02: it was blue).
+                  variant={verb === "delete" ? "destructive" : "default"}
                   disabled={!canExecute}
-                  onClick={handleExecute}
+                  onClick={() => void handleExecute()}
                   className="h-11 w-fit gap-1 lg:h-8"
                 >
                   {executing ? (
@@ -886,8 +914,11 @@ export function DirectiveBuilderPanel({
 
           {result && (
             <div className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
-              <span className="text-xs font-medium text-muted-foreground">
-                Result — {result.applied} applied, {result.failed} failed
+              <span
+                className="text-xs font-medium text-muted-foreground"
+                data-execute-headline=""
+              >
+                {executeResultHeadline(result)}
               </span>
               {result.receipts.map((r, i) => (
                 <div

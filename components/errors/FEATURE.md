@@ -52,6 +52,13 @@ Arman: an error must be copyable for AI with everything needed to act on it. One
 
 ## Change Log
 
+- 2026-10-02 — **The inline menu never adds space around its tap button.** Its wrapper carried
+  `ml-1` (and `pl-1` when truncating), which the design-system dev guard paints as "TAP BUTTON
+  MISUSE — adds 4px around a tap button" beside every inline error (seen on the directive
+  builder's failed result). The breathing room is now the slot's own width
+  (`w-[calc(1lh+0.25rem)]`, glyph centred) — same line footprint. Guard:
+  `__tests__/menu-renders-anywhere.test.tsx` ("adds no margin or padding…", red before).
+
 - 2026-09-28 — **An error toast can be read and its Alchemy menu reached.**
   Error and warning toasts last at least `MIN_ERROR_TOAST_MS` (5 s,
   `lib/toast.ts`). A toast someone holds — pointer over the toaster, focus

@@ -13,6 +13,8 @@
 import type { ChatRootState } from "../../store/root-state";
 
 jest.mock("@ai-matrx/agents/matrx", () => ({
+  // The host's `buildRequestBody` runs on the shared request core (P9b).
+  ...jest.requireActual("@ai-matrx/agents/matrx"),
   startAgentRun: jest.fn(),
 }));
 jest.mock("../../host/server/matrx-transport", () => ({

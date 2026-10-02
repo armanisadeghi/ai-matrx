@@ -1,6 +1,7 @@
 // lib/api/stream-parser.ts
 // Reusable NDJSON stream parser for the Python FastAPI backend.
-// Single implementation — all consumers use this instead of inline parsing.
+// The parser is the shared core in `@ai-matrx/agents/matrx`; this module wires
+// the app diagnostics and adds the typed callback consumer.
 
 import type {
   TypedStreamEvent,
@@ -39,8 +40,7 @@ import {
   isRecordReservedEvent,
   isRecordUpdateEvent,
 } from "./types";
-import { readMatrxNdjsonStream } from "@ai-matrx/agents/stream/ndjson";
-import { BackendApiError, StreamTransportError } from "./errors";
+import { parseMatrxNdjsonResponse } from "@ai-matrx/agents/matrx";
 import {
   captureStreamEvent,
   captureStreamTransportError,
@@ -51,7 +51,11 @@ import {
 // ============================================================================
 
 /**
- * Parse an NDJSON streaming response into typed events.
+ * Parse an NDJSON streaming response into typed events — the shared core's
+ * `parseMatrxNdjsonResponse` (`@ai-matrx/agents/matrx`, P9b), wired to this
+ * app's diagnostics: every event feeds the Error Inspector's stream capture,
+ * and a broken body (a resumable `StreamTransportError`, never a failed run)
+ * is captured once before it is thrown.
  *
  * Returns the `X-Request-ID` header value (if present) alongside the generator,
  * so callers can use it for cancellation.
@@ -73,80 +77,25 @@ export function parseNdjsonStream(
   requestId: string | null;
   conversationId: string | null;
 } {
-  const requestId = response.headers.get("X-Request-ID");
-  const conversationId = response.headers.get("X-Conversation-ID");
+  const parsed = parseMatrxNdjsonResponse(response, signal, {
+    onMalformedLine: ({ line, error }) => {
+      console.warn(
+        "[stream-parser] Failed to parse NDJSON line:",
+        line.slice(0, 500),
+        error,
+      );
+    },
+    onUnknownEnvelope: (value) => {
+      console.warn("[stream-parser] Unknown NDJSON event envelope:", value);
+    },
+    onEvent: (event, ids) => captureStreamEvent(event as TypedStreamEvent, ids),
+    onTransportError: (error, ids) => captureStreamTransportError(error, ids),
+  });
   return {
-    events: _parseNdjsonStream(response, signal, { requestId, conversationId }),
-    requestId,
-    conversationId,
+    events: parsed.events as AsyncGenerator<TypedStreamEvent, void, undefined>,
+    requestId: parsed.requestId,
+    conversationId: parsed.conversationId,
   };
-}
-
-async function* _parseNdjsonStream(
-  response: Response,
-  signal?: AbortSignal,
-  ctx?: { requestId: string | null; conversationId: string | null },
-): AsyncGenerator<TypedStreamEvent, void, undefined> {
-  if (!response.body) {
-    throw new BackendApiError({
-      code: "internal_error",
-      detail: "Response has no body",
-      userMessage: "No response received from server",
-    });
-  }
-
-  try {
-    for await (const envelope of readMatrxNdjsonStream(response.body, {
-      ...(signal ? { signal } : {}),
-      onMalformedLine: ({ line, error }) => {
-        console.warn(
-          "[stream-parser] Failed to parse NDJSON line:",
-          line.slice(0, 500),
-          error,
-        );
-      },
-      onUnknownEnvelope: (value) => {
-        console.warn("[stream-parser] Unknown NDJSON event envelope:", value);
-      },
-    })) {
-      const item = envelope as TypedStreamEvent;
-      // Universal stream-error capture: every consumer (agent processStream,
-      // consumeStream, podcast, research) pulls events through here, so this
-      // single call feeds the Inspector with every server-emitted typed error
-      // / warning / failure. Non-error events are ignored inside the adapter.
-      captureStreamEvent(item, ctx ?? {});
-
-      yield item;
-    }
-  } catch (error) {
-    if (
-      signal?.aborted ||
-      (error instanceof Error && error.name === "AbortError")
-    ) {
-      return;
-    }
-    // ONLY a broken body reader reaches here. `readMatrxNdjsonStream` treats
-    // malformed lines and unknown envelopes as non-fatal, and a backend that
-    // fails mid-run emits a typed `error` EVENT and closes the body cleanly —
-    // it never breaks the socket. So this is a TRANSPORT loss, and because
-    // aidream runs `detach_on_disconnect=True` the run itself is very likely
-    // still completing server-side. Say that, and hand the caller a resumable
-    // classification instead of a hard "the response was lost" verdict it can
-    // only render as a dead end (D183).
-    const transportError =
-      error instanceof BackendApiError
-        ? error
-        : new StreamTransportError({
-            detail:
-              error instanceof Error
-                ? error.message
-                : "The response stream ended unexpectedly.",
-            details: error,
-            ...(ctx?.requestId ? { requestId: ctx.requestId } : {}),
-          });
-    captureStreamTransportError(transportError, ctx ?? {});
-    throw transportError;
-  }
 }
 
 // ============================================================================

@@ -70,6 +70,8 @@ import { BackendApiError } from "@/lib/api/errors";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
+import { readDirectiveRecord } from "@/features/matrx-envelope/directiveRecordRow";
 
 const DIRECTIVE_ITEM_OVERLAY_ID = "directiveItemWindow" as const;
 
@@ -139,7 +141,12 @@ function requireStore() {
  * "Are you sure?" fails; the sentence has to name what changes.
  */
 function ask(request: DirectiveAskRequest): Promise<boolean> {
-  return confirmDialog(directiveConsequenceDialog(request, matrxDirectiveNouns));
+  // The organization the write will land in — the one `authedDirectiveHeaders`
+  // sends with every directive write (the active organization is for writes).
+  const organizationName = selectActiveOrganizationName(requireStore().getState());
+  return confirmDialog(
+    directiveConsequenceDialog(request, matrxDirectiveNouns, organizationName),
+  );
 }
 
 async function confirm(shell: DirectiveShell): Promise<DirectiveApplyResult> {
@@ -202,12 +209,24 @@ function toApplyState(state: DirectiveShellState): DirectiveApplyState {
   if (state.unreadable) throw new Error(state.unreadable);
   const items = state.items;
   if (items.length > 0 && items.every((item) => item.state === "applied")) {
+    // `resource_ids` are the LATEST copy's (aidream `applied_summary`), so after
+    // "Run again" the tally opens the newest record, not the first.
     const records = appliedRecords(
       state.directive,
       items.map((item) => ({ resource_kind: state.noun, resource_ids: item.resource_ids })),
     );
     const message = items.length === 1 ? (items[0].message ?? null) : null;
-    return { state: "applied", message, records };
+    // How many times the block has applied (1 + every Run again). The server
+    // answers `copies` per item since aidream cc87e4e53c; the generated
+    // contract in @ai-matrx/agents does not carry it yet, so it is read by
+    // narrowing, never by a cast — an older server simply omits it (→ 1).
+    const copies = Math.max(
+      1,
+      ...items.map((item) =>
+        "copies" in item && typeof item.copies === "number" ? item.copies : 1,
+      ),
+    );
+    return { state: "applied", message, records, copies };
   }
   if (items.some((item) => item.state === "in_flight")) return { state: "in_flight" };
   return { state: "not_applied" };
@@ -349,6 +368,8 @@ export const matrxDirectiveHost: DirectiveHost = {
   ask,
   confirm,
   applyState,
+  // An update card and its confirm say "old → new" from the record as it is now.
+  readRecord: readDirectiveRecord,
   renderRecord: (props) => <DirectiveRecordLink {...props} />,
   openItem,
   renderCopy,

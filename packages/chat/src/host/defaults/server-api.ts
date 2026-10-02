@@ -12,24 +12,24 @@
  */
 
 import {
-  BackendApiError,
   MatrxApiError,
-  StreamTransportError,
   applyOrganizationContextHeader,
+  buildMatrxRequestBody,
+  buildMatrxRequestUrl,
   cancelAgentRun,
   createMatrxTransport as createPackageTransport,
+  executeMatrxCall,
   normalizeMatrxError,
+  parseMatrxNdjsonResponse,
   reportProviderSessionFailure,
   type MatrxCallError,
+  type MatrxCallResult,
   type MatrxCancelResponse,
   type MatrxTransport,
   type ProviderSessionFailure,
   type ProviderSessionFailureVerdict,
 } from "@ai-matrx/agents/matrx";
-import {
-  readMatrxNdjsonStream,
-  type MatrxStreamEnvelope,
-} from "@ai-matrx/agents/stream/ndjson";
+import type { MatrxStreamEnvelope } from "@ai-matrx/agents/stream/ndjson";
 import type {
   ChatIdentityPort,
   ChatOrgPort,
@@ -49,29 +49,11 @@ export type DefaultServerThunk<R> = (
   extra: unknown,
 ) => R;
 
-export interface DefaultApiCallError {
-  type:
-    | "auth_error"
-    | "network_error"
-    | "http_error"
-    | "validation_error"
-    | "abort_error"
-    | "unknown";
-  message: string;
-  status?: number;
-  serverDetail?: unknown;
-  code?: string;
-  name?: string;
-  stack?: string;
-  raw?: unknown;
-}
+/** The ONE classified call error (`MatrxCallError`, `@ai-matrx/agents/matrx`). */
+export type DefaultApiCallError = MatrxCallError;
 
-export interface DefaultApiCallResult<T = unknown> {
-  data?: T;
-  requestId?: string;
-  conversationId?: string;
-  error?: DefaultApiCallError;
-}
+/** The call result (`MatrxCallResult`, `@ai-matrx/agents/matrx`). */
+export type DefaultApiCallResult<T = unknown> = MatrxCallResult<T>;
 
 export interface DefaultCallScope {
   organization_id?: string;
@@ -176,11 +158,6 @@ async function errorFromResponse(response: Response, path: string): Promise<Matr
   return new MatrxApiError({ status: response.status, path, serverDetail });
 }
 
-function toCallError(error: unknown): DefaultApiCallError {
-  const normalized: MatrxCallError = normalizeMatrxError(error);
-  return normalized;
-}
-
 function unhosted(feature: string): void {
   announceOnce(
     `server-unhosted-${feature}`,
@@ -242,58 +219,35 @@ export function createDefaultServerApi(host: () => ServerHostView) {
   }
 
   function buildRequestBody(body: unknown, scope: DefaultCallScope): Record<string, unknown> {
-    const base =
-      body && typeof body === "object" && !Array.isArray(body)
-        ? (body as Record<string, unknown>)
-        : {};
-    const scoped: Record<string, unknown> = {};
-    if (scope.organization_id !== undefined) scoped.organization_id = scope.organization_id;
-    if (scope.project_id !== undefined) scoped.project_id = scope.project_id;
-    if (scope.task_id !== undefined) scoped.task_id = scope.task_id;
-    return { ...scoped, ...base };
+    return buildMatrxRequestBody(body, scope);
   }
 
   function callApi(config: DefaultApiCallConfig): DefaultServerThunk<Promise<DefaultApiCallResult>> {
+    // THE shared request pipeline (`@ai-matrx/agents/matrx` `call`, P9b) — the
+    // same one matrx-frontend's `lib/api` `callApi` runs; this host supplies
+    // only its base URL and policy headers.
     return async () => {
-      const path = withQuery(fillPath(config.path, config.pathParams), config.queryParams);
       try {
         const scope = resolveScope(undefined, config.scopeOverrides);
-        const body =
-          config.method === "GET" || config.method === "DELETE"
-            ? undefined
-            : buildRequestBody(config.body, scope);
-        const response = await send(config.method, path, {
-          ...(body !== undefined ? { body } : {}),
+        return await executeMatrxCall({
+          url: buildMatrxRequestUrl(baseUrl(), config.path, config.pathParams, config.queryParams),
+          method: config.method,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: config.stream ? "application/x-ndjson" : "application/json",
+            ...(await policyHeaders()),
+          },
+          body: buildMatrxRequestBody(config.body, scope),
+          stream: !!config.stream,
           ...(config.signal ? { signal: config.signal } : {}),
-          accept: config.stream ? "application/x-ndjson" : "application/json",
+          ...(config.onStreamStart ? { onStreamStart: config.onStreamStart } : {}),
+          ...(config.onStreamEvent ? { onStreamEvent: config.onStreamEvent } : {}),
+          ...(config.consumeStream ? { consumeStream: config.consumeStream } : {}),
+          ...(config.onStreamComplete ? { onStreamComplete: config.onStreamComplete } : {}),
+          ...(config.onStreamError ? { onStreamError: config.onStreamError } : {}),
         });
-        const requestId = response.headers.get("X-Request-ID");
-        const conversationId = response.headers.get("X-Conversation-ID");
-        if (!config.stream) {
-          const data = response.status === 204 ? undefined : await response.json();
-          return {
-            data,
-            ...(requestId ? { requestId } : {}),
-            ...(conversationId ? { conversationId } : {}),
-          };
-        }
-        config.onStreamStart?.(requestId, conversationId);
-        if (config.consumeStream) {
-          await config.consumeStream(response, { requestId, conversationId });
-        } else if (response.body) {
-          for await (const event of readMatrxNdjsonStream(response.body, {
-            ...(config.signal ? { signal: config.signal } : {}),
-          })) {
-            config.onStreamEvent?.(event);
-          }
-        }
-        config.onStreamComplete?.(requestId, conversationId);
-        return {
-          ...(requestId ? { requestId } : {}),
-          ...(conversationId ? { conversationId } : {}),
-        };
       } catch (error) {
-        const callError = toCallError(error);
+        const callError = normalizeMatrxError(error);
         if (config.stream) config.onStreamError?.(callError);
         return { error: callError };
       }
@@ -407,7 +361,7 @@ export function createDefaultServerApi(host: () => ServerHostView) {
           const data = await cancelAgentRun(sender, requestId, { mode });
           return { data, requestId: data.request_id };
         } catch (error) {
-          return { error: toCallError(error) };
+          return { error: normalizeMatrxError(error) };
         }
       },
 
@@ -473,35 +427,10 @@ export function createDefaultServerApi(host: () => ServerHostView) {
       },
 
     // the NDJSON stream every run reads
-    parseNdjsonStream: (response: Response, signal?: AbortSignal) => {
-      const requestId = response.headers.get("X-Request-ID");
-      const conversationId = response.headers.get("X-Conversation-ID");
-      // Same contract as matrx-frontend's lib/api/stream-parser: a body that
-      // breaks mid-run is a TRANSPORT loss (the run may still finish and is
-      // reattachable), never a failed run; an abort ends quietly.
-      async function* events(): AsyncGenerator<MatrxStreamEnvelope, void, undefined> {
-        if (!response.body) {
-          throw new BackendApiError({
-            code: "internal_error",
-            detail: "Response has no body",
-            userMessage: "No response received from server",
-          });
-        }
-        try {
-          yield* readMatrxNdjsonStream(response.body, signal ? { signal } : {});
-        } catch (error) {
-          if (signal?.aborted || (error instanceof Error && error.name === "AbortError")) return;
-          throw error instanceof BackendApiError
-            ? error
-            : new StreamTransportError({
-                detail: error instanceof Error ? error.message : "The response stream ended unexpectedly.",
-                details: error,
-                ...(requestId ? { requestId } : {}),
-              });
-        }
-      }
-      return { events: events(), requestId, conversationId };
-    },
+    // THE shared parser: a body that breaks mid-run is a TRANSPORT loss (the
+    // run may still finish and is reattachable), never a failed run.
+    parseNdjsonStream: (response: Response, signal?: AbortSignal) =>
+      parseMatrxNdjsonResponse(response, signal),
 
     // the server selection (no admin server switcher in a bare host)
     selectResolvedBaseUrl: (_state: unknown): string | undefined => baseUrl(),

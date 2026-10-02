@@ -81,26 +81,45 @@ import {
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 // BACKEND_URLS no longer needed here — URL resolution is owned by apiConfigSlice
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { BackendApiError } from "@/lib/api/errors";
-import { isBareTransportCode } from "@/lib/api/door-refusal";
 import { logApiTarget } from "@/lib/api/log-api-target";
-import { resilientFetch } from "@ai-matrx/data/net";
-import { isNetError } from "@ai-matrx/data/net";
-import { extractErrorMessage } from "@/utils/errors";
+import type { resilientFetch } from "@ai-matrx/data/net";
 import { captureApiError } from "@/lib/diagnostics/captureApiError";
 import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import { wasStreamErrorCaptured } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { fetchWithMatrxProtocolFallback } from "@ai-matrx/agents/matrx";
+import {
+  buildMatrxRequestBody,
+  buildMatrxRequestUrl,
+  executeMatrxCall,
+  fetchWithMatrxProtocolFallback,
+  normalizeMatrxError,
+  buildSafeRequestLog,
+  redactUrlForRequestLog,
+  shouldReportMatrxCallError,
+  type MatrxCallError,
+  type MatrxCallResult,
+  type MatrxProtocolDowngrade,
+} from "@ai-matrx/agents/matrx";
 import { resolveRunWait, type RunOutputKind } from "@/lib/api/run-wait";
 import { getUserId } from "@/utils/auth/getUserId";
 import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
 import {
   applyOrganizationContextHeader,
   assertQueryOrganizationMatchesContext,
-  OrganizationContextError,
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
+
+// The request pipeline (URL, scoped body, execution, the one error classifier,
+// the honest status sentence, the log + capture policy) is THE shared core in
+// `@ai-matrx/agents/matrx` (`call`, chat-package independence P9b). This module
+// supplies only this app's facts: Redux auth / base URL / endpoint overrides /
+// scope, the organization gate, the desktop target, the run-wait knob, and the
+// diagnostics sinks. Grow the pipeline in the package, never here.
+export {
+  bareStatusSentence,
+  buildSafeRequestLog,
+  redactUrlForRequestLog,
+} from "@ai-matrx/agents/matrx";
 
 export {
   applyOrganizationContextHeader,
@@ -445,45 +464,11 @@ export interface ApiCallConfig<
 // SECTION 6 — CALL RESULT + ERRORS
 // ============================================================================
 
-export interface ApiCallError {
-  type:
-    | "auth_error"
-    | "network_error"
-    | "http_error"
-    | "validation_error"
-    | "abort_error"
-    | "unknown";
-  message: string;
-  /** HTTP status code, if applicable */
-  status?: number;
-  /** Raw error detail from the server (e.g. HTTPValidationError.detail) */
-  serverDetail?: unknown;
-  /**
-   * Machine code from a `BackendApiError` that reached the boundary, preserved
-   * through normalization. The load-bearing case is `stream_transport_lost`:
-   * without it a dropped socket is indistinguishable from a failed run once
-   * flattened to `network_error`, and the surface renders a dead end instead of
-   * reattaching (D183). Read it with `isStreamTransportLost(result.error)`.
-   */
-  code?: string;
-  /** Original exception identity for diagnostics (network failures, etc.). */
-  name?: string;
-  /** Original exception stack. */
-  stack?: string;
-  /** JSON-safe dump of the original thrown value. */
-  raw?: unknown;
-}
+/** The ONE classified call error — `MatrxCallError` from the shared core. */
+export type ApiCallError = MatrxCallError;
 
-export interface ApiCallResult<T = unknown> {
-  /** Parsed JSON response body (non-streaming calls only) */
-  data?: T;
-  /** Server-assigned request ID (from response header) */
-  requestId?: string;
-  /** Server-assigned conversation ID (from response header or stream event) */
-  conversationId?: string;
-  /** Set if the call failed */
-  error?: ApiCallError;
-}
+/** The call result — `MatrxCallResult` from the shared core. */
+export type ApiCallResult<T = unknown> = MatrxCallResult<T>;
 
 // ============================================================================
 // SECTION 7 — AUTH RESOLUTION
@@ -598,51 +583,6 @@ export function resolveBaseUrl(
         `or enter a custom URL via the admin indicator.`,
     );
   }
-  return url;
-}
-
-/**
- * Build the full URL for the request.
- *
- * - Substitutes path parameters (e.g. {agent_id} → actual ID)
- * - Strips any leading /api prefix (backend no longer requires it)
- * - Appends query string when provided
- */
-function buildUrl(
-  baseUrl: string,
-  pathTemplate: string,
-  pathParams?: Record<string, string>,
-  queryParams?: Record<string, string | number | boolean>,
-): string {
-  // Substitute path parameters
-  let resolvedPath = pathTemplate;
-  if (pathParams) {
-    for (const [key, value] of Object.entries(pathParams)) {
-      resolvedPath = resolvedPath.replace(
-        `{${key}}`,
-        encodeURIComponent(value),
-      );
-    }
-  }
-
-  // Strip the /api prefix — the backend routes no longer live under /api/*.
-  // Both legacy paths (starting with /api/) and new paths (without it) are handled correctly.
-  const fullPath = resolvedPath.startsWith("/api/")
-    ? resolvedPath.slice(4)
-    : resolvedPath;
-
-  const url = `${baseUrl}${fullPath}`;
-
-  // Append query string
-  if (queryParams && Object.keys(queryParams).length > 0) {
-    const qs = new URLSearchParams(
-      Object.fromEntries(
-        Object.entries(queryParams).map(([k, v]) => [k, String(v)]),
-      ),
-    ).toString();
-    return `${url}?${qs}`;
-  }
-
   return url;
 }
 
@@ -781,97 +721,15 @@ export function resolveScope(
 // ============================================================================
 
 /**
- * UI-only fields that must never be sent to the Python backend.
- * These are capability flags used internally by the frontend to determine
- * which input types to show — the backend's UnifiedConfig rejects them.
- */
-const UI_ONLY_BODY_FIELDS = new Set<string>([
-  "youtube_videos",
-  "file_urls",
-  "image_urls",
-]);
-
-/**
- * Assemble the final request body, injecting scope fields automatically.
- *
- * The backend accepts scope fields (organization_id, project_id,
- * task_id) on every AI endpoint body. Fields that are undefined are stripped
- * by JSON.stringify so endpoints that don't declare them simply ignore them —
- * no validation errors will occur.
- *
- * user_id and conversation_id are NOT injected here:
- *   - user_id   → resolved from the auth header (JWT sub claim), never the body
- *   - conversation_id → either a path parameter or an explicit body field
- *     managed by the caller
- *
- * UI-only capability flags (youtube_videos, file_urls, image_urls) are always
- * stripped — they are internal frontend signals and are not part of the backend schema.
+ * The final request body for `scope` — the shared core's
+ * `buildMatrxRequestBody` (UI-only strip, scope injection, the fail-closed
+ * body-vs-context organization check).
  */
 export function buildRequestBody(
   body: unknown,
   scope: GuestResolvedCallScope,
 ): unknown {
-  // MATRX-EXCEPTION: `body` is optional by design — a caller with no body
-  // still gets scope fields injected below, so `{}` (no caller fields) is
-  // the correct starting point, not a masked failure.
-  const raw = (body ?? {}) as Record<string, unknown>;
-
-  // Strip UI-only fields before sending to the backend
-  const base: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(raw)) {
-    if (!UI_ONLY_BODY_FIELDS.has(key)) {
-      base[key] = value;
-    }
-  }
-
-  // A caller that writes `organization_id: someId ?? null` is saying "I have no
-  // organization of my own to name here", not "send this request for a
-  // DIFFERENT organization". Treating that absence as a conflict is what turned
-  // the Libraries paste box into "Request body organization_id must match the
-  // request context organization" with no second organization anywhere in
-  // sight, so a null (or a blank string) is dropped and the scope's
-  // organization is injected below, exactly as if the caller had never written
-  // the key. A real, non-empty value that disagrees with the scope is still a
-  // refusal — that is the guard.
-  if (
-    base.organization_id === null ||
-    (typeof base.organization_id === "string" && base.organization_id.trim() === "")
-  ) {
-    delete base.organization_id;
-  }
-
-  const bodyOrganizationId = base.organization_id;
-  if (
-    scope.organization_id !== undefined &&
-    bodyOrganizationId !== undefined &&
-    (typeof bodyOrganizationId !== "string" ||
-      bodyOrganizationId.trim() !== scope.organization_id)
-  ) {
-    throw new OrganizationContextError(
-      "organization_context_mismatch",
-      "Request body organization_id must match the request context organization.",
-    );
-  }
-  if (bodyOrganizationId !== undefined && scope.organization_id !== undefined) {
-    base.organization_id = scope.organization_id;
-  }
-
-  // organization_id is unconditional on the JWT lane; the org-less guest lane
-  // (scope.organization_id undefined) injects nothing — the server admits
-  // that lane without an organization. Other optional scope fields are
-  // omitted when absent so endpoints that do not declare them remain
-  // unaffected.
-  const scopeFields: Record<string, unknown> = {
-    ...(scope.organization_id !== undefined
-      ? { organization_id: scope.organization_id }
-      : {}),
-  };
-  if (scope.project_id !== undefined) scopeFields.project_id = scope.project_id;
-  if (scope.task_id !== undefined) scopeFields.task_id = scope.task_id;
-
-  // The required organization is already proven identical above. Other scope
-  // fields preserve the existing caller-wins behavior.
-  return { ...scopeFields, ...base };
+  return buildMatrxRequestBody(body, scope);
 }
 
 // ============================================================================
@@ -885,39 +743,6 @@ function applyTestHeaders(
 ): Record<string, string> {
   if (!testOverrides?.additionalHeaders) return headers;
   return { ...headers, ...testOverrides.additionalHeaders };
-}
-
-const SENSITIVE_HEADER_NAME = /authorization|cookie|token|api[-_]?key/i;
-
-export function buildSafeRequestLog(
-  headers: Record<string, string>,
-  body: unknown,
-): { headers: Record<string, string>; body: Record<string, unknown> } {
-  const safeHeaders = Object.fromEntries(
-    Object.entries(headers).map(([name, value]) => [
-      name,
-      SENSITIVE_HEADER_NAME.test(name) ? "[REDACTED]" : value,
-    ]),
-  );
-  const bodyMetadata: Record<string, unknown> = Array.isArray(body)
-    ? { type: "array", itemCount: body.length }
-    : body && typeof body === "object"
-      ? { type: "object", keys: Object.keys(body as Record<string, unknown>) }
-      : { type: body === null ? "null" : typeof body };
-  return { headers: safeHeaders, body: bodyMetadata };
-}
-
-export function redactUrlForRequestLog(url: string): string {
-  try {
-    const parsed = new URL(url);
-    for (const key of parsed.searchParams.keys()) {
-      parsed.searchParams.set(key, "[REDACTED]");
-    }
-    return parsed.toString();
-  } catch {
-    const queryIndex = url.indexOf("?");
-    return queryIndex === -1 ? url : `${url.slice(0, queryIndex)}?[REDACTED]`;
-  }
 }
 
 /** Log redacted request metadata when test overrides request it. */
@@ -942,405 +767,43 @@ function maybeLogRequest(
 // SECTION 12 — ERROR NORMALIZATION
 // ============================================================================
 
-/**
- * Extract the richest human-readable message from a structured server error
- * body (D102). aidream 4xx validation errors look like
- * `{ error, user_message, details: [{ field, message, help }] }`; FastAPI's
- * default is `{ detail: string | [{ msg }] }`. Preference order:
- * `user_message` → `message` → joined `details[].message` → FastAPI `detail`.
- * Returns undefined for non-object / unrecognized bodies so callers fall back
- * to the bare status line.
- */
-/**
- * 🚨 A BARE STATUS CODE IS NEVER A SENTENCE (V-PARITY/UX F4, 2026-09-08).
- *
- * `error.message` is what surfaces print. It used to fall back to
- * `` `HTTP ${status}` ``, and a walker read the result off the deployed admin
- * panel: **"This job's inputs could not be read: HTTP 400"**, twice, and a bare
- * **"HTTP 400"** where the input surface should have been. A transport code at
- * a person names no cause and offers no remedy — the fourth law's exact
- * prohibition, one inch from the screen.
- *
- * The class fix is HERE rather than at the caller, because every `callApi`
- * consumer in the repo inherits this fallback: fixing the one surface the walk
- * happened to stand on would leave the rest of them saying "HTTP 500".
- *
- * The status itself is NOT lost — it rides `error.status`, which is what code
- * branches on. This is only the words.
- *
- * A server that answers an error with no readable message is ITSELF a defect,
- * and the sentence says so rather than pretending the reader did something
- * wrong.
- */
-export function bareStatusSentence(status: number): string {
-  if (status === 401 || status === 403) {
-    return "The server would not let this request through — your session may have expired, or this account may not have access here. Sign in again, and if it repeats, ask an administrator.";
-  }
-  if (status === 404) {
-    return "The server has nothing at that address. Reload the page; if it repeats, report it — a client asking for something that no longer exists is a defect, not your mistake.";
-  }
-  if (status === 429) {
-    return "The server is rate-limiting this request. Wait a few seconds and try again.";
-  }
-  if (status >= 500) {
-    return "The server failed while answering this, and sent no explanation. Try again in a moment; if it repeats, report it with the request id above.";
-  }
-  return "The server refused this request and sent no reason with it — the missing reason is itself a defect worth reporting. Reload the page and try once more; if it repeats, report it with the request id above.";
-}
-
-function extractServerErrorMessage(serverDetail: unknown): string | undefined {
-  if (typeof serverDetail !== "object" || serverDetail === null) {
-    return undefined;
-  }
-  const body = serverDetail as Record<string, unknown>;
-
-  if (typeof body.user_message === "string" && body.user_message.trim()) {
-    return body.user_message;
-  }
-  if (typeof body.message === "string" && body.message.trim()) {
-    return body.message;
-  }
-  if (Array.isArray(body.details)) {
-    const messages = body.details
-      .map((d: unknown) => {
-        if (typeof d !== "object" || d === null) return undefined;
-        const detail = d as Record<string, unknown>;
-        const message =
-          typeof detail.message === "string" ? detail.message : undefined;
-        const field =
-          typeof detail.field === "string" ? detail.field : undefined;
-        if (!message) return undefined;
-        return field ? `${field}: ${message}` : message;
-      })
-      .filter((m): m is string => typeof m === "string" && m.length > 0);
-    if (messages.length > 0) return messages.join("; ");
-  }
-  // FastAPI default validation shape: { detail: string | [{ msg, loc }] }
-  if (typeof body.detail === "string" && body.detail.trim()) {
-    return body.detail;
-  }
-  if (Array.isArray(body.detail)) {
-    const messages = body.detail
-      .map((d: unknown) => {
-        if (typeof d !== "object" || d === null) return undefined;
-        const detail = d as Record<string, unknown>;
-        return typeof detail.msg === "string" ? detail.msg : undefined;
-      })
-      .filter((m): m is string => typeof m === "string" && m.length > 0);
-    if (messages.length > 0) return messages.join("; ");
-  }
-  return undefined;
-}
-
-/**
- * 🚨 THE OTHER HALF OF `bareStatusSentence` (FIX-Q8, 2026-09-11).
- *
- * F4 fixed the FALLBACK — the case where the server sent no readable body. It
- * did not fix the case where something upstream had already MANUFACTURED a
- * sentence out of the status: `lib/api/errors.ts` builds `detail: "HTTP 400"`
- * on an unreadable body, `normalizeError` prints `err.detail`, and the reader
- * gets the status code after all. That is how the one-binding workspace was
- * still showing "HTTP 400" a surface later, after F4 closed.
- *
- * So every branch of `normalizeError` launders its message through here: a
- * message that is really just the status line wearing words is replaced by the
- * sentence for that status. The status itself is never lost — it rides
- * `error.status`, which is what code branches on.
- */
-function honestTransportMessage(raw: string, status: number | undefined): string {
-  if (raw && !isBareTransportCode(raw)) return raw;
-  return bareStatusSentence(status ?? 0);
-}
-
+/** THE one classifier — the shared core's `normalizeMatrxError`. */
 export function normalizeError(err: unknown): ApiCallError {
-  if (err instanceof OrganizationContextError) {
-    return {
-      type: "validation_error",
-      message: err.message,
-      code: err.code,
-      name: err.name,
-      stack: err.stack,
-    };
-  }
-
-  if (err instanceof DOMException && err.name === "AbortError") {
-    return { type: "abort_error", message: "Request was cancelled." };
-  }
-
-  // A typed backend/stream error carries a classification the caller needs.
-  // Flattening it to a bare `network_error` is how a dropped socket became
-  // indistinguishable from a failed run (D183) — keep the code.
-  if (err instanceof BackendApiError) {
-    return {
-      type: "network_error",
-      message: honestTransportMessage(
-        err.detail || err.userMessage,
-        err.status ?? undefined,
-      ),
-      code: err.code,
-      name: err.name,
-      ...(err.status !== null ? { status: err.status } : {}),
-      // 🚨 THE ONE ORGANIZATION-HOLD SHAPE RIDES `serverDetail` (2026-09-19).
-      // Without this, `err.details` — aidream's `organization_hold_detail`
-      // body, carrying `details.organizations`, the caller's own membership
-      // choices — was DROPPED at exactly the boundary every `callApi()`
-      // consumer reads through. `extractOrganizationHoldMemberships` (see
-      // `lib/organizations/organizationRequiredError.ts`) reads it back from
-      // here via `.serverDetail`, the same field every OTHER structured 4xx
-      // already uses (see `parseCallApiError`) — no new field, no second
-      // convention.
-      ...(err.details !== null ? { serverDetail: err.details } : {}),
-    };
-  }
-
-  if (isNetError(err)) {
-    if (err.code === "aborted") {
-      return { type: "abort_error", message: err.message };
-    }
-    if (
-      err.code === "connect-timeout" ||
-      err.code === "total-timeout" ||
-      err.code === "heartbeat-timeout"
-    ) {
-      return { type: "network_error", message: err.message };
-    }
-    if (err.code === "http") {
-      const status = err.status ?? 0;
-      return {
-        type: status >= 400 && status < 500 ? "validation_error" : "http_error",
-        message: honestTransportMessage(err.message, status),
-        status,
-      };
-    }
-    return { type: "network_error", message: err.message };
-  }
-
-  if (err instanceof Error) {
-    // HTTP error format from existing infrastructure: "HTTP 422: ..."
-    const httpMatch = err.message.match(/HTTP (\d+):\s*(.*)/);
-    if (httpMatch) {
-      const status = parseInt(httpMatch[1], 10);
-      return {
-        type: status >= 400 && status < 500 ? "validation_error" : "http_error",
-        message: honestTransportMessage(httpMatch[2] ?? err.message, status),
-        status,
-      };
-    }
-
-    // `"HTTP 400"` with no colon never matched above and fell through here
-    // verbatim — the literal string a walker read off the deployed panel.
-    if (isBareTransportCode(err.message)) {
-      const status = Number.parseInt(err.message.replace(/\D+/g, ""), 10);
-      return {
-        type: status >= 400 && status < 500 ? "validation_error" : "http_error",
-        message: bareStatusSentence(status),
-        status,
-      };
-    }
-
-    return { type: "network_error", message: err.message };
-  }
-
-  return { type: "unknown", message: extractErrorMessage(err) };
+  return normalizeMatrxError(err);
 }
 
 // ============================================================================
-// SECTION 13 — EXECUTION: JSON (non-streaming)
+// SECTION 13 — PROTOCOL DOWNGRADE (the app's telemetry record)
 // ============================================================================
 
+/** The app's telemetry record for a v2 → v1 protocol downgrade. */
+function captureProtocolDowngrade(downgrade: MatrxProtocolDowngrade): void {
+  captureError({
+    source: "api-http",
+    code: "ai_v2_downgrade",
+    message: `v2 endpoint failed (${downgrade.reason}); request served by v1 fallback`,
+    details: downgrade.url,
+    status: downgrade.status,
+  });
+}
+
 /**
- * `resilientFetch` with the v2 → v1 transport fallback
- * (aidream docs/runtime/V2_FRONTEND_MIGRATION.md §5b). Fires ONLY when a
- * `/v2/ai/...` ENDPOINT itself fails — a network-layer throw (non-abort), a
- * 404/405 (surface not on v2), or a 5xx — always BEFORE any stream content is
- * consumed. Never on an application error (those fail identically on v1). The
- * downgrade is loud: console.warn + an `ai_v2_downgrade` record in the Error
- * Inspector; a sustained stream of these means a v2 surface is unhealthy.
+ * `resilientFetch` with the v2 → v1 transport fallback (the package's
+ * `fetchWithMatrxProtocolFallback`), wired to the app's downgrade record.
  */
 export async function fetchWithV2Fallback(
   url: string,
   init: RequestInit,
   opts: Parameters<typeof resilientFetch>[2],
 ): Promise<{ response: Response }> {
-  // The downgrade machinery itself (trigger conditions, abort exclusion, the
-  // v1 URL transform) lives in the package since the 0.6.0 C22 retrofit —
-  // this wrapper only wires the app's telemetry record.
   return fetchWithMatrxProtocolFallback(url, init, {
     ...opts,
-    onDowngrade: (downgrade) => {
-      captureError({
-        source: "api-http",
-        code: "ai_v2_downgrade",
-        message: `v2 endpoint failed (${downgrade.reason}); request served by v1 fallback`,
-        details: downgrade.url,
-        status: downgrade.status,
-      });
-    },
+    onDowngrade: captureProtocolDowngrade,
   });
 }
 
-async function executeJsonRequest<T>(
-  url: string,
-  method: string,
-  headers: Record<string, string>,
-  body: unknown,
-  config: Pick<ApiCallConfig, "signal" | "connectTimeoutMs" | "totalTimeoutMs">,
-): Promise<ApiCallResult<T>> {
-  const hasBody = method !== "GET" && method !== "HEAD";
-
-  const { response } = await fetchWithV2Fallback(
-    url,
-    {
-      method,
-      headers,
-      body: hasBody ? JSON.stringify(body) : undefined,
-    },
-    {
-      signal: config.signal,
-      connectTimeoutMs: config.connectTimeoutMs ?? 15_000,
-      totalTimeoutMs:
-        config.totalTimeoutMs === undefined ? 30_000 : config.totalTimeoutMs,
-      throwOnHttpError: false,
-    },
-  );
-
-  const requestId = response.headers.get("X-Request-ID") ?? undefined;
-  const conversationId = response.headers.get("X-Conversation-ID") ?? undefined;
-
-  if (!response.ok) {
-    const serverDetail: unknown = await response
-      .json()
-      .catch(() => undefined);
-    return {
-      requestId,
-      conversationId,
-      error: {
-        type:
-          response.status >= 400 && response.status < 500
-            ? "validation_error"
-            : "http_error",
-        message:
-          extractServerErrorMessage(serverDetail) ??
-          bareStatusSentence(response.status),
-        status: response.status,
-        serverDetail,
-      },
-    };
-  }
-
-  const data = (await response.json()) as T;
-  return { data, requestId, conversationId };
-}
-
 // ============================================================================
-// SECTION 14 — EXECUTION: STREAMING (NDJSON)
-// ============================================================================
-
-async function executeStreamingRequest(
-  url: string,
-  method: string,
-  headers: Record<string, string>,
-  body: unknown,
-  config: Pick<
-    ApiCallConfig,
-    | "signal"
-    | "connectTimeoutMs"
-    | "onStreamStart"
-    | "onStreamEvent"
-    | "onStreamComplete"
-    | "onStreamError"
-    | "consumeStream"
-  >,
-): Promise<ApiCallResult> {
-  const { response } = await fetchWithV2Fallback(
-    url,
-    {
-      method,
-      headers,
-      body: JSON.stringify(body),
-    },
-    {
-      signal: config.signal,
-      connectTimeoutMs: config.connectTimeoutMs ?? 15_000,
-      totalTimeoutMs: null,
-      throwOnHttpError: false,
-    },
-  );
-
-  // Two shapes on purpose: the stream callbacks and `consumeStream` are typed
-  // `string | null` (a header that is absent is absent), while `ApiCallResult`
-  // carries optional fields. So the raw nullable value is what the callbacks
-  // get, and every RETURN converts it at the boundary with `?? undefined`.
-  const requestId = response.headers.get("X-Request-ID");
-  const conversationId = response.headers.get("X-Conversation-ID");
-
-  if (!response.ok) {
-    const serverDetail: unknown = await response
-      .json()
-      .catch(() => undefined);
-    const error: ApiCallError = {
-      type:
-        response.status >= 400 && response.status < 500
-          ? "validation_error"
-          : "http_error",
-      message:
-        extractServerErrorMessage(serverDetail) ?? bareStatusSentence(response.status),
-      status: response.status,
-      serverDetail,
-    };
-    config.onStreamError?.(error);
-    return {
-      requestId: requestId ?? undefined,
-      conversationId: conversationId ?? undefined,
-      error,
-    };
-  }
-
-  // A body can be consumed exactly once. When the caller supplied a
-  // `consumeStream` owner, hand it the raw Response and never touch the body
-  // here — the ids still come from headers, which are already available.
-  if (config.consumeStream) {
-    const ids = { requestId, conversationId };
-    config.onStreamStart?.(ids.requestId, ids.conversationId);
-    await config.consumeStream(response, ids);
-    config.onStreamComplete?.(ids.requestId, ids.conversationId);
-    return {
-      requestId: ids.requestId ?? undefined,
-      conversationId: ids.conversationId ?? undefined,
-    };
-  }
-
-  // Use the shared NDJSON stream parser.
-  // requestId and conversationId are read synchronously from response headers —
-  // they are available BEFORE any body events are consumed.
-  const {
-    events,
-    requestId: parsedRequestId,
-    conversationId: parsedConversationId,
-  } = parseNdjsonStream(
-    response,
-    config.signal ?? undefined,
-  );
-
-  // Fire immediately — headers arrive before the body, so this is the
-  // earliest possible moment to capture conversationId (for URL updates, etc.).
-  config.onStreamStart?.(parsedRequestId, parsedConversationId);
-
-  // Drain the async generator, handing each event to the caller
-  for await (const event of events) {
-    config.onStreamEvent?.(event);
-  }
-
-  config.onStreamComplete?.(parsedRequestId, parsedConversationId);
-
-  return {
-    requestId: parsedRequestId ?? undefined,
-    conversationId: parsedConversationId ?? undefined,
-  };
-}
-
-// ============================================================================
-// SECTION 15 — THE MAIN THUNK CREATOR
+// SECTION 14 — THE MAIN THUNK CREATOR
 // ============================================================================
 
 /**
@@ -1404,7 +867,7 @@ export function callApi<
       config.path as string,
       selectEndpointOverrideConfig(state),
     );
-    const url = buildUrl(
+    const url = buildMatrxRequestUrl(
       baseUrl,
       resolvedPath,
       config.pathParams as Record<string, string> | undefined,
@@ -1543,15 +1006,27 @@ export function callApi<
               ).firstResponseMs,
             }
           : config;
-      const result = config.stream
-        ? await executeStreamingRequest(
-            url,
-            config.method,
-            headers,
-            body,
-            streamConfig,
-          )
-        : await executeJsonRequest(url, config.method, headers, body, config);
+      const result = await executeMatrxCall<unknown, TypedStreamEvent>(
+        {
+          url,
+          method: config.method,
+          headers,
+          body,
+          stream: !!config.stream,
+          signal: streamConfig.signal,
+          connectTimeoutMs: streamConfig.connectTimeoutMs,
+          totalTimeoutMs: config.totalTimeoutMs,
+          onStreamStart: config.onStreamStart,
+          onStreamEvent: config.onStreamEvent,
+          consumeStream: config.consumeStream,
+          onStreamComplete: config.onStreamComplete,
+          onStreamError: config.onStreamError,
+        },
+        {
+          onProtocolDowngrade: captureProtocolDowngrade,
+          parseStream: parseNdjsonStream,
+        },
+      );
       // Single capture chokepoint for backend failures that resolve with an
       // `{ error }` body (non-2xx). Feeds the systemwide Error Inspector.
       if (
@@ -1605,7 +1080,7 @@ export function shouldCaptureApiError(
   status: number | null | undefined,
   expectedErrorStatuses: readonly number[] | undefined,
 ): boolean {
-  return status == null || !expectedErrorStatuses?.includes(status);
+  return shouldReportMatrxCallError(status, expectedErrorStatuses);
 }
 
 function isAiTurnPath(path: string): boolean {

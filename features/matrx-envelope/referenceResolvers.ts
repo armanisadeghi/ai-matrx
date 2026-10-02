@@ -1041,6 +1041,19 @@ function subscribeReferenceLabels(listener: () => void): () => void {
   return () => referenceLabelListeners.delete(listener);
 }
 
+/**
+ * The change counter `invalidateReferenceLabel` bumps for one record — so any
+ * other read of that record (a directive card's trash state) re-reads when a
+ * writer on this page changes it, exactly as its label does.
+ */
+export function useReferenceRecordVersion(id: string): number {
+  return useSyncExternalStore(
+    subscribeReferenceLabels,
+    () => referenceLabelVersions.get(id) ?? 0,
+    () => 0,
+  );
+}
+
 export function useResolvedReferenceLabel(
   item: ReferenceItem,
   type: string,

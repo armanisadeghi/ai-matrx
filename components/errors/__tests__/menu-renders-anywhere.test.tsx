@@ -35,7 +35,24 @@ it("takes one line-height of width in the text flow, not its 32px tap target (ne
   });
   const menu = host.querySelector("[data-error-alchemy-menu]")!;
   const cls = menu.className.split(/\s+/);
-  expect(cls).toEqual(expect.arrayContaining(["w-[1lh]", "h-[1lh]", "justify-center", "overflow-visible"]));
+  expect(cls).toEqual(expect.arrayContaining(["w-[calc(1lh+0.25rem)]", "h-[1lh]", "justify-center", "overflow-visible"]));
+  await act(async () => root.unmount());
+});
+
+it("adds no margin or padding around its tap button — the dev tap guard paints that as MISUSE", async () => {
+  // Reviewer, 2026-10-02: "TAP BUTTON MISUSE — <span.ml-1…> adds 4px around a
+  // tap button" beside the directive builder's failed result. The design
+  // system's guard (tap-target-guard.ts rule 3) refuses margin/padding on any
+  // wrapper that holds only a tap button; the spacing lives in the slot width.
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(<p>Could not update task.<ErrorAlchemyMenu input={{ message: "Could not update task." }} /></p>);
+  });
+  const menu = host.querySelector("[data-error-alchemy-menu]")!;
+  const spacing = menu.className.split(/\s+/).filter((c) => /^-?(m|p)[trblxyse]?-/.test(c));
+  expect(spacing).toEqual([]);
   await act(async () => root.unmount());
 });
 

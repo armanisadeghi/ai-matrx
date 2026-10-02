@@ -179,10 +179,16 @@ export function ErrorAlchemyMenu({
         // wide (its 32px tap target overflows it, centred), so it never grows
         // the line or the box — nor wraps a line the sentence just fits
         // (the organization picker grew 32→48px at 1400px, RC-B12 layout).
-        "ml-1 inline-flex h-[1lh] w-[1lh] shrink-0 items-center justify-center overflow-visible align-top",
+        // 🚨 The breathing room from the sentence is part of the SLOT's width
+        // (1lh + 0.25rem, glyph centred), never a margin or padding around
+        // the tap button: `ml-1` here painted the dev tap guard's "TAP BUTTON
+        // MISUSE — adds 4px around a tap button" box beside every inline
+        // error (reviewer, 2026-10-02, the directive builder's result line).
+        // Same line footprint as before.
+        "inline-flex h-[1lh] w-[calc(1lh+0.25rem)] shrink-0 items-center justify-center overflow-visible align-top",
         // A truncating line hides anything in its text flow behind the "…",
         // so there the menu leaves the flow and holds the line's right end.
-        placement.truncated && "absolute right-0 top-0 pl-1",
+        placement.truncated && "absolute right-0 top-0",
         className,
       )}
       onPointerEnter={surface.refresh}

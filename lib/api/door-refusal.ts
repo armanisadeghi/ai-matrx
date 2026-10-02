@@ -23,6 +23,8 @@
  * rather than papered over.
  */
 
+import { isBareTransportCode } from "@ai-matrx/agents/matrx";
+
 /** The error shape `callApi` hands back on a failed request. */
 export interface DoorApiError {
   status?: number | undefined;
@@ -57,14 +59,9 @@ const BLAMES_THE_READER = /check your input/i;
  * sent no readable body. This is the exact string that reached a person's
  * screen on the admin mandate page, twice on one page.
  */
-const BARE_TRANSPORT_CODE =
-  /^\s*(?:HTTP|HTTP\s*Error|Status(?:\s*Code)?)?\s*[:\-]?\s*\d{3}\s*[.:!]?\s*$/i;
-
-/** True when a candidate sentence is really just the status line wearing words. */
-export function isBareTransportCode(text: string | null | undefined): boolean {
-  if (!text) return false;
-  return BARE_TRANSPORT_CODE.test(text);
-}
+// THE detector lives in the shared core (`@ai-matrx/agents/matrx`, P9b) — the
+// one every client's error classifier launders messages through.
+export { isBareTransportCode } from "@ai-matrx/agents/matrx";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
