@@ -23,6 +23,10 @@
  *   npx tsx scripts/cutover-census/scopes-side-effects.ts --target clone --plant
  *        prove it fails LIVE: inside one transaction on the clone, plant a trigger on context.templates,
  *        run the guard against that transaction's catalogue, and roll back (never on production)
+ *   npx tsx scripts/cutover-census/scopes-side-effects.ts --target production --plant-in-memory
+ *        prove it fails on the LIVE catalogue without writing anything: read the catalogue, then (in
+ *        memory only) add an unlisted trigger and, one at a time, drop each census row — every plant must
+ *        go RED for its own reason (UNLISTED for that trigger). Safe on production.
  *
  * Exit 0 green, 1 red, 2 could not measure.
  */
@@ -208,10 +212,38 @@ async function main(argv: string[]): Promise<number> {
         await client.query("rollback");
       }
     }
+    if (argv.includes("--plant-in-memory")) return plantInMemory(rows, await readCatalogue(client, rows), target);
     return report(judge(rows, await readCatalogue(client, rows)), rows, target);
   } finally {
     await client.end();
   }
+}
+
+/** Plants on the live catalogue, in memory only: the guard must catch each one for its own reason. */
+function plantInMemory(rows: CensusRow[], cat: Catalogue, where: string): number {
+  const base = judge(rows, cat);
+  if (base.length !== 0) {
+    console.error(`PLANT-IN-MEMORY could not start: ${where} is not green before planting`, base);
+    return 1;
+  }
+  const failures: string[] = [];
+  const planted = { ...cat, triggers: [...cat.triggers, { table: "context.scopes", trigger: "zz_planted_in_memory", function: "public.set_updated_at" }] };
+  const p1 = judge(rows, planted);
+  if (!p1.some((p) => p.startsWith("UNLISTED context.scopes zz_planted_in_memory"))) failures.push("an unlisted trigger added to the live catalogue was not UNLISTED");
+  else console.log(`PLANT RED (as it must be) — ${p1[0]}`);
+  let caught = 0;
+  for (const r of rows) {
+    const without = rows.filter((x) => x !== r);
+    if (judge(without, cat).some((p) => p.startsWith(`UNLISTED ${key(r)} `))) caught++;
+    else failures.push(`dropping the census row ${key(r)} did not make that live trigger UNLISTED`);
+  }
+  console.log(`PLANT RED (as it must be) — each of the ${rows.length} census rows dropped in turn: ${caught} caught as UNLISTED`);
+  if (failures.length) {
+    console.error(`PLANT-IN-MEMORY FAILED on ${where}:`);
+    for (const f of failures) console.error(`  ${f}`);
+    return 1;
+  }
+  return 0;
 }
 
 function selfTest(): number {

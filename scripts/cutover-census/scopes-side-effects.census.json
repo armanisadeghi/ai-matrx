@@ -4,8 +4,9 @@
   "plan_step": "SCOPES-CUTOVER-PLAN 0.3",
   "measured": {
     "database": "production (read-only)",
-    "at": "2026-09-28T18:20Z",
-    "triggers": 66
+    "at": "2026-10-02T17:30Z",
+    "triggers": 74,
+    "recensus": "2026-10-02 lane 9 O1: +8 access-ladder triggers added after the 2026-09-28 census (T-13 ×4, T-21 ×4)"
   },
   "rulings": {
     "twin_exists": "the record store already does this job for every Record, Field and Table",
@@ -360,6 +361,14 @@
     },
     {
       "table": "context.scopes",
+      "trigger": "_a0_t13_dual_write",
+      "function": "platform._t13_transitional_dual_write",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "dies",
+      "plain": "access ladder T-13 transitional dual-write (created by platform._t13_transitional_expand, migration access_ladder_t13_3a_expand_machinery, run per table by aidream scripts/t13_phase3_driver.py on 2026-09-29): maps the image's retiring visibility column to published_to_web / shown_to. A job of the image's own access columns: a store Record carries its own visibility and shown_to and custom.record is not a T-13 expanded table; 0 scopes are published to the web or public today, so nothing is lost; T-13 phase 7 removes it by 2026-12-15 regardless"
+    },
+    {
+      "table": "context.scopes",
       "trigger": "_cascade_softdelete",
       "function": "platform._cascade_soft_delete",
       "fires": "AFTER UPDATE OF deleted_at",
@@ -450,6 +459,14 @@
     },
     {
       "table": "context.scopes",
+      "trigger": "_t13_count_row_column_writes",
+      "function": "platform._t13_transitional_flush_writes",
+      "fires": "AFTER INSERT OR UPDATE (statement)",
+      "ruling": "dies",
+      "plain": "access ladder T-13 transitional counter (same origin as _a0_t13_dual_write): counts writes still arriving through the retiring visibility column into ops.t13_row_column_events. Measures the image's own writers; once the image is not written there is nothing to count, and T-13 phase 7 removes it by 2026-12-15"
+    },
+    {
+      "table": "context.scopes",
       "trigger": "_touch_row",
       "function": "platform._touch_row",
       "fires": "BEFORE INSERT OR UPDATE",
@@ -520,6 +537,14 @@
     },
     {
       "table": "context.system_context_item",
+      "trigger": "_a0_t13_dual_write",
+      "function": "platform._t13_transitional_dual_write",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it (access ladder T-13 transitional dual-write, added 2026-09-29 by platform._t13_transitional_expand; T-13 phase 7 removes it by 2026-12-15)"
+    },
+    {
+      "table": "context.system_context_item",
       "trigger": "_gc_assoc_harddelete",
       "function": "platform._gc_entity_associations",
       "fires": "AFTER DELETE",
@@ -552,6 +577,14 @@
     },
     {
       "table": "context.system_context_item",
+      "trigger": "_t13_count_row_column_writes",
+      "function": "platform._t13_transitional_flush_writes",
+      "fires": "AFTER INSERT OR UPDATE (statement)",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it (access ladder T-13 transitional write counter, added 2026-09-29 by platform._t13_transitional_expand; T-13 phase 7 removes it by 2026-12-15)"
+    },
+    {
+      "table": "context.system_context_item",
       "trigger": "_touch_row",
       "function": "platform._touch_row",
       "fires": "BEFORE INSERT OR UPDATE",
@@ -573,6 +606,38 @@
       "fires": "BEFORE UPDATE",
       "ruling": "stays",
       "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it"
+    },
+    {
+      "table": "context.user_active_context",
+      "trigger": "_guard_governance",
+      "function": "iam._guard_governance_columns",
+      "fires": "BEFORE UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it (added 2026-09-28 by the access-ladder policy generator via iam.apply_governance_guard after T-21 moved the table to Organization)"
+    },
+    {
+      "table": "context.user_active_context",
+      "trigger": "_stamp_actor",
+      "function": "platform._stamp_actor",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it (added 2026-09-28 by platform.retrofit_entity in migration access_ladder_t21_06_context_user_active_context)"
+    },
+    {
+      "table": "context.user_active_context",
+      "trigger": "_stamp_actor_tier",
+      "function": "platform._stamp_actor_tier",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it (added 2026-09-28 by platform.retrofit_entity in migration access_ladder_t21_06_context_user_active_context)"
+    },
+    {
+      "table": "context.user_active_context",
+      "trigger": "_touch_row",
+      "function": "platform._touch_row",
+      "fires": "BEFORE INSERT OR UPDATE",
+      "ruling": "stays",
+      "plain": "reference data, not scope data: this table is not part of the drop (SCOPES-CUTOVER-PLAN decision 3, SCOPES-CONTEXT D10), so its trigger stays with it (added 2026-09-28 by platform.retrofit_entity in migration access_ladder_t21_06_context_user_active_context)"
     },
     {
       "table": "context.user_active_context",
