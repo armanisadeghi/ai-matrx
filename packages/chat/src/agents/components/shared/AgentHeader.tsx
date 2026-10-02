@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "../../../host/navigation";
 import { ChevronLeft } from "lucide-react";
 import { AgentSelectorIsland } from "./AgentSelectorIsland";
 import { AgentModeController } from "./AgentModeController";

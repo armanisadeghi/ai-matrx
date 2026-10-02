@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "../../../host/navigation";
 import { useSelector } from "react-redux";
 import {
   selectUser,

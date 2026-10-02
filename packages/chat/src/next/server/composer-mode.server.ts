@@ -8,8 +8,8 @@ import "server-only";
  */
 
 import { cookies } from "next/headers";
-import { COMPOSER_MODE_COOKIE, parseComposerModeCookie } from "./composer-mode-cookie";
-import type { ComposerMode } from "./composer-types";
+import { COMPOSER_MODE_COOKIE, parseComposerModeCookie } from "../../agents/components/inputs/smart-input/composer/composer-mode-cookie";
+import type { ComposerMode } from "../../agents/components/inputs/smart-input/composer/composer-types";
 
 export async function readComposerModeCookie(): Promise<ComposerMode | null> {
   const store = await cookies();

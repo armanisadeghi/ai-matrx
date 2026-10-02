@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { ChatRoomClient } from "@ai-matrx/chat/agents/components/chat/ChatRoomClient";
 import { ChatRunHeader } from "@ai-matrx/chat/agents/components/chat/ChatRunHeader";
-import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 
 interface DirectAgentChatPageProps {

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "../../../../host/navigation";
 import { AgentSelectorIsland } from "../../shared/AgentSelectorIsland";
 import {
   PanelLeftTapButton,

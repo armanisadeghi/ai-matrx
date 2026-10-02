@@ -9,8 +9,8 @@
 // both capped at max-w-[800px] to match the original ConversationShell width.
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
+import { useRouter } from "../../../host/navigation";
+import { AgentPickerSheet } from "../../../next/lazy/AgentPickerSheet";
 import { useAppSelector } from "../../../store/hooks";
 import { selectUserContext } from "@host/lib/redux/slices/userSlice";
 import { useDebugContext } from "../../../host/prefs-react";
@@ -32,14 +32,6 @@ import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components
 import { ServerOperationBanner } from "../../../agents/runtime-reconnect/ServerOperationBanner";
 import { pushAppHref } from "@host/lib/deployment/navigate";
 import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
-
-const AgentPickerSheet = dynamic(
-  () =>
-    import("../agent/AgentPickerSheet").then(
-      (m) => ({ default: m.AgentPickerSheet }),
-    ),
-  { ssr: false },
-);
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 

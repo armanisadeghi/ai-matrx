@@ -8,7 +8,7 @@
  */
 
 import { useEffect } from "react";
-import Link from "next/link";
+import { Link } from "../../../../host/navigation";
 import { Folder, ExternalLink } from "lucide-react";
 import { NoteContentEditor } from "@host/features/notes/components/NoteContentEditor";
 import { NoteViewControls } from "@host/features/notes/components/NoteViewControls";

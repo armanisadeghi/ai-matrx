@@ -15,9 +15,8 @@ jest.mock("../../../../host/db", () => ({
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
   }),
 }));
-jest.mock("next/link", () => ({
-  __esModule: true,
-  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+jest.mock("../../../../host/navigation", () => ({
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
     <a href={href} {...rest}>
       {children}
     </a>

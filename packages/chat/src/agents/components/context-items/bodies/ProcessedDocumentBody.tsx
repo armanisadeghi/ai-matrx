@@ -15,28 +15,12 @@
  * the drawer on a document chip (Method A: conditional reveal).
  */
 
-import dynamic from "next/dynamic";
+import { LibraryPreviewPage } from "../../../../next/lazy/LibraryPreviewPage";
 import { useEffect, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
 import type { ContextItemBodyProps } from "../types";
 import { useAttachedDocumentDisplayName } from "../../inputs/resources/attached-documents";
 import { resolvePdfSurfaceIds } from "@host/features/pdf/hooks/usePdfSurfaceLinks";
-
-const LibraryPreviewPage = dynamic(
-  () =>
-    import("@host/features/rag/components/library/LibraryPreviewPage").then(
-      (m) => m.LibraryPreviewPage,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading document…
-      </div>
-    ),
-  },
-);
 
 export function ProcessedDocumentBody({
   item,

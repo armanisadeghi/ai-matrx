@@ -425,7 +425,7 @@ describe("PageHeader is server-rendered", () => {
 const CLIENT_ONLY_HEADER_BASELINE = new Set([
   "app/(core)/tools/pdf-extractor/PdfStudioRouteClient.tsx -> features/pdf-extractor/studio/PdfStudioShell.tsx",
   "app/(core)/tools/pdf-extractor/PdfStudioRouteClient.tsx -> features/pdf-extractor/studio/PdfStudioMobile.tsx",
-  "packages/chat/src/agents/components/context-items/bodies/ProcessedDocumentBody.tsx -> features/rag/components/library/LibraryPreviewPage.tsx",
+  "packages/chat/src/next/lazy/LibraryPreviewPage.tsx -> features/rag/components/library/LibraryPreviewPage.tsx",
   "features/notes/components/NotesLayout.tsx -> features/notes/components/NotesHeaderPortal.tsx",
   "features/notes/components/NotesView.tsx -> features/notes/components/mobile/MobileNotesView.tsx",
   "features/war-room/components/thread/ThreadAudioTab.tsx -> features/transcription-cleanup/components/CleanupPad.tsx",

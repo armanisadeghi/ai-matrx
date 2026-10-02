@@ -12,7 +12,7 @@
 
 import { logFailure } from "@host/lib/errors/expectedRefusal";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "../../../host/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import {

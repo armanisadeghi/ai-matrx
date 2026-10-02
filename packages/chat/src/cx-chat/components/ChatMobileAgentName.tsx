@@ -7,19 +7,11 @@
 
 import { useState, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
+import { usePathname, useSearchParams, useRouter } from "../../host/navigation";
+import { AgentPickerSheet } from "../../next/lazy/AgentPickerSheet";
 import { useAppSelector } from "../../store/hooks";
 import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
 import { pushAppHref } from "@host/lib/deployment/navigate";
-
-const AgentPickerSheet = dynamic(
-  () =>
-    import("./agent/AgentPickerSheet").then(
-      (m) => ({ default: m.AgentPickerSheet }),
-    ),
-  { ssr: false },
-);
 
 export default function ChatMobileAgentName() {
   const router = useRouter();

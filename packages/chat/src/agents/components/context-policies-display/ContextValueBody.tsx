@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { ExternalLink } from "lucide-react";
 import type { ContextObjectType } from "../../types/agent-api-types";
 import {

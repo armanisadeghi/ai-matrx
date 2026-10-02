@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "../../../../host/navigation";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { supabase } from "../../../../host/db";
 import { db } from "../../service/supabase-typed";

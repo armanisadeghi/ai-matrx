@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useRouter, Link } from "../../../host/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch } from "../../../store/hooks";

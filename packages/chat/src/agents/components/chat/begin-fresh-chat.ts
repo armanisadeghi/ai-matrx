@@ -1,6 +1,6 @@
 "use client";
 
-import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import type { ChatRouter } from "../../../host/contract";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { clearFocus } from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
@@ -104,7 +104,7 @@ export function stageChatAgentSwitch({
   href = `/chat/a/${encodeURIComponent(targetAgentId)}`,
 }: {
   dispatch: ChatDispatch;
-  router: AppRouterInstance;
+  router: ChatRouter;
   getState: () => ChatRootState;
   targetAgentId: string;
   sourceAgentId?: string;
@@ -185,7 +185,7 @@ export async function beginFreshChat({
   getState,
 }: {
   dispatch: ChatDispatch;
-  router: AppRouterInstance;
+  router: ChatRouter;
   pathname: string;
   getState: () => ChatRootState;
 }): Promise<void> {

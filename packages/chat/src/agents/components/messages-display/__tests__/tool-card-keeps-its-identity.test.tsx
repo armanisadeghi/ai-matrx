@@ -70,7 +70,8 @@ jest.mock("@host/components/MarkdownStream", () => ({
   default: jest.requireActual("@host/components/MarkdownStreamImpl").default,
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
-jest.mock("next/navigation", () => ({
+jest.mock("../../../../host/navigation", () => ({
+  ...jest.requireActual("../../../../host/navigation"),
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
   usePathname: () => "/chat",
   useSearchParams: () => new URLSearchParams(),

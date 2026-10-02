@@ -27,7 +27,7 @@
  * route (or when the route has no mapping yet).
  */
 
-import { usePathname } from "next/navigation";
+import { usePathname } from "../../host/navigation";
 import { getManifest } from "./registry";
 import {
   useSurfaceRuntime,

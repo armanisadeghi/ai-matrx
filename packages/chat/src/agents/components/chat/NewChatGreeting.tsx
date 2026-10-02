@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "../../../host/navigation";
 import { useAppStore } from "../../../store/hooks";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";

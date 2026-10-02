@@ -17,11 +17,13 @@ import { PageIntelligenceSection } from "../PageIntelligenceSection";
 
 const openMandate = jest.fn();
 
-jest.mock("next/navigation", () => ({ usePathname: () => "/notes" }));
-jest.mock("next/link", () => {
+jest.mock("../../../../host/navigation", () => {
   const ReactModule = require("react");
-  return ({ href, children, prefetch: _prefetch, ...rest }: { href: string; children: React.ReactNode; prefetch?: boolean }) =>
-    ReactModule.createElement("a", { href, ...rest }, children);
+  return {
+    usePathname: () => "/notes",
+    Link: ({ href, children, prefetch: _prefetch, ...rest }: { href: string; children: React.ReactNode; prefetch?: boolean }) =>
+      ReactModule.createElement("a", { href, ...rest }, children),
+  };
 });
 jest.mock("../../../runtime/intelligence", () => ({
   declaredKeysForRoute: () => ["notes.page_guidance"],

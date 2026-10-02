@@ -17,7 +17,8 @@
 //   diagnostics → the Error Inspector capture store (which persists through
 //                 `log_client_error`) — lib/diagnostics/chat-diagnostics-port;
 //                 sourceApp names this client for the package default as well
-//   navigation  → next/navigation + next/link
+//   navigation  → the package's Next binding (`@ai-matrx/chat/next/navigation`):
+//                 the app router + next/link (P10)
 //   windows     → the overlay system (`openOverlay` / `closeOverlay`) and
 //                 the window manager; every CHAT_WINDOWS id must be an
 //                 OverlayId (`chatWindowOverlay` fails to compile otherwise)
@@ -45,9 +46,8 @@
 // handed to the package (`store`), which keeps its `chatHost` slice synced.
 
 import type { ReactNode } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ChatProvider } from "@ai-matrx/chat/host/react";
+import { useNextNavigation } from "@ai-matrx/chat/next/navigation";
 import type {
   ChatChromePort,
   ChatHost,
@@ -424,7 +424,7 @@ function useAppWindowOpeners(): ChatWindowOpeners {
 
 export function ChatHostAdapter({ children }: { children: ReactNode }) {
   const store = useAppStore();
-  const router = useRouter();
+  const navigation = useNextNavigation();
   const windowOpeners = useAppWindowOpeners();
   const canvas = useOptionalCanvas();
 
@@ -453,12 +453,7 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
     notify: appNotify,
     prefs,
     diagnostics: createAppChatDiagnostics(store.dispatch),
-    navigation: {
-      push: (href) => router.push(href),
-      replace: (href) => router.replace(href),
-      back: () => router.back(),
-      Link,
-    },
+    navigation,
     windows: { ...reduxWindows(store, canvas), openers: windowOpeners },
     catalog: () => getAgentCatalog(),
     chrome: appChrome,

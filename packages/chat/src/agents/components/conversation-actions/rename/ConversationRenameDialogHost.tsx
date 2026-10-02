@@ -6,12 +6,7 @@
  * Callers: `openConversationRename(id, title)` from `../conversation-verbs`.
  */
 
-import dynamic from "next/dynamic";
-
-const ConversationRenameDialogHostImpl = dynamic(
-  () => import("./ConversationRenameDialogHostImpl"),
-  { ssr: false, loading: () => null },
-);
+import { ConversationRenameDialogHostImpl } from "../../../../next/lazy/ConversationRenameDialogHostImpl";
 
 export function ConversationRenameDialogHost() {
   return <ConversationRenameDialogHostImpl />;

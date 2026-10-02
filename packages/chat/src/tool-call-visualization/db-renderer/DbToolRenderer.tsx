@@ -13,18 +13,10 @@
  * renders null while it fetches the row, so the row stays quiet until the
  * compiled component (or the GenericRenderer fallback) is ready.
  */
-import dynamic from "next/dynamic";
+import { DbToolRendererImplLazy as LazyImpl } from "../../next/lazy/DbToolRendererImpl";
 import React from "react";
 
 import type { DbToolRendererImplProps } from "./DbToolRendererImpl";
-
-const LazyImpl = dynamic(
-  () =>
-    import("./DbToolRendererImpl").then((m) => ({
-      default: m.DbToolRendererImpl,
-    })),
-  { ssr: false, loading: () => null },
-);
 
 // The public wrapper props ARE the impl props — the only thing the wrapper
 // adds is the lazy boundary, so it shares the exact same prop contract.

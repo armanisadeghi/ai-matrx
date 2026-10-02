@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "../../../../host/navigation";
 import { Building2, Briefcase, ExternalLink } from "lucide-react";
 import { useAppSelector } from "../../../../store/hooks";
 import { selectActiveOrganizationName } from "@host/features/scopes/redux/selectors/active-context";

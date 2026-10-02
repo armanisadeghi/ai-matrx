@@ -19,8 +19,8 @@ import { MarketingPageShell } from "@/features/shell/components/MarketingPageShe
 import { getMarketingRouteMetadata } from "@/features/marketing/lib/route-metadata";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
-import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies.server";
-import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 
 const MARKETING_WORKSPACE_ID = "marketing";
 

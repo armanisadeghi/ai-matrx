@@ -3,7 +3,7 @@
 // Map: common-docs/projects/ai-matrx-composer/MAP.md.
 
 import type { Metadata } from "next";
-import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import { ComposerPlayground } from "./ComposerPlayground";
 
 export const metadata: Metadata = {

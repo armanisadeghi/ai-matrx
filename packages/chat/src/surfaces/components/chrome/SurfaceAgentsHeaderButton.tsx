@@ -19,7 +19,7 @@
  */
 
 import { useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { SurfaceAgentsPanelImpl } from "../../../next/lazy/SurfaceAgentsPanelImpl";
 import { Loader2 } from "lucide-react";
 
 import { TapTargetButton } from "@ai-matrx/tap-target";
@@ -38,19 +38,6 @@ import {
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useOpenAuthGateDialog } from "../../../host/window-openers";
 import { GRID_COMPANION_ATTR } from "@host/features/data-tables/grid-companion";
-
-export const SurfaceAgentsPanelImpl = dynamic(
-  () => import("./SurfaceAgentsPanelImpl"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center gap-2 p-8 text-xs text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading agents…
-      </div>
-    ),
-  },
-);
 
 /** What a guest is told when they reach for Agents — one copy for every door. */
 export const AGENTS_AUTH_GATE = {
@@ -152,3 +139,5 @@ export function SurfaceAgentsHeaderButton({
     </span>
   );
 }
+
+export { SurfaceAgentsPanelImpl };

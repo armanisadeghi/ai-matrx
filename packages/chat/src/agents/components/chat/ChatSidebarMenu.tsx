@@ -45,8 +45,7 @@
 // pattern — NOT to add a parallel styling system here.
 
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
+import { usePathname, useRouter, Link } from "../../../host/navigation";
 import {
   LayoutTemplate,
   Mic,

@@ -24,7 +24,7 @@
 // Neither action can lose an agent, and the confirm says so in those words.
 
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "../../host/navigation";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   deleteAgent,

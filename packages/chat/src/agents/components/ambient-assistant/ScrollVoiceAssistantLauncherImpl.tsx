@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "../../../host/navigation";
 import { AudioLines, Keyboard, Mic, MicOff, Square, X } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";

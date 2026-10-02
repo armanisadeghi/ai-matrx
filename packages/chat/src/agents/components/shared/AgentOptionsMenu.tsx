@@ -25,8 +25,7 @@ import { KIT_WORD } from "@host/features/kits/constants";
 const SAVE_AS_KIT_LABEL = `Save as ${KIT_WORD.oneLower}`;
 
 import { useCallback, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, Link } from "../../../host/navigation";
 import {
   MoreHorizontal,
   FileText,

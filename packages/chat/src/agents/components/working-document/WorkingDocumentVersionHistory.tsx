@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
+import { NoteVersionHistoryPanel } from "../../../next/lazy/NoteVersionHistoryPanel";
 import { ChevronLeft, ChevronRight, Loader2, RotateCcw } from "lucide-react";
 import {
   MatrxDynamicPanelHost,
@@ -21,21 +21,6 @@ import { useAppSelector } from "../../../store/hooks";
 import { selectWorkingDocBinding } from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
-
-const NoteVersionHistoryPanel = dynamic(
-  () =>
-    import("@host/features/notes/components/diff/NoteVersionHistoryPanel").then(
-      (m) => ({ default: m.NoteVersionHistoryPanel }),
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
-        Loading version history…
-      </div>
-    ),
-  },
-);
 
 interface WorkingDocumentVersionHistoryProps {
   conversationId: string;

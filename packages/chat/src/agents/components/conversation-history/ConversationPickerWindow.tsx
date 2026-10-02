@@ -23,7 +23,7 @@
  */
 
 import { useCallback } from "react";
-import dynamic from "next/dynamic";
+import { WindowPanel } from "../../../next/lazy/WindowPanel";
 import { ConversationHistorySidebar } from "./ConversationHistorySidebar";
 import type { ConversationListItem } from "../../redux/conversation-list/conversation-list.types";
 
@@ -31,14 +31,6 @@ import type { ConversationListItem } from "../../redux/conversation-list/convers
 // ConversationPickerWindow is imported by route-visible war-room components,
 // so a static WindowPanel import here eagerly pulled the full window fleet into
 // initial route boot even while the picker was closed.
-const WindowPanel = dynamic(
-  () =>
-    import("@host/features/window-panels/WindowPanel").then(
-      (module) => module.WindowPanel,
-    ),
-  { ssr: false },
-);
-
 /** Stable empty array — `agentIds: []` = every accessible agent. */
 const ALL_AGENTS: string[] = [];
 

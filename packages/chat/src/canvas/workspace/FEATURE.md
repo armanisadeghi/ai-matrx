@@ -48,7 +48,7 @@ such layout in the app.
   shared by every chat panel.
 - **`CanvasPropertiesPanel`** — tabs; lists scroll with a bottom fade, scrollbar on hover.
 - **Cookies** — `workspace-cookies.ts` (chat `side` · `floating` · `…:closed`, properties open/closed, sizes,
-  panel ids) + `workspace-cookies.server.ts` (`readCanvasWorkspaceLayout`).
+  panel ids) + `next/server/workspace-cookies.server.ts` (`readCanvasWorkspaceLayout`, the Next binding).
 - **Navigation** — the shell sidebar + account rail (never a page-local nav). The page registers itself with
   `registerInPlaceChatHost` (`packages/chat/src/agents/components/chat/in-place-chat-host.ts`) so the sidebar's Chats
   side opens history and New chat in this panel; on a phone the header's menu button opens the shell drawer

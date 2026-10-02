@@ -5,7 +5,7 @@
 // the run route. A COMPACT agent picker (never full-width). Self-contained:
 // the page passes the route's active agent; the live name comes from Redux.
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "../../../host/navigation";
 import { useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectAgentName } from "../../redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, Link } from "../../../host/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
 import {

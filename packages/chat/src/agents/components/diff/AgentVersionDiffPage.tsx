@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "../../../host/navigation";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   fetchAgentVersionHistory,

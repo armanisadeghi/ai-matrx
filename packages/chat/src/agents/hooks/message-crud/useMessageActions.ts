@@ -23,7 +23,7 @@
  */
 
 import { useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "../../../host/navigation";
 import { useAppDispatch } from "../../../store/hooks";
 import type { Json } from "../../../host/db-types";
 import { editMessage } from "../../redux/execution-system/message-crud/edit-message.thunk";

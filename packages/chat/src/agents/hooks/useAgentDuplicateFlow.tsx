@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "../../host/navigation";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAgentById } from "../redux/agent-definition/selectors";
 import { duplicateAgent } from "../redux/agent-definition/thunks";

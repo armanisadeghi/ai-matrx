@@ -5,7 +5,7 @@ import {
   ChatNewLandingSkeleton,
 } from "@ai-matrx/chat/agents/components/chat/ChatNewClient";
 import { ChatNewHeader } from "@ai-matrx/chat/agents/components/chat/ChatNewHeader";
-import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "../../../host/navigation";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   selectChatIncognitoActive,

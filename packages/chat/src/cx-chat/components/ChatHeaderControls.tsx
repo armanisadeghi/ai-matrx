@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 import { Share2, Blocks, Camera } from "lucide-react";
-import dynamic from "next/dynamic";
+import { ShareModal } from "../../next/lazy/ShareModal";
 import { IconButton, PageHeaderPortal } from "../../host/chrome";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { selectIsSuperAdminDebugger } from "../../host/prefs";
@@ -24,18 +24,10 @@ import {
   setUseBlockMode,
   setUseSnapshot,
 } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "../../host/navigation";
 import { ContextGaugeWidget } from "./ContextGaugeWidget";
 import { ConversationPageMenu } from "../../agents/components/chat/ConversationPageMenu";
 import { selectIsAuthenticated } from "../../host/identity";
-
-const ShareModal = dynamic(
-  () =>
-    import("@host/features/sharing/components/ShareModal").then((m) => ({
-      default: m.ShareModal,
-    })),
-  { ssr: false },
-);
 
 export default function ChatHeaderControls() {
   const dispatch = useAppDispatch();

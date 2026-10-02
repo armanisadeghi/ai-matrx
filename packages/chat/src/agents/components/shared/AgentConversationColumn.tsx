@@ -7,7 +7,7 @@ import {
   useEffect,
   useLayoutEffect,
 } from "react";
-import dynamic from "next/dynamic";
+import { CreatorRunPanel } from "../../../next/lazy/CreatorRunPanel";
 import { ArrowDown } from "lucide-react";
 import { motion } from "motion/react";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
@@ -48,14 +48,6 @@ import {
 // tab panel). Without `dynamic()` it would pull WindowPanel and the
 // entire window-panels chunk into every route that statically imports
 // AgentConversationColumn (chat, agent run, agent builder).
-const CreatorRunPanel = dynamic(
-  () =>
-    import("../run-controls/CreatorRunPanel").then((m) => ({
-      default: m.CreatorRunPanel,
-    })),
-  { ssr: false, loading: () => null },
-);
-
 const CHAT_INITIAL_VISIBLE_GROUPS = 2;
 const CHAT_AUTO_VISIBLE_GROUPS = 6;
 const CHAT_REVEAL_STEP_GROUPS = 2;

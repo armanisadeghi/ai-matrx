@@ -15,7 +15,7 @@
  */
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "../../../host/navigation";
 import { AlertCircle, RotateCw, Loader2, ArrowRight } from "lucide-react";
 import { bindingUnresolvedFailure } from "./friendlyStreamError";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";

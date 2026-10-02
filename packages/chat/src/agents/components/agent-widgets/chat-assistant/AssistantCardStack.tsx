@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useRef, useMemo } from "react";
-import dynamic from "next/dynamic";
+import { AgentAssistantMessage } from "../../../../next/lazy/AgentAssistantMessage";
 import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import { selectConversationMessages } from "../../../redux/execution-system/messages/messages.selectors";
 import type { MessageRole } from "../../../types/agent-message-types";
@@ -33,16 +33,6 @@ import { AgentUserMessage } from "../../messages-display/user/AgentUserMessage";
 import { collapseByRequestId } from "../../messages-display/assistant/collapse-by-request-id";
 import { AgentPlanningIndicator } from "../../shared/AgentPlanningIndicator";
 import { ChatAssistantVariableInputs } from "./ChatAssistantVariableInputs";
-
-const AgentAssistantMessage = dynamic(
-  () =>
-    import("../../messages-display/assistant/AgentAssistantMessage").then(
-      (m) => ({
-        default: m.AgentAssistantMessage,
-      }),
-    ),
-  { ssr: false },
-);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

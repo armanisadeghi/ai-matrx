@@ -10,17 +10,9 @@ import {
   selectUIState,
 } from "./_legacy-stubs";
 import { chatConversationsActions } from "./_legacy-stubs";
-import dynamic from "next/dynamic";
+import { AssistantMessage } from "../next/lazy/CxAssistantMessage";
 import { MessageErrorBoundary } from "./MessageErrorBoundary";
 import { UserMessage } from "./UserMessage";
-
-const AssistantMessage = dynamic(
-  () =>
-    import("./AssistantMessage").then(
-      (m) => m.AssistantMessage,
-    ),
-  { ssr: false },
-);
 
 interface MessageListProps {
   sessionId: string;

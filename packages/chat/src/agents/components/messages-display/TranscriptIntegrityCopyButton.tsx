@@ -8,7 +8,7 @@
  */
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "../../../host/navigation";
 import { Stethoscope } from "lucide-react";
 import { useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";

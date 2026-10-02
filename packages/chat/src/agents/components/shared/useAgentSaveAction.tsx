@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "../../../host/navigation";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   selectAgentIsDirty,

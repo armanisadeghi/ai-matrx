@@ -1,7 +1,7 @@
 /**
  * "Last mode used" (Amendment 1, A1) — a cookie, not a setting.
  *
- * Framework-free on purpose: the server reader (`composer-mode.server.ts`)
+ * Framework-free on purpose: the server reader (`next/server/composer-mode.server.ts`, the Next binding)
  * and the client writer (`useComposerMode`) share these constants. The
  * server reads it so the first paint is already in the right mode (no flash);
  * the default mode and "remember last mode" are knobs

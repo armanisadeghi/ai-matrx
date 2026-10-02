@@ -2,7 +2,7 @@ import { useAppSelector } from "../../../../store/hooks";
 import { selectInstanceAgentName } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectInstanceAgentDescription } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { Webhook } from "lucide-react";
-import dynamic from "next/dynamic";
+import { IconResolver } from "../../../../next/lazy/IconResolver";
 import type { ChatRootState } from "../../../../store/root-state";
 // The MarkdownStream FRONT DOOR (already a dynamic ssr:false shell) — never
 // re-wrap or bypass it with a second boundary on MarkdownStreamImpl; that
@@ -11,14 +11,6 @@ import MarkdownStream from "@host/components/MarkdownStream";
 import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { selectIsVariableFormShown } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { emptyStateInstruction } from "./empty-state-instruction";
-
-const IconResolver = dynamic(
-  () =>
-    import("@ai-matrx/icons").then((m) => ({
-      default: m.IconResolver,
-    })),
-  { ssr: false },
-);
 
 /** Beyond this length the empty-state background shows description only. */
 const LONG_DESCRIPTION_CHAR_THRESHOLD = 1000;

@@ -8,8 +8,8 @@ import { EducationAgeGateMount } from "@/features/education/compliance/Education
 import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
-import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies.server";
-import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
+import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 
 /** The education workspace's id: its chat, its remembered layout. */
 const EDUCATION_WORKSPACE_ID = "education";

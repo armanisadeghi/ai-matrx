@@ -1,6 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { AgentDiffViewer } from "../../../next/lazy/AgentDiffViewer";
 import { useEffect, useState, useTransition } from "react";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
@@ -23,19 +23,6 @@ import SuspenseLoader from "@host/components/loaders/SuspenseLoader";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
-
-const AgentDiffViewer = dynamic(
-  () => import("./AgentDiffViewer").then((m) => m.AgentDiffViewer),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex-1 p-4 space-y-3">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    ),
-  },
-);
 
 interface SideState {
   agentId: string | null;

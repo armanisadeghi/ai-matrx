@@ -17,7 +17,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ComponentType, ReactNode } from "react";
+import type { AnchorHTMLAttributes, ComponentType, ReactNode, Ref } from "react";
 import type { AgentCatalog } from "@ai-matrx/agents/catalog";
 import type { ChatDatabase } from "./db-types";
 import type { ChatWindowId } from "./windows";
@@ -484,16 +484,54 @@ export interface ChatPrefsPort {
   SettingDoor?: ComponentType<ChatSettingDoorProps>;
 }
 
-export interface ChatLinkProps {
+/**
+ * A link's props: an anchor's, `href` a string. `prefetch` / `replace` /
+ * `scroll` are routing hints a router-backed host honours (Next's `<Link>`);
+ * the default anchor drops them.
+ */
+export interface ChatLinkProps
+  extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> {
   href: string;
-  className?: string;
-  children: ReactNode;
+  children?: ReactNode;
+  ref?: Ref<HTMLAnchorElement>;
+  prefetch?: boolean | null;
+  replace?: boolean;
+  scroll?: boolean;
 }
 
+export interface ChatNavigateOptions {
+  scroll?: boolean;
+}
+
+/** What `useRouter()` gives a package component (the app router's shape). */
+export interface ChatRouter {
+  push(href: string, options?: ChatNavigateOptions): void;
+  replace(href: string, options?: ChatNavigateOptions): void;
+  back(): void;
+  forward(): void;
+  refresh(): void;
+  prefetch(href: string): void;
+}
+
+/** The current URL's query, read-only by contract (Next's `ReadonlyURLSearchParams` is one). */
+export type ChatSearchParams = URLSearchParams;
+
+/**
+ * Navigation port (R10, slice P10). Package code reaches it only through the
+ * `host/navigation` seam (`useRouter`, `usePathname`, `useSearchParams`,
+ * `Link`) — never `next/*`. The three `use*` members are React hooks the seam
+ * calls during render: a host passes the same functions for the life of the
+ * page. Default: `window.location` + a plain anchor (`defaults/navigation`).
+ * matrx-frontend passes the package's Next binding (`next/navigation`).
+ */
 export interface ChatNavigationPort {
+  /** Imperative navigation for non-React code. */
   push(href: string): void;
   replace(href: string): void;
   back(): void;
+  useRouter(): ChatRouter;
+  usePathname(): string;
+  useSearchParams(): ChatSearchParams;
   Link: ComponentType<ChatLinkProps>;
 }
 
@@ -765,7 +803,7 @@ export interface ChatHost {
   diagnostics?: ChatDiagnosticsPort;
   /** Default: localStorage (memory, announced once, when storage is unavailable). */
   prefs?: ChatPrefsPort;
-  /** Default: window.location + <a>. matrx-frontend passes next/navigation + next/link. */
+  /** Default: window.location + <a>. matrx-frontend passes the package's Next binding (`next/navigation`). */
   navigation?: ChatNavigationPort;
   /** Default: announces once that no window host exists here (a floating-window host is not built yet). */
   windows?: ChatWindowsPort;

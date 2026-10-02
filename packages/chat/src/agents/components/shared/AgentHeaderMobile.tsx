@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, type ReactNode } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "../../../host/navigation";
 import { Check, MoreHorizontal, Pencil, Play, Webhook } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAgentIsDirty } from "../../redux/agent-definition/selectors";

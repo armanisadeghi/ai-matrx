@@ -15,7 +15,7 @@
  * run says that, and a schedule that is switched off says so with the one place to turn it on.
  */
 
-import Link from "next/link";
+import { Link } from "../../../../host/navigation";
 import { useEffect, useState } from "react";
 import { usePageCaptureContribution } from "@host/components/agent-copy/page-capture/usePageCapture";
 import { ShieldCheck, ShieldAlert } from "lucide-react";

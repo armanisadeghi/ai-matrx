@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleAlert } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "../../../host/navigation";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAppStore } from "../../../store/hooks";
 import { ChatRoomClient } from "./ChatRoomClient";

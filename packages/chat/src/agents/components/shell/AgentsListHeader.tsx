@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "../../../host/navigation";
 import { useEffect } from "react";
 import { FileChartColumn, Webhook } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";

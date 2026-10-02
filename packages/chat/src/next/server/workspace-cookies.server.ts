@@ -11,7 +11,7 @@ import {
   parseCanvasChatCookie,
   parseCanvasPropertiesCookie,
   type CanvasWorkspaceLayout,
-} from "./workspace-cookies";
+} from "../../canvas/workspace/workspace-cookies";
 
 /** Read on the server so the first paint is at the layout the person left. */
 export async function readCanvasWorkspaceLayout(

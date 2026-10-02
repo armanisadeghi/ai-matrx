@@ -14,16 +14,9 @@
 // Navigation: Uses Next.js router.push() for proper App Router navigation.
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import dynamic from "next/dynamic";
+import { useRouter, usePathname, useSearchParams } from "../../host/navigation";
+import { AgentPickerSheet } from "../../next/lazy/AgentPickerSheet";
 
-const AgentPickerSheet = dynamic(
-  () =>
-    import("./agent/AgentPickerSheet").then(
-      (m) => ({ default: m.AgentPickerSheet }),
-    ),
-  { ssr: false },
-);
 import { useChatCatalogueInit } from "../hooks/useChatCatalogueInit";
 import { ChevronDown } from "lucide-react";
 import { SidebarActions } from "./sidebar/SidebarActions";

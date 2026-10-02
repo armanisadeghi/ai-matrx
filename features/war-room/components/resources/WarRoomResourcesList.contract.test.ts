@@ -13,6 +13,11 @@ const conversationPickerSource = readFileSync(
   ),
   "utf8",
 );
+// The dynamic() front door lives in the package's Next binding (P10).
+const windowPanelLazySource = readFileSync(
+  join(process.cwd(), "packages/chat/src/next/lazy/WindowPanel.tsx"),
+  "utf8",
+);
 
 describe("war-room resource attach boundaries", () => {
   it("passes only reference-pickable listable tokens to universal search", () => {
@@ -29,8 +34,11 @@ describe("war-room resource attach boundaries", () => {
       featureRegExp(/import\s+\{\s*WindowPanel\s*\}\s+from\s+["']@\/features\/window-panels\/WindowPanel["']/),
     );
     expect(conversationPickerSource).toContain(
+      'import { WindowPanel } from "../../../next/lazy/WindowPanel"',
+    );
+    expect(windowPanelLazySource).toContain(
       'import("@host/features/window-panels/WindowPanel")',
     );
-    expect(conversationPickerSource).toContain("ssr: false");
+    expect(windowPanelLazySource).toContain("ssr: false");
   });
 });

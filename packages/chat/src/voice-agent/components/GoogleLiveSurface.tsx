@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "../../host/navigation";
 import { useState } from "react";
 import { ArrowLeft, Music2 } from "lucide-react";
 import { VoiceControlCluster } from "./VoiceControlCluster";

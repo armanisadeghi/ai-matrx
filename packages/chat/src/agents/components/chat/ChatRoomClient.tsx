@@ -5,7 +5,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { shallowEqual } from "react-redux";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "../../../host/navigation";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectAgentExecutionPayload } from "../../redux/agent-definition/selectors";

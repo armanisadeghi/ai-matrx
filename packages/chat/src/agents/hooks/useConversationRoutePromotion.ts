@@ -22,7 +22,7 @@
 // the gotchas each guard exists to kill.
 
 import { useEffect, useEffectEvent, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "../../host/navigation";
 import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
 import { waitForConversationPersisted } from "../redux/execution-system/conversations/conversation-persistence";

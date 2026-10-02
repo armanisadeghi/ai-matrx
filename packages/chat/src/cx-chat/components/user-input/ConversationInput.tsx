@@ -8,8 +8,8 @@ import React, {
   useMemo,
 } from "react";
 import { useDebugContext } from "../../../host/prefs-react";
-import dynamic from "next/dynamic";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { GuidedVariableInputs, StackedVariableInputs } from "../../../next/lazy/ChatVariableInputs";
+import { useRouter, useSearchParams, usePathname } from "../../../host/navigation";
 import {
   CornerDownLeft,
   Loader2,
@@ -18,21 +18,6 @@ import {
 } from "lucide-react";
 import { ResponseModeButtons, BackToStartButton } from "./InpuControlButtons";
 
-const GuidedVariableInputs = dynamic(
-  () =>
-    import("./GuidedVariableInputs").then(
-      (m) => ({ default: m.GuidedVariableInputs }),
-    ),
-  { ssr: false },
-);
-
-const StackedVariableInputs = dynamic(
-  () =>
-    import("./StackedVariableInputs").then(
-      (m) => ({ default: m.StackedVariableInputs }),
-    ),
-  { ssr: false },
-);
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import { InputActionButtons } from "./InputActionButtons";

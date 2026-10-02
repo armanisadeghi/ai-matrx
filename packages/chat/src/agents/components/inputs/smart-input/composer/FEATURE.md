@@ -93,7 +93,7 @@ Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fix
   panel height × `compact_input_max_height_pct` (50% until the knob answers; `undefined` until measured).
 - `useComposerAgent(conversationId)` / `useEffectiveModelId` — agent, effective model, Custom, presets.
 
-**Server** — `readComposerModeCookie()` (`composer-mode.server.ts`): the "last mode used" cookie for first paint.
+**Server** — `readComposerModeCookie()` (`packages/chat/src/next/server/composer-mode.server.ts`, the Next binding): the "last mode used" cookie for first paint.
 
 **Demo** — `/demos/composer` (`app/(dev)/demos/composer/`): a real conversation, mode + size switches.
 

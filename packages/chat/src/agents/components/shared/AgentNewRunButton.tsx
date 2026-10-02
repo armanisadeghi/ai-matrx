@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "../../../host/navigation";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { startNewConversation } from "../../redux/execution-system/thunks/create-instance.thunk";
 import { PlusTapButton } from "@ai-matrx/tap-target/buttons";

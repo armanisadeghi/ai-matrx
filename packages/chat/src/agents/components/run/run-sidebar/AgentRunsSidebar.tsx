@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "../../../../host/navigation";
 import { Loader2, ChevronRight, MessageSquare } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {

@@ -12,7 +12,7 @@
  */
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
+import { ResourcePickerWindow } from "../../../../next/lazy/ResourcePickerWindow";
 import { Plus } from "lucide-react";
 import { useDialogContainer } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../../store/hooks";
@@ -21,14 +21,6 @@ import { selectAttachmentCapabilities } from "../../../redux/execution-system/in
 import { PlusAttachMenu } from "../smart-input/PlusAttachMenu";
 import { useAttachResource, useDetachResource } from "./attach-resource";
 import type { Resource } from "../../../resources/types";
-
-const ResourcePickerWindow = dynamic(
-  () =>
-    import("@host/features/window-panels/windows/ResourcePickerWindow").then(
-      (m) => ({ default: m.ResourcePickerWindow }),
-    ),
-  { ssr: false },
-);
 
 interface SmartAgentResourcePickerButtonProps {
   conversationId: string;

@@ -10,8 +10,8 @@
 //  3. router.replace navigates to /c/{id} — instance stays alive, streaming continues.
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
+import { useRouter } from "../../host/navigation";
+import { AgentPickerSheet } from "../../next/lazy/AgentPickerSheet";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
 import { selectLatestConversationId } from "../../agents/redux/execution-system/selectors/aggregate.selectors";
@@ -19,14 +19,6 @@ import { SmartAgentInput } from "../../agents/components/inputs/smart-input/Smar
 import { setInputPlaceholder } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { pushAppHref, replaceAppHref } from "@host/lib/deployment/navigate";
 import { selectIsAuthenticated } from "../../host/identity";
-
-const AgentPickerSheet = dynamic(
-  () =>
-    import("./agent/AgentPickerSheet").then(
-      (m) => ({ default: m.AgentPickerSheet }),
-    ),
-  { ssr: false },
-);
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 

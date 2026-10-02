@@ -54,7 +54,10 @@ jest.mock("../../../../host/prefs-react", () => ({
   ...jest.requireActual("../../../../host/prefs-react"),
   useDebugContext: () => ({ publish: () => undefined, isActive: false }),
 }));
-jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+jest.mock("../../../../host/navigation", () => ({
+  ...jest.requireActual("../../../../host/navigation"),
+  useRouter: () => ({ push: jest.fn() }),
+}));
 jest.mock("next/dynamic", () => () => () => null);
 jest.mock(
   "../../../../agents/components/messages-display/AgentConversationDisplay",

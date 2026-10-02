@@ -1,7 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { usePathname } from "next/navigation";
+import { ScrollAssistantLauncherImpl, ScrollVoiceAssistantLauncherImpl } from "../../../next/lazy/ScrollAssistantLaunchers";
+import { usePathname } from "../../../host/navigation";
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { ScrollAssistantLauncherImplProps } from "./ScrollAssistantLauncherImpl";
@@ -29,24 +29,6 @@ const FLOATING_SCROLLER =
 export function isOnFloatingSurface(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest(FLOATING_SCROLLER));
 }
-
-const ScrollAssistantLauncherImpl = dynamic<ScrollAssistantLauncherImplProps>(
-  () => import("./ScrollAssistantLauncherImpl"),
-  {
-    ssr: false,
-    // A prop-blind loading shell would jump between the two supported heights.
-    // Reveal the correctly sized implementation once its chunk is ready.
-    loading: () => null,
-  },
-);
-
-const ScrollVoiceAssistantLauncherImpl = dynamic(
-  () => import("./ScrollVoiceAssistantLauncherImpl"),
-  {
-    ssr: false,
-    loading: () => null,
-  },
-);
 
 /**
  * Tiny front door for the ambient page assistant. The expensive agent/chat

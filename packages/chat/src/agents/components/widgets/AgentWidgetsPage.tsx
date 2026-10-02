@@ -14,7 +14,7 @@
 
 import { logFailure } from "@host/lib/errors/expectedRefusal";
 import { useEffect, useRef, useState, type ComponentProps } from "react";
-import Link from "next/link";
+import { Link } from "../../../host/navigation";
 import { DynamicIcon } from "@ai-matrx/icons";
 import { Loader2, TestTube, ChevronDown, Rocket } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";

@@ -43,7 +43,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "../../host/navigation";
 import { useAppDispatch } from "../../store/hooks";
 import {
   initializeChatAgents,

@@ -6,7 +6,7 @@ import {
   useAppStore,
 } from "../../store/hooks";
 import { waitForConversationPersisted } from "../redux/execution-system/conversations/conversation-persistence";
-import { useRouter } from "next/navigation";
+import { useRouter } from "../../host/navigation";
 import { useConversationRoutePromotion } from "./useConversationRoutePromotion";
 
 jest.mock("../../store/hooks", () => ({
@@ -17,7 +17,7 @@ jest.mock("../../store/hooks", () => ({
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../store/hooks"));
 
-jest.mock("next/navigation", () => ({
+jest.mock("../../host/navigation", () => ({
   useRouter: jest.fn(),
 }));
 

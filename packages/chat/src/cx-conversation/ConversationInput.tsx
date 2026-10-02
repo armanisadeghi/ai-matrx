@@ -7,8 +7,8 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import dynamic from "next/dynamic";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { GuidedVariableInputs, PublicVariableInputs } from "../next/lazy/PublicChatVariableInputs";
+import { useRouter, useSearchParams, usePathname } from "../host/navigation";
 import {
   CornerDownLeft,
   Loader2,
@@ -21,21 +21,6 @@ import {
   BackToStartButton,
 } from "../public-chat/components/AgentSelector";
 
-const GuidedVariableInputs = dynamic(
-  () =>
-    import("../public-chat/components/GuidedVariableInputs").then(
-      (m) => ({ default: m.GuidedVariableInputs }),
-    ),
-  { ssr: false },
-);
-
-const PublicVariableInputs = dynamic(
-  () =>
-    import("../public-chat/components/PublicVariableInputs").then(
-      (m) => ({ default: m.PublicVariableInputs }),
-    ),
-  { ssr: false },
-);
 import {
   TapTargetButtonTransparent,
   TapTargetButtonSolid,
