@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { effectiveOfferingPinOf } from "@/lib/redux/slices/agent-settings/internal-utils";
 import {
   classConfigKey,
   fetchModelClassConfig,
@@ -61,9 +62,7 @@ export function useAgentSettingsClassControls(agentId: string): void {
     return typeof id === "string" ? id : null;
   });
   const offeringId = useAppSelector((state) => {
-    const entry = state.agentSettings?.entries[agentId];
-    const pin = entry?.overrides?.offering_id ?? entry?.defaults?.offering_id;
-    return typeof pin === "string" ? pin : null;
+    return effectiveOfferingPinOf(state.agentSettings?.entries[agentId]) ?? null;
   });
   useModelClassControls(modelId, offeringId);
 }

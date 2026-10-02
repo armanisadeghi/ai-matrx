@@ -487,21 +487,59 @@ export function getActionForMode(
  *
  * Absorbs the diff logic from ConversationInput.handleSettingsChange.
  * In chat/test contexts, only true overrides are stored — not redundant defaults.
+ *
+ * REMOVAL IS A DIFF TOO: a key the defaults carry that `proposed` dropped (or
+ * set to null) is stored as an explicit `null` override. Without it a removal
+ * was inexpressible — the default (e.g. the agent's class pin `offering_id`)
+ * silently came back on the next merge and on the wire. `null` = "the API must
+ * not use this key"; `mergeEffectiveSettings` deletes it, `buildApiPayload`
+ * sends it (the server honours `offering_id: null`).
  */
 export function computeOverrideDiff(
   defaults: Partial<AgentSettings>,
   proposed: Partial<AgentSettings>,
 ): Partial<AgentSettings> {
-  const diff: Partial<AgentSettings> = {};
+  const diff: Record<string, unknown> = {};
+  const defaultsRecord = defaults as Record<string, unknown>;
+  const proposedRecord = proposed as Record<string, unknown>;
 
-  for (const [key, proposedValue] of Object.entries(proposed)) {
-    const defaultValue = (defaults as Record<string, unknown>)[key];
+  for (const [key, proposedValue] of Object.entries(proposedRecord)) {
+    if (proposedValue === undefined || proposedValue === null) continue;
+    const defaultValue = defaultsRecord[key];
     if (JSON.stringify(proposedValue) !== JSON.stringify(defaultValue)) {
-      (diff as Record<string, unknown>)[key] = proposedValue;
+      diff[key] = proposedValue;
     }
   }
 
-  return diff;
+  for (const [key, defaultValue] of Object.entries(defaultsRecord)) {
+    if (defaultValue === undefined || defaultValue === null) continue;
+    const proposedValue = proposedRecord[key];
+    if (proposedValue === undefined || proposedValue === null) {
+      diff[key] = null;
+    }
+  }
+
+  return diff as Partial<AgentSettings>;
+}
+
+/**
+ * The class pin (`offering_id`) an entry runs on: an override — including an
+ * explicit `null` removal — wins over the defaults. Never `overrides ?? defaults`
+ * (a removal is `null`, which `??` would fall through to the default's pin).
+ */
+export function effectiveOfferingPinOf(
+  entry:
+    | { defaults?: Partial<AgentSettings>; overrides?: Partial<AgentSettings> }
+    | null
+    | undefined,
+): string | undefined {
+  if (!entry) return undefined;
+  const overrides = (entry.overrides ?? {}) as Record<string, unknown>;
+  const raw =
+    "offering_id" in overrides
+      ? overrides.offering_id
+      : (entry.defaults as Record<string, unknown> | undefined)?.offering_id;
+  return typeof raw === "string" && raw !== "" ? raw : undefined;
 }
 
 // ── API Payload Builder ────────────────────────────────────────────────────────
@@ -534,6 +572,14 @@ export function buildApiPayload(
     payload[key] = value;
   }
 
+  // An explicit removal (a `null` override — see computeOverrideDiff) reaches
+  // the wire as `null` in every context: the server would otherwise fall back
+  // to the agent's stored value (e.g. its class pin).
+  for (const [key, value] of Object.entries(overrides)) {
+    if (UI_ONLY_SET.has(key)) continue;
+    if (value === null) payload[key] = null;
+  }
+
   return payload as Partial<AgentSettings>;
 }
 
@@ -547,7 +593,13 @@ export function mergeEffectiveSettings(
   defaults: Partial<AgentSettings>,
   overrides: Partial<AgentSettings>,
 ): Partial<AgentSettings> {
-  return { ...defaults, ...overrides };
+  const merged: Record<string, unknown> = { ...defaults };
+  for (const [key, value] of Object.entries(overrides)) {
+    // `null` override = removed (see computeOverrideDiff) — the key is gone.
+    if (value === null) delete merged[key];
+    else if (value !== undefined) merged[key] = value;
+  }
+  return merged as Partial<AgentSettings>;
 }
 
 // ── Variable Utilities ─────────────────────────────────────────────────────────

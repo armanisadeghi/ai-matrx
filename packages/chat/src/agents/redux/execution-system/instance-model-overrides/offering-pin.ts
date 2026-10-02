@@ -72,3 +72,33 @@ export function resetModelChoice(conversationId: string): ChatThunk {
     dispatch(resetOverride({ conversationId, key: OFFERING_KEY }));
   };
 }
+
+/**
+ * The override keys an agent switch carries, with the CLASS bound to its MODEL.
+ *
+ * A class (`offering_id`) is an offering OF one model. Carried alone — e.g. a
+ * class pinned from a Service chip on a default chat whose model is a SEEDED
+ * launch default (which never crosses the switch) — it lands beside the target
+ * agent's own model and the run raises. So:
+ *   - the model travels → its class travels with it: the source's effective
+ *     pin, or — when the target has a pin of its own (base or override) — an
+ *     explicit removal (`null`), so the target's class (an offering of the
+ *     target's model) never rides the carried model;
+ *   - the model does not travel → no class key travels either (no pin, no
+ *     removal); the target keeps its own model AND its own class.
+ * `carried` uses the replaceOverrides document shape (`null` = removal).
+ */
+export function classOnlyBesideItsModel(
+  carried: Record<string, unknown>,
+  source: InstanceModelOverrideState,
+  target: InstanceModelOverrideState | undefined,
+): Record<string, unknown> {
+  const next = { ...carried };
+  delete next[OFFERING_KEY];
+  if (typeof next.model === "string" && next.model !== "") {
+    const pin = effectiveOfferingPin(source);
+    if (pin) next[OFFERING_KEY] = pin;
+    else if (effectiveOfferingPin(target)) next[OFFERING_KEY] = null;
+  }
+  return next;
+}

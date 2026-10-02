@@ -25,6 +25,7 @@ import type {
 } from "@/lib/redux/slices/agent-settings/types";
 import {
   buildApiPayload,
+  effectiveOfferingPinOf,
   getActionForMode,
   mergeEffectiveSettings,
   mergeVariableValues,
@@ -145,8 +146,8 @@ export const selectNormalizedControls = createSelector(
     (state: RootState, agentId: string) => {
       const entry = state.agentSettings?.entries[agentId];
       const modelId = entry?.overrides?.model ?? entry?.defaults?.model;
-      const pin = entry?.overrides?.offering_id ?? entry?.defaults?.offering_id;
-      return typeof pin === "string" && typeof modelId === "string"
+      const pin = effectiveOfferingPinOf(entry);
+      return pin && typeof modelId === "string"
         ? state.modelRegistry?.classConfigByOffering?.[classConfigKey(modelId, pin)]
         : undefined;
     },
