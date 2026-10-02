@@ -20,6 +20,12 @@ jest.mock("@host/lib/redux/hooks", () => ({
 jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
   selectScopeSelectionsContext: () => ({}),
 }));
+// The context door (the conversation's own fields); this test is about the selection.
+jest.mock("../../redux/execution-system/context-rules/request-context", () => ({
+  buildPreviewRequestContext: () => ({}),
+  pageContextFor: () => null,
+  selectResolvedContextRows: () => () => null,
+}));
 jest.mock(
   "../../redux/execution-system/conversations/conversations.selectors",
   () => ({

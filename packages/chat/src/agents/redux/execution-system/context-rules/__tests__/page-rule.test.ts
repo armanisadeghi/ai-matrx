@@ -187,6 +187,8 @@ describe("fan-out and follow-up turns keep the rule", () => {
 
 describe("the context preview — what the agent will receive", () => {
   it("carries the same context, withheld keys and page rule a send of that conversation does", () => {
+    // The client value stamps `now`; one instant for both reads.
+    jest.useFakeTimers({ now: new Date("2026-10-01T18:00:00Z") });
     for (const [own, pageOff] of [
       [true, false],
       [false, true],
@@ -202,6 +204,7 @@ describe("the context preview — what the agent will receive", () => {
       expect(preview.page_context ?? null).toEqual(send.page_context);
       expect(preview.surface).toBe(BATTLE);
     }
+    jest.useRealTimers();
   });
 
   it("a battle column's preview names the page rule, so its receipt withholds route and id", () => {

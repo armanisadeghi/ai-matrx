@@ -24,6 +24,10 @@
 //      own conversation and a switched-off page) — the chip would say "off" while the server,
 //      never told, delivered the route, the page's introduction and the screens around it
 //      (Model Battle, 2026-10-01); and a door that stops deciding the page rule for its rows.
+//   9. the context preview (`POST /ai/context/preview`, "what the agent will receive") that does
+//      not send the door's preview fields (`buildPreviewRequestContext`: context, withheld keys,
+//      page_context, surface) — its receipt would disagree with the real turn on the page's own
+//      conversation and on a switched-off page.
 //
 // `--self-test` plants each violation in memory and proves it is caught, then proves a clean file
 // passes and that a stale allow-list entry fails.
@@ -57,6 +61,25 @@ const REQUEST_BUILDERS = [
   "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
   "packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts",
 ];
+
+/** The preview's request, and the door's preview fields (rule 9). */
+const PREVIEW = "packages/chat/src/agents/components/context-preview/useContextPreview.ts";
+
+/** Rule 9: the preview body is the door's preview fields; the door's preview fields carry the page rule. */
+export function previewFindings(relPath, text, doorText) {
+  const out = [];
+  const reads = /\bbuildPreviewRequestContext\s*\(/.test(text);
+  const spreads = /path:\s*"\/ai\/context\/preview"[\s\S]{0,1200}?\.\.\.doorFields/.test(text);
+  if (!(reads && spreads)) {
+    out.push({ file: relPath, line: 1, rule: "preview-no-door", text: "the context preview no longer sends the door's fields (context, withheld keys, page_context)" });
+  }
+  const doorPreview = /export function buildPreviewRequestContext[\s\S]{0,800}?buildRequestContext\(state, conversationId\)[\s\S]{0,600}?page_context:\s*door\.page_context/.test(doorText);
+  if (!doorPreview) {
+    out.push({ file: DOOR_PATH, line: 1, rule: "preview-page-rule", text: "the door's preview fields no longer carry the send's page_context" });
+  }
+  return out;
+}
+const DOOR_PATH = "packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts";
 
 /** Rule 6 for one builder's text: the door's withheld keys must reach its body. */
 export function builderFindings(relPath, text) {
@@ -148,6 +171,9 @@ function run() {
       builderFindings(p, readFileSync(join(ROOT, p), "utf8")),
     ),
     ...(existsSync(join(ROOT, DOOR)) ? doorFindings(DOOR, readFileSync(join(ROOT, DOOR), "utf8")) : []),
+    ...(existsSync(join(ROOT, PREVIEW)) && existsSync(join(ROOT, DOOR))
+      ? previewFindings(PREVIEW, readFileSync(join(ROOT, PREVIEW), "utf8"), readFileSync(join(ROOT, DOOR), "utf8"))
+      : [{ file: PREVIEW, line: 1, rule: "preview-no-door", text: "the context preview hook moved; point rule 9 at it" }]),
   ];
   const stale = staleAllowList();
   for (const f of all) console.error(`✗ ${f.file}:${f.line} [${f.rule}] ${f.text}`);
@@ -226,6 +252,23 @@ function selfTest() {
   }
   if (!doorFindings(DOOR, "  page_context: null,").some((f) => f.rule === "door-page-rule")) {
     console.error("✗ self-test: a door that ignores the page rule was NOT caught");
+    ok = false;
+  }
+  // Rule 9: the preview sends the door's fields, and those carry the page rule.
+  const previewOk = 'const doorFields = dispatch((_d, g) => buildPreviewRequestContext(g(), id));\n  callApi({ path: "/ai/context/preview", body: { a, ...doorFields } });';
+  const doorPreviewOk = "export function buildPreviewRequestContext(state, conversationId) {\n  const door = buildRequestContext(state, conversationId);\n  return { ...(door.page_context ? { page_context: door.page_context } : {}) };\n}";
+  if (previewFindings(PREVIEW, previewOk, doorPreviewOk).length) {
+    console.error("✗ self-test: a preview that sends the door's fields was flagged", previewFindings(PREVIEW, previewOk, doorPreviewOk));
+    ok = false;
+  }
+  const previewBare = 'callApi({ path: "/ai/context/preview", body: { conversation_id, scope_ids } });';
+  if (!previewFindings(PREVIEW, previewBare, doorPreviewOk).some((f) => f.rule === "preview-no-door")) {
+    console.error("✗ self-test: a preview that skips the door was NOT caught");
+    ok = false;
+  }
+  const doorPreviewNoPage = "export function buildPreviewRequestContext(state, conversationId) {\n  const door = buildRequestContext(state, conversationId);\n  return { context: door.context };\n}";
+  if (!previewFindings(PREVIEW, previewOk, doorPreviewNoPage).some((f) => f.rule === "preview-page-rule")) {
+    console.error("✗ self-test: door preview fields without page_context were NOT caught");
     ok = false;
   }
   // Rule 7 holds inside an allowed request builder too (the resume path forced it until 2026-10-01).
