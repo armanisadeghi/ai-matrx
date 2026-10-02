@@ -18,8 +18,8 @@ controls, never hidden — see `features/shell/FEATURE.md`.
 
 | File | Role |
 |---|---|
-| `components/InboxHeaderButton.tsx` | The bell. Badge = unseen Needs-you + For-you notices + anything new from a counting source since the bell was last opened; clears on open (ruling 1). Updates add a dot, never a number; an unreadable part shows a neutral dot. Fixed 400px popover on desktop, full-height sheet on phone. `G` then `N` opens the inbox window from anywhere. |
-| `components/BellPanel.tsx` | THE bell body — desktop popover AND phone sheet (also mounted by `HeaderPhoneOverflow`). For you / Updates tabs, Needs-you section (3 + "N more"), time buckets, grouped rows, All places strip, footer "Open inbox" as a WINDOW (Ctrl/Cmd-click: new tab). No bulk, no filters. |
+| `components/InboxHeaderButton.tsx` | The bell. Badge = unseen Needs-you + For-you notices + anything new from a counting source since the bell was last opened; clears on open (ruling 1). Updates add a dot, never a number; an unreadable part shows a neutral dot. Toggles the Notifications canvas tab (`canvas/notificationsKind.tsx`), opened in a pane below what the canvas shows; pressed while in front. `G` then `N` opens the inbox window from anywhere. |
+| `components/BellPanel.tsx` | THE bell body — the Notifications canvas tab (`variant="pane"`, touch-sized on a phone; the phone ⋮ sheet opens the same tab). For you / Updates tabs, Needs-you section (3 + "N more"), time buckets, grouped rows, All places strip, footer "Open inbox" as a WINDOW (Ctrl/Cmd-click: new tab). No bulk, no filters. |
 | `components/InboxWorkspace.tsx` | THE inbox — `/notifications` (`InboxPage`, `?org_filter=`, `?view=`) and the inbox window (`windows/InboxWindow.tsx`). Rail (views + Places), grouped list, detail pane, Snoozed (with `HiddenElsewhere`) and Done views, keyboard (J/K, Enter/O, E, Shift+E, U, H, X, Z, ?), bulk, search, type filter, organization filter (default All, never the active org). |
 | `components/NoticeRow.tsx` | ONE row anatomy for bell, sheet and page: unread dot, lead (avatar or type icon), actor · title, context · plain preview, time → hover Done / Snooze / ⋯; 52/64px fixed; swipe on the phone (left Done, right read). |
 | `components/NoticeDetail.tsx` | Detail pane: triage bar, full body (`NotificationBody`), group members. |
@@ -79,6 +79,8 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 13. **HiddenElsewhere** lists snoozed assists from the newest 100 pending (the count in All places is exact); `listMyTaskUserStates` logs and returns [] on failure, so a task-state read failure reads as "nothing hidden" — fix in the tasks service.
 
 ## Change log
+
+- **2026-10-02** — The bell opens Notifications as a canvas tab (kind `notifications`, body `BellPanel variant="pane"`) in a vertical split below the tab in front; an empty canvas just opens it; a second press closes it. The popover, the phone drawer and the `sheet` variant are gone. Guard: `__tests__/the-bell-opens-notifications-in-the-canvas.test.tsx`.
 
 - **2026-10-02** — An absent triage door is no longer filed RED on every load (`/board` captured `PGRST202 communication.my_inbox_summary` while the inbox ran on its fallback). Doors with a working pre-triage fallback go through `allowAbsentDoor` (`lib/diagnostics/supabaseErrorCapture.ts`); Done/Snooze against an absent door and every other error still capture; the stand-in announces itself once per page in the console with the remedy. Guard: `__tests__/absent-door-is-not-an-incident.test.ts` (red on the old reader).
 

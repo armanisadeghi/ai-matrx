@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * features/notifications/components/BellPanel.tsx — the bell's body: the desktop
- * popover AND the phone sheet (RESEARCH.md §3.2, §3.7).
+ * features/notifications/components/BellPanel.tsx — the bell's body: the
+ * Notifications canvas tab (`variant="pane"`, desktop and phone — touch-sized
+ * on a phone) and the compact self-titled embed (RESEARCH.md §3.2, §3.7).
  *
  *   Notifications        [For you] [Updates •]          ⋯
  *   NEEDS YOU · 3        real rows, Review in place, + N more
@@ -26,6 +27,7 @@ import {
   Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -52,9 +54,9 @@ const BUCKET_ORDER: TimeBucket[] = ["Today", "Yesterday", "This week", "Earlier"
 type BellTab = "for_you" | "updates";
 
 interface BellPanelProps {
-  /** `compact` = the desktop popover; `sheet` = the phone's full-height sheet. */
-  variant?: "compact" | "sheet";
-  /** Called after something opened, so the host popover or sheet can close. */
+  /** `pane` = the Notifications canvas tab (its pane header names it); `compact` = a self-titled embed. */
+  variant?: "compact" | "pane";
+  /** Called after something opened, so a host popover can close. */
   onNavigate?: () => void;
   className?: string;
 }
@@ -68,6 +70,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function BellPanel({ variant = "compact", onNavigate, className }: BellPanelProps) {
+  // The canvas tab is full screen on a phone: touch-sized rows, one column.
+  const isMobile = useIsMobile();
+  const touch = variant === "pane" && isMobile;
   const dispatch = useAppDispatch();
   const counts = useInboxCounts();
   const feed = useInboxFeed({ state: "inbox" });
@@ -110,7 +115,7 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
       key={group.key}
       group={group}
       triage={feed.triage}
-      density={variant === "sheet" ? "sheet" : "bell"}
+      density={touch ? "sheet" : "bell"}
       expanded={expanded === group.key}
       onToggleExpand={() => setExpanded((k) => (k === group.key ? null : group.key))}
       {...handlers}
@@ -218,14 +223,14 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
     <div
       className={cn(
         "flex flex-col",
-        variant === "compact" ? "max-h-[min(640px,80dvh)]" : "h-full",
+        variant === "compact" ? "max-h-[min(640px,80dvh)]" : "h-full min-h-0",
         className,
       )}
       data-inbox-panel={variant}
     >
       <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border px-3">
         {variant === "compact" ? (
-          // The phone sheet's host already titles it.
+          // The canvas pane header already titles the pane variant.
           <span className="mr-2 text-sm font-semibold text-foreground">Notifications</span>
         ) : null}
         <div role="tablist" aria-label="Notification views" className="flex items-center gap-0.5">
@@ -273,9 +278,9 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1">{body}</div>
 
-      <PlacesStrip onOpened={onNavigate} columns={variant === "sheet" ? 1 : 2} />
+      <PlacesStrip onOpened={onNavigate} columns={touch ? 1 : 2} />
 
-      <div className={cn("shrink-0 border-t border-border px-1 py-1", variant === "sheet" ? "pb-safe" : undefined)}>
+      <div className={cn("shrink-0 border-t border-border px-1 py-1", touch ? "pb-safe" : undefined)}>
         <button
           type="button"
           onClick={(event) => {
@@ -288,7 +293,7 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
           }}
           className={cn(
             "flex w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-medium text-foreground transition-colors hover:bg-[var(--matrx-glass-bg-hover)]",
-            variant === "sheet" ? "h-11" : "h-8",
+            touch ? "h-11" : "h-8",
           )}
           title="Opens over this page · Ctrl or Cmd-click for a new tab"
         >

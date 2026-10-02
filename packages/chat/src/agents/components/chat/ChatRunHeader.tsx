@@ -10,7 +10,6 @@ import { useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectAgentName } from "../../redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ActiveContextLensChip } from "@host/features/scopes/components/active-context/ActiveContextLensChip";
-import { ChatCanvasButton } from "./ChatCanvasButton";
 import { ComposerModeSwitch } from "../inputs/smart-input/composer/ComposerModeSwitch";
 import type { ComposerMode } from "../inputs/smart-input/composer/composer-types";
 import { ConversationRecordsChip } from "./ConversationRecordsChip";
@@ -32,8 +31,8 @@ interface ChatRunHeaderProps {
   activeAgentId?: string;
   /** SSR-resolved name for first paint; replaced by the live Redux value. */
   initialAgentName?: string;
-  /** Active conversation (present on `/chat/[conversationId]`). Lets the Canvas
-   *  button open this conversation's working document when the Canvas is empty. */
+  /** Active conversation (present on `/chat/[conversationId]`): its records,
+   *  attachments and page menu. The shell's canvas offers its documents. */
   conversationId?: string;
   /**
    * Where picking an agent navigates. Defaults to the text chat route
@@ -84,7 +83,7 @@ export function ChatRunHeader({
   };
 
   // Full-width bar with a hard left/right split at every breakpoint: agent +
-  // context stay pinned left; canvas stays pinned right inside the center slot.
+  // context stay pinned left; the page actions stay pinned right inside the center slot.
   // (Previously `lg:w-full` + a single row let the inject zone center the
   // shrink-wrapped cluster on mobile/tablet, which pushed controls into the
   // avatar and broke the layout.)
@@ -163,8 +162,6 @@ export function ChatRunHeader({
         {conversationId && (
           <ConversationAttachmentsChip conversationId={conversationId} />
         )}
-        {/* Canvas — the unified live workspace, one click away at the top. */}
-        <ChatCanvasButton conversationId={conversationId} />
         {/* DD-179 — the conversation's own menu: rename, archive, delete (soft
             and restorable), share, duplicate. Absent on `/chat/new`, where
             there is no conversation yet to act on. */}

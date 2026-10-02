@@ -58,9 +58,9 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import { openMessaging } from "@/features/messaging/redux/messagingUiSlice";
+import { useOpenMessages } from "@/features/messaging/canvas/messagesKind";
 import { useConversations } from "@ai-matrx/messaging/react";
 import { asUserId } from "@ai-matrx/messaging";
 import { EmailComposeSheet } from "@/components/admin/EmailComposeSheet";
@@ -227,7 +227,7 @@ export function MembersPanel({
     name: copyContainer?.name,
   };
   const currentUser = useAppSelector(selectUser);
-  const dispatch = useAppDispatch();
+  const openMessages = useOpenMessages();
   const [searchTerm, setSearchTerm] = useState("");
   const [memberToRemove, setMemberToRemove] = useState<PanelMember | null>(
     null,
@@ -248,11 +248,11 @@ export function MembersPanel({
     if (!currentUser?.id || memberId === currentUser.id) return;
     setMessageLoading(memberId);
     try {
-      // Atomic get-or-create in the database, then open it in the sheet. Two
+      // Atomic get-or-create in the database, then open it in the Messages tab. Two
       // clicks converge on ONE conversation instead of minting a duplicate.
       const conversationId = await startDirect(asUserId(memberId));
       select(conversationId);
-      dispatch(openMessaging());
+      openMessages();
       toast.success(`Opening conversation with ${memberEmail}`);
     } catch (err) {
       console.error("Failed to start conversation:", err);

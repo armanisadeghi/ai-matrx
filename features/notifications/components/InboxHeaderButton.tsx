@@ -6,8 +6,8 @@
  * One of the fixed header controls (features/shell/FEATURE.md § The header right
  * set). Always mounted, always the same 44px slot:
  *
- *   signed in  → bell + badge, opens a fixed 400px popover (desktop) or a
- *                full-height sheet (phone) holding `BellPanel`.
+ *   signed in  → bell + badge; toggles the Notifications canvas tab (`BellPanel`
+ *                in a pane below what the canvas shows). Pressed while in front.
  *   signed out → the same bell; a click opens the auth gate. Never hidden.
  *
  * THE BADGE (owner ruling 1, 2026-10-01) counts only what is NEW and needs you or
@@ -18,16 +18,14 @@
  * `G` then `N` anywhere (outside a text field) opens the inbox window.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { BellRingTapButton, BellTapButton } from "@ai-matrx/tap-target/buttons";
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 import { useInboxCounts } from "../useInbox";
-import { BellPanel } from "./BellPanel";
+import { useNotificationsToggle } from "../canvas/notificationsKind";
 
 function InboxBadge({ count, dot }: { count: number; dot: "updates" | "unknown" | null }) {
   if (count > 0) {
@@ -101,9 +99,8 @@ function useGoToInboxShortcut() {
 }
 
 function SignedInInboxButton() {
-  const [open, setOpen] = useState(false);
-  const isMobile = useIsMobile();
   const counts = useInboxCounts();
+  const { isVisible, toggle } = useNotificationsToggle();
   useGoToInboxShortcut();
 
   const dot = counts.updatesDot ? "updates" : counts.partial ? "unknown" : null;
@@ -117,49 +114,14 @@ function SignedInInboxButton() {
           : "Notifications";
 
   const Bell = counts.badge > 0 ? BellRingTapButton : BellTapButton;
-  // The ARIA popup wiring must land on the focusable button itself, never on
-  // the positioning wrapper (aria-allowed-attr).
-  const trigger = (
-    <Bell
-      ariaLabel={label}
-      tooltip={label}
-      className={counts.badge > 0 ? "text-primary" : undefined}
-      onClick={isMobile ? () => setOpen(true) : undefined}
-    />
-  );
-
-  if (isMobile) {
-    return (
-      <div className="relative shrink-0" data-inbox-header-button>
-        {trigger}
-        <InboxBadge count={counts.badge} dot={dot} />
-        <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="bg-textured h-dvh max-h-dvh rounded-none">
-            <DrawerHeader className="sr-only">
-              <DrawerTitle>Notifications</DrawerTitle>
-            </DrawerHeader>
-            {open ? (
-              <BellPanel variant="sheet" onNavigate={() => setOpen(false)} className="min-h-0 flex-1" />
-            ) : null}
-          </DrawerContent>
-        </Drawer>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative shrink-0" data-inbox-header-button>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-        <PopoverContent
-          sizing="fixed"
-          align="end"
-          side="bottom"
-          className="w-[400px] max-w-[calc(100vw-2rem)] overflow-hidden p-0 bg-textured"
-        >
-          {open ? <BellPanel variant="compact" onNavigate={() => setOpen(false)} /> : null}
-        </PopoverContent>
-      </Popover>
+    <div className="relative shrink-0" data-inbox-header-button data-pressed={isVisible ? "" : undefined}>
+      <Bell
+        ariaLabel={label}
+        tooltip={label}
+        className={cn(isVisible && "bg-accent", (counts.badge > 0 || isVisible) && "text-primary")}
+        onClick={toggle}
+      />
       <InboxBadge count={counts.badge} dot={dot} />
     </div>
   );

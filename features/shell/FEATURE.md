@@ -31,7 +31,7 @@ and its Chats side opens conversations in the page's chat panel: read
 | Search | `features/knowledge/command-bar/OpenCommandBarButtons.tsx` | Guest → auth gate. |
 | Intelligence | `packages/chat/src/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx` | Guest → auth gate. |
 | Canvas | `features/canvas/core/CanvasHeaderToggle.tsx` | Never disabled: empty → opens the canvas HOME (`CanvasHomeSheet`: saved items + Board). The 44px slot never unmounts. |
-| Messages | `features/messaging/components/shell/MessagesHeaderButton.tsx` | Guest → auth gate. Own unread-conversation count; toggles the docked messages sheet. |
+| Messages | `features/messaging/components/shell/MessagesHeaderButton.tsx` | Guest → auth gate. Own unread-conversation count; toggles the Messages canvas tab. |
 | Notifications | `features/notifications/components/InboxHeaderButton.tsx` | Guest → auth gate. Never counts DMs. |
 
 Each is a 44px tap target with its spacing built in: **no gap, padding or

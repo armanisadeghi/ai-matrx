@@ -9,12 +9,6 @@ import dynamic from "next/dynamic";
 // Do NOT add a wrapper here — register the overlay in
 // `windowRegistry.ts` + `windowRegistryMetadata.ts` and let
 // `UnifiedOverlayController` handle it. (Bug found 2026-04-29.)
-//
-// The messaging side-sheet island used to
-// mount here, which left the (authenticated) route group without messaging
-// (icon click did nothing, conversations never loaded). They now mount in
-// `app/DeferredSingletons.tsx` via `LazyMessagingIsland` so they work on
-// every authenticated route.
 
 // ⌘K "Search your knowledge" — a keydown listener and the overlay opener,
 // nothing else. The bar itself loads behind the overlay controller's single

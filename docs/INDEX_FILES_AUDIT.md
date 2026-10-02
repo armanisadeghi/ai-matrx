@@ -74,7 +74,6 @@
 - `app/(core)/messages/MessagesLayoutClient.tsx`
 - `app/(core)/messages/MessagesPageClient.tsx`
 - `app/(core)/messages/[conversationId]/page.tsx`
-- `app/(dev)/demos/dynamic-imports/DynamicMessaging.tsx`
 - `app/(dev)/demos/whatsapp-demo/WhatsAppDemoClient.tsx`
 - `app/(dev)/demos/whatsapp-window-demo/WhatsAppWindowDemoClient.tsx`
 - `components/layout/new-layout/DesktopLayout.tsx`
@@ -90,7 +89,6 @@
 - `features/settings/tabs/MessagingTab.tsx`
 - `features/sharing/components/tabs/ShareWithUserTab.tsx`
 - `features/shell/components/header/header-right-menu/MessagesMenuItem.tsx`
-- `features/shell/islands/LazyMessagingIsland.tsx`
 - `features/tasks/components/TaskAssigneePicker.tsx`
 - `features/whatsapp-clone/hooks/useWhatsAppChat.ts`
 - `features/whatsapp-clone/hooks/useWhatsAppConversations.ts`

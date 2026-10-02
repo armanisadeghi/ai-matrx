@@ -82,7 +82,6 @@ features/shell/
     ├── AdminIndicatorIsland.tsx
     ├── DeferredIslands.tsx
     ├── DevPerfOverlayIsland.tsx
-    ├── LazyMessagingIsland.tsx
     └── VoicePadIsland.tsx
 ```
 

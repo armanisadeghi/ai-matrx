@@ -23,7 +23,6 @@ import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
 import { LinkOrganizationWatcher } from "@/features/organizations/components/LinkOrganizationWatcher";
 import AnnouncementProvider from "@/components/layout/AnnouncementProvider";
 import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
-import LazyMessagingIsland from "@/features/shell/islands/LazyMessagingIsland";
 import KgNewSuggestionNotifier from "@/features/kg-suggestions/components/KgNewSuggestionNotifier";
 import AssistsDock from "@/features/assists/components/AssistsDock";
 import CloudBrowserHandoffDeepLink from "@/features/cloud-browser/components/CloudBrowserHandoffDeepLink";
@@ -136,7 +135,6 @@ export default function DeferredSingletonCore() {
       <Suspense fallback={null}>
         <UrlPanelManager />
       </Suspense>
-      <LazyMessagingIsland />
       <KgNewSuggestionNotifier />
       <AssistsDock />
       {/* Render-free. Reads `?cloudBrowserHandoff=` — the door a D-14 "your

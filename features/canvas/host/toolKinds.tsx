@@ -2,7 +2,8 @@
 
 /**
  * Registers every TOOL the canvas shows as a tab — the quick tools of the
- * account menu's Quick Access group and the conversation/note side tools.
+ * account menu's Quick Access group, the conversation/note side tools, and the
+ * shell header's Messages and Notifications.
  * Each kind lives beside its feature; this is the one list of them, read by
  * `CanvasHostProvider` next to the artifact kinds.
  */
@@ -16,9 +17,12 @@ import { QUICK_NOTES_KIND, quickNotesKind } from "@/features/notes/canvas/quickN
 import { noteKnowledgeKind } from "@/features/notes/canvas/noteKnowledgeKind";
 import { QUICK_TASKS_KIND, quickTasksKind } from "@/features/tasks/canvas/quickTasksKind";
 import { QUICK_SCRIBE_KIND, quickScribeKind } from "@/features/transcript-studio/canvas/quickScribeKind";
+import { notificationsKind } from "@/features/notifications/canvas/notificationsKind";
+import { messagesKind } from "@/features/messaging/canvas/messagesKind";
 import { useToolToggle } from "./toolCanvas";
 import { documentsKind } from "./conversation/documentsKind";
 import { contextPreviewKind } from "./conversation/contextPreviewKind";
+import { chatDocumentsKind } from "./conversation/chatDocumentsKind";
 
 export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   quickChatKind,
@@ -28,8 +32,12 @@ export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   quickDataKind,
   quickScribeKind,
   documentsKind,
+  chatDocumentsKind,
   contextPreviewKind,
   noteKnowledgeKind,
+  // The shell header's Messages and Notifications buttons open these.
+  messagesKind,
+  notificationsKind,
 ];
 
 export function registerToolCanvasKinds(): () => void {

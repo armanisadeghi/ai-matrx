@@ -14,8 +14,8 @@
  *   Search        → the ⌘K bar (the dock's Search door, too)
  *   Intelligence  → the page's agents panel, in this sheet
  *   Canvas        → open / put away; empty opens the canvas home
- *   Messages      → the docked messages sheet; its unread count on the row
- *   Notifications → the bell's panel, full height (notifications ruling 4: it
+ *   Messages      → the Messages canvas tab; its unread count on the row
+ *   Notifications → the Notifications canvas tab (notifications ruling 4: it
  *                   opens windows or new tabs only, never moves the page)
  *
  * The owner's header ruling (2026-09-19: "a consistent set … never hiding
@@ -54,10 +54,10 @@ import { useCanvasHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle
 import { INBOX_AUTH_GATE } from "@/features/notifications/components/InboxHeaderButton";
 import {
   MESSAGES_AUTH_GATE,
-  useToggleMessages,
   useUnreadConversationCount,
 } from "@/features/messaging/components/shell/MessagesHeaderButton";
-import { BellPanel } from "@/features/notifications/components/BellPanel";
+import { useMessagesToggle } from "@/features/messaging/canvas/messagesKind";
+import { useNotificationsToggle } from "@/features/notifications/canvas/notificationsKind";
 import { useInboxCounts } from "@/features/notifications/useInbox";
 import { cn } from "@/lib/utils";
 import {
@@ -65,7 +65,7 @@ import {
   usePhonePageActions,
 } from "./phone-page-actions";
 
-type View = "menu" | "agents" | "inbox";
+type View = "menu" | "agents";
 
 function Row({
   icon,
@@ -156,12 +156,7 @@ function MessagesRowTrailing() {
 
 function InboxRowTrailing() {
   const counts = useInboxCounts();
-  return (
-    <>
-      <CountBadge count={counts.badge} />
-      <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
-    </>
-  );
+  return <CountBadge count={counts.badge} />;
 }
 
 /**
@@ -258,7 +253,8 @@ export function HeaderPhoneOverflow({
   const openSearch = useOpenBarOrGate(isAuthenticated);
   const openAuthGate = useOpenAuthGateDialog();
   const canvas = useCanvasHeaderToggle();
-  const toggleMessages = useToggleMessages();
+  const messages = useMessagesToggle();
+  const notifications = useNotificationsToggle();
   const pageActions = usePhonePageActions();
 
   // The persistent node route headers portal their actions into (see
@@ -278,29 +274,6 @@ export function HeaderPhoneOverflow({
     };
   }, [holder]);
 
-  // CANVAS SHOWS ONCE (page-pass shared defects, 2026-09-27 follow-up): a
-  // page's own Canvas action in "This page" (e.g. `/chat/[id]`'s
-  // ChatCanvasButton, which opens THIS conversation's working document
-  // instead of the generic disabled-when-empty row below) opts in with
-  // `data-phone-sheet-replaces="canvas"` on its control. When one is present
-  // the generic row is redundant — hide it so Canvas appears exactly once.
-  const [pageReplacesCanvas, setPageReplacesCanvas] = useState(false);
-  useLayoutEffect(() => {
-    // `host` is created once and never nulled again while this component is
-    // mounted, so there is no live case to unset — the initial `false` above
-    // already covers "not mounted yet".
-    if (!host) return;
-    const read = () =>
-      setPageReplacesCanvas(host.querySelector('[data-phone-sheet-replaces="canvas"]') != null);
-    // Synchronous on mount/open (host's content is already settled by the time
-    // the menu draws — same guarantee `PageActionsSection`'s own prune relies
-    // on) plus a live watch for a page action that appears/disappears later.
-    read();
-    const observer = new MutationObserver(read);
-    observer.observe(host, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [host, open]);
-
   const close = () => setOpen(false);
   const onOpenChange = (next: boolean) => {
     setOpen(next);
@@ -310,8 +283,7 @@ export function HeaderPhoneOverflow({
   const canvasState =
     canvas.itemCount === 0 ? "empty" : canvas.isOpen ? "open" : "closed";
 
-  const title =
-    view === "agents" ? "Intelligence" : view === "inbox" ? "Notifications" : "More";
+  const title = view === "agents" ? "Intelligence" : "More";
 
   return (
     <div className="shell-header-overflow relative shrink-0" data-header-phone-overflow>
@@ -322,13 +294,7 @@ export function HeaderPhoneOverflow({
         <OverflowTrigger onOpen={() => setOpen(true)} unread={0} />
       )}
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent
-          className={
-            view === "inbox"
-              ? "bg-textured h-dvh max-h-dvh rounded-none"
-              : "bg-textured pb-safe max-h-[85dvh]"
-          }
-        >
+        <DrawerContent className="bg-textured pb-safe max-h-[85dvh]">
           <DrawerHeader className={view === "menu" ? "sr-only" : "flex flex-row items-center gap-1 px-2 py-1 text-left"}>
             {view !== "menu" ? (
               <TapTargetButton
@@ -369,7 +335,7 @@ export function HeaderPhoneOverflow({
               {/* Same reservation as the desktop slot: present until a surface
                   REPORTS the canvas unavailable, never missing while the
                   deferred front door is still mounting. */}
-              {(canvas.isAvailable || !canvas.availabilityKnown) && !pageReplacesCanvas ? (
+              {canvas.isAvailable || !canvas.availabilityKnown ? (
                 <Row
                   icon={<Layers className="h-5 w-5" />}
                   label={
@@ -397,7 +363,7 @@ export function HeaderPhoneOverflow({
                     openAuthGate(MESSAGES_AUTH_GATE);
                     return;
                   }
-                  toggleMessages();
+                  messages.toggle();
                 }}
                 trailing={isAuthenticated ? <MessagesRowTrailing /> : undefined}
               />
@@ -405,22 +371,20 @@ export function HeaderPhoneOverflow({
                 icon={<Bell className="h-5 w-5" />}
                 label="Notifications"
                 onClick={() => {
+                  close();
                   if (!isAuthenticated) {
-                    close();
                     openAuthGate(INBOX_AUTH_GATE);
                     return;
                   }
-                  setView("inbox");
+                  notifications.toggle();
                 }}
                 trailing={isAuthenticated ? <InboxRowTrailing /> : undefined}
               />
             </div>
-          ) : view === "agents" ? (
+          ) : (
             <div className="overflow-y-auto px-1 pb-4">
               <SurfaceAgentsPanelImpl onRequestClose={close} />
             </div>
-          ) : (
-            <BellPanel variant="sheet" onNavigate={close} className="min-h-0 flex-1" />
           )}
         </DrawerContent>
       </Drawer>

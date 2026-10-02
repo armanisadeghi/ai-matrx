@@ -7,23 +7,20 @@
  * One of the fixed header controls (features/shell/FEATURE.md § THE HEADER
  * RIGHT SET). Always mounted, one 44px slot:
  *
- *   signed in  → message icon + unread-conversation badge; toggles the docked
- *                messages sheet (`MessagingSideSheet`, mounted by the shell's
- *                deferred islands).
+ *   signed in  → message icon + unread-conversation badge; toggles the
+ *                Messages canvas tab (`features/messaging/canvas`). Pressed
+ *                while that tab is in front.
  *   signed out → the same icon; a click opens the auth gate naming Messages.
  *
  * The badge reads the ONE messaging store (`useConversations` from the
- * package), so it can never disagree with the sheet's own list.
+ * package), so it can never disagree with the tab's own list.
  */
 
 import { MessageTapButton } from "@ai-matrx/tap-target/buttons";
 import { useConversations } from "@ai-matrx/messaging/react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@/lib/utils";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
-import {
-  selectMessagingIsOpen,
-  toggleMessaging,
-} from "@/features/messaging/redux/messagingUiSlice";
+import { useMessagesToggle } from "@/features/messaging/canvas/messagesKind";
 
 /** What a guest is told when they reach for Messages — one copy for every door. */
 export const MESSAGES_AUTH_GATE = {
@@ -34,12 +31,6 @@ export const MESSAGES_AUTH_GATE = {
 /** Unread conversations — the Messages badge everywhere it is drawn. */
 export function useUnreadConversationCount(): number {
   return useConversations().totalUnreadConversations;
-}
-
-/** Open or close the docked messages sheet. */
-export function useToggleMessages() {
-  const dispatch = useAppDispatch();
-  return () => dispatch(toggleMessaging());
 }
 
 function MessagesBadge({ count }: { count: number }) {
@@ -67,15 +58,14 @@ function GuestMessagesButton() {
 
 function SignedInMessagesButton() {
   const unread = useUnreadConversationCount();
-  const isOpen = useAppSelector(selectMessagingIsOpen);
-  const toggle = useToggleMessages();
+  const { isVisible, toggle } = useMessagesToggle();
   const label = unread > 0 ? `Messages (${unread} unread)` : "Messages";
   return (
-    <div className="relative shrink-0" data-messages-header-button>
+    <div className="relative shrink-0" data-messages-header-button data-pressed={isVisible ? "" : undefined}>
       <MessageTapButton
         ariaLabel={label}
         tooltip={label}
-        className={unread > 0 || isOpen ? "text-primary" : undefined}
+        className={cn(isVisible && "bg-accent", (unread > 0 || isVisible) && "text-primary")}
         onClick={toggle}
       />
       <MessagesBadge count={unread} />

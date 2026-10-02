@@ -90,10 +90,10 @@ const MESSAGES_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
-      name: "MessagingSideSheet",
-      filePath: "features/messaging/components/MessagingSideSheet.tsx",
+      name: "Messages canvas tab",
+      filePath: "features/messaging/canvas/messagesKind.tsx",
       description:
-        "The docked messages sheet — app frame around the same two panes.",
+        "The shell header's Messages, as a canvas tab around the same two panes.",
       status: "Live",
       tier: "internal",
     },
@@ -123,12 +123,6 @@ const MESSAGES_ADMIN_MAP: FeatureAdminMap = {
     },
   ],
   reduxSlices: [
-    {
-      name: "messagingUi",
-      filePath: "features/messaging/redux/messagingUiSlice.ts",
-      description:
-        "The side sheet's open state and dragged width — app chrome only. Conversations, unread counts and the active conversation live in @ai-matrx/messaging's store, never mirrored here.",
-    },
   ],
   relatedFeatures: [
     {

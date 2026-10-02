@@ -13,12 +13,19 @@
  *
  * Everything here runs for real: the app's root reducer, the app's ONE canvas
  * binding (CanvasHostProvider), the app's chat canvas port, the app's openers
- * registered on a real ChatProvider, and the chat package's own Canvas button.
+ * registered on a real ChatProvider, and the canvas launcher's "This chat's
+ * documents" door (the chat page's own Canvas button was removed 2026-10-02 —
+ * the shell's ONE canvas toggle is the door, and the launcher offers the chat's
+ * documents from inside the canvas).
  *
  * Proven failing before passing (2026-10-02): run against the previous
  * ChatCanvasButton / kinds → "the header's Canvas button opens the Documents
  * tab" RED (it opened a `working_document` artifact tab beside it) and the
  * registry test RED (`working_document` / `scratchpad` were registered).
+ * The launcher door was proven the same way: with its body's open-and-close
+ * removed, "the launcher's This chat's documents opens the conversation's
+ * Documents tab" is RED (only the launcher tab is on the canvas), and with the
+ * `/chat/new` focus fallback removed the brand-new-chat case is RED.
  */
 
 import React, { act, useEffect } from "react";
@@ -26,7 +33,7 @@ import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { configureStore } from "@reduxjs/toolkit";
-import type { CanvasState } from "@ai-matrx/canvas";
+import { CANVAS_MAIN_WINDOW, type CanvasState } from "@ai-matrx/canvas";
 import { useCanvas } from "@ai-matrx/canvas/react";
 import { ChatProvider } from "@ai-matrx/chat/host/react";
 import type { ChatHost } from "@ai-matrx/chat/host";
@@ -39,7 +46,12 @@ import {
   scratchpadTabId,
 } from "@ai-matrx/chat/host/canvas-tabs";
 import { useChatCanvasView } from "@ai-matrx/chat/host/canvas";
-import { ChatCanvasButton } from "@ai-matrx/chat/agents/components/chat/ChatCanvasButton";
+import { setFocus } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import {
+  CHAT_DOCUMENTS_LAUNCHER_KIND,
+  chatDocumentsKind,
+} from "@/features/canvas/host/conversation/chatDocumentsKind";
+import ChatDocumentsCanvasView from "@/features/canvas/host/conversation/ChatDocumentsCanvasView";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { CanvasHostProvider } from "@/features/canvas/host/CanvasHostProvider";
 import { TOOL_CANVAS_KINDS } from "@/features/canvas/host/toolKinds";
@@ -50,6 +62,12 @@ import { useQuickToolToggle } from "@/features/canvas/host/toolKinds";
 import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
+
+let mockPathname = "/chat";
+jest.mock("next/navigation", () => ({
+  ...jest.requireActual("next/navigation"),
+  usePathname: () => mockPathname,
+}));
 
 const CONVERSATION_ID = "6f1e2d3c-4b5a-4968-8776-655443322110";
 
@@ -104,6 +122,37 @@ function SourceProbe({ probe }: { probe: Partial<Probe> }) {
   return null;
 }
 
+/**
+ * The empty pane's launcher entry, as the canvas column renders it: picking
+ * "This chat's documents" opens the launcher tab, whose body then runs.
+ */
+const LAUNCHER_ITEM_ID = `${CHAT_DOCUMENTS_LAUNCHER_KIND}::current`;
+function LauncherTab() {
+  const canvas = useCanvas();
+  const state = canvas.getState();
+  const item = state.items[LAUNCHER_ITEM_ID];
+  if (!item) return null;
+  return (
+    <ChatDocumentsCanvasView item={item} data={null} paneId={state.focusedPaneId} isFocused canvas={canvas} windowId={CANVAS_MAIN_WINDOW} />
+  );
+}
+
+/** Re-renders the launcher tab whenever the canvas changes, as the column does. */
+function LauncherWatcher({ store }: { store: Store }) {
+  const [, force] = React.useReducer((n: number) => n + 1, 0);
+  useEffect(() => store.subscribe(force), [store]);
+  return <LauncherTab />;
+}
+
+function LauncherDoor({ probe }: { probe: Partial<Probe> & { pick?: () => void } }) {
+  const canvas = useCanvas();
+  const launcher = chatDocumentsKind.launcher;
+  probe.pick = () => {
+    if (launcher) canvas.open({ kind: CHAT_DOCUMENTS_LAUNCHER_KIND, key: launcher.key, data: launcher.data });
+  };
+  return null;
+}
+
 function mount(store: Store) {
   const probe: Partial<Probe> = {};
   const container = document.createElement("div");
@@ -116,7 +165,8 @@ function mount(store: Store) {
           <CanvasHostProvider>
             <PresentedColumn />
             <ChatHostUnderTest store={store} probe={probe}>
-              <ChatCanvasButton conversationId={CONVERSATION_ID} />
+              <LauncherDoor probe={probe} />
+              <LauncherWatcher store={store} />
               <SourceProbe probe={probe} />
             </ChatHostUnderTest>
           </CanvasHostProvider>
@@ -126,7 +176,7 @@ function mount(store: Store) {
   });
   return {
     container,
-    probe: probe as Probe,
+    probe: probe as Probe & { pick: () => void },
     unmount: () => {
       act(() => root.unmount());
       container.remove();
@@ -147,11 +197,11 @@ describe("a conversation's documents are one canvas kind", () => {
 });
 
 describe("every door opens the same Documents tab", () => {
-  it("the header's Canvas button opens the conversation's Documents tab, and the chat sees it", () => {
+  it("the launcher's This chat's documents opens the conversation's Documents tab, and the chat sees it", () => {
+    mockPathname = `/chat/${CONVERSATION_ID}`;
     const store = makeStore();
-    const { container, probe, unmount } = mount(store);
-    const button = container.querySelector<HTMLButtonElement>('button[aria-label="Canvas"]');
-    act(() => button?.click());
+    const { probe, unmount } = mount(store);
+    act(() => probe.pick());
 
     expect(itemIds(store)).toEqual([conversationDocumentsTabId(CONVERSATION_ID)]);
     expect(canvasOf(store).items[conversationDocumentsTabId(CONVERSATION_ID)]?.kind).toBe(CONVERSATION_DOCUMENTS_KIND);
@@ -161,6 +211,28 @@ describe("every door opens the same Documents tab", () => {
     // A second door (a result bar, `?attachDoc=`, the documents menu) focuses it.
     act(() => void probe.openDocuments({ conversationId: CONVERSATION_ID, initialKind: "scratch" }));
     expect(itemIds(store)).toEqual([conversationDocumentsTabId(CONVERSATION_ID)]);
+    unmount();
+  });
+
+  it("on a brand-new chat it opens the conversation /chat/new already reserved — never a refusal", () => {
+    mockPathname = "/chat/new";
+    const store = makeStore();
+    store.dispatch(setFocus({ surfaceKey: "chat:default-agent", conversationId: CONVERSATION_ID }));
+    const { probe, unmount } = mount(store);
+    act(() => probe.pick());
+
+    expect(itemIds(store)).toEqual([conversationDocumentsTabId(CONVERSATION_ID)]);
+    unmount();
+  });
+
+  it("off a chat route the launcher tab stays and says so", () => {
+    mockPathname = "/notes";
+    const store = makeStore();
+    const { container, probe, unmount } = mount(store);
+    act(() => probe.pick());
+
+    expect(itemIds(store)).toEqual([LAUNCHER_ITEM_ID]);
+    expect(container.querySelector("[data-chat-documents-empty]")).not.toBeNull();
     unmount();
   });
 

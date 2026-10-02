@@ -8,14 +8,13 @@
  * a second name for it that drifts.
  *
  * What lives in this feature is app chrome: the panes that wrap the package's
- * surfaces in this app's right-click menu and surface scope, the side sheet,
+ * surfaces in this app's right-click menu and surface scope, the canvas tab,
  * the action-card surfaces for this app's message kinds, the notification sink,
  * and the "message this person" service other features call.
  */
 
 export { ConversationListPane } from "./components/ConversationListPane";
 export { ConversationPane } from "./components/ConversationPane";
-export { MessagingSideSheet } from "./components/MessagingSideSheet";
 export { NewConversationDialog } from "./components/NewConversationDialog";
 export {
   MessagingConversationRowChrome,
@@ -27,10 +26,3 @@ export {
   sendDirectActionMessage,
   findOrCreateDirectConversation,
 } from "./service/sendDirectActionMessage";
-export {
-  closeMessaging,
-  openMessaging,
-  toggleMessaging,
-  selectMessagingIsOpen,
-  selectMessagingSheetWidth,
-} from "./redux/messagingUiSlice";

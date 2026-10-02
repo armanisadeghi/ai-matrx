@@ -20,7 +20,7 @@ components — was DELETED, not wrapped. Roughly 5,900 lines.
 | App chrome the package renders | `components/MessagingChrome.tsx` — the `data-message-id` / `data-conversation-id` the menu resolves its target from, and this app's ```matrx fence renderer                        |
 | Action cards                   | `actions/messageActionSurfaces.tsx` — this app's kinds (access request, resource shared, task reminder, agent drift, open link, setting request), handed over as `actionRenderers` |
 | Notifications                  | `lib/useIncomingMessageNotifier.ts` — sound + desktop notification, gated on this app's user preferences                                                                           |
-| Chrome state                   | `redux/messagingUiSlice.ts` — the side sheet's open state and dragged width. **Nothing else.**                                                                                     |
+| Header door                    | `canvas/messagesKind.tsx` — Messages as a canvas tab (list ↔ thread inside it); the header button toggles it. No Redux chrome state.                                               |
 | "Message this person"          | `service/sendDirectActionMessage.ts` — the framework-free package path, for services with no React                                                                                 |
 | Menus                          | `lib/messaging-menu-actions.tsx`                                                                                                                                                   |
 
@@ -89,7 +89,7 @@ area, and its own header says why it is not on `@ai-matrx/realtime` yet.
 ## macOS presentation and review catalogue (2026-09-30)
 
 `messages-native.css` is the shared app presentation used by both panes, including
-floating windows and the side sheet. It sets compact desktop typography, a
+floating windows and the Messages canvas tab. It sets compact desktop typography, a
 single-line action strip, a centered glass contact header and a 36px growing composer;
 touch inputs retain 16px text and 44px action targets. Package data and rendering
 ownership are unchanged.

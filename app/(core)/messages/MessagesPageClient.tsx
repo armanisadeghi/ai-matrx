@@ -12,23 +12,23 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquare } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { closeMessaging } from "@/features/messaging/redux/messagingUiSlice";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { closeMessagesTab } from "@/features/messaging/canvas/messagesKind";
 import { ConversationListPane } from "@/features/messaging/components/ConversationListPane";
 import { MessagesListHeader } from "@/features/messaging/components/shell/MessagesListHeader";
 import { useMessagesSurfaceScope } from "@/features/messaging/lib/useMessagesSurfaceScope";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 export default function MessagesPageClient() {
-  const dispatch = useAppDispatch();
+  const canvas = useOptionalCanvas();
   const router = useRouter();
   const getScope = useMessagesSurfaceScope();
 
-  // The side sheet and the full page are the same conversations; leaving the
-  // sheet open behind the page would be two views of one thread.
+  // The Messages canvas tab and the full page are the same conversations;
+  // leaving the tab open beside the page would be two views of one thread.
   useEffect(() => {
-    dispatch(closeMessaging());
-  }, [dispatch]);
+    closeMessagesTab(canvas);
+  }, [canvas]);
 
   return (
     <SurfaceRuntimeProvider

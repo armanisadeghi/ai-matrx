@@ -12,6 +12,7 @@
  *      beside them; shell.css hides the one and shows the other below 768px.
  *   2. The sheet holds all five; an empty canvas is an ENABLED row (it opens
  *      the canvas — owner, 2026-09-30: "always available and clickable");
+ *      Messages and Notifications open their canvas tabs (owner, 2026-10-02);
  *      a guest reaching for Intelligence, Messages or Notifications gets the
  *      auth gate, never a dead row.
  *
@@ -33,7 +34,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { canvasActions, createCanvasStore, type CanvasStoreBinding } from "@ai-matrx/canvas";
-import { CanvasProvider, useCanvas } from "@ai-matrx/canvas/react";
+import { CanvasProvider, registerCanvasKinds, useCanvas } from "@ai-matrx/canvas/react";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -65,18 +66,19 @@ jest.mock("@ai-matrx/chat/surfaces/components/chrome/SurfaceAgentsHeaderButton",
 jest.mock("@/features/notifications/components/InboxHeaderButton", () => ({
   INBOX_AUTH_GATE: { featureName: "Inbox", featureDescription: "x" },
 }));
-jest.mock("@/features/notifications/components/BellPanel", () => ({
-  BellPanel: () => <div data-testid="inbox-panel">inbox</div>,
-}));
 jest.mock("@/features/notifications/useInbox", () => ({
   useInboxCounts: () => ({ badge: 3, partial: false }),
 }));
-const toggleMessages = jest.fn();
 jest.mock("@/features/messaging/components/shell/MessagesHeaderButton", () => ({
   MESSAGES_AUTH_GATE: { featureName: "Messages", featureDescription: "x" },
-  useToggleMessages: () => toggleMessages,
   useUnreadConversationCount: () => 2,
 }));
+// The real Messages and Notifications canvas kinds — the rows open THEM.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { messagesKind, MESSAGES_KIND } = require("@/features/messaging/canvas/messagesKind") as typeof import("@/features/messaging/canvas/messagesKind");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { notificationsKind, NOTIFICATIONS_KIND } = require("@/features/notifications/canvas/notificationsKind") as typeof import("@/features/notifications/canvas/notificationsKind");
+registerCanvasKinds([messagesKind, notificationsKind]);
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { TooltipProvider } = require("@/components/ui/tooltip") as typeof import("@/components/ui/tooltip");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -174,11 +176,12 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     expect(canvasStore.getState().isOpen).toBe(true);
   });
 
-  it("Messages toggles the docked messages sheet", () => {
+  it("Messages opens the Messages canvas tab", () => {
     mount(true);
     openSheet();
     click(row("Messages"));
-    expect(toggleMessages).toHaveBeenCalled();
+    expect(canvasStore.getState().items[`${MESSAGES_KIND}::default`]).toBeDefined();
+    expect(canvasStore.getState().isOpen).toBe(true);
   });
 
   it("a put-away canvas with tabs names its active tab and opens from the sheet", () => {
@@ -212,7 +215,7 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     expect(openBar).toHaveBeenCalled();
   });
 
-  it("signed in, Notifications opens in the sheet and the count rides the button", () => {
+  it("signed in, Notifications opens the Notifications canvas tab and the count rides the button", () => {
     mount(true);
     // The number rides the button's name; the visible mark is a dot in the
     // corner, never a "99+" pill over the ⋮ (page-pass, 2026-09-27).
@@ -224,7 +227,8 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     expect(dot?.textContent).toBe("");
     openSheet();
     click(row("Notifications"));
-    expect(document.querySelector('[data-testid="inbox-panel"]')).not.toBeNull();
+    expect(canvasStore.getState().items[`${NOTIFICATIONS_KIND}::default`]).toBeDefined();
+    expect(canvasStore.getState().isOpen).toBe(true);
   });
 
   it("signed in, Intelligence opens the page's agents in the sheet", () => {
@@ -310,21 +314,19 @@ describe("HeaderPhoneOverflow — no 0×0 pieces in 'This page'", () => {
 });
 
 /**
- * CANVAS SHOWS ONCE (page-pass shared defects, 2026-09-27 follow-up):
- * `/chat/[id]` folds `ChatCanvasButton` into "This page" via
- * `HeaderActionsSlot` — it also names its own conversation's working
- * document, unlike the generic menu row's plain open/close/disabled states —
- * so the sheet drew BOTH the generic "Canvas" row here and the page's own
- * "Canvas" row in "This page". A page action that opts in with
- * `data-phone-sheet-replaces="canvas"` now suppresses the generic row so the
- * control appears once. PROVEN FAILING BEFORE PASSING: against the pre-fix
- * `HeaderPhoneOverflow`, both rows are present.
+ * THE CANVAS ROW IS ALWAYS THE SHELL'S (owner, 2026-10-02). Until then a page
+ * action could hide the generic Canvas row by declaring itself a replacement
+ * (`/chat`'s own Canvas button) — and on a phone that page button was the only
+ * Canvas left, answering "nothing to show yet". The chat button is gone and so
+ * is the replace mechanism: whatever a page puts in "This page", the shell's
+ * Canvas row stays. PROVEN FAILING BEFORE PASSING: against the pre-fix sheet
+ * the generic row is hidden (1 row, not 2).
  */
-describe("HeaderPhoneOverflow — Canvas shows once when a page provides its own", () => {
+describe("HeaderPhoneOverflow — the shell's Canvas row always shows", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const store = require("./phone-page-actions") as typeof import("./phone-page-actions");
 
-  it("hides the generic Canvas row once a page action declares data-phone-sheet-replaces=\"canvas\"", () => {
+  it("keeps the generic Canvas row beside a page action that names itself Canvas", () => {
     let host: HTMLElement | null = null;
     const Probe = () => {
       host = store.usePhonePageActions().host;
@@ -342,12 +344,10 @@ describe("HeaderPhoneOverflow — Canvas shows once when a page provides its own
     host!.appendChild(item);
     act(() => store.setPhonePageActionCount("route-chat", 1));
     openSheet();
-    const genericRows = [...document.querySelectorAll("button")].filter((b) =>
+    const canvasRows = [...document.querySelectorAll("button")].filter((b) =>
       b.textContent?.trim().startsWith("Canvas"),
     );
-    // Only the page's own row remains — the generic menu row is gone.
-    expect(genericRows).toHaveLength(1);
-    expect(genericRows[0]).toBe(pageCanvas);
+    expect(canvasRows).toHaveLength(2);
     act(() => store.setPhonePageActionCount("route-chat", 0));
     act(() => probeRoot.unmount());
   });

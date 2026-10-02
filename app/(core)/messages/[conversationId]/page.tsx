@@ -14,8 +14,8 @@ import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { asConversationId } from "@ai-matrx/messaging";
 import { useConversation } from "@ai-matrx/messaging/react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { closeMessaging } from "@/features/messaging/redux/messagingUiSlice";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { closeMessagesTab } from "@/features/messaging/canvas/messagesKind";
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { MessagesThreadHeader } from "@/features/messaging/components/shell/MessagesThreadHeader";
 import { useMessagesSurfaceScope } from "@/features/messaging/lib/useMessagesSurfaceScope";
@@ -25,7 +25,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 export default function ConversationPage() {
   const params = useParams();
   const router = useRouter();
-  const dispatch = useAppDispatch();
+  const canvas = useOptionalCanvas();
   const conversationId = params.conversationId as string;
   const id = asConversationId(conversationId);
 
@@ -35,9 +35,10 @@ export default function ConversationPage() {
   // mounted. The read receipt rides it — no separate "mark as read" call, and
   // no chance of marking a conversation read that never opened.
   const thread = useConversation(id);
+  // The Messages canvas tab would be a second view of this thread.
   useEffect(() => {
-    dispatch(closeMessaging());
-  }, [dispatch]);
+    closeMessagesTab(canvas);
+  }, [canvas]);
 
   // A conversation that does not exist or that this person cannot read is an
   // access question, never "No messages yet" and never an endless spinner.

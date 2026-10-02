@@ -58,6 +58,24 @@ export interface ToolToggleInput {
   data: CanvasJson;
   /** What a press does while the tab is in front: close it (default) or put the canvas away. */
   whenVisible?: "close" | "hide";
+  /**
+   * Where a NEW tab opens. "split-down": in a new pane BELOW whatever the
+   * canvas is showing (Notifications); an empty or put-away canvas just opens
+   * it. An existing tab never moves.
+   *
+   * TODO(canvas 0.5.0): becomes the kind's own `preferredTarget` — delete this
+   * field and `opensInSplit` once the package honours it inside `toggleKind`.
+   */
+  target?: "split-down";
+}
+
+/** True when a press should open a new pane below the tab now in front. */
+function opensInSplit(canvas: CanvasController, input: ToolToggleInput): boolean {
+  if (input.target !== "split-down") return false;
+  const state = canvas.getState();
+  if (!state.isOpen) return false;
+  if (selectCanvasKindVisibility(state, input.kind, input.key ?? "default") !== "absent") return false;
+  return Boolean(state.panes[state.focusedPaneId]?.activeItemId);
 }
 
 /**
@@ -71,6 +89,11 @@ export function toggleToolInCanvas(canvas: CanvasController | null, input: ToolT
   if (!canvas || !canvas.isPresented()) {
     reportCanvasOpenDrop({ reason: "canvas-unavailable", requested: input.title, detail: `${input.kind}::${input.key ?? "default"}` });
     return null;
+  }
+  if (opensInSplit(canvas, input)) {
+    const key = input.key ?? "default";
+    canvas.open({ kind: input.kind, key, title: input.title, data: input.data, target: "split-down" });
+    return selectCanvasKindVisibility(canvas.getState(), input.kind, key);
   }
   return toggleKind(canvas, input);
 }

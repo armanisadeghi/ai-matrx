@@ -73,7 +73,6 @@ import codeEditHistoryReducer from "@/features/code/redux/codeEditHistorySlice";
 import fsChangesReducer from "@/features/code/redux/fsChangesSlice";
 // Deep import, NOT the `@/features/files` barrel — see the note in lib/redux/store.ts.
 import { cloudFilesReducer } from "@/features/files/redux/slice";
-import messagingUiReducer from "@/features/messaging/redux/messagingUiSlice";
 import smsReducer from "@/features/sms/redux/smsSlice";
 import adminPreferencesReducer from "./preferences/adminPreferencesSlice";
 import apiConfigReducer from "./slices/apiConfigSlice";
@@ -223,7 +222,6 @@ export const slimReducerMap = {
   layout: layoutReducer,
   flashcardChat: flashcardChatReducer,
 
-  messagingUi: messagingUiReducer,
 
   adminPreferences: adminPreferencesReducer,
 
