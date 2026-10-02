@@ -13,12 +13,18 @@ state, and the SAME expectations are read in every mode, so red and green are on
   current  the database as it is (after the round-1 file is applied): all PASS.
   r1       the round-1 file applied inside the txn on top of whatever is there: all PASS.
 
-  --plant <case>  (with r1/current) breaks exactly what one legitimate case depends on, and that
-           case — and only that case — must go red:
-             nonparty   the note Field is retired before the member writes it
-             service    the party Field the server job writes is retired first
-             mover      the mover skips its declare step and writes the value anyway
-             freeform   the registry's free-form fact is taken off the autofill profile
+  --plant <case>  (with r1/current) breaks exactly what a legitimate case depends on, and exactly
+           the cases named for that plant — no others — must go red:
+             opentable  the closed-table knob also names `note`        -> opentable
+             freeform   the closed-table knob also names the profile   -> freeform (client cases)
+             mover      the mover skips its declare step               -> mover
+             r0guard    the guard that refused every writer (lane7sec_a's body) is put back
+                        -> servernotice, legacy, opentable, freeform, prefix, header
+
+The rule (CHAIR-SEC-R1): an undeclared key is refused only for a CLIENT writer on a table the
+knob custom/closed_custom_field_tables names (default: party); the platform's own writers keep
+the key and a NOTICE names it; a key the row already carries stays editable; only `_values`,
+`_actor` and `_on_behalf_of` are the store's own keys.
 
 Everything runs in ONE transaction that is rolled back. People are seated as PostgREST seats
 them (role authenticated + request.jwt.claims [+ request.headers]); the server job and the
@@ -95,7 +101,9 @@ refused = lambda o: o[0] == 'REFUSED'
 accepted = lambda o: o[0] == 'OK'
 first = lambda o: o[1][0][0] if o[0] == 'OK' and o[1] else None
 
+notices = []
 with conn() as c:
+    c.add_notice_handler(lambda d: notices.append(d.message_primary or ''))
     cur = c.cursor()
     cur.execute("select (select count(*) from cron.job where active),(select count(*) from pg_extension where extname='pg_net')")
     q = cur.fetchone(); assert q == (0, 0), q
@@ -150,21 +158,16 @@ with conn() as c:
     print('note', note)
 
     # ── the plants: each removes the one thing a legitimate case stands on ──────────────────
-    if PLANT in ('nonparty', 'service'):
-        seat(cur, ADMIN)
-        key = 'study_topic' if PLANT == 'nonparty' else 'intake_notes'
-        token = 'note' if PLANT == 'nonparty' else 'party'
+    if PLANT in ('opentable', 'freeform'):
         owner(cur)
-        cur.execute("select id from custom.record where table_id=custom.field_kernel_id() and organization_id=%s and data->>'table_token'=%s and data->>'key'=%s and deleted_at is null", (ORG, token, key))
-        fid = cur.fetchone()[0]
-        seat(cur, ADMIN)
-        print('plant: retire', key, step(cur, "select custom.entity_field_retire(%s,%s)", (ORG, fid)))
-    if PLANT == 'freeform':
+        extra = 'note' if PLANT == 'opentable' else 'user_form_profile'
+        cur.execute("update platform.feature_knob set value = value || to_jsonb(%s::text) where feature='custom' and key='closed_custom_field_tables' returning value", (extra,))
+        print('plant: closed tables now', cur.fetchall())
+    if PLANT == 'r0guard':
         owner(cur)
-        cur.execute("set local session_replication_role = replica")
-        cur.execute("update platform.entity_types set custom_fields_free_form = false where token='user_form_profile'")
-        cur.execute("set local session_replication_role = origin")
-        print('plant: user_form_profile is no longer free-form')
+        down = R1_DOWN.read_text()
+        ddl(down[down.index('CREATE OR REPLACE FUNCTION custom._entity_custom_fields_guard()'):down.index('$function$;', down.index('CREATE OR REPLACE FUNCTION custom._entity_custom_fields_guard()')) + len('$function$;')])
+        print('plant: the guard that refused every writer is back')
 
     # ── DEFECTS: what a person or a payload must never do ──────────────────────────────────
     seat(cur, TEST)
@@ -195,9 +198,9 @@ with conn() as c:
     seat(cur, ADMIN)
     o = step(cur, "select custom.entity_field_declare(%s,'party','{\"label\":\"Insurance member number\",\"type\":\"text\",\"key\":\"insurance_member_number\",\"sensitivity\":\"restricted\"}'::jsonb)", (ORG,))
     record('DEFECT', 'shape', 'admin declares a RESTRICTED field on a standard table', o, refused)
-    server(cur)
-    o = step(cur, "update crm.party set custom_fields = coalesce(custom_fields,'{}'::jsonb) || '{\"legacy_bag_key\":\"x\"}'::jsonb where id=%s returning id", (PID,))
-    record('DEFECT', 'undeclared', 'a server job writes a key it never declared', o, refused)
+    seat(cur, TEST)
+    o = step(cur, "update crm.party set custom_fields = custom_fields || '{\"made_up_key\":\"x\"}'::jsonb where id=%s returning id", (PID,))
+    record('DEFECT', 'undeclared', 'member adds an undeclared key on party (a closed table)', o, refused)
 
     # ── LEGIT: what must keep working ──────────────────────────────────────────────────────
     seat(cur, ADMIN)
@@ -231,14 +234,32 @@ with conn() as c:
     server(cur)
     o = step(cur, "update crm.party set custom_fields = coalesce(custom_fields,'{}'::jsonb) || '{\"intake_notes\":\"Imported from intake form\"}'::jsonb where id=%s returning custom_fields->'_values'->'intake_notes'->>'actor'", (PID,))
     record('LEGIT', 'service', 'a server job (service role) writes a declared key, stamped "system"', o, lambda o: first(o) == 'system')
+    # The platform's own writer keeps an undeclared key, and a NOTICE names it (never silent).
+    server(cur)
+    notices.clear()
+    o = step(cur, "update crm.party set custom_fields = coalesce(custom_fields,'{}'::jsonb) || '{\"legacy_intake_ref\":\"IF-2291\"}'::jsonb where id=%s returning custom_fields->>'legacy_intake_ref'", (PID,))
+    said = [n for n in notices if 'legacy_intake_ref' in n]
+    record('LEGIT', 'servernotice', 'a server job writes an undeclared key: kept, and a NOTICE names it', (o, said),
+           lambda x: first(x[0]) == 'IF-2291' and len(x[1]) > 0)
+    # A key the row already carries (legacy) stays editable and clearable by a person.
+    seat(cur, TEST)
+    o = step(cur, "update crm.party set custom_fields = custom_fields || '{\"legacy_intake_ref\":\"IF-2292\"}'::jsonb where id=%s returning custom_fields->>'legacy_intake_ref'", (PID,))
+    record('LEGIT', 'legacy', 'member edits a legacy (undeclared, already present) key on party', o, lambda o: first(o) == 'IF-2292')
+    o = step(cur, "update crm.party set custom_fields = custom_fields - 'legacy_intake_ref' where id=%s returning custom_fields ? 'legacy_intake_ref'", (PID,))
+    record('LEGIT', 'legacy', 'member clears a legacy key on party', o, lambda o: first(o) is False)
+    # A client on a table that is NOT closed keeps an undeclared key.
+    o = step(cur, "update workbench.notes set custom_fields = coalesce(custom_fields,'{}'::jsonb) || '{\"reading_list\":\"Knee rehab basics\"}'::jsonb where id=%s returning custom_fields->>'reading_list'", (note,))
+    record('LEGIT', 'opentable', 'member writes an undeclared key on a NOTE (not a closed table): kept', o, lambda o: first(o) == 'Knee rehab basics')
     # The mover: declares through the store's declare door, then writes the value.
     owner(cur)
     if PLANT != 'mover':
         print('mover declares', step(cur, "select custom.entity_field_declare(%s,'party','{\"label\":\"Insurance plan\",\"type\":\"text\",\"key\":\"insurance_plan\"}'::jsonb)", (ORG,)))
     server(cur)
     o = step(cur, "update crm.party set custom_fields = coalesce(custom_fields,'{}'::jsonb) || '{\"insurance_plan\":\"Blue Shield PPO\"}'::jsonb where id=%s returning custom_fields->>'insurance_plan'", (PID,))
-    record('LEGIT', 'mover', 'a mover declares the field, then writes its value', o, lambda o: first(o) == 'Blue Shield PPO')
-    # The autofill profile: one person's own free keys (registry: custom_fields_free_form).
+    seat(cur, ADMIN)
+    o = step(cur, "select f->>'value' from jsonb_array_elements(custom.entity_record_read(%s,'party',%s)->'fields') f where f->>'key'='insurance_plan'", (ORG, PID))
+    record('LEGIT', 'mover', 'a mover declares the field, then writes its value: it reads back as a field', o, lambda o: first(o) == 'Blue Shield PPO')
+    # The autofill profile: one person's own free keys (not a closed table).
     seat(cur, TEST)
     o = step(cur, "insert into users.user_form_profile (user_id, organization_id, custom_fields) values (%s, (select organization_id from users.profiles where id=%s), '{\"gate_code\":\"4471\"}'::jsonb) on conflict (user_id) do update set custom_fields = excluded.custom_fields returning custom_fields->>'gate_code'", (TEST, TEST))
     record('LEGIT', 'freeform', 'member upserts her autofill profile with her own keys (the extension upsert shape)', o, lambda o: first(o) == '4471')
@@ -259,9 +280,11 @@ bad = [r for r in results if not r[3]]
 print(f"\n{MODE}{' plant=' + PLANT if PLANT else ''}: {len(results) - len(bad)}/{len(results)} expectations met")
 for r in bad:
     print('  FAIL', r[0], r[1], '-', r[2])
+EXPECTED_RED = {'opentable': {'opentable'}, 'freeform': {'freeform'}, 'mover': {'mover'},
+                'r0guard': {'servernotice', 'legacy', 'opentable', 'freeform', 'prefix', 'header'}}
 if PLANT:
     planted = {r[1] for r in bad}
-    ok = planted == {PLANT}
-    print(f"plant {PLANT}: {'RED ONLY WHERE PLANTED' if ok else 'UNEXPECTED: ' + str(sorted(planted))}")
+    ok = planted == EXPECTED_RED[PLANT]
+    print(f"plant {PLANT}: {'RED EXACTLY WHERE PLANTED' if ok else 'UNEXPECTED: ' + str(sorted(planted))}")
     sys.exit(0 if ok else 1)
 sys.exit(1 if bad else 0)
