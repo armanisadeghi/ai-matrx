@@ -28,6 +28,13 @@ function rowsFor(q: Query): unknown {
   return q.table === "agent_run_stage" ? [] : null;
 }
 
+// A settings knob read inside the panel tree is a dependency of this test, not
+// its subject: unset knobs fall back to their defaults exactly as before a row
+// is seeded. Without this the knob snapshot reached for a real Supabase client.
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
+  useEffectiveKnob: () => undefined,
+}));
+
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
     schema: (schema: string) => ({
