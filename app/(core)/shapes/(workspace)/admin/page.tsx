@@ -41,7 +41,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       url: SHAPES_ALL_HREF,
       label: "Shapes library",
       description:
-        "Canonical EntityListPage: mine, organizations, shared, and public scopes with true counts, ranked search, server sort/filter/pagination, URL state, column controls, copy, row menus, and entity context actions.",
+        "Canonical EntityListPage: mine, organizations, shared, and public scopes with true counts, ranked search, server sort/filter/pagination, URL state, column controls, copy, row menus, and entity actions.",
       filePath: "app/(core)/shapes/(workspace)/all/page.tsx",
       status: "Live",
     },

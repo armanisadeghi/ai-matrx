@@ -23,7 +23,7 @@ const BUILDER_OPTIONS = [
     bgClass: "bg-blue-100 dark:bg-blue-900/30",
     title: "Comprehensive Builder",
     description:
-      "Tabs for task, context, tone, examples and more",
+      "Tabs for task, background, tone, examples and more",
     badges: [
       { label: "Advanced", color: "blue" },
       { label: "Detailed", color: "green" },

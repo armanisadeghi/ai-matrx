@@ -71,8 +71,7 @@ export default function GlobalTaskShortcutImpl({ onClose }: Props) {
         <DialogHeader>
           <DialogTitle>New task</DialogTitle>
           <DialogDescription className="text-xs">
-            ⌘⇧T from anywhere. Uses your active app context for project +
-            scopes.
+            ⌘⇧T from anywhere. Uses your active scopes.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">

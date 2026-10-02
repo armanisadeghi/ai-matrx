@@ -228,7 +228,7 @@ const builtIns: Array<{
     key: "googleAnalytics4",
     label: "Google Analytics 4 (optional)",
     description:
-      "Optional traffic and engagement context. Analytics setup does not affect Search Console or PageSpeed.",
+      "Optional traffic and engagement data. Analytics setup does not affect Search Console or PageSpeed.",
     resourceLabel: "GA4 property",
     resourcePlaceholder: "properties/123456789",
     icon: BarChart3,

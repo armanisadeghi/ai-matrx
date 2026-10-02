@@ -128,8 +128,8 @@ export function NoteContextStatusIcon({
   );
   const hasContext = es.scopeIds.length > 0 || hasFkContext;
   const label = hasContext
-    ? "Context is set — click to review or change"
-    : "No context set — click to assign";
+    ? "Scopes are set — click to review or change"
+    : "No scopes set — click to assign";
 
   return (
     <ContextAssignmentPopover

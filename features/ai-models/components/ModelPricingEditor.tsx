@@ -311,7 +311,7 @@ export default function ModelPricingEditor({
         <div className="rounded-md bg-muted/50 border p-2.5 text-xs text-muted-foreground space-y-1">
           <p className="font-medium">Tiered pricing note:</p>
           <p>
-            Tiers apply based on the prompt context length. The last tier
+            Tiers apply based on the prompt length. The last tier
             (max_tokens = null) covers all prompts above the previous threshold.
             Order tiers from smallest to largest.
           </p>

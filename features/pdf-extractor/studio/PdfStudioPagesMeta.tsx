@@ -118,7 +118,7 @@ function PdfFileContextRow({
           className="flex cursor-pointer items-baseline justify-between gap-2 min-w-0 rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <dt className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
-            Context
+            Scopes
           </dt>
           <dd
             className={cn(

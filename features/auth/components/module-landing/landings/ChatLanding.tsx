@@ -58,7 +58,7 @@ const STEPS: ModuleStep[] = [
     number: "01",
     title: "Start a chat",
     description:
-      "Pick an agent from the gallery or start fresh. Bring your files, your scope, your context — Chat already knows them.",
+      "Pick an agent from the gallery or start fresh. Bring your files and your scopes — Chat already knows them.",
   },
   {
     number: "02",

@@ -32,11 +32,11 @@ const CAPABILITIES: ModuleCapability[] = [
     icon: Pin,
     title: "Pin what matters, hide the rest",
     description:
-      "Pin the one or two threads you're driving right now and they grow; hide the noise to a tray and pull it back in a click. Focus without losing context.",
+      "Pin the one or two threads you're driving right now and they grow; hide the noise to a tray and pull it back in a click. Focus without losing your place.",
   },
   {
     icon: Building2,
-    title: "Context-aware, top to bottom",
+    title: "Scoped, top to bottom",
     description:
       "Set the org, client, case, or matter once for the whole room — every tile inherits it. Override any single tile when one thread needs a tighter scope.",
   },
@@ -59,7 +59,7 @@ const STEPS: ModuleStep[] = [
     number: "01",
     title: "Open a War Room",
     description:
-      "Start a fresh room or reopen a saved one. Set the working context — org, client, case — for everything inside it.",
+      "Start a fresh room or reopen a saved one. Set the scopes — org, client, case — for everything inside it.",
   },
   {
     number: "02",
@@ -77,7 +77,7 @@ const STEPS: ModuleStep[] = [
     number: "04",
     title: "Come back to it",
     description:
-      "It's all saved. Tomorrow's you opens the room and is instantly back in context — nothing dropped, nothing forgotten.",
+      "It's all saved. Tomorrow's you opens the room and is instantly back where you left off — nothing dropped, nothing forgotten.",
   },
 ];
 
@@ -135,7 +135,7 @@ export default function WarRoomLanding() {
       eyebrowIcon={LayoutGrid}
       headline="Run your whole day from"
       headlineGradient="one command center."
-      description="A session-based workspace for people who never stop context-switching. Every open thread becomes a tile — task, notes, and live transcript together — in a grid that arranges itself. Pin what's hot, hide what's not, and pick up exactly where you left off."
+      description="A session-based workspace for people who never stop juggling tasks. Every open thread becomes a tile — task, notes, and live transcript together — in a grid that arranges itself. Pin what's hot, hide what's not, and pick up exactly where you left off."
       primaryCtaHref="/sign-up?source=war-room-landing"
       primaryCtaLabel="Start Free"
       workspaceHref="/war-room/all"

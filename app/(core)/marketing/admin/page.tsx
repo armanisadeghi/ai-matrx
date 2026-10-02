@@ -670,7 +670,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/[brandId]/seo/[siteId]/findings/[findingId]",
       label: "Finding detail",
       description:
-        "FindingDetail — finding state, catalog context, and immutable evidence.",
+        "FindingDetail — finding state, catalog item, and immutable evidence.",
       filePath:
         "app/(core)/marketing/[brandId]/seo/[siteId]/findings/[findingId]/page.tsx",
       status: "Live",
@@ -1415,7 +1415,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       name: "MarketingSiteLayoutClient",
       filePath:
         "features/marketing/components/site/MarketingSiteLayoutClient.tsx",
-      description: "Site access/context shell and route navigation.",
+      description: "Site access and scope shell and route navigation.",
       tier: "internal",
     },
     {

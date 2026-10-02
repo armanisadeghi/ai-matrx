@@ -135,9 +135,9 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
       <OrganizationContextNotice
         compact
         state={organizationState}
-        what="Context measurements"
-        title="Choose an organization to read context"
-        description="Context measurements are read in one organization, and none is selected for this session."
+        what="Context window measurements"
+        title="Choose an organization to read the context window"
+        description="Context window measurements are read in one organization, and none is selected for this session."
       />
     );
   }

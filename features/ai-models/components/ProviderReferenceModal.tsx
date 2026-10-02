@@ -130,7 +130,7 @@ function ModelCard({ model }: { model: ProviderModelEntry }) {
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             {model.max_input_tokens != null && (
               <div className="text-xs">
-                <span className="text-muted-foreground">Context: </span>
+                <span className="text-muted-foreground">Context window: </span>
                 <span className="font-mono">
                   {model.max_input_tokens.toLocaleString()}
                 </span>

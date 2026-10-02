@@ -144,7 +144,7 @@ function AdminPanel({ error }: { error: Error & { digest?: string } }) {
       >
         <Shield className="h-3.5 w-3.5 text-amber-500 shrink-0" />
         <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
-          Admin Debug Context
+          Admin debug info
         </span>
         <div className="ml-auto flex items-center gap-2">
           <Badge
@@ -188,7 +188,7 @@ function AdminPanel({ error }: { error: Error & { digest?: string } }) {
             <div className="flex items-center gap-1.5 mb-2">
               <Hash className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs font-semibold text-foreground">
-                Request Context
+                Request
               </span>
             </div>
             <div className="rounded-lg bg-background/60 border border-border/60 px-3 py-1">
@@ -202,7 +202,7 @@ function AdminPanel({ error }: { error: Error & { digest?: string } }) {
             <div className="flex items-center gap-1.5 mb-2">
               <User className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs font-semibold text-foreground">
-                User Context
+                User
               </span>
             </div>
             <div className="rounded-lg bg-background/60 border border-border/60 px-3 py-1">

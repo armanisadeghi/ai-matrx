@@ -968,7 +968,7 @@ export function AgentContextPoliciesManager({
     <>
       <div className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap">
         <Label className="text-xs text-muted-foreground shrink-0">
-          Context
+          Context policy
         </Label>
 
         <ContextPolicyStackTrigger

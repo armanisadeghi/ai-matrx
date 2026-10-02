@@ -482,7 +482,7 @@ function ComparisonDemo() {
       <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-4 rounded-md">
         <p className="text-sm text-amber-800 dark:text-amber-200">
           Note: Both components share the same selected images state through the
-          SelectedImagesProvider context.
+          SelectedImagesProvider.
         </p>
       </div>
     </div>

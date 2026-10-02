@@ -30,7 +30,7 @@ const CAPABILITIES: ModuleCapability[] = [
     icon: Eye,
     title: "Drill into source mentions",
     description:
-      "Click any node and see every doc, page, paragraph that referenced it — with the snippet, the source, and a jump-to-context link.",
+      "Click any node and see every doc, page, paragraph that referenced it — with the snippet, the source, and a jump-to-source link.",
   },
   {
     icon: Filter,

@@ -356,7 +356,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
     kind: "web-finding",
     label: itemLabel,
     description:
-      "One durable finding: lifecycle state, catalog item context, affected page, and the latest result evidence.",
+      "One durable finding: lifecycle state, catalog item, affected page, and the latest result evidence.",
     surface: `Finding detail — ${finding.item_key}`,
     data,
     lines: [

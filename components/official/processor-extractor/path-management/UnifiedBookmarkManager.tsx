@@ -578,7 +578,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
             </div>
             <div>
               <label htmlFor="edit-config" className="text-sm font-medium block mb-2">
-                Config Context:
+                Configuration:
               </label>
               <Select 
                 value={editingBookmark.configKey || 'default'} 

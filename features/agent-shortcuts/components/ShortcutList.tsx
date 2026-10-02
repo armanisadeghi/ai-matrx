@@ -506,10 +506,10 @@ export function ShortcutList({
                     onValueChange={setContextTagFilter}
                   >
                     <SelectTrigger className="h-8 w-[200px]">
-                      <SelectValue placeholder="Context tag" />
+                      <SelectValue placeholder="Feature tag" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All contexts</SelectItem>
+                      <SelectItem value="all">All features</SelectItem>
                       <SelectItem value="unrestricted">
                         Unrestricted only
                       </SelectItem>

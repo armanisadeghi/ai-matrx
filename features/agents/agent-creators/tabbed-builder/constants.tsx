@@ -153,7 +153,7 @@ export const promptTemplateSource = {
   // The tab structure for our prompt builder
   export const promptBuilderTabs = [
     { id: "task", label: "Task", icon: <PenTool className="h-4 w-4" /> },
-    { id: "context", label: "Context", icon: <Braces className="h-4 w-4" /> },
+    { id: "context", label: "Background", icon: <Braces className="h-4 w-4" /> },
     { id: "tone", label: "Tone & Style", icon: <MessageSquare className="h-4 w-4" /> },
     { id: "format", label: "Format", icon: <FileText className="h-4 w-4" /> },
     { id: "knowledge", label: "Knowledge", icon: <Layers className="h-4 w-4" /> },
@@ -181,7 +181,7 @@ export const promptTemplateSource = {
       alwaysEnabled: true
     },
     context: {
-      title: "Context",
+      title: "Background",
       description: "Give background the AI needs to understand the task"
     },
     tone: {

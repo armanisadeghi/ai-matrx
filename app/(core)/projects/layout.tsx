@@ -6,7 +6,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 export const metadata = createRouteMetadata("/projects", {
   title: "Projects",
   description:
-    "Long-running containers for tasks, resources, and context across your org.",
+    "Long-running containers for tasks and resources across your org.",
   letter: "P",
 });
 
@@ -25,7 +25,7 @@ export default async function ProjectsLayout({
       <ModuleSignInGate
         title="Projects"
         route="/projects"
-        description="Plan and track long-running work — tasks, resources, and context — across your organization."
+        description="Plan and track long-running work — tasks and resources — across your organization."
         icon={FolderKanban}
       />
     );

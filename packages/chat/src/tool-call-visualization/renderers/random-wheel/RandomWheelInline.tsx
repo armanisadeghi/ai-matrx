@@ -979,8 +979,7 @@ export const RandomWheelInline: React.FC<ToolRendererProps> = ({
 
         {settled && wheel.candidates.length > 1 && !isPersisted && (
           <p className="text-xs text-muted-foreground text-center">
-            Drag the wheel to explore other options — your pick is sent to
-            context.
+            Drag to explore options — your pick goes to the agent.
           </p>
         )}
 

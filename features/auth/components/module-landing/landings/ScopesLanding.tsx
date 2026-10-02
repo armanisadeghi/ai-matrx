@@ -22,9 +22,9 @@ const CAPABILITIES: ModuleCapability[] = [
   },
   {
     icon: Replace,
-    title: "Active scope = ambient context",
+    title: "One active scope, everywhere",
     description:
-      "Set a scope from the sidebar; every agent run, every note, every task inherits it. Switch scope, switch context — zero re-typing.",
+      "Set a scope from the sidebar; every agent run, every note, every task inherits it. Switch scope and everything follows — zero re-typing.",
   },
   {
     icon: CheckCircle2,
@@ -99,7 +99,7 @@ export default function ScopesLanding() {
       eyebrowIcon={Layers}
       headline="Context your team"
       headlineGradient="actually uses, on every run."
-      description="Define the dimensions your team works in — clients, departments, repos, cases — and AI Matrx wires them into every agent, every note, every task. Switch scope, switch context, zero re-typing."
+      description="Define the dimensions your team works in — clients, departments, repos, cases — and AI Matrx wires them into every agent, every note, every task. Switch scope and everything follows, zero re-typing."
       primaryCtaHref="/sign-up?source=scopes-landing"
       primaryCtaLabel="Map Your Org Free"
       workspaceHref="/scopes"

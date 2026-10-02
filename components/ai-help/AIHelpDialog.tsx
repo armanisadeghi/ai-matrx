@@ -125,7 +125,7 @@ export function AIHelpDialog(
                                 </TabsTrigger>
                                 <TabsTrigger value="context">
                                     <FileJson className="h-4 w-4 mr-2"/>
-                                    Context
+                                    Page context
                                 </TabsTrigger>
                                 <TabsTrigger value="export">
                                     <Download className="h-4 w-4 mr-2"/>

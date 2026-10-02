@@ -100,7 +100,7 @@ export function EducationHub() {
       steps: [
         { number: "01", title: "Bring anything", description: "Upload a PDF, record a lecture, paste a YouTube link, or snap a photo of your notes." },
         { number: "02", title: "Auto-build study material", description: "Flashcards, quizzes, summaries, mind maps, and audio overviews generate in seconds." },
-        { number: "03", title: "Study every way you learn", description: "Fast Fire spoken recall, spaced repetition, practice tests, and a context-aware AI tutor." },
+        { number: "03", title: "Study every way you learn", description: "Fast Fire spoken recall, spaced repetition, practice tests, and an AI tutor that knows your class." },
         { number: "04", title: "Measure real progress", description: "Per-card mastery, weak-area surfacing, and pre/post learning-gain — not just streaks." },
       ],
     },
@@ -145,7 +145,7 @@ export function EducationHub() {
         eyebrowIcon={GraduationCap}
         title="Every subject. Every grade."
         titleAccent="Every way to learn."
-        description="The all-in-one AI study platform — flashcards, quizzes, practice tests, podcasts, mind maps, and a context-aware tutor that grades your spoken answers in real time. From a 2nd grader's picture cards to a med student's oral-exam prep."
+        description="The all-in-one AI study platform — flashcards, quizzes, practice tests, podcasts, mind maps, and a tutor that knows your class that grades your spoken answers in real time. From a 2nd grader's picture cards to a med student's oral-exam prep."
         primary={{ label: "Create a study kit", href: "/education/start" }}
         secondary={{ label: "Start studying free", href: EDU_BASE }}
       />

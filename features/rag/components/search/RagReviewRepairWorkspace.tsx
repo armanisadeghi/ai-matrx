@@ -72,7 +72,7 @@ const REPAIR_KINDS: Array<{
   },
   {
     value: "missing_context",
-    label: "Restore context",
+    label: "Restore surrounding text",
     icon: FileText,
     instructions:
       "Review the attached native PDF pages directly and create a self-contained replacement that restores the context missing from the retrieved chunk. Include the necessary preceding and following material, while staying faithful to the source and identifying the source pages used.",

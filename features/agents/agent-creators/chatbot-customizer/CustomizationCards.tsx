@@ -296,7 +296,7 @@ export const MemoryFeaturesCard: React.FC<CardComponentProps> = (props) => {
   const memoryOption: ToggleOption = {
     type: "toggle",
     id: "memory",
-    label: "Remember Context Across Sessions",
+    label: "Remember Across Sessions",
     icon: Clock,
     defaultValue: true,
   };

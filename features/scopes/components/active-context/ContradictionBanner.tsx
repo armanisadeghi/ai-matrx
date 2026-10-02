@@ -51,7 +51,7 @@ export function ContradictionBanner({
         <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-warning" />
         <div className="flex-1 space-y-1">
           <div className="font-medium">
-            Scope contradiction — local context wins for this action
+            Scope contradiction — local scopes win for this action
           </div>
           <ul className="space-y-0.5 text-muted-foreground">
             {contradictions.map((c) => {

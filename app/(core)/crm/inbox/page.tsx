@@ -24,7 +24,7 @@ export default async function CrmInboxRoute() {
       <ModuleSignInGate
         title="Outreach Inbox"
         route="/crm/inbox"
-        description="Every reply to your outreach in one place, in full context."
+        description="Every reply to your outreach in one place, with the full thread."
         icon={Inbox}
       />
     );

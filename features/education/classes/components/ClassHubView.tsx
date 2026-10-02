@@ -579,7 +579,7 @@ function ClassHubBody({
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-8 text-center">
             <p className="text-sm text-muted-foreground">
               Nothing tagged to this class yet. Tag a deck, quiz, note, or upload
-              — or generate new material while this class is your active context.
+              — or generate new material while this class is your active scope.
             </p>
             <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
               <Plus className="h-4 w-4" />

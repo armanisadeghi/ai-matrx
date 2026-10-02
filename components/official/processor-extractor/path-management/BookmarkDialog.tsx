@@ -50,7 +50,7 @@ const SaveBookmarkDialog: React.FC<BookmarkDialogProps> = ({
               <div>
                 <p className="text-blue-800 dark:text-blue-200 font-medium">Config: {configKey}</p>
                 <p className="text-blue-700 dark:text-blue-300 mt-1">
-                  This bookmark will be associated with this configuration context for better organization and filtering.
+                  This bookmark will be associated with this configuration for better organization and filtering.
                 </p>
               </div>
             </div>

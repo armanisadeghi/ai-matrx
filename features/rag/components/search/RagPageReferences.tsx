@@ -197,8 +197,8 @@ const DERIVATION_META: Record<string, { label: string; description: string }> =
       description: "Higher-level summary linked to this page",
     },
     chunked_coarse: {
-      label: "Coarse context",
-      description: "Broader context window containing this page",
+      label: "Coarse chunk",
+      description: "Broader passage containing this page",
     },
     chunked_fine: {
       label: "Fine passages",

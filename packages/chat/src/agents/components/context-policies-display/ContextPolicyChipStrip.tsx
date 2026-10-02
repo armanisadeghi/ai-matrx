@@ -64,7 +64,7 @@ export function ContextPolicyChipStrip({
 
   const labelEl = showLabel ? (
     <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">
-      Context
+      Context policies
     </span>
   ) : null;
 

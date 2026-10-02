@@ -282,8 +282,8 @@ const PrivacyPolicyPage = () => {
 
         <h3>2.9 Google Workspace data (optional)</h3>
         <p>
-          If you choose to connect Google Workspace, AI Matrx requests access in
-          context for the feature you are using. Connecting Docs and Sheets uses
+          If you choose to connect Google Workspace, AI Matrx requests access at the
+          point of use for the feature you are using. Connecting Docs and Sheets uses
           Google&rsquo;s <code>drive.file</code> permission. This lets you
           select individual Google Docs or Sheets through Google Picker; it does
           not let AI Matrx browse your entire Google Drive. For a selected file,

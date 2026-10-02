@@ -220,7 +220,7 @@ export default function PdRatingsCalculatorLanding() {
             Five calculators, one shell
           </h2>
           <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-            Switch between them without losing context. Inputs you have already
+            Switch between them without losing your place. Inputs you have already
             entered carry over.
           </p>
         </div>

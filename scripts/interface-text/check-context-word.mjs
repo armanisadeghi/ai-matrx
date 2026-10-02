@@ -13,6 +13,8 @@
  * word, drops the approved correct uses (ALLOWED below), and compares the rest with the baseline
  * `context-word-baseline.json`. A string not in the baseline is NEW and is reported.
  *
+ * The baseline is judged: 2026-10-02 every entry was read in its file and renamed or allowed above, so it
+ * is empty. Never grow it to pass — name the thing or, when it is context, use an approved phrase.
  * Advisory: exits 0 unless --strict. Fix a NEW line by naming the thing (Scopes, Rules, Settings…)
  * or, when it really is context, by using an approved phrase. Never grow the baseline to pass.
  *
@@ -48,12 +50,26 @@ export const ALLOWED = [
   /\bcontext menus?\b/gi, // right-click menu — unrelated UI term
   /\b(preview|inspect(or)?) context\b/gi,
   /\bcontext (preview|inspector)\b/gi,
+  // 2026-10-02 judging pass over the baseline — each phrase is what an agent receives, or a policy/control about it.
+  // Every entry was read in its file; a bare "Context" label is never allowed (name it: Context policy, Scopes…).
+  /\bcontext[- ]values?\b/gi, // hyphenated form
+  /\bcontext[- ]polic(y|ies)\b/gi,
+  /\bcontext[- ](trim|trimmed|awareness block|injection|notes?|snapshot|window|debug|builder|collector|data|overrides|api)\b/gi,
+  /\b(auto|automatic|ad-hoc|pinned|surface|page|editor|instance|request|goal|dictionary|document|retrieved|business|brand|agent|cleanup|grounding|pasted|optional|extra|brief|lazy|prior|available|shared|first-class|named|this page['’]s|less|full|instance) context\b/gi, // delivered to the agent
+  /\b(agent|page|document)(&apos;|['’])s context\b/gi,
+  /\bcontext (parity|gauge|fill|variable keys?|key|entries|types?|strip|\+|the system added|this cost|you (explicitly|have)|and scope|you)\b/gi,
+  /\b(preview|clear all|reset|add|remove|provide|reviewing|finding with|bring all data from the table into|have my|delivers no|apply my) .{0,24}?context\b|\bcontext (preview|selector|navigator|picker|selections?)\b|\bcontext:\s*\$\{/gi,
+  /\b(model['’]s|out of|trimmed out of|cleared from|as) (the )?(model['’]s )?context\b|\bwhen context is\b|\b(variables?|responses) (&|and) context\b/gi,
+  /\b(that context|context inspection|tabs in context|context copy|context fix|sent to the agent as context|(copy|copy full failure) context|context \(|context \+|context injected|context: % · ~ \/ est tokens)/gi, // an agent's input or its inspection
+  /\bscopes? & context\b/gi, // admin section: scopes plus the context they deliver
 ];
 
 const PROP = /\b(label|title|aria-label|placeholder|tooltip|description|emptyText|heading|name|subtitle|sublabel)\s*[=:]\s*(?:\{\s*)?(["'`])((?:(?!\2).){0,400}?)\2/g;
 const JSX_TEXT = />([^<>{}]{1,400})</g;
 const TOAST = /\btoast(?:\.\w+)?\(\s*(["'`])((?:(?!\1).){0,400}?)\1/g;
 const WORD = /\bcontext\b/i;
+const CODE_LIKE = /=>|===|\);|\breturn\b|\bconst\b|\bcase\s*["']|(?<!:)\/\/|\w\?:\s|^\s*\*\s|\s\*\s|\/\*|\*\/|\?\.\w|\buseState\b|\bnew Set\b|\bRecord</;
+const QUOTED = /(["'`])((?:(?!\1).){2,200}?)\1/g;
 
 /** Every user-visible candidate string in `src` that still says "context" after the approved uses. */
 export function findOffenders(src) {
@@ -61,12 +77,21 @@ export function findOffenders(src) {
   const consider = (text) => {
     const t = text.replace(/\s+/g, " ").trim();
     if (!t || !WORD.test(t)) return;
-    let rest = t;
+    if (/^[a-z_]+$/.test(t)) return; // a bare lowercase key (name: "context") is a code id, not text
+    let rest = t.replace(/\$\{[^}]*\}/g, "").replace(/\s+/g, " "); // template holes are code, only the literal text renders
+    if (!WORD.test(rest)) return;
     for (const re of ALLOWED) rest = rest.replace(re, "");
     if (WORD.test(rest)) out.add(t);
   };
   for (const m of src.matchAll(PROP)) consider(m[3]);
-  for (const m of src.matchAll(JSX_TEXT)) consider(m[1]);
+  for (const m of src.matchAll(JSX_TEXT)) {
+    // The regex over-reaches across code between two tags; for a code span judge only the
+    // quoted string literals inside it (those can render), never the code around them.
+    if (CODE_LIKE.test(m[1])) {
+      // a bare lowercase literal is a code key, not rendered text
+      for (const q of m[1].matchAll(QUOTED)) if (!/^[a-z_]+$/.test(q[2])) consider(q[2]);
+    } else consider(m[1]);
+  }
   for (const m of src.matchAll(TOAST)) consider(m[2]);
   return [...out];
 }
@@ -104,6 +129,8 @@ function selfTest() {
     ['<span>Context menu</span>', 0],
     ['label="Scopes"', 0],
     ['const x = useContext(Foo)', 0],
+    ['<a>) : context.kind === "brand" ? (</a>', 0],
+    ['<a>; case "context": return</a>', 0],
   ];
   let bad = 0;
   for (const [src, want] of cases) {

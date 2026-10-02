@@ -225,7 +225,7 @@ export function BacklinkEnrichmentDetail({
     kind: "web-backlink-link-identity",
     label: "Link identity",
     description:
-      "The source page, referring site, target page, anchor, placement, and surrounding link context for one backlink.",
+      "The source page, referring site, target page, anchor, placement, and surrounding link text for one backlink.",
     surface: recordSurface,
     data: identityData,
     lines: [

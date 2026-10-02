@@ -381,7 +381,7 @@ const cards = [
                     </p>
                     
                     <p>
-                        Its variants, Scout and Maverick, combine 17 billion active parameters with extensive context capabilities (up to 10 million tokens), 
+                        Its variants, Scout and Maverick, combine 17 billion active parameters with an extensive context window (up to 10 million tokens), 
                         excelling in coding, reasoning, and multimedia understanding.
                     </p>
                     

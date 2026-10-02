@@ -770,7 +770,7 @@ const DebugDisplay = ({
         <div>
           <CardTitle>Debug View</CardTitle>
           <CardDescription>
-            Current form state with question context
+            Current form state with its questions
           </CardDescription>
         </div>
         <button

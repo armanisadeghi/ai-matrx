@@ -711,7 +711,7 @@ function ModelDetailCard({
             </div>
             <div>
               <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Context
+                Context window
               </dt>
               <dd className="tabular-nums text-foreground/80">
                 {model.contextWindow?.toLocaleString() ?? "—"}
@@ -1135,7 +1135,7 @@ function FiltersPanel({
     { key: "name", label: "Name" },
     { key: "maker", label: "Maker" },
     { key: "service", label: SERVICE_LABEL },
-    { key: "context", label: "Context" },
+    { key: "context", label: "Context window" },
     { key: "price", label: variant === "admin" ? "Price ($/M out)" : "Cost" },
     ...(variant === "admin"
       ? ([
@@ -2148,7 +2148,7 @@ export function ModelListDropdown({
         <span>Name</span>
         <span className="w-11 text-right">Speed</span>
         <DelayedHint label="How many tokens this model can hold in one conversation">
-          <span className="block w-12 text-right">Context</span>
+          <span className="block w-12 text-right" title="Context window">Window</span>
         </DelayedHint>
         <DelayedHint label="Relative cost band — more $ is more expensive. Not your personal usage.">
           <span className="block w-[2.75rem] text-right">Cost</span>

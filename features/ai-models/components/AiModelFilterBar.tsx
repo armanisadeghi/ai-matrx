@@ -476,7 +476,7 @@ export default function AiModelFilterBar({
           {/* Context window range */}
           <NumberRangeInput
             key={`context-${filters.context_window_min ?? ""}-${filters.context_window_max ?? ""}`}
-            label="Context"
+            label="Context window"
             min={filters.context_window_min}
             max={filters.context_window_max}
             onMinChange={(v) => onUpdateFilters({ context_window_min: v })}

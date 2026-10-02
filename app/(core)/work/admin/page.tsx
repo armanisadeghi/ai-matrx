@@ -20,7 +20,7 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
       url: "/work/new",
       label: "Start work (composer)",
       description:
-        "Eight-step progressive composer: destination, request, expert system, skills, context, home, timing, review. AI Matrx execution only; provider destinations are capability-gated.",
+        "Eight-step progressive composer: destination, request, expert system, skills, scopes, home, timing, review. AI Matrx execution only; provider destinations are capability-gated.",
       filePath: "app/(core)/work/new/page.tsx",
       status: "Live",
     },

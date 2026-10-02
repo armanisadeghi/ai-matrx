@@ -15,14 +15,14 @@ const PAGE_EXTRACTION_ADMIN_MAP: FeatureAdminMap = {
   name: "Page Extraction",
   slug: "page-extraction",
   description:
-    "Run an AI integration page-by-page (or in chunks) across a document and persist each structured response anchored to its source page(s). Two surfaces share one data model and one parsing rule set: the PDF Studio inline Extractions/Chunked-Runs panes (/tools/pdf-extractor) for setup + live runs, and the dedicated Extraction Data workspace (/knowledge/extractions) for full management, review, export, context tagging, and pushing to workbooks / data tables.",
+    "Run an AI integration page-by-page (or in chunks) across a document and persist each structured response anchored to its source page(s). Two surfaces share one data model and one parsing rule set: the PDF Studio inline Extractions/Chunked-Runs panes (/tools/pdf-extractor) for setup + live runs, and the dedicated Extraction Data workspace (/knowledge/extractions) for full management, review, export, scope tagging, and pushing to workbooks / data tables.",
   docs: [
     {
       label: "Page Extraction FEATURE.md",
       href: "/features/page-extraction/FEATURE.md",
     },
     {
-      label: "Scopes (context) FEATURE.md",
+      label: "Scopes FEATURE.md",
       href: "/features/scopes/FEATURE.md",
     },
   ],
@@ -33,7 +33,7 @@ const PAGE_EXTRACTION_ADMIN_MAP: FeatureAdminMap = {
       url: "/knowledge/extractions",
       label: "Extrdirective catalog (list)",
       description:
-        "Global catalog of every extraction dataset across all sources. Search, sort, context-filter; per-row context status + 'Open' into the dataset grid. The savior list entry — replaces being trapped in the PDF Studio tab.",
+        "Global catalog of every extraction dataset across all sources. Search, sort, scope-filter; per-row scope status + 'Open' into the dataset grid. The savior list entry — replaces being trapped in the PDF Studio tab.",
       filePath: "app/(core)/knowledge/extractions/page.tsx",
       status: "Live",
       notes: [
@@ -45,7 +45,7 @@ const PAGE_EXTRACTION_ADMIN_MAP: FeatureAdminMap = {
       url: "/knowledge/extractions/<id>",
       label: "Extraction dataset (grid)",
       description:
-        "Full data grid for one dataset: search, sort, column show/hide, pagination, merge duplicates, inline-edit manual columns, per-row + bulk delete, run history/retry/cancel, context tagging, export, push to workbook / data table, jump to source PDF.",
+        "Full data grid for one dataset: search, sort, column show/hide, pagination, merge duplicates, inline-edit manual columns, per-row + bulk delete, run history/retry/cancel, scope tagging, export, push to workbook / data table, jump to source PDF.",
       filePath: "app/(core)/knowledge/extractions/[id]/page.tsx",
       status: "Live",
       notes: [
@@ -76,7 +76,7 @@ const PAGE_EXTRACTION_ADMIN_MAP: FeatureAdminMap = {
       filePath:
         "features/page-extraction/data-review/ExtractionCatalogClient.tsx",
       description:
-        "Searchable / sortable / context-filterable catalog of all datasets.",
+        "Searchable / sortable / scope-filterable catalog of all datasets.",
       tier: "internal",
       status: "Live",
     },
@@ -210,9 +210,9 @@ const PAGE_EXTRACTION_ADMIN_MAP: FeatureAdminMap = {
 
   relatedFeatures: [
     {
-      name: "Scopes (Context)",
+      name: "Scopes",
       description:
-        "Datasets are taggable entities (entity_type 'page_extraction_job') via ctx_scope_assignments. The catalog filters by context and shows per-row status.",
+        "Datasets are taggable entities (entity_type 'page_extraction_job') via ctx_scope_assignments. The catalog filters by scope and shows per-row status.",
     },
     {
       name: "Files / PDF",

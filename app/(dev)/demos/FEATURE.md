@@ -41,6 +41,7 @@ competing with the one persistent shell header.
 `/demos/canonical-flashcards` is the isolated comparison and migration proof for one context-aware flashcard player. Its four variant routes use fixture `flashcard_set` data only; they do not write production data or execute production AI. **Start at the hub** for the selected candidate, source-to-style mapping, proof boundary, and additive migration sequence.
 
 ## Change log
+- 2026-10-02 — Added `/demos/context-menu-designs`: Today's right-click menu for a table row vs three competing designs, side by side, with live counts walked from each design's real menu model (home: `features/context-menu-v3/designs/`).
 - 2026-10-02 — `/demos/ui-unification` rebuilt mobile-first: one surface level (hairline sections, radio rows — no card-in-card), 12px phone gutters, tap-target header actions; added height-scale options aligned to the tap geometry (D1 toolbar, D1b touch, D1c rung count, D2 form row) and D15 phone page structure.
 - 2026-10-01 — Added `/demos/ui-unification`: a decision board that renders each contested UI pattern (toolbar height, field height, badge, tabs, card density, dialog width, loaders, empty states, toasts, radius…) with the real components and census counts; picks + notes persist in localStorage and export as Markdown.
 

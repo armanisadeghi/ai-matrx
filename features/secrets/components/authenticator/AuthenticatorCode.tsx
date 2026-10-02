@@ -83,7 +83,7 @@ export function AuthenticatorCode({
       <OrganizationRequiredNotice
         compact
         title="Choose an organization to read this code"
-        description="Authenticator codes are read in one organization's context, and none is selected for this session."
+        description="Authenticator codes are read within one organization, and none is selected for this session."
         onRetry={() => {
           setOrgRequired(false);
           setReload((value) => value + 1);

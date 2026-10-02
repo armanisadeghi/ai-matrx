@@ -118,7 +118,7 @@ export function PageAnalyzerCard({
               <p className="text-xs font-medium text-foreground">Not yet analyzed</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Run the Page Analyzer to infer this page&apos;s keyword picture from its
-                stored content, GSC queries, and site context.
+                stored content, GSC queries, and site details.
               </p>
             </div>
           </div>

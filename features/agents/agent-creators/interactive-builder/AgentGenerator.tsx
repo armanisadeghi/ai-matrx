@@ -739,7 +739,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   showResult
                 }
                 onTranscriptionComplete={() =>
-                  toast.success("Voice context added", {
+                  toast.success("Voice input added", {
                     position: TOAST_POSITION,
                   })
                 }

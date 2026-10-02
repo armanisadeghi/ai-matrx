@@ -100,7 +100,7 @@ export function ContextAwareCodeEditorModal({
   onCodeChange,
   selection,
   context,
-  title = "AI Code Editor (Context-Aware)",
+  title = "AI Code Editor",
   customMessage = "Describe the specific code changes you want to make.",
   countdownSeconds,
 }: ContextAwareCodeEditorModalProps) {

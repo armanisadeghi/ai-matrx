@@ -31,7 +31,7 @@ const CAPABILITIES: ModuleCapability[] = [
     icon: Link2,
     title: "Pin notes to the work",
     description:
-      "Anchor a note to a scope, project, client, or task. The right notes surface in the right context — no more digging through folders.",
+      "Anchor a note to a scope, project, client, or task. The right notes surface in the right scope — no more digging through folders.",
   },
   {
     icon: Tag,
@@ -62,7 +62,7 @@ const STEPS: ModuleStep[] = [
   },
   {
     number: "02",
-    title: "Organize with context",
+    title: "Organize with scopes",
     description:
       "Tag it, pin it to a scope or project, link related notes. Your structure builds itself as you work, not the other way around.",
   },

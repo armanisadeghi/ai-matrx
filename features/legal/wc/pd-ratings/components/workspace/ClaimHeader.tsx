@@ -102,7 +102,7 @@ export function ClaimHeader({ claim, onChange, className }: ClaimHeaderProps) {
             Claim
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Applicant, date of injury, and rating context.
+            Applicant, date of injury, and rating details.
           </p>
         </div>
       </header>

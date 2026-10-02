@@ -83,7 +83,7 @@ interface CreatorHubTabDef {
 const CREATOR_HUB_TABS: CreatorHubTabDef[] = [
   { id: "settings", label: "Settings", icon: Settings },
   { id: "data", label: "Data", icon: Database },
-  { id: "context", label: "Context", icon: Layers, runTabId: "context" },
+  { id: "context", label: "Context policies", icon: Layers, runTabId: "context" },
   { id: "payload", label: "Payload", icon: FileJson, runTabId: "payload" },
   {
     id: "widget_invoker",

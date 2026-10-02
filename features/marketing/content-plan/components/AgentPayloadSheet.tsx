@@ -295,7 +295,7 @@ function BranchWalk({ view }: { view: PlanIndexView }) {
   if (!ctx?.own_branch) {
     return (
       <p className="text-xs text-muted-foreground">
-        No branch context — this view was opened for the whole plan, not one
+        No branch — this view was opened for the whole plan, not one
         page.
       </p>
     );

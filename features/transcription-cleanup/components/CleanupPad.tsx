@@ -2517,7 +2517,7 @@ export default function CleanupPad({
           </div>
         )}
 
-        <SidebarSectionLabel icon={BookOpen} label="Context" />
+        <SidebarSectionLabel icon={BookOpen} label="Context notes" />
         <CleanupContextPanel
           key={session.loaded?.sessionId ?? "draft"}
           initialItems={session.loaded?.contextItems ?? null}
@@ -3100,7 +3100,7 @@ export default function CleanupPad({
                 onClick={() => toggleReveal("sidebar")}
                 icon={SlidersHorizontal}
                 label="Controls"
-                title="Clean agent, context, dictionary, clean-up"
+                title="Clean agent, context notes, dictionary, clean-up"
                 iconOnly
               />
               <RevealChip
@@ -3136,7 +3136,7 @@ export default function CleanupPad({
                   onClick={() => toggleReveal("sidebar")}
                   icon={SlidersHorizontal}
                   label="Controls"
-                  title="Clean agent, context, dictionary, clean-up"
+                  title="Clean agent, context notes, dictionary, clean-up"
                 />
                 <RevealChip
                   active={showCustom}

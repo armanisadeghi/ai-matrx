@@ -133,7 +133,7 @@ export const TextCleanerComponent: React.FC = () => {
 
   const contextSelectField: FormField = {
     name: "context",
-    label: "Context",
+    label: "Prompt template",
     type: "select",
     options: textContext.map((entry) => entry.name),
     required: false,

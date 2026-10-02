@@ -200,7 +200,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "WarRoomContextPicker + ThreadContextOverride",
       filePath: "features/war-room/components/shared/WarRoomContextPicker.tsx",
       description:
-        "Per-thread context override (ThreadContextOverride → WarRoomContextPicker). Writes only to war-room/thread records — never appContextSlice. Room header uses ActiveContextLensChip (same as /chat) for global working context.",
+        "Per-thread scope override (ThreadContextOverride → WarRoomContextPicker). Writes only to war-room/thread records — never appContextSlice. Room header uses ActiveContextLensChip (same as /chat) for the global scope selection.",
       tier: "internal",
     },
     {
@@ -268,7 +268,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "Scopes",
       adminUrl: "/scopes/admin",
       description:
-        "Context-awareness composes EntityTargetPicker + EntityScopeTagger (controlled). War Room never writes appContextSlice or ctx_scope_assignments.",
+        "Scope-awareness composes EntityTargetPicker + EntityScopeTagger (controlled). War Room never writes appContextSlice or ctx_scope_assignments.",
     },
   ],
 };

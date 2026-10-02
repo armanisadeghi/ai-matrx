@@ -752,12 +752,12 @@ function ResourceRowMenu({
             {pinned ? (
               <>
                 <PinOff className="h-4 w-4" />
-                Unpin from context
+                Unpin
               </>
             ) : (
               <>
                 <Pin className="h-4 w-4" />
-                Pin to context
+                Pin
               </>
             )}
           </DropdownMenuItem>

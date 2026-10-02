@@ -330,7 +330,7 @@ export function TesterSettingsPanel({
         />
         <EditorContextField
           id={`${idPrefix}-editor-context`}
-          label="Context"
+          label="Context policies"
           value={c.editorContext}
           onChange={c.setEditorContext}
           rows={2}
@@ -357,7 +357,7 @@ export function TesterSettingsPanel({
           />
           <SwitchRow
             id={`${idPrefix}-apply-app-context`}
-            label="Apply My Local App Context"
+            label="Apply My Local Scopes"
             checked={quickTest.applyAppContext}
             onCheckedChange={quickTest.setApplyAppContext}
             title="Construct an Application Scope from the active state"

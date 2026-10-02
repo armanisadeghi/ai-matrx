@@ -486,8 +486,7 @@ export function OrgManage({
                         Scopes
                       </h2>
                       <p className="text-xs text-muted-foreground">
-                        The dimensions your team works in — the most important
-                        part of context.
+                        The dimensions your team works in.
                       </p>
                     </div>
                   </div>

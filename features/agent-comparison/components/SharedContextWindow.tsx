@@ -366,7 +366,7 @@ function ActiveScopeReadout() {
     <div className="border-b border-border bg-muted/10 px-3 py-2 space-y-1.5">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Active context
+          Active scopes
         </span>
         <span className="text-[10px] text-muted-foreground/70">
           inherited from the page scope

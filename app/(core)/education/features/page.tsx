@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/education", {
   titlePrefix: "Features",
   title: "Education",
   description:
-    "What makes AI Matrx different — FastFire spoken recall, a context-aware tutor, voice everywhere, grading of spoken/written/handwritten work, and broadcast-quality audio study.",
+    "What makes AI Matrx different — FastFire spoken recall, a tutor that knows your class, voice everywhere, grading of spoken/written/handwritten work, and broadcast-quality audio study.",
   letter: "Ef",
   canonicalPath: "/education/features",
 });

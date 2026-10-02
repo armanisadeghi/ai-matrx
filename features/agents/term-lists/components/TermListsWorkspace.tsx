@@ -390,11 +390,11 @@ export function TermListEditor({
       </div>
 
       <Textarea
-        aria-label="Context"
+        aria-label="Notes"
         value={draft.context ?? ""}
         onChange={(e) => set({ context: e.target.value || null })}
         rows={2}
-        placeholder="Audience and brand context; never translated or spoken"
+        placeholder="Audience and brand notes; never translated or spoken"
       />
 
       <TermEntriesTable

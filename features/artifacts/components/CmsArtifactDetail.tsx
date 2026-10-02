@@ -561,7 +561,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Context
+                Scopes
               </CardTitle>
             </CardHeader>
             <CardContent className="divide-y divide-border/50">

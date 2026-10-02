@@ -299,7 +299,7 @@ export default function TranscriptionCleanup({
         </RadioGroup>
 
         <div className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-          Context
+          Context notes
         </div>
         <TranscriptionCleanupContextPanel onChange={handleContextChange} />
       </div>

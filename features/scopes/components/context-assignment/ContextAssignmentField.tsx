@@ -607,7 +607,7 @@ function HierarchyTree({
                 <Checkbox
                   checked={selOrgs.has(o.id)}
                   onCheckedChange={() => onToggleOrg(o.id)}
-                  aria-label={`Include ${formatOrgDisplayName(o)} in context`}
+                  aria-label={`Include ${formatOrgDisplayName(o)} in scopes`}
                 />
               ) : (
                 <button

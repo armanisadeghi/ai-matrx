@@ -371,7 +371,7 @@ export function AttachedDocumentChips({
           error: detachResult.error,
         });
         toast.error(
-          `Context updated, but the legacy attachment could not be removed: ${detachResult.error}`,
+          `Attachments updated, but the legacy attachment could not be removed: ${detachResult.error}`,
         );
         // Restore the pre-edit graph so the hidden canonical edge cannot
         // disagree with the still-visible legacy chip.

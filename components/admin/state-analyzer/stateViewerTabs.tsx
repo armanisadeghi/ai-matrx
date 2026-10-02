@@ -372,7 +372,7 @@ export function getStateViewerTabs(
     },
     {
       id: "appContext",
-      label: "App Context",
+      label: "Active scopes",
       content: (
         <GenericSliceViewer
           sliceKey="appContext"

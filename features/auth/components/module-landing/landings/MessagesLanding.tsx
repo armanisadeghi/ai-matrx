@@ -31,7 +31,7 @@ const CAPABILITIES: ModuleCapability[] = [
     icon: ArrowRightLeft,
     title: "Cross-tool handoff",
     description:
-      "Convert a message into a task, a note, or an agent run — preserving context. The conversation becomes the audit trail of what was decided and what got built.",
+      "Convert a message into a task, a note, or an agent run — keeping the whole thread. The conversation becomes the audit trail of what was decided and what got built.",
   },
   {
     icon: Shield,
@@ -64,7 +64,7 @@ const STEPS: ModuleStep[] = [
     number: "02",
     title: "Bring the work in",
     description:
-      "Attach notes, tasks, files, or live agent runs to a thread. Discussion happens where the artifacts live — no context-switching.",
+      "Attach notes, tasks, files, or live agent runs to a thread. Discussion happens where the artifacts live — no app-switching.",
   },
   {
     number: "03",

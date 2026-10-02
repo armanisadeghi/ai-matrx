@@ -857,7 +857,7 @@ function CodeAgentDriftPanel({
         )}
         <CopyButton
           content={`${brief}\n\nPREFERRED OPTION: deliver the unconsumed code value through a named variable or a declared context slot. Keep user_input exclusively for human-authored text. Update every discovered call site.`}
-          label="Copy context fix"
+          label="Copy fix"
           size="sm"
         />
         {agentEditHref ? (
@@ -1529,7 +1529,7 @@ function FactsPanel({
           {/* Context is the THIRD input channel, alongside declared input and user
           text — so it belongs in the facts panel beside Inputs and Output, not
           buried in a settings tab. A gate may only narrow. */}
-          <Fact label="Context">
+          <Fact label="Context policy">
             <MandateContextGate row={row} onSaved={onSaved} />
           </Fact>
           {/* 🚨 ONE SENTENCE, ONE AUTHORITY (V2-2). This fact used to be rendered

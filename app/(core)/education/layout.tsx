@@ -18,7 +18,7 @@ export const metadata = {
   ...createRouteMetadata("/education", {
     title: "Education",
     description:
-      "The all-in-one AI study platform — flashcards, quizzes, practice tests, podcasts, mind maps, and a context-aware tutor. Every subject, every grade, every way to learn.",
+      "The all-in-one AI study platform — flashcards, quizzes, practice tests, podcasts, mind maps, and a tutor that knows your class. Every subject, every grade, every way to learn.",
     letter: "Ed",
     canonicalPath: "/education",
   }),

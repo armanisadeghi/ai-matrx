@@ -1017,7 +1017,7 @@ const DETAIL_TABS = [
   { id: "variables", label: "Variables", icon: Variable },
   { id: "model", label: "Model", icon: Cpu },
   { id: "resources", label: "Resources", icon: FolderOpen },
-  { id: "context", label: "Context", icon: Box },
+  { id: "context", label: "Instance context", icon: Box },
   { id: "userInput", label: "Input", icon: Type },
   { id: "tools", label: "Tools", icon: Wrench },
   { id: "requests", label: "Requests", icon: Zap },

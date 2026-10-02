@@ -1658,7 +1658,7 @@ function AgentToolResultBlock({
                       {chunk.parent?.content_text && (
                         <>
                           <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                            parent context
+                            parent passage
                           </div>
                           <p className="whitespace-pre-wrap text-foreground/80">
                             {chunk.parent.content_text}
