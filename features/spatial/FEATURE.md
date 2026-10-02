@@ -54,6 +54,25 @@ stale text. By construction a batched tile renders once per interval instead of 
   ended only on one `pointerup` reaching one element stayed open when that release was missed: the
   resize shield stayed over the page with a resize cursor and the board took no clicks (Arman,
   2026-10-01). The board pan heals the same way. `__tests__/SpatialTile.test.tsx` holds it.
+- **Tiles sleep only when proven to wake correctly (`TileLife` in `engine/spatial-store.ts`).** The store
+  says live / frozen / discarded (needed = in view at a readable zoom, selected, worked in, full screen,
+  keyboard focus inside, or `holdAwake`; frozen 8 s after it stops being needed; discarded beyond 12
+  warm). A tile acts on it only with `sleeps` (React `<Activity mode="hidden">`) / `discardable`, set per
+  item type (`BoardItemType.sleeps`) after a browser check — waking re-runs every effect, and content
+  whose mount effect resets itself loses work. Label and image sleep today; chat, note, document, file
+  and table are still to be checked. What must outlive a sleeping body (a chat's live run, holding the
+  tile awake while the agent works) is the type's `Keep`, mounted outside the boundary.
+- **Full screen MOVES the card element** into the focus layer and back (`moveBefore` where available);
+  it never renders the card in a second place (that remounted editors and reloaded iframes).
+- **Per-tile hooks only** (`useIsSelected/Focused/Editing(id)`, `useIsLiveTile(id)`, `useTileLife(id)`):
+  a hook returning the selected id re-renders every tile on every click.
+- **A record is on a board once** (`recordKeyOf`): a second bring-in shows the existing tile.
+- **Two CSS traps measured on this board (2026-10-02):** a `[style…]` selector with a descendant part
+  makes every inline-style change restyle its whole subtree (guard
+  `styles/__tests__/no-style-attribute-descendant-selectors.test.ts`); an unscoped `::highlight()`
+  rule is computed for every element on the page (guard
+  `features/rich-document/annotations/__tests__/highlight-rules-scoped.test.ts`). Together they made a
+  pan frame or a menu opening cost seconds on a board of long chats.
 - **The board model is never host React state.** It lives in a `BoardStore` (`board/board-store.ts`)
   outside React; a tile reads its own record (`useBoardTile`), a host reads structure only
   (`useBoardLayout` — tile ids, shelf, frames, shapes, connections, undo-ability). A drag or resize
@@ -340,6 +359,13 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-10-02 — Stability round: tile lifecycle (opt-in sleep), full screen moves the card, per-tile
+  hooks, one tile per record, agent undo never re-parks, close-safe saves, the camera follows only
+  keyboard focus, a press on empty board blurs the tile's field. Root causes of the pan freeze and the
+  menu freeze/crash were CSS (see "Two CSS traps"); measured on five long chats: pan/drag/resize 17 ms
+  frames with no long tasks, a menu opens in ~0.2 s (was a hang and a crash), pan while two chats
+  stream p95 17 ms (was 1,267 ms).
 
 - 2026-10-02 — Every "Bring in" picker offers its type's "Start new" entries in its header, so no
   picker is a dead end. New starts: Meeting (`StartNewEntry.Dialog` — THE ONE MEETING FORM mounted bare,
