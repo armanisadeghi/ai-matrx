@@ -5789,17 +5789,6 @@
               }
             ],
             "default": null
-          },
-          "server_rendered": {
-            "anyOf": [
-              {
-                "$ref": "#/$defs/ContextDeliveredText"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
           }
         },
         "required": [

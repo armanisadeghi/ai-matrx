@@ -22,15 +22,12 @@ export function ContextDeliveredBlock({
   fields: ContextDeliveredFields;
   className?: string;
 }) {
-  if (!fields.delivered && !fields.onRequest && !fields.serverRendered) return null;
+  if (!fields.delivered && !fields.onRequest) return null;
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {fields.delivered ? <DeliveredText title="Agent received" text={fields.delivered} /> : null}
       {fields.onRequest ? (
         <DeliveredText title="Returned on request" text={fields.onRequest} />
-      ) : null}
-      {fields.serverRendered ? (
-        <DeliveredText title="Agent also received" text={fields.serverRendered} />
       ) : null}
     </div>
   );

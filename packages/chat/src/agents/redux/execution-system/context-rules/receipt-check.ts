@@ -158,7 +158,9 @@ export function recordContextReceipt(
 
 /**
  * What the model READ for one value, from a receipt (RULES.md §5 `delivered` /
- * `on_request`) — the server's rendering, cut from the block the model got.
+ * `on_request`) — the server's rendering, cut from the block the model got; for
+ * a server-authoritative value (§5a: user, client, organization, active_scopes)
+ * the server's own statement of it.
  * A detail view shows this instead of the client's pre-send copy whenever it
  * is present. Absent fields: the value reached no context block (or an older
  * server). Matched by key + surface, then by key, like `applyReceiptToRows`.
@@ -166,7 +168,6 @@ export function recordContextReceipt(
 export interface ContextDeliveredFields {
   delivered?: ContextDeliveredText;
   onRequest?: ContextDeliveredText;
-  serverRendered?: ContextDeliveredText;
 }
 
 export function deliveredFieldsFor(
@@ -183,6 +184,5 @@ export function deliveredFieldsFor(
   return {
     ...(hit.delivered ? { delivered: hit.delivered } : {}),
     ...(hit.on_request ? { onRequest: hit.on_request } : {}),
-    ...(hit.server_rendered ? { serverRendered: hit.server_rendered } : {}),
   };
 }

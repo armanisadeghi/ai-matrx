@@ -517,16 +517,14 @@ describe("values the server added are shown and governable", () => {
     const state = afterTurn(true, true);
     const ctx = (state as unknown as { instanceContext: { receiptByConversationId: Record<string, { receipt: { rows: Record<string, unknown>[] } }> } }).instanceContext;
     const element = '    <object key="plain" label="Plain value" format="text">\nStandup notes, as the server rendered them\n    </object>';
-    const stated = '  <organization id="o-1">Harbor Point</organization>';
     ctx.receiptByConversationId.c1!.receipt.rows[0] = {
       ...ctx.receiptByConversationId.c1!.receipt.rows[0],
       delivered: { text: element, chars: element.length, truncated: false, sha256: "a" },
-      server_rendered: { text: stated, chars: stated.length, truncated: false, sha256: "b" },
     };
     const shown = selectDisplayContextRows("c1")(state) as unknown as Array<Record<string, unknown>>;
     const plain = shown.find((r) => r.key === "plain")!;
     expect((plain.delivered as { text: string }).text).toBe(element);
-    expect((plain.serverRendered as { text: string }).text).toBe(stated);
+    expect(plain).not.toHaveProperty("serverRendered");
     expect(plain.value).toBe("Standup notes");
     expect(JSON.stringify(build(state).context)).not.toContain("as the server rendered them");
   });

@@ -20,6 +20,7 @@
 
 import { useConversationDisplayRows } from "../inputs/smart-input/useConversationDisplayRows";
 import * as contextReact from "@ai-matrx/agents/context/react";
+import * as contextCore from "@ai-matrx/agents/context";
 import { ContextRulesPanelBody } from "@ai-matrx/agents/context/react";
 import type { ResolvedContextRow } from "@ai-matrx/agents/context";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
@@ -47,6 +48,20 @@ import type { ContextDeliveredFields } from "../../redux/execution-system/contex
  * so the host renders it. Retire with the 0.27.0 adoption.
  */
 const PACKAGE_SHOWS_DELIVERED = "ContextDeliveredValue" in contextReact;
+
+/**
+ * RULES.md §5a: the server states these values itself and drops the page's
+ * copy, so before any receipt the detail never shows the page's guess as what
+ * will be sent. @ai-matrx/agents ≥ 0.28.0 exports the registry (and its panel
+ * detail says so itself); the fallback is that table, retired with adoption.
+ */
+const PACKAGE_KNOWS_SERVER_OWNED = "isServerAuthoritativeKey" in contextCore;
+const SERVER_OWNED_FALLBACK = new Set(["user", "client", "organization", "active_scopes"]);
+export function isServerOwnedContextKey(key: string): boolean {
+  const fromPackage = (contextCore as { isServerAuthoritativeKey?: (k: string) => boolean })
+    .isServerAuthoritativeKey;
+  return fromPackage ? fromPackage(key) : SERVER_OWNED_FALLBACK.has(key);
+}
 import {
   WorkingDocumentBody,
   buildWorkingDocumentDrawerItem,
@@ -99,9 +114,8 @@ export function ContextRulesPanel({
     // RULES.md §5: when the receipt says what the model read for this value,
     // THAT is the content — never the client's pre-send copy (Arman, 2026-10-01).
     const delivered = row as ResolvedContextRow & ContextDeliveredFields;
-    const received = Boolean(
-      delivered.delivered || delivered.onRequest || delivered.serverRendered,
-    );
+    const received = Boolean(delivered.delivered || delivered.onRequest);
+    const serverOwned = !received && isServerOwnedContextKey(row.key);
     const value =
       row.value && typeof row.value === "object" && !Array.isArray(row.value) && "content" in row.value
         ? (row.value as { content: unknown }).content
@@ -113,6 +127,12 @@ export function ContextRulesPanel({
         ) : null}
         {received ? (
           PACKAGE_SHOWS_DELIVERED ? null : <ContextDeliveredBlock fields={delivered} />
+        ) : serverOwned ? (
+          PACKAGE_KNOWS_SERVER_OWNED ? null : (
+            <p data-testid="context-server-fills" className="text-xs text-muted-foreground">
+              Filled in by the server
+            </p>
+          )
         ) : (
           <>
             {value !== undefined && value !== null ? (
