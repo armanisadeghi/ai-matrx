@@ -173,6 +173,8 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-10-02` — **Narrow panes take turns.** Quick Notes (`NotesView`) and a conversation's Documents (`DocumentsWorkspace`) measure their own width: below 520px the list and the document take turns at full width instead of squeezing the document to a sliver. The live door to the `conversation-documents` tab is the chat's `?attachDoc=<id>` deep link (a working document's in-app destination); the composer `ContextDocsMenu` that also called it is imported but rendered nowhere.
+
 - `2026-10-02` — **One right-hand region.** The floating `SidePanelSurface` is deleted. Every data
   table's row detail and the admin relationships forms (new rule, new entity type, new shareable
   resource, link policy) are `page-panel` tabs (`host/pagePanel.tsx`); a person's acquisition

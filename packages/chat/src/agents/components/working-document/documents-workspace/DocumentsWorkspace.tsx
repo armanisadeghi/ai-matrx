@@ -16,7 +16,7 @@
 
 import { StaleDataNotice } from "@host/components/official/stale-data/StaleDataNotice";
 import { toast } from "../../../../host/notify";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FileText,
   FilePlus2,
@@ -101,6 +101,10 @@ interface DocumentsWorkspaceProps {
   className?: string;
 }
 
+
+/** Below this width of its own, the document list and the document take turns. */
+const NARROW_WORKSPACE_PX = 520;
+
 export function DocumentsWorkspace({
   conversationId,
   initialKind = "working",
@@ -175,7 +179,28 @@ export function DocumentsWorkspace({
     activeKeyRaw === SCRATCH_PENDING && scratchScope
       ? tabKey({ conversationId: scratchScope, kind: "scratch" })
       : activeKeyRaw;
-  const [railOpen, setRailOpen] = useState(defaultRailOpen);
+  const [wideRailOpen, setWideRailOpen] = useState(defaultRailOpen);
+
+  // A narrow host (a phone, a 360px canvas pane) has no room for the list
+  // beside the document, so the two take turns: the document first, the list
+  // on request, and picking a document closes the list again. Measured on the
+  // workspace itself — a narrow canvas pane on a wide screen is narrow.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [paneWidth, setPaneWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const measure = () => setPaneWidth(Math.round(root.clientWidth));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+  const compact =
+    isMobile || (paneWidth !== null && paneWidth > 0 && paneWidth < NARROW_WORKSPACE_PX);
+  const [compactRailOpen, setCompactRailOpen] = useState(false);
+  const railOpen = compact ? compactRailOpen : wideRailOpen;
+  const setRailOpen = compact ? setCompactRailOpen : setWideRailOpen;
 
   // Restore this conversation's ATTACHED documents (persisted association
   // edges) as tabs on mount — the thunk also loads each one's content into its
@@ -449,7 +474,7 @@ export function DocumentsWorkspace({
       getScope={buildScope}
       isEditable={false}
     >
-      <div className={cn("flex h-full min-h-0", className)}>
+      <div ref={rootRef} className={cn("flex h-full min-h-0", className)}>
         {railOpen && (
           <DocumentsListRail
             currentConversationId={conversationId}
@@ -458,16 +483,16 @@ export function DocumentsWorkspace({
             closableKeys={closableKeys}
             onOpen={(selection) => {
               openDoc(selection);
-              if (isMobile) setRailOpen(false);
+              if (compact) setRailOpen(false);
             }}
             onDetach={closeTab}
             onDocumentRenamed={handleDocumentRenamed}
             onCollapse={() => setRailOpen(false)}
-            className={isMobile ? "w-full border-r-0" : undefined}
+            className={compact ? "w-full border-r-0" : undefined}
           />
         )}
 
-        {(!isMobile || !railOpen) && (
+        {(!compact || !railOpen) && (
           <div className="flex min-w-0 flex-1 flex-col">
             {restoreError != null && (
               <StaleDataNotice
