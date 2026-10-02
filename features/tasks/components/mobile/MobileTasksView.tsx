@@ -3,7 +3,11 @@
 import React, { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectSelectedTaskId,
+  setSelectedTaskId,
+} from "@/features/tasks/redux/taskUiSlice";
 import { selectAllTasksFlat } from "@/features/tasks/redux/selectors";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -11,8 +15,6 @@ import { Button } from "@/components/ui/button";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import MobileTasksList from "./MobileTasksList";
 import MobileTaskDetails from "./MobileTaskDetails";
-
-type MobileView = "tasks" | "details";
 
 interface MobileTaskDetailsLoaderProps {
   taskId: string;
@@ -80,19 +82,20 @@ function MobileTaskDetailsLoader({
 }
 
 export default function MobileTasksView() {
-  const [currentView, setCurrentView] = useState<MobileView>("tasks");
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  // The ONE selection — the same Redux value `TaskUrlSync` bridges to
+  // `?task=`. A local copy here meant a phone ignored deep links and Back.
+  const dispatch = useAppDispatch();
+  const selectedTaskId = useAppSelector(selectSelectedTaskId);
+  const currentView = selectedTaskId ? "details" : "tasks";
   const [detailLoadAttempt, setDetailLoadAttempt] = useState(0);
 
   const handleTaskSelect = (taskId: string) => {
-    setSelectedTaskId(taskId);
     setDetailLoadAttempt(0);
-    setCurrentView("details");
+    dispatch(setSelectedTaskId(taskId));
   };
 
   const handleBack = () => {
-    setCurrentView("tasks");
-    setSelectedTaskId(null);
+    dispatch(setSelectedTaskId(null));
   };
 
   return (
