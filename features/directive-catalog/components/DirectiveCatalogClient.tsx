@@ -25,10 +25,12 @@ import {
   DirectiveBuilderPanel,
   type DirectiveBuilderPick,
 } from "@/features/directive-catalog/components/DirectiveBuilderPanel";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
 import {
-  DirectiveShapePanel,
+  directiveShapeOpenInput,
   type DirectiveShapeSelection,
-} from "@/features/directive-catalog/components/DirectiveShapePanel";
+} from "@/features/directive-catalog/canvas/directiveShapeKind";
 import { setEntityTypeAgentWritable } from "@/features/admin/relationships/entityTypeMutations";
 import type { NounDirectives } from "@/features/directive-catalog/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -53,9 +55,10 @@ export function DirectiveCatalogClient() {
   const activeServer = useAppSelector(selectActiveServer);
   const { catalog, isLoading, error, baseUrl, lastUpdatedAt, refresh } =
     useDirectiveCatalog(POLL_MS);
-  const [selection, setSelection] = useState<DirectiveShapeSelection | null>(
-    null,
-  );
+  const canvas = useOptionalCanvas();
+  const inspect = (selection: DirectiveShapeSelection) => {
+    openCanvasItem(canvas, directiveShapeOpenInput(selection));
+  };
   const [busyToggle, setBusyToggle] = useState<string | null>(null);
   const [builderPick, setBuilderPick] = useState<DirectiveBuilderPick | null>(
     null,
@@ -171,7 +174,7 @@ export function DirectiveCatalogClient() {
                 onToggleWritable={(noun, enabled) =>
                   void toggleWritable(noun, enabled)
                 }
-                onInspect={setSelection}
+                onInspect={inspect}
                 onPickNoun={(noun) =>
                   setBuilderPick((prev) => ({
                     noun: noun.noun,
@@ -194,12 +197,6 @@ export function DirectiveCatalogClient() {
           </div>
         )}
       </div>
-      {selection ? (
-        <DirectiveShapePanel
-          selection={selection}
-          onClose={() => setSelection(null)}
-        />
-      ) : null}
     </div>
   );
 }

@@ -1,44 +1,34 @@
-// features/kg-suggestions/components/GlobalSuggestionsDrawer.tsx
+// features/kg-suggestions/canvas/SuggestionsInboxCanvasView.tsx
 //
 // The global suggestion inbox — every pending KG → scope-item suggestion
 // across the user's data, grouped by source kind, plus a dedicated
-// "Suggest a scope" section for heavy-hitter rows. Opened from the nav via
-// the overlay system (see openers/kgSuggestionsDrawer.tsx); this component is
-// rendered (gated) by OverlayController and self-manages its surface chrome.
+// "Suggest a scope" section for heavy-hitter rows — as the body of the
+// `kg-suggestions` canvas tab (see kgSuggestionsKind.ts). The pane header is
+// the chrome: the tab carries the name and the live count, and its header
+// button opens the full manager.
 //
-// Mobile-first: a bottom Drawer on phones (useIsMobile), a right-side Sheet on
-// desktop. Single scroll area. Accept/reject/defer are non-blocking; results
-// are toasts. Nothing here writes global context — these are pure suggestion
-// decisions that funnel through the user-scoped /kg-suggestions API.
+// Single scroll area. Accept/reject/defer are non-blocking; results are
+// toasts. A source preview opens as its own canvas tab beside this one.
+// Nothing here writes global context — these are pure suggestion decisions
+// that funnel through the user-scoped /kg-suggestions API.
 
 "use client";
 
 import Link from "next/link";
 import { ArrowRight, Lightbulb, Network } from "lucide-react";
 import { isLowConfidence } from "@/features/kg-suggestions/constants";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { useEffect } from "react";
+import type { CanvasKindProps } from "@ai-matrx/canvas/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useKgSuggestions } from "@/features/kg-suggestions/hooks/useKgSuggestions";
-import { KgSuggestionRowItem } from "./KgSuggestionRowItem";
-import { useIsPreviewingSource } from "./source-preview/SourcePreviewContext";
+import { KgSuggestionRowItem } from "@/features/kg-suggestions/components/KgSuggestionRowItem";
+import { SUGGESTIONS_TAB_TITLE } from "./kgSuggestionsKind";
 import type {
   KgGlobalFilter,
   KgSuggestionRow,
 } from "@/features/kg-suggestions/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-
-export interface GlobalSuggestionsDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
 
 const SOURCE_LABELS: Record<string, string> = {
   note: "Notes",
@@ -56,22 +46,11 @@ function sourceLabel(kind: string): string {
   return SOURCE_LABELS[kind] ?? kind;
 }
 
-export function GlobalSuggestionsDrawer({
-  isOpen,
-  onClose,
-}: GlobalSuggestionsDrawerProps) {
-  const isMobile = useIsMobile();
+export default function SuggestionsInboxCanvasView({ item, canvas }: CanvasKindProps) {
   const filter: KgGlobalFilter = { global: true, status: "pending" };
   const { items, count, status, error, accept, reject, defer } =
-    useKgSuggestions(filter, { autoFetch: isOpen });
-
-  // A source preview opens as a canvas tab; the inbox never unmounts. While the
-  // person is reading one we stop outside-clicks / escape from dismissing the
-  // inbox, so reviewing the source can't close the drawer out from under you.
-  const isPreviewing = useIsPreviewingSource();
-  const keepOpenWhilePreviewing = (e: { preventDefault: () => void }) => {
-    if (isPreviewing) e.preventDefault();
-  };
+    useKgSuggestions(filter, { autoFetch: true });
+  const closeTab = () => canvas.close(item.id);
 
   // React Compiler is on — no manual memoization. Group rows for render.
   // Low-confidence (<50%) rows are mostly noise — keep them OUT of the normal
@@ -184,7 +163,7 @@ export function GlobalSuggestionsDrawer({
         {lowQualityCount > 0 ? (
           <Link
             href="/suggestions"
-            onClick={onClose}
+            onClick={closeTab}
             className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
           >
             <span>
@@ -199,62 +178,16 @@ export function GlobalSuggestionsDrawer({
     </ScrollArea>
   );
 
-  const surface = isMobile ? (
-    <Drawer open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent
-        className="h-dvh max-h-[90dvh]"
-        onInteractOutside={keepOpenWhilePreviewing}
-        onPointerDownOutside={keepOpenWhilePreviewing}
-        onEscapeKeyDown={keepOpenWhilePreviewing}
-      >
-        <DrawerHeader className="border-b border-border">
-          <DrawerTitle className="flex items-center gap-2">
-            <Lightbulb className="h-4 w-4 text-primary" />
-            Suggestions {status !== "error" && shownCount > 0 ? `(${shownCount})` : ""}
-          </DrawerTitle>
-          <Link
-            href="/suggestions"
-            onClick={onClose}
-            className="mt-1 inline-flex items-center gap-1 self-start text-xs text-primary hover:underline"
-          >
-            Open full manager
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-        </DrawerHeader>
-        <div className="flex flex-1 min-h-0 flex-col">{body}</div>
-      </DrawerContent>
-    </Drawer>
-  ) : (
-    <MatrxDynamicPanelHost
-      open={isOpen}
-      onOpenChange={(o) => !o && onClose()}
-      title={
-        <span className="inline-flex items-center gap-2">
-          <Lightbulb className="h-4 w-4 text-primary" />
-          Suggestions {status !== "error" && shownCount > 0 ? `(${shownCount})` : ""}
-        </span>
-      }
-      expandButtonLabel="Suggestions"
-      dismissDisabled={isPreviewing}
-      position="right"
-      defaultSize={36}
-      contentClassName="flex min-h-0 flex-1 flex-col p-0"
-      headerActions={
-        <Link
-          href="/suggestions"
-          onClick={onClose}
-          className="mt-0.5 pr-3 inline-flex shrink-0 items-center gap-1 text-sm text-primary hover:underline"
-        >
-          Open full manager
-          <ArrowRight className="h-3 w-3" />
-        </Link>
-      }
-    >
-      {body}
-    </MatrxDynamicPanelHost>
-  );
+  // The tab names the inbox and how many strong suggestions wait in it.
+  const tabTitle =
+    status !== "error" && shownCount > 0
+      ? `${SUGGESTIONS_TAB_TITLE} (${shownCount})`
+      : SUGGESTIONS_TAB_TITLE;
+  const itemId = item.id;
+  const currentTitle = item.title;
+  useEffect(() => {
+    if (currentTitle !== tabTitle) canvas.update(itemId, { title: tabTitle });
+  }, [canvas, itemId, currentTitle, tabTitle]);
 
-  return surface;
+  return body;
 }
-
-export default GlobalSuggestionsDrawer;

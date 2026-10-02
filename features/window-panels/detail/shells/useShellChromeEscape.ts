@@ -6,8 +6,7 @@
 // The keyboard model `@ai-matrx/detail` specifies is "Escape → close", read on the
 // presentation's own root and on every slot it fills (`data-detail-root`,
 // `data-detail-keyboard-slot`). The SHELL's chrome is none of those: `WindowPanel`'s
-// close / minimize / pop-out buttons, `SidePanelSurface`'s close button and drag
-// handle, and the page's route header render outside the slots, in a PORTAL, and
+// close / minimize / pop-out buttons, and the page's route header render outside the slots, in a PORTAL, and
 // neither component handles a keystroke. So with focus on the window's own close
 // button — a place a person's focus lands constantly — Escape did nothing, while a
 // shell's header comment claimed Escape closed it (VERIFY-U-P1-R5, NEW-22: "the

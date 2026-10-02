@@ -139,7 +139,7 @@ export default function MatrxDataTableDisplay({
         </h2>
         <p className="text-sm text-muted-foreground">
           Sticky headers, every-column sort/filter, layered advanced rules,
-          toolbar facets, row → SidePanelSurface, panel icon → WindowPanel.
+          toolbar facets, row → canvas tab, panel icon → WindowPanel.
         </p>
       </div>
 

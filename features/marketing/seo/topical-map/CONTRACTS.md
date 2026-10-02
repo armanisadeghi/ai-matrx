@@ -192,9 +192,10 @@ button with the consequence sentence in a `ConfirmDialog`; `batch` = checkboxes 
   `mobilePresentation: "drawer"`, `defaultData: { mapId: "", slug: "", siteId: null }`,
   `preservation.dataKeys: ["mapId","slug","siteId"]`, `urlSync: { key: "topic" }`.
 - Component `features/window-panels/windows/marketing/TopicalMapTopicPanel.tsx`: reads
-  `detail_panel` through `useTopicalMapKnobs`; `window` → `<WindowPanel>`; `drawer` →
-  `<SidePanelSurface>`; both around ONE `<TopicDetailBody host=… />`. While knobs load it renders
-  the component-library loading state; on knob error it renders `TopicalMapFailed`.
+  `detail_panel` through `useTopicalMapKnobs`; `window` → `<WindowPanel>`; `drawer` → a
+  `topical-map-topic` canvas tab keyed `<mapId>|<slug>` (`canvas/topicKind.ts`) and the overlay
+  instance closes; both around ONE `<TopicDetailBody host=… />`. While knobs load nothing is framed;
+  a knob error is announced with a toast.
 - Opener `features/overlays/openers/topicalMapTopicPanel.tsx`: `useOpenTopicPanel()` →
   `(args: { mapId: string; slug: string; siteId?: string | null }) => void`.
 - `panel/TopicDetailBody.tsx`: `{ mapId: string; slug: string; siteId: string | null; host: MapHost; readOnly?: boolean }`.

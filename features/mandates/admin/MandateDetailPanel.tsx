@@ -1918,7 +1918,7 @@ export function MandateDetailView({
   }
 
   return (
-    // SidePanelSurface (and the WindowPanel body) hand children an
+    // The table's detail tab (and the WindowPanel body) hand children an
     // overflow-hidden flex cell and expect the child to own its scroll —
     // without this wrapper the drawer simply cut off at the fold, which is
     // exactly the defect the 2026-08-12 rebuild was ordered over.

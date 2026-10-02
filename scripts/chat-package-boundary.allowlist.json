@@ -372,7 +372,6 @@
     "@host/features/overlays/openers/imageViewer": 1,
     "@host/features/overlays/openers/liveRunWindow": 3,
     "@host/features/overlays/openers/shortcutEditorWindow": 1,
-    "@host/features/overlays/surfaces/SidePanelSurface": 1,
     "@host/features/pdf/components/PdfNamedSurfaceSwitcher": 1,
     "@host/features/pdf/hooks/usePdfSurfaceLinks": 1,
     "@host/features/podcasts/generator/useVoices": 1,

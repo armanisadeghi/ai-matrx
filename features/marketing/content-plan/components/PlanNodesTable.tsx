@@ -9,7 +9,7 @@
  * (`filterAndSortRows`): every column sorts AND filters against the WHOLE
  * plan, finite columns get real option lists with counts, and full-row click
  * opens the node in a WindowPanel. The row's panel action switches the same
- * canonical NodePanel into the adjustable SidePanelSurface. Style
+ * canonical NodePanel into the page's resizable pane. Style
  * (sort, page size, hidden columns) persists via useListViewPrefs
  * ("content-plan-nodes"); search/filters/page are query state and never
  * persist.

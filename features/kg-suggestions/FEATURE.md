@@ -12,14 +12,14 @@ recurring entity to a brand-new scope.
 ## Files
 
 **Components** — `KgSuggestionsChip` · `KgSuggestionsPopover` · `ScopeItemSuggestionsPanel` ·
-`GlobalSuggestionsDrawer` · `HeavyHitterSuggestionsInbox` · `KgSuggestionsNavButton` ·
+`canvas/` (the `kg-suggestions` inbox kind + `SuggestionsInboxCanvasView`) · `HeavyHitterSuggestionsInbox` · `KgSuggestionsNavButton` ·
 **`KgSuggestionRowItem`** (the ONE shared decision card every surface renders) ·
 `components/source-preview/` (`SuggestionSourcePreview`, the `kg-source-preview` canvas kind,
-`useOpenSourcePreview`, `useIsPreviewingSource`, `PreviewSourceButton`) · `SuggestionsManager` (`/suggestions`).
+`useOpenSourcePreview`, `PreviewSourceButton`) · `SuggestionsManager` (`/suggestions`).
 
 **Hooks / state** — `useKgSuggestions(filter)` (slice cache, the three inbox views) ·
 `useSuggestionsQuery` (server-side query over the enriched view, manager only) ·
-`useHeavyHitterAccept` · `useOpenKgSuggestionsDrawer`.
+`useHeavyHitterAccept` · `useOpenKgSuggestions`.
 
 **Service** — `sourcePreviewService` + `useSourcePreviewDoc` (the ONE source read layer);
 decisions write to Supabase directly.
@@ -50,24 +50,23 @@ Migration `kg_014` added `decision_note`, `viewed_at`, `is_starred` to both ledg
 - **Source preview is a canvas tab and never dismisses the inbox.** A card
   calls `useOpenSourcePreview()`, which opens the `kg-source-preview` kind keyed
   `<source_kind>:<source_id>` (same source → same tab). It touches neither the
-  suggestion cache nor the drawer; the drawer reads `useIsPreviewingSource()` to
-  stay open while the evidence is read. Where no canvas column is on screen the
+  suggestion cache nor the inbox, which is its own canvas tab beside it. Where no canvas column is on screen the
   hook returns `null` and the card MUST fall back to a link-out, never crash.
 - **One source read layer.** Source titles + bodies + link-outs come from
   `sourcePreviewService` (and `useSourcePreviewDoc` for bodies). Don't re-query
   source tables ad hoc from a card or fork a second title resolver — extend the
   per-kind switch there.
 - **Cross-surface sync via normalized cache.** A decision removes the row from
-  every list key, so a note chip and the global drawer update together. Don't
+  every list key, so a note chip and the global inbox update together. Don't
   add a parallel per-surface cache.
 - **The chip `filter` is keyed on `source_kind`/`source_id`, NOT
   `EntityType`.** A suggestion's source (transcript, scraped,
   cld_file, …) is broader than the set of taggable entities; coupling to the
   narrower union would wrongly exclude sources.
-- **Global drawer is overlay-system, not a parallel render tree.** It is
-  registered as `kgSuggestionsDrawer` (overlay-id + catalogue entry + opener +
-  gated block in `OverlayController.tsx`). Open it only via
-  `useOpenKgSuggestionsDrawer` — never dispatch `openOverlay` directly.
+- **The global inbox is a canvas tab.** The `kg-suggestions` kind
+  (`canvas/kgSuggestionsKind.tsx`, key `inbox`, registered in
+  `features/canvas/host/featureCanvasKinds.ts`); open it only via
+  `useOpenKgSuggestions` — the nav button and the new-suggestion toast do.
 - **`auto_rag_enabled` is not in generated `database.types` yet** (Phase A
   applied the column to the DB; FE types regen is pending). The hook bridges the
   gap with a localized cast and a TODO. Regenerate Supabase types to remove it.
@@ -111,6 +110,8 @@ Migration `kg_014` added `decision_note`, `viewed_at`, `is_starred` to both ledg
 ---
 
 ## Change Log
+
+- 2026-10-02 — The global inbox is a `kg-suggestions` canvas tab; the `kgSuggestionsDrawer` overlay, its opener and `useIsPreviewingSource` are deleted.
 
 - 2026-10-02 — Source preview moved off the floating `MatrxDynamicPanel` (`SourcePreviewPanel`, deleted with its host-owned controller) onto a `kg-source-preview` canvas tab keyed by the source; `useOpenSourcePreview` needs no host provider any more.
 - 2026-09-17 — **The personal-organization write in `kgSuggestionAckService.ackSuggestions` is

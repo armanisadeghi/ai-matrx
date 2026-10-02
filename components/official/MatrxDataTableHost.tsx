@@ -17,7 +17,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { hostEntityMenu } from "@/features/admin/users/components/admin-user-table-menu";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
-import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -128,7 +128,8 @@ const ports: TableHost = {
   ToolbarAction: TableToolbarAction,
   SavedViews: TableSavedViews,
   EntityRef,
-  SidePanelSurface,
+  // A row's detail is a canvas tab: the right-hand region is the canvas, never a second panel.
+  SidePanelSurface: CanvasPagePanel,
   WindowPanel: TableWindowPanel,
   ResourcePeek: ResourcePeekHost,
   resolveEntityDoors: tableEntityDoors,

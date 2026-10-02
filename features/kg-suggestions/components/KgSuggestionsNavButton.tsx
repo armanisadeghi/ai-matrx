@@ -1,8 +1,7 @@
 // features/kg-suggestions/components/KgSuggestionsNavButton.tsx
 //
 // A reusable "open the global suggestion inbox" button with a live count
-// badge. Opens the GlobalSuggestionsDrawer via the overlay system (NOT a
-// parallel render tree) — see openers/kgSuggestionsDrawer.tsx. Drop this into
+// badge. Opens the inbox as a canvas tab (canvas/kgSuggestionsKind.tsx). Drop this into
 // any nav / hub surface that should expose the global inbox. Self-fetches the
 // global pending count so the badge stays in sync with accept/reject/defer
 // from any other surface.
@@ -13,7 +12,7 @@ import { Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { useKgSuggestions } from "@/features/kg-suggestions/hooks/useKgSuggestions";
-import { useOpenKgSuggestionsDrawer } from "@/features/overlays/openers/kgSuggestionsDrawer";
+import { useOpenKgSuggestions } from "@/features/kg-suggestions/canvas/kgSuggestionsKind";
 import type { KgGlobalFilter } from "@/features/kg-suggestions/types";
 
 export interface KgSuggestionsNavButtonProps {
@@ -32,7 +31,7 @@ export function KgSuggestionsNavButton({
 }: KgSuggestionsNavButtonProps) {
   const filter: KgGlobalFilter = { global: true, status: "pending" };
   const { count } = useKgSuggestions(filter);
-  const openDrawer = useOpenKgSuggestionsDrawer();
+  const openInbox = useOpenKgSuggestions();
 
   if (hideWhenEmpty && count <= 0) return null;
 
@@ -41,7 +40,7 @@ export function KgSuggestionsNavButton({
       type="button"
       variant={variant}
       size="sm"
-      onClick={() => openDrawer()}
+      onClick={() => openInbox()}
       className={cn("relative gap-1.5", className)}
     >
       <Lightbulb className="h-3.5 w-3.5" />

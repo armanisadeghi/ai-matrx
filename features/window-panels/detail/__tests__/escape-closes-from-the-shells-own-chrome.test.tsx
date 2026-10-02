@@ -3,8 +3,7 @@
 //
 // Round 4 bound the keyboard model on every slot the PRESENTATION fills
 // (`data-detail-root`, `data-detail-keyboard-slot`). Round 5 found what was left:
-// `WindowPanel`'s close / minimize / pop-out buttons, `SidePanelSurface`'s close
-// button and drag handle and the page's `RouteHeader` render OUTSIDE those slots,
+// `WindowPanel`'s close / minimize / pop-out buttons and the page's `RouteHeader` render OUTSIDE those slots,
 // in a portal, and neither component contains any keystroke handling — while
 // the docked shell's own header comment told the next agent that the docked
 // panel closed on Escape. A comment that lies about the code beneath it is the

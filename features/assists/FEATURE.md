@@ -191,8 +191,8 @@ Three systems model "here is something you could do": **assists**
 **Verdict: kg-suggestions CANNOT be retired.** Eight capabilities are missing,
 three of them load-bearing (source preview, per-record chips, domain-RPC
 accept). It also stays mounted in eight live surfaces (notes, tasks, scopes
-hub, scope detail / items / list, orgs, settings) plus the `kgSuggestionsDrawer`
-overlay, so "retire" here means those eight surfaces lose a working feature.
+hub, scope detail / items / list, orgs, settings) plus the `kg-suggestions`
+canvas tab, so "retire" here means those eight surfaces lose a working feature.
 
 ### `web.finding` (offer layer) → assists
 

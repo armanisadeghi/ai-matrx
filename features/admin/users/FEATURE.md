@@ -112,7 +112,8 @@ and `runtime.global_execution` (runtime-admitted work, nested status, meters,
 and cost), `public.system_error` (AI Dream 5xx plus persisted frontend captures),
 and attributed `public.app_log` warnings/errors. It states an engagement verdict,
 feature usage, failures, runtime work/cost, and the request-ID chronology. The
-Journey door opens the canonical non-blocking `SidePanelSurface`; secondary
+Journey door opens a `user-journey` canvas tab keyed by the acquisition row
+(`canvas/userJourneyKind.ts`); secondary
 telemetry failures appear as source warnings without hiding successfully loaded
 history. Localhost and loopback referrers are visibly classified as local/agent
 testing, not ordinary acquired traffic. Headline people, account, conversion,

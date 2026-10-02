@@ -719,7 +719,7 @@ export const componentList: ComponentEntry[] = [
     name: "Matrx Data Table",
     path: "@ai-matrx/design-system/data-table/MatrxDataTable.tsx",
     description:
-      "Canonical data table: sticky headers, every-column sort/filter, toolbar facets, row → SidePanelSurface, panel icon → WindowPanel",
+      "Canonical data table: sticky headers, every-column sort/filter, toolbar facets, row → canvas tab, panel icon → WindowPanel",
     categories: ["data-display", "interactive", "dashboards"],
     tags: [
       "table",

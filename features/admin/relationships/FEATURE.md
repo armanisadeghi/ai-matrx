@@ -302,7 +302,7 @@ used by the per-row **Link policy** side panel).
 - **Reusable primitives extracted:** `components/entity-types/EntityTypeChip` +
   `EntityTypeCombobox` (consumed here; available to every association surface).
 - **Table chrome:** `MatrxDataTable` — sticky headers, every-column filter/sort,
-  toolbar facets, row → `SidePanelSurface` / `MatrxDynamicPanelHost`, panel icon →
+  toolbar facets, row → a canvas tab (`CanvasPagePanel`), panel icon →
   `WindowPanel`.
 - **One core component, two shells:** `EntityRelationshipOrbit` is
   route-agnostic — the `explorer/[token]` page and `EntityRelationshipOrbitWindow`
@@ -315,6 +315,8 @@ used by the per-row **Link policy** side panel).
   a half-empty control plane.
 
 ## Change log
+
+- **2026-10-02** — The create forms (rule, entity type, shareable resource) and the link-policy editor open as canvas tabs (`CanvasPagePanel`, keys `new-relationship-rule`, `new-entity-type`, `new-shareable-resource`, `link-policy:<schema>.<table>`); the floating side panel is deleted.
 
 - 2026-09-12 — Reused the published shared pagination-policy validator in the frontend; preserved organization lookup, manual recovery and retry messages. Adopted the shared wheel-baseline repair through design-system 0.17.1.
 

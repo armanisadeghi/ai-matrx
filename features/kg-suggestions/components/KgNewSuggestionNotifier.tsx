@@ -25,7 +25,7 @@ import { Lightbulb, X } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useKgSuggestions } from "@/features/kg-suggestions/hooks/useKgSuggestions";
-import { useOpenKgSuggestionsDrawer } from "@/features/overlays/openers/kgSuggestionsDrawer";
+import { useOpenKgSuggestions } from "@/features/kg-suggestions/canvas/kgSuggestionsKind";
 import {
   ackSuggestions,
   fetchAckedSuggestionIds,
@@ -40,7 +40,7 @@ export default function KgNewSuggestionNotifier() {
   const user = useAppSelector(selectUser);
   const userId = user?.id ?? null;
   const { items } = useKgSuggestions({ global: true, status: "pending" });
-  const openDrawer = useOpenKgSuggestionsDrawer();
+  const openInbox = useOpenKgSuggestions();
 
   // Durable "don't show again" set (loaded once per user). State (not ref) so
   // its arrival re-runs the show effect even if `items` already resolved.
@@ -83,7 +83,7 @@ export default function KgNewSuggestionNotifier() {
             count={count}
             onReview={() => {
               toast.dismiss(id);
-              openDrawer();
+              openInbox();
             }}
             onClose={() => toast.dismiss(id)}
             onDontShow={() => {
@@ -109,7 +109,7 @@ export default function KgNewSuggestionNotifier() {
     }, SHOW_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [userId, acked, items, openDrawer]);
+  }, [userId, acked, items, openInbox]);
 
   return null;
 }

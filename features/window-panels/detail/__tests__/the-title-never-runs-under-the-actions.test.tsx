@@ -1,4 +1,4 @@
-// 🚨 D4 and NEW-4 (VERIFY-U-P1-R2) — THE RECORD'S NAME AND THE ACTION CLUSTER
+// 🚨 D4 (VERIFY-U-P1-R2) — THE RECORD'S NAME AND THE ACTION CLUSTER
 // DO NOT SHARE THE SAME PIXELS.
 //
 // Both findings are GEOMETRIC: this container cannot sign in to any Matrx host,
@@ -11,15 +11,12 @@
 //         gave the title a 432px box in the 560px default window, spanning
 //         x≈64–496, while the cluster occupied from x≈440 rightward — so the type
 //         chip and the record's own doors sat underneath the icons.
-//   NEW-4 The docked presentation's header (`SidePanelSurface`'s `PanelHeader`)
-//         gave the title `flex-1` beside a `shrink-0` cluster; under
-//         `pointer: coarse` every icon is 40px, so on a 390px phone the cluster
-//         is ~300px and the name was left ~50px.
 //
-// The fix in both is the same shape: the title and the actions are laid out in
-// ONE flex row, the title `min-w-0 truncate` so it yields exactly the space the
-// actions really need and not a pixel more — and on a phone the name keeps the
-// first row while the cluster wraps below it.
+// The fix: the title and the actions are laid out in ONE flex row, the title
+// `min-w-0 truncate` so it yields exactly the space the actions really need and
+// not a pixel more. (The docked presentation is a canvas tab now; its header is
+// the canvas pane's, and a narrow pane folds the record's controls into More —
+// see RecordPeekCanvasView.)
 
 import * as React from "react";
 import { act } from "react";
@@ -31,7 +28,6 @@ import windowManager from "@/lib/redux/slices/windowManagerSlice";
 import adminDebug from "@/lib/redux/preferences/adminDebugSlice";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
-import { PanelHeader } from "@/features/overlays/surfaces/SidePanelSurface";
 import { DetailActions, DetailTitle } from "@ai-matrx/detail/react";
 import { useDetailCore } from "@ai-matrx/detail/react";
 import { instance, makePorts, mount } from "@/lib/detail/__tests__/harness";
@@ -140,63 +136,6 @@ describe("the window header's title layer, as rendered", () => {
       el.className.includes(DETAIL_HEADER_CONTAINER),
     );
     expect(declared).toBe(true);
-    m.unmount();
-  });
-});
-
-function mountHeader(actions: React.ReactNode) {
-  const container = document.createElement("div");
-  document.body.appendChild(container);
-  const root = createRoot(container);
-  act(() => {
-    root.render(
-      <PanelHeader
-        title={<span data-title-node>Q3 partnership agreement — signed copy.pdf</span>}
-        headerActions={actions}
-        onRequestClose={() => {}}
-      />,
-    );
-  });
-  return {
-    container,
-    unmount: () => {
-      act(() => root.unmount());
-      container.remove();
-    },
-  };
-}
-
-describe("the docked panel's header on a phone", () => {
-  it("gives the name the first row and lets the action cluster wrap below it", () => {
-    const m = mountHeader(<div data-actions>icons</div>);
-    const header = m.container.firstElementChild as HTMLElement;
-    const title = m.container.querySelector("[data-panel-title]") as HTMLElement;
-    const actions = m.container.querySelector("[data-panel-header-actions]") as HTMLElement;
-
-    // One row that may become two, rather than one row that squeezes the name.
-    expect(header.className).toContain("flex-wrap");
-    // A fixed height would clip the wrapped second row.
-    expect(header.className).not.toMatch(/(^|\s)h-11(\s|$)/);
-    expect(header.className).toContain("min-h-11");
-
-    // The name yields only what the actions really need…
-    expect(title.className).toContain("min-w-0");
-    expect(title.className).toContain("truncate");
-    // …and it is never the thing that wraps: the cluster is.
-    expect(actions.className).toContain("w-full");
-    expect(actions.className).toContain("order-last");
-    expect(actions.className).toContain("sm:w-auto");
-
-    // The name comes first in the DOM, so it is also first for a screen reader.
-    expect(
-      title.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    m.unmount();
-  });
-
-  it("reserves nothing when there are no actions", () => {
-    const m = mountHeader(undefined);
-    expect(m.container.querySelector("[data-panel-header-actions]")).toBeNull();
     m.unmount();
   });
 });

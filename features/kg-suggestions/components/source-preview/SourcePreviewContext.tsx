@@ -11,10 +11,9 @@
 
 "use client";
 
-import { selectCanvasActiveItem } from "@ai-matrx/canvas";
-import { useCanvasIsPresented, useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
+import { useCanvasIsPresented, useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
-import { SOURCE_PREVIEW_KIND, sourcePreviewOpenInput } from "./sourcePreviewKind";
+import { sourcePreviewOpenInput } from "./sourcePreviewKind";
 
 export interface SourcePreviewTarget {
   kind: string;
@@ -37,15 +36,4 @@ export function useOpenSourcePreview():
   return (target) => {
     openCanvasItem(canvas, sourcePreviewOpenInput(target));
   };
-}
-
-/**
- * True while the person is looking at a source preview tab — inboxes use this
- * to keep themselves open while the evidence is being read.
- */
-export function useIsPreviewingSource(): boolean {
-  return useOptionalCanvasState(
-    (state) => state.isOpen && selectCanvasActiveItem(state)?.kind === SOURCE_PREVIEW_KIND,
-    false,
-  );
 }

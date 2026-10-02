@@ -610,7 +610,6 @@
   "features/dictionary/components/DictionaryImportDialog.tsx": 1,
   "features/directive-catalog/components/DirectiveBuilderPanel.tsx": 1,
   "features/directive-catalog/components/DirectiveCatalogClient.tsx": 1,
-  "features/directive-catalog/components/DirectiveShapePanel.tsx": 1,
   "features/education/assessment/components/create/AssessmentCreate.tsx": 1,
   "features/education/assessment/components/take/AssessmentTaker.tsx": 1,
   "features/education/classes/components/ClassFormDialog.tsx": 1,

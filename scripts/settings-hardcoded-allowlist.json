@@ -5909,10 +5909,6 @@
       "name": "STALL_WARN_MS"
     },
     {
-      "file": "matrx-frontend/features/overlays/surfaces/SidePanelSurface.tsx",
-      "name": "ENTER_MS"
-    },
-    {
       "file": "matrx-frontend/features/page-extraction/constants.ts",
       "name": "MAX_CHUNK_SIZE"
     },

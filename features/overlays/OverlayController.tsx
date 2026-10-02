@@ -1014,13 +1014,6 @@ const SetContextValueWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/scopes/SetContextValueWindow"),
   { ssr: false },
 );
-const GlobalSuggestionsDrawer = lazyOverlay(
-  () =>
-    import("@/features/kg-suggestions/components/GlobalSuggestionsDrawer").then(
-      (m) => ({ default: m.GlobalSuggestionsDrawer }),
-    ),
-  { ssr: false },
-);
 const QuickTasksWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/QuickTasksWindow"),
@@ -1615,9 +1608,6 @@ export default function OverlayController() {
     ),
     setContextValueWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "setContextValueWindow"),
-    ),
-    kgSuggestionsDrawer: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "kgSuggestionsDrawer"),
     ),
     quickTasksWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickTasksWindow"),
@@ -6772,20 +6762,6 @@ export default function OverlayController() {
             }
             initialEditorMode={
               data?.initialEditorMode as EditorMode | undefined
-            }
-          />
-        );
-      })()}
-
-      {/* kgSuggestionsDrawer — global KG suggestion inbox */}
-      {(() => {
-        const isOpen = isOpenById.kgSuggestionsDrawer;
-        if (!isOpen) return null;
-        return (
-          <GlobalSuggestionsDrawer
-            isOpen={isOpen}
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "kgSuggestionsDrawer" }))
             }
           />
         );

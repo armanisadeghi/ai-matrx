@@ -3,7 +3,7 @@
 //
 // Reproduced at `01566c21`: the keyboard model was bound on `KeyboardRoot`, which
 // wraps the BODY only — `titleNode` and `actions` are handed to the shell and
-// render OUTSIDE it. Neither `WindowPanel` nor `SidePanelSurface` contains any
+// render OUTSIDE it. Neither `WindowPanel` nor the docked panel contained any
 // keydown handling and the page shell is a `RouteHeader`, so on a desktop, with
 // focus on the copy-id button, a presentation icon, the previous/next chevrons or
 // the overflow trigger, Escape closed nothing in ALL THREE presentations. On a

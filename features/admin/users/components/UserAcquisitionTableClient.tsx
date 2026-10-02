@@ -5,7 +5,7 @@ import { useAdminCost } from "@/components/cost/useAdminCost";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, Ban, Cpu, ExternalLink, Route, ShieldCheck, X } from "lucide-react";
+import { Ban, Cpu, ExternalLink, Route, ShieldCheck, X } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { GuestBlockDialog } from "./GuestBlockDialog";
@@ -19,7 +19,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
+import { userJourneyOpenInput } from "../canvas/userJourneyKind";
+import { fmtAcquisitionDate as fmtDate } from "../lib/acquisitionFormat";
 import { AdminUserRef } from "./AdminUserRef";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
@@ -30,15 +33,12 @@ import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import type {
   AdminUserAcquisitionRow,
-  AcquisitionJourney,
   AcquisitionIdentityState,
 } from "../types";
 import {
-  AcquisitionJourneySchema,
   AdminUserAcquisitionRowSchema,
 } from "../types";
 import { pushAppHref } from "@/lib/deployment/navigate";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 
 type Timeframe = "7d" | "30d" | "90d" | "all";
@@ -56,16 +56,6 @@ const STATE_LABEL: Record<AcquisitionIdentityState, string> = {
   converted: "Converted",
 };
 
-const VERDICT = {
-  no_activity: ["No activity after arrival", "text-slate-700 bg-slate-500/10"],
-  blocked: ["Likely blocked by a problem", "text-rose-700 bg-rose-500/10"],
-  exploring: ["Exploring the product", "text-amber-700 bg-amber-500/10"],
-  engaged: [
-    "Reached runtime-powered work",
-    "text-emerald-700 bg-emerald-500/10",
-  ],
-  converted: ["Converted", "text-emerald-700 bg-emerald-500/10"],
-} as const;
 
 const GUEST_ACCESS_LABEL: Record<GuestAccessState | "none", string> = {
   allowed: "Allowed",
@@ -78,9 +68,6 @@ function guestAccessKey(row: AdminUserAcquisitionRow): GuestAccessState | "none"
   return row.guest_access ? guestAccessState(row.guest_access) : "none";
 }
 
-function fmtDate(value: string | null): string {
-  return value ? new Date(value).toLocaleString() : "—";
-}
 
 
 function stateBadge(state: AcquisitionIdentityState) {
@@ -112,15 +99,9 @@ export function UserAcquisitionTableClient() {
   const [timeframe, setTimeframe] = useState<Timeframe>("30d");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<AdminUserAcquisitionRow | null>(
-    null,
-  );
   const [clickedRow, setClickedRow] = useState<AdminUserAcquisitionRow | null>(
     null,
   );
-  const [journey, setJourney] = useState<AcquisitionJourney | null>(null);
-  const [journeyLoading, setJourneyLoading] = useState(false);
-  const [journeyError, setJourneyError] = useState<string | null>(null);
   const [blockTarget, setBlockTarget] =
     useState<AdminUserAcquisitionRow | null>(null);
   const [accessPending, setAccessPending] = useState<string | null>(null);
@@ -193,41 +174,13 @@ export function UserAcquisitionTableClient() {
     [applyAccess],
   );
 
-  const openJourney = useCallback(async (row: AdminUserAcquisitionRow) => {
-    setSelected(row);
-    setJourney(null);
-    setJourneyError(null);
-    setJourneyLoading(true);
-    try {
-      const response = await fetch(
-        `/api/admin/users/acquisition/${encodeURIComponent(row.row_id)}`,
-        { cache: "no-store" },
-      );
-      const body: unknown = await response.json();
-      if (!response.ok) {
-        const message =
-          typeof body === "object" &&
-          body !== null &&
-          "error" in body &&
-          typeof body.error === "string"
-            ? body.error
-            : "Failed to load this user journey";
-        throw new Error(message);
-      }
-      if (typeof body !== "object" || body === null || !("journey" in body)) {
-        throw new Error("Journey response was incomplete");
-      }
-      const parsed = AcquisitionJourneySchema.safeParse(body.journey);
-      if (!parsed.success) throw new Error("Journey response was invalid");
-      setJourney(parsed.data);
-    } catch (caught) {
-      setJourneyError(
-        caught instanceof Error ? caught.message : "Failed to load journey",
-      );
-    } finally {
-      setJourneyLoading(false);
-    }
-  }, []);
+  const canvas = useOptionalCanvas();
+  const openJourney = useCallback(
+    (row: AdminUserAcquisitionRow) => {
+      openCanvasItem(canvas, userJourneyOpenInput({ rowId: row.row_id, name: row.display_name }));
+    },
+    [canvas],
+  );
 
   const load = useCallback(async (value: Timeframe) => {
     setLoading(true);
@@ -327,7 +280,7 @@ export function UserAcquisitionTableClient() {
             className="h-7 gap-1 px-2 text-xs"
             onClick={(event) => {
               event.stopPropagation();
-              void openJourney(row);
+              openJourney(row);
             }}
           >
             <Route className="h-3.5 w-3.5" /> View
@@ -773,149 +726,6 @@ export function UserAcquisitionTableClient() {
           }}
           onConfirm={(args) => void submitBlock(args)}
         />
-      ) : null}
-      {selected ? (
-        <SidePanelSurface
-          title={selected.display_name}
-          onClose={() => setSelected(null)}
-          defaultWidth={720}
-        >
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
-            {journeyLoading ? (
-              <p className="text-sm text-muted-foreground">
-                Loading the journey…
-              </p>
-            ) : null}
-            {journeyError ? (
-              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-                {journeyError}
-                <ErrorAlchemyMenu error={journeyError} />
-              </div>
-            ) : null}
-            {!journeyError && journey ? (
-              <div className="space-y-5">
-                {journey.source_warnings.length ? (
-                  <div className="space-y-2">
-                    {journey.source_warnings.map((warning) => (
-                      <div
-                        key={warning}
-                        className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800"
-                      >
-                        {warning}
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-                <div
-                  className={`rounded-lg p-4 ${VERDICT[journey.verdict][1]}`}
-                >
-                  <div className="text-sm font-semibold">
-                    {VERDICT[journey.verdict][0]}
-                  </div>
-                  <div className="mt-1 text-xs opacity-80">
-                    Last observed {fmtDate(journey.last_activity)}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {[
-                    ["API requests", journey.api_requests],
-                    ["Failed", journey.failed_requests],
-                    ["Runtime work", journey.runtime_executions],
-                    ["Runtime cost", fmtCost(journey.runtime_cost)],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-md border p-3">
-                      <div className="text-[11px] text-muted-foreground">
-                        {label}
-                      </div>
-                      <div className="font-semibold tabular-nums">{value}</div>
-                    </div>
-                  ))}
-                </div>
-                <section>
-                  <h3 className="mb-2 text-sm font-semibold">Features used</h3>
-                  {journey.feature_usage.length ? (
-                    <div className="space-y-1.5">
-                      {journey.feature_usage.map((item) => (
-                        <div
-                          key={item.feature}
-                          className="flex items-center rounded-md border px-3 py-2 text-sm"
-                        >
-                          <span>{item.feature}</span>
-                          <span className="ml-auto tabular-nums text-muted-foreground">
-                            {item.requests} requests
-                          </span>
-                          {item.failures ? (
-                            <Badge variant="destructive" className="ml-2">
-                              {item.failures} failed
-                              <ErrorAlchemyMenu error={item.failures} />
-                            </Badge>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No feature requests were captured.
-                    </p>
-                  )}
-                </section>
-                <section>
-                  <h3 className="mb-2 text-sm font-semibold">
-                    Activity timeline
-                  </h3>
-                  <div className="space-y-2">
-                    {journey.events.map((event) => (
-                      <details
-                        key={event.id}
-                        className={`rounded-md border p-3 ${event.is_problem ? "border-rose-500/30 bg-rose-500/5" : ""}`}
-                      >
-                        <summary className="cursor-pointer list-none">
-                          <div className="flex items-start gap-2">
-                            {event.is_problem ? (
-                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
-                            ) : (
-                              <Route className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <div className="truncate text-sm font-medium">
-                                {event.title}
-                              </div>
-                              <div className="text-[11px] text-muted-foreground">
-                                {fmtDate(event.occurred_at)} · {event.kind}
-                                {event.status ? ` · ${event.status}` : ""}
-                              </div>
-                            </div>
-                            {event.cost ? (
-                              <span className="text-xs font-medium tabular-nums">
-                                {fmtCost(event.cost)}
-                              </span>
-                            ) : null}
-                          </div>
-                        </summary>
-                        <div className="mt-3 space-y-1 border-t pt-3 font-mono text-xs text-muted-foreground">
-                          {event.request_id ? (
-                            <div>request {event.request_id}</div>
-                          ) : null}
-                          {event.route ? <div>route {event.route}</div> : null}
-                          {event.detail ? (
-                            <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words">
-                              {event.detail}
-                            </pre>
-                          ) : null}
-                        </div>
-                      </details>
-                    ))}
-                    {!journey.events.length ? (
-                      <p className="text-sm text-muted-foreground">
-                        No owned activity records were found.
-                      </p>
-                    ) : null}
-                  </div>
-                </section>
-              </div>
-            ) : null}
-          </div>
-        </SidePanelSurface>
       ) : null}
     </div>
   );

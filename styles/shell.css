@@ -2008,11 +2008,11 @@ body[style*="pointer-events: none"] {
    portal layer from ONE place, so the two can never drift apart — a second rule
    repeating `2.5rem` for the portal is exactly the drift this avoids.
    `body:has()` is already load-bearing in this sheet (section 11's mobile-dock
-   runway). Consumer: `SidePanelSurface`, which reserves
-   `var(--shell-header-h, 0px)` on the fixed panel container — it reserved the
-   legacy 2.5rem token there and drew 4px over the (core) shell header's org
-   switcher, search and avatar (D3, then again at 4px: Bugbot, frontend PR 228,
-   commit 4cbd9e45). */
+   runway). Consumers: the canvas column (`--mxc-header-h`, so its pane header
+   lines up with the shell header) and every `MatrxDynamicPanelHost` panel that
+   clears the header — reserving the legacy 2.5rem token drew 4px over the
+   (core) shell header's org switcher, search and avatar (D3, then again at
+   4px: Bugbot, frontend PR 228, commit 4cbd9e45). */
 body:has(.shell-root[data-pathname^="/administration"]) {
   --shell-header-h: 2.5rem;
 }

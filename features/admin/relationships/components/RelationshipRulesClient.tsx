@@ -29,7 +29,7 @@ import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -658,9 +658,10 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
         </NonEditableContextMenu>
       </div>
 
-      {/* Create rule — SidePanelSurface (MatrxDynamicPanelHost) */}
+      {/* Create rule — a canvas tab beside the rules list */}
       {editor?.mode === "create" ? (
-        <SidePanelSurface
+        <CanvasPagePanel
+          panelKey="new-relationship-rule"
           title="New relationship rule"
           description={
             editorValid
@@ -675,7 +676,6 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
               : "Pick a source (content) and target (container) to begin."
           }
           onClose={() => setEditor(null)}
-          defaultWidth={480}
         >
           <RuleEditorForm
             editor={editor}
@@ -700,7 +700,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
             onCancel={() => setEditor(null)}
             onSave={() => void saveRule()}
           />
-        </SidePanelSurface>
+        </CanvasPagePanel>
       ) : null}
 
       {/* Guards */}

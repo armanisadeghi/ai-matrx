@@ -2,7 +2,7 @@
 
 /**
  * Rule editor body — shared between the MatrxDataTable side panel (edit) and
- * the create SidePanelSurface. Pure presentational; parent owns EditorState.
+ * the create canvas tab. Pure presentational; parent owns EditorState.
  */
 
 import { TriangleAlert, Trash2 } from "lucide-react";

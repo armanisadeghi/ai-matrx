@@ -28,7 +28,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -708,11 +708,11 @@ export function ShareableRegistryPanel({
       </div>
 
       {policyRow ? (
-        <SidePanelSurface
+        <CanvasPagePanel
+          panelKey={`link-policy:${policyRow.schema_name}.${policyRow.table_name}`}
           title={`Link policy: ${policyRow.display_label}`}
           description={`${policyRow.schema_name}.${policyRow.table_name}`}
           onClose={() => setPolicyRow(null)}
-          defaultWidth={560}
         >
           <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-3">
             <div className="flex items-center justify-between rounded-md border border-border p-3">
@@ -755,15 +755,15 @@ export function ShareableRegistryPanel({
               onCancel={() => setPolicyRow(null)}
             />
           </div>
-        </SidePanelSurface>
+        </CanvasPagePanel>
       ) : null}
 
       {/* Registers a row in platform.shareable_resource_registry, checked by the reachability cascade. */}
       {editor?.mode === "create" ? (
-        <SidePanelSurface
+        <CanvasPagePanel
+          panelKey="new-shareable-resource"
           title="New shareable resource"
           onClose={() => setEditor(null)}
-          defaultWidth={480}
         >
           <ShareableResourceForm
             editor={editor}
@@ -785,7 +785,7 @@ export function ShareableRegistryPanel({
             onCancel={() => setEditor(null)}
             onSave={() => void saveResource()}
           />
-        </SidePanelSurface>
+        </CanvasPagePanel>
       ) : null}
     </section>
   );

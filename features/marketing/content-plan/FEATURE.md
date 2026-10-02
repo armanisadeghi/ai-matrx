@@ -332,7 +332,7 @@ research"` and keyword #1 is the page's target query; at most ONE more is
    columns get real option lists with counts (status options in pipeline
    order). Full-row click opens the canonical `NodePanel` in the table-owned
    `WindowPanel`; the trailing panel action and the window header switch the
-   same editor into the canonical adjustable `SidePanelSurface`. No blocking
+   same editor into the table's detail tab in the canvas. No blocking
    `Sheet` remains in this path.
    Style persists via `useListViewPrefs("content-plan-nodes")` (sort,
    direction, page size, hidden columns via the toolbar Columns picker;

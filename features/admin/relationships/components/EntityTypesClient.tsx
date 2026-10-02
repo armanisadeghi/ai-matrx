@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Switch } from "@/components/ui/switch";
-import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -832,12 +832,12 @@ export function EntityTypesClient({ entityTypes }: Props) {
         </NonEditableContextMenu>
       </div>
 
-      {/* Create — SidePanelSurface. Registers a token in platform.entity_types. */}
+      {/* Create — a canvas tab. Registers a token in platform.entity_types. */}
       {editor?.mode === "create" ? (
-        <SidePanelSurface
+        <CanvasPagePanel
+          panelKey="new-entity-type"
           title="New entity type"
           onClose={() => setEditor(null)}
-          defaultWidth={480}
         >
           <EntityTypeForm
             editor={editor}
@@ -848,7 +848,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
             onCancel={() => setEditor(null)}
             onSave={() => void saveEntityType()}
           />
-        </SidePanelSurface>
+        </CanvasPagePanel>
       ) : null}
 
       {/* Deactivate / reactivate guard */}

@@ -21,6 +21,8 @@ the rules an agent editing THIS directory must obey.
 | Placement: fixed right column, `--shell-canvas-w`, surface emitter             | `host/ShellCanvasColumn.tsx`, `host/canvas-host.css`, `host/canvasSurfaceScope.ts`               |
 | Every content type as a kind (icon, restore, keep-alive, header action, menu)  | `host/artifactKinds.tsx`                                                                         |
 | Every tool as a kind (Quick Chat/Notes/Tasks/Data/Scribe, Scratchpad, Documents, Agent context, Note knowledge) — one list; each kind beside its feature | `host/toolKinds.tsx`, `host/conversation/`, opener core `host/toolCanvas.ts` |
+| "About this thing" kinds, each beside its feature: `record-peek`, `ai-visibility-answer`, `kg-source-preview`, `user-journey` (acquisition row), `directive-shape` (verb:noun), `topical-map-topic` (map\|slug, the `drawer` knob frame), `kg-suggestions` (the inbox) | `host/featureCanvasKinds.ts` |
+| A page's own live panel as a tab (`page-panel`): the page keeps the tree, the tab is a portal slot; every data table's row detail (`MatrxDataTableHost` port), admin create/edit forms | `host/pagePanel.tsx` (`<CanvasPagePanel>`) |
 | Artifact item data + identity keys                                             | `host/artifactItem.ts`                                                                           |
 | THE way app code opens content                                                 | `host/useArtifactCanvas.ts` (+ `hooks/useCanvas.ts`, `useOpenArtifactInCanvas`, `useOpenCanvasItem`) |
 | Artifact tab body (CanvasBody / source, share sheet, debug panel)              | `host/ArtifactCanvasView.tsx`, `host/artifactPanels.ts`                                          |
@@ -52,6 +54,12 @@ the rules an agent editing THIS directory must obey.
   PACKAGE for every host. (The 2026-09-16 ruling against a per-route
   `CanvasDock` still stands: that was a route-owned fork, which this is not.)
   Guard: `__tests__/one-canvas-column.test.ts`.
+- 🚨 **THE RIGHT-HAND REGION IS THE CANVAS — there is no second floating right panel.** Detail
+  about a thing opens a tab keyed by that thing (a kind beside its feature, registered in
+  `host/featureCanvasKinds.ts` or `host/toolKinds.tsx`). A panel whose content is the page's own
+  live state (a table's row detail, a create form) renders `<CanvasPagePanel>`: same props as the
+  old side panel, the tab closes with the page. Something that is part of the page's own workspace
+  is an in-page resizable pane instead. Guard: `__tests__/side-panels-are-canvas-tabs.test.tsx`.
 - **A new kind of content is a KIND, never a new panel.** Register it with
   `registerCanvasKind(defineCanvasKind({...}))` (package registry); artifact
   content types are already registered in `host/artifactKinds.tsx`, and adding
@@ -164,6 +172,13 @@ the rules an agent editing THIS directory must obey.
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-10-02` — **One right-hand region.** The floating `SidePanelSurface` is deleted. Every data
+  table's row detail and the admin relationships forms (new rule, new entity type, new shareable
+  resource, link policy) are `page-panel` tabs (`host/pagePanel.tsx`); a person's acquisition
+  journey is `user-journey`, a directive's item shape `directive-shape`, a topic under the `drawer`
+  knob `topical-map-topic`, and the suggestion inbox (`kgSuggestionsDrawer` overlay, deleted)
+  `kg-suggestions`. Guard: `__tests__/side-panels-are-canvas-tabs.test.tsx` (proven red per opener).
 
 - `2026-10-02` — **The quick tools are canvas tabs.** Quick Chat, Quick Notes, Quick Tasks, the
   Scratchpad, Quick Data, Quick Scribe, a conversation's Documents, "what the agent receives" and a

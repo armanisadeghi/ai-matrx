@@ -32,7 +32,7 @@ import {
   type DirectiveVerb,
   type NounDirectives,
 } from "@/features/directive-catalog/types";
-import type { DirectiveShapeSelection } from "@/features/directive-catalog/components/DirectiveShapePanel";
+import type { DirectiveShapeSelection } from "@/features/directive-catalog/canvas/directiveShapeKind";
 import { nounLabel } from "@/features/directive-catalog/nounOptions";
 
 const ALL_FAMILIES = "__all__";
