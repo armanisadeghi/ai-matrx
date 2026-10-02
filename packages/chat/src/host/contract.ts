@@ -156,9 +156,122 @@ export interface ChatDiagnosticContext {
   detail?: unknown;
 }
 
+/**
+ * Where a structured diagnostic came from. The closed list of classes the
+ * package files today; "chat" is the package's own failures reported through
+ * `capture(error, ctx)`. A host maps each to its own error store
+ * (matrx-frontend: the Error Inspector's `CapturedErrorSource`).
+ */
+export type ChatDiagnosticSource =
+  | "chat"
+  | "agent-json-result"
+  | "agent-stop-save-shorter"
+  | "agent-stream-client-error"
+  | "agent-stream-provider-retry"
+  | "agent-stream-terminal-guard"
+  | "agent-stream-warning"
+  | "api-http"
+  | "content-ir"
+  | "context-truth"
+  | "data-shape"
+  | "mandate-fast-path"
+  | "react-render"
+  | "reasoning-leak"
+  | "record-unavailable"
+  | "supabase-postgrest"
+  | "surface-registration"
+  | "surface-writeback"
+  | "unsaved-work";
+
+/** A Supabase DML verb, or "rpc" for a function call. */
+export type ChatDiagnosticOperation =
+  | "select"
+  | "insert"
+  | "update"
+  | "upsert"
+  | "delete"
+  | "rpc"
+  | "unknown";
+
+/** One structured diagnostic — what a capture site knows; the host fills the rest. */
+export interface ChatDiagnosticEntry {
+  source: ChatDiagnosticSource;
+  operation?: ChatDiagnosticOperation;
+  schema?: string;
+  relation?: string;
+  code?: string;
+  message: string;
+  details?: string;
+  hint?: string;
+  status?: number;
+  /** The sentence the person saw, when one was shown. */
+  userMessage?: string;
+  /** The run survived this. */
+  recoverable?: boolean;
+  /** Producer-declared level, e.g. "low" | "medium" | "high". */
+  level?: string;
+  requestId?: string;
+  conversationId?: string;
+  name?: string;
+  stack?: string;
+  callSite?: string;
+  raw?: unknown;
+  sessionState?: string;
+  /** false only for expected, successfully handled diagnostics. Default true. */
+  durable?: boolean;
+  /** Separates failures that share a signature but belong to distinct server requests. */
+  dedupeDiscriminator?: string;
+}
+
+/** The kinds of network work the package reports to a host's connection-health view. */
+export type ChatNetRequestKind = "agent-run" | "agent-init" | "chat" | "crud" | "api";
+
+export type ChatNetRequestPhase =
+  | "connecting"
+  | "streaming"
+  | "heartbeat-stalled"
+  | "completed"
+  | "error"
+  | "timed-out"
+  | "cancelled";
+
+export interface ChatNetRequestStart {
+  id: string;
+  kind: ChatNetRequestKind;
+  label: string;
+  recoveryId?: string;
+  groupKey?: string;
+}
+
+export interface ChatNetRequestFinish {
+  id: string;
+  phase: "completed" | "error" | "timed-out" | "cancelled";
+  errorCode?: string;
+  errorMessage?: string;
+  retryable?: boolean;
+}
+
+/** In-flight network work, for a host's connection-health view. */
+export interface ChatNetRequestsPort {
+  start(request: ChatNetRequestStart): void;
+  phase(id: string, phase: ChatNetRequestPhase): void;
+  heartbeat(id: string): void;
+  finish(result: ChatNetRequestFinish): void;
+}
+
 /** Every background failure lands here. */
 export interface ChatDiagnosticsPort {
   capture(error: unknown, ctx: ChatDiagnosticContext): void;
+  /**
+   * A structured diagnostic (the seam's `captureError`). Returns the host's id
+   * for it, so a later resolver can reconcile the same row. Absent: the entry
+   * goes to `capture` with `area` = its source.
+   */
+  record?(entry: ChatDiagnosticEntry): string;
+  /** True when the host's own transport already recorded this thrown value. */
+  wasCaptured?(error: unknown): boolean;
+  /** In-flight network work for the host's connection-health view. Absent: not tracked. */
+  requests?: ChatNetRequestsPort;
 }
 
 /** Drafts, density, knobs, debug flags. String values, same as the rewrite's port. */

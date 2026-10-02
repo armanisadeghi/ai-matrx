@@ -8,6 +8,9 @@
 jest.mock("../../../../host/db", () => ({ supabase: {} }));
 // App modules this card reaches still import the app's own client.
 jest.mock("@host/utils/supabase/client", () => ({ supabase: {} }));
+jest.mock("../../../../host/diagnostics", () => ({ captureError: jest.fn() }));
+// The subject still reaches the app's Error Inspector through other host
+// modules; both sinks share one mock so no capture escapes the assertions.
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({ captureError: jest.fn() }));
 
 import {

@@ -26,6 +26,12 @@ jest.mock("next/dynamic", () => ({
     jest.requireActual("@host/components/markdown-core/MarkdownCoreImpl").default,
 }));
 const mockCaptureError = jest.fn();
+jest.mock("../../../host/diagnostics", () => ({
+  ...jest.requireActual("../../../host/diagnostics"),
+  captureError: (input: unknown) => mockCaptureError(input),
+}));
+// The subject still reaches the app's Error Inspector through other host
+// modules; both sinks share one mock so no capture escapes the assertions.
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: (input: unknown) => mockCaptureError(input),

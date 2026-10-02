@@ -1,5 +1,5 @@
 import { miniSerializeError } from "@reduxjs/toolkit";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../host/diagnostics";
 
 /** A successful catalog read returned no registration; not a transport failure. */
 export class SurfaceRegistrationError extends Error {

@@ -14,7 +14,7 @@ import type {
   ContextPolicy,
   ContextPolicyPersist,
 } from "../../types/agent-api-types";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../host/diagnostics";
 import type { JsonValue } from "@host/types/json";
 
 interface ParseContext {

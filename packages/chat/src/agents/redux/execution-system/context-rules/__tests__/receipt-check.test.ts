@@ -12,6 +12,14 @@ import type { ContextReceiptData } from "@host/types/python-generated/stream-eve
 import type { ChatRootState } from "../../../../../store/root-state";
 
 const captured: Array<{ code?: string; message?: string; details?: string }> = [];
+jest.mock("../../../../../host/diagnostics", () => ({
+  captureError: (input: { code?: string; message?: string; details?: string }) => {
+    captured.push(input);
+    return "id";
+  },
+}));
+// The subject still reaches the app's Error Inspector through other host
+// modules; both sinks share one mock so no capture escapes the assertions.
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   captureError: (input: { code?: string; message?: string; details?: string }) => {
     captured.push(input);

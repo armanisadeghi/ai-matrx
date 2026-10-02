@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { serializeExecutionRejection } from "@host/lib/diagnostics/executionRejectionMeta";
+import { serializeExecutionRejection } from "./execution-rejection-meta";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { selectAutoClearConversation } from "../instance-ui-state/instance-ui-state.selectors";
 import {

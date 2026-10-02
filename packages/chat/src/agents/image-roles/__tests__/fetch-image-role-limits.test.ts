@@ -2,7 +2,7 @@ const mockRpc = jest.fn();
 const mockSchema = jest.fn(() => ({ rpc: mockRpc }));
 jest.mock("../../../host/db", () => ({ supabase: { schema: mockSchema } }));
 const mockCaptureError = jest.fn();
-jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({ captureError: mockCaptureError }));
+jest.mock("../../../host/diagnostics", () => ({ captureError: mockCaptureError }));
 
 // Veo 3.1's live row from ai.offering_capabilities, as a non-admin reads it.
 const VEO_ROW = {

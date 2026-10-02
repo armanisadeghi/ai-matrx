@@ -61,7 +61,7 @@
 // ============================================================================
 
 import type { InstanceUserInputState } from "../../../types/instance.types";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../host/diagnostics";
 
 /**
  * True when `entry.text` holds a live next-message draft that MUST NOT be

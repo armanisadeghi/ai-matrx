@@ -42,6 +42,12 @@ export type CapturedErrorSource =
   | "supabase-exception"
   /** An uncaught error reached `window` 'error' (runtime exception). */
   | "runtime-exception"
+  /**
+   * A failure the `@ai-matrx/chat` package reported through its host
+   * diagnostics port (`capture(error, { area, code })`, filed by
+   * providers/ChatHostAdapter.tsx); `name` is `chat:<area>`.
+   */
+  | "chat"
   /** An unhandled promise rejection reached `window`. */
   | "unhandled-rejection"
   /** A `console.error(...)` call (noise-filtered). */

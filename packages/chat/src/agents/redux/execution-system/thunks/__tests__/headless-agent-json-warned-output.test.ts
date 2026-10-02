@@ -14,9 +14,15 @@
  */
 
 import { failWarnedOutputMissingKeys } from "../run-headless-agent-json";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../../host/diagnostics";
 import { resolveMandate } from "../../../../../mandates/service";
 
+jest.mock("../../../../../host/diagnostics", () => ({
+  ...jest.requireActual("../../../../../host/diagnostics"),
+  captureError: jest.fn(),
+}));
+// The subject still reaches the app's Error Inspector through other host
+// modules; both sinks share one mock so no capture escapes the assertions.
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),

@@ -24,6 +24,12 @@ jest.mock("@host/features/organizations/awaitWorkspace", () => ({
 jest.mock("../../../host/notify", () => ({
   toast: { error: mockToastError, success: mockToastSuccess },
 }));
+jest.mock("../../../host/diagnostics", () => ({
+  ...jest.requireActual("../../../host/diagnostics"),
+  captureError: mockCaptureError,
+}));
+// The subject still reaches the app's Error Inspector through other host
+// modules; both sinks share one mock so no capture escapes the assertions.
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: mockCaptureError,

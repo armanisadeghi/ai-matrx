@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand \u2014 route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 2231,
+  "total": 2190,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -538,10 +538,7 @@
     "@host/lib/dates/datetimeLocalValue": 1,
     "@host/lib/deployment/navigate": 4,
     "@host/lib/diagnostics/captureApiError": 1,
-    "@host/lib/diagnostics/captureReactError": 3,
-    "@host/lib/diagnostics/captureStreamError": 1,
-    "@host/lib/diagnostics/errorCaptureStore": 73,
-    "@host/lib/diagnostics/executionRejectionMeta": 4,
+    "@host/lib/diagnostics/errorCaptureStore": 41,
     "@host/lib/diagnostics/reduxErrorCaptureMiddleware": 2,
     "@host/lib/dom/flash-attention": 1,
     "@host/lib/dom/visual-viewport-lift": 1,
@@ -582,7 +579,6 @@
     "@host/lib/python-client": 3,
     "@host/lib/records/recordUnavailable": 11,
     "@host/lib/redux/hooks": 36,
-    "@host/lib/redux/net/netRequestsSlice": 1,
     "@host/lib/redux/preferences/adminDebugSlice": 4,
     "@host/lib/redux/preferences/adminPreferencesSlice": 9,
     "@host/lib/redux/preferences/creatorDebugSlice": 11,

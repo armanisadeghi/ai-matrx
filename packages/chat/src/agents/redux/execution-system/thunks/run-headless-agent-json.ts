@@ -37,7 +37,7 @@ import { extractFirstJson } from "@ai-matrx/kit/json-extract";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 import { destroyInstanceIfAllowed } from "../conversations/conversations.thunks";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../host/diagnostics";
 import {
   selectAnswerText,
   selectConversationRequestIds,

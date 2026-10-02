@@ -47,7 +47,7 @@ import {
   resolveSurfaceWritePatch,
   type SurfaceWritePatch,
 } from "./surface-write-patch";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../host/diagnostics";
 import {
   applyWindowFormChanges,
   hasWindowForms,

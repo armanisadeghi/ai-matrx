@@ -35,7 +35,7 @@ import { hasAbortController } from "./abort-registry";
 import { releaseStreamAnchors } from "../messages/messages.slice";
 import { extractFlatText } from "../messages/messages.selectors";
 import { selectAnswerText } from "../active-requests/active-requests.selectors";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../host/diagnostics";
 
 /** How long a Stop waits for the server to finish its in-flight call. */
 export const STOP_SETTLE_WINDOW_MS = 90_000;

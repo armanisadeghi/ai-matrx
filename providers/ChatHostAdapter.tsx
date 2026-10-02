@@ -15,8 +15,8 @@
 //   server      → apiConfig's resolved aidream URL; bearer + X-Organization-Id
 //   notify      → lib/toast (`toast`, `recordToast`)
 //   diagnostics → the Error Inspector capture store (which persists through
-//                 `log_client_error`); sourceApp names this client for the
-//                 package default as well
+//                 `log_client_error`) — lib/diagnostics/chat-diagnostics-port;
+//                 sourceApp names this client for the package default as well
 //   navigation  → next/navigation + next/link
 //   windows     → the overlay system (`openOverlay` / `closeOverlay`) and
 //                 the window manager; every CHAT_WINDOWS id must be an
@@ -76,7 +76,7 @@ import {
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { requireOrganizationForChat } from "@/lib/organization/chat-org-port";
 import { toast, recordToast } from "@/lib/toast";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { createAppChatDiagnostics } from "@/lib/diagnostics/chat-diagnostics-port";
 import { getAgentCatalog } from "@/lib/agents/catalog";
 import { useOpenAgentAdminFindUsagesWindow } from "@/features/overlays/openers/agentAdminFindUsagesWindow";
 import { useOpenAgentShortcutQuickCreateWindow } from "@/features/overlays/openers/agentAdminShortcutWindow";
@@ -324,21 +324,7 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
       },
     },
     notify: appNotify,
-    diagnostics: {
-      capture(error, ctx) {
-        // P5 adds a dedicated capture source for the package's own failures.
-        captureError({
-          source: "runtime-exception",
-          name: `chat:${ctx.area}`,
-          code: ctx.code,
-          message: error instanceof Error ? error.message : String(error),
-          ...(error instanceof Error && error.stack
-            ? { stack: error.stack }
-            : {}),
-          ...(ctx.detail !== undefined ? { raw: ctx.detail } : {}),
-        });
-      },
-    },
+    diagnostics: createAppChatDiagnostics(store.dispatch),
     navigation: {
       push: (href) => router.push(href),
       replace: (href) => router.replace(href),

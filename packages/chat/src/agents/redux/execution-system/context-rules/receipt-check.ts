@@ -28,7 +28,7 @@ import type {
   ContextReceiptRow as WireReceiptRow,
 } from "@host/types/python-generated/stream-events";
 import { setContextReceipt } from "../instance-context/instance-context.slice";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../host/diagnostics";
 import { toast } from "../../../../host/notify";
 
 /**

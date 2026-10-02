@@ -2,7 +2,7 @@ import {
   executionRejectionMeta,
   RESUME_RETRY_SCHEDULED_ERROR_NAME,
   type ExecutionRejectionMeta,
-} from "@host/lib/diagnostics/executionRejectionMeta";
+} from "./execution-rejection-meta";
 /**
  * resumeInstance — continue an agent loop whose original stream has ended
  * because a client-delegated tool was answered after the hard-suspend.

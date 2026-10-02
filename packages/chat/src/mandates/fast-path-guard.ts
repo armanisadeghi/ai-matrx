@@ -26,7 +26,7 @@
  * speed; the check rides beside it.
  */
 
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../host/diagnostics";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 
 export interface FastPathCheck {

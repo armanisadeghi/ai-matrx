@@ -27,7 +27,7 @@
  */
 
 import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../host/diagnostics";
 import { sanitizeInboundEnvelopeMetadata } from "@host/features/content-ir/redux/render-block-envelope";
 import { sanitizeInboundPartialKindMetadata } from "@ai-matrx/content-ir/wire";
 import { fromRenderBlock } from "@host/features/files/blocks/image/adapters/from-render-block";

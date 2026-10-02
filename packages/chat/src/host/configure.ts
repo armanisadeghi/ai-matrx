@@ -158,7 +158,22 @@ export function configureChat(host: ChatHost): ResolvedChatHost {
   }
   const resolved = resolveChatHost(host);
   configured = { host, resolved };
+  for (const listener of configuredListeners) {
+    try {
+      listener();
+    } catch {
+      /* a listener must never break configuration */
+    }
+  }
   return resolved;
+}
+
+const configuredListeners = new Set<() => void>();
+
+/** Call `listener` each time a host is configured (e.g. to deliver work held before one existed). */
+export function onChatHostConfigured(listener: () => void): () => void {
+  configuredListeners.add(listener);
+  return () => configuredListeners.delete(listener);
 }
 
 /** The configured host. Throws `ChatHostNotConfiguredError` (with the remedy) when there is none. */

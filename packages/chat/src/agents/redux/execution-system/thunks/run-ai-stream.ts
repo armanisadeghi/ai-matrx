@@ -58,8 +58,8 @@ import {
   hasRetainedTransportConsumer,
   processStream,
 } from "./process-stream";
-import { captureStreamClientError } from "@host/lib/diagnostics/captureStreamError";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureStreamClientError } from "../../../../host/diagnostics";
+import { captureError } from "../../../../host/diagnostics";
 import {
   isRecordUnavailableError,
   recordUnavailable,

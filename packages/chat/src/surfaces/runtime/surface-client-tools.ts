@@ -30,7 +30,7 @@
  */
 
 import { getAllManifests, getManifest } from "./registry";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../host/diagnostics";
 import { toast } from "../../host/notify";
 
 import type { SurfaceClientTool } from "../types";

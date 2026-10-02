@@ -35,7 +35,7 @@ import {
 } from "../active-requests/active-requests.slice";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../host/diagnostics";
 
 interface EditMessageArgs {
   conversationId: string;

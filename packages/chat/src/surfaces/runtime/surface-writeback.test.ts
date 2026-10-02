@@ -10,6 +10,14 @@ jest.mock("../../host/notify", () => ({
   },
 }));
 
+jest.mock("../../host/diagnostics", () => ({
+  // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
+  // the real store so a new export can never take this suite down at import.
+  ...jest.requireActual("../../host/diagnostics"),
+  captureError: mockCaptureError,
+}));
+// The subject still reaches the app's Error Inspector through other host
+// modules; both sinks share one mock so no capture escapes the assertions.
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
   // the real store so a new export can never take this suite down at import.

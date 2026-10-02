@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TriangleAlert } from 'lucide-react';
-import { captureReactRenderError } from '@host/lib/diagnostics/captureReactError';
+import { captureReactRenderError } from "../host/diagnostics";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface MessageErrorBoundaryProps {

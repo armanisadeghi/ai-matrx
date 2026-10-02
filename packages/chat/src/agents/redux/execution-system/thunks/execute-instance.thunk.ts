@@ -1,7 +1,7 @@
 import {
   executionRejectionMeta,
   type ExecutionRejectionMeta,
-} from "@host/lib/diagnostics/executionRejectionMeta";
+} from "./execution-rejection-meta";
 /**
  * Execute Instance Thunk
  *

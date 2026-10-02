@@ -27,7 +27,7 @@ import instanceUserInput, {
   markInputSubmitted,
   setUserInputText,
 } from "../instance-user-input.slice";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../../host/diagnostics";
 import messages, {
   addOptimisticUserMessage,
 } from "../../messages/messages.slice";
@@ -44,6 +44,14 @@ import {
 } from "../composer-draft-store";
 import { useComposerDraftRestore } from "../useComposerDraftRestore";
 
+jest.mock("../../../../../host/diagnostics", () => ({
+  // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
+  // the real store so a new export can never take this suite down at import.
+  ...jest.requireActual("../../../../../host/diagnostics"),
+  captureError: jest.fn(),
+}));
+// The subject still reaches the app's Error Inspector through other host
+// modules; both sinks share one mock so no capture escapes the assertions.
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
   // the real store so a new export can never take this suite down at import.

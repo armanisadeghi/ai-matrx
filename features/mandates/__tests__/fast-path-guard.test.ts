@@ -9,6 +9,9 @@ import {
   clearCapturedErrors,
   getSnapshot,
 } from "@/lib/diagnostics/errorCaptureStore";
+import { createAppChatDiagnostics } from "@/lib/diagnostics/chat-diagnostics-port";
+import { _resetChatHostForTests, configureChat } from "@ai-matrx/chat/host";
+import { createFakeDb } from "@ai-matrx/chat/host/__tests__/fake-db";
 import {
   resetFastPathVerdictsForTests,
   verifyFastPathAgainstMandate,
@@ -25,6 +28,13 @@ async function flush(): Promise<void> {
 
 describe("verifyFastPathAgainstMandate", () => {
   let consoleError: jest.SpyInstance;
+
+  beforeAll(() => {
+    // The package records through its host's diagnostics port — wired to the
+    // Error Inspector exactly as providers/ChatHostAdapter.tsx wires it.
+    configureChat({ db: createFakeDb().db, diagnostics: createAppChatDiagnostics() });
+  });
+  afterAll(() => _resetChatHostForTests());
 
   beforeEach(() => {
     resetFastPathVerdictsForTests();

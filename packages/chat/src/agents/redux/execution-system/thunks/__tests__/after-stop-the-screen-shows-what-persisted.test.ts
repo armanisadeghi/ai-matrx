@@ -27,9 +27,15 @@ import messagesReducer, {
 } from "../../messages/messages.slice";
 import type { RuntimeOperationsByLinkResponse } from "../../../../runtime-reconnect/types";
 import {
-  clearCapturedErrors,
-  getSnapshot,
-} from "@host/lib/diagnostics/errorCaptureStore";
+  _resetChatHostForTests,
+  configureChat,
+} from "../../../../../host/configure";
+import type { ChatDiagnosticEntry } from "../../../../../host/contract";
+import { createFakeDb } from "../../../../../host/__tests__/fake-db";
+
+// The host's diagnostics port: every entry the package records, in order.
+const recorded: ChatDiagnosticEntry[] = [];
+const getSnapshot = () => recorded;
 
 const CONV = "e2acdae2-eb77-4c99-9511-f3d591d4841c";
 const SERVER_REQ = "4ac2df1c-2085-45f2-ada8-b039e5374d19";
@@ -220,11 +226,24 @@ function answer(store: ReturnType<typeof makeStore>) {
 }
 
 beforeEach(() => {
-  clearCapturedErrors();
+  recorded.length = 0;
+  _resetChatHostForTests();
+  configureChat({
+    db: createFakeDb().db,
+    diagnostics: {
+      capture() {},
+      record(entry) {
+        recorded.push(entry);
+        return `diagnostic-${recorded.length}`;
+      },
+    },
+  });
   spine.length = 0;
   fetchOperationsByLink.mockClear();
   cancelAgentRunRequest.mockClear();
 });
+
+afterAll(() => _resetChatHostForTests());
 
 describe("after Stop the screen shows what persisted", () => {
   it("follows the cancelled run to its end and renders the saved answer", async () => {

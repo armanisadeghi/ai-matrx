@@ -16,7 +16,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../../host/db";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../host/diagnostics";
 
 const cache = new Map<string, number | null>();
 

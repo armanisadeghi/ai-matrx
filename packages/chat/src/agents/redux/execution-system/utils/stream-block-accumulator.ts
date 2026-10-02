@@ -85,7 +85,7 @@ import {
 import { withIrEnvelope } from "@host/features/content-ir/registry/region-envelope-memo";
 import { sessionEnvelope } from "@host/features/content-ir/registry/kind-correctors";
 import { canonicalizeCompletedLegacyQuizEnvelope } from "@host/features/content-ir/registry/legacy-quiz-envelope";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../host/diagnostics";
 
 // ============================================================================
 // Types

@@ -1,5 +1,5 @@
 import { StreamBlockAccumulator } from "../stream-block-accumulator";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../../host/diagnostics";
 import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
 
 // 🚨 A PARTIAL MOCK OF A REAL MODULE IS A SUITE THAT DIES ON THE NEXT EXPORT
@@ -9,6 +9,12 @@ import type { RenderBlockPayload } from "@host/types/python-generated/stream-eve
 // time — zero tests ran while the file still looked green in a list. Spread the
 // real module: only the export this suite observes is replaced, and a new
 // export can never silently take the suite down.
+jest.mock("../../../../../host/diagnostics", () => ({
+  ...jest.requireActual("../../../../../host/diagnostics"),
+  captureError: jest.fn(),
+}));
+// The subject still reaches the app's Error Inspector through other host
+// modules; both sinks share one mock so no capture escapes the assertions.
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),

@@ -40,6 +40,12 @@ jest.mock("@host/components/agent-copy/CopyButtons", () => ({
 }));
 jest.mock("@ai-matrx/media/react", () => ({ InlineMediaRef: () => null }));
 const mockCaptureError = jest.fn();
+jest.mock("../../../host/diagnostics", () => ({
+  ...jest.requireActual("../../../host/diagnostics"),
+  captureError: (input: unknown) => mockCaptureError(input),
+}));
+// The subject still reaches the app's Error Inspector through other host
+// modules; both sinks share one mock so no capture escapes the assertions.
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
   captureError: (input: unknown) => mockCaptureError(input),

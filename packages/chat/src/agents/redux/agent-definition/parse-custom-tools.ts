@@ -15,7 +15,7 @@ import type {
   CustomToolInputSchema,
   JsonSchemaProperty,
 } from "../../types/agent-api-types";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../host/diagnostics";
 
 const PROPERTY_TYPES = [
   "string",

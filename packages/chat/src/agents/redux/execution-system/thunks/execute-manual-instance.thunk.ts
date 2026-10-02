@@ -1,7 +1,7 @@
 import {
   executionRejectionMeta,
   type ExecutionRejectionMeta,
-} from "@host/lib/diagnostics/executionRejectionMeta";
+} from "./execution-rejection-meta";
 /**
  * Execute Manual Instance Thunk
  *
@@ -186,12 +186,7 @@ import {
 import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
 import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
-import {
-  startRequest as startNetRequest,
-  setPhase as setNetPhase,
-  beatHeartbeat as beatNetHeartbeat,
-  finishRequest as finishNetRequest,
-} from "@host/lib/redux/net/netRequestsSlice";
+import { netRequests } from "../../../../host/diagnostics";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
@@ -869,14 +864,12 @@ export const executeManualInstance = createAsyncThunk<
       // Global net-requests slice. The Creator Panel and RequestRecoveryProvider
       // read this — without it, manual runs are invisible in the connection-
       // health UI. label/groupKey tagging matches the agent path.
-      dispatch(
-        startNetRequest({
-          id: requestId,
-          kind: "agent-run",
-          label: `Manual: ${instance.agentId}`,
-          groupKey: conversationId,
-        }),
-      );
+      netRequests.start({
+        id: requestId,
+        kind: "agent-run",
+        label: `Manual: ${instance.agentId}`,
+        groupKey: conversationId,
+      });
 
       // Resolve the manual-execution PATH. Priority:
       //   1. Per-conversation Builder override (manualEndpointOverride) — the
@@ -1100,7 +1093,7 @@ export const executeManualInstance = createAsyncThunk<
 
       dispatch(setInstanceStatus({ conversationId, status: "streaming" }));
       dispatch(setRequestStatus({ requestId, status: "streaming" }));
-      dispatch(setNetPhase({ id: requestId, phase: "streaming" }));
+      netRequests.phase(requestId, "streaming");
 
       const currentUiState = (getState() as ChatRootState).instanceUIState
         ?.byConversationId[conversationId];
@@ -1126,7 +1119,7 @@ export const executeManualInstance = createAsyncThunk<
         forceLocalConversationId: true,
         // Each event resets the heartbeat watchdog → no wedged stream UI.
         onEvent: () => {
-          dispatch(beatNetHeartbeat(requestId));
+          netRequests.heartbeat(requestId);
         },
         abortController,
         heartbeatTimeoutMs: HEARTBEAT_TIMEOUT_MS,
@@ -1134,7 +1127,7 @@ export const executeManualInstance = createAsyncThunk<
       });
 
       unregisterAbortController(conversationId);
-      dispatch(finishNetRequest({ id: requestId, phase: "completed" }));
+      netRequests.finish({ id: requestId, phase: "completed" });
       if (recoveryId) {
         void payloadSafetyStore.markSuccess(recoveryId).catch(() => {});
       }
@@ -1147,7 +1140,7 @@ export const executeManualInstance = createAsyncThunk<
 
       if (error instanceof Error && error.name === "AbortError") {
         dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
-        dispatch(finishNetRequest({ id: requestId, phase: "cancelled" }));
+        netRequests.finish({ id: requestId, phase: "cancelled" });
         if (recoveryId) {
           void payloadSafetyStore.deleteEntry(recoveryId).catch(() => {});
         }
@@ -1171,15 +1164,13 @@ export const executeManualInstance = createAsyncThunk<
         netErr.code === "heartbeat-timeout"
           ? "timed-out"
           : "error";
-      dispatch(
-        finishNetRequest({
-          id: requestId,
-          phase,
-          errorCode: netErr.code,
-          errorMessage: netErr.message,
-          retryable: netErr.retryable,
-        }),
-      );
+      netRequests.finish({
+        id: requestId,
+        phase,
+        errorCode: netErr.code,
+        errorMessage: netErr.message,
+        retryable: netErr.retryable,
+      });
 
       const message = extractErrorMessage(error, "Unknown error");
       // A first-response timeout is NOT a failed run: the server may still be

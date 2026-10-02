@@ -134,7 +134,7 @@ import { isCanvasItemContextKey } from "../../../utils/canvasItemContext";
 import { StreamingJsonTracker } from "@ai-matrx/kit/json-extract";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
 import { deriveAnswerText } from "../active-requests/active-requests.selectors";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../host/diagnostics";
 import type { ExtractedJsonSnapshot } from "../../../types/request.types";
 import {
   setConversationLabel,

@@ -48,7 +48,7 @@
 
 import type { ChatThunk } from "../../../../store/root-state";
 import type { TypedStreamEvent } from "@host/types/python-generated/stream-events";
-import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
+import { captureError } from "../../../../host/diagnostics";
 import { isStreamTransportLost } from "@host/lib/api/errors";
 
 import {

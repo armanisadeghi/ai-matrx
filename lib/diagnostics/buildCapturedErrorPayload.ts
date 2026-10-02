@@ -64,6 +64,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "supabase-postgrest": "Supabase error",
   "supabase-exception": "Supabase exception",
   "runtime-exception": "Runtime exception",
+  chat: "Chat package failure",
   "unhandled-rejection": "Unhandled promise rejection",
   "console-error": "Console error",
   "messaging": "Messaging operation",
