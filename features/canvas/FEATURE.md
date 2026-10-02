@@ -118,9 +118,8 @@ the rules an agent editing THIS directory must obey.
   `hooks/useCanvasArtifactUrlState.ts`. Any list surface that opens saved canvas
   items mounts that hook and inherits reload, Back, Forward and a shareable
   link — never a second persistence layer, never `localStorage`. Restoring goes
-  through the SAME `useOpenCanvasItem` opener a click uses, and it WAITS for
-  `selectCanvasIsAvailable` because the front door is idle-deferred; restoring
-  before it mounts produces a false "canvas is not available here". The two
+  through the SAME `useOpenCanvasItem` opener a click uses, and only once the
+  canvas provider is present. The two
   directions are reconciled BY VALUE against one agreed-on id, never by
   remembering which URLs we wrote — that bookkeeping swallows Forward to an
   artifact that was open before. Guard:

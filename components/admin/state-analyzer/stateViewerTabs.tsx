@@ -108,7 +108,7 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "voicePad",
   "windowManager",
   "urlSync",
-  "canvas",
+  "canvasHost",
   "artifacts",
   "htmlPages",
   "textDiff",
