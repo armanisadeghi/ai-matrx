@@ -38,6 +38,11 @@ tables at the end.
 
     SN_TARGET=live uv run --project ../aidream python scripts/safety-net/probes/query_correctness.py
     node scripts/safety-net/run.mjs --target live --only query.correctness
+
+SELF-TEST (planted breaks, in memory, never on disk): query_correctness_selftest.py beside this file runs
+this probe three times — sound with pages of 5 (all PASS), a one-page total (Q04 RED), a dropped filter
+(Q03/Q05/Q06 RED). Green since VISION-REACH W2 (2026-10-02), when the door learned to measure a formula
+column and a measure's `order`, and the tool learned match / as_of / bucket / order / related_to.
 """
 
 from __future__ import annotations
@@ -505,6 +510,16 @@ def main() -> int:
             step(ITEM_IDS, "fixture", False, f"refused: {e}")
             return 1
         door = door_answers(member, fx)
+        # THE GRID'S SUMMARY BAR asks the same door in ONE call for several measures of the column
+        # (@ai-matrx/records client.recordAggregate: p_group_by [], p_measures [...], p_filter {}).
+        # Hand-worked from the seed: 420, 640, 200, 192, 0, 420, 640, 450, 200 -> sum 3162, min 0,
+        # max 640, average 351.33.
+        bar = _agg(member, fx["visits"], [{"op": op, "key": "expected_copay_total"} for op in ("sum", "min", "max", "avg")])
+        m = (bar[0].get("measures") or {}) if isinstance(bar, list) and bar else {}
+        got = {k: _num(m.get(f"{k}_expected_copay_total")) for k in ("sum", "min", "max", "avg")}
+        ok = got["sum"] == 3162 and got["min"] == 0 and got["max"] == 640 and got["avg"] is not None and round(got["avg"], 2) == 351.33
+        step(["Q01"], "Q1b the grid summary bar's sum / min / max / average of the formula column, in one call", ok,
+             f"truth sum 3162 min 0 max 640 avg 351.33 | door {json.dumps(got)}")
         ask = asyncio.run(_ask_all(member, fx))
         for q in TRUTH:
             want, got_door, got_ask = TRUTH[q], door[q], ask_value(q, ask[q], fx)
