@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * SEO provider spend rollup panel (M-9 / WS-7 UI tranche) — the third
  * `/marketing/cost` mode, alongside "By site" / "By client". Reads
@@ -39,7 +40,7 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   return (
     <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card p-2.5">
       <span className="text-xs font-medium capitalize text-foreground">
-        {row.provider.replace(/_/g, " ")}
+        {humanizeIdentifier(row.provider) || row.provider}
       </span>
       <span className="text-right font-mono text-xs font-semibold tabular-nums">
         {formatRuntimeCost(row.effective_cost, unit)}{" "}

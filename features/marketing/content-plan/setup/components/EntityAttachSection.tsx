@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * E-E-A-T attachment pass — which pages carry which author, reviewer, or
  * citation, decided across the whole plan at once.
@@ -212,7 +213,7 @@ function EntityAttachFallbackBody({ plan }: { plan: EntityAttachPlan }) {
             >
               <div className="flex items-baseline gap-2">
                 <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase leading-none text-muted-foreground">
-                  {attachment.role.replace(/_/g, " ")}
+                  {humanizeIdentifier(attachment.role) || attachment.role}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
                   {attachment.entityLabel}

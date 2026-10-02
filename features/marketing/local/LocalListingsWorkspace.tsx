@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -647,7 +648,7 @@ function ProfileEditor({
                 className="rounded border border-border bg-card px-1.5 py-0.5 text-[11px] text-foreground hover:bg-muted"
                 title={`From ${AUTOFILL_SOURCE_LABELS[s.source]}`}
               >
-                {s.field.replace(/_/g, " ")}:{" "}
+                {humanizeIdentifier(s.field) || s.field}:{" "}
                 {s.value.length > 28 ? `${s.value.slice(0, 28)}…` : s.value}
               </button>
             ))}

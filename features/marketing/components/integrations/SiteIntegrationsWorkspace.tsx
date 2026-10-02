@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -883,12 +884,14 @@ function SiteIntegrationsEditor({
     save(await confirmGscPropertyChoice());
   };
 
-  const providerStatusLabel = (key: BuiltInProviderKey): string =>
-    providerReferenceStatus(
+  const providerStatusLabel = (key: BuiltInProviderKey): string => {
+    const status = providerReferenceStatus(
       draft[key],
       key !== "pageSpeedInsights",
       key !== "pageSpeedInsights",
-    ).replace(/_/g, " ");
+    );
+    return humanizeIdentifier(status) || status;
+  };
 
   const providerCopy = (
     key: BuiltInProviderKey,
@@ -1982,7 +1985,7 @@ function UrlChangeIntakeCard({
               const evidence = isJsonObject(row.evidence) ? row.evidence : {};
               const status =
                 typeof evidence.status === "string"
-                  ? evidence.status.replace(/_/g, " ")
+                  ? humanizeIdentifier(evidence.status) || evidence.status
                   : "recorded";
               return (
                 <Link

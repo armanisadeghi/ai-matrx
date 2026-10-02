@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -276,7 +277,7 @@ function BusinessFactRow({
     fact.label ||
     (isBusinessFactKind(fact.kind)
       ? BUSINESS_FACT_KIND_LABELS[fact.kind]
-      : fact.kind.replace(/_/g, " "));
+      : (humanizeIdentifier(fact.kind) || fact.kind));
   const actions = (
     <div className="flex shrink-0 items-center gap-0.5">
       <CopyButtons
@@ -541,7 +542,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
       ["Brand", current.name],
       ["Properties", socialProperties.length],
       ...socialProperties.map((property): [string, string] => [
-        property.kind.replace(/_/g, " "),
+        (humanizeIdentifier(property.kind) || property.kind),
         property.url || property.handle || property.display_name || "—",
       ]),
     ],
@@ -559,7 +560,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
       ["Brand", current.name],
       ["Facts", factRows.length],
       ...factRows.map((fact): [string, string] => [
-        fact.label || fact.kind.replace(/_/g, " "),
+        fact.label || (humanizeIdentifier(fact.kind) || fact.kind),
         factValueText(fact),
       ]),
     ],
@@ -577,7 +578,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
       ["Brand", current.name],
       ["Assets", assetRows.length],
       ...assetRows.map((asset): [string, string] => [
-        `${asset.kind.replace(/_/g, " ")}${asset.title ? ` · ${asset.title}` : ""}`,
+        `${humanizeIdentifier(asset.kind) || asset.kind}${asset.title ? ` · ${asset.title}` : ""}`,
         asset.source_url ?? "no source URL",
       ]),
     ],
@@ -899,13 +900,13 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                               kind: "web-brand-property",
                               label:
                                 property.display_name ||
-                                property.kind.replace(/_/g, " "),
+                                (humanizeIdentifier(property.kind) || property.kind),
                               description:
                                 "One non-website brand property (social profile or other presence).",
                               surface: `Social profiles — ${current.name}`,
                               data: property,
                               lines: [
-                                ["Kind", property.kind.replace(/_/g, " ")],
+                                ["Kind", (humanizeIdentifier(property.kind) || property.kind)],
                                 ["Name", property.display_name],
                                 ["Handle", handle],
                                 ["URL", href],
@@ -1082,7 +1083,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   const color = assetColorValue(asset);
                   const kindLabel = isBrandAssetKind(asset.kind)
                     ? BRAND_ASSET_KIND_LABELS[asset.kind]
-                    : asset.kind.replace(/_/g, " ");
+                    : (humanizeIdentifier(asset.kind) || asset.kind);
                   return (
                     <li
                       key={asset.id}

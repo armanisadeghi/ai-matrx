@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/mandates/candidate-dialog/target.ts
 //
 // PURE: where a "try as candidate" comes from → the dialog's pre-fill. Three
@@ -117,7 +118,7 @@ export const DOOR_LABEL: Record<string, string> = {
 };
 
 export function doorLabel(door: string): string {
-  return DOOR_LABEL[door] ?? door.replace(/_/g, " ");
+  return DOOR_LABEL[door] ?? (humanizeIdentifier(door) || door);
 }
 
 /** Plain words for a skip reason (`candidate.skips`, P17). */
@@ -129,7 +130,7 @@ export const SKIP_LABEL: Record<string, string> = {
 };
 
 export function skipLabel(reason: string): string {
-  return SKIP_LABEL[reason] ?? reason.replace(/_/g, " ");
+  return SKIP_LABEL[reason] ?? (humanizeIdentifier(reason) || reason);
 }
 
 export const RUNG_LABEL: Record<CandidateRung, string> = {

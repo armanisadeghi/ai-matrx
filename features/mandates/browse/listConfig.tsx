@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/mandates/browse/listConfig.tsx
 //
 // /mandates expressed as an entity-list config — the mandates browse
@@ -120,7 +121,7 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
       filterId: "feature",
       label: "Feature",
       noneLabel: "No feature",
-      formatValue: (raw) => raw.replace(/_/g, " "),
+      formatValue: (raw) => (humanizeIdentifier(raw) || raw),
     },
     {
       facet: "layer",

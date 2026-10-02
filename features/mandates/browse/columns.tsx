@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/mandates/browse/columns.tsx
 //
 // The MANDATES column registry for the canonical entity list. Every column
@@ -106,7 +107,7 @@ export function mandateColumnsFor(
         width: 130,
         cell: (row) => (
           <Badge variant="outline" className="py-0 text-[10.5px] font-medium">
-            {row.feature.replace(/_/g, " ")}
+            {humanizeIdentifier(row.feature) || row.feature}
           </Badge>
         ),
       },

@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * The result pane.
  *
@@ -152,7 +153,7 @@ export function ResultPanel({ config, result }: Props) {
                   variant="outline"
                   className="text-[11px] font-normal"
                 >
-                  {role.replace(/_/g, " ")}:{" "}
+                  {humanizeIdentifier(role) || role}:{" "}
                   {ceiling === "free"
                     ? "free"
                     : money(ceiling, config.money.currency)}

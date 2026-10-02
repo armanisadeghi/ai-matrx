@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useMemo, useState } from "react";
 import {
   AtSign,
@@ -1153,7 +1154,7 @@ function DiscoveryRow({
             <Badge variant="outline" className="text-[10px]">
               {socialPreview
                 ? socialPreview.providerLabel
-                : item.guessed_kind.replace(/_/g, " ")}
+                : (humanizeIdentifier(item.guessed_kind) || item.guessed_kind)}
             </Badge>
           ) : null}
           {typeof item.confidence === "number" ? (
