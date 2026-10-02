@@ -21,7 +21,7 @@
  */
 
 import type { RootState } from "@host/lib/redux/store";
-import { buildRequestContext, pageContextFor } from "../request-context";
+import { buildPreviewRequestContext, buildRequestContext, pageContextFor } from "../request-context";
 import { buildContinuationBody } from "../../utils/continuation-body";
 import { copyInstanceRequestDraft } from "../../thunks/copy-instance-request-draft.thunk";
 
@@ -182,5 +182,34 @@ describe("fan-out and follow-up turns keep the rule", () => {
       { retry: false, debug: false, cacheBypass: null },
     );
     expect(body.page_context).toEqual({ mode: "own", withheld: ["route_brief"] });
+  });
+});
+
+describe("the context preview — what the agent will receive", () => {
+  it("carries the same context, withheld keys and page rule a send of that conversation does", () => {
+    for (const [own, pageOff] of [
+      [true, false],
+      [false, true],
+      [false, false],
+    ] as const) {
+      if (own) owners.c1 = BATTLE;
+      else delete owners.c1;
+      const state = firstTurnState({ pageOff, surfaceName: own ? null : BATTLE });
+      const send = buildRequestContext(state, "c1");
+      const preview = buildPreviewRequestContext(state, "c1");
+      expect(preview.context).toEqual(send.context);
+      expect(preview.context_withheld).toEqual(send.context_withheld);
+      expect(preview.page_context ?? null).toEqual(send.page_context);
+      expect(preview.surface).toBe(BATTLE);
+    }
+  });
+
+  it("a battle column's preview names the page rule, so its receipt withholds route and id", () => {
+    owners.c1 = BATTLE;
+    const preview = buildPreviewRequestContext(firstTurnState({ surfaceName: null }), "c1");
+    expect(preview.page_context?.mode).toBe("own");
+    expect(preview.context?.route_brief).toBeUndefined();
+    expect(preview.context?.conversation).toBeUndefined();
+    expect(preview.context_withheld).toEqual(expect.arrayContaining(["route_brief", "conversation"]));
   });
 });

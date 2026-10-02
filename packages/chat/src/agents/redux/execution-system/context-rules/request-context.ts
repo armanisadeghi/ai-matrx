@@ -402,6 +402,34 @@ export function buildRequestContext(
   };
 }
 
+/**
+ * The context fields of `POST /ai/context/preview` — what "what the agent will
+ * receive" is computed from. The SAME door call a send makes (rows, wire,
+ * withheld keys, the page rule) plus the surface the request would name, so
+ * the preview's receipt and the real turn's cannot disagree — on the page's
+ * own conversation and on a switched-off page included (RULES.md §0).
+ */
+export interface PreviewRequestContext {
+  context?: Record<string, unknown>;
+  context_withheld: string[];
+  page_context?: PageContextDirective;
+  surface?: string;
+}
+
+export function buildPreviewRequestContext(
+  state: RootState,
+  conversationId: string,
+): PreviewRequestContext {
+  const door = buildRequestContext(state, conversationId);
+  const surface = resolveClientSurface(state, conversationId);
+  return {
+    ...(door.context ? { context: door.context } : {}),
+    context_withheld: door.context_withheld,
+    ...(door.page_context ? { page_context: door.page_context } : {}),
+    ...(surface ? { surface } : {}),
+  };
+}
+
 // ── The table's rows, memoized ──────────────────────────────────────────────
 
 const EMPTY_ROWS: ResolvedContextRow[] = [];

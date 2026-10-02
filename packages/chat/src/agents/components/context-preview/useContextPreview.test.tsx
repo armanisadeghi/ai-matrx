@@ -19,7 +19,9 @@ import { createRoot, type Root } from "react-dom/client";
 jest.mock("@host/lib/api/call-api", () => ({ callApi: jest.fn() }));
 jest.mock("@host/lib/redux/hooks", () => ({
   // The door itself is the mock, so dispatch only hands back what it produced.
-  useAppDispatch: () => (thunk: unknown) => thunk,
+  // A function thunk (the door read) runs against an empty state.
+  useAppDispatch: () => (thunk: unknown) =>
+    typeof thunk === "function" ? (thunk as (d: unknown, g: () => unknown) => unknown)(null, () => ({})) : thunk,
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector(undefined),
 }));
@@ -32,6 +34,19 @@ jest.mock(
     selectConversationScopeIds: () => () => ({ organizationId: undefined }),
   }),
 );
+
+const PREVIEW_FIELDS = {
+  context: { user: { id: "u1" } },
+  context_withheld: ["route_brief", "conversation"],
+  page_context: { mode: "own", withheld: ["route_brief", "conversation"] },
+  surface: "matrx-user/agent-comparison-model",
+};
+jest.mock("../../redux/execution-system/context-rules/request-context", () => ({
+  // The door: the hook must send exactly what it builds for the conversation.
+  buildPreviewRequestContext: () => PREVIEW_FIELDS,
+  pageContextFor: () => PREVIEW_FIELDS.page_context,
+  selectResolvedContextRows: () => () => [],
+}));
 
 import { callApi } from "@host/lib/api/call-api";
 import { useContextPreview, type ContextPreviewState } from "./useContextPreview";
@@ -114,6 +129,14 @@ describe("useContextPreview", () => {
     expect(view.state().error).toContain(
       "scope_ids[0] is not a scope you can read.",
     );
+    await view.unmount();
+  });
+
+  it("sends the conversation's context, withheld keys and page rule from the one door", async () => {
+    door.mockResolvedValue({ data: { receipt: null } });
+    const view = await mountHook();
+    const req = door.mock.calls[0]?.[0] as { body?: Record<string, unknown> };
+    expect(req.body).toMatchObject(PREVIEW_FIELDS);
     await view.unmount();
   });
 });
