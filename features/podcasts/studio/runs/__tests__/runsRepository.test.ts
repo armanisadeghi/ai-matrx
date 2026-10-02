@@ -90,6 +90,7 @@ type AssetRow = Database["podcast"]["Tables"]["pc_studio_run_assets"]["Row"];
 type RunSelectRow = Pick<
   AgentRunRow,
   | "id"
+  | "organization_id"
   | "status"
   | "error"
   | "request"
@@ -120,11 +121,14 @@ type AssetSelectRow = Pick<
 
 // The column contract of each read, as PostgREST receives it.
 const RUN_COLUMNS =
-  "select=id,status,error,request,result,episode_id,last_heartbeat_at,created_at,updated_at,agent_run_stage(stage_key,status,output,error,started_at,finished_at)";
+  "select=id,organization_id,status,error,request,result,episode_id,last_heartbeat_at,created_at,updated_at,agent_run_stage(stage_key,status,output,error,started_at,finished_at)";
 const ASSET_COLUMNS =
   "select=asset_kind,slot,url,prompt,model_alias,is_manual,status,superseded_by";
 
 const RUN_ID = "7d3f1c2e-0b7a-4f7e-9a51-2c4b8e6f1a01";
+// The organization the run belongs to — resume/rejoin carry it (not the
+// session's selection), so the summary must surface it.
+const RUN_ORGANIZATION_ID = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
 const OWNER = "0b8f2a4e-5d1c-4c3a-9f7e-1a2b3c4d5e6f";
 const FILE_IMAGE_0 = "c1a0e0f4-2b7d-4c9e-8a11-5f3e2d1c0b01";
 const FILE_IMAGE_1 = "c1a0e0f4-2b7d-4c9e-8a11-5f3e2d1c0b02";
@@ -159,6 +163,7 @@ describe("fetchPodcastRunDetail", () => {
 
   const failedRun = {
     id: RUN_ID,
+    organization_id: RUN_ORGANIZATION_ID,
     status: "failed",
     error: { message: "tts provider timed out" },
     request: {
@@ -259,6 +264,7 @@ describe("fetchPodcastRunDetail", () => {
 
     const expected: RunDetail = {
       run_id: RUN_ID,
+      organization_id: RUN_ORGANIZATION_ID,
       status: "failed",
       liveness: "failed",
       source: {
@@ -372,6 +378,7 @@ function runRow(
 ): RunSelectRow {
   return {
     id,
+    organization_id: RUN_ORGANIZATION_ID,
     status: "completed",
     // `agent_run.error` is a selected, non-nullable-key column: a run with no
     // failure carries SQL NULL, never an absent key. Omitting it made every

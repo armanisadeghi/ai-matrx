@@ -49,6 +49,10 @@ export interface RunAsset {
 
 export interface RunSummary {
   run_id: string;
+  /** The organization the run belongs to. Work on an existing run (resume,
+   *  rejoin) carries THIS, never the session's current selection — on a reload
+   *  the selection may not be restored yet, and the run's org is the truth. */
+  organization_id: string | null;
   status: string;
   liveness: RunLiveness;
   source: RunSource;

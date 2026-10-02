@@ -61,6 +61,7 @@ interface AssetRowRaw {
 
 interface AgentRunRaw {
   id: string;
+  organization_id: string | null;
   status: string | null;
   error: unknown;
   request: Record<string, unknown> | null;
@@ -73,7 +74,7 @@ interface AgentRunRaw {
 }
 
 const RUN_SELECT =
-  "id,status,error,request,result,episode_id,last_heartbeat_at,created_at,updated_at," +
+  "id,organization_id,status,error,request,result,episode_id,last_heartbeat_at,created_at,updated_at," +
   "agent_run_stage(stage_key,status,output,error,started_at,finished_at)";
 
 const ASSET_SELECT =
@@ -286,6 +287,7 @@ function toSummary(run: AgentRunRaw, now: number): RunSummary {
   const audioUrl = stageOutput(byKey.get(AUDIO_STAGE));
   return {
     run_id: run.id,
+    organization_id: run.organization_id ?? null,
     status,
     liveness: liveness(status, lastAct, now),
     source: sourceSummary(request),

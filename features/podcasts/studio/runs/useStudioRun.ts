@@ -213,6 +213,12 @@ export function useStudioRun(runId: string): UseStudioRun {
   const audioEncodingRef = useRef<"pcm_s16le" | "mp3" | null>(null);
   const audioStreamBrokenRef = useRef(false);
   const backendRunIdRef = useRef<string | null>(null);
+  // The organization the run belongs to (from its durable record). Resume and
+  // rejoin are work on THIS run, so they carry its org rather than the
+  // session's selection, which a fresh reload may not have restored yet — the
+  // automatic resume was refused client-side ("Select an organization before
+  // sending this request") and the page fell back to polling (2026-10-01).
+  const runOrganizationIdRef = useRef<string | null>(null);
   // The durable agent_run id as RENDER state, mirrored from the ref. The ref
   // alone was the 2026-09-17 defect: during an in-place run the id arrives on
   // the live `podcast_run` event, lands only in the ref, and nothing re-renders
@@ -780,6 +786,9 @@ export function useStudioRun(runId: string): UseStudioRun {
                   path: "/podcast/resume/{run_id}",
                   method: "POST",
                   pathParams: { run_id: resumeRunId },
+                  ...(runOrganizationIdRef.current
+                    ? { scopeOverrides: { organization_id: runOrganizationIdRef.current } }
+                    : {}),
                   stream: true,
                   signal: controller.signal,
                   onStreamEvent,
@@ -799,6 +808,9 @@ export function useStudioRun(runId: string): UseStudioRun {
               interactiveOrganization: false,
               method: "POST",
               pathParams: { request_id: liveRequestId },
+              ...(runOrganizationIdRef.current
+                ? { scopeOverrides: { organization_id: runOrganizationIdRef.current } }
+                : {}),
               stream: true,
               signal: controller.signal,
               onStreamEvent,
@@ -936,6 +948,7 @@ export function useStudioRun(runId: string): UseStudioRun {
           : detailToRunState(runDetail);
         setState(fromDetail);
         adoptBackendRunId(runDetail.run_id);
+        runOrganizationIdRef.current = runDetail.organization_id;
         setRequest(
           runDetail.request && Object.keys(runDetail.request).length > 0
             ? (runDetail.request as unknown as PodcastGenerateRequest)
