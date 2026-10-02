@@ -16,6 +16,9 @@
 -- them lists every table the organization has and searches the answer by hand. This door answers
 -- the one table in one request.
 --
+-- THE STORE SWITCH. custom.assert_store_door is asked first, as every store door asks it, so an
+-- organization that switched its record store off is refused here too (chair review, 2026-10-02).
+--
 -- WHAT DECIDES WHAT A CALLER SEES. Not this door. The candidates are found by slug or name, and
 -- then they are read through custom.read_records_by_ids on the Table kernel — THE SAME read door
 -- `tableRead` / `tableList` use (custom.assert_may_know_table, the one ladder, the one mask). A
@@ -40,6 +43,9 @@ declare
   v_ids  uuid[];
   v_row  record;
 begin
+  -- The record-store switch, first, exactly as table_ensure and record_upsert ask it (chair review
+  -- REVIEW-PAD-WAVE1): a store switched off answers no door, this reader included.
+  perform custom.assert_store_door(p_organization_id, 'custom.table_find');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.table_find');
 
   if v_slug is null and v_name is null then
@@ -90,7 +96,7 @@ values
   ('custom', 'table_find',
    'p_organization_id uuid, p_slug text, p_name text',
    array['uuid'::regtype::oid, 'text'::regtype::oid, 'text'::regtype::oid],
-   'Takes an organization and a slug or a name. Refuses unless custom.assert_client_may_reach admits the caller to that organization; then answers the one Table of that slug (or name) through custom.read_records_by_ids on the Table kernel, so only a Table the caller may see is answered, masked as the read door masks it. It writes nothing.',
+   'Takes an organization and a slug or a name. Refuses unless custom.assert_store_door and custom.assert_client_may_reach admit the caller to that organization; then answers the one Table of that slug (or name) through custom.read_records_by_ids on the Table kernel, so only a Table the caller may see is answered, masked as the read door masks it. It writes nothing.',
    'lane12_one_table_is_found_by_its_slug.sql', null, true, false,
-   '{"version": 1, "arguments": {"p_organization_id": {"type": "uuid", "check": "this body decides it with custom.assert_client_may_reach(arg1) — the organization wall — a non-member is refused before anything is read, and that call stands before every other use of this argument in the body.", "entity": "organization", "foreign": {"sqlstate": "42501", "same_as_invented": true}, "position": 1, "optional": false, "null_rule": {"sqlstate": "22004"}, "verified": "2026-10-02 lane PLATFORM-APP-DATA — read from this body"}}, "declared_at": "2026-10-02 lane PLATFORM-APP-DATA", "declared_by": "lane12_one_table_is_found_by_its_slug.sql"}'::jsonb)
+   '{"version": 1, "arguments": {"p_organization_id": {"type": "uuid", "check": "this body decides it with custom.assert_store_door(arg1), custom.assert_client_may_reach(arg1) — the organization wall — a non-member is refused before anything is read, and that call stands before every other use of this argument in the body.", "entity": "organization", "foreign": {"sqlstate": "42501", "same_as_invented": true}, "position": 1, "optional": false, "null_rule": {"sqlstate": "22004"}, "verified": "2026-10-02 lane PLATFORM-APP-DATA — read from this body"}}, "declared_at": "2026-10-02 lane PLATFORM-APP-DATA", "declared_by": "lane12_one_table_is_found_by_its_slug.sql"}'::jsonb)
 on conflict do nothing;

@@ -585,7 +585,12 @@ async function connect(env: DbEnv): Promise<pg.Client> {
 async function beginClean(client: pg.Client): Promise<void> {
   let last = "";
   for (let attempt = 1; attempt <= POOLER_ATTEMPTS; attempt += 1) {
-    await client.query("begin");
+    // READ WRITE, said out loud (lane PLATFORM-APP-DATA, 2026-10-02): a transaction-pooler backend
+    // can carry a session-level default_transaction_read_only = on leaked by another client (measured
+    // on the clone the same day — a rehearsal's inverse died "cannot execute DELETE in a read-only
+    // transaction"). A plain BEGIN inherits it; BEGIN READ WRITE does not. Same as aidream's
+    // db/pooler_session.py SET TRANSACTION READ WRITE.
+    await client.query("begin read write");
     await client.query("reset role");
     const who = await client.query<{
       cur: string;

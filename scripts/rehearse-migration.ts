@@ -227,7 +227,9 @@ async function measure(
   let failedAt: number | null = null;
   const t0 = Date.now();
   try {
-    await worker.query("begin");
+    // READ WRITE, said out loud: a pooled backend may carry a leaked session-level
+    // default_transaction_read_only = on (see apply-migration.ts beginClean).
+    await worker.query("begin read write");
     // INSIDE the transaction. See the header - set outside, a transaction-mode pooler
     // can hand the name to somebody else's backend and the sample is not yours.
     await worker.query(`set local application_name = '${appName.replace(/'/g, "''")}'`);
