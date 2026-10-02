@@ -56,6 +56,7 @@ import { FILES_TABLE_COLUMNS } from "@/features/files/filesDb";
 import { refinePartyDetail } from "@/features/crm/party-detail";
 import { refineResearchTemplateDetail } from "@/features/research/admin/template-detail";
 import { partyKindWord } from "@/features/crm/party-words";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface ItemTypeConfig {
   /** Stable key — the enum value. */
@@ -192,10 +193,7 @@ const clip = (v: unknown, max = 160): string | undefined => {
 
 const titleCase = (v: unknown): string | undefined => {
   if (typeof v !== "string" || !v.trim()) return undefined;
-  return v
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
+  return humanizeIdentifier(v) || undefined;
 };
 
 /**

@@ -68,6 +68,7 @@ import type {
   PageExtractionResult,
 } from "@/features/page-extraction/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface ResultsTableProps {
   /**
@@ -759,9 +760,9 @@ function RecoveryBanner({ count }: { count: number }) {
 function prettifyKey(key: string): string {
   // The reserved text/fallback key renders as "Response".
   if (key === TEXT_RESULT_KEY) return "Response";
-  // Snake/kebab → Title Case. Cheap fallback when there's no schema to
+  // Identifier → Title Case. Cheap fallback when there's no schema to
   // pull a polished label from (`columnLabel` requires a schema).
-  return key.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return humanizeIdentifier(key) || key;
 }
 
 /**

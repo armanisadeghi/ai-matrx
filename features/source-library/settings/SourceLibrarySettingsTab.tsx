@@ -38,6 +38,7 @@ import { SettingsTextInput } from "@/components/official/settings/primitives/Set
 import { MediaApiError, getMediaSettings, putMediaSettings } from "../api";
 import type { MediaSettingKnob, MediaSettingsResponse } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { displayLabel, humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ───────────────────────────────────────────────────────────────── helpers ──
 
@@ -46,12 +47,6 @@ function sourceSentence(source: MediaSettingKnob["source"]): string {
     if (source === "library") return "Set on this Library.";
     if (source === "org") return "Inherited from your organization.";
     return "Platform default — nobody has changed this yet.";
-}
-
-/** A readable label for a knob the server did not label. */
-function humanize(key: string): string {
-    const words = key.replace(/_/g, " ").trim();
-    return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 function asNumber(value: unknown): number | null {
@@ -342,7 +337,7 @@ function KnobRow({
     onDraft,
     onCommit,
 }: KnobRowProps) {
-    const label = knob.label ?? humanize(settingKey);
+    const label = displayLabel(knob.label, settingKey);
     const description = sourceSentence(knob.source);
     const modified = JSON.stringify(knob.value) !== JSON.stringify(knob.default);
     const common = {
@@ -408,7 +403,7 @@ function KnobRow({
                 onValueChange={(next) => onCommit(next)}
                 options={options.map((option) => ({
                     value: option,
-                    label: humanize(option),
+                    label: humanizeIdentifier(option),
                 }))}
             />
         );

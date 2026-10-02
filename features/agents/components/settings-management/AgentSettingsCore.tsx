@@ -97,7 +97,6 @@ import { MatrxDirectivesTab } from "./matrx-directives/MatrxDirectivesTab";
 import { validateOutputSchema } from "./output-schema/validateOutputSchema";
 import {
   buildSettingsRows,
-  humanizeSettingKey,
   type SettingsRow,
 } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
@@ -128,6 +127,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ── Tab type ─────────────────────────────────────────────────────────────────
 type SettingsTab =
@@ -1924,7 +1924,7 @@ export function AgentSettingsCore({
       {/* Aligns with the checkbox column of the rows below. */}
       <span className="h-4 w-4 shrink-0" aria-hidden />
       <Label className="text-xs flex-shrink-0 w-36 text-gray-700 dark:text-gray-300">
-        {humanizeSettingKey(key)}
+        {humanizeIdentifier(key)}
       </Label>
       <span className="flex-1 min-w-0 truncate text-xs font-mono text-foreground/80">
         {isOffValue(value, null) ? "Off" : formatModelDefault(value)}
@@ -1949,7 +1949,7 @@ export function AgentSettingsCore({
               size="icon"
               className="h-6 w-6 text-muted-foreground hover:text-destructive"
               onClick={() => handleIssueRemove(key)}
-              aria-label={`Clear ${humanizeSettingKey(key)}`}
+              aria-label={`Clear ${humanizeIdentifier(key)}`}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>

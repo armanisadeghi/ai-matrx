@@ -66,7 +66,6 @@ import {
 } from "../../redux/execution-system/instance-model-overrides/offering-pin";
 import {
   buildSettingsRows,
-  humanizeSettingKey,
   type SettingsRow,
 } from "@host/lib/redux/slices/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@host/lib/redux/slices/agent-settings/types";
@@ -80,6 +79,7 @@ import { parseRequestOverrides } from "../../redux/execution-system/utils/reques
 import { isUnsetChoice } from "../../redux/execution-system/instance-model-overrides/auto-means-unset";
 import type { LLMParams } from "../../types/agent-api-types";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const OVERRIDE_COLUMNS = [
   { key: "setting", label: "Setting" },
@@ -462,7 +462,7 @@ export function RunConfigOverrides({
                 {orphanedKeys.map((key) => (
                   <div key={key} className="flex items-center gap-2">
                     <span className="flex-1 truncate text-[11px] text-muted-foreground">
-                      {humanizeSettingKey(key)}
+                      {humanizeIdentifier(key)}
                     </span>
                     <button
                       type="button"

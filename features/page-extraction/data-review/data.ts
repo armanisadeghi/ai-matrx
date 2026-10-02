@@ -21,7 +21,6 @@ import { listResults } from "@/features/page-extraction/api/runs";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   cellValueFor,
-  humanizeKey,
   inferColumnsFromRows,
   normalizeResultRows,
   parseTemplateColumns,
@@ -32,6 +31,7 @@ import type {
   PageExtractionJob,
   RunStatus,
 } from "@/features/page-extraction/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const docproc = supabase as any;
@@ -263,7 +263,7 @@ export async function loadDatasetExportView(jobId: string): Promise<{
       ? tpl
       : inferColumnsFromRows(normalized).map((key) => ({
           key,
-          label: humanizeKey(key),
+          label: humanizeIdentifier(key),
           type: "string" as const,
           source: "agent" as const,
           agentField: key,

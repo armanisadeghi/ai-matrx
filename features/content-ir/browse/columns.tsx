@@ -8,13 +8,7 @@ import {
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
 import type { ShapeBrowseRow } from "./types";
-
-function titleCase(value: string): string {
-  return value
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export const SHAPE_COLUMNS: EntityColumnSpec<ShapeBrowseRow>[] = [
   {
@@ -51,7 +45,7 @@ export const SHAPE_COLUMNS: EntityColumnSpec<ShapeBrowseRow>[] = [
     id: "status",
     label: "Status",
     facet: "status",
-    formatFacetValue: titleCase,
+    formatFacetValue: humanizeIdentifier,
     column: {
       id: "status",
       accessorKey: "is_active",
@@ -97,28 +91,28 @@ export const SHAPE_COLUMNS: EntityColumnSpec<ShapeBrowseRow>[] = [
       header: "Family",
       filter: "select",
       width: 140,
-      cell: (row) => <Muted>{row.family ? titleCase(row.family) : "—"}</Muted>,
+      cell: (row) => <Muted>{row.family ? humanizeIdentifier(row.family) : "—"}</Muted>,
     },
   },
   {
     id: "origin",
     label: "Origin",
     facet: "origin",
-    formatFacetValue: titleCase,
+    formatFacetValue: humanizeIdentifier,
     column: {
       id: "origin",
       accessorKey: "origin",
       header: "Origin",
       filter: "select",
       width: 110,
-      cell: (row) => <Muted>{titleCase(row.origin)}</Muted>,
+      cell: (row) => <Muted>{humanizeIdentifier(row.origin)}</Muted>,
     },
   },
   {
     id: "visibility",
     label: "Visibility",
     facet: "visibility",
-    formatFacetValue: titleCase,
+    formatFacetValue: humanizeIdentifier,
     defaultHidden: true,
     column: {
       id: "visibility",
@@ -126,7 +120,7 @@ export const SHAPE_COLUMNS: EntityColumnSpec<ShapeBrowseRow>[] = [
       header: "Visibility",
       filter: "select",
       width: 110,
-      cell: (row) => <Muted>{titleCase(row.visibility)}</Muted>,
+      cell: (row) => <Muted>{humanizeIdentifier(row.visibility)}</Muted>,
     },
   },
   {
@@ -191,7 +185,7 @@ export const SHAPE_COLUMNS: EntityColumnSpec<ShapeBrowseRow>[] = [
     id: "access_level",
     label: "Access",
     facet: "access_level",
-    formatFacetValue: titleCase,
+    formatFacetValue: humanizeIdentifier,
     scopedToShared: true,
     defaultHidden: true,
     column: {
@@ -200,7 +194,7 @@ export const SHAPE_COLUMNS: EntityColumnSpec<ShapeBrowseRow>[] = [
       header: "Access",
       filter: "select",
       width: 100,
-      cell: (row) => <Muted>{titleCase(row.access_level)}</Muted>,
+      cell: (row) => <Muted>{humanizeIdentifier(row.access_level)}</Muted>,
     },
   },
   {

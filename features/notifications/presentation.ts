@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { AGENT_ICON, INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import type { InboxNotification, NoticeBucket } from "./types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const UPDATES_PREFIX =
   /^(records\.changed|news\.monitor\.|masterwork\.daily_drip|hr\.digest\.|knowledge\.saved_view_alert|pipeline\.stage_entered|personal_staff\.ack|print\.order_status_changed|hr\.recognition\.team_post|hr\.schedule\.(re)?published|hr\.announcement\.published|meet\.rsvp_received|custom\.form\.response|custom\.booking\.made|custom\.capture\.arrived|cms\.form_submission|esign\.signer_viewed)/;
@@ -98,8 +99,7 @@ export function categoryFor(eventKey: string): NoticeCategory {
 /** A last resort that still reads as words: "hr.workflow.step_assigned" → "Step assigned". */
 function humanizeKey(eventKey: string): string {
   const last = eventKey.split(".").pop() ?? eventKey;
-  const words = last.replaceAll("_", " ").trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : "Notice";
+  return humanizeIdentifier(last) || "Notice";
 }
 
 export function noticeTitle(row: Pick<InboxNotification, "subject" | "event_label" | "event_key">): string {

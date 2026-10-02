@@ -24,7 +24,6 @@ import { Input } from "@ai-matrx/design-system";
 import {
   buildTemplateSchema,
   buildTextSchema,
-  humanizeKey,
   importColumnsFromAgentSchema,
   parseOutputMode,
   parseTemplateColumns,
@@ -36,6 +35,7 @@ import type {
   ColumnType,
   ExtractionColumn,
 } from "@/features/page-extraction/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const SOURCES: ColumnSource[] = ["agent", "validation", "manual", "system"];
 const TYPES: ColumnType[] = COLUMN_TYPES;
@@ -90,7 +90,7 @@ export function SchemaEditor({
       ...columns,
       {
         key,
-        label: humanizeKey(key),
+        label: humanizeIdentifier(key),
         type: source === "validation" ? "boolean" : "string",
         source,
         ...(source === "agent" ? { agentField: key } : {}),

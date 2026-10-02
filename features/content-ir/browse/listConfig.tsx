@@ -11,13 +11,7 @@ import {
 } from "./service";
 import { SHAPE_LIST_SCOPES, type ShapeBrowseRow } from "./types";
 import { useShapeRowActions } from "./useShapeRowActions";
-
-function titleCase(value: string): string {
-  return value
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export const shapeListConfig: EntityListConfig<ShapeBrowseRow> = {
   surfaceKey: "shapes-browse",
@@ -54,14 +48,14 @@ export const shapeListConfig: EntityListConfig<ShapeBrowseRow> = {
       filterId: "origin",
       label: "Origin",
       noneLabel: "Unknown origin",
-      formatValue: titleCase,
+      formatValue: humanizeIdentifier,
     },
     {
       facet: "status",
       filterId: "status",
       label: "Status",
       noneLabel: "Unknown status",
-      formatValue: titleCase,
+      formatValue: humanizeIdentifier,
     },
     {
       facet: "component",
@@ -76,7 +70,7 @@ export const shapeListConfig: EntityListConfig<ShapeBrowseRow> = {
       filterId: "family",
       label: "Family",
       noneLabel: "No family",
-      formatValue: titleCase,
+      formatValue: humanizeIdentifier,
     },
     {
       facet: "authoring_owner",
@@ -90,14 +84,14 @@ export const shapeListConfig: EntityListConfig<ShapeBrowseRow> = {
       filterId: "visibility",
       label: "Visibility",
       noneLabel: "No visibility",
-      formatValue: titleCase,
+      formatValue: humanizeIdentifier,
     },
     {
       facet: "access_level",
       filterId: "access_level",
       label: "Access",
       noneLabel: "No access level",
-      formatValue: titleCase,
+      formatValue: humanizeIdentifier,
     },
   ],
   noneLabels: {

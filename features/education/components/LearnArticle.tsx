@@ -18,17 +18,10 @@ import {
   eduHref,
 } from "../constants";
 import type { LearnDoc, EduSection } from "../types";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
-/** Slug → Title Case, used ONLY as a fallback when no registry name exists. */
-function humanize(slug: string): string {
-  return slug
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
-const subjectName = (s: string) => getAxisEntry("subjects", s)?.name ?? humanize(s);
-const toolName = (s: string) => EDU_TOOL_BY_SLUG[s]?.name ?? humanize(s);
+const subjectName = (s: string) => displayLabel(getAxisEntry("subjects", s)?.name, s);
+const toolName = (s: string) => displayLabel(EDU_TOOL_BY_SLUG[s]?.name, s);
 
 export function LearnArticle({ doc }: { doc: LearnDoc }) {
   const url = `${EDU_ORIGIN}${eduHref(EDU_LEARN_SEGMENT, doc.slug)}`;

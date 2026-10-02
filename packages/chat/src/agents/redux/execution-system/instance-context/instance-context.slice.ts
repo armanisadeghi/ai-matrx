@@ -20,6 +20,7 @@ import type {
 } from "@ai-matrx/agents/context";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // =============================================================================
 // State
@@ -92,14 +93,11 @@ function inferType(value: unknown): ContextObjectType {
  * `records_ta…`. `records_table_id` → "Records table", never the token.
  */
 export function keyWords(key: string): string {
-  const words = key
-    .replace(/[_\-.]+/g, " ")
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/\b(id|ids)\b/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (words === "") return key;
-  return words.charAt(0).toUpperCase() + words.slice(1).toLowerCase();
+  const words = humanizeIdentifier(key)
+    .split(" ")
+    .filter((word) => word !== "" && !/^ids?$/i.test(word))
+    .join(" ");
+  return words === "" ? key : words;
 }
 
 const RICH_ENVELOPE_KEYS = new Set([

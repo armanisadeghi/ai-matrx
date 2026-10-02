@@ -16,20 +16,13 @@ import { getPublishedLearnDocTitles } from "../publishing/queries";
 import { ExamHubActions } from "./ExamHubActions";
 import { ExamCuratedLibrary } from "./ExamCuratedLibrary";
 import type { AxisEntry, EduAxisId, EduSection } from "../types";
-
-/** Slug → Title Case, used ONLY as a fallback when no registry name exists. */
-function humanize(slug: string): string {
-  return slug
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 // Name resolvers — always prefer the referenced entry's real display name
 // (e.g. "FastFire", "MCAT", "Mathematics") over a slug-derived guess.
-const toolName = (s: string) => EDU_TOOL_BY_SLUG[s]?.name ?? humanize(s);
-const examName = (s: string) => getAxisEntry("exam-prep", s)?.name ?? humanize(s);
-const subjectName = (s: string) => getAxisEntry("subjects", s)?.name ?? humanize(s);
+const toolName = (s: string) => displayLabel(EDU_TOOL_BY_SLUG[s]?.name, s);
+const examName = (s: string) => displayLabel(getAxisEntry("exam-prep", s)?.name, s);
+const subjectName = (s: string) => displayLabel(getAxisEntry("subjects", s)?.name, s);
 
 interface RelatedGroup {
   label: string;
@@ -40,7 +33,7 @@ function buildRelated(
   entry: AxisEntry,
   contentTitles: Record<string, string>,
 ): RelatedGroup[] {
-  const contentName = (s: string) => contentTitles[s] ?? humanize(s);
+  const contentName = (s: string) => displayLabel(contentTitles[s], s);
   const groups: RelatedGroup[] = [];
   const r = entry.related;
   if (!r) return groups;

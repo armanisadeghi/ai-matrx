@@ -42,6 +42,7 @@ import {
   type VaultHandling,
   type VaultItem,
 } from "./types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * The accent palette. Deliberately a CURATED subset of the semantic tokens —
@@ -137,14 +138,9 @@ const ACRONYMS = new Set([
  * key leaking into the UI is what made the old cards read as database rows.
  */
 export function humanizeKey(key: string): string {
-  return key
-    .split(/[_\-.]+/)
-    .filter(Boolean)
-    .map((word) =>
-      ACRONYMS.has(word.toLowerCase())
-        ? word.toUpperCase()
-        : word.charAt(0).toUpperCase() + word.slice(1),
-    )
+  return humanizeIdentifier(key)
+    .split(" ")
+    .map((word) => (ACRONYMS.has(word.toLowerCase()) ? word.toUpperCase() : word))
     .join(" ");
 }
 

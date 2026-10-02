@@ -21,6 +21,7 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { ROLES, type InterviewTurnRow, type RoleKey } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
 import { stripControlLines } from "@/lib/control-tokens/stripControlLines";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function turnTime(iso: string): string {
   const d = new Date(iso);
@@ -29,13 +30,6 @@ function turnTime(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function prettifyKey(key: string): string {
-  return key
-    .replace(/[_-]+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /**
@@ -61,7 +55,7 @@ function displayContent(turn: InterviewTurnRow): string {
     if (Array.isArray(parsed.doc_patches)) {
       const parts: string[] = [];
       const touched = parsed.doc_patches
-        .map((p) => (p.section_key ? `**${prettifyKey(p.section_key)}**` : null))
+        .map((p) => (p.section_key ? `**${humanizeIdentifier(p.section_key)}**` : null))
         .filter(Boolean);
       if (touched.length) {
         parts.push(`Updated the living document: ${touched.join(", ")}.`);

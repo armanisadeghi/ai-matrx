@@ -57,11 +57,11 @@ it("the chips read the labels the ask carried", () => {
 });
 
 it("a chip nobody labelled reads as words, never its key", () => {
-  expect(keyWords("records_table_id")).toBe("Records table");
-  expect(keyWords("organization_timezone")).toBe("Organization timezone");
+  expect(keyWords("records_table_id")).toBe("Records Table");
+  expect(keyWords("organization_timezone")).toBe("Organization Timezone");
   const state = instanceContextReducer(
     undefined,
     setContextEntries({ conversationId: "c2", entries: [{ key: "records_wanted", value: "form" }] }),
   );
-  expect(state.byConversationId.c2.records_wanted.label).toBe("Records wanted");
+  expect(state.byConversationId.c2.records_wanted.label).toBe("Records Wanted");
 });

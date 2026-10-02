@@ -13,13 +13,6 @@ export const truncateText = (text: unknown, maxLength: number = 100): string => 
     return text.slice(0, maxLength) + '...';
 };
 
-export const toTitleCase = (str: string) => {
-    return str
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, char => char.toUpperCase());
-};
-
 
 // TODO: Integrate this with many other old-tools like it in a centralized place. (Great for demos and adds 'intelligence' to the app)
 

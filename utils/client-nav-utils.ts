@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation';
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const DEFAULT_NAME_REPLACE_MAP = {
     'api': 'API',
@@ -33,12 +34,7 @@ export function useParsedPathName() {
     const result = segments.map((segment, index) => {
         const toTitleCase = (str: string) => {
             // First apply standard transformations
-            let formatted = str
-                .replace(/[_-]/g, ' ')
-                .replace(/([a-z])([A-Z])/g, '$1 $2')
-                .replace(/\s+/g, ' ')
-                .trim()
-                .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+            let formatted = humanizeIdentifier(str) || str;
             
             // Then apply special word replacements
             formatted = applyWordReplacements(formatted);
@@ -96,12 +92,7 @@ export function useParsedPathNameWithCustomReplacements(customReplaceMap: Record
     const result = segments.map((segment, index) => {
         const toTitleCase = (str: string) => {
             // First apply standard transformations
-            let formatted = str
-                .replace(/[_-]/g, ' ')
-                .replace(/([a-z])([A-Z])/g, '$1 $2')
-                .replace(/\s+/g, ' ')
-                .trim()
-                .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+            let formatted = humanizeIdentifier(str) || str;
             
             // Then apply special word replacements with custom map
             formatted = applyWordReplacements(formatted, replaceMap);

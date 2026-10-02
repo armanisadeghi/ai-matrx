@@ -47,6 +47,7 @@ import { sourceVocabulary, speakMediaNouns, type SourceVocabulary } from "../voc
 import { RulebookParamPicker } from "./RulebookParamPicker";
 import { AgentParamPicker } from "./AgentParamPicker";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { displayLabel, humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface ActionRunDialogProps {
     open: boolean;
@@ -105,10 +106,6 @@ function readSchema(action: ActionDeclaration | null): {
     return { properties: usable, required };
 }
 
-function humanize(key: string): string {
-    return key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
-}
-
 /**
  * D11 (jobs-bar cold-walk-12): the gate sentence ("X needs ⟨this⟩ before it can
  * start") must read as a person would say it out loud, never as a database
@@ -126,7 +123,7 @@ function missingParamNoun(
 ): string {
     if (key === "rulebook_id") return "a Rulebook";
     if (key === "agent_id") return "an agent";
-    return speakMediaNouns(property.title ?? humanize(key), vocabulary).toLowerCase();
+    return speakMediaNouns(displayLabel(property.title, key), vocabulary).toLowerCase();
 }
 
 export function ActionRunDialog(props: ActionRunDialogProps) {
@@ -378,7 +375,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                             // The schema's own `title` is a server sentence
                             // too — "{Items} per test case" is a field LABEL.
                             const label = speakMediaNouns(
-                                property.title ?? humanize(key),
+                                displayLabel(property.title, key),
                                 vocabulary,
                             );
                             const value = params[key];
@@ -440,7 +437,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                                             <SelectContent>
                                                 {property.enum.map((option) => (
                                                     <SelectItem key={option} value={option}>
-                                                        {humanize(option)}
+                                                        {humanizeIdentifier(option)}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>

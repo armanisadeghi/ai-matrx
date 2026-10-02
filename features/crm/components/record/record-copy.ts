@@ -18,6 +18,7 @@ import type {
   InteractionRow,
   PartyListRow,
 } from "@/features/crm/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface CrmRecordCopyParent {
   id: string;
@@ -32,12 +33,6 @@ interface NamedValue {
 
 function display(value: string | null | undefined): string {
   return value?.trim() || "—";
-}
-
-function titleCase(value: string): string {
-  return value
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function parentContext(parent: CrmRecordCopyParent) {
@@ -136,9 +131,9 @@ export function formatContactPointsCopy(
     `Contact methods — ${parent.label}`,
     ...views.map(
       (view) =>
-        `${titleCase(view.channel ?? "other")}${view.is_primary ? " (Primary)" : ""}: ${view.value}` +
+        `${humanizeIdentifier(view.channel ?? "other")}${view.is_primary ? " (Primary)" : ""}: ${view.value}` +
         `${view.label ? `\nLabel: ${view.label}` : ""}` +
-        `${view.purpose ? `\nPurpose: ${titleCase(view.purpose)}` : ""}` +
+        `${view.purpose ? `\nPurpose: ${humanizeIdentifier(view.purpose)}` : ""}` +
         `\nStatus: ${view.status}`,
     ),
   ].join("\n\n");
@@ -190,7 +185,7 @@ export function formatAddressesCopy(
     `Addresses — ${parent.label}`,
     ...views.map(
       (view) =>
-        `${titleCase(view.purpose ?? "other")}${view.label ? ` — ${view.label}` : ""}\n${view.address}`,
+        `${humanizeIdentifier(view.purpose ?? "other")}${view.label ? ` — ${view.label}` : ""}\n${view.address}`,
     ),
   ].join("\n\n");
 }
@@ -283,7 +278,7 @@ export function buildInteractionCopyView(row: InteractionRow) {
       ? readInboundClassification(row.attributes)
       : null;
   return {
-    subject: row.subject || titleCase(row.channel_code),
+    subject: row.subject || humanizeIdentifier(row.channel_code),
     channel: row.channel_code,
     direction: row.direction,
     occurred_at: row.occurred_at ?? row.created_at,
@@ -301,8 +296,8 @@ export type InteractionCopyView = ReturnType<typeof buildInteractionCopyView>;
 
 export function formatInteractionCopy(view: InteractionCopyView): string {
   return [
-    `${titleCase(view.channel)} — ${view.subject}`,
-    `Direction: ${titleCase(view.direction)}`,
+    `${humanizeIdentifier(view.channel)} — ${view.subject}`,
+    `Direction: ${humanizeIdentifier(view.direction)}`,
     `When: ${view.occurred_at}`,
     view.duration_minutes == null
       ? null

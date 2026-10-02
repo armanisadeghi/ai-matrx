@@ -22,12 +22,12 @@ import {
   ConfigurationTableRow,
   PropertyRow,
 } from "@/components/official/ConfigurationFields";
-import { humanizeSettingKey } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import { Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { JsonObject } from "@/types/json";
 import { ALLOWED_PIN_KEYS } from "../provision-shapes";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function display(value: unknown): string {
   if (value === null || value === undefined) return "—";
@@ -66,7 +66,7 @@ export function EffectiveConfigLayers({
             key={key}
             columns={columns}
             cells={{
-              setting: humanizeSettingKey(key),
+              setting: humanizeIdentifier(key),
               value:
                 typeof pins[key] === "boolean"
                   ? pins[key]

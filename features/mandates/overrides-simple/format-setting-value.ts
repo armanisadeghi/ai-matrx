@@ -4,8 +4,8 @@
 // when it is NOT overridden. The editor (`SettingControlInput`) only appears
 // once the person chooses to override that row.
 
-import { humanizeSettingKey } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** `{ type: "json_object" }` → `"json_object"` (the response_format shape). */
 function flattenTypeObject(value: unknown): unknown {
@@ -29,7 +29,7 @@ export function formatSettingValue(
   if (flat === undefined || flat === null || flat === "") return "Not set";
   if (typeof flat === "boolean") return flat ? "On" : "Off";
   if (control?.type === "enum" && typeof flat === "string") {
-    return humanizeSettingKey(flat);
+    return humanizeIdentifier(flat);
   }
   if (typeof flat === "number") return flat.toLocaleString();
   if (typeof flat === "string") return flat;

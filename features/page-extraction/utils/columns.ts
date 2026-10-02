@@ -23,6 +23,7 @@ import type {
   PageExtractionResult,
   TemplateColumnsSchema,
 } from "@/features/page-extraction/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export const SYSTEM_PAGE_COLUMN_KEY = "__page__";
 
@@ -228,22 +229,13 @@ export function augmentColumnsWithUncovered(
     seen.add(key);
     extras.push({
       key,
-      label: key === TEXT_RESULT_KEY ? "Response" : humanizeKey(key),
+      label: key === TEXT_RESULT_KEY ? "Response" : humanizeIdentifier(key),
       type: "string",
       source: "agent",
       agentField: key,
     });
   }
   return extras.length === 0 ? declared : [...declared, ...extras];
-}
-
-/** Human-friendly label from a snake/kebab/camel key. */
-export function humanizeKey(key: string): string {
-  return key
-    .replace(/[_-]+/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
 }
 
 /** Parse the template's output_schema into a column list, or null when
@@ -290,7 +282,7 @@ export function importColumnsFromAgentSchema(
     };
     out.push({
       key,
-      label: humanizeKey(key),
+      label: humanizeIdentifier(key),
       type: normalizeType(prop.type),
       description: prop.description,
       source: "agent",

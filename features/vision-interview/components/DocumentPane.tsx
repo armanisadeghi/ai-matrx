@@ -31,6 +31,7 @@ import {
 } from "../redux/vision-interview.slice";
 import { ROLES } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface DocSection {
   key: string;
@@ -48,13 +49,6 @@ const LEGACY_SECTION_RE =
   /<([A-Za-z_][A-Za-z0-9_.\-]*)(?:\s[^>]*)?>([\s\S]*?)<\/\1\s*>/g;
 const H2_RE = /^##\s+(.+?)\s*$/;
 
-function prettifyKey(key: string): string {
-  return key
-    .replace(/[_-]+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 /** Pull the section's title out of its body: the first H2 wins (and is
  *  removed from the rendered body — the accordion trigger carries it);
  *  fallback is the prettified section key. */
@@ -71,7 +65,7 @@ function titleFromBody(body: string, key: string): { title: string; body: string
     }
     break;
   }
-  return { title: prettifyKey(key), body: body.trim() };
+  return { title: humanizeIdentifier(key), body: body.trim() };
 }
 
 function splitSections(markdown: string): {

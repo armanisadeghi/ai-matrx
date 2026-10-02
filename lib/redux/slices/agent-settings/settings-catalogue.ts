@@ -29,6 +29,7 @@
 
 import type { ControlDefinition, ControlType } from "./types";
 import { UI_GATE_KEYS } from "./ui-gates";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const CONTROL_TYPES = [
   "number",
@@ -247,14 +248,6 @@ function hasMeaningfulValue(
   return v !== undefined && v !== null;
 }
 
-/** Convert a snake_case / kebab key to a Title Case label for catch-all rows. */
-export function humanizeSettingKey(key: string): string {
-  return key
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
-}
-
 /**
  * Build the STANDARD settings list for the selected model.
  *
@@ -305,7 +298,7 @@ export function buildSettingsRows(
   if (declaredExtra.length > 0) {
     const rows: SettingsRow[] = declaredExtra.sort().map((key) => ({
       key,
-      label: humanizeSettingKey(key),
+      label: humanizeIdentifier(key),
       group: "other" as const,
       control: lookupControl(controls, key),
       supported: true,

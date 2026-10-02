@@ -74,7 +74,6 @@ import {
   cellValueFor,
   COLUMN_SOURCE_META,
   editKeyFor,
-  humanizeKey,
   inferColumnsFromRows,
   normalizeResultRows,
   parseTemplateColumns,
@@ -102,6 +101,7 @@ import {
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const PAGE_SIZES = [50, 100, 250, 1000] as const;
 
@@ -293,7 +293,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       return augmentColumnsWithUncovered(tpl, normalizedRows);
     return inferColumnsFromRows(normalizedRows).map((key) => ({
       key,
-      label: humanizeKey(key),
+      label: humanizeIdentifier(key),
       type: "string" as const,
       source: "agent" as const,
       agentField: key,

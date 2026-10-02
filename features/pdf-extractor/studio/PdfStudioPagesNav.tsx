@@ -4,10 +4,10 @@ import React, { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { toTitleCase } from "@/utils/dataUtils";
 import { PdfStudioPagesMeta } from "./PdfStudioPagesMeta";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface PdfStudioPagesNavProps {
   doc: PdfDocument;
@@ -82,11 +82,11 @@ export function PdfStudioPagesNav({
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="font-medium tabular-nums">
-                        Page {p.pageNumber}: {toTitleCase(p.sectionKind)}
+                        Page {p.pageNumber}: {humanizeIdentifier(p.sectionKind)}
                       </span>
                       {/* {p.sectionKind && (
                         <span className="text-xs text-foreground">
-                          Type: {toTitleCase(p.sectionKind)}
+                          Type: {humanizeIdentifier(p.sectionKind)}
                         </span>
                       )} */}
                       {p.sectionTitle && (

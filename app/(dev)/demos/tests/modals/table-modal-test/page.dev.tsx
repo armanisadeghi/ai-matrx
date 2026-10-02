@@ -22,6 +22,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {Textarea} from "@/components/ui/textarea";
 import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
 import {Checkbox} from "@/components/ui/checkbox";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // Component map for rendering components dynamically
 const componentMap: Record<string, React.FC<any>> = {
@@ -237,13 +238,6 @@ const tabsData = [
 ];
 
 
-const toTitleCase = (str: string) => {
-    return str
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, char => char.toUpperCase());
-};
-
 interface DynamicInputProps {
     inputValue: string;
     onInputChange: (value: string) => void;
@@ -263,7 +257,7 @@ const DynamicInput: React.FC<DynamicInputProps> = (
         name,
     }) => {
     // Generate the label if not provided, converting name to Title Case
-    const generatedLabel = label || toTitleCase(name);
+    const generatedLabel = label || humanizeIdentifier(name) || name;
 
     // Generate placeholder if not provided
     const generatedPlaceholder = inputPlaceholder || `Enter ${generatedLabel}`;

@@ -20,11 +20,11 @@
 // for a token the registry does not carry.
 
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
-/** "fc_card" → "Fc card" — the last-resort phrase, never raw snake_case. */
+/** "fc_card" → "Fc Card" — the last-resort phrase, never raw snake_case. */
 function humanize(token: string): string {
-  const words = token.replace(/[_-]+/g, " ").trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : "Saved items";
+  return humanizeIdentifier(token) || "Saved items";
 }
 
 /**

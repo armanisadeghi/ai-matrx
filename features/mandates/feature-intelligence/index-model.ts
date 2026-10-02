@@ -23,6 +23,7 @@ import {
 import { REGISTRY_DOMAINS, registryDomain } from "./taxonomy";
 import { shortMandateName } from "./service";
 import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** One job as the directory needs it. */
 export interface DirectoryJob {
@@ -81,11 +82,7 @@ export interface DirectoryHolder {
 }
 
 function humanizeKeyTail(key: string): string {
-  const tail = key
-    .slice(key.indexOf(".") + 1)
-    .replace(/[._-]+/g, " ")
-    .trim();
-  return tail ? tail.charAt(0).toUpperCase() + tail.slice(1) : key;
+  return humanizeIdentifier(key.slice(key.indexOf(".") + 1)) || key;
 }
 
 const FIXTURES = "fixtures";

@@ -22,7 +22,6 @@
  * a change means (agent edit, per-run override, …).
  */
 
-import { humanizeSettingKey } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,6 +48,7 @@ import { AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRati
 import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
 import { choiceControlFor } from "@ai-matrx/chat/agents/utils/choice-rule";
 import { ENUM_OFF_VALUE } from "../setting-state";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface SettingControlInputProps {
   /** Setting key (snake_case) — used for ids and response_format handling. */
@@ -117,7 +117,7 @@ export function SettingControlInput({
           value={isValueMismatch ? "" : stringValue}
           onChange={emit}
           options={control.enum}
-          getLabel={explicitState ? humanizeSettingKey : undefined}
+          getLabel={explicitState ? humanizeIdentifier : undefined}
           variant="inline"
           disabled={disabled}
           id={inputId}
@@ -156,7 +156,7 @@ export function SettingControlInput({
                   {option === ENUM_OFF_VALUE
                     ? "Off"
                     : explicitState
-                      ? humanizeSettingKey(option)
+                      ? humanizeIdentifier(option)
                       : option}
                 </SelectItem>
               ))}

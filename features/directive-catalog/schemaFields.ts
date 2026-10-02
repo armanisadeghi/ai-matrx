@@ -31,6 +31,7 @@ import {
   sentenceCaseValue,
   type ValueVocabulary,
 } from "@/features/directive-catalog/valueVocabulary";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export type SchemaFieldKind =
   | "text"
@@ -251,11 +252,8 @@ const KIND_RANK: Record<SchemaFieldKind, number> = {
 };
 
 function humanize(key: string): string {
-  return key
-    .replace(/_id$/, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
+  const bare = key.replace(/_id$/, "");
+  return humanizeIdentifier(bare) || key;
 }
 
 /**
