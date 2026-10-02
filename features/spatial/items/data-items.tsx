@@ -49,6 +49,7 @@ import type { NodeSource } from "../board/document";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
 import { titleToAdopt } from "./feature-items.logic";
 import { RecordList } from "./feature-items";
+import { tablesToPick } from "@/features/unified-data/hub/tablePicking";
 
 const TABLE_ENTITY = "data-table";
 
@@ -114,7 +115,7 @@ function TablesAcrossOrganizations({
 }) {
   const tables = useTablesEverywhere();
   const [orgFilter, setOrgFilter] = useState<string | null>(null);
-  const rows = inOrganization(tables.rows, orgFilter).filter((t) => !t.kept_by_the_app);
+  const rows = tablesToPick(inOrganization(tables.rows, orgFilter));
   return (
     <div className="flex flex-col gap-2">
       <div className="flex justify-end">

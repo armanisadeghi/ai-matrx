@@ -104,6 +104,7 @@ import {
 import type { RouteFact, RoutesInThisBuild } from "./routeFacts";
 import { organizationSavedViews } from "./savedViewsPort";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { tablePickerEntries } from "@/features/unified-data/hub/tablePicking";
 
 /** The organization setting section 2 flips, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -418,7 +419,10 @@ function Bench({
     // product's own bookkeeping; it is not what "the table these sections work
     // on" means.
     const rows: Table[] = useMemo(
-        () => (tables.data ?? []).filter((t) => laneFor(t) !== "app" && laneFor(t) !== "system"),
+        () =>
+            tablePickerEntries((tables.data ?? []).map((t) => ({ ...t, name: t.name ?? "" })))
+                .entries.map((e) => e.table)
+                .filter((t) => laneFor(t) !== "system"),
         [tables.data],
     );
     const workingTable = useMemo(

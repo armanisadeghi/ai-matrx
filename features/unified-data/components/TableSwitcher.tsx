@@ -20,6 +20,7 @@ import { useTables } from "@ai-matrx/records/react";
 import { laneFor } from "@ai-matrx/records-ui";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { tablePickerEntries } from "@/features/unified-data/hub/tablePicking";
 
 export interface TableSwitcherProps {
   tableId: string;
@@ -49,7 +50,9 @@ export function TableSwitcher({ tableId, name, allTablesHref, footer }: TableSwi
   const listed = useMemo(
     () =>
       tablesMatching(
-        (tables.data ?? []).filter((t) => (t.name ?? "").trim() !== "" && laneFor(t) !== "app" && laneFor(t) !== "system"),
+        tablePickerEntries((tables.data ?? []).map((t) => ({ ...t, name: t.name ?? "" })), { keep: tableId })
+          .entries.map((e) => e.table)
+          .filter((t) => t.name.trim() !== "" && laneFor(t) !== "system"),
         query,
       ),
     [tables.data, query],

@@ -82,6 +82,7 @@ import {
   useCustomDataOrganizationId,
 } from "./CustomDataRecordsScope";
 import { useBindingKnobs } from "./useBindingKnobs";
+import { tablesToPick } from "@/features/unified-data/hub/tablePicking";
 
 /** How many records the record picker lists. Search narrows within them. */
 
@@ -137,8 +138,9 @@ export function CustomDataBindingPicker({
   };
 
   // The organization filter narrows every lane; the lane narrows the list; counts are what shows.
-  const shown = (t: { kept_by_the_app: boolean; table_id: string }) =>
-    showAppTables || !t.kept_by_the_app || t.table_id === tableId;
+  // Tables only unless the author asks for the app's own — the one rule (`tablePicking.ts`).
+  const offeredByDefault = new Set(tablesToPick(tables.rows, tableId).map((t) => t.table_id));
+  const shown = (t: { table_id: string }) => showAppTables || offeredByDefault.has(t.table_id);
   const inOrg = inOrganization(tables.rows, orgFilter);
   const allTables = inLane(inOrg, lane);
   const appKeptCount = allTables.filter((t) => t.kept_by_the_app).length;

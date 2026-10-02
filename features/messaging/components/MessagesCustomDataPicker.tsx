@@ -14,6 +14,7 @@ import { CustomDataRecordsScope } from "@/features/agents/components/variables-m
 import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
 import { buildDirectiveFence } from "@ai-matrx/agents/envelope";
 import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
+import { tablesToPick } from "@/features/unified-data/hub/tablePicking";
 
 const RECORD_PAGE_SIZE = 100;
 
@@ -34,7 +35,8 @@ export default function MessagesCustomDataPicker({
   const [tableId, setTableId] = useState<string | null>(null);
   const chosenTable =
     tables.rows.find((table) => table.table_id === tableId) ?? null;
-  const options: CreatableOption[] = tables.rows.map((table) => ({
+  // Tables only — never a choice column's list (`tablePicking.ts`, the one rule every table picker uses).
+  const options: CreatableOption[] = tablesToPick(tables.rows, tableId).map((table) => ({
     value: table.table_id,
     label: table.table_name,
     hint: table.organization_name,
