@@ -56,6 +56,7 @@ import {
   receiptSummary,
 } from "../context-policies-display/MessageContextReceipt";
 import { isContextReceiptData } from "../../redux/execution-system/messages/message-context-receipt";
+import type { ContextViewLoader } from "../../redux/execution-system/context-rules/context-viewer";
 
 type View = "resolved" | "compare" | "attached";
 
@@ -373,7 +374,7 @@ function ResolvedView({
           </div>
         )}
 
-        {data && <ResolvedBody data={data} agentId={agentId} />}
+        {data && <ResolvedBody data={data} agentId={agentId} load={preview.loadView} />}
       </div>
     </div>
   );
@@ -399,9 +400,12 @@ function flattenScopeLabels(raw: unknown): string[] {
 function ResolvedBody({
   data,
   agentId,
+  load,
 }: {
   data: ContextPreviewResponse;
   agentId?: string;
+  /** The preview's viewer: opening a value fetches its exact next-turn text (RULES.md §5b). */
+  load?: ContextViewLoader;
 }) {
   const scopeLabels = useMemo(
     () => flattenScopeLabels(data.scope_labels),
@@ -424,7 +428,7 @@ function ResolvedBody({
             </span>
           </div>
           <div className="mt-1.5 overflow-hidden rounded-md border border-border">
-            <MessageContextReceiptTable receipt={receipt} />
+            <MessageContextReceiptTable receipt={receipt} load={load} />
           </div>
         </section>
       )}

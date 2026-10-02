@@ -6563,7 +6563,7 @@
           "AI"
         ],
         "summary": "Context Delivered",
-        "description": "The exact text a SENT turn's model received for one value or block (RULES.md §5b),\nre-found in the turn's recorded provider request and matched by the receipt's hash. The next\nturn's text is ``POST /preview`` with ``view``. Access: the conversation, viewer level.",
+        "description": "The exact text a SENT turn's model received for one value or block (RULES.md §5b),\nre-found in the turn's recorded provider request and matched by the receipt's hash. The next\nturn's text is ``POST /preview`` with ``view``. Access: the conversation, viewer level.\n``kind=fetchable``: what the agent gets if it asks now (rendered under the caller's access).",
         "operationId": "context_delivered_ai_context_delivered_get",
         "parameters": [
           {
@@ -6596,6 +6596,7 @@
               "enum": [
                 "block",
                 "delivered",
+                "fetchable",
                 "on_request"
               ],
               "type": "string",
@@ -6901,6 +6902,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PortableAgentBundle"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/agents/{agent_id}/portable/summary": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get Portable Agent Summary",
+        "description": "The light read for a picker: name, variables, versions and hashes.",
+        "operationId": "get_portable_agent_summary_ai_agents__agent_id__portable_summary_get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortableAgentSummary"
                 }
               }
             }
@@ -151842,6 +151886,7 @@
             "enum": [
               "block",
               "delivered",
+              "fetchable",
               "on_request"
             ],
             "title": "Kind"
@@ -151868,6 +151913,7 @@
             "enum": [
               "block",
               "delivered",
+              "fetchable",
               "on_request"
             ],
             "title": "Kind"
@@ -151892,6 +151938,7 @@
             "type": "string",
             "enum": [
               "conversation_prompt",
+              "fetched_now",
               "preview",
               "turn_record",
               "wire"
@@ -240436,6 +240483,46 @@
         "type": "object",
         "title": "ParagraphStats"
       },
+      "ParameterFactsSummary": {
+        "properties": {
+          "written": {
+            "type": "boolean",
+            "title": "Written"
+          },
+          "sources": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Sources"
+          },
+          "providers": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Providers"
+          },
+          "write_failures": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Write Failures"
+          }
+        },
+        "type": "object",
+        "required": [
+          "written",
+          "sources",
+          "providers"
+        ],
+        "title": "ParameterFactsSummary",
+        "description": "What the parameter-facts stage did. ``written`` is False on a dry run."
+      },
       "PartyKindBatchRequest": {
         "properties": {
           "organization_id": {
@@ -247273,6 +247360,111 @@
         "type": "object",
         "title": "PortableAgentRequest",
         "description": "What the host sends: the person's variable values, and the tool surface."
+      },
+      "PortableAgentSummary": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          },
+          "version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Number"
+          },
+          "definition_hash": {
+            "type": "string",
+            "title": "Definition Hash"
+          },
+          "variables": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Variables"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/PortableAgentVersion"
+            },
+            "type": "array",
+            "title": "Versions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "agent_id",
+          "name",
+          "definition_hash"
+        ],
+        "title": "PortableAgentSummary",
+        "description": "What a picker needs the moment a person chooses an agent — no skills, no\ntools, no rendering. The full bundle is built only when a session starts."
+      },
+      "PortableAgentVersion": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version_number": {
+            "type": "integer",
+            "title": "Version Number"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At"
+          },
+          "definition_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Hash"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "version_number"
+        ],
+        "title": "PortableAgentVersion"
       },
       "PortableSkill": {
         "properties": {
@@ -254956,6 +255148,12 @@
             ],
             "title": "Provider Slugs",
             "description": "ai.provider.slug values to refresh (openai, anthropic, groq, google, xai). Omit or null to refresh every supported provider."
+          },
+          "parameter_facts": {
+            "type": "boolean",
+            "title": "Parameter Facts",
+            "description": "Also rebuild provider_models_cache.parameter_facts (per-offering parameter truth from the provider snapshots, models.dev, OpenRouter and the Vercel AI Gateway).",
+            "default": false
           }
         },
         "type": "object",
@@ -254990,6 +255188,16 @@
             },
             "type": "array",
             "title": "Results"
+          },
+          "parameter_facts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ParameterFactsSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

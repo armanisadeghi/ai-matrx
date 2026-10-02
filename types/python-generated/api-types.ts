@@ -2492,6 +2492,7 @@ export interface paths {
          * @description The exact text a SENT turn's model received for one value or block (RULES.md §5b),
          *     re-found in the turn's recorded provider request and matched by the receipt's hash. The next
          *     turn's text is ``POST /preview`` with ``view``. Access: the conversation, viewer level.
+         *     ``kind=fetchable``: what the agent gets if it asks now (rendered under the caller's access).
          */
         get: operations["context_delivered_ai_context_delivered_get"];
         put?: never;
@@ -2619,6 +2620,26 @@ export interface paths {
          * @description The agent's current definition as a portable bundle.
          */
         post: operations["get_portable_agent_ai_agents__agent_id__portable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/agents/{agent_id}/portable/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Portable Agent Summary
+         * @description The light read for a picker: name, variables, versions and hashes.
+         */
+        get: operations["get_portable_agent_summary_ai_agents__agent_id__portable_summary_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -65417,7 +65438,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "block" | "delivered" | "on_request";
+            kind: "block" | "delivered" | "fetchable" | "on_request";
             /** Key */
             key: string;
         };
@@ -65430,7 +65451,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "block" | "delivered" | "on_request";
+            kind: "block" | "delivered" | "fetchable" | "on_request";
             /** Key */
             key: string;
             /** Text */
@@ -65443,7 +65464,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "conversation_prompt" | "preview" | "turn_record" | "wire";
+            source: "conversation_prompt" | "fetched_now" | "preview" | "turn_record" | "wire";
         };
         /** ContractAuditReport */
         ContractAuditReport: {
@@ -104143,6 +104164,26 @@ export interface components {
             one_sentence_paragraph_frequency?: number;
         };
         /**
+         * ParameterFactsSummary
+         * @description What the parameter-facts stage did. ``written`` is False on a dry run.
+         */
+        ParameterFactsSummary: {
+            /** Written */
+            written: boolean;
+            /** Sources */
+            sources: {
+                [key: string]: string;
+            };
+            /** Providers */
+            providers: {
+                [key: string]: {
+                    [key: string]: number;
+                };
+            };
+            /** Write Failures */
+            write_failures?: string[];
+        };
+        /**
          * PartyKindBatchRequest
          * @description ``organization_id`` is the caller's injected app context, never the target;
          *     the review queue is platform data, so the target org is its own field.
@@ -107502,6 +107543,40 @@ export interface components {
              * @default matrx-user/code-editor
              */
             surface?: string;
+        };
+        /**
+         * PortableAgentSummary
+         * @description What a picker needs the moment a person chooses an agent — no skills, no
+         *     tools, no rendering. The full bundle is built only when a session starts.
+         */
+        PortableAgentSummary: {
+            /** Agent Id */
+            agent_id: string;
+            /** Name */
+            name: string;
+            /** Version Id */
+            version_id?: string | null;
+            /** Version Number */
+            version_number?: number | null;
+            /** Definition Hash */
+            definition_hash: string;
+            /** Variables */
+            variables?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Versions */
+            versions?: components["schemas"]["PortableAgentVersion"][];
+        };
+        /** PortableAgentVersion */
+        PortableAgentVersion: {
+            /** Id */
+            id: string;
+            /** Version Number */
+            version_number: number;
+            /** Changed At */
+            changed_at?: string | null;
+            /** Definition Hash */
+            definition_hash?: string | null;
         };
         /** PortableSkill */
         PortableSkill: {
@@ -110866,6 +110941,12 @@ export interface components {
              * @description ai.provider.slug values to refresh (openai, anthropic, groq, google, xai). Omit or null to refresh every supported provider.
              */
             provider_slugs?: string[] | null;
+            /**
+             * Parameter Facts
+             * @description Also rebuild provider_models_cache.parameter_facts (per-offering parameter truth from the provider snapshots, models.dev, OpenRouter and the Vercel AI Gateway).
+             * @default false
+             */
+            parameter_facts?: boolean;
         };
         /** ProviderModelsRefreshSummary */
         ProviderModelsRefreshSummary: {
@@ -110881,6 +110962,7 @@ export interface components {
             failed: number;
             /** Results */
             results?: components["schemas"]["ProviderRefreshResult"][];
+            parameter_facts?: components["schemas"]["ParameterFactsSummary"] | null;
         };
         /**
          * ProviderRefreshResult
@@ -149828,7 +149910,7 @@ export interface operations {
                 conversation_id: string;
                 /** @description The person's message of the turn. */
                 message_id: string;
-                kind: "block" | "delivered" | "on_request";
+                kind: "block" | "delivered" | "fetchable" | "on_request";
                 /** @description The value's key, or the block's id. */
                 key: string;
             };
@@ -150049,6 +150131,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PortableAgentBundle"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_portable_agent_summary_ai_agents__agent_id__portable_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortableAgentSummary"];
                 };
             };
             /** @description Validation Error */

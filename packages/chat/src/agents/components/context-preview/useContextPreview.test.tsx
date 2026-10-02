@@ -139,4 +139,39 @@ describe("useContextPreview", () => {
     expect(req.body).toMatchObject(PREVIEW_FIELDS);
     await view.unmount();
   });
+
+  it("opens a value through the same request as the preview, plus the view (RULES.md §5b)", async () => {
+    door.mockResolvedValue({ data: { receipt: null } });
+    const view = await mountHook();
+    const viewed = {
+      kind: "on_request",
+      key: "route_brief",
+      text: "Agent comparison: three columns.",
+      chars: 32,
+      sha256: "ab",
+      source: "preview",
+    };
+    door.mockResolvedValueOnce({ data: { viewed } });
+    const loadView = view.state().loadView;
+    expect(loadView).toBeDefined();
+    await expect(loadView!({ kind: "on_request", key: "route_brief" })).resolves.toEqual(viewed);
+    const preview = door.mock.calls[0]?.[0] as { body?: Record<string, unknown> };
+    const opened = door.mock.calls.at(-1)?.[0] as { body?: Record<string, unknown> };
+    const { view: target, ...rest } = opened.body ?? {};
+    expect(target).toEqual({ kind: "on_request", key: "route_brief" });
+    expect(rest).toEqual(preview.body);
+    await view.unmount();
+  });
+
+  it("a view the next turn does not send is refused in words", async () => {
+    door.mockResolvedValue({ data: { receipt: null } });
+    const view = await mountHook();
+    door.mockResolvedValueOnce({
+      error: { type: "http_error", message: "The next turn sends no on_request for 'x'.", status: 404 },
+    });
+    await expect(view.state().loadView!({ kind: "on_request", key: "x" })).rejects.toThrow(
+      "The next turn sends no on_request for 'x'.",
+    );
+    await view.unmount();
+  });
 });

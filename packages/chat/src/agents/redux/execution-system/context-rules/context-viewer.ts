@@ -19,7 +19,12 @@ import { buildPreviewRequestContext } from "./request-context";
 import { sentWithRequest } from "../messages/messages.slice";
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 
-export type ContextViewKind = "delivered" | "on_request" | "block";
+/**
+ * `fetchable` — what the agent gets if it asks a tool now (the Organization:
+ * its selected scopes' values via `scope_system`). Rendered when opened, never
+ * on the receipt; `source: "fetched_now"`.
+ */
+export type ContextViewKind = "delivered" | "on_request" | "block" | "fetchable";
 
 export interface ContextViewTarget {
   kind: ContextViewKind;
@@ -33,7 +38,7 @@ export interface ContextViewedText {
   text: string;
   chars: number;
   sha256: string;
-  source: "preview" | "wire" | "conversation_prompt" | "turn_record";
+  source: "preview" | "wire" | "conversation_prompt" | "turn_record" | "fetched_now";
 }
 
 export type ContextViewLoader = (target: ContextViewTarget) => Promise<ContextViewedText>;

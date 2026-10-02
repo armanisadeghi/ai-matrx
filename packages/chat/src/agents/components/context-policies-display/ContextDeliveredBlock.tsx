@@ -5,7 +5,10 @@
  * (`context-viewer.ts`) when the detail opens, never pushed (RULES.md §5b):
  * its own element (`delivered`), the blocks it rode with (the Organization's
  * catalog) and, for an on-request value, what the `context` tool returns.
- * Verbatim from the server; never the client's pre-send copy.
+ * Verbatim from the server; never the client's pre-send copy. A value whose
+ * content the agent reads through a tool (`FETCHABLE_ROWS` — the
+ * Organization's selected scopes via `scope_system`) also shows what that tool
+ * returns now (`kind: "fetchable"`), sized once loaded.
  *
  * The package renders the same in its panel detail from @ai-matrx/agents
  * 0.29.0 (`ContextDeliveredValue` / `DeliveredSection`); this host copy serves
@@ -32,6 +35,9 @@ export interface DeliveredRefBlock {
   label: string;
   delivered: DeliveredRef;
 }
+
+/** Rows whose values the agent reads through a tool rather than receiving them (RULES.md §5b). */
+export const FETCHABLE_ROWS: ReadonlySet<string> = new Set(["organization"]);
 
 export function ContextDeliveredBlock({
   rowKey,
@@ -76,11 +82,21 @@ export function ContextDeliveredBlock({
           load={load}
         />
       ) : null}
+      {delivered && FETCHABLE_ROWS.has(rowKey) ? (
+        <DeliveredText
+          title="Agent can fetch"
+          target={{ kind: "fetchable", key: rowKey }}
+          load={load}
+        />
+      ) : null}
     </div>
   );
 }
 
-type Loaded = { state: "loading" } | { state: "error"; message: string } | { state: "done"; text: string };
+type Loaded =
+  | { state: "loading" }
+  | { state: "error"; message: string }
+  | { state: "done"; text: string; chars: number };
 
 export function DeliveredText({
   title,
@@ -90,7 +106,8 @@ export function DeliveredText({
 }: {
   title: string;
   target: ContextViewTarget;
-  size: DeliveredRef;
+  /** The receipt's size; absent for a `fetchable` text, sized once it loads. */
+  size?: DeliveredRef;
   load?: ContextViewLoader;
 }) {
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
@@ -102,7 +119,7 @@ export function DeliveredText({
     setLoaded({ state: "loading" });
     load({ kind, key }).then(
       (viewed) => {
-        if (live) setLoaded({ state: "done", text: viewed.text });
+        if (live) setLoaded({ state: "done", text: viewed.text, chars: viewed.chars });
       },
       (error: unknown) => {
         if (live)
@@ -121,7 +138,11 @@ export function DeliveredText({
     <section className="flex flex-col gap-1" aria-label={title} data-view-kind={kind} data-view-key={key}>
       <div className="flex items-baseline gap-2 text-xs">
         <span className="font-medium">{title}</span>
-        <span className="tabular-nums text-muted-foreground">{`${formatChars(size.chars)} chars`}</span>
+        {size || loaded.state === "done" ? (
+          <span className="tabular-nums text-muted-foreground">
+            {`${formatChars(size ? size.chars : loaded.state === "done" ? loaded.chars : 0)} chars`}
+          </span>
+        ) : null}
       </div>
       {!load ? (
         <span className="text-xs text-muted-foreground">—</span>
@@ -140,6 +161,10 @@ export function DeliveredText({
             Retry
           </button>
         </div>
+      ) : loaded.text === "" ? (
+        <span data-testid="context-delivered-empty" className="text-xs text-muted-foreground">
+          None
+        </span>
       ) : (
         <pre
           data-testid="context-delivered-text"

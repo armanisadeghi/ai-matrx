@@ -23,6 +23,9 @@ const STATED =
   '<active_context>\n  <organization id="c41f9e20">Harbor Point Property Management</organization>\n</active_context>';
 const CATALOG = "<org_catalog>\n  Harbor Point Property Management\n</org_catalog>";
 const SANDBOX = "<sandbox_briefing>\n  Box sbx-4b is armed.\n</sandbox_briefing>";
+/** What `scope_system` returns now for the selected scope — tool-returnable, never inline. */
+const FETCHED =
+  'scope_system(action="expand_scope", scope_slug="marina", scope_type_slug="properties") returns:\n<scope slug="marina">gate_code: 4471</scope>';
 
 const RECEIPT: ContextReceiptData = {
   type: "context_receipt",
@@ -59,6 +62,7 @@ const TEXTS: Record<string, string> = {
   "delivered:organization": STATED,
   "block:organization_catalog": CATALOG,
   "block:sandbox_briefing": SANDBOX,
+  "fetchable:organization": FETCHED,
 };
 
 let host: HTMLDivElement;
@@ -69,7 +73,13 @@ const load = async (target: ContextViewTarget): Promise<ContextViewedText> => {
   calls.push(`${target.kind}:${target.key}`);
   const text = TEXTS[`${target.kind}:${target.key}`];
   if (text === undefined) throw new Error("Not retained");
-  return { ...target, text, chars: text.length, sha256: "x", source: "wire" };
+  return {
+    ...target,
+    text,
+    chars: text.length,
+    sha256: "x",
+    source: target.kind === "fetchable" ? "fetched_now" : "wire",
+  };
 };
 
 beforeEach(() => {
@@ -98,13 +108,22 @@ it("nothing is fetched until a value is opened; the receipt carries no text", ()
   expect(JSON.stringify(RECEIPT)).not.toContain("Harbor Point");
 });
 
-it("opening Organization fetches the server's statement and the catalog it rode with", async () => {
+it("opening Organization fetches the server's statement, the catalog it rode with, and what the agent can fetch", async () => {
   act(() => root.render(<MessageContextReceiptTable receipt={RECEIPT} load={load} />));
   const open = [...host.querySelectorAll("button")].find((b) => b.textContent === "Organization")!;
   act(() => open.click());
   await flush();
-  expect(texts()).toEqual([STATED, CATALOG]);
-  expect(calls).toEqual(["delivered:organization", "block:organization_catalog"]);
+  expect(texts()).toEqual([STATED, CATALOG, FETCHED]);
+  expect(calls).toEqual([
+    "delivered:organization",
+    "block:organization_catalog",
+    "fetchable:organization",
+  ]);
+  // The scope values are what the agent CAN fetch (scope_system), labelled so and sized once
+  // loaded — never under "Agent received".
+  const fetchable = host.querySelector('section[aria-label="Agent can fetch"]')!;
+  expect(fetchable.textContent).toContain(`${FETCHED.length} chars`);
+  expect(host.querySelector('section[aria-label="Agent received"]')!.textContent).not.toContain("4471");
   expect(host.textContent).not.toContain("Titanium");
   expect(host.querySelector('section[aria-label="Agent received"]')).not.toBeNull();
   // The catalog is the Organization's — "Also sent" lists only the other block.
@@ -132,4 +151,17 @@ it("a refusal is said, with a retry — never an empty box", async () => {
   await flush();
   expect(host.querySelector('[role="alert"]')?.textContent).toContain("Not retained");
   expect(texts()).toEqual([]);
+});
+
+it("nothing selected to fetch says None — never an empty box", async () => {
+  const none = async (target: ContextViewTarget): Promise<ContextViewedText> =>
+    target.kind === "fetchable"
+      ? { ...target, text: "", chars: 0, sha256: "e3b0", source: "fetched_now" }
+      : load(target);
+  act(() => root.render(<MessageContextReceiptTable receipt={RECEIPT} load={none} />));
+  const open = [...host.querySelectorAll("button")].find((b) => b.textContent === "Organization")!;
+  act(() => open.click());
+  await flush();
+  const fetchable = host.querySelector('section[aria-label="Agent can fetch"]')!;
+  expect(fetchable.querySelector('[data-testid="context-delivered-empty"]')?.textContent).toBe("None");
 });

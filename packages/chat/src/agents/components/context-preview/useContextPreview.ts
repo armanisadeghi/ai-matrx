@@ -36,6 +36,10 @@ import {
 } from "../../redux/execution-system/context-rules/request-context";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { components } from "@host/types/python-generated/api-types";
+import type {
+  ContextViewLoader,
+  ContextViewedText,
+} from "../../redux/execution-system/context-rules/context-viewer";
 
 export type ContextSelection = components["schemas"]["ContextSelection"];
 
@@ -49,6 +53,13 @@ export interface ContextPreviewState {
   data: ContextPreviewResponse | null;
   error: string | null;
   refresh: () => void;
+  /**
+   * THE VIEWER for this preview (RULES.md §5b): the exact text the next turn
+   * sends for one receipt value or block — the SAME request body as the preview
+   * plus `view`, so the text is the one behind the sizes on screen. Called only
+   * when a value is opened.
+   */
+  loadView?: ContextViewLoader;
 }
 
 /**
@@ -115,13 +126,14 @@ export function useContextPreview(opts: {
   // The object's organization (explicit) wins over a conversation's durable one.
   const requestOrganizationId =
     chosen?.organization_id ?? conversationScope.organizationId ?? null;
-  const fetchPreview = useCallback(() => {
-    const seq = ++requestSeq.current;
-    const doorFields = conversationId
-      ? dispatch((_d, getState) => buildPreviewRequestContext(getState(), conversationId))
-      : {};
-    void dispatch(
-      callApi({
+  // ONE request body for the preview and its viewer, so a viewed text is the one the
+  // receipt on screen sized.
+  const previewRequest = useCallback(
+    (extra: Record<string, unknown>) => {
+      const doorFields = conversationId
+        ? dispatch((_d, getState) => buildPreviewRequestContext(getState(), conversationId))
+        : {};
+      return callApi({
         path: "/ai/context/preview",
         method: "POST",
         // A preview that re-fires as the selection changes — never a question.
@@ -134,12 +146,35 @@ export function useContextPreview(opts: {
             : { scope_ids: scopeIds }),
           ...(path !== "old" ? { path } : {}),
           ...doorFields,
+          ...extra,
         },
         scopeOverrides: requestOrganizationId
           ? { organization_id: requestOrganizationId }
           : undefined,
-      }),
-    ).then((result) => {
+      });
+    },
+    [conversationId, agentId, scopeIds, selectionKey, path, requestOrganizationId, dispatch],
+  );
+
+  const loadView = useCallback<ContextViewLoader>(
+    async (target) => {
+      const result = await dispatch(previewRequest({ view: target }));
+      if (result.error) {
+        const detail = result.error.serverDetail
+          ? extractErrorMessage(result.error.serverDetail)
+          : "";
+        throw new Error(detail || result.error.message || "Couldn't load");
+      }
+      const viewed = (result.data as { viewed?: ContextViewedText | null } | undefined)?.viewed;
+      if (!viewed) throw new Error("Not in the next turn");
+      return viewed;
+    },
+    [dispatch, previewRequest],
+  );
+
+  const fetchPreview = useCallback(() => {
+    const seq = ++requestSeq.current;
+    void dispatch(previewRequest({})).then((result) => {
       if (seq !== requestSeq.current) return; // superseded
       if (result.error) {
         setStatus("error");
@@ -158,17 +193,8 @@ export function useContextPreview(opts: {
       setError(null);
       setStatus("ready");
     });
-  }, [
-    conversationId,
-    agentId,
-    scopeIds,
-    selectionKey,
-    path,
-    requestOrganizationId,
-    doorRows,
-    pageRuleKey,
-    dispatch,
-  ]);
+    // The door's inputs re-resolve the preview (the fields are read inside the request).
+  }, [previewRequest, doorRows, pageRuleKey, dispatch]);
 
   const refresh = useCallback(() => {
     setStatus("loading");
@@ -181,5 +207,5 @@ export function useContextPreview(opts: {
     fetchPreview();
   }, [enabled, fetchPreview]);
 
-  return { status, data, error, refresh };
+  return { status, data, error, refresh, loadView };
 }
