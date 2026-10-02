@@ -716,7 +716,14 @@ function OverridesBody({
             inheritedFrom={sourceWord(sources.model)}
             display={
               typeof base.model === "string" && base.model ? (
-                <AiModelRef modelId={base.model} showIcon={false} />
+                <AiModelRef
+                  modelId={base.model}
+                  showClass
+                  offeringId={
+                    typeof base.offering_id === "string" ? base.offering_id : null
+                  }
+                  showIcon={false}
+                />
               ) : (
                 "Not set"
               )

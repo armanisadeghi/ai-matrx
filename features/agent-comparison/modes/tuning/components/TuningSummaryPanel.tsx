@@ -81,6 +81,12 @@ export function TuningSummaryPanel({ syntheticAgentId }: Props) {
           {modelId ? (
             <AiModelRef
               modelId={modelId}
+              showClass
+              offeringId={
+                typeof settingsObj.offering_id === "string"
+                  ? settingsObj.offering_id
+                  : null
+              }
               showIcon={false}
               className="min-w-0 flex-1 text-[11px] text-foreground"
             />

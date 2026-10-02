@@ -110,7 +110,7 @@ export function AiModelRef({
   );
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const classStatus = useAppSelector((s) => s.modelRegistry?.modelClassStatus);
-  const className = useAppSelector((s) =>
+  const modelClass = useAppSelector((s) =>
     showClass ? selectModelClassName(s, modelId, offeringId) : undefined,
   );
   useEffect(() => {
@@ -136,7 +136,7 @@ export function AiModelRef({
     historicalIdentity?.common_name ||
     historicalIdentity?.name ||
     fallbackName("AI model", modelId);
-  const resolvedName = withModelClass(baseName, className);
+  const resolvedName = withModelClass(baseName, modelClass);
   const mustShowId =
     showId || (!name && !model && !historicalIdentity && isUuidValue(modelId));
 
