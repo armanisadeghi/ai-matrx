@@ -578,6 +578,7 @@ function parseVariableDefinition(
     name: value.name,
     defaultValue: value.defaultValue === undefined ? null : value.defaultValue,
   };
+  const label = parseOptionalString(value.label, `${path}.label`);
   const helpText = parseOptionalString(value.helpText, `${path}.helpText`);
   const required = parseOptionalBoolean(value.required, `${path}.required`);
   const customComponent = parseVariableCustomComponent(
@@ -586,12 +587,13 @@ function parseVariableDefinition(
   );
   const binding = parseVariableBinding(value.binding, `${path}.binding`);
   const control = parseControlBinding(value.control, `${path}.control`);
+  if (label !== undefined && label.trim() !== "") parsed.label = label;
   if (helpText !== undefined) parsed.helpText = helpText;
   if (required !== undefined) parsed.required = required;
   if (customComponent !== undefined) parsed.customComponent = customComponent;
   if (binding !== undefined) parsed.binding = binding;
   if (control !== undefined) parsed.control = control;
-  copyOpaqueKeys(parsed, value, [...VARIABLE_DEFINITION_KNOWN_KEYS, "control"]);
+  copyOpaqueKeys(parsed, value, [...VARIABLE_DEFINITION_KNOWN_KEYS, "control", "label"]);
   return parsed;
 }
 

@@ -36,6 +36,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { setAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { AgentVariableEditor } from "./AgentVariableEditor";
 import { variableEditorInstanceId } from "./variableEditorAddress";
 
@@ -82,7 +83,7 @@ export default function AgentVariableEditorWindow({
         remembered && remembered.isConnected
           ? remembered
           : document.querySelector<HTMLElement>(
-              `button[aria-label^="Edit variable ${CSS.escape(nameRef.current)}"]`,
+              `button[data-variable-name="${CSS.escape(nameRef.current)}"]`,
             );
       // After the window's own teardown, so nothing steals focus back.
       requestAnimationFrame(() => target?.focus());
@@ -91,14 +92,16 @@ export default function AgentVariableEditorWindow({
 
   if (!isOpen) return null;
 
-  const exists = variables.some((v) => v.name === variableName);
+  const current = variables.find((v) => v.name === variableName);
+  const exists = !!current;
+  const shown = displayLabelForKey(variableName, current?.label);
   const existingNames = variables
     .filter((v) => v.name !== variableName)
     .map((v) => v.name);
 
   const title = justCreated
-    ? `New Variable · ${variableName}`
-    : `Edit Variable · ${variableName}`;
+    ? `New Variable · ${shown}`
+    : `Edit Variable · ${shown}`;
 
   const handleDiscard = () => {
     dispatch(
@@ -162,7 +165,7 @@ export default function AgentVariableEditorWindow({
           />
         ) : (
           <p className="text-sm text-muted-foreground">
-            &ldquo;{variableName}&rdquo; is gone — removed or renamed
+            &ldquo;{shown}&rdquo; is gone — removed or renamed
           </p>
         )}
       </div>

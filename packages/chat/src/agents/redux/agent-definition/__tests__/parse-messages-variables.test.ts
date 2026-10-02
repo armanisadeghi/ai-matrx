@@ -359,3 +359,19 @@ describe("parseAgentMessages — the decision modality's Questions part", () => 
     });
   });
 });
+
+describe("parseAgentVariableDefinitions — the person's label", () => {
+  it("keeps the label the person typed beside the {{key}}", () => {
+    const [parsed] = parseAgentVariableDefinitions([
+      { name: "normal_text", label: "Normal Text", defaultValue: "" },
+    ]) ?? [];
+    expect(parsed?.name).toBe("normal_text");
+    expect(parsed?.label).toBe("Normal Text");
+  });
+  it("drops a blank label so screens fall back to the humanized key", () => {
+    const [parsed] = parseAgentVariableDefinitions([
+      { name: "normal_text", label: "  ", defaultValue: "" },
+    ]) ?? [];
+    expect(parsed).not.toHaveProperty("label");
+  });
+});

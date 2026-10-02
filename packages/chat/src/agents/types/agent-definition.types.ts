@@ -271,7 +271,10 @@ export interface ControlBinding {
 }
 
 export interface VariableDefinition {
+  /** The `{{key}}` messages use — snake_case, derived from what the person typed. */
   name: string;
+  /** What the person typed ("Normal Text"). Every screen shows it; absent → the humanized `name`. */
+  label?: string;
   defaultValue: unknown;
   helpText?: string;
   required?: boolean;

@@ -110,14 +110,17 @@ export function AgentVariableEditor({
   const buildAgentScope = useAgentBuilderSurfaceScope(agentId);
 
   // Name buffer — local draft for editing; resets when the variable changes.
+  // The field shows what the person typed ("Normal Text"); the `{{key}}` the
+  // messages use (`normal_text`) is derived from it on blur and kept beside it.
+  const shownName = variable?.label?.trim() || variableName;
   const [nameDraftState, setNameDraftState] = useState({
     sourceName: variableName,
-    value: variableName,
+    value: shownName,
   });
   const nameDraft =
     nameDraftState.sourceName === variableName
       ? nameDraftState.value
-      : variableName;
+      : shownName;
   const setNameDraft = (value: string) =>
     setNameDraftState({ sourceName: variableName, value });
   const [isConvertingPicklist, setIsConvertingPicklist] = useState(false);
@@ -174,13 +177,17 @@ export function AgentVariableEditor({
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleNameBlur = () => {
-    const sanitized = nameDraft.trim() ? sanitizeVariableName(nameDraft) : "";
+    const typed = nameDraft.trim();
+    const sanitized = typed ? sanitizeVariableName(typed) : "";
     if (!sanitized) {
-      setNameDraft(variableName);
+      setNameDraft(shownName);
       return;
     }
+    // The person's own words are the label; a name typed AS the key needs none.
+    const label = typed !== sanitized ? typed : undefined;
     if (sanitized === variableName) {
-      setNameDraft(variableName);
+      if (label !== (variable.label?.trim() || undefined)) updateVariable({ label });
+      setNameDraft(label ?? variableName);
       return;
     }
     if (existingNames.includes(sanitized)) return; // keep draft; dup border shows
@@ -188,7 +195,7 @@ export function AgentVariableEditor({
       selectAgentVariableDefinitions(store.getState(), agentId) ?? [];
     const from = currentName.current;
     dispatchVariables(
-      latest.map((v) => (v.name === from ? { ...v, name: sanitized } : v)),
+      latest.map((v) => (v.name === from ? { ...v, name: sanitized, label } : v)),
     );
     currentName.current = sanitized;
     onRenamed?.(sanitized);
@@ -354,7 +361,7 @@ export function AgentVariableEditor({
       <div className="space-y-1.5">
         <Label className="text-sm font-medium">Name</Label>
         <Input
-          placeholder="e.g. city_name"
+          placeholder="e.g. City Name"
           value={nameDraft}
           onChange={(e) => setNameDraft(e.target.value)}
           onBlur={handleNameBlur}
@@ -373,13 +380,17 @@ export function AgentVariableEditor({
               isDuplicate ? "text-destructive" : "text-muted-foreground",
             )}
           >
-            {isDuplicate
-              ? "This name is taken"
-              : showSanitizationPreview && sanitizedDraft
-                ? `Saved as ${sanitizedDraft}`
-                : sanitizedDraft && sanitizedDraft !== variableName
-                  ? "Renames when you click away"
-                  : ""}
+            {isDuplicate ? (
+              "This name is taken"
+            ) : sanitizedDraft &&
+              (showSanitizationPreview || sanitizedDraft !== variableName) ? (
+              <>
+                In messages{" "}
+                <code className="font-mono text-foreground">{`{{${sanitizedDraft}}}`}</code>
+              </>
+            ) : (
+              ""
+            )}
           </p>
         )}
       </div>
