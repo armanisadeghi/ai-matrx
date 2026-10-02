@@ -68,12 +68,37 @@ export function KindHeaderSlot({ item }: CanvasKindProps) {
   );
 }
 
-/** Renders `children` into the pane header of canvas item `itemId`. */
-export function KindHeaderPortal({ itemId, children }: { itemId: string; children: ReactNode }) {
-  const slot = useSyncExternalStore(
+function useSlot(itemId: string): HTMLElement | null {
+  return useSyncExternalStore(
     subscribe,
     () => store().slots.get(itemId) ?? null,
     () => null,
   );
+}
+
+/** Renders `children` into the pane header of canvas item `itemId`. */
+export function KindHeaderPortal({ itemId, children }: { itemId: string; children: ReactNode }) {
+  const slot = useSlot(itemId);
   return slot ? createPortal(children, slot) : null;
+}
+
+/**
+ * The width of the pane header item `itemId` is showing in, live (null before
+ * the header mounts) — so a body can compact the controls it portals there
+ * when the pane is narrow and the tabs need the room.
+ */
+export function useKindPaneHeaderWidth(itemId: string): number | null {
+  const header = useSlot(itemId)?.closest("header") ?? null;
+  return useSyncExternalStore(
+    (onChange) => {
+      if (!header) return () => {};
+      const observer = new ResizeObserver(onChange);
+      observer.observe(header);
+      return () => observer.disconnect();
+    },
+    // Read on every render as well as on resize: an observer's first report
+    // waits for a paint, which a background tab never gets.
+    () => (header ? Math.round(header.clientWidth) : null),
+    () => null,
+  );
 }

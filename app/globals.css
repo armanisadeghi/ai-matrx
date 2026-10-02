@@ -45,6 +45,7 @@
 @source "../node_modules/@ai-matrx/meet/dist";
 @source "../node_modules/@ai-matrx/messaging/dist";
 @source "../node_modules/@ai-matrx/kit/dist";
+@source "../node_modules/@ai-matrx/detail/dist";
 @import "tw-animate-css";
 
 /* THE DATABASE-CLASS SAFELIST (DD-123 §1.8). Tailwind emits a utility only for

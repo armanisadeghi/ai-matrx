@@ -15,7 +15,7 @@ export default function AiAnswerCanvasView({ data }: CanvasKindProps) {
   if (!answer) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-sm text-muted-foreground">
-        This answer could not be read.
+        No answer in this tab.
       </div>
     );
   }

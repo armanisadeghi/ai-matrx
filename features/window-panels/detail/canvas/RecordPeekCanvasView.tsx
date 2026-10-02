@@ -12,7 +12,7 @@
  * presentation closes the tab. Every other port is the app's DetailHost.
  */
 
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import type { CanvasKindProps } from "@ai-matrx/canvas/react";
 import {
   DetailDockedPresentation,
@@ -22,12 +22,41 @@ import {
   type DetailHostPorts,
 } from "@ai-matrx/detail/react";
 import { DETAIL_URL_AS_ARG, DETAIL_URL_TYPE_KEY } from "@ai-matrx/detail";
-import { KindHeaderPortal } from "@/features/canvas/host/kindHeaderSlot";
+import { KindHeaderPortal, useKindPaneHeaderWidth } from "@/features/canvas/host/kindHeaderSlot";
 import { useUrlSync } from "@/features/window-panels/url-sync/useUrlSync";
 import { DETAIL_TYPE_BINDING } from "../detailTypeBinding";
 import { readRecordPeekData, recordPeekOpenInput } from "./recordPeek";
 
 const PeekTabContext = createContext<CanvasKindProps | null>(null);
+
+/** Below this pane width the record's optional controls fold into "More". */
+const COMPACT_PANE_BELOW_PX = 560;
+
+/**
+ * The record's controls in the pane header. In a narrow pane they sit in a
+ * `window-header` container sized to the controls that must stay (More, and
+ * previous / next when the record came from a list), which is the container
+ * the Detail primitive's own compact rule reads — so the optional actions
+ * fold into its overflow menu and the tabs keep their room.
+ */
+function HeaderActions({ itemId, hasList, children }: { itemId: string; hasList: boolean; children: ReactNode }) {
+  const width = useKindPaneHeaderWidth(itemId);
+  const compact = width !== null && width < COMPACT_PANE_BELOW_PX;
+  return (
+    <KindHeaderPortal itemId={itemId}>
+      {compact ? (
+        <span
+          className="@container/window-header inline-flex justify-end"
+          style={{ width: hasList ? "10.5rem" : "2.5rem" }}
+        >
+          {children}
+        </span>
+      ) : (
+        children
+      )}
+    </KindHeaderPortal>
+  );
+}
 
 function RecordPeekShell({ instanceKey, title, actions, children }: DetailDockedShellProps) {
   // The tab on screen keeps its `?panels=detail:<type>.<id>:as-docked` address,
@@ -45,7 +74,11 @@ function RecordPeekShell({ instanceKey, title, actions, children }: DetailDocked
 
   return (
     <>
-      {itemId ? <KindHeaderPortal itemId={itemId}>{actions}</KindHeaderPortal> : null}
+      {itemId ? (
+        <HeaderActions itemId={itemId} hasList={Boolean(tab && readRecordPeekData(tab.data)?.list)}>
+          {actions}
+        </HeaderActions>
+      ) : null}
       <div className="flex h-full min-h-0 flex-col overflow-y-auto" data-record-peek>
         {children}
       </div>
