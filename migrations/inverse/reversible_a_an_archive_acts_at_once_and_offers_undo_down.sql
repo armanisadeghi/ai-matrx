@@ -1,5 +1,6 @@
 -- chair-step: puts custom.table_archive back to the body it had before reversible_a_an_archive_acts_at_once_and_offers_undo.sql (identical but for the `confirm_over` key it answers) and removes the three knob rows that file added (platform/undo_window_seconds, platform/undo_window_guide_seconds, custom/archive_confirm_over) with any overrides of them. Screens then ask before every table archive and use their own windows; nothing is dropped, granted or revoked.
 -- lane: TABLE-ACTIONS
+-- based-on: custom.table_archive(uuid, uuid, integer, boolean) 81828a9c7db3affff415a516d4981bad1a2953b26fff5a68f952212af2a2d45c
 
 
 
