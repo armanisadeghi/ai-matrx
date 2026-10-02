@@ -316,7 +316,8 @@ export default function NavFlyoutGroup({
             <div className="shell-nav-flyout-header">{item.label}</div>
             {sections.map((section) => (
               <div key={section.label ?? section.items[0]?.href}>
-                {section.label ? (
+                {/* A section named like the menu itself would repeat the header. */}
+                {section.label && section.label.toLowerCase() !== item.label.toLowerCase() ? (
                   <div className="shell-nav-flyout-section">
                     {section.label}
                   </div>
