@@ -11,7 +11,12 @@
  * Scope guards — we do NOT capture non-failures:
  *   - `meta.aborted` (the request was cancelled / superseded)
  *   - `meta.condition` (the thunk's `condition` returned false — never ran)
- *   - AbortError / ConditionError by name
+ *   - AbortError / ConditionError by name, and every serialized form of an
+ *     abort: DOMException code 20 / `ABORT_ERR`, and the STRINGIFIED shape
+ *     supabase-js postgrest builds (`{ code: "", message: "AbortError: …" }`),
+ *     which carries no `name` once a thunk rethrows it (`isCancellation`).
+ *     A `TimeoutError` (AbortSignal.timeout, or an abort with a TimeoutError
+ *     reason) is a real failure and is still captured.
  *   - SessionUnavailableError (an expected auth-lifecycle pause)
  *   - a rejection marked ResumeRetryScheduled (its own retry is already queued)
  *
@@ -64,6 +69,31 @@ function messageOf(a: RejectedAction): string {
   return "Rejected thunk";
 }
 
+/** `AbortError: …` / `AbortError` — the stringified form postgrest-js and
+ * `String(err)` produce. Anchored so "Upload aborted by server" stays a failure. */
+const STRINGIFIED_ABORT = /^AbortError(?::|$)/;
+
+function isAbortShape(value: unknown): boolean {
+  if (typeof value === "string") return STRINGIFIED_ABORT.test(value.trim());
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  if (v.name === "TimeoutError") return false;
+  if (v.name === "AbortError") return true;
+  if (v.code === 20 || v.code === "20" || v.code === "ABORT_ERR") return true;
+  return typeof v.message === "string" && STRINGIFIED_ABORT.test(v.message.trim());
+}
+
+/**
+ * A rejection that is a cancellation, not a failure: the thunk was aborted
+ * (unmount, supersession, the caller's own signal) or never ran. Timeouts are
+ * NOT cancellations — a timeout is a failure the person felt.
+ */
+export function isCancellation(action: RejectedAction): boolean {
+  if (action.meta?.aborted || action.meta?.condition) return true;
+  if (action.error?.name === "ConditionError") return true;
+  return isAbortShape(action.error) || isAbortShape(action.payload);
+}
+
 const STREAM_WRAPPER_RELATIONS = new Set([
   "instances/execute",
   "instances/executeManual",
@@ -100,13 +130,7 @@ export const reduxErrorCaptureMiddleware: Middleware =
     try {
       if (typeof a?.type === "string" && a.type.endsWith("/rejected")) {
         // Not real failures — a superseded or never-run thunk.
-        if (a.meta?.aborted || a.meta?.condition) return result;
-        if (
-          a.error?.name === "AbortError" ||
-          a.error?.name === "ConditionError"
-        ) {
-          return result;
-        }
+        if (isCancellation(a)) return result;
         if (a.error?.name === "SessionUnavailableError") return result;
         // The person's own Stop / picker dismissal is an answer (W-49).
         if (

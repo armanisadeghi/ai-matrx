@@ -84,7 +84,7 @@ import {
 } from "./file-tree-auth-boundary";
 import {
   createFileTreeLoadTimeout,
-  FILE_TREE_LOAD_TIMEOUT_MESSAGE,
+  fileTreeLoadTimeoutError,
 } from "./file-tree-timeout";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
@@ -508,13 +508,18 @@ export const loadUserFileTree = createAsyncThunk<
         }),
       );
     } catch (error) {
-      const message = controller.signal.aborted
-        ? FILE_TREE_LOAD_TIMEOUT_MESSAGE
-        : error instanceof Error
-          ? error.message
+      // The only abort on this request is our own load timeout — reject with
+      // the named TimeoutError (not postgrest's stringified "AbortError: …"),
+      // so the capture middleware reports it as the failure it is.
+      const failure = controller.signal.aborted
+        ? fileTreeLoadTimeoutError()
+        : error;
+      const message =
+        failure instanceof Error
+          ? failure.message
           : "Could not load your file library.";
       dispatch(setTreeStatus({ status: "error", error: message }));
-      throw error;
+      throw failure;
     } finally {
       disposeTimeout();
     }

@@ -158,3 +158,45 @@ describe("reduxErrorCaptureMiddleware stream ownership", () => {
     expect(getSnapshot()).toHaveLength(0);
   });
 });
+
+describe("reduxErrorCaptureMiddleware cancellation vs failure", () => {
+  beforeEach(() => clearCapturedErrors());
+
+  const run = (action: Record<string, unknown>) => {
+    const next = jest.fn();
+    reduxErrorCaptureMiddleware({} as never)(next)(action as never);
+    expect(next).toHaveBeenCalledWith(action);
+    return getSnapshot().length;
+  };
+
+  // The exact production action (class sec_d904494698f4…, 2026-10-02): supabase
+  // postgrest stringifies a fetch AbortError into `{ code: "", message: "AbortError: …" }`
+  // and the thunk rethrew that plain object, so RTK serialized no `name`.
+  it.each([
+    [
+      "the stringified postgrest abort from production",
+      {
+        type: "cloudFiles/loadUserFileTree/rejected",
+        error: { code: "", message: "AbortError: signal is aborted without reason" },
+        meta: { requestId: "r1", rejectedWithValue: false },
+      },
+    ],
+    ["meta.aborted", { type: "x/load/rejected", error: { message: "Aborted" }, meta: { aborted: true } }],
+    ["meta.condition", { type: "x/load/rejected", error: { name: "ConditionError" }, meta: { condition: true } }],
+    ["AbortError by name", { type: "x/load/rejected", error: { name: "AbortError", message: "The user aborted a request." } }],
+    ["DOMException code 20 in a rejectWithValue payload", { type: "x/load/rejected", payload: { code: 20, message: "The operation was aborted." }, meta: { rejectedWithValue: true } }],
+    ["ABORT_ERR code", { type: "x/load/rejected", error: { code: "ABORT_ERR", message: "aborted" } }],
+    ["a stringified abort as a rejectWithValue string", { type: "x/load/rejected", payload: "AbortError: The operation was aborted.", meta: { rejectedWithValue: true } }],
+  ])("does not capture a cancellation: %s", (_label, action) => {
+    expect(run(action)).toBe(0);
+  });
+
+  it.each([
+    ["a network 500", { type: "x/load/rejected", payload: "context_state_fetch_failed: 500 Internal Server Error", meta: { rejectedWithValue: true } }],
+    ["a TimeoutError by name", { type: "cloudFiles/loadUserFileTree/rejected", error: { name: "TimeoutError", message: "Your file library took too long to load. Try again." } }],
+    ["a stringified postgrest timeout", { type: "x/load/rejected", error: { code: "", message: "TimeoutError: signal timed out" } }],
+    ["a plain error that merely mentions abort", { type: "x/load/rejected", error: { name: "Error", message: "Upload aborted by server: quota exceeded" } }],
+  ])("still captures a real failure: %s", (_label, action) => {
+    expect(run(action)).toBe(1);
+  });
+});

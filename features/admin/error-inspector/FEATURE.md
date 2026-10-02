@@ -454,6 +454,14 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-10-02 — A cancellation is never a `redux-rejected` capture, in any
+  serialized form (`isCancellation` in `reduxErrorCaptureMiddleware.ts`):
+  `meta.aborted`/`condition`, name `AbortError`, code 20/`ABORT_ERR`, and the
+  postgrest STRINGIFIED shape `{ code: "", message: "AbortError: …" }` a thunk
+  rethrows without a `name`. `TimeoutError` stays a failure. The live instance
+  (`cloudFiles/loadUserFileTree`, 7h-old hidden tab) was its own 20s load
+  timeout disguised as an abort — it now rejects as a named `TimeoutError`
+  (`features/files/redux/file-tree-timeout.ts`) and is still captured.
 - 2026-10-01 — A scheduled resume retry is not an error. `resumeInstance`
   rejects with `originalErrorName: "ResumeRetryScheduled"` when it has already
   queued its own bounded retry (stream still closing, 409 resume_conflict);
