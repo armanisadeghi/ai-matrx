@@ -163,12 +163,23 @@ export function CrumbTrailHeader({
     <RouteHeader
       fallback={fallback}
       left={
-        <>
-          <ChevronLeftTapButton href={back} ariaLabel="Back" />
+        // ALL GLASS OR NONE (tap-target placement rule 2): the shell header
+        // floats over the scrolling page, so its controls are glass — and the
+        // back button and the trail beside it share ONE glass capsule instead
+        // of a glass circle next to bare text. The back button is the group
+        // variant (the capsule's own inset pill, 28px in a 32px box: 2px each
+        // side), so the trail adds 4px to keep one 6px gap from the pill
+        // (rule 3); its end inset matches the glyph's inset from the start.
+        <div
+          data-matrx-glass
+          className="matrx-glass-thin-border flex h-[var(--matrx-tap-wide-size)] min-w-0 items-center rounded-full"
+        >
+          <ChevronLeftTapButton variant="group" href={back} ariaLabel="Back" />
           {/* Desktop: full trail */}
           <nav
+            data-matrx-glass
             aria-label="Breadcrumb"
-            className="hidden sm:flex min-w-0 items-center gap-1"
+            className="hidden sm:flex min-w-0 items-center gap-1 ps-1 pe-2"
           >
             {trail.map((crumb, i) => (
               <Fragment key={`${crumb.label}-${i}`}>
@@ -181,12 +192,13 @@ export function CrumbTrailHeader({
           </nav>
           {/* Mobile: last crumb only */}
           <nav
+            data-matrx-glass
             aria-label="Breadcrumb"
-            className="flex sm:hidden min-w-0 items-center"
+            className="flex sm:hidden min-w-0 items-center ps-1 pe-2"
           >
             <CrumbNode crumb={last} isLast />
           </nav>
-        </>
+        </div>
       }
       right={right}
     />

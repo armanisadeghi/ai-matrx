@@ -26,7 +26,7 @@ export function HeaderControlSet({ isAuthenticated }: { isAuthenticated: boolean
       <div className="shell-header-secondary" data-header-control-set>
         <CommandBarHeaderButton isAuthenticated={isAuthenticated} />
         <SurfaceAgentsHeaderButton isAuthenticated={isAuthenticated} />
-        <CanvasToggle />
+        <CanvasToggle variant="glass" />
         <MessagesHeaderButton isAuthenticated={isAuthenticated} />
         <InboxHeaderButton isAuthenticated={isAuthenticated} />
       </div>
