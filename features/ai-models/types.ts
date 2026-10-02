@@ -1,5 +1,6 @@
 import type { Database } from "@/types/database.types";
 import type { ModelCapabilities } from "./capabilities/types";
+import type { RuleField } from "./controls/controlRuleFields.generated";
 
 // =============================================================================
 // Raw DB types — source of truth, never hand-edit
@@ -182,7 +183,37 @@ export type ControlRule = {
   processor_config?: Record<string, unknown>;
   /** Explicit UI vocabulary (seeded order) — wins over value_map derivation. */
   ui_values?: unknown[];
+  /** Canonical values that resolve to `default` (declared, never a miss). */
+  to_default?: unknown[];
+  // Contract K6 (settings-translation CONTRACTS.md). Carried and displayed
+  // only — no frontend reader acts on these yet.
+  /** What "off" sends: `{send}` | `{floor: true}` | `{omit: true, why}`. */
+  off?:
+    | { send: unknown }
+    | { floor: true }
+    | { omit: true; why?: string };
+  /** Number → canonical value ladder, ascending; `to: null` = declared drop. */
+  from_number?: { lte: number | null; to: unknown }[];
+  /** Canonical value → number. */
+  to_number?: Record<string, number>;
+  /** Capability: values the provider accepts (ui_values = what the UI offers). */
+  accepts?: unknown[];
+  /** Declared drop: `{"drop": true, "why": ...}`. */
+  drop?: boolean;
+  why?: string;
 };
+
+// The hand-written type above and the GENERATED field list (from the server's
+// Pydantic ControlRule + contract K6) must name the same fields, both ways —
+// a field added on either side without the other fails `pnpm type-check`.
+type _AssertTrue<T extends true> = T;
+export type _RuleFieldsMatchServer = _AssertTrue<
+  [keyof ControlRule] extends [RuleField]
+    ? [RuleField] extends [keyof ControlRule]
+      ? true
+      : false
+    : false
+>;
 
 export type RulesParams = Record<string, ControlRule>;
 

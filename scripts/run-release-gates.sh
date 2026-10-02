@@ -569,6 +569,12 @@ if $STRICT; then
         # advisory carve-out. (db-rules FEATURE.md §6d-1.)
         "Component ownership law (no created_by)|pnpm check:component-created-by:strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
+        # The AI catalog's ControlRule field list is GENERATED from aidream's
+        # Pydantic model (+ settings-translation contract K6). A hand copy had
+        # lost `to_default`, so the admin Controls editor flagged a valid
+        # server field as unknown. No aidream checkout or no uv = UNMEASURED.
+        "ControlRule fields match aidream's model|pnpm check:control-rule-fields"
+        "The ControlRule field guard can still fail|pnpm check:control-rule-fields:self-test"
         # A postgres_changes binding on a table that is NOT in the
         # supabase_realtime publication joins, says SUBSCRIBED, and delivers
         # nothing, silently, forever. Four instances shipped (workbench.notes
@@ -1202,6 +1208,12 @@ else
         # scream, never block, which is the contract this list actually has.
         "Component ownership law (no created_by)|pnpm check:component-created-by:strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
+        # The AI catalog's ControlRule field list is GENERATED from aidream's
+        # Pydantic model (+ settings-translation contract K6). A hand copy had
+        # lost `to_default`, so the admin Controls editor flagged a valid
+        # server field as unknown. No aidream checkout or no uv = UNMEASURED.
+        "ControlRule fields match aidream's model|pnpm check:control-rule-fields"
+        "The ControlRule field guard can still fail|pnpm check:control-rule-fields:self-test"
         # A postgres_changes binding on a table that is NOT in the
         # supabase_realtime publication joins, says SUBSCRIBED, and delivers
         # nothing, silently, forever. Four instances shipped (workbench.notes

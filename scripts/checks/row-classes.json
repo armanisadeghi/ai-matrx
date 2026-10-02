@@ -6,7 +6,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 108,
+    "repo-only": 112,
     "live-db": 58,
     "clone-db": 3
   },
@@ -588,6 +588,20 @@
       "label": "One agent-list read (package-owned)",
       "class": "repo-only",
       "cmd": "pnpm check:agent-list-reads",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "chat-package-boundary-no-new-host-ties": {
+      "label": "Chat package boundary (no new @host ties)",
+      "class": "repo-only",
+      "cmd": "pnpm check:chat-package-boundary",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "chat-package-boundary-self-test": {
+      "label": "Chat package boundary — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:chat-package-boundary:self-test",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
@@ -1402,6 +1416,20 @@
       "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
+    "controlrule-fields-match-aidream-s-model": {
+      "label": "ControlRule fields match aidream's model",
+      "class": "repo-only",
+      "cmd": "pnpm check:control-rule-fields",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "the-controlrule-field-guard-can-still-fail": {
+      "label": "The ControlRule field guard can still fail",
+      "class": "repo-only",
+      "cmd": "pnpm check:control-rule-fields:self-test",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
     "subscribed-tables-in-supabase-realtime": {
       "label": "Subscribed tables in supabase_realtime",
       "class": "live-db",
@@ -1605,7 +1633,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 180 file(s) reached",
+      "reason": "no database access in 181 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -1808,7 +1836,7 @@
       "label": "Surfaces running an agent without naming it",
       "class": "repo-only",
       "cmd": "pnpm check:agent-disclosure",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "unacknowledged-ddl-guard-firings": {

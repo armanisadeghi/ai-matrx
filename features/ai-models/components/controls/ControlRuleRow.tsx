@@ -24,6 +24,7 @@ import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonE
 import { cn } from "@/lib/utils";
 import type { AiSetting, ControlRule } from "../../types";
 import {
+  readOnlyRuleFields,
   resolveControlForKey,
   validateAutoNoneLaw,
   validateRuleShape,
@@ -391,6 +392,17 @@ export default function ControlRuleRow({
                 />
               </>
             )}
+
+            {readOnlyRuleFields(editedRule).map(({ field, value }) => (
+              <React.Fragment key={field}>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {field}
+                </span>
+                <code className="text-[10px] font-mono break-all text-muted-foreground">
+                  {JSON.stringify(value)}
+                </code>
+              </React.Fragment>
+            ))}
           </div>
 
           {ruleIssues.length > 0 && (

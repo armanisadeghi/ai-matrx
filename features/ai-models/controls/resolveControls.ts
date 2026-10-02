@@ -26,19 +26,15 @@ import type {
   RulesParams,
 } from "../types";
 
-export const RULE_FIELDS: (keyof ControlRule)[] = [
-  "provider_key",
-  "value_map",
-  "on_unmapped",
-  "clamp",
-  "supported",
-  "default",
-  "send_when_unset",
-  "const",
-  "processor",
-  "processor_config",
-  "ui_values",
-];
+import { RULE_FIELDS as GENERATED_RULE_FIELDS } from "./controlRuleFields.generated";
+
+/** Every valid ControlRule field — GENERATED from the server's Pydantic model
+ *  plus contract K6 (scripts/control-rule-fields.mjs; guard
+ *  `pnpm check:control-rule-fields`). Never hand-list fields here. Fields this
+ *  module does not read (to_default, K6 off/from_number/to_number/accepts/
+ *  drop/why) are carried through the merge and provenance untouched; they do
+ *  not change the resolved control. */
+export const RULE_FIELDS: readonly (keyof ControlRule)[] = GENERATED_RULE_FIELDS;
 
 /** Field-level merge, override wins — mirror of the SQL `||`. */
 export function mergeRule(
@@ -196,6 +192,31 @@ export function validateRuleShape(rule: ControlRule): string[] {
     );
   }
   return issues;
+}
+
+/** Fields this editor renders (typed input or the collapsed summary). Every
+ *  other valid field — today to_default, on_unmapped, processor_config and the
+ *  contract K6 fields — is shown read-only, never flagged; the raw rule editor
+ *  stays the way to change it. Derived from the GENERATED field list, so a field
+ *  the server adds later appears here without an edit. */
+export const EDITOR_FIELDS: ReadonlySet<keyof ControlRule> = new Set<keyof ControlRule>([
+  "supported",
+  "const",
+  "default",
+  "clamp",
+  "ui_values",
+  "value_map",
+  "provider_key",
+  "processor",
+  "send_when_unset",
+]);
+
+export function readOnlyRuleFields(
+  rule: ControlRule,
+): { field: keyof ControlRule; value: unknown }[] {
+  return RULE_FIELDS.filter(
+    (f) => !EDITOR_FIELDS.has(f) && rule[f] !== undefined,
+  ).map((field) => ({ field, value: rule[field] }));
 }
 
 /** One row of the editor: everything the UI needs about a single setting key. */
