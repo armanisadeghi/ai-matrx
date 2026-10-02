@@ -219,7 +219,7 @@ every fence and wall lets through. A dress rehearsal drives the SAME doors the p
 (the admin lane, and NOT a member of what the step touches), so that the server channel's actor settings,
 caller role, request headers and the person's memberships are the ones judged. Prove the rehearsal red
 against the pre-fix bodies before trusting it green; a rehearsal that never saw the production sentence
-cannot vouch for the fix. Method and proof: `projects/data-doctrine-adoption/v5/PROGRESS-PRESS-FENCE.md`
+cannot vouch for the fix. Method and proof: the retired data-doctrine lane report `v5/PROGRESS-PRESS-FENCE.md` (git history)
 (the honest rehearsal, lane PRESS-FENCE-HONEST).
 
 **Runners on one machine.** The provider's in-app browser pane is one per machine: every runner and every fixer takes
