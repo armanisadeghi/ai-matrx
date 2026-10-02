@@ -473,3 +473,19 @@ export function namedHeader(
   if (!heading || actionText.source === "selection") return null;
   return { content: heading.text, contentLabel: heading.label };
 }
+
+/**
+ * The revision the alchemy menu engine re-resolves on. The engine
+ * (`useMenuEngine` in @ai-matrx/alchemy/react/menu) rebuilds its model — header
+ * included — only when its `revision` moves; `content` / `contentLabel` are not
+ * in its dependency list. A menu that stays mounted between opens therefore
+ * kept the FIRST header: "Note: New Note" after the note was renamed
+ * (G6B review, 2026-10-02). The header text is part of what the menu draws, so
+ * it is part of the revision.
+ */
+export function menuEngineRevision(
+  drawn: string,
+  header: { content: string | null; contentLabel: string | null },
+): string {
+  return `${drawn}\u0000${header.contentLabel ?? ""}\u0000${header.content ?? ""}`;
+}

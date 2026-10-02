@@ -25,7 +25,7 @@ import { SOURCE_WRITE_TARGET, richDocumentTargetHost } from "@/features/rich-doc
 import { useRichDocumentProvider } from "@/features/rich-document/actions/useRichDocumentProvider";
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import { buildMenuModel } from "../model/menu-model";
-import { chatMessageSubject, namedHeader, contextMenuActionsFromModel, contextMenuProvider, menuHeader, modelRevision } from "../alchemy-provider";
+import { chatMessageSubject, namedHeader, contextMenuActionsFromModel, contextMenuProvider, menuEngineRevision, menuHeader, modelRevision } from "../alchemy-provider";
 import { RegroupBoundary } from "../regroup/RegroupContext";
 import type { MenuContentProps } from "../types";
 
@@ -140,9 +140,6 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
       },
     });
   const [target] = React.useState(() => makeTarget(true));
-  // Re-resolve when what the menu would draw moves (agents finish loading, a
-  // toggle flips) — the target object itself stays one per open.
-  const revision = drawn;
   // In a field the header names the field ("Body"), never its raw text.
   // The message the menu opened on: its role and time, from the transcript store.
   // Either this menu IS the message's, or it is the transcript's and the
@@ -158,6 +155,10 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   // still shows itself.
   const { content, contentLabel } =
     namedHeader(menuProps.heading, m.actionText) ?? menuHeader(m.actionText, m.fieldLabel, chatMessage);
+  // Re-resolve when what the menu would draw moves (agents finish loading, a
+  // toggle flips, the record is renamed) — the target object itself stays one
+  // per open.
+  const revision = menuEngineRevision(drawn, { content, contentLabel });
   const engine = { revision, content, contentLabel };
 
   // A pass-through everywhere except under a MenuRegroupContext (the regroup
