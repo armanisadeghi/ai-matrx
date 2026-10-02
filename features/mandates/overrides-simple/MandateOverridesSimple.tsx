@@ -62,8 +62,8 @@ import {
   selectAllModels,
   selectModelFullyLoaded,
 } from "@/features/ai-models/redux/modelRegistrySlice";
-import { useModelControls
-import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls"; } from "@ai-matrx/chat/agents/hooks/useModelControls";
+import { useModelControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
+import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { buildSettingsRows } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types";
 import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";

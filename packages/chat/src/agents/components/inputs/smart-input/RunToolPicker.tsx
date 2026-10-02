@@ -65,6 +65,8 @@ import {
   supportsTools,
 } from "../../../hooks/useModelControls";
 import { selectInstanceOverrideState } from "../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import { effectiveOfferingPin } from "../../../redux/execution-system/instance-model-overrides/offering-pin";
+import { useModelClassControls } from "@host/features/ai-models/hooks/useModelClassControls";
 import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
@@ -118,7 +120,15 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
       void dispatch(fetchModelById(effectiveModelId));
     }
   }, [effectiveModelId, modelIsFull, modelRegistryLoading, dispatch]);
-  const { normalizedControls } = useModelControls(models, effectiveModelId);
+  const classControls = useModelClassControls(
+    effectiveModelId,
+    effectiveOfferingPin(overrideState),
+  );
+  const { normalizedControls } = useModelControls(
+    models,
+    effectiveModelId,
+    classControls,
+  );
   // Unknown model (none selected / not loaded) → permissive, don't gate.
   const modelSupportsTools = effectiveModelId
     ? supportsTools(normalizedControls)
