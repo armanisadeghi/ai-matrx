@@ -170,6 +170,8 @@ const config: Config = {
     "^@ai-matrx/chat/(.*)$": "<rootDir>/packages/chat/src/$1",
     "^@ai-matrx/canvas$": "<rootDir>/packages/canvas/src/index.ts",
     "^@ai-matrx/canvas/react$": "<rootDir>/packages/canvas/src/react.ts",
+    "^@ai-matrx/terminal$": "<rootDir>/packages/terminal/src/index.ts",
+    "^@ai-matrx/terminal/react$": "<rootDir>/packages/terminal/src/react.ts",
     "^@host/(.*)$": "<rootDir>/$1",
     "^@ai-matrx/([^/]+)/package\\.json$":
       "<rootDir>/node_modules/@ai-matrx/$1/package.json",

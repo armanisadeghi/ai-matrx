@@ -1,0 +1,25 @@
+/*
+ * @ai-matrx/terminal — DEFAULT token values. Import only in a host without its own theme; a
+ * themed host maps the --mxt-* tokens to its design tokens instead.
+ */
+:root {
+  --mxt-bar-bg: #d1d3d9;
+  --mxt-bar-border: rgba(0, 0, 0, 0.12);
+  --mxt-key-bg: #ffffff;
+  --mxt-key-fg: #18181b;
+  --mxt-key-shadow: rgba(0, 0, 0, 0.3);
+  --mxt-key-pressed-bg: #e4e4e7;
+  --mxt-accent: #2563eb;
+  --mxt-accent-fg: #ffffff;
+}
+
+.dark {
+  --mxt-bar-bg: #2b2b2e;
+  --mxt-bar-border: rgba(255, 255, 255, 0.1);
+  --mxt-key-bg: #46464b;
+  --mxt-key-fg: #f4f4f5;
+  --mxt-key-shadow: rgba(0, 0, 0, 0.5);
+  --mxt-key-pressed-bg: #5b5b61;
+  --mxt-accent: #60a5fa;
+  --mxt-accent-fg: #0b1220;
+}
