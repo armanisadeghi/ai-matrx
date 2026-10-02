@@ -41,6 +41,9 @@ export const CONTINUATION_FIELD_ROUTING = {
   sandbox: true,
   context: true,
   context_withheld: true,
+  // The page rule (RULES.md §0): every turn of the page's own conversation, or
+  // of one whose page switch is off, withholds the page — not only the first.
+  page_context: true,
   block_mode: true,
   snapshot: true,
   memory: true,
@@ -63,18 +66,6 @@ export const CONTINUATION_FIELD_ROUTING = {
   max_retries_per_iteration: "not assembled by this thunk",
   responder_agent_id: "coding-mirror replies only; not assembled by this thunk",
 } as const satisfies Record<ContinueKey, true | string>;
-
-/**
- * Additive aidream fields a continuation forwards that the generated
- * `ConversationContinueRequest` does not name yet. On the next api-types
- * regeneration each becomes a required key of `CONTINUATION_FIELD_ROUTING`
- * above (type-check fails until it is moved there) and leaves this list.
- */
-export const ADDITIVE_CONTINUATION_FIELDS = [
-  // The page rule (RULES.md §0): every turn of the page's own conversation, or
-  // of one whose page switch is off, withholds the page — not only the first.
-  "page_context",
-] as const;
 
 const FALSE_IS_MEANINGFUL = new Set(["memory", "tools_replace", "context_withheld"]);
 
@@ -104,10 +95,6 @@ export function buildContinuationBody(
     if (value === false && !FALSE_IS_MEANINGFUL.has(key)) continue;
     if (value === "") continue;
     body[key] = value;
-  }
-  for (const key of ADDITIVE_CONTINUATION_FIELDS) {
-    const value = source[key];
-    if (value !== undefined && value !== null) body[key] = value;
   }
   if (debug) body.debug = true;
   if (cacheBypass) body.cache_bypass = cacheBypass;

@@ -36,19 +36,11 @@ import {
 } from "../../redux/execution-system/context-rules/request-context";
 import { extractErrorMessage } from "@host/utils/errors";
 import type { components } from "@host/types/python-generated/api-types";
-import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 
 export type ContextSelection = components["schemas"]["ContextSelection"];
 
-/**
- * `receipt` — the context receipt the run path's gate would produce for this
- * turn (aidream `conversation_context/preview.py`, RULES.md §5). Not yet in
- * the generated api-types; drop the intersection once they are regenerated.
- */
-export type ContextPreviewResponse =
-  components["schemas"]["ContextPreviewResponse"] & {
-    receipt?: ContextReceiptData | null;
-  };
+/** The server's answer; `receipt` is the run path's gate over this turn (RULES.md §5). */
+export type ContextPreviewResponse = components["schemas"]["ContextPreviewResponse"];
 
 export type ContextPreviewStatus = "idle" | "loading" | "ready" | "error";
 

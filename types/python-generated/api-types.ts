@@ -4684,6 +4684,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/broker/provider-failures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Provider Session Failure
+         * @description A browser-held provider session (realtime voice, Cartesia TTS) failed.
+         *
+         *     THE contract every client holding a native-ephemeral credential calls on a
+         *     provider session failure: the provider's text is classified and reported
+         *     through the provider failure door; the answer is the sentence to show.
+         */
+        post: operations["report_provider_session_failure_broker_provider_failures_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/broker/gateway/anthropic/v1/messages": {
         parameters: {
             query?: never;
@@ -33038,300 +33062,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/datasets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Datasets */
-        get: operations["list_datasets_datasets_get"];
-        put?: never;
-        /**
-         * Create Dataset
-         * @description Create a dataset.
-         *
-         *     Three flavors, all driven by the same body:
-         *
-         *     1. **rows only**           — schema is auto-detected from row keys.
-         *     2. **fields only**         — empty dataset with an explicit schema.
-         *     3. **fields + rows**       — explicit schema, then bulk-load rows.
-         *     4. **neither**             — empty dataset with no fields (you can add them later).
-         */
-        post: operations["create_dataset_datasets_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/datasets/{dataset_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Dataset */
-        get: operations["get_dataset_datasets__dataset_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/datasets/{dataset_id}/fields": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Fields */
-        get: operations["list_fields_datasets__dataset_id__fields_get"];
-        put?: never;
-        /**
-         * Add Field
-         * @description Add a column to an existing dataset.
-         *
-         *     The underlying SQL bumps the dataset version and back-fills every
-         *     existing row with the supplied default (or JSONB null).
-         */
-        post: operations["add_field_datasets__dataset_id__fields_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/datasets/{dataset_id}/rows": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Rows */
-        get: operations["list_rows_datasets__dataset_id__rows_get"];
-        put?: never;
-        /**
-         * Add Rows
-         * @description Append one or many rows.
-         *
-         *     A single dict adds one row; an array of dicts triggers a batched insert.
-         *     Values are not coerced — the caller is expected to send JSON-shaped data
-         *     that matches the field definitions. Use `prepare_data_for_user_table`
-         *     upstream if type coercion is needed.
-         */
-        post: operations["add_rows_datasets__dataset_id__rows_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/datasets/{dataset_id}/rows/{row_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Row */
-        get: operations["get_row_datasets__dataset_id__rows__row_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update Row
-         * @description Update a row.
-         *
-         *     By default this performs a *shallow merge* with the existing data, so
-         *     callers can patch a few fields without re-sending the whole row. Pass
-         *     `?replace=true` for a full replacement.
-         */
-        patch: operations["update_row_datasets__dataset_id__rows__row_id__patch"];
-        trace?: never;
-    };
-    "/datasets/{dataset_id}/projection": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Project Fields
-         * @description Pull only the listed columns. Avoids transferring full JSONB rows.
-         */
-        get: operations["project_fields_datasets__dataset_id__projection_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/datasets/{dataset_id}/fields/{field_name}/distinct": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Distinct Values
-         * @description Distinct values of a single column. Useful for filter dropdowns.
-         */
-        get: operations["distinct_values_datasets__dataset_id__fields__field_name__distinct_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/datasets/{dataset_id}/filter": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Filter Rows
-         * @description Filter rows by one or more column predicates.
-         *
-         *     Type casting is handled by `field_queries.filter_by_multiple_fields`
-         *     based on each field's `data_type`. Pass `match_all: false` for OR
-         *     semantics.
-         */
-        post: operations["filter_rows_datasets__dataset_id__filter_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/datasets/{dataset_id}/schema-types": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Field Types
-         * @description Lightweight `{field_name: data_type}` map for client-side validators.
-         */
-        get: operations["field_types_datasets__dataset_id__schema_types_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/picklists": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Picklists */
-        get: operations["list_picklists_picklists_get"];
-        put?: never;
-        /**
-         * Create Picklist
-         * @description Create a picklist.
-         *
-         *     Three flavors:
-         *
-         *     1. **items**   — full structured items (label + optional description / help / group / icon).
-         *     2. **labels**  — shortcut for label-only items (optionally with a shared `group_name`).
-         *     3. **neither** — empty list; add items later via POST /picklists/{id}/items.
-         */
-        post: operations["create_picklist_picklists_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/picklists/{list_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Picklist */
-        get: operations["get_picklist_picklists__list_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Picklist */
-        delete: operations["delete_picklist_picklists__list_id__delete"];
-        options?: never;
-        head?: never;
-        /** Update Picklist */
-        patch: operations["update_picklist_picklists__list_id__patch"];
-        trace?: never;
-    };
-    "/picklists/{list_id}/items": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Items */
-        get: operations["list_items_picklists__list_id__items_get"];
-        put?: never;
-        /**
-         * Add Items
-         * @description Add one or many items. The items table's INSERT policy (editor on the list) decides.
-         */
-        post: operations["add_items_picklists__list_id__items_post"];
-        /**
-         * Clear Items
-         * @description Archive every item in a picklist while keeping the picklist itself.
-         */
-        delete: operations["clear_items_picklists__list_id__items_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/picklists/{list_id}/items/{item_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Item */
-        get: operations["get_item_picklists__list_id__items__item_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Item */
-        delete: operations["delete_item_picklists__list_id__items__item_id__delete"];
-        options?: never;
-        head?: never;
-        /** Update Item */
-        patch: operations["update_item_picklists__list_id__items__item_id__patch"];
-        trace?: never;
-    };
     "/knowledge/search": {
         parameters: {
             query?: never;
@@ -45226,23 +44956,6 @@ export interface components {
             op: "add_edge";
             edge: components["schemas"]["EdgeDef"];
         };
-        /** AddFieldResponse */
-        AddFieldResponse: {
-            /** Id */
-            id: string;
-            /** Field Name */
-            field_name: string;
-            /** Display Name */
-            display_name: string;
-            /** Data Type */
-            data_type: string;
-            /** Field Order */
-            field_order: number;
-            /** Is Required */
-            is_required: boolean;
-        } & {
-            [key: string]: unknown;
-        };
         /** AddGroupMemberRequest */
         AddGroupMemberRequest: {
             /** User Id */
@@ -45253,13 +44966,6 @@ export interface components {
              * @enum {string}
              */
             role?: "admin" | "member";
-        };
-        /** AddItemsResponse */
-        AddItemsResponse: {
-            /** Item Ids */
-            item_ids: string[];
-            /** Count */
-            count: number;
         };
         /** AddLinksToScope */
         AddLinksToScope: {
@@ -45283,13 +44989,6 @@ export interface components {
              */
             op: "add_node";
             node: components["schemas"]["NodeDef"];
-        };
-        /** AddRowsResponse */
-        AddRowsResponse: {
-            /** Row Ids */
-            row_ids: string[];
-            /** Count */
-            count: number;
         };
         /**
          * AddSourceRequest
@@ -46297,6 +45996,8 @@ export interface components {
              * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
              */
             context_withheld?: string[] | null;
+            /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
+            page_context?: components["schemas"]["PageContext"] | null;
             /**
              * Writable Variables
              * @default []
@@ -56040,6 +55741,8 @@ export interface components {
             ok: boolean;
             /** Error */
             error?: string | null;
+            /** Live Request Id */
+            live_request_id?: string | null;
         };
         /**
          * BulkOperationRequest
@@ -59242,6 +58945,8 @@ export interface components {
              * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
              */
             context_withheld?: string[] | null;
+            /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
+            page_context?: components["schemas"]["PageContext"] | null;
             /**
              * Writable Variables
              * @default []
@@ -64738,6 +64443,8 @@ export interface components {
             context_withheld?: string[] | null;
             /** Surface */
             surface?: string | null;
+            /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
+            page_context?: components["schemas"]["PageContext"] | null;
             /** Question */
             question: string;
         };
@@ -64963,6 +64670,24 @@ export interface components {
             /** Block Byte Length */
             block_byte_length?: number | null;
             provenance?: components["schemas"]["ContextProvenance"] | null;
+        };
+        /**
+         * ContextDeliveredText
+         * @description Text the model actually read for one value — copied from what the server rendered,
+         *     never rebuilt from the client's copy (RULES.md §5 ``delivered`` / ``on_request``).
+         */
+        ContextDeliveredText: {
+            /** Text */
+            text: string;
+            /** Chars */
+            chars: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /** Sha256 */
+            sha256: string;
         };
         /**
          * ContextEnvelope
@@ -65220,6 +64945,8 @@ export interface components {
             context_withheld?: string[] | null;
             /** Surface */
             surface?: string | null;
+            /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
+            page_context?: components["schemas"]["PageContext"] | null;
         };
         /** ContextPreviewResponse */
         ContextPreviewResponse: {
@@ -65407,6 +65134,9 @@ export interface components {
             consumed_as?: ("directive" | "expanded" | "renamed" | "unaccounted") | null;
             /** Consumed Into */
             consumed_into?: string[];
+            delivered?: components["schemas"]["ContextDeliveredText"] | null;
+            on_request?: components["schemas"]["ContextDeliveredText"] | null;
+            server_rendered?: components["schemas"]["ContextDeliveredText"] | null;
         };
         /** ContextRenderRequest */
         ContextRenderRequest: {
@@ -65841,6 +65571,8 @@ export interface components {
              * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
              */
             context_withheld?: string[] | null;
+            /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
+            page_context?: components["schemas"]["PageContext"] | null;
             /**
              * Writable Variables
              * @default []
@@ -68629,117 +68361,6 @@ export interface components {
             result_count: number;
             /** Synonyms */
             synonyms: components["schemas"]["DatamuseSynonym"][];
-        };
-        /** DatasetCreate */
-        DatasetCreate: {
-            /**
-             * Name
-             * @description User-facing dataset name
-             */
-            name: string;
-            /** Description */
-            description?: string | null;
-            /**
-             * Is Public
-             * @default false
-             */
-            is_public?: boolean;
-            /**
-             * Fields
-             * @description Explicit schema. Required when no rows are supplied.
-             */
-            fields?: components["schemas"]["FieldDefinition"][] | null;
-            /**
-             * Rows
-             * @description Optional initial data. When supplied without `fields`, the schema is auto-detected from the row keys.
-             */
-            rows?: {
-                [key: string]: unknown;
-            }[] | null;
-        };
-        /** DatasetDetail */
-        DatasetDetail: {
-            /** Id */
-            id: string;
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Version */
-            version?: number | null;
-            /** Is Public */
-            is_public?: boolean | null;
-            /**
-             * Row Count
-             * @default 0
-             */
-            row_count?: number;
-            /**
-             * Field Count
-             * @default 0
-             */
-            field_count?: number;
-            /** Created At */
-            created_at?: string | null;
-            /** Updated At */
-            updated_at?: string | null;
-            /** Fields */
-            fields?: components["schemas"]["FieldRecord"][];
-        } & {
-            [key: string]: unknown;
-        };
-        /**
-         * DatasetRow
-         * @description A single row from a user dataset.
-         *
-         *     The columns are user-defined per-dataset, so we expose the canonical
-         *     framing keys (``id`` / ``created_at`` / ``updated_at``) and let the
-         *     rest flow through via ``extra="allow"``.
-         */
-        DatasetRow: {
-            /** Id */
-            id: string;
-            /** Created At */
-            created_at?: string | null;
-            /** Updated At */
-            updated_at?: string | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /**
-         * DatasetSummary
-         * @description The metadata-only projection of a dataset row.
-         *
-         *     Extra keys are tolerated because the user_data SQL projections can add
-         *     columns (counts, flags) without bumping this wire shape.
-         */
-        DatasetSummary: {
-            /** Id */
-            id: string;
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Version */
-            version?: number | null;
-            /** Is Public */
-            is_public?: boolean | null;
-            /**
-             * Row Count
-             * @default 0
-             */
-            row_count?: number;
-            /**
-             * Field Count
-             * @default 0
-             */
-            field_count?: number;
-            /** Created At */
-            created_at?: string | null;
-            /** Updated At */
-            updated_at?: string | null;
-        } & {
-            [key: string]: unknown;
         };
         /** DateFilter */
         DateFilter: {
@@ -71951,15 +71572,6 @@ export interface components {
              * @default
              */
             rationale?: string;
-        };
-        /** DistinctValuesResponse */
-        DistinctValuesResponse: {
-            /** Field Name */
-            field_name: string;
-            /** Values */
-            values: components["schemas"]["JsonValue"][];
-            /** Count */
-            count: number;
         };
         /**
          * DnsRecordSpec
@@ -77275,63 +76887,6 @@ export interface components {
              */
             status_page?: "https://status.fibery.io";
         };
-        /** FieldAdd */
-        FieldAdd: {
-            /** Display Name */
-            display_name: string;
-            /** Field Name */
-            field_name?: string | null;
-            /**
-             * Data Type
-             * @default string
-             * @enum {string}
-             */
-            data_type?: "array" | "boolean" | "date" | "datetime" | "integer" | "json" | "number" | "string";
-            /**
-             * Is Required
-             * @default false
-             */
-            is_required?: boolean;
-            default_value?: components["schemas"]["JsonValue"] | null;
-            /** Validation Rules */
-            validation_rules?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Field Order
-             * @description Position. Auto-set to last when omitted.
-             */
-            field_order?: number | null;
-        };
-        /** FieldDefinition */
-        FieldDefinition: {
-            /**
-             * Display Name
-             * @description Human-friendly column name
-             */
-            display_name: string;
-            /**
-             * Field Name
-             * @description Internal snake_case identifier; auto-derived from display_name when omitted
-             */
-            field_name?: string | null;
-            /**
-             * Data Type
-             * @default string
-             * @enum {string}
-             */
-            data_type?: "array" | "boolean" | "date" | "datetime" | "integer" | "json" | "number" | "string";
-            /**
-             * Is Required
-             * @default false
-             */
-            is_required?: boolean;
-            default_value?: components["schemas"]["JsonValue"] | null;
-            /** Validation Rules */
-            validation_rules?: {
-                [key: string]: unknown;
-            } | null;
-        };
         /** FieldIn */
         FieldIn: {
             /**
@@ -77364,25 +76919,6 @@ export interface components {
             inject_into_sandbox?: boolean;
             /** Description */
             description?: string | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /** FieldRecord */
-        FieldRecord: {
-            /** Id */
-            id: string;
-            /** Field Name */
-            field_name?: string | null;
-            /** Display Name */
-            display_name?: string | null;
-            /** Data Type */
-            data_type?: string | null;
-            /** Field Order */
-            field_order?: number | null;
-            /** Is Required */
-            is_required?: boolean | null;
-            default_value?: components["schemas"]["JsonValue"] | null;
-            validation_rules?: components["schemas"]["JsonValue"] | null;
         } & {
             [key: string]: unknown;
         };
@@ -78149,39 +77685,6 @@ export interface components {
             selector?: string | null;
             /** Value */
             value?: string | null;
-        };
-        /** FilterRequest */
-        FilterRequest: {
-            /** Filters */
-            filters: {
-                [key: string]: unknown;
-            };
-            /**
-             * Match All
-             * @default true
-             */
-            match_all?: boolean;
-            /**
-             * Limit
-             * @default 100
-             */
-            limit?: number;
-            /**
-             * Offset
-             * @default 0
-             */
-            offset?: number;
-        };
-        /** FilterRowsResponse */
-        FilterRowsResponse: {
-            /** Rows */
-            rows: components["schemas"]["DatasetRow"][];
-            /** Count */
-            count: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
         };
         /** FinalMileResult */
         FinalMileResult: {
@@ -79330,6 +78833,8 @@ export interface components {
              * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
              */
             context_withheld?: string[] | null;
+            /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
+            page_context?: components["schemas"]["PageContext"] | null;
             /**
              * Writable Variables
              * @default []
@@ -80149,6 +79654,11 @@ export interface components {
              * @description Catalog model name; empty runs the image.generate mandate Holder's model.
              */
             model?: string | null;
+            /**
+             * Offering Id
+             * @description The exact class (ai.offering) of ``model`` the person chose. A model offered in several classes is several products; without it the catalog runs the preferred class. Ignored when ``model`` is empty.
+             */
+            offering_id?: string | null;
         };
         /** GeneratePlanBody */
         GeneratePlanBody: {
@@ -91288,26 +90798,12 @@ export interface components {
             /** Count */
             count: number;
         };
-        /** ListDatasetsResponse */
-        ListDatasetsResponse: {
-            /** Datasets */
-            datasets: components["schemas"]["DatasetSummary"][];
-            /** Count */
-            count: number;
-        };
         /** ListExamplesResponse */
         ListExamplesResponse: {
             /** Total */
             total: number;
             /** Items */
             items: components["schemas"]["ItemResponse"][];
-        };
-        /** ListFieldsResponse */
-        ListFieldsResponse: {
-            /** Fields */
-            fields: components["schemas"]["FieldRecord"][];
-            /** Count */
-            count: number;
         };
         /** ListGroupBookmark */
         ListGroupBookmark: {
@@ -91324,15 +90820,6 @@ export interface components {
             list_name?: string | null;
         } & {
             [key: string]: unknown;
-        };
-        /** ListGroupedItemsResponse */
-        ListGroupedItemsResponse: {
-            /** Grouped Items */
-            grouped_items: {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[];
-            /** Count */
-            count: number;
         };
         /** ListInputPart */
         ListInputPart: {
@@ -91382,37 +90869,12 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** ListItemsResponse */
-        ListItemsResponse: {
-            /** Items */
-            items: components["schemas"]["PicklistItem"][];
-            /** Count */
-            count: number;
-        };
-        /** ListPicklistsResponse */
-        ListPicklistsResponse: {
-            /** Picklists */
-            picklists: components["schemas"]["PicklistSummary"][];
-            /** Count */
-            count: number;
-        };
         /** ListRequestsResponse */
         ListRequestsResponse: {
             /** Requests */
             requests: components["schemas"]["RequestRecord"][];
             /** Count */
             count: number;
-        };
-        /** ListRowsResponse */
-        ListRowsResponse: {
-            /** Rows */
-            rows: components["schemas"]["DatasetRow"][];
-            /** Count */
-            count: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
         };
         /** ListToolsBySourceKindResponse */
         ListToolsBySourceKindResponse: {
@@ -97879,6 +97341,19 @@ export interface components {
             accepts_youtube?: boolean;
         };
         /**
+         * ModelClassInfo
+         * @description One serving CLASS of a model (its endpoint brand: "Matrx Fast",
+         *     "Matrx Lightning", ...). Classes of one model are separate products; to run
+         *     a non-default class, store ``offering_id`` in the agent's settings. Equivalent
+         *     offerings inside one class are already collapsed to its preferred one.
+         */
+        ModelClassInfo: {
+            /** Offering Id */
+            offering_id: string;
+            /** Served Via */
+            served_via: string;
+        };
+        /**
          * ModelControlInfo
          * @description One control this model exposes, and whether a variable may set it here.
          */
@@ -97956,6 +97431,8 @@ export interface components {
              */
             output_type?: "agent" | "audio" | "decision" | "extraction" | "image" | "realtime" | "text" | "video";
             capabilities?: components["schemas"]["ModelCapabilitySummary"] | null;
+            /** Classes */
+            classes?: components["schemas"]["ModelClassInfo"][];
             authoring?: components["schemas"]["ModelAuthoringFacts"] | null;
         };
         /**
@@ -103469,6 +102946,23 @@ export interface components {
                 [key: string]: string;
             }[];
         };
+        /**
+         * PageContext
+         * @description Request field ``page_context``: this turn's conversation is the page's own, or its page
+         *     switch is off. Omitted = an ordinary conversation that follows the page.
+         */
+        PageContext: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "off" | "own";
+            /**
+             * Withheld
+             * @description The keys this page's own conversation (or a switched-off page) never receives — the page's declared list. Omitted: the default for the mode.
+             */
+            withheld?: string[] | null;
+        };
         /** PageDetail */
         PageDetail: {
             /** Page Index */
@@ -105730,7 +105224,7 @@ export interface components {
         PicklistBinding: {
             /**
              * Listid
-             * @description udt_structured_lists.id the options are hydrated from.
+             * @description The id of the pick list (a Table of choices) the options come from.
              */
             listId: string;
             /**
@@ -105746,159 +105240,6 @@ export interface components {
             multiple?: boolean;
         } & {
             [key: string]: unknown;
-        };
-        /** PicklistCreate */
-        PicklistCreate: {
-            /**
-             * Name
-             * @description User-facing list name
-             */
-            name: string;
-            /** Description */
-            description?: string | null;
-            /**
-             * Is Public
-             * @default false
-             */
-            is_public?: boolean;
-            /**
-             * Public Read
-             * @default false
-             */
-            public_read?: boolean;
-            /**
-             * Items
-             * @description Structured items. Mutually exclusive with `labels`.
-             */
-            items?: components["schemas"]["PicklistItemInput"][] | null;
-            /**
-             * Labels
-             * @description Shorthand for label-only items. Mutually exclusive with `items`.
-             */
-            labels?: string[] | null;
-            /**
-             * Group Name
-             * @description Optional group applied to every item when using `labels` mode.
-             */
-            group_name?: string | null;
-        };
-        /** PicklistDetail */
-        PicklistDetail: {
-            /** Id */
-            id: string;
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Is Public */
-            is_public?: boolean | null;
-            /** Public Read */
-            public_read?: boolean | null;
-            /**
-             * Item Count
-             * @default 0
-             */
-            item_count?: number;
-            created_at?: components["schemas"]["JsonValue"] | null;
-            updated_at?: components["schemas"]["JsonValue"] | null;
-            /** Items */
-            items?: components["schemas"]["PicklistItem"][];
-            /** Grouped Items */
-            grouped_items?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[] | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /** PicklistItem */
-        PicklistItem: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Help Text */
-            help_text?: string | null;
-            /** Group Name */
-            group_name?: string | null;
-            /** Icon Name */
-            icon_name?: string | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /** PicklistItemInput */
-        PicklistItemInput: {
-            /** Label */
-            label: string;
-            /** Description */
-            description?: string | null;
-            /** Help Text */
-            help_text?: string | null;
-            /** Group Name */
-            group_name?: string | null;
-            /** Icon Name */
-            icon_name?: string | null;
-            /**
-             * Is Public
-             * @default false
-             */
-            is_public?: boolean;
-            /**
-             * Public Read
-             * @default false
-             */
-            public_read?: boolean;
-        };
-        /** PicklistItemUpdate */
-        PicklistItemUpdate: {
-            /** Label */
-            label?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Help Text */
-            help_text?: string | null;
-            /** Group Name */
-            group_name?: string | null;
-            /** Icon Name */
-            icon_name?: string | null;
-            /** Is Public */
-            is_public?: boolean | null;
-            /** Public Read */
-            public_read?: boolean | null;
-        };
-        /** PicklistSummary */
-        PicklistSummary: {
-            /** Id */
-            id: string;
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Is Public */
-            is_public?: boolean | null;
-            /** Public Read */
-            public_read?: boolean | null;
-            /**
-             * Item Count
-             * @default 0
-             */
-            item_count?: number;
-            created_at?: components["schemas"]["JsonValue"] | null;
-            updated_at?: components["schemas"]["JsonValue"] | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /** PicklistUpdate */
-        PicklistUpdate: {
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Is Public */
-            is_public?: boolean | null;
-            /** Public Read */
-            public_read?: boolean | null;
         };
         /** PicsumCatalog */
         PicsumCatalog: {
@@ -109992,20 +109333,6 @@ export interface components {
             short_description: string | null;
         };
         /**
-         * ProjectionResponse
-         * @description Projection result — each row is a free-form subset of the requested fields.
-         */
-        ProjectionResponse: {
-            /** Rows */
-            rows: {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[];
-            /** Count */
-            count: number;
-            /** Fields */
-            fields: string[];
-        };
-        /**
          * ProjectionStatus
          * @enum {string}
          */
@@ -110202,6 +109529,8 @@ export interface components {
              * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
              */
             context_withheld?: string[] | null;
+            /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
+            page_context?: components["schemas"]["PageContext"] | null;
         };
         /**
          * PromptUserValueMapping
@@ -111424,6 +110753,45 @@ export interface components {
             last_run_error?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /**
+         * ProviderSessionFailureReport
+         * @description Body of ``POST /broker/provider-failures`` — what the provider told the browser.
+         *
+         *     Everything here is the PROVIDER's text relayed by the client and is used only
+         *     to classify; the reporting person and organization come from the
+         *     authenticated request, never from this body. Every field is size-bounded.
+         */
+        ProviderSessionFailureReport: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "cartesia" | "openai" | "xai";
+            /** Model */
+            model?: string | null;
+            /** Status Code */
+            status_code?: number | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Message */
+            message: string;
+        };
+        /**
+         * ProviderSessionFailureVerdict
+         * @description The shared classification of a reported session failure.
+         *
+         *     ``user_message`` is the sentence the client shows the person (never the
+         *     provider's raw text); ``retryable`` says whether reconnecting can help — an
+         *     out-of-credit refusal never can.
+         */
+        ProviderSessionFailureVerdict: {
+            /** Error Type */
+            error_type: string;
+            /** Retryable */
+            retryable: boolean;
+            /** User Message */
+            user_message: string;
         };
         /** ProviderSpendRow */
         ProviderSpendRow: {
@@ -117764,6 +117132,27 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** RowUpdate */
+        RowUpdate: {
+            /**
+             * Values
+             * @description Column name -> the value to write. Only the columns named are changed.
+             */
+            values: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Add Choices
+             * @description A word that is not yet one of a choice column's choices is refused (409, naming the words) unless this is true; then the words are added to the column in the same change. Your organization's choice setting can forbid adding.
+             * @default false
+             */
+            add_choices?: boolean;
+            /**
+             * Expected Version
+             * @description The version you read. When someone changed the row since, the update is refused (409) with both versions.
+             */
+            expected_version?: number | null;
+        };
         /** RowWrite */
         RowWrite: {
             /**
@@ -119701,18 +119090,6 @@ export interface components {
              * @default false
              */
             cyclic?: boolean;
-        };
-        /**
-         * SchemaTypesResponse
-         * @description Map of ``field_name -> data_type``.
-         */
-        SchemaTypesResponse: {
-            /** Types */
-            types: {
-                [key: string]: string;
-            };
-            /** Count */
-            count: number;
         };
         /** SchooxServiceStatus */
         SchooxServiceStatus: {
@@ -135079,15 +134456,6 @@ export interface components {
             /** Expected Version */
             expected_version?: number | null;
         };
-        /** UpdateRowResponse */
-        UpdateRowResponse: {
-            /** Id */
-            id: string;
-            /** Data */
-            data: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-        };
         /**
          * UpdateSendingIdentityRequest
          * @description Pacing and presentation only.
@@ -143251,6 +142619,8 @@ export interface components {
              * @description The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play.
              */
             context_withheld?: string[] | null;
+            /** @description This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt. */
+            page_context?: components["schemas"]["PageContext"] | null;
             /**
              * Writable Variables
              * @default []
@@ -143266,13 +142636,6 @@ export interface components {
              * @default false
              */
             block_mode?: boolean;
-        };
-        /** RowUpdate */
-        aidream__services__datasets__wire__RowUpdate: {
-            /** Data */
-            data: {
-                [key: string]: unknown;
-            };
         };
         /** PackageMetadata */
         aidream__services__debian_sources_integrations__service__PackageMetadata: {
@@ -144841,27 +144204,6 @@ export interface components {
             format?: "restructuredtext";
             /** Content */
             content: string;
-        };
-        /** RowUpdate */
-        aidream__services__table_api__contract__RowUpdate: {
-            /**
-             * Values
-             * @description Column name -> the value to write. Only the columns named are changed.
-             */
-            values: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-            /**
-             * Add Choices
-             * @description A word that is not yet one of a choice column's choices is refused (409, naming the words) unless this is true; then the words are added to the column in the same change. Your organization's choice setting can forbid adding.
-             * @default false
-             */
-            add_choices?: boolean;
-            /**
-             * Expected Version
-             * @description The version you read. When someone changed the row since, the update is refused (409) with both versions.
-             */
-            expected_version?: number | null;
         };
         /** CardMetadata */
         aidream__services__tcgdex_integrations__service__CardMetadata: {
@@ -146946,7 +146288,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["aidream__services__table_api__contract__RowUpdate"];
+                "application/json": components["schemas"]["RowUpdate"];
             };
         };
         responses: {
@@ -150088,6 +149430,7 @@ export interface operations {
         parameters: {
             query?: {
                 mode?: string;
+                seen_seq?: number | null;
             };
             header?: never;
             path: {
@@ -154091,6 +153434,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BrokeredCredential"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_provider_session_failure_broker_provider_failures_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderSessionFailureReport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderSessionFailureVerdict"];
                 };
             };
             /** @description Validation Error */
@@ -197093,801 +196469,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatelessRatingResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_datasets_datasets_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListDatasetsResponse"];
-                };
-            };
-        };
-    };
-    create_dataset_datasets_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DatasetCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DatasetDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_dataset_datasets__dataset_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                dataset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DatasetDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_fields_datasets__dataset_id__fields_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                dataset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListFieldsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_field_datasets__dataset_id__fields_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                dataset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FieldAdd"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AddFieldResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_rows_datasets__dataset_id__rows_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-                /** @description Snake_case field name to sort by */
-                sort_field?: string | null;
-                sort_direction?: "asc" | "desc";
-                /** @description Substring search across all field values */
-                search?: string | null;
-            };
-            header?: never;
-            path: {
-                dataset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListRowsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_rows_datasets__dataset_id__rows_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                dataset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | {
-                    [key: string]: unknown;
-                }[];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AddRowsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_row_datasets__dataset_id__rows__row_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                dataset_id: string;
-                row_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DatasetRow"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_row_datasets__dataset_id__rows__row_id__patch: {
-        parameters: {
-            query?: {
-                /** @description If true, replace the entire data object instead of merging. */
-                replace?: boolean;
-            };
-            header?: never;
-            path: {
-                dataset_id: string;
-                row_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["aidream__services__datasets__wire__RowUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UpdateRowResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    project_fields_datasets__dataset_id__projection_get: {
-        parameters: {
-            query: {
-                /** @description Comma-separated list of snake_case field names */
-                fields: string;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                dataset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    distinct_values_datasets__dataset_id__fields__field_name__distinct_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                dataset_id: string;
-                field_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DistinctValuesResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    filter_rows_datasets__dataset_id__filter_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                dataset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FilterRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FilterRowsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    field_types_datasets__dataset_id__schema_types_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                dataset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaTypesResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_picklists_picklists_get: {
-        parameters: {
-            query?: {
-                /** @description Optional search term across name + description */
-                q?: string | null;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListPicklistsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_picklist_picklists_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PicklistCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PicklistDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_picklist_picklists__list_id__get: {
-        parameters: {
-            query?: {
-                /** @description Return items grouped by group_name. */
-                grouped?: boolean;
-            };
-            header?: never;
-            path: {
-                list_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PicklistDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_picklist_picklists__list_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                list_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_picklist_picklists__list_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                list_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PicklistUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PicklistDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_items_picklists__list_id__items_get: {
-        parameters: {
-            query?: {
-                grouped?: boolean;
-            };
-            header?: never;
-            path: {
-                list_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListItemsResponse"] | components["schemas"]["ListGroupedItemsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_items_picklists__list_id__items_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                list_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PicklistItemInput"] | components["schemas"]["PicklistItemInput"][];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AddItemsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    clear_items_picklists__list_id__items_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                list_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_item_picklists__list_id__items__item_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                list_id: string;
-                item_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PicklistItem"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_item_picklists__list_id__items__item_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                list_id: string;
-                item_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_item_picklists__list_id__items__item_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                list_id: string;
-                item_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PicklistItemUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PicklistItem"];
                 };
             };
             /** @description Validation Error */

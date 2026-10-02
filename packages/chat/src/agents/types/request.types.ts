@@ -936,14 +936,6 @@ export type AssembledAgentStartRequest = Partial<
    * here until the generated OpenAPI schema carries it.
    */
   initiation?: "user" | "auto";
-  /**
-   * The page rule (common-docs context-delivery RULES.md §0): this
-   * conversation is the page's own, or its page switch is off — the server's
-   * gate withholds the page from it. Built only by the context door
-   * (`buildRequestContext`). Additive aidream field; folds into the generated
-   * contract on the next regeneration.
-   */
-  page_context?: { mode: "own" | "off"; withheld: string[] };
 };
 
 /**

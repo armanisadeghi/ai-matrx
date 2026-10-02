@@ -1815,7 +1815,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/aidream__services__table_api__contract__RowUpdate"
+                "$ref": "#/components/schemas/RowUpdate"
               }
             }
           }
@@ -6389,6 +6389,22 @@
               "type": "string",
               "default": "cancel",
               "title": "Mode"
+            }
+          },
+          {
+            "name": "seen_seq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Seen Seq"
             }
           }
         ],
@@ -12166,6 +12182,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BrokeredCredential"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/broker/provider-failures": {
+      "post": {
+        "tags": [
+          "Token Broker",
+          "Token Broker"
+        ],
+        "summary": "Report Provider Session Failure",
+        "description": "A browser-held provider session (realtime voice, Cartesia TTS) failed.\n\nTHE contract every client holding a native-ephemeral credential calls on a\nprovider session failure: the provider's text is classified and reported\nthrough the provider failure door; the answer is the sentence to show.",
+        "operationId": "report_provider_session_failure_broker_provider_failures_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderSessionFailureReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderSessionFailureVerdict"
                 }
               }
             }
@@ -71321,1324 +71380,6 @@
         }
       }
     },
-    "/datasets": {
-      "get": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "List Datasets",
-        "operationId": "list_datasets_datasets_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListDatasetsResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Create Dataset",
-        "description": "Create a dataset.\n\nThree flavors, all driven by the same body:\n\n1. **rows only**           — schema is auto-detected from row keys.\n2. **fields only**         — empty dataset with an explicit schema.\n3. **fields + rows**       — explicit schema, then bulk-load rows.\n4. **neither**             — empty dataset with no fields (you can add them later).",
-        "operationId": "create_dataset_datasets_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DatasetCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DatasetDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/datasets/{dataset_id}": {
-      "get": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Get Dataset",
-        "operationId": "get_dataset_datasets__dataset_id__get",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DatasetDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/datasets/{dataset_id}/fields": {
-      "get": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "List Fields",
-        "operationId": "list_fields_datasets__dataset_id__fields_get",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListFieldsResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Add Field",
-        "description": "Add a column to an existing dataset.\n\nThe underlying SQL bumps the dataset version and back-fills every\nexisting row with the supplied default (or JSONB null).",
-        "operationId": "add_field_datasets__dataset_id__fields_post",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FieldAdd"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AddFieldResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/datasets/{dataset_id}/rows": {
-      "get": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "List Rows",
-        "operationId": "list_rows_datasets__dataset_id__rows_get",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 1000,
-              "minimum": 1,
-              "default": 100,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "sort_field",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Snake_case field name to sort by",
-              "title": "Sort Field"
-            },
-            "description": "Snake_case field name to sort by"
-          },
-          {
-            "name": "sort_direction",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "type": "string",
-              "default": "asc",
-              "title": "Sort Direction"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Substring search across all field values",
-              "title": "Search"
-            },
-            "description": "Substring search across all field values"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListRowsResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Add Rows",
-        "description": "Append one or many rows.\n\nA single dict adds one row; an array of dicts triggers a batched insert.\nValues are not coerced — the caller is expected to send JSON-shaped data\nthat matches the field definitions. Use `prepare_data_for_user_table`\nupstream if type coercion is needed.",
-        "operationId": "add_rows_datasets__dataset_id__rows_post",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
-                ],
-                "title": "Body"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AddRowsResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/datasets/{dataset_id}/rows/{row_id}": {
-      "get": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Get Row",
-        "operationId": "get_row_datasets__dataset_id__rows__row_id__get",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          },
-          {
-            "name": "row_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Row Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DatasetRow"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Update Row",
-        "description": "Update a row.\n\nBy default this performs a *shallow merge* with the existing data, so\ncallers can patch a few fields without re-sending the whole row. Pass\n`?replace=true` for a full replacement.",
-        "operationId": "update_row_datasets__dataset_id__rows__row_id__patch",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          },
-          {
-            "name": "row_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Row Id"
-            }
-          },
-          {
-            "name": "replace",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "If true, replace the entire data object instead of merging.",
-              "default": false,
-              "title": "Replace"
-            },
-            "description": "If true, replace the entire data object instead of merging."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/aidream__services__datasets__wire__RowUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UpdateRowResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/datasets/{dataset_id}/projection": {
-      "get": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Project Fields",
-        "description": "Pull only the listed columns. Avoids transferring full JSONB rows.",
-        "operationId": "project_fields_datasets__dataset_id__projection_get",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          },
-          {
-            "name": "fields",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Comma-separated list of snake_case field names",
-              "title": "Fields"
-            },
-            "description": "Comma-separated list of snake_case field names"
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 1000,
-              "minimum": 1,
-              "default": 100,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/datasets/{dataset_id}/fields/{field_name}/distinct": {
-      "get": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Distinct Values",
-        "description": "Distinct values of a single column. Useful for filter dropdowns.",
-        "operationId": "distinct_values_datasets__dataset_id__fields__field_name__distinct_get",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          },
-          {
-            "name": "field_name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Field Name"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 10000,
-              "minimum": 1,
-              "default": 1000,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DistinctValuesResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/datasets/{dataset_id}/filter": {
-      "post": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Filter Rows",
-        "description": "Filter rows by one or more column predicates.\n\nType casting is handled by `field_queries.filter_by_multiple_fields`\nbased on each field's `data_type`. Pass `match_all: false` for OR\nsemantics.",
-        "operationId": "filter_rows_datasets__dataset_id__filter_post",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FilterRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FilterRowsResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/datasets/{dataset_id}/schema-types": {
-      "get": {
-        "tags": [
-          "Datasets",
-          "Datasets"
-        ],
-        "summary": "Field Types",
-        "description": "Lightweight `{field_name: data_type}` map for client-side validators.",
-        "operationId": "field_types_datasets__dataset_id__schema_types_get",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaTypesResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/picklists": {
-      "get": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "List Picklists",
-        "operationId": "list_picklists_picklists_get",
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Optional search term across name + description",
-              "title": "Q"
-            },
-            "description": "Optional search term across name + description"
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 500,
-              "minimum": 1,
-              "default": 50,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListPicklistsResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "Create Picklist",
-        "description": "Create a picklist.\n\nThree flavors:\n\n1. **items**   — full structured items (label + optional description / help / group / icon).\n2. **labels**  — shortcut for label-only items (optionally with a shared `group_name`).\n3. **neither** — empty list; add items later via POST /picklists/{id}/items.",
-        "operationId": "create_picklist_picklists_post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PicklistCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PicklistDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/picklists/{list_id}": {
-      "get": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "Get Picklist",
-        "operationId": "get_picklist_picklists__list_id__get",
-        "parameters": [
-          {
-            "name": "list_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "List Id"
-            }
-          },
-          {
-            "name": "grouped",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "Return items grouped by group_name.",
-              "default": false,
-              "title": "Grouped"
-            },
-            "description": "Return items grouped by group_name."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PicklistDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "Update Picklist",
-        "operationId": "update_picklist_picklists__list_id__patch",
-        "parameters": [
-          {
-            "name": "list_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "List Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PicklistUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PicklistDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "Delete Picklist",
-        "operationId": "delete_picklist_picklists__list_id__delete",
-        "parameters": [
-          {
-            "name": "list_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "List Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/picklists/{list_id}/items": {
-      "get": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "List Items",
-        "operationId": "list_items_picklists__list_id__items_get",
-        "parameters": [
-          {
-            "name": "list_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "List Id"
-            }
-          },
-          {
-            "name": "grouped",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Grouped"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ListItemsResponse"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ListGroupedItemsResponse"
-                    }
-                  ],
-                  "title": "Response List Items Picklists  List Id  Items Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "Add Items",
-        "description": "Add one or many items. The items table's INSERT policy (editor on the list) decides.",
-        "operationId": "add_items_picklists__list_id__items_post",
-        "parameters": [
-          {
-            "name": "list_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "List Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/PicklistItemInput"
-                  },
-                  {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/PicklistItemInput"
-                    }
-                  }
-                ],
-                "title": "Body"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AddItemsResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "Clear Items",
-        "description": "Archive every item in a picklist while keeping the picklist itself.",
-        "operationId": "clear_items_picklists__list_id__items_delete",
-        "parameters": [
-          {
-            "name": "list_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "List Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/picklists/{list_id}/items/{item_id}": {
-      "get": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "Get Item",
-        "operationId": "get_item_picklists__list_id__items__item_id__get",
-        "parameters": [
-          {
-            "name": "list_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "List Id"
-            }
-          },
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PicklistItem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "Update Item",
-        "operationId": "update_item_picklists__list_id__items__item_id__patch",
-        "parameters": [
-          {
-            "name": "list_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "List Id"
-            }
-          },
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PicklistItemUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PicklistItem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Picklists",
-          "Picklists"
-        ],
-        "summary": "Delete Item",
-        "operationId": "delete_item_picklists__list_id__items__item_id__delete",
-        "parameters": [
-          {
-            "name": "list_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "List Id"
-            }
-          },
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/knowledge/search": {
       "post": {
         "tags": [
@@ -104839,45 +103580,6 @@
         ],
         "title": "AddEdgeOp"
       },
-      "AddFieldResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "field_name": {
-            "type": "string",
-            "title": "Field Name"
-          },
-          "display_name": {
-            "type": "string",
-            "title": "Display Name"
-          },
-          "data_type": {
-            "type": "string",
-            "title": "Data Type"
-          },
-          "field_order": {
-            "type": "integer",
-            "title": "Field Order"
-          },
-          "is_required": {
-            "type": "boolean",
-            "title": "Is Required"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id",
-          "field_name",
-          "display_name",
-          "data_type",
-          "field_order",
-          "is_required"
-        ],
-        "title": "AddFieldResponse"
-      },
       "AddGroupMemberRequest": {
         "properties": {
           "user_id": {
@@ -104899,27 +103601,6 @@
           "user_id"
         ],
         "title": "AddGroupMemberRequest"
-      },
-      "AddItemsResponse": {
-        "properties": {
-          "item_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Item Ids"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "type": "object",
-        "required": [
-          "item_ids",
-          "count"
-        ],
-        "title": "AddItemsResponse"
       },
       "AddLinksToScope": {
         "properties": {
@@ -104974,27 +103655,6 @@
           "node"
         ],
         "title": "AddNodeOp"
-      },
-      "AddRowsResponse": {
-        "properties": {
-          "row_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Row Ids"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "type": "object",
-        "required": [
-          "row_ids",
-          "count"
-        ],
-        "title": "AddRowsResponse"
       },
       "AddSourceRequest": {
         "properties": {
@@ -107680,6 +106340,17 @@
             ],
             "title": "Context Withheld",
             "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
+          },
+          "page_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
           },
           "writable_variables": {
             "items": {
@@ -129099,6 +127770,17 @@
               }
             ],
             "title": "Error"
+          },
+          "live_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Request Id"
           }
         },
         "type": "object",
@@ -137186,6 +135868,17 @@
             ],
             "title": "Context Withheld",
             "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
+          },
+          "page_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
           },
           "writable_variables": {
             "items": {
@@ -150607,6 +149300,17 @@
             ],
             "title": "Surface"
           },
+          "page_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
+          },
           "question": {
             "type": "string",
             "maxLength": 4000,
@@ -151263,6 +149967,36 @@
         "title": "ContextDeliveredSide",
         "description": "One side's context EXACTLY as the model is fed it — the run path's assembler's bytes."
       },
+      "ContextDeliveredText": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "chars",
+          "sha256"
+        ],
+        "title": "ContextDeliveredText",
+        "description": "Text the model actually read for one value — copied from what the server rendered,\nnever rebuilt from the client's copy (RULES.md §5 ``delivered`` / ``on_request``)."
+      },
       "ContextEnvelope": {
         "properties": {
           "content": {
@@ -151890,6 +150624,17 @@
               }
             ],
             "title": "Surface"
+          },
+          "page_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
           }
         },
         "additionalProperties": false,
@@ -152401,6 +151146,36 @@
             },
             "type": "array",
             "title": "Consumed Into"
+          },
+          "delivered": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextDeliveredText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "on_request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextDeliveredText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "server_rendered": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextDeliveredText"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -153527,6 +152302,17 @@
             ],
             "title": "Context Withheld",
             "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
+          },
+          "page_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
           },
           "writable_variables": {
             "items": {
@@ -160332,317 +159118,6 @@
         ],
         "title": "DatamuseSynonymResult",
         "description": "Safe bounded projection of one public synonym lookup."
-      },
-      "DatasetCreate": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Name",
-            "description": "User-facing dataset name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public",
-            "default": false
-          },
-          "fields": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/FieldDefinition"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fields",
-            "description": "Explicit schema. Required when no rows are supplied."
-          },
-          "rows": {
-            "anyOf": [
-              {
-                "items": {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rows",
-            "description": "Optional initial data. When supplied without `fields`, the schema is auto-detected from the row keys."
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "DatasetCreate"
-      },
-      "DatasetDetail": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "version": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version"
-          },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
-          },
-          "row_count": {
-            "type": "integer",
-            "title": "Row Count",
-            "default": 0
-          },
-          "field_count": {
-            "type": "integer",
-            "title": "Field Count",
-            "default": 0
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
-          },
-          "fields": {
-            "items": {
-              "$ref": "#/components/schemas/FieldRecord"
-            },
-            "type": "array",
-            "title": "Fields"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "DatasetDetail"
-      },
-      "DatasetRow": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "DatasetRow",
-        "description": "A single row from a user dataset.\n\nThe columns are user-defined per-dataset, so we expose the canonical\nframing keys (``id`` / ``created_at`` / ``updated_at``) and let the\nrest flow through via ``extra=\"allow\"``."
-      },
-      "DatasetSummary": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "version": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version"
-          },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
-          },
-          "row_count": {
-            "type": "integer",
-            "title": "Row Count",
-            "default": 0
-          },
-          "field_count": {
-            "type": "integer",
-            "title": "Field Count",
-            "default": 0
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "DatasetSummary",
-        "description": "The metadata-only projection of a dataset row.\n\nExtra keys are tolerated because the user_data SQL projections can add\ncolumns (counts, flags) without bumping this wire shape."
       },
       "DateFilter": {
         "properties": {
@@ -168227,32 +166702,6 @@
         },
         "type": "object",
         "title": "DissolvePlanRequest"
-      },
-      "DistinctValuesResponse": {
-        "properties": {
-          "field_name": {
-            "type": "string",
-            "title": "Field Name"
-          },
-          "values": {
-            "items": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "array",
-            "title": "Values"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "type": "object",
-        "required": [
-          "field_name",
-          "values",
-          "count"
-        ],
-        "title": "DistinctValuesResponse"
       },
       "DnsRecordSpec": {
         "properties": {
@@ -180651,152 +179100,6 @@
         "title": "FiberyServiceStatus",
         "description": "Safe aggregate status projection for Fibery's fixed status page."
       },
-      "FieldAdd": {
-        "properties": {
-          "display_name": {
-            "type": "string",
-            "title": "Display Name"
-          },
-          "field_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Name"
-          },
-          "data_type": {
-            "type": "string",
-            "enum": [
-              "array",
-              "boolean",
-              "date",
-              "datetime",
-              "integer",
-              "json",
-              "number",
-              "string"
-            ],
-            "title": "Data Type",
-            "default": "string"
-          },
-          "is_required": {
-            "type": "boolean",
-            "title": "Is Required",
-            "default": false
-          },
-          "default_value": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "validation_rules": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Validation Rules"
-          },
-          "field_order": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Order",
-            "description": "Position. Auto-set to last when omitted."
-          }
-        },
-        "type": "object",
-        "required": [
-          "display_name"
-        ],
-        "title": "FieldAdd"
-      },
-      "FieldDefinition": {
-        "properties": {
-          "display_name": {
-            "type": "string",
-            "title": "Display Name",
-            "description": "Human-friendly column name"
-          },
-          "field_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Name",
-            "description": "Internal snake_case identifier; auto-derived from display_name when omitted"
-          },
-          "data_type": {
-            "type": "string",
-            "enum": [
-              "array",
-              "boolean",
-              "date",
-              "datetime",
-              "integer",
-              "json",
-              "number",
-              "string"
-            ],
-            "title": "Data Type",
-            "default": "string"
-          },
-          "is_required": {
-            "type": "boolean",
-            "title": "Is Required",
-            "default": false
-          },
-          "default_value": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "validation_rules": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Validation Rules"
-          }
-        },
-        "type": "object",
-        "required": [
-          "display_name"
-        ],
-        "title": "FieldDefinition"
-      },
       "FieldIn": {
         "properties": {
           "field_key": {
@@ -180859,95 +179162,6 @@
           "value"
         ],
         "title": "FieldIn"
-      },
-      "FieldRecord": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "field_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Name"
-          },
-          "display_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Display Name"
-          },
-          "data_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Data Type"
-          },
-          "field_order": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Order"
-          },
-          "is_required": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Required"
-          },
-          "default_value": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "validation_rules": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "FieldRecord"
       },
       "FigmaServiceStatus": {
         "properties": {
@@ -182988,67 +181202,6 @@
           "success"
         ],
         "title": "FillResult"
-      },
-      "FilterRequest": {
-        "properties": {
-          "filters": {
-            "additionalProperties": true,
-            "type": "object",
-            "minProperties": 1,
-            "title": "Filters"
-          },
-          "match_all": {
-            "type": "boolean",
-            "title": "Match All",
-            "default": true
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit",
-            "default": 100
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "required": [
-          "filters"
-        ],
-        "title": "FilterRequest"
-      },
-      "FilterRowsResponse": {
-        "properties": {
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/DatasetRow"
-            },
-            "type": "array",
-            "title": "Rows"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "type": "object",
-        "required": [
-          "rows",
-          "count",
-          "limit",
-          "offset"
-        ],
-        "title": "FilterRowsResponse"
       },
       "FinalMileResult": {
         "properties": {
@@ -185925,6 +184078,17 @@
             "title": "Context Withheld",
             "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
           },
+          "page_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
+          },
           "writable_variables": {
             "items": {
               "type": "string"
@@ -187363,6 +185527,18 @@
             ],
             "title": "Model",
             "description": "Catalog model name; empty runs the image.generate mandate Holder's model."
+          },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id",
+            "description": "The exact class (ai.offering) of ``model`` the person chose. A model offered in several classes is several products; without it the catalog runs the preferred class. Ignored when ``model`` is empty."
           }
         },
         "additionalProperties": false,
@@ -212114,27 +210290,6 @@
         ],
         "title": "ListConversationsResponse"
       },
-      "ListDatasetsResponse": {
-        "properties": {
-          "datasets": {
-            "items": {
-              "$ref": "#/components/schemas/DatasetSummary"
-            },
-            "type": "array",
-            "title": "Datasets"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "type": "object",
-        "required": [
-          "datasets",
-          "count"
-        ],
-        "title": "ListDatasetsResponse"
-      },
       "ListExamplesResponse": {
         "properties": {
           "total": {
@@ -212155,27 +210310,6 @@
           "items"
         ],
         "title": "ListExamplesResponse"
-      },
-      "ListFieldsResponse": {
-        "properties": {
-          "fields": {
-            "items": {
-              "$ref": "#/components/schemas/FieldRecord"
-            },
-            "type": "array",
-            "title": "Fields"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "type": "object",
-        "required": [
-          "fields",
-          "count"
-        ],
-        "title": "ListFieldsResponse"
       },
       "ListGroupBookmark": {
         "properties": {
@@ -212214,30 +210348,6 @@
           "group_name"
         ],
         "title": "ListGroupBookmark"
-      },
-      "ListGroupedItemsResponse": {
-        "properties": {
-          "grouped_items": {
-            "items": {
-              "additionalProperties": {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Grouped Items"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "type": "object",
-        "required": [
-          "grouped_items",
-          "count"
-        ],
-        "title": "ListGroupedItemsResponse"
       },
       "ListInputPart": {
         "properties": {
@@ -212351,48 +210461,6 @@
         ],
         "title": "ListItemBookmark"
       },
-      "ListItemsResponse": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PicklistItem"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "count"
-        ],
-        "title": "ListItemsResponse"
-      },
-      "ListPicklistsResponse": {
-        "properties": {
-          "picklists": {
-            "items": {
-              "$ref": "#/components/schemas/PicklistSummary"
-            },
-            "type": "array",
-            "title": "Picklists"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "type": "object",
-        "required": [
-          "picklists",
-          "count"
-        ],
-        "title": "ListPicklistsResponse"
-      },
       "ListRequestsResponse": {
         "properties": {
           "requests": {
@@ -212413,37 +210481,6 @@
           "count"
         ],
         "title": "ListRequestsResponse"
-      },
-      "ListRowsResponse": {
-        "properties": {
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/DatasetRow"
-            },
-            "type": "array",
-            "title": "Rows"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "type": "object",
-        "required": [
-          "rows",
-          "count",
-          "limit",
-          "offset"
-        ],
-        "title": "ListRowsResponse"
       },
       "ListToolsBySourceKindResponse": {
         "properties": {
@@ -227209,6 +225246,25 @@
         "title": "ModelCapabilitySummary",
         "description": "What a model can actually do — for a capability-driven model picker. Two\nlayers: MODEL-level (the per-model jsonb seam) + PROVIDER-level (what the\nprovider API accepts as input). See /Users/armanisadeghi/code/common-docs/systems/agents/ai-models/STATE.md."
       },
+      "ModelClassInfo": {
+        "properties": {
+          "offering_id": {
+            "type": "string",
+            "title": "Offering Id"
+          },
+          "served_via": {
+            "type": "string",
+            "title": "Served Via"
+          }
+        },
+        "type": "object",
+        "required": [
+          "offering_id",
+          "served_via"
+        ],
+        "title": "ModelClassInfo",
+        "description": "One serving CLASS of a model (its endpoint brand: \"Matrx Fast\",\n\"Matrx Lightning\", ...). Classes of one model are separate products; to run\na non-default class, store ``offering_id`` in the agent's settings. Equivalent\nofferings inside one class are already collapsed to its preferred one."
+      },
       "ModelControlInfo": {
         "properties": {
           "key": {
@@ -227367,6 +225423,13 @@
                 "type": "null"
               }
             ]
+          },
+          "classes": {
+            "items": {
+              "$ref": "#/components/schemas/ModelClassInfo"
+            },
+            "type": "array",
+            "title": "Classes"
           },
           "authoring": {
             "anyOf": [
@@ -239596,6 +237659,40 @@
         ],
         "title": "PageCaptureResult"
       },
+      "PageContext": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "off",
+              "own"
+            ],
+            "title": "Mode"
+          },
+          "withheld": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld",
+            "description": "The keys this page's own conversation (or a switched-off page) never receives — the page's declared list. Omitted: the default for the mode."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "title": "PageContext",
+        "description": "Request field ``page_context``: this turn's conversation is the page's own, or its page\nswitch is off. Omitted = an ordinary conversation that follows the page."
+      },
       "PageDetail": {
         "properties": {
           "page_index": {
@@ -244880,7 +242977,7 @@
           "listId": {
             "type": "string",
             "title": "Listid",
-            "description": "udt_structured_lists.id the options are hydrated from."
+            "description": "The id of the pick list (a Table of choices) the options come from."
           },
           "groupName": {
             "anyOf": [
@@ -244907,544 +243004,6 @@
           "listId"
         ],
         "title": "PicklistBinding"
-      },
-      "PicklistCreate": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Name",
-            "description": "User-facing list name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public",
-            "default": false
-          },
-          "public_read": {
-            "type": "boolean",
-            "title": "Public Read",
-            "default": false
-          },
-          "items": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/PicklistItemInput"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Items",
-            "description": "Structured items. Mutually exclusive with `labels`."
-          },
-          "labels": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Labels",
-            "description": "Shorthand for label-only items. Mutually exclusive with `items`."
-          },
-          "group_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Name",
-            "description": "Optional group applied to every item when using `labels` mode."
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "PicklistCreate"
-      },
-      "PicklistDetail": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
-          },
-          "public_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Public Read"
-          },
-          "item_count": {
-            "type": "integer",
-            "title": "Item Count",
-            "default": 0
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PicklistItem"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "grouped_items": {
-            "anyOf": [
-              {
-                "items": {
-                  "additionalProperties": {
-                    "$ref": "#/components/schemas/JsonValue"
-                  },
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Grouped Items"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "PicklistDetail"
-      },
-      "PicklistItem": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "help_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Help Text"
-          },
-          "group_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Name"
-          },
-          "icon_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Icon Name"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "PicklistItem"
-      },
-      "PicklistItemInput": {
-        "properties": {
-          "label": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Label"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "help_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Help Text"
-          },
-          "group_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Name"
-          },
-          "icon_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Icon Name"
-          },
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public",
-            "default": false
-          },
-          "public_read": {
-            "type": "boolean",
-            "title": "Public Read",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "label"
-        ],
-        "title": "PicklistItemInput"
-      },
-      "PicklistItemUpdate": {
-        "properties": {
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "help_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Help Text"
-          },
-          "group_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Name"
-          },
-          "icon_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Icon Name"
-          },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
-          },
-          "public_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Public Read"
-          }
-        },
-        "type": "object",
-        "title": "PicklistItemUpdate"
-      },
-      "PicklistSummary": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
-          },
-          "public_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Public Read"
-          },
-          "item_count": {
-            "type": "integer",
-            "title": "Item Count",
-            "default": 0
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "PicklistSummary"
-      },
-      "PicklistUpdate": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "is_public": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Public"
-          },
-          "public_read": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Public Read"
-          }
-        },
-        "type": "object",
-        "title": "PicklistUpdate"
       },
       "PicsumCatalog": {
         "properties": {
@@ -253895,39 +251454,6 @@
         ],
         "title": "ProjectMetadata"
       },
-      "ProjectionResponse": {
-        "properties": {
-          "rows": {
-            "items": {
-              "additionalProperties": {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Rows"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "fields": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Fields"
-          }
-        },
-        "type": "object",
-        "required": [
-          "rows",
-          "count",
-          "fields"
-        ],
-        "title": "ProjectionResponse",
-        "description": "Projection result — each row is a free-form subset of the requested fields."
-      },
       "ProjectionStatus": {
         "type": "string",
         "enum": [
@@ -254568,6 +252094,17 @@
             ],
             "title": "Context Withheld",
             "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
+          },
+          "page_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
           }
         },
         "type": "object",
@@ -257175,6 +254712,94 @@
           "enabled"
         ],
         "title": "ProviderScheduleStatus"
+      },
+      "ProviderSessionFailureReport": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "cartesia",
+              "openai",
+              "xai"
+            ],
+            "title": "Provider"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 599.0,
+                "minimum": 100.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Code"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "message"
+        ],
+        "title": "ProviderSessionFailureReport",
+        "description": "Body of ``POST /broker/provider-failures`` — what the provider told the browser.\n\nEverything here is the PROVIDER's text relayed by the client and is used only\nto classify; the reporting person and organization come from the\nauthenticated request, never from this body. Every field is size-bounded."
+      },
+      "ProviderSessionFailureVerdict": {
+        "properties": {
+          "error_type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable"
+          },
+          "user_message": {
+            "type": "string",
+            "title": "User Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error_type",
+          "retryable",
+          "user_message"
+        ],
+        "title": "ProviderSessionFailureVerdict",
+        "description": "The shared classification of a reported session failure.\n\n``user_message`` is the sentence the client shows the person (never the\nprovider's raw text); ``retryable`` says whether reconnecting can help — an\nout-of-credit refusal never can."
       },
       "ProviderSpendRow": {
         "properties": {
@@ -272299,6 +269924,42 @@
         ],
         "title": "RowPage"
       },
+      "RowUpdate": {
+        "properties": {
+          "values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Values",
+            "description": "Column name -> the value to write. Only the columns named are changed."
+          },
+          "add_choices": {
+            "type": "boolean",
+            "title": "Add Choices",
+            "description": "A word that is not yet one of a choice column's choices is refused (409, naming the words) unless this is true; then the words are added to the column in the same change. Your organization's choice setting can forbid adding.",
+            "default": false
+          },
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version",
+            "description": "The version you read. When someone changed the row since, the update is refused (409) with both versions."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "values"
+        ],
+        "title": "RowUpdate"
+      },
       "RowWrite": {
         "properties": {
           "values": {
@@ -276696,28 +274357,6 @@
         ],
         "title": "SchemaReport",
         "description": "Audit of one schema class (an input/output/config root, or a shared model)."
-      },
-      "SchemaTypesResponse": {
-        "properties": {
-          "types": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Types"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "type": "object",
-        "required": [
-          "types",
-          "count"
-        ],
-        "title": "SchemaTypesResponse",
-        "description": "Map of ``field_name -> data_type``."
       },
       "SchooxServiceStatus": {
         "properties": {
@@ -311395,27 +309034,6 @@
         "type": "object",
         "title": "UpdatePlanRequest"
       },
-      "UpdateRowResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "data": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "data"
-        ],
-        "title": "UpdateRowResponse"
-      },
       "UpdateSendingIdentityRequest": {
         "properties": {
           "organization_id": {
@@ -330734,6 +328352,17 @@
             "title": "Context Withheld",
             "description": "The context keys the client withheld this turn (off by the page, the agent or the person's rule). When sent, the context receipt lists saved-rule rows only for these keys; omitted, it lists every saved off-rule for the surfaces in play."
           },
+          "page_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This conversation is the page's own (mode 'own') or the person switched the page off (mode 'off'): the page's values, the screens around it and what identifies the conversation are withheld by the context gate and reported off by the page on the receipt."
+          },
           "writable_variables": {
             "items": {
               "type": "string"
@@ -330755,20 +328384,6 @@
         },
         "type": "object",
         "title": "ResumeRequest"
-      },
-      "aidream__services__datasets__wire__RowUpdate": {
-        "properties": {
-          "data": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "RowUpdate"
       },
       "aidream__services__debian_sources_integrations__service__PackageMetadata": {
         "properties": {
@@ -333623,42 +331238,6 @@
           "content"
         ],
         "title": "GettingStartedContent"
-      },
-      "aidream__services__table_api__contract__RowUpdate": {
-        "properties": {
-          "values": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Values",
-            "description": "Column name -> the value to write. Only the columns named are changed."
-          },
-          "add_choices": {
-            "type": "boolean",
-            "title": "Add Choices",
-            "description": "A word that is not yet one of a choice column's choices is refused (409, naming the words) unless this is true; then the words are added to the column in the same change. Your organization's choice setting can forbid adding.",
-            "default": false
-          },
-          "expected_version": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Expected Version",
-            "description": "The version you read. When someone changed the row since, the update is refused (409) with both versions."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "values"
-        ],
-        "title": "RowUpdate"
       },
       "aidream__services__tcgdex_integrations__service__CardMetadata": {
         "properties": {
