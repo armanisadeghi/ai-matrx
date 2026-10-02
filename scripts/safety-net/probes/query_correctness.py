@@ -238,6 +238,7 @@ def make_tables(admin: Seat, fx: dict) -> dict:
     assert s == 200, ("person_kernel_id", s, kernel)
     s, home = admin.rpc("record_write", {"p_organization_id": ORG, "p_table_id": kernel, "p_data": {"name": f"Copay Review {STAMP}"}})
     assert s == 200, ("home", s, home)
+    fx["home"] = str(home)
 
     def declare(name: str, single: str, slug: str, title: str, fields: list[dict]) -> str:
         spec = {"name": name, "slug": f"{slug}_{int(time.time() * 1000)}", "type": "entity", "label_singular": single,
@@ -515,6 +516,9 @@ def main() -> int:
         for t in reversed(fx.get("tables", [])):
             ok, said = archive(admin, t)
             step([], f"cleanup: archive {t}", ok, said)
+        if fx.get("home"):
+            s, body = admin.rpc("record_delete", {"p_organization_id": ORG, "p_record_id": fx["home"]})
+            step([], "cleanup: archive the home", s == 200, f"{s} {json.dumps(body)[:120]}")
         (OUT / "query-correctness.json").write_text(json.dumps({"walk": "query-correctness", "target": TARGET, "results": results,
                                                                  "log": log}, indent=2, ensure_ascii=False))
     return 0 if all(r["status"] != "FAIL" for r in results) else 1
