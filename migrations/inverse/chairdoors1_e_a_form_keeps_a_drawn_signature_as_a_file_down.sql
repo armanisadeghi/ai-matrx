@@ -1,5 +1,6 @@
 -- chair-step: undo chairdoors1_e_a_form_keeps_a_drawn_signature_as_a_file.sql: restores custom.form_submit's body exactly as it was (a drawing is stored as the text Value).
 -- lane: CHAIR-DOORS-1
+-- based-on: custom.form_submit(uuid, text, jsonb, text, text, text) 554e3a94018e47e51620c1ef06aac8c04947a18ed1e84bdcccca77276b73d3be
 
 CREATE OR REPLACE FUNCTION custom.form_submit(p_form_id uuid, p_origin text, p_payload jsonb, p_bucket text, p_honeypot text DEFAULT NULL::text, p_client_key text DEFAULT NULL::text)
  RETURNS TABLE(submission_id uuid, record_id uuid, state text, message text)

@@ -1,5 +1,6 @@
 -- chair-step: undo chairdoors1_c_a_rule_is_worked_out_from_the_callers_seat.sql: restores custom.rule_eval's body exactly as it was, takes EXECUTE back from authenticated on custom.rule_eval and history.capture_is_open, removes the three door rows and drops custom._rule_eval_seated.
 -- lane: CHAIR-DOORS-1
+-- based-on: custom.rule_eval(uuid, jsonb, jsonb, jsonb) e3e14c1d2f2a28ba416932415edb2bd59455a5f334930bc61c22b8d56e5e500d
 delete from platform.client_callable_door
  where declared_by = 'chairdoors1_c_a_rule_is_worked_out_from_the_callers_seat.sql';
 revoke execute on function custom.rule_eval(uuid, jsonb, jsonb, jsonb) from authenticated;

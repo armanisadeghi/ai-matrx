@@ -447,7 +447,7 @@ async function main() {
     console.log(`\x1b[31m${failures} of ${compared} answers DISAGREE (the older grid or the expected answer vs the store).\x1b[0m`);
     process.exit(1);
   }
-  console.log(`\x1b[32mPARITY — ${FORMULAS.length} formulas × 10 appointments the same from the older grid and from the store, and ${STORE_ONLY.length} formulas of the eight newer functions × 10 the same as worked out here: ${compared} answers.\x1b[0m`);
+  console.log(`\x1b[32mPARITY — ${FORMULAS.length} formulas × 10 appointments the same from the older grid and from the store, and ${STORE_ONLY.length} formulas of the eight newer functions (each on every appointment, or once when it reads none) the same as worked out here: ${compared} answers.\x1b[0m`);
 }
 
 main().catch((e) => {

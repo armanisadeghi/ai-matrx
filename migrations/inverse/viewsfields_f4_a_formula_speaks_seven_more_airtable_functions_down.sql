@@ -1,16 +1,19 @@
 -- lock: custom
 -- lane: VIEWS-AND-FIELDS
--- based-on: custom.formula_node_kinds() 7e7db983a6908767a2dbb0dfa0cffabbacea17c92ead785b4147accfcf06fe1d
--- based-on: custom.formula_eval(uuid, jsonb, jsonb, jsonb) ca3e4a3eb43264c86095217ff20bdf1cbe6a6e365e55a654272605619dfcad61
+-- based-on: custom.formula_node_kinds() 167dae64dd5fb2ad275f1851e6da2f98419c89b8659eb26e16433f8cf997da8f
+-- based-on: custom.formula_eval(uuid, jsonb, jsonb, jsonb) 51688809971ada2a1be338ff4cf5d184e752077adc40c44a5d94e13e08ccbde2
 -- based-on: custom._fxp_type(jsonb, jsonb) a0887838d72777784413b691317f7e1ebca94567757effc4ae72d79218f5f29b
--- based-on: custom._fx_datetime_format(timestamp without time zone, text) 63e86a27828cc56b9ac83c770cefbca00d0962e8e9bb778c7844b57f08422f72
+-- based-on: custom._fx_ordinal(integer) e1a8cd17b9c816c642cab14686915afb546543f3ce59d51d4f5992643b313a14
+-- based-on: custom._fx_datetime_format(timestamp without time zone, text) fb9c2a084acbf65e1a6aa66af69c89b0d50a5cfef048a62f74009c727efeba2f
+-- based-on: custom._fx_regex(text, text) 3d672b4a276e607345b8ebb90f59d5367c471fba54d498fd37086d4f7c5419d3
+-- based-on: custom._fx_items(uuid, jsonb, jsonb, jsonb) a26379f005faa37a92c2a4aca4eaca372542a1482c22ac51c369ee68d2eae009
 -- based-on: custom._fx_workday(timestamp without time zone, integer, jsonb) 865a962f7497147ffc51b7b254d3c19d113b1b6cf6b70a3e3a74ca49f4c5ecd2
 -- chair-step: the inverse of viewsfields_f4_a_formula_speaks_seven_more_airtable_functions.sql.
 -- It puts back, byte for byte, custom.formula_node_kinds, custom.formula_eval and custom._fxp_type
--- as the main database held them before (2026-10-02), and drops custom._fx_datetime_format and
--- custom._fx_workday. What it undoes: SWITCH, FIND, SUBSTITUTE, REGEX_MATCH, DATETIME_FORMAT,
--- WORKDAY and ARRAYJOIN leave the formula language; a formula column already written with one of
--- them is refused by name ("There is no function called …") on its next read.
+-- as the main database held them before (2026-10-02), and drops the five helpers that file
+-- created. What it undoes: SWITCH, FIND, SUBSTITUTE, REGEX_MATCH, DATETIME_FORMAT, WORKDAY,
+-- ARRAYJOIN and ARRAYCOMPACT leave the formula language; a formula column already written with
+-- one of them is refused by name ("There is no function called …") on its next read.
 
 set local statement_timeout = '60s';
 
@@ -341,5 +344,8 @@ begin
 end
 $function$;
 
+drop function custom._fx_items(uuid, jsonb, jsonb, jsonb);
+drop function custom._fx_regex(text, text);
 drop function custom._fx_datetime_format(timestamp, text);
+drop function custom._fx_ordinal(integer);
 drop function custom._fx_workday(timestamp, integer, jsonb);

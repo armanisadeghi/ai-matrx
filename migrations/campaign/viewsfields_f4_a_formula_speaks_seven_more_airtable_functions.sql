@@ -228,7 +228,7 @@ begin
       -- years
       when v_tok = 'YY'   then to_char(p_ts, 'YY')
       when v_tok = 'YYYY' then to_char(p_ts, 'YYYY')
-      when v_tok = 'gg'   then right(lpad(v_wyr::text, 2, '0'), 2)
+      when v_tok = 'gg'   then lpad(right(v_wyr::text, 2), 2, '0')
       when v_tok = 'gggg' then lpad(v_wyr::text, 4, '0')
       when v_tok = 'ggggg' then lpad(v_wyr::text, 5, '0')
       when v_tok = 'GG'   then right(to_char(p_ts, 'IYYY'), 2)
@@ -391,7 +391,7 @@ begin
   -- link's titles, any other list as it is (or its JSON text), one value as a list of one. An
   -- empty item stays in the list as null — ARRAYJOIN keeps it, ARRAYCOMPACT drops it.
   if jsonb_typeof(p_node) = 'object' and p_node ? 'field' and not (p_node ? 'op') then
-    v_a := custom.rule_eval(p_organization_id, p_node, p_values, coalesce(p_context, '{}'::jsonb));
+    v_a := custom.rule_eval(p_organization_id, p_node, p_values, coalesce(p_context, '{}'::jsonb) - 'fx_nested');
     select f.data ->> 'type' into v_type
       from custom.record f
      where f.organization_id = p_organization_id and f.id = (p_node ->> 'field')::uuid
@@ -502,16 +502,35 @@ declare
   v_i     integer;
   v_k     integer;
   v_p     integer;
+  v_msg   text;
 begin
+  -- ── ONCE, AT THE TOP OF A FORMULA: a statement timeout while it is being worked out is said
+  -- in a plain sentence, never as the database's own words. It keeps its sqlstate (57014), so
+  -- custom.derived_value still re-raises it as a cancelled read and never shows an empty cell.
+  -- Inner calls carry `fx_nested` and skip this block (one subtransaction per formula, not per
+  -- node); the key is taken off again before anything is handed to custom.rule_eval.
+  if not coalesce(p_context ? 'fx_nested', false) then
+    begin
+      return custom.formula_eval(p_organization_id, p_expr, p_values,
+                                 coalesce(p_context, '{}'::jsonb) || '{"fx_nested": true}'::jsonb);
+    exception when query_canceled then
+      get stacked diagnostics v_msg = message_text;
+      if left(v_msg, 1) = '`' then
+        raise;   -- already said by the function that was running (REGEX_MATCH)
+      end if;
+      raise exception 'This formula took too long to work out and was stopped.' using errcode = '57014';
+    end;
+  end if;
+
   if p_expr is null or jsonb_typeof(p_expr) <> 'object' then
-    return custom.rule_eval(p_organization_id, p_expr, p_values, coalesce(p_context, '{}'::jsonb));
+    return custom.rule_eval(p_organization_id, p_expr, p_values, coalesce(p_context, '{}'::jsonb) - 'fx_nested');
   end if;
 
   -- ── A COLUMN. What the older grid's `displayValueOf` seam did: a choice or a relation is
   -- the WORDS a person reads (so `{Status} = "No-show"` compares the label), everything else
   -- is its stored value; a list or an object reads as its JSON (normalizeCell).
   if p_expr ? 'field' and not (p_expr ? 'op') then
-    v_a := custom.rule_eval(p_organization_id, p_expr, p_values, coalesce(p_context, '{}'::jsonb));
+    v_a := custom.rule_eval(p_organization_id, p_expr, p_values, coalesce(p_context, '{}'::jsonb) - 'fx_nested');
     if v_a is null or jsonb_typeof(v_a) = 'null' then
       return 'null'::jsonb;
     end if;
@@ -532,7 +551,7 @@ begin
   if v_op is null or left(v_op, 3) <> 'fx.' then
     -- Every node that is not the formula language's own is a Rule node, answered by the
     -- Rules' evaluator, unchanged — so every formula written before today answers the same.
-    return custom.rule_eval(p_organization_id, p_expr, p_values, coalesce(p_context, '{}'::jsonb));
+    return custom.rule_eval(p_organization_id, p_expr, p_values, coalesce(p_context, '{}'::jsonb) - 'fx_nested');
   end if;
 
   select * into v_spec from custom.formula_node_kinds() k where k.node = v_op;
@@ -609,20 +628,6 @@ begin
     return coalesce((select jsonb_agg(u.x order by u.i)
                        from jsonb_array_elements(v_a) with ordinality u(x, i)
                       where not custom._fx_blank(u.x)), '[]'::jsonb);
-  end if;
-    end if;
-    if custom._fx_blank(v_a) then
-      return '""'::jsonb;
-    end if;
-    if jsonb_typeof(v_a) <> 'array' then
-      v_a := jsonb_build_array(v_a);
-    end if;
-    return to_jsonb(coalesce((
-      select string_agg(case when v_type in ('list', 'relation')
-                             then custom.field_words(p_organization_id, (v_one ->> 'field')::uuid, u.x)
-                             else custom._fx_text(u.x) end, v_s order by u.i)
-        from jsonb_array_elements(v_a) with ordinality u(x, i)
-       where not custom._fx_blank(u.x)), ''));
   end if;
 
   -- ── the store's own kinds ───────────────────────────────────────────────────────────────

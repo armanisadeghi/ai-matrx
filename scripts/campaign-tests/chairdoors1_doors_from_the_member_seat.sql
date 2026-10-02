@@ -72,7 +72,8 @@ begin
   insert into res values ('A every live field', jsonb_array_length(v -> 'fields') = current_setting('t.want_fields')::int,
                           format('%s of %s', jsonb_array_length(v -> 'fields'), current_setting('t.want_fields')));
   insert into res values ('A choices per list field', (select count(*) from jsonb_object_keys(v -> 'choices')) = current_setting('t.want_lists')::int
-                          and (select bool_and(jsonb_array_length(e.value) > 0 and e.value -> 0 ? 'key' and e.value -> 0 ? 'label' and e.value -> 0 ? 'id' and e.value -> 0 ? 'retired') from jsonb_each(v -> 'choices') e),
+                          and (select bool_and(jsonb_typeof(e.value) = 'array' and (jsonb_array_length(e.value) = 0 or (e.value -> 0 ? 'key' and e.value -> 0 ? 'label' and e.value -> 0 ? 'id' and e.value -> 0 ? 'retired'))) from jsonb_each(v -> 'choices') e)
+                          and (select count(*) from jsonb_each(v -> 'choices') e where jsonb_array_length(e.value) > 0) > 0,
                           (select string_agg(k, ',') from jsonb_object_keys(v -> 'choices') k));
   insert into res values ('A stamp present', length(coalesce(v ->> 'stamp', '')) = 32, v ->> 'stamp');
   begin
@@ -80,7 +81,7 @@ begin
     insert into res values ('A foreign table refused', false, 'answered');
   exception when insufficient_privilege then
     get stacked diagnostics m = message_text;
-    insert into res values ('A foreign table refused', m like 'You do not have access to this table%', m);
+    insert into res values ('A foreign table refused', m = 'You do not have access to this table, so custom.table_kind_facts has nothing to show you.', m);
   end;
   begin
     perform custom.table_kind_facts(gen_random_uuid());

@@ -386,6 +386,11 @@ describe("findTakenSlugs", () => {
 // The write sequence
 // ---------------------------------------------------------------------------
 
+/** Every planned kind declared `record` — what a person picks for a plain report shape. */
+function recordsFor(plan: ShapePlan): Record<string, "record"> {
+  return Object.fromEntries(plan.planned.map((k) => [k.kind, "record" as const]));
+}
+
 describe("createShapeFromPlan", () => {
   it("writes definitions, then edges, then the canonical example", async () => {
     const { client, calls } = makeMockClient();
@@ -396,6 +401,7 @@ describe("createShapeFromPlan", () => {
       organizationId: ORG_ID,
       plan,
       sample: VALID_SAMPLE,
+      dispositions: recordsFor(plan),
     });
 
     expect(calls.map((c) => c.table)).toEqual([
@@ -413,6 +419,7 @@ describe("createShapeFromPlan", () => {
       expect(row.metadata).toEqual({
         source: "schema_proposal",
         user_authored: true,
+        disposition: "record",
       });
       expect(row.emitted_json_schema).toBeTruthy();
     }
@@ -444,6 +451,7 @@ describe("createShapeFromPlan", () => {
       organizationId: ORG_ID,
       plan: planOrThrow(),
       sample: VALID_SAMPLE,
+      dispositions: recordsFor(planOrThrow()),
     });
     expect(result.validationStatus).toBe("failed");
   });
@@ -456,6 +464,7 @@ describe("createShapeFromPlan", () => {
         organizationId: ORG_ID,
         plan: planOrThrow(),
         sample: VALID_SAMPLE,
+        dispositions: recordsFor(planOrThrow()),
       }),
     ).rejects.toThrow(/canonical example failed to write.*rolled back/s);
     // Compensation: soft-delete updates on kind_edge + kind_definition.
@@ -479,6 +488,7 @@ describe("createShapeFromPlan", () => {
         organizationId: ORG_ID,
         plan: planOrThrow(),
         sample: VALID_SAMPLE,
+        dispositions: recordsFor(planOrThrow()),
       }),
     ).rejects.toThrow(/Failed to link nested Shape kinds.*rolled back/s);
     const updates = calls.filter((c) => c.op === "update");
@@ -496,11 +506,52 @@ describe("createShapeFromPlan", () => {
       organizationId: ORG_ID,
       plan: planOrThrow(),
       sample: VALID_SAMPLE,
+      dispositions: recordsFor(planOrThrow()),
       rootLabel: "My Custom Label",
     });
     const defRows = calls[0].payload as Array<Record<string, unknown>>;
     expect(defRows[0].label).toBe("My Custom Label");
     expect(defRows[1].label).not.toBe("My Custom Label");
+  });
+});
+
+describe("createShapeFromPlan — a kind says what its output is (KINDS-GLUE)", () => {
+  it("refuses a shape whose root kind has no disposition, before any write", async () => {
+    const { client, calls } = makeMockClient();
+    const plan = planOrThrow();
+    const dispositions = { ...recordsFor(plan), [plan.rootSlug]: null };
+    await expect(
+      createShapeFromPlan({ client, organizationId: ORG_ID, plan, sample: VALID_SAMPLE, dispositions }),
+    ).rejects.toThrow(/does not say what its output is/);
+    expect(calls).toEqual([]);
+  });
+
+  it("refuses when a nested child kind has no disposition, before any write", async () => {
+    const { client, calls } = makeMockClient();
+    const plan = planOrThrow();
+    const child = plan.planned.find((k) => k.kind !== plan.rootSlug);
+    expect(child).toBeDefined();
+    const dispositions: Record<string, string> = { [plan.rootSlug]: "record" };
+    await expect(
+      createShapeFromPlan({
+        client,
+        organizationId: ORG_ID,
+        plan,
+        sample: VALID_SAMPLE,
+        dispositions: dispositions as Record<string, "record">,
+      }),
+    ).rejects.toThrow(new RegExp(`"${child!.kind}" does not say what its output is`));
+    expect(calls).toEqual([]);
+  });
+
+  it("refuses a value outside the closed set", async () => {
+    const { client, calls } = makeMockClient();
+    const plan = planOrThrow();
+    const dispositions = { ...recordsFor(plan), [plan.rootSlug]: "table" } as unknown as Record<string, "record">;
+    await expect(
+      createShapeFromPlan({ client, organizationId: ORG_ID, plan, sample: VALID_SAMPLE, dispositions }),
+    ).rejects.toThrow(/which is not one of record, envelope, receipt, proposal, prose/);
+    expect(calls).toEqual([]);
   });
 });
 

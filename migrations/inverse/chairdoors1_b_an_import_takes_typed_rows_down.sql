@@ -1,5 +1,7 @@
 -- chair-step: undo chairdoors1_b_an_import_takes_typed_rows.sql — restores the two bodies exactly as they were (csv and xlsx only).
 -- lane: CHAIR-DOORS-1
+-- based-on: custom.io_import_begin(uuid, uuid, text, text, jsonb, text, jsonb, text, bigint, boolean) 6715a819f585a6e323ce97354ee7a17f643d159c19407722ea9623f0d31f9f94
+-- based-on: custom.io_import_rows(uuid, uuid, jsonb, jsonb) dd9d07cfa744e1a24a2d6158ea541b75bffbadf4bc6332bced295771e0a7ff45
 
 CREATE OR REPLACE FUNCTION custom.io_import_begin(p_organization_id uuid, p_table_id uuid, p_format text DEFAULT 'csv'::text, p_source_name text DEFAULT NULL::text, p_source_columns jsonb DEFAULT '[]'::jsonb, p_file_hash text DEFAULT NULL::text, p_policy jsonb DEFAULT '{}'::jsonb, p_dedupe_key text DEFAULT NULL::text, p_file_bytes bigint DEFAULT NULL::bigint, p_force boolean DEFAULT false)
  RETURNS jsonb

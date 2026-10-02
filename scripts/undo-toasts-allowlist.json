@@ -1,0 +1,33 @@
+{
+  "about": "Hand-written Undo toasts awaiting announceReversible (lib/reversible). Only ever shrinks: node scripts/check-undo-toasts.mjs --update.",
+  "files": {
+    "components/mardown-display/blocks/table/StreamingTableRenderer.tsx": 1,
+    "components/mardown-display/tables/MarkdownTable.tsx": 1,
+    "components/rich-editor/visual/nodes/IslandBlockView.tsx": 1,
+    "components/user-generated-table-data/DeleteRowModal.tsx": 1,
+    "components/user-generated-table-data/UserTableViewer.tsx": 3,
+    "features/assists/components/AssistsDock.tsx": 1,
+    "features/education/onboard/components/DataOwnershipPage.tsx": 1,
+    "features/files/devices/console/FilesPanel.tsx": 1,
+    "features/flashcards/components/home/useFlashcardSetRowActions.tsx": 1,
+    "features/knowledge/hub/components/KnowledgeHubPage.tsx": 3,
+    "features/knowledge/hub/tags/PeekTags.tsx": 1,
+    "features/marketing/seo/keyword-research/components/KeywordResearchWorkbench.tsx": 2,
+    "features/marketing/seo/keyword-research/components/SiteKeywordPerformanceWorkspace.tsx": 1,
+    "features/marketing/seo/keyword/KeywordIntelPanel.tsx": 1,
+    "features/notes/components/note-actions/noteMenuRegistry.tsx": 1,
+    "features/notes/components/NoteSidebarBulkBar.tsx": 1,
+    "features/notes/hooks/useNoteDelete.ts": 1,
+    "features/notifications/useInbox.ts": 1,
+    "features/rich-document/actions/handlers/answer-tools.ts": 1,
+    "features/rich-document/annotations/AnnotationPanel.tsx": 1,
+    "features/source-studio/components/SourceStudio.tsx": 1,
+    "features/spatial/demo/SpatialDemoBoard.tsx": 3,
+    "features/spatial/home/UserBoard.tsx": 2,
+    "features/spatial/tools/useBoardAgentTools.ts": 1,
+    "features/transcripts/browse/useTranscriptRowActions.tsx": 1,
+    "features/war-room/components/board/RoomBoardView.tsx": 4,
+    "features/workflow-runtime/components/spatial/WorkflowRunSpatialView.tsx": 2,
+    "packages/chat/src/agents/components/conversation-actions/conversationActionRegistry.tsx": 1
+  }
+}

@@ -48,8 +48,17 @@ begin
   end if;
 
   perform custom.assert_store_door(v_org, 'custom.table_kind_facts');
-  perform custom.assert_client_may_reach(v_org, 'custom.table_kind_facts');
-  perform custom.assert_may_know_table(v_org, p_table_id, 'custom.table_kind_facts');
+  -- A TABLE IN AN ORGANIZATION SHE IS NOT IN IS REFUSED IN THE SAME SENTENCE AS AN INVENTED ID.
+  -- assert_client_may_reach's own sentence ("You are not a member of that organization…") would
+  -- tell her the id is a real Table somewhere; the decision is the wall's, only the words are kept.
+  begin
+    perform custom.assert_client_may_reach(v_org, 'custom.table_kind_facts');
+    perform custom.assert_may_know_table(v_org, p_table_id, 'custom.table_kind_facts');
+  exception when insufficient_privilege then
+    raise exception 'You do not have access to this table, so % has nothing to show you.', 'custom.table_kind_facts'
+      using errcode = '42501',
+            hint = 'VIS-5 / T10: you know a table if you may open the table itself, or if anything in it has been shared with you. Ask whoever owns it to share the table, or a record in it, with you.';
+  end;
 
   select * into v_table
     from custom.record t

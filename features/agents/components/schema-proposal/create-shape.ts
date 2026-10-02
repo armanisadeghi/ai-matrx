@@ -48,6 +48,10 @@ import {
   type LegResult,
 } from "@ai-matrx/content-ir";
 import { RESERVED_SHAPE_SLUGS } from "@/features/content-ir/studio/constants";
+import {
+  kindDispositionRefusal,
+  type KindDisposition,
+} from "@/features/content-ir/registry/kind-dispositions";
 import { isReservedDirectiveSlug } from "@ai-matrx/content-ir";
 
 import type { ShapeWriteClient } from "@/features/content-ir/studio/shape-authoring-service";
@@ -468,6 +472,12 @@ export interface CreateShapeOptions {
   /** User-edited display label for the ROOT kind (children keep converter labels). */
   rootLabel?: string;
   exampleLabel?: string;
+  /**
+   * What each planned kind's output IS (KINDS-GLUE), keyed by slug — the root and every
+   * nested child the plan creates. Chosen by the person; never defaulted. A plan with any
+   * kind missing one is refused before the first write.
+   */
+  dispositions: Readonly<Record<string, KindDisposition | null | undefined>>;
 }
 
 /**
@@ -512,6 +522,15 @@ export async function createShapeFromPlan(
     );
   }
 
+  // KINDS-GLUE wave 1b: every kind this create writes says what its output is — checked
+  // before the first insert (the registry trigger refuses it too, without the sentence).
+  const undeclared = plan.planned
+    .map((k) => kindDispositionRefusal(k.kind, options.dispositions[k.kind]))
+    .filter((refusal): refusal is string => refusal !== null);
+  if (undeclared.length > 0) {
+    throw new Error(undeclared.join(" "));
+  }
+
   const defRows: KindDefinitionInsert[] = plan.planned.map((k) => ({
     kind: k.kind,
     label:
@@ -528,7 +547,11 @@ export async function createShapeFromPlan(
     // A user kind has no component — the dual gate's render leg cannot pass.
     // Inactive kinds render through the generic viewer (correct, not a bug).
     is_active: false,
-    metadata: { source: "schema_proposal", user_authored: true } as Json,
+    metadata: {
+      source: "schema_proposal",
+      user_authored: true,
+      disposition: options.dispositions[k.kind],
+    } as Json,
     // the row controls ride the column defaults. Never write "Only me"
     // here — a personal kind is editable only by its creating account and
     // strands org admins/super admins at viewer (DB CHECK enforces this).

@@ -33,8 +33,6 @@
 -- No strong lock: three INSERTs into the knob register and one CREATE OR REPLACE of a function body
 -- with the same signature and return type. No grant changes.
 
-set lock_timeout = '30s';
-set statement_timeout = '120s';
 
 insert into platform.feature_knob
   (feature, key, value, default_value, value_type, unit, min_value, max_value, label, description,

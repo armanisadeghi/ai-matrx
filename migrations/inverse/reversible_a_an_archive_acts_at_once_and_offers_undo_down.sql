@@ -1,13 +1,7 @@
 -- chair-step: puts custom.table_archive back to the body it had before reversible_a_an_archive_acts_at_once_and_offers_undo.sql (identical but for the `confirm_over` key it answers) and removes the three knob rows that file added (platform/undo_window_seconds, platform/undo_window_guide_seconds, custom/archive_confirm_over) with any overrides of them. Screens then ask before every table archive and use their own windows; nothing is dropped, granted or revoked.
 -- lane: TABLE-ACTIONS
 
-set lock_timeout = '30s';
-set statement_timeout = '120s';
 
-delete from platform.knob_override
- where (feature, key) in (('platform', 'undo_window_seconds'), ('platform', 'undo_window_guide_seconds'), ('custom', 'archive_confirm_over'));
-delete from platform.feature_knob
- where (feature, key) in (('platform', 'undo_window_seconds'), ('platform', 'undo_window_guide_seconds'), ('custom', 'archive_confirm_over'));
 
 CREATE OR REPLACE FUNCTION custom.table_archive(p_organization_id uuid, p_table_id uuid, p_chunk integer DEFAULT 50, p_include_table boolean DEFAULT true)
  RETURNS jsonb
@@ -237,3 +231,9 @@ begin
 end;
 $function$
 ;
+
+-- The body first: the knob register refuses to drop a knob a function still reads.
+delete from platform.knob_override
+ where (feature, key) in (('platform', 'undo_window_seconds'), ('platform', 'undo_window_guide_seconds'), ('custom', 'archive_confirm_over'));
+delete from platform.feature_knob
+ where (feature, key) in (('platform', 'undo_window_seconds'), ('platform', 'undo_window_guide_seconds'), ('custom', 'archive_confirm_over'));

@@ -10,7 +10,7 @@
 --   custom._rule_eval_seated: custom.assert_store_door + custom.assert_client_may_reach on the organization,
 --     custom.assert_may_know_table on p_context.table_id when given, the viewer rung on p_context.record_id
 --     and p_context.fx_self_id when given; then the one evaluator, with sibling_count and stage_count
---     counting only the records custom.has_visibility gives her (mx.rule_eval_seat, transaction-local,
+--     counting only the records the one ladder lets her see (mx.rule_eval_seat, transaction-local,
 --     set and restored by this helper alone, exception path included).
 
 CREATE FUNCTION custom._rule_eval_seated(p_organization_id uuid, p_expr jsonb, p_values jsonb, p_context jsonb DEFAULT '{}'::jsonb)
@@ -40,11 +40,8 @@ begin
   -- and the counts read it by id).
   foreach v_id in array array_remove(array[nullif(v_ctx ->> 'record_id', '')::uuid,
                                            nullif(v_ctx ->> 'fx_self_id', '')::uuid], null) loop
-    if not custom.has_visibility(v_me, 'record', v_id, 'viewer'::public.permission_level) then
-      raise exception 'You do not have access to this record, so custom.rule_eval has nothing to work out about it.'
-        using errcode = '42501',
-              hint = 'A rule is worked out from your own seat: the record it is about has to be one you may see.';
-    end if;
+    perform custom.assert_client_may_open(p_organization_id, v_id, 'custom.rule_eval',
+                                          'viewer'::public.permission_level, 'record');
   end loop;
 
   -- THE SEAT, for the length of this one call. sibling_count and stage_count count only what she may see.

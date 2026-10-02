@@ -16,6 +16,8 @@ import type { RecordsDataSource, RecordsError } from "@ai-matrx/records";
 import * as doors from "@/features/unified-data/hub/doors";
 import { ArchivedTablesList, type ArchivedTable } from "@/features/unified-data/hub/ArchivedTablesList";
 import { ArchivedPortalsEverywhere } from "@/features/unified-data/hub/ArchivedPortalsEverywhere";
+import { useFoundHere } from "@/lib/reversible/useFoundHere";
+import { ARCHIVED_TABLES_SPOT } from "./archivedTablesPlace";
 
 // NEVER THOUSANDS AT ONCE (DATA-HOME-3F; VERIFY-DATA-HOME-3 W4). The member's archive is 1,769
 // Tables: drawn in one list it was 7,116 lines of text, and the second read hit the signed-in
@@ -76,6 +78,10 @@ export function DataHomeArchive({
   const onOpenChange = useCallback((open: boolean) => {
     if (open) setOpened(true);
   }, []);
+  // THE REVERSIBLE ACTION'S "Open Archived tables" lands here (`?found=archived-tables`): the
+  // disclosure opens itself, reads afresh (the table just archived is in it) and flashes.
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const found = useFoundHere(ARCHIVED_TABLES_SPOT, sectionRef);
 
   const readPage = useCallback(
     async (offset: number, prior: ArchivedTable[]) => {
@@ -100,6 +106,18 @@ export function DataHomeArchive({
   useEffect(() => {
     if (opened) void read();
   }, [read, opened]);
+
+  const arrived = useRef(false);
+  useEffect(() => {
+    if (!found) {
+      arrived.current = false;
+      return;
+    }
+    if (arrived.current) return;
+    arrived.current = true;
+    if (opened) void read();
+    else setOpened(true);
+  }, [found, opened, read]);
 
   const showMore = useCallback(() => {
     void readPage(tables?.length ?? 0, tables ?? []);
@@ -131,10 +149,14 @@ export function DataHomeArchive({
   );
 
   return (
-    <section data-data-home-archive="" className="rounded-lg border border-border bg-card p-3">
+    <section ref={sectionRef} data-data-home-archive="" className="rounded-lg border border-border bg-card p-3">
       {/* read-gate-exempt: a troubled first read shows no count; the list says the trouble inside */}
       {/* The count is said only when the whole archive is in hand; a partial count would be a guess. */}
-      <ArchivedDisclosure noun="tables" onOpenChange={onOpenChange} count={complete && !trouble ? shown?.length : undefined}>
+      <ArchivedDisclosure
+        key={found ? "found" : "home"}
+        noun="tables"
+        defaultOpen={found}
+        onOpenChange={onOpenChange} count={complete && !trouble ? shown?.length : undefined}>
         <ArchivedTablesList
           tables={shown}
           readTrouble={null}

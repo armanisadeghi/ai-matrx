@@ -706,6 +706,8 @@
     "check:links-carry-their-organization": "bash scripts/check-links-carry-their-organization.sh",
     "check:route-manifest:live:self-test": "tsx scripts/check-route-manifest-live.ts --self-test",
     "check:record-toasts": "tsx scripts/check-record-toasts.ts",
+    "check:undo-toasts": "node scripts/check-undo-toasts.mjs",
+    "check:undo-toasts:self-test": "node scripts/check-undo-toasts.mjs --self-test",
     "check:record-toasts:strict": "tsx scripts/check-record-toasts.ts --strict",
     "check:record-toasts:update": "tsx scripts/check-record-toasts.ts --update",
     "check:record-toasts:self-test": "tsx scripts/check-record-toasts.ts --self-test",

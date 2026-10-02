@@ -1,6 +1,7 @@
 -- chair-step: the inverse of lane12_d_an_expected_version_of_nothing_is_a_stale_write.sql. It restores the body of custom.record_upsert(uuid, uuid, text[], jsonb, integer) as read from the clone on 2026-10-02 before that file (sha256 2679ab70273a050ec2444689fdf18fec38173ea2007bbdb581803dcea4df0cfa): a call with p_expected_version that finds no live record of its key again writes a new record. Same signature, grants and security; nothing else is touched.
 -- lane: PLATFORM-APP-DATA (v6 lane 12)
 -- lock: custom
+-- based-on: custom.record_upsert(uuid, uuid, text[], jsonb, integer) c45cc99e91e1fa2e31c42f3e29610cd0aef785767e2fe2e4540ebfdd8f078a27
 
 set local lock_timeout = '2s';
 
