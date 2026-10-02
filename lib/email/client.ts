@@ -6,6 +6,7 @@ import { Resend } from "resend";
 import type { Attachment } from "resend";
 
 import { outboundSuppression } from "@/lib/communications/outbound-guard";
+import { routeRecipients } from "@/lib/communications/test-inbox";
 
 // Lazy initialization to avoid build-time errors when API key is not available
 let resend: Resend | null = null;
@@ -87,10 +88,21 @@ interface SendEmailOptions {
  * Requires RESEND_API_KEY and EMAIL_FROM environment variables
  */
 export async function sendEmail(options: SendEmailOptions) {
-  const { to, subject, html, text, from, replyTo, attachments } = options;
+  const { from, replyTo, attachments, html, text } = options;
+
+  // 🚨 A test account's mail goes to the ONE designated test inbox, never to admin.com /
+  // test.com (strangers' domains) — named in the subject and a header, never dropped
+  // (lib/communications/test-inbox.ts; every route reaches Resend through here).
+  const routing = routeRecipients(options.to, options.subject);
+  const { to, subject } = routing;
+  if (routing.redirected.length > 0) {
+    console.info(
+      `Test-account email for ${routing.redirected.join(", ")} redirected to the test inbox`,
+    );
+  }
 
   // 🚨 A copy of production never emails a person (lib/communications/outbound-guard.ts).
-  for (const recipient of Array.isArray(to) ? to : [to]) {
+  for (const recipient of to) {
     const suppressed = outboundSuppression("email", recipient);
     if (suppressed) {
       return {
@@ -112,12 +124,13 @@ export async function sendEmail(options: SendEmailOptions) {
     const client = getResendClient();
     const { data, error } = await client.emails.send({
       from: senderAddress,
-      to: Array.isArray(to) ? to : [to],
+      to,
       subject,
       html,
       text,
       replyTo,
       attachments,
+      ...(routing.headers ? { headers: routing.headers } : {}),
     });
 
     if (error) {
