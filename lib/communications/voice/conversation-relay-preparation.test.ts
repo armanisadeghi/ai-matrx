@@ -4,9 +4,10 @@ import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 jest.mock("server-only", () => ({}));
 
+// ops.system_error has one write door: rpc("record_system_error", { p_error }).
+const mockRpc = jest.fn();
 const mockInsert = jest.fn();
-const mockFrom = jest.fn(() => ({ insert: mockInsert }));
-const mockSchema = jest.fn(() => ({ from: mockFrom }));
+const mockSchema = jest.fn(() => ({ rpc: mockRpc }));
 const mockCreateAdminClient = jest.fn(() => ({ schema: mockSchema }));
 
 jest.mock("@/utils/supabase/adminClient", () => ({
@@ -30,8 +31,13 @@ describe("prepareConversationRelaySession", () => {
   beforeEach(() => {
     global.fetch = fetchMock;
     fetchMock.mockReset();
-    mockInsert.mockReset().mockResolvedValue({ error: null });
-    mockFrom.mockClear();
+    mockInsert.mockReset();
+    mockRpc.mockReset().mockImplementation(
+      (_fn: string, args: { p_error: unknown }) => {
+        mockInsert(args.p_error);
+        return Promise.resolve({ error: null });
+      },
+    );
     mockSchema.mockClear();
     mockCreateAdminClient.mockClear();
   });
