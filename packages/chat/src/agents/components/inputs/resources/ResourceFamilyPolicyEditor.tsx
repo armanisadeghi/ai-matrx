@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Loader2, Plus, X } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@host/components/ui/checkbox";
@@ -207,7 +208,7 @@ export function ResourceFamilyPolicyEditor({
                 />
                 <span className="min-w-0">
                   <span className="block font-medium">
-                    {familyWords(key, key.replace(/_/g, " "), 0).label}
+                    {familyWords(key, humanizeIdentifier(key) || key, 0).label}
                   </span>
                   <span className="text-muted-foreground">
                     Turned off earlier · not made for this file yet
@@ -290,7 +291,7 @@ export function ResourceFamilyPolicyEditor({
                         <SelectItem value={promotion.representation}>
                           {familyWords(
                             promotion.representation,
-                            promotion.representation.replace(/_/g, " "),
+                            humanizeIdentifier(promotion.representation) || promotion.representation,
                             0,
                           ).label}{" "}
                           (chosen earlier)

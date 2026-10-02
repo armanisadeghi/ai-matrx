@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // lib/scoped-config/ladder.ts
 //
 // ONE place that answers, for one key at one rung: where did this value come
@@ -120,7 +121,7 @@ const RUNG_NAMES: Record<string, string> = {
 };
 
 export function rungName(kind: string): string {
-  return RUNG_NAMES[kind] ?? kind.replace(/_/g, " ");
+  return RUNG_NAMES[kind] ?? (humanizeIdentifier(kind) || kind);
 }
 
 /** Title-case rung name for a badge ("Organization", "Platform"). */

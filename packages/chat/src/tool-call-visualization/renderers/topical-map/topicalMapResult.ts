@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * topicalMapResult.ts — reading ONE `topical_map` tool result (28 actions).
  *
@@ -98,7 +99,7 @@ export const TOPICAL_MAP_WRITING_ACTIONS: ReadonlySet<string> = new Set([
 
 export function humanizeAction(action: string | null): string {
   if (!action) return "Topical map";
-  return action.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+  return humanizeIdentifier(action) || action;
 }
 
 export function topicalMapActionOf(entry: ToolLifecycleEntry): string | null {

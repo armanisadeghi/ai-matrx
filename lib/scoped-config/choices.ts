@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // lib/scoped-config/choices.ts
 //
 // THE ONE PLACE A SETTING'S CHOICES GET THEIR WORDS.
@@ -53,9 +54,7 @@ export type KnobChoice = {
 
 /** "not_set" → "Not set". A stopgap, never a home for words — see the header. */
 function mechanicalWords(raw: string): string {
-  const words = raw.replace(/[_-]+/g, " ").trim();
-  if (words === "") return raw;
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(raw) || raw;
 }
 
 /**

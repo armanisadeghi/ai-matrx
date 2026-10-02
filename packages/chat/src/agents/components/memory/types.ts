@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Types for the user-facing Agent Memory manager (`chat.agent_memory`).
  *
@@ -38,9 +39,7 @@ export function displayTitleForMemory(memory: AgentMemoryRow): string {
   const title =
     metadata && typeof metadata.title === "string" ? metadata.title : null;
   if (title) return title;
-  return memory.key
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return humanizeIdentifier(memory.key) || memory.key;
 }
 
 /** `importance` is stored as a 0–1 float; displayed everywhere as a 0–10

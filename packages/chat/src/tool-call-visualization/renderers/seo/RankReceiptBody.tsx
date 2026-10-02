@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Rank-collection receipt body for the `seo` tool (action=collect_rank).
  *
@@ -120,7 +121,7 @@ export function RankReceiptBody({
           )}
           {args.searchType && args.searchType !== "organic" && (
             <span className="rounded-md border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-              {args.searchType.replace(/_/g, " ")}
+              {humanizeIdentifier(args.searchType) || args.searchType}
             </span>
           )}
           {args.provider && (

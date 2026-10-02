@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * THE RECORD STORE'S REFERENCE AND KIND PORTS (records-ui `renderReference` / `renderKind`, lane
  * REFERENCE-CARRY).
@@ -54,8 +55,7 @@ export function recordsRenderReference(ref: ReferenceArgs): ReactNode {
 
 /** "reference · scope" / "directive_v1_reference_scope" / "table_v1" → words a person reads. */
 function kindWords(kind: string): string {
-  const words = kind.replace(/^directive_v\d+_/, "").replace(/_v\d+$/, "").replace(/_/g, " ").trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : "Structured value";
+  return humanizeIdentifier(kind.replace(/^directive_v\d+_/, "").replace(/_v\d+$/, "")) || "Structured value";
 }
 
 function KindValueButton({ value, kind, title }: KindArgs) {
