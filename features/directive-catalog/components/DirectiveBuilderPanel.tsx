@@ -61,6 +61,7 @@ import {
   refFieldsForNoun,
 } from "@/features/directive-catalog/buildEnvelope";
 import {
+  formTitleColumn,
   identityFieldPickerInfo,
   payloadFieldEntityInfo,
 } from "@/features/directive-catalog/identityPicker";
@@ -310,7 +311,7 @@ export function DirectiveBuilderPanel({
     const schema = noun?.schemas?.[verb];
     if (isReference || !noun || !isJsonSchema(schema)) return [];
     return deriveSchemaFields(schema, {
-      titleColumn: noun.title_column,
+      titleColumn: formTitleColumn(noun),
       resolveRecordToken: (key) =>
         payloadFieldEntityInfo(key, noun.noun)?.token ?? null,
     });
@@ -491,7 +492,7 @@ export function DirectiveBuilderPanel({
     setExecError(null);
     setResult(null);
     try {
-      const titleKey = noun?.title_column;
+      const titleKey = noun ? formTitleColumn(noun) : null;
       const sent = titleKey ? effectivePayload[titleKey] : undefined;
       // A delete/update names its record by the one chosen in the form.
       const chosen = payloadValues.id?.recordTitle ?? null;

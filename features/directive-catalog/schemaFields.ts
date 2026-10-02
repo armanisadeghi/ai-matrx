@@ -515,8 +515,23 @@ export function humanFormFields(fields: readonly SchemaField[]): SchemaField[] {
     (f) =>
       f.required ||
       (f.kind !== "json" &&
-        !(f.kind === "text" && (f.key === "id" || f.key.endsWith("_id")))),
+        !(f.kind === "text" && (f.key === "id" || f.key.endsWith("_id"))) &&
+        !isSetByTheSystem(f)),
   );
+}
+
+/**
+ * A field the record fills in itself, so a person is never asked for it:
+ *   - a lifecycle stamp — a date-time named `…_at` (`completed_at`,
+ *     `archived_at`, `published_at`): it is set by DOING the thing (completing
+ *     the task), never typed on a form (G5 review: "Completed At" on Task
+ *     create);
+ *   - `timezone` — it follows the person's own setting.
+ * The admin builder still shows both: this narrows controls, never capability.
+ */
+function isSetByTheSystem(field: SchemaField): boolean {
+  if (field.kind === "datetime" && field.key.endsWith("_at")) return true;
+  return field.key === "timezone";
 }
 
 /** Apply one control change; `null` returns the field to "not set / unchanged". */

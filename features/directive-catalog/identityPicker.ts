@@ -6,9 +6,26 @@ import {
   type EntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
 import {
+  ENTITY_TYPE_METADATA,
   isEntityTypeToken,
   type EntityTypeToken,
 } from "@ai-matrx/associations";
+
+/** The token a person field points at: every `users.profiles` id is a person. */
+export const PERSON_TOKEN: EntityTypeToken = "user_profile";
+
+/**
+ * The column a write form labels "Title". The catalog's `title_column` wins;
+ * when a server leaves it out, the registry's title column for the same type
+ * answers — a note's title is stored in `label`, and a form must never print
+ * that storage word (G5 review).
+ */
+export function formTitleColumn(noun: Pick<NounDirectives, "noun" | "title_column">): string | null {
+  if (noun.title_column) return noun.title_column;
+  return isEntityTypeToken(noun.noun)
+    ? (ENTITY_TYPE_METADATA[noun.noun].titleColumn ?? null)
+    : null;
+}
 
 /** Compound-reference ids whose owning record is unambiguous. */
 const FIELD_TOKEN: Readonly<Partial<Record<string, EntityTypeToken>>> = {

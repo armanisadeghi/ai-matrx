@@ -53,7 +53,10 @@ import type {
   NounDirectives,
 } from "@/features/directive-catalog/types";
 import { isJsonSchema } from "@/features/directive-catalog/schemaExamples";
-import { payloadFieldEntityInfo } from "@/features/directive-catalog/identityPicker";
+import {
+  formTitleColumn,
+  payloadFieldEntityInfo,
+} from "@/features/directive-catalog/identityPicker";
 import {
   applyFieldChange,
   buildSchemaPayload,
@@ -731,7 +734,7 @@ function WriteStep({
     () =>
       noun && isJsonSchema(schema)
         ? humanFormFields(deriveSchemaFields(schema, {
-            titleColumn: noun.title_column,
+            titleColumn: formTitleColumn(noun),
             // The record an update changes was chosen by search; it is not a field.
             exclude: formMode === "update" ? ["id"] : [],
             resolveRecordToken: (key) =>
@@ -748,7 +751,7 @@ function WriteStep({
     formMode === "update" && target ? { id: target.id } : {},
   );
 
-  const titleColumn = noun?.title_column ?? null;
+  const titleColumn = noun ? formTitleColumn(noun) : null;
   const typedTitle =
     titleColumn && typeof values[titleColumn]?.raw === "string"
       ? (values[titleColumn]!.raw as string).trim()

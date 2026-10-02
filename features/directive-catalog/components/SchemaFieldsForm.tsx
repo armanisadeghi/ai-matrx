@@ -37,6 +37,8 @@ import {
 import { cn } from "@/lib/utils";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RecordReferencePicker } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
+import { PERSON_TOKEN } from "@/features/directive-catalog/identityPicker";
+import TaskAssigneePicker from "@/features/tasks/components/TaskAssigneePicker";
 import {
   splitWarnings,
   type SchemaField,
@@ -224,6 +226,18 @@ function FieldControl({
         />
       );
     case "record":
+      // A person is chosen from people — the one assignee search — never
+      // from a generic record list of "user profiles".
+      if (field.recordToken === PERSON_TOKEN) {
+        return (
+          <TaskAssigneePicker
+            assigneeId={text || null}
+            onChange={(userId) =>
+              onChange(userId ? { raw: userId, touched: true } : null)
+            }
+          />
+        );
+      }
       return (
         <RecordControl
           field={field}
