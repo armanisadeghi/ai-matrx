@@ -18,6 +18,9 @@ import type { AgentBrowseRow } from "./types";
  * `catalog_filters`.
  */
 export const AGENT_BROWSE_OWNERSHIP_TABS = [
+  // All is the default lane (active-org-is-never-a-list-filter); without it every
+  // right-click on an untouched /agents/all threw "cannot emit unsupported ownership scope all".
+  "all",
   "mine",
   "team",
   "orgs",
@@ -89,7 +92,7 @@ export function createAgentBrowseSurfaceScope(
   const hasActiveFilters =
     Boolean(list.query.search.trim()) ||
     countActiveFilters(list.query) > 0 ||
-    ownershipTab !== "mine";
+    ownershipTab !== "all";
 
   return createAgentsHubScope({
     visible_agents: list.rows.map((row) => ({

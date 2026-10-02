@@ -69,6 +69,15 @@ describe("Agents Hub canonical list surface", () => {
     expect(scope.available_tags).toEqual(["seo"]);
   });
 
+  it("emits the default All lane (an untouched /agents/all never throws)", () => {
+    const list = makeListController();
+    list.query.scope = { kind: "all" };
+    list.query.search = "";
+    const scope = createAgentBrowseSurfaceScope(list);
+    expect(scope.ownership_tab).toBe("all");
+    expect(scope.has_active_filters).toBe(false);
+  });
+
   it("applies one validated composite write through query and view setters", () => {
     const list = makeListController();
     const handlers = createAgentBrowseSurfaceWriteHandlers(list);
