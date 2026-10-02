@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * The hardcoded kind loading-component library (zero fetch delay). Each
  * accepts the early-key contract (kind-loading.types.ts) and renders a small,
@@ -348,8 +349,7 @@ const Shell: React.FC<
 
 /** `quiz_set` → "Quiz set" — a readable name for a slot with no title yet. */
 function formatKindLabel(kind: string): string {
-  const words = kind.replace(/_/g, " ").trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(kind) || kind;
 }
 
 // ── The library ─────────────────────────────────────────────────────────────

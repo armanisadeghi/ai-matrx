@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/crm/outreach-lists/types.ts
 //
 // Types for the outreach list builder + call queue. ALL row shapes derive from the
@@ -257,7 +258,7 @@ const OUTCOME_KIND_LABELS: Record<string, string> = {
 };
 
 export function outcomeKindLabel(kind: string): string {
-  return OUTCOME_KIND_LABELS[kind] ?? kind.replace(/_/g, " ");
+  return OUTCOME_KIND_LABELS[kind] ?? (humanizeIdentifier(kind) || kind);
 }
 
 export function readMemberOutcome(

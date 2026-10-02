@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Directive Catalog — (verb, noun) → the canonical Kind Directive shell.
  *
@@ -61,8 +62,7 @@ export function referenceFieldsForSpecs(
 }
 
 function labelForKey(key: string): string {
-  const pretty = key.replace(/_/g, " ");
-  return pretty.charAt(0).toUpperCase() + pretty.slice(1);
+  return humanizeIdentifier(key) || key;
 }
 
 /**

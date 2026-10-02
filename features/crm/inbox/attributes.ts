@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/crm/inbox/attributes.ts
 //
 // 🚨 THE ONE READER of crm.interaction.attributes on the client.
@@ -208,7 +209,7 @@ export function readPersonalizationProvenance(
     if (!text) continue;
     fields.push({
       name,
-      label: PERSONALIZATION_FIELD_LABELS[name] ?? name.replace(/_/g, " "),
+      label: PERSONALIZATION_FIELD_LABELS[name] ?? (humanizeIdentifier(name) || name),
       text,
       fact: readString(value, "fact"),
       sourceUrl: readString(value, "source_url"),
@@ -269,7 +270,7 @@ const REPLY_INTENT_LABELS: Record<string, string> = {
 
 export function replyIntentLabel(intent: string | null): string {
   if (!intent) return "No stated intent";
-  return REPLY_INTENT_LABELS[intent] ?? intent.replace(/_/g, " ");
+  return REPLY_INTENT_LABELS[intent] ?? (humanizeIdentifier(intent) || intent);
 }
 
 export function readReplyProvenance(attributes: unknown): ReplyProvenance | null {

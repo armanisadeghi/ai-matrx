@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * `masterwork_checkup_finding` — ONE thing the Final Checkup believes the
  * system got wrong or missed, shaped as the sentence the Expert actually reads.
@@ -251,7 +252,7 @@ function readConnections(value: unknown): CheckupRuleConnection[] {
     out.push({
       ruleId,
       kind,
-      relation: text(item.relation) ?? kind.replace(/_/g, " "),
+      relation: text(item.relation) ?? (humanizeIdentifier(kind) || kind),
       ruleName: text(item.rule_name),
       note: text(item.note),
     });

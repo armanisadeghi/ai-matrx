@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * DirectiveBuilderPanel — "trigger via a few dropdowns".
  *
@@ -182,7 +183,7 @@ function StatusPill({ status }: { status: DirectiveReceipt["status"] }) {
         RECEIPT_PILL[status],
       )}
     >
-      {status.replace(/_/g, " ")}
+      {humanizeIdentifier(status) || status}
     </span>
   );
 }

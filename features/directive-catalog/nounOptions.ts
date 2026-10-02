@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * nounOptions — how the builder offers ~1,100 nouns without a scroll wall.
  *
@@ -44,8 +45,7 @@ export function nounLabel(noun: NounDirectives): string {
   if (friendly) return friendly;
   const label = noun.label?.trim();
   if (label) return label;
-  const words = noun.noun.replace(/_/g, " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(noun.noun) || noun.noun;
 }
 
 /** Wired-and-writable first, then wired, each alphabetical by label. */

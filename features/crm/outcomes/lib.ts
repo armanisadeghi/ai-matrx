@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/crm/outcomes/lib.ts
 //
 // Pure core for attribution outcomes (platform.outcome_event, IC-5).
@@ -43,7 +44,7 @@ const SIGNAL_LABELS: Record<string, string> = {
 };
 
 export function signalLabel(name: string): string {
-  return SIGNAL_LABELS[name] ?? name.replace(/_/g, " ");
+  return SIGNAL_LABELS[name] ?? (humanizeIdentifier(name) || name);
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

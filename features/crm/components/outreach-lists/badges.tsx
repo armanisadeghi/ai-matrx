@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/crm/components/outreach-lists/badges.tsx
 //
 // The ONE place outreach list + member statuses map to visual treatment — the
@@ -95,7 +96,7 @@ export function MemberStatusBadge({ status }: { status: string }) {
         classes,
       )}
     >
-      {status.replace(/_/g, " ")}
+      {humanizeIdentifier(status) || status}
     </span>
   );
 }

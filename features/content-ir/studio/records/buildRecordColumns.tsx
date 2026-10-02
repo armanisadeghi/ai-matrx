@@ -147,9 +147,7 @@ export function systemDisplayName(raw: string | null): string | null {
   if (!value || isUuidShape(value)) return null;
   // `chat_kind_emission` → `Chat kind emission`. A registered system name is a
   // slug by convention; a person reads a sentence.
-  const words = value.replace(/[_-]+/g, " ").trim();
-  if (!words) return null;
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(value) || null;
 }
 
 /**
