@@ -22,6 +22,7 @@
  */
 
 import type { ComponentType } from "react";
+import { MissingReferenceChip } from "@/features/matrx-envelope/components/MissingReferenceChip";
 import {
   Link2,
   List,
@@ -174,6 +175,10 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
   const door = useReferenceDoor(type, ref, label);
 
   const Icon = chipIcon(type);
+
+  // The read worked and there is no such record for this reader: say so now,
+  // never as a working chip whose click then fails.
+  if (status === "missing") return <MissingReferenceChip label={label} />;
 
   // `url` has no Matrx-owned entity — it opens the link itself in a new tab.
   const isExternalUrl = type === "url" && typeof ref.url === "string";

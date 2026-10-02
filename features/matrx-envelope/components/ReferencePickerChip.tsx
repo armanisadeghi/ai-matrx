@@ -20,6 +20,7 @@ import {
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
 import { useReferenceDoor } from "@/features/matrx-envelope/components/useReferenceDoor";
+import { MissingReferenceChip } from "@/features/matrx-envelope/components/MissingReferenceChip";
 import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 
 export interface ReferencePickerChipProps {
@@ -50,6 +51,25 @@ export function ReferencePickerChip({
   const door = useReferenceDoor(type, coerceRefToStrings(item, `${type} picker chip`), label);
   const nameClass = "truncate rounded-sm hover:underline underline-offset-2";
 
+  const removeButton = onRemove ? (
+    <button
+      type="button"
+      onClick={onRemove}
+      className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+      aria-label={`Remove ${label}`}
+    >
+      <X className="h-3 w-3" />
+    </button>
+  ) : null;
+
+  if (status === "missing") {
+    return (
+      <MissingReferenceChip label={label} className={className}>
+        {removeButton}
+      </MissingReferenceChip>
+    );
+  }
+
   return (
     <span
       className={cn(
@@ -75,16 +95,7 @@ export function ReferencePickerChip({
       {status === "loading" && (
         <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
       )}
-      {onRemove && (
-        <button
-          type="button"
-          onClick={onRemove}
-          className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-          aria-label={`Remove ${label}`}
-        >
-          <X className="h-3 w-3" />
-        </button>
-      )}
+      {removeButton}
     </span>
   );
 }

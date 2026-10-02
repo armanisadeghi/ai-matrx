@@ -14,9 +14,12 @@
  * bespoke OVERLAY only (compound identities, richer selects, custom open
  * targets). Aliases come from the server-published catalog map.
  *
- * Every resolver is defensive: it NEVER throws (the chip wraps it too), and a
- * missing row / soft error returns `undefined` so the chip falls back to the
- * item's display hint. UUID-guarding happens at the call site (`ReferenceChip`).
+ * Every resolver is defensive: it NEVER throws (the chip wraps it too). A soft
+ * error returns `undefined` so the chip falls back to the item's display hint;
+ * a read that SUCCEEDED and found no row this reader can see returns `null`, so
+ * the chip says up front that the record is gone instead of drawing a working
+ * chip whose click then fails (G2 review, 2026-10-02). UUID-guarding happens
+ * at the call site (`ReferenceChip`).
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -68,13 +71,14 @@ async function storeRow(tableId: string, rowId: string): Promise<Record<string, 
 export interface ReferenceResolver {
   /**
    * Fetch the live, human-readable value for this reference from Supabase.
-   * Returns `undefined` on miss / soft error (chip falls back to display.label).
-   * Keep defensive — never throw.
+   * `undefined` = could not tell (soft error; chip falls back to display.label).
+   * `null` = the read worked and there is no such record for this reader —
+   * the chip shows it as missing. Keep defensive — never throw.
    */
   resolveValue: (
     supabase: SupabaseClient,
     ref: Record<string, string>,
-  ) => Promise<string | undefined>;
+  ) => Promise<string | null | undefined>;
   /**
    * The item-presentation type that opens the underlying entity, when it is
    * not the type the `opensTable` already names (a list ITEM opens its list).
@@ -133,7 +137,7 @@ interface RecordResolverConfig {
 async function resolveFileReferenceValue(
   supabase: SupabaseClient,
   ref: Record<string, string>,
-): Promise<string | undefined> {
+): Promise<string | null | undefined> {
   if (!ref.file_id) return undefined;
   const { data, error } = await supabase
     .schema("files")
@@ -141,7 +145,8 @@ async function resolveFileReferenceValue(
     .select("file_name, mime_type")
     .eq("id", ref.file_id)
     .maybeSingle();
-  if (error || !data) return undefined;
+  if (error) return undefined;
+  if (!data) return null;
   const row = data as unknown as Record<string, unknown>;
   return firstField(row, ["file_name"]) ?? firstField(row, ["mime_type"]);
 }
@@ -194,7 +199,9 @@ function createRecordResolver(config: RecordResolverConfig): ReferenceResolver {
         .select(config.select)
         .eq("id", ref.id)
         .maybeSingle();
-      if (error || !data) return undefined;
+      if (error) return undefined;
+      // The read worked and found nothing this reader can see: missing.
+      if (!data) return null;
       const row = data as unknown as Record<string, unknown>;
       const heading = firstField(row, config.titleFields);
       const body = config.bodyFields
@@ -708,6 +715,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.file_id,
     resolveValue: async (supabase, ref) => {
       const base = await resolveFileReferenceValue(supabase, ref);
+      if (base === null) return null;
       const page = ref.page_number ? `p.${ref.page_number}` : undefined;
       if (base && page) return `${base} · ${page}`;
       return base ?? page ?? stringify(ref.label);
@@ -856,8 +864,10 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
       try {
         const from =
           schema === "public" ? supabase.from(table) : supabase.schema(schema).from(table);
-        const { data } = await from.select("*").eq("id", ref.id).maybeSingle();
-        if (!data) return undefined;
+        const { data, error } = await from.select("*").eq("id", ref.id).maybeSingle();
+        if (error) return undefined;
+        // The read worked and found nothing this reader can see: missing.
+        if (!data) return null;
         return firstField(data as Record<string, unknown>, titleFields) ?? stringify(ref.label);
       } catch {
         return undefined; // graceful chip — display.label fallback
@@ -946,7 +956,16 @@ export function referenceChipLabel(display: string): string {
   return (first ?? display).trim();
 }
 
-export type ReferenceResolutionStatus = "idle" | "loading" | "ready" | "fallback";
+/**
+ * `missing` = the read worked and there is no such record for this reader
+ * (deleted, or not shared with them) — a chip shows that up front.
+ */
+export type ReferenceResolutionStatus =
+  | "idle"
+  | "loading"
+  | "ready"
+  | "fallback"
+  | "missing";
 
 /**
  * THE ONE place a reference item's live display value is resolved. Every chip
@@ -1072,7 +1091,7 @@ export function useResolvedReferenceLabel(
           setValue(v);
           setStatus("ready");
         } else {
-          setStatus("fallback");
+          setStatus(v === null ? "missing" : "fallback");
         }
       })
       .catch(() => {
