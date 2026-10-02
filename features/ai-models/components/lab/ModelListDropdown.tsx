@@ -206,7 +206,9 @@ type ModelClassSelectionProps =
       pinnedOfferingId: string | null | undefined;
       /**
        * Called with the chosen class's offering uuid, or `undefined` to clear
-       * the pin (Auto). Selecting a single-class model clears it.
+       * the pin (Auto). Selecting a single-class model clears it. Within one
+       * gesture the class is ALWAYS reported before `onValueChange` (and a
+       * class-only change on the current model reports no value at all).
        */
       onOfferingPinChange: (offeringId: string | undefined) => void;
       modelOnly?: never;
@@ -1587,6 +1589,8 @@ export function ModelListDropdown({
   const [tab, setTab] = useState<"all" | "favorites">("all");
   const [rightPanel, setRightPanel] = useState<RightPanel>(null);
   const [hovered, setHovered] = useState<CatalogModel | null>(null);
+  // The class ROW that was hovered — the detail card's Select keeps it.
+  const [hoveredClass, setHoveredClass] = useState<CatalogTier | null>(null);
   const [mobileDetail, setMobileDetail] = useState<CatalogModel | null>(null);
   const [mobileDetailClass, setMobileDetailClass] = useState<CatalogTier | null>(null);
   const [mobileFilters, setMobileFilters] = useState(false);
@@ -1982,8 +1986,9 @@ export function ModelListDropdown({
   ) => {
     if (!onOfferingPinChange) return;
     if (refuseIfRetired(model.id)) return;
-    if (model.id !== value) onValueChange(model.id);
+    // ONE order on every path: class first, then model (see the props doc).
     onOfferingPinChange(offeringId);
+    if (model.id !== value) onValueChange(model.id);
   };
 
   const trigger = (
@@ -2215,6 +2220,7 @@ export function ModelListDropdown({
                       ? undefined
                       : () => {
                           setHovered(m);
+                          setHoveredClass(classTier);
                           if (rightPanel !== "filters") setRightPanel("detail");
                         }
                   }
@@ -2404,7 +2410,7 @@ export function ModelListDropdown({
                       model={hovered}
                       tier={costRatingTier(hovered.costRating)}
                       variant={variant}
-                      onSelect={() => handleSelect(hovered.id)}
+                      onSelect={() => handleSelect(hovered.id, hoveredClass)}
                       isCurrentModel={hovered.id === value}
                       pinnedOfferingId={pinnedOfferingId}
                       onPinOffering={

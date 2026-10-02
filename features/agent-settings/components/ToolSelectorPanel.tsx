@@ -18,6 +18,7 @@ import { formatText } from "@ai-matrx/kit/text-case";
 import { mapIcon } from "@/utils/icons/icon-mapper";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
+import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { selectAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { setAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
@@ -42,6 +43,7 @@ export function ToolSelectorPanel({
   const selectedTools = useAppSelector((state) =>
     selectAgentTools(state, agentId),
   ) ?? [];
+  useAgentSettingsClassControls(agentId);
   const normalizedControls = useAppSelector((state) =>
     selectNormalizedControls(state, agentId),
   );

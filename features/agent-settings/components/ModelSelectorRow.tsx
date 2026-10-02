@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { Settings2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,14 +65,55 @@ export function ModelSelectorRow({
     selectHasPendingSwitch(state, agentId),
   );
 
+  // The picker reports the class BEFORE the model. The class is written at
+  // once; if the model switch it came with is then cancelled, the old model
+  // gets its own class back (never the new model's).
+  const pinBeforeSwitch = useRef<{ prev: string | undefined } | null>(null);
+  const switchFromModel = useRef<string | null>(null);
+  const wasPending = useRef(false);
+  useEffect(() => {
+    if (wasPending.current && !hasPendingSwitch) {
+      const cancelled = switchFromModel.current === effectiveModelId;
+      if (cancelled && pinBeforeSwitch.current) {
+        dispatch(
+          applySettingsFromDialog({
+            agentId,
+            newSettings: withOfferingPin(
+              effectiveSettings,
+              pinBeforeSwitch.current.prev,
+            ),
+          }),
+        );
+      }
+      pinBeforeSwitch.current = null;
+      switchFromModel.current = null;
+    }
+    wasPending.current = hasPendingSwitch;
+  }, [hasPendingSwitch, effectiveModelId, effectiveSettings, agentId, dispatch]);
+
+  // The switch committed (model moved) → nothing left to restore.
+  useEffect(() => {
+    if (switchFromModel.current && switchFromModel.current !== effectiveModelId) {
+      pinBeforeSwitch.current = null;
+      switchFromModel.current = null;
+    }
+  }, [effectiveModelId]);
+
   const handleModelChange = (newModelId: string) => {
     if (newModelId === effectiveModelId) return;
+    switchFromModel.current = effectiveModelId ?? null;
     dispatch(requestModelSwitch({ agentId, newModelId }));
   };
 
   // The class (offering) pin rides with the model in the same settings entry;
   // `undefined` removes the key so the server routes to the preferred class.
   const handleOfferingPinChange = (offeringId: string | undefined) => {
+    const prev = effectiveSettings.offering_id;
+    pinBeforeSwitch.current = { prev: typeof prev === "string" ? prev : undefined };
+    queueMicrotask(() => {
+      // No model switch followed in this gesture → a class-only change.
+      if (switchFromModel.current === null) pinBeforeSwitch.current = null;
+    });
     dispatch(
       applySettingsFromDialog({
         agentId,

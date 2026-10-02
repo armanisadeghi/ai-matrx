@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  classConfigKey,
   fetchModelClassConfig,
   type ModelClassConfig,
 } from "@/features/ai-models/redux/modelRegistrySlice";
@@ -30,13 +31,12 @@ export function useModelClassControls(
   offeringId: string | null | undefined,
 ): ModelClassControls {
   const dispatch = useAppDispatch();
+  const key = modelId && offeringId ? classConfigKey(modelId, offeringId) : null;
   const config = useAppSelector((state) =>
-    offeringId ? state.modelRegistry?.classConfigByOffering?.[offeringId] : undefined,
+    key ? state.modelRegistry?.classConfigByOffering?.[key] : undefined,
   );
   const status = useAppSelector((state) =>
-    offeringId
-      ? state.modelRegistry?.classConfigStatusByOffering?.[offeringId]
-      : undefined,
+    key ? state.modelRegistry?.classConfigStatusByOffering?.[key] : undefined,
   );
   useEffect(() => {
     if (modelId && offeringId) {
@@ -45,7 +45,25 @@ export function useModelClassControls(
   }, [dispatch, modelId, offeringId]);
 
   if (!modelId || !offeringId) return undefined;
-  if (config && config.modelId === modelId) return { config };
+  if (config) return { config };
   if (status === "failed") return { failed: true };
   return { pending: true };
+}
+
+/**
+ * Loads the pinned class's controls for an agent-settings entry so
+ * `selectNormalizedControls` reads that class, not the preferred one.
+ */
+export function useAgentSettingsClassControls(agentId: string): void {
+  const modelId = useAppSelector((state) => {
+    const entry = state.agentSettings?.entries[agentId];
+    const id = entry?.overrides?.model ?? entry?.defaults?.model;
+    return typeof id === "string" ? id : null;
+  });
+  const offeringId = useAppSelector((state) => {
+    const entry = state.agentSettings?.entries[agentId];
+    const pin = entry?.overrides?.offering_id ?? entry?.defaults?.offering_id;
+    return typeof pin === "string" ? pin : null;
+  });
+  useModelClassControls(modelId, offeringId);
 }

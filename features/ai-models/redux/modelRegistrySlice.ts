@@ -91,13 +91,17 @@ interface ModelRegistryState {
   >;
   /**
    * Resolved controls/constraints for ONE serving class (pinned offering) of
-   * a model, keyed by offering id. A model's classes run through different
+   * a model, keyed by `classConfigKey(modelId, offeringId)`. A model's classes run through different
    * APIs with different rules, so a pinned Matrx Lightning offering must not
    * show the preferred Matrx Fast offering's controls.
    */
   classConfigByOffering: Record<string, ModelClassConfig>;
   classConfigStatusByOffering: Record<string, "loading" | "succeeded" | "failed">;
 }
+
+/** Class configs are keyed by model AND class — a pin is only meaningful for its model. */
+export const classConfigKey = (modelId: string, offeringId: string) =>
+  `${modelId}:${offeringId}`;
 
 export type ModelClassConfig = {
   modelId: string;
@@ -285,7 +289,7 @@ export const fetchModelClassConfig = createAsyncThunk(
           ? (data as { controls?: Json; constraints?: Json })
           : null;
       return {
-        offeringId,
+        key: classConfigKey(modelId, offeringId),
         config: {
           modelId,
           controls: cfg?.controls ?? null,
@@ -299,10 +303,12 @@ export const fetchModelClassConfig = createAsyncThunk(
     }
   },
   {
-    condition: ({ offeringId }, { getState }) => {
+    // A failed load (refused pin, network) is retried the next time a surface
+    // asks — never cached as a permanent "not available".
+    condition: ({ modelId, offeringId }, { getState }) => {
       const status = (getState() as StateWithModelRegistry).modelRegistry
-        ?.classConfigStatusByOffering?.[offeringId];
-      return status !== "loading" && status !== "succeeded" && status !== "failed";
+        ?.classConfigStatusByOffering?.[classConfigKey(modelId, offeringId)];
+      return status !== "loading" && status !== "succeeded";
     },
   },
 );
@@ -583,14 +589,18 @@ const modelRegistrySlice = createSlice({
     // ── fetchModelClassConfig ──────────────────────────────────────
     builder
       .addCase(fetchModelClassConfig.pending, (state, action) => {
-        state.classConfigStatusByOffering[action.meta.arg.offeringId] = "loading";
+        state.classConfigStatusByOffering[
+          classConfigKey(action.meta.arg.modelId, action.meta.arg.offeringId)
+        ] = "loading";
       })
       .addCase(fetchModelClassConfig.fulfilled, (state, action) => {
-        state.classConfigStatusByOffering[action.payload.offeringId] = "succeeded";
-        state.classConfigByOffering[action.payload.offeringId] = action.payload.config;
+        state.classConfigStatusByOffering[action.payload.key] = "succeeded";
+        state.classConfigByOffering[action.payload.key] = action.payload.config;
       })
       .addCase(fetchModelClassConfig.rejected, (state, action) => {
-        state.classConfigStatusByOffering[action.meta.arg.offeringId] = "failed";
+        state.classConfigStatusByOffering[
+          classConfigKey(action.meta.arg.modelId, action.meta.arg.offeringId)
+        ] = "failed";
       });
 
     // ── fetchModelIdentityById ─────────────────────────────────────
