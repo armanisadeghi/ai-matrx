@@ -23,7 +23,7 @@
  *   4. Image blocks route through the canonical `UnifiedImageBlock` adapter so
  *      the rest of the system sees one shape.
  *
- * Contract: `common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md`.
+ * Contract: `common-docs/systems/architecture/content-ir/FEATURE.md`.
  */
 
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";

@@ -4,8 +4,8 @@ updated: 2026-08-17
 repos: [matrx-frontend, aidream, common-docs]
 vision:
   [
-    /Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/UNIFICATION.md,
-    /Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/NOMENCLATURE.md,
+    /Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/FEATURE.md,
+    /Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/FEATURE.md,
     /Users/armanisadeghi/code/common-docs/systems/platform/vocabulary/FEATURE.md,
   ]
 ---
@@ -30,7 +30,7 @@ repo. **Read it before touching anything here; it outranks this work order.**
   the PACKAGE (`aidream/apps/shared/content-ir-core`, npm `@ai-matrx/content-ir`) — the source
   twin and `sync_content_ir_core.py` were RETIRED 2026-08-22 and `features/content-ir/core/` is
   deleted; rename in the package, release a version, adopt here same-session
-  (`common-docs/systems/architecture/content-ir/content-ir-twin-FEATURE.md`).
+  (`common-docs/systems/architecture/content-ir/FEATURE.md`).
 - Verify: `pnpm type-check` · `pnpm check:shapes` · `pnpm check:content-ir:strict` no worse than
   before; regenerate generated files, never hand-edit. Report before/after grep counts → zero.
 - Protocol mirror: `MATRX_ENVELOPE.md` / `MATRX_REFERENCES.md` are byte-mirrored (edit aidream,

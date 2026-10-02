@@ -3,7 +3,7 @@
 /**
  * The Matrix binding of the `run_result` runtime-wrapper renderer.
  *
- * Contract: `common-docs/systems/architecture/content-ir/RUNTIME_WRAPPER_WIRE.md`.
+ * Contract: `common-docs/systems/architecture/content-ir/FEATURE.md`.
  * One `node_outcome` per TERMINAL node, each delegated to the data kind's own
  * component, recursion all the way down. No payload is rendered here, and no
  * `final_text` is read here. The run's own `output` renders ONLY when the run

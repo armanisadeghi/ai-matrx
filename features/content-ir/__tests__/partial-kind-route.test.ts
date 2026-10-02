@@ -6,7 +6,7 @@
  * (`partial-kind-events.generated.json`, emitted by the Python producer), so
  * these assertions are about traffic that actually happens, not hand-built
  * shapes. Contract:
- * common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md
+ * common-docs/systems/architecture/content-ir/FEATURE.md
  */
 
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";

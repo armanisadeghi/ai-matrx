@@ -9,7 +9,7 @@ bespoke component is warranted, the generic structured renderer is registered as
 **EXPLICIT basic route** (`component_key='generic_structured'`, `source='bundled'`,
 `is_active=true`) — the resolver then answers `by:'db'` and the shape is claimed on purpose.
 
-Canonical spec: `common-docs/systems/architecture/content-ir/KINDS_EVERYWHERE_PLAN.md` (§4, §6, §9,
+Canonical spec: `common-docs/systems/architecture/content-ir/FEATURE.md` (§4, §6, §9,
 §12, and the *wire-is-block* finding). Precedent to copy exactly:
 [`migrations/content_ir_generic_structured_roots.sql`](../migrations/content_ir_generic_structured_roots.sql).
 

@@ -49,7 +49,7 @@ timestamp: 2026-09-14T00:00:00Z
    module (`aidream/services/<family>_kinds/tests/fixtures/<provider>_<archetype>.json`). Never
    fabricate samples. Note measured findings (sections that never appeared, formats) in the ledger.
 2. **Complete the source (mandatory, non-blocking).** Survey the provider's full surface vs what
-   we call today and fire a recon chip (pattern: `systems/architecture/content-ir/SEARCH_PROVIDER_RECON.md`
+   we call today and fire a recon chip (pattern: `systems/architecture/content-ir/FEATURE.md`
    — endpoints, verticals, params, response sections, plan sizing). Its findings land in the ledger
    as follow-up capability work. Distillation proceeds without waiting.
 3. **Check what already exists BEFORE proposing.** Registry (`content_ir.kind_definition`, slugs +

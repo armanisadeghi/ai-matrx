@@ -2,7 +2,7 @@
 status: active
 updated: 2026-09-08
 repos: [matrx-frontend, aidream, common-docs]
-vision: [/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/FEATURE.md, /Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/OWNER_BRIEF.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/FEATURE.md, /Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/FEATURE.md]
 ---
 
 # Content IR / Shape System — work order for continuing agents
@@ -30,7 +30,7 @@ repo. **Read it before touching anything here; it outranks this work order.**
 
 ## Working discipline (how this effort has run — keep it)
 
-Every lane: build → independent adversarial review agent (goal: REFUTE the claims) → fix findings → commit. Verify against the LIVE DB with SELECTs, never trust reports. Browser-verify user-visible work with real streams (dev-login per CLAUDE.md; never fake verification). KERNEL/RENDER changes are made IN the packages (aidream `apps/shared/content-ir-core` / `content-ir-react`) and released to npm — the source twin and its sync ceremony were RETIRED 2026-08-22, and `features/content-ir/core/` was deleted 2026-08-23; there is no `sync_content_ir_core.py` any more (record: `common-docs/systems/architecture/content-ir/content-ir-twin-FEATURE.md`). Idempotent ledgered migrations via Supabase MCP; watch the version-bump/example-stranding trap on any `kind_definition` UPDATE (revalidate after). Count `__kind` via `strpos`, never `LIKE '%__kind%'`.
+Every lane: build → independent adversarial review agent (goal: REFUTE the claims) → fix findings → commit. Verify against the LIVE DB with SELECTs, never trust reports. Browser-verify user-visible work with real streams (dev-login per CLAUDE.md; never fake verification). KERNEL/RENDER changes are made IN the packages (aidream `apps/shared/content-ir-core` / `content-ir-react`) and released to npm — the source twin and its sync ceremony were RETIRED 2026-08-22, and `features/content-ir/core/` was deleted 2026-08-23; there is no `sync_content_ir_core.py` any more (record: `common-docs/systems/architecture/content-ir/FEATURE.md`). Idempotent ledgered migrations via Supabase MCP; watch the version-bump/example-stranding trap on any `kind_definition` UPDATE (revalidate after). Count `__kind` via `strpos`, never `LIKE '%__kind%'`.
 
 ## Remaining work — safely delegable to any competent agent
 

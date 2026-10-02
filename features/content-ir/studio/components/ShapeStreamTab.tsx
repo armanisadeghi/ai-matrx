@@ -14,7 +14,7 @@
  *
  * The verdict panel makes the check explicit: instant detection, loading
  * component identity, progressive growth, raw-JSON flash, final swap.
- * Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md.
+ * Contract: common-docs/systems/architecture/content-ir/FEATURE.md.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";

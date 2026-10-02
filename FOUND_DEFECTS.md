@@ -2728,7 +2728,7 @@ _(Filed 2026-08-16; recovered 2026-08-21 from inside the "claim the next free ID
 
 ### D229 — the FE mirrors aidream's contract inventory to serve one always-null lookup (2026-08-20)
 
-Fallout from the contract-artifact eviction (`../common-docs/systems/architecture/content-ir/KINDS_EVERYWHERE_PLAN.md` §10b item **5a**, which holds the full context). The 986 machine-minted I/O contracts left `content_ir.kind_definition` for `content_ir.io_contract`, and after the gate repairs (`c02e9b57b`) the shape doctor no longer reads the committed manifest at all.
+Fallout from the contract-artifact eviction (`../common-docs/systems/architecture/content-ir/FEATURE.md` §10b item **5a**, which holds the full context). The 986 machine-minted I/O contracts left `content_ir.kind_definition` for `content_ir.io_contract`, and after the gate repairs (`c02e9b57b`) the shape doctor no longer reads the committed manifest at all.
 
 What's left: `scripts/shape/content-ir-contract-manifest.json` (~776 stale contract slugs) plus `scripts/shape/refresh-contract-manifest.ts`, `scripts/shape/contract-manifest-format.ts` and the `check:shapes:manifest:refresh` script. Its **only** remaining consumer is `familyByKind` in `features/content-ir/admin/shape-doctor-server.ts:442`, which now resolves `null` for every live kind because the map is built exclusively from contract slugs — so the admin board's Family column is dead (it was always null for real shapes; now it is null for everything).
 

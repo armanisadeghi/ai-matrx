@@ -11,7 +11,7 @@ phase plan live THERE; this doc is the code contract for what exists in this rep
 before extending this feature.
 
 **Wire contract for a node's output and a run's result:**
-`/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/RUNTIME_WRAPPER_WIRE.md` — every
+`/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/FEATURE.md` — every
 `node_completed` carries `wrapper` (a self-describing `node_outcome`: which workflow, which node,
 timing, kind verdict, the data kind nested under `output`) and `GET /runs/{id}` returns `result` (a
 `run_result` nesting one per terminal node). Payloads are elided — `output_ref` names the frame
@@ -33,7 +33,7 @@ that is the exit-test surface.
 |---|---|---|
 | Event vocabulary | `types.ts` → `@/@ai-matrx/agents/generated/workflow-events` | GENERATED from `matrx_graph/types/events.py` (the durable events) + aidream's `services/runtime/workflow_events.py` (ephemeral `node_stream`, router handshake, `run_announce`). `types.ts` re-exports them and adds the FE-only pieces: the REST projections (`RunEventRecord`, `RunRow`) and the helpers. **Never hand-edit an event shape** — this file and workflow-studio's were two hand mirrors that drifted; both now consume ONE artifact, refreshed by `pnpm sync-types` (bundle `workflow-events-ts`) and guarded by aidream's `generate_types.py --check` in `release.sh`. `invocationKeyOf(nodeId, dispatchId, itemIndex)` is THE lane identity — `node_id` alone is never a completion key. |
 | SSE client | `transport/sse.ts` | Fetch-based (EventSource can't set Authorization). Handles CRLF, partial frames, comment heartbeats. |
-| Render-block frames | `transport/render-block-frames.ts` | Reassembles the SLICED `render_block` frames of the ephemeral channel: a server render block is a full snapshot that routinely exceeds the wire's 8000-byte pg_notify cap, so it arrives as ordered slices sharing a `frame_id`. A set that never completes, or one that does not parse, is DROPPED — half a JSON document never reaches a renderer. Contract: `../../../common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md` §7b. |
+| Render-block frames | `transport/render-block-frames.ts` | Reassembles the SLICED `render_block` frames of the ephemeral channel: a server render block is a full snapshot that routinely exceeds the wire's 8000-byte pg_notify cap, so it arrives as ordered slices sharing a `frame_id`. A set that never completes, or one that does not parse, is DROPPED — half a JSON document never reaches a renderer. Contract: `../../../common-docs/systems/architecture/content-ir/FEATURE.md` §7b. |
 | Run event source | `transport/run-event-source.ts` | SSE preferred + poller fallback on ONE `after_seq` cursor; claim-on-first-frame; 20s stall detector; ported from workflow-studio's proven pair. `node_stream` frames carry no seq and never advance the cursor. |
 | **The slice** | `redux/workflow-runs.slice.ts` | Tree-aware (`byRunId`, children auto-attach on `subgraph_run_linked`). Every node TRACKED: invocation states with fan-out aggregation, costs, progress, emissions, work sets, interrupt, capped text tails. |
 | Selectors | `redux/workflow-runs.selectors.ts` | Memoized, per-property, stable-empty. `selectNodeAggregate` derives the aggregate phase (a node is settled only when `invocations.length >= expectedCount`). |
@@ -409,7 +409,7 @@ that is the exit-test surface.
   `processStream` was rewired onto rather than copied from. Proven by replaying a verbatim
   capture of a real run's wire (`__tests__/real-run-partial-kinds.test.ts`): a `quiz_set`
   partial fills 4 → 10 questions, then produces no provisional render once it completes.
-  Mechanism: `../../../common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md` §7b.
+  Mechanism: `../../../common-docs/systems/architecture/content-ir/FEATURE.md` §7b.
 
 - 2026-08-21 — **The §6 content channel stopped being dropped on the floor.**
   `matrx-ai` has always sent `content` on the agent-run envelope

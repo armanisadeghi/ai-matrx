@@ -81,7 +81,7 @@ export interface CompleteEnvelopeBridgeOptions {
    * A bridge accepting a provisional value MUST tolerate missing required
    * fields; returning `undefined` for a value too thin to render is the
    * correct decline (the loading skeleton stays up for that frame).
-   * Contract: common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md
+   * Contract: common-docs/systems/architecture/content-ir/FEATURE.md
    */
   provisional?: boolean;
 }
