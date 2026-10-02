@@ -23,6 +23,7 @@ import {
   type CustomFieldPredicateBuilder,
   type StandardFieldColumn,
 } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
+import { announceRecordChange } from "@/lib/records/recordChanges";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import type { CrmQueryContext } from "../types";
@@ -322,6 +323,7 @@ export async function createDeal(input: {
     .select("*")
     .single();
   if (error) throw pgError(error);
+  announceRecordChange({ token: "crm_deal", kind: "created", id: data.id });
   return data;
 }
 

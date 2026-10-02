@@ -13,6 +13,7 @@ import type { CrmQueryContext } from "../types";
 import type { DealListQuery, DealListRow, DealSortOpts } from "./types";
 import { DEFAULT_DEAL_QUERY } from "./types";
 import { useCrmContext } from "../hooks/useCrmContext";
+import { useRecordChanges } from "@/lib/records/recordChanges";
 import type { StandardFieldColumn } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 
 const NO_CUSTOM_FIELDS: readonly StandardFieldColumn[] = [];
@@ -85,6 +86,8 @@ export function useDealList(
   }, []);
 
   const refresh = useCallback(() => setGeneration((g) => g + 1), []);
+  // A deal created anywhere on this page re-asks the list.
+  useRecordChanges("crm_deal", refresh);
 
   const patchRow = useCallback((id: string, patch: Partial<DealListRow>) => {
     setRows((prev) =>

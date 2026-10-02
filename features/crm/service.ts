@@ -87,6 +87,7 @@ import {
   type CustomFieldPredicateBuilder,
   type StandardFieldColumn,
 } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
+import { announceRecordChange } from "@/lib/records/recordChanges";
 export { normalizeMediumValue };
 
 // ── List page ───────────────────────────────────────────────────────────────
@@ -511,7 +512,10 @@ export async function resolveParty(
     // and the two values are now the same value from the same place.
     organizationId: input.orgId,
   });
-  return toResolvedParty(data);
+  const resolved = toResolvedParty(data);
+  // Every list of parties on this page re-asks (the create window knows no list).
+  if (resolved.created) announceRecordChange({ token: "party", kind: "created", id: resolved.partyId });
+  return resolved;
 }
 
 export interface ResolvePartyBatchItem {
@@ -536,11 +540,13 @@ export async function resolvePartiesBatch(
     { parties: inputs.map(resolveRequestBody) },
     { organizationId: inputs[0].orgId },
   );
-  return data.map((row) => ({
+  const items = data.map((row) => ({
     index: row.index,
     resolved: row.resolved ? toResolvedParty(row.resolved) : undefined,
     error: row.error ?? undefined,
   }));
+  if (items.some((item) => item.resolved?.created)) announceRecordChange({ token: "party", kind: "created" });
+  return items;
 }
 
 /** Hydrate a resolver result into the `PartyRef` shape the CRM UI passes around. */

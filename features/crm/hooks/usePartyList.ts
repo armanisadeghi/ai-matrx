@@ -23,6 +23,7 @@ import type {
 } from "../types";
 import { DEFAULT_PARTY_QUERY } from "../types";
 import { useCrmContext } from "./useCrmContext";
+import { useRecordChanges } from "@/lib/records/recordChanges";
 import type { StandardFieldColumn } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 
 const NO_CUSTOM_FIELDS: readonly StandardFieldColumn[] = [];
@@ -147,6 +148,8 @@ export function usePartyList(
   }, []);
 
   const refresh = useCallback(() => setGeneration((g) => g + 1), []);
+  // A party created anywhere on this page (the create window, an import) re-asks the list.
+  useRecordChanges("party", refresh);
 
   const patchRow = useCallback((id: string, patch: Partial<PartyListRow>) => {
     setRows((prev) =>
