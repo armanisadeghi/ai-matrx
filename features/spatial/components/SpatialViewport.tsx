@@ -22,6 +22,7 @@
  * mirrored into `#cam=x,y,z` so a view is a shareable link.
  */
 
+import { useTileNavigationGuard } from "../engine/tile-navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
@@ -77,6 +78,8 @@ export function SpatialViewport({
   className,
 }: SpatialViewportProps) {
   const [store] = useState(() => new SpatialStore(initialCamera));
+  // A tile's content never navigates the board away (engine/tile-navigation.tsx).
+  useTileNavigationGuard();
   const [focusHost, setFocusHost] = useState<HTMLElement | null>(null);
   const { top = 0, right = 0, bottom = 0, left = 0 } = insets ?? {};
   useEffect(() => {

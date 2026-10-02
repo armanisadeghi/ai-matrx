@@ -56,6 +56,7 @@ import {
   detectThrow,
 } from "../engine/throw";
 import { startPointerGesture } from "../engine/pointer-gesture";
+import { TileNavigationBoundary } from "../engine/tile-navigation";
 import { type StatusFrom, type TileStatus, useTileStatus } from "../streams/useSourceStatus";
 
 const IDLE_STATUS: StatusFrom = { kind: "static", value: { status: "idle", progress: null } };
@@ -436,7 +437,9 @@ export function SpatialTile({
             // A frozen tile keeps its state and DOM but runs nothing: effects,
             // store subscriptions, channels and timers are torn down until it
             // is needed again (React's Activity, Chrome's tab freezing).
-            <Activity mode={sleeps && life !== "live" && !focused ? "hidden" : "visible"}>{children(tier)}</Activity>
+            <Activity mode={sleeps && life !== "live" && !focused ? "hidden" : "visible"}>
+              <TileNavigationBoundary>{children(tier)}</TileNavigationBoundary>
+            </Activity>
           )}
         </div>
         {overview && <OverviewCard title={title} from={statusFrom} icon={Icon} />}
