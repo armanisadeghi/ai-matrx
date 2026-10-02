@@ -139,11 +139,10 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
 
   // Opening the inbox is "seen" too (ruling 1).
   const { markSeen, approvals: approvalsCount, work: workCount } = counts;
+  // Re-run as each counting source answers, so what it shows is seen too (idempotent).
   useEffect(() => {
     markSeen();
-    // Re-run as each counting source answers, so what it shows is seen too.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [approvalsCount, workCount]);
+  }, [approvalsCount, workCount, markSeen]);
 
   // A view that does not exist on this database falls back to the Inbox.
   useEffect(() => {

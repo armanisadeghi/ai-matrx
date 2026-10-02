@@ -143,16 +143,14 @@ export function HiddenElsewhere() {
   const workSnoozed = (work.data ?? []).reduce((sum, o) => sum + o.snoozed, 0);
   const items = hidden.data ?? [];
 
-  const restore = async (item: HiddenItem) => {
-    try {
-      await item.restore();
-      toast(`Back on: ${item.title}`);
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "That didn't save.");
-    } finally {
-      await queryClient.invalidateQueries({ queryKey: ["inbox"] });
-    }
-  };
+  const restore = (item: HiddenItem) =>
+    item
+      .restore()
+      .then(() => toast(`Back on: ${item.title}`))
+      .catch((error: unknown) =>
+        toast.error(error instanceof Error ? error.message : "That didn't save."),
+      )
+      .then(() => queryClient.invalidateQueries({ queryKey: ["inbox"] }));
 
   if (hidden.isLoading) return null;
   if (items.length === 0 && workSnoozed === 0 && !hidden.isError) return null;

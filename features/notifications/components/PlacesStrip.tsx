@@ -31,9 +31,7 @@ export function SourceItem({
   active?: boolean;
 }) {
   const dispatch = useAppDispatch();
-  const state = source.useState();
   const Icon = source.icon;
-  const loud = source.bucket === "needs_you" || source.bucket === "direct";
   return (
     <button
       type="button"
@@ -51,23 +49,7 @@ export function SourceItem({
     >
       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       <span className="min-w-0 flex-1 truncate text-foreground">{source.label}</span>
-      {state.hidden ? (
-        <span className="shrink-0 text-[11px] text-muted-foreground">{state.hidden} snoozed</span>
-      ) : null}
-      {state.error ? (
-        <span className="shrink-0 text-[11px] text-muted-foreground" title="Count unavailable">
-          —
-        </span>
-      ) : state.count !== null && state.count > 0 && source.bucket !== "quiet" ? (
-        <span
-          className={cn(
-            "inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold",
-            loud ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-          )}
-        >
-          {state.count > 99 ? "99+" : state.count}
-        </span>
-      ) : null}
+      <source.Indicator />
       {source.opensIn === "tab" ? (
         <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
       ) : null}

@@ -83,11 +83,10 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
   // Opening the bell is "seen": the badge clears (ruling 1).
   // Re-run as each counting source answers, so what it shows while open is seen too.
   const { markSeen, approvals, work } = counts;
+  // The host mounts this body only while it is open; markSeen is idempotent.
   useEffect(() => {
     markSeen();
-    // The host mounts this body only while it is open.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [approvals, work]);
+  }, [approvals, work, markSeen]);
 
   const openInbox = (initialTab?: string) => {
     dispatch(openOverlay({ overlayId: "notificationsInboxWindow", data: initialTab ? { initialTab } : {} }));

@@ -13,10 +13,12 @@
  * when its list is route-bound (it writes the address) — in a new tab. Never a
  * same-tab navigation (ruling 4).
  *
- * `useState` is a hook each source owns; it is called by the one component that
- * renders that source (`SourceCountProbe`), never in a loop.
+ * Each source's live state comes from its own hook, rendered through its own
+ * `Indicator` component — a component value, never a hook passed around, so the
+ * React Compiler can memoise every row.
  */
 
+import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   CheckSquare,
@@ -36,6 +38,7 @@ import { useWaitingRuns } from "@/features/workflow-runtime/discovery/useWaiting
 import { queryAssists } from "@/features/assists/service";
 import type { AssistsQuery } from "@/features/assists/types";
 import { listMyTaskUserStates } from "@/features/tasks/services/taskUserStateService";
+import { cn } from "@/lib/utils";
 import { useWorkWaiting } from "../useInbox";
 
 /** How a source interrupts: needs_you/direct add to the badge, updates a dot, quiet nothing. */
@@ -59,7 +62,8 @@ export interface NoticeSource {
   opensIn: "window" | "tab";
   /** Only for people this source exists for. */
   adminOnly?: boolean;
-  useState: () => SourceState;
+  /** Its count and "N snoozed", from its own hook. */
+  Indicator: ComponentType;
   open: (dispatch: AppDispatch) => void;
 }
 
@@ -157,8 +161,49 @@ function useWaitingRunsState(): SourceState {
   return { count: error ? null : rows.length, hidden: null, loading, error: error !== null };
 }
 
-function useNoState(): SourceState {
-  return NONE;
+/** What a source shows beside its label: "N snoozed" and its count. */
+export function SourceIndicatorView({ state, bucket }: { state: SourceState; bucket: SourceBucket }) {
+  const loud = bucket === "needs_you" || bucket === "direct";
+  return (
+    <>
+      {state.hidden ? (
+        <span className="shrink-0 text-[11px] text-muted-foreground">{state.hidden} snoozed</span>
+      ) : null}
+      {state.error ? (
+        <span className="shrink-0 text-[11px] text-muted-foreground" title="Count unavailable">
+          —
+        </span>
+      ) : state.count !== null && state.count > 0 && bucket !== "quiet" ? (
+        <span
+          className={cn(
+            "inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold",
+            loud ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+          )}
+        >
+          {state.count > 99 ? "99+" : state.count}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+function ApprovalsIndicator() {
+  return <SourceIndicatorView state={useApprovalsState()} bucket="needs_you" />;
+}
+function WorkIndicator() {
+  return <SourceIndicatorView state={useWorkState()} bucket="needs_you" />;
+}
+function WaitingRunsIndicator() {
+  return <SourceIndicatorView state={useWaitingRunsState()} bucket="needs_you" />;
+}
+function AssistsIndicator() {
+  return <SourceIndicatorView state={useAssistsState()} bucket="updates" />;
+}
+function TasksIndicator() {
+  return <SourceIndicatorView state={useTasksState()} bucket="quiet" />;
+}
+function NoIndicator() {
+  return null;
 }
 
 /**
@@ -172,7 +217,7 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: ClipboardCheck,
     bucket: "needs_you",
     opensIn: "window",
-    useState: useApprovalsState,
+    Indicator: ApprovalsIndicator,
     open: openWindow("approvalsWindow"),
   },
   {
@@ -181,7 +226,7 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: Table2,
     bucket: "needs_you",
     opensIn: "window",
-    useState: useWorkState,
+    Indicator: WorkIndicator,
     open: openWindow("workInboxWindow"),
   },
   {
@@ -190,7 +235,7 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: Workflow,
     bucket: "needs_you",
     opensIn: "window",
-    useState: useWaitingRunsState,
+    Indicator: WaitingRunsIndicator,
     open: openWindow("waitingRunsWindow"),
   },
   {
@@ -199,7 +244,7 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: Lightbulb,
     bucket: "updates",
     opensIn: "window",
-    useState: useAssistsState,
+    Indicator: AssistsIndicator,
     open: openWindow("assistsWindow"),
   },
   {
@@ -208,7 +253,7 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: CheckSquare,
     bucket: "quiet",
     opensIn: "window",
-    useState: useTasksState,
+    Indicator: TasksIndicator,
     open: openWindow("quickTasksWindow"),
   },
   {
@@ -218,7 +263,7 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     bucket: "quiet",
     // The HR inbox writes its scope into the address, so it opens in its own tab.
     opensIn: "tab",
-    useState: useNoState,
+    Indicator: NoIndicator,
     open: openTab("/hr/tasks"),
   },
 ];
