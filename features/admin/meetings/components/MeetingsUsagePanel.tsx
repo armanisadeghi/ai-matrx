@@ -107,13 +107,13 @@ export function MeetingsUsagePanel({ onOpenOrganization }: { onOpenOrganization:
 
       <div className="grid grid-cols-2 rounded-md border border-border bg-card sm:grid-cols-4 xl:grid-cols-8">
         <Stat label="Meetings held" value={totals ? formatCount(totals.meetings_held) : dash} />
-        <Stat label="Meeting time" value={totals ? minutes(totals.meeting_minutes) : dash} hint="Sum of started → ended (or now) over the period" />
+        <Stat label="Meeting time" value={totals ? minutes(totals.meeting_minutes) : dash} hint="Sum of start to end (or last activity) over the period" />
         <Stat label="People" value={totals ? formatCount(totals.unique_participants) : dash} hint="Unique signed-in people who joined; AI participants excluded" />
         <Stat label="Guests" value={totals ? formatCount(totals.guests) : dash} hint="Unique joined identities with no account; AI participants excluded" />
         <Stat label="Recordings" value={totals ? formatCount(totals.recordings) : dash} />
         <Stat label="Recording storage" value={totals ? formatFileSize(totals.recording_bytes) : dash} hint="Size of the recording files in the file store" />
         <Stat label="Transcript lines" value={totals ? formatCount(totals.transcript_segments) : dash} />
-        <Stat label="Live now" value={totals ? formatCount(totals.live_now) : dash} tone="live" hint="Started, not ended, not cancelled or archived — at this moment, regardless of period" />
+        <Stat label="Live now" value={totals ? formatCount(totals.live_now) : dash} tone="live" hint="Meetings with someone in the room right now, regardless of period" />
       </div>
 
       <div className="min-h-0 flex-1">
