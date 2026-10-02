@@ -85,6 +85,7 @@ import { canEditAccess } from "@/utils/permissions/access-core";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { fcService } from "../../data/fcService";
 import { getCardImages } from "../study/cardImages";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { buildDeckPrintData } from "../../utils/deckPrintData";
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { notifyPrintOutcome } from "@/lib/print/print-outcome-toast";
@@ -762,15 +763,47 @@ export function SetDetailView({
   const {
     run: illustrateRun,
     start: startIllustrate,
+    stop: stopIllustrate,
     setReview,
     reset: resetIllustrate,
   } = useIllustrateSetRun();
   const [illustrateOpen, setIllustrateOpen] = useState(false);
   const openCardWindow = useOpenFlashcardItemWindow();
 
-  const runIllustrate = async () => {
+  // Every card is a paid web search + judge, so nothing runs sight unseen: the
+  // first click confirms and sources ONE trial card; the window then shows its
+  // picture and offers the rest, which confirms the count again. Stop is live
+  // the whole time.
+  const cardsWithoutImage = data
+    ? data.cards.filter((c) => !getCardImages(c).front).length
+    : 0;
+
+  const runIllustrate = async (mode: "trial" | "rest") => {
+    const count = mode === "trial" ? 1 : cardsWithoutImage;
+    if (count === 0) {
+      toast.info("Every card already has an image.");
+      return;
+    }
+    const ok = await confirm(
+      mode === "trial"
+        ? {
+            title: "Try one card first?",
+            description: `An agent searches the web for one card's image so you can check it. ${cardsWithoutImage} cards have no image.`,
+            confirmLabel: "Illustrate 1 card",
+          }
+        : {
+            title: `Illustrate ${count} cards?`,
+            description: `Runs ${count} paid image searches, about 30–60 seconds each. You can stop at any time.`,
+            confirmLabel: `Illustrate ${count} cards`,
+          },
+    );
+    if (!ok) return;
     setIllustrateOpen(true);
-    const outcome = await startIllustrate(setId, "front");
+    const outcome = await startIllustrate(
+      setId,
+      "front",
+      mode === "trial" ? { limit: 1 } : {},
+    );
     // Whatever landed is already in the DB — refetch so badges and thumbnails
     // on the deck below match what the review pass is showing.
     setReloadKey((k) => k + 1);
@@ -780,6 +813,7 @@ export function SetDetailView({
       toast.info("Your plan's image limit was reached for now.");
       return;
     }
+    if (mode === "trial") return; // the window shows the picture and the next step
     toast.success(
       outcome.attached === 0
         ? "No image cleared the bar on this run — see why, card by card."
@@ -1440,14 +1474,18 @@ export function SetDetailView({
                     hint="An expert image on the front of every card"
                     busy={
                       illustrateRun.phase === "starting" ||
-                      illustrateRun.phase === "running"
+                      illustrateRun.phase === "running" ||
+                      illustrateRun.phase === "stopping"
                     }
                     disabled={
                       illustrate.isChecking ||
                       illustrateRun.phase === "starting" ||
-                      illustrateRun.phase === "running"
+                      illustrateRun.phase === "running" ||
+                      illustrateRun.phase === "stopping"
                     }
-                    onClick={() => void illustrate.guard(runIllustrate)}
+                    onClick={() =>
+                      void illustrate.guard(() => runIllustrate("trial"))
+                    }
                     meter={<EntitlementMeter capability="education.card_image_source" />}
                   />
                 )}
@@ -1695,6 +1733,11 @@ export function SetDetailView({
                   setIllustrateOpen(false);
                   resetIllustrate();
                 }}
+                onStop={stopIllustrate}
+                remainingCount={cardsWithoutImage}
+                onContinue={() =>
+                  void illustrate.guard(() => runIllustrate("rest"))
+                }
                 onKeep={(card) => reviewImage(card, "accepted")}
                 onReject={(card) => reviewImage(card, "rejected")}
                 onOpenCard={(cardId) => {
