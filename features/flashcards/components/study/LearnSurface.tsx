@@ -48,6 +48,7 @@ export function LearnSurface({ setId }: { setId: string }) {
             <OfflineDeckButton
               setId={setId}
               size="sm"
+              compact
               disabled={study.loading || study.cards.length === 0}
             />
           }
@@ -76,7 +77,6 @@ export function LearnSurface({ setId }: { setId: string }) {
           errorTitle="Couldn't load this set"
           emptyBody="This set has no cards yet. Generate some in chat to study it."
           completionTitle="All cards mastered"
-          completionSubtitle={`You mastered all ${study.progress.total} cards.`}
           completionPrimary={{
             label: "Back to set",
             icon: Layers,

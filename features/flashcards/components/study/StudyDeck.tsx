@@ -1044,9 +1044,12 @@ export function StudyDeck(props: StudyDeckProps) {
             <h2 className="text-lg font-semibold text-foreground">
               {completionTitle}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {completionSubtitle ?? `You studied all ${progress.total} cards.`}
-            </p>
+            {/* The stats row below already says how many — no default line. */}
+            {completionSubtitle && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {completionSubtitle}
+              </p>
+            )}
           </div>
           <div className="grid w-full grid-cols-3 gap-2 text-center">
             <Stat label="Studied" value={`${progress.done}`} />
@@ -1371,8 +1374,9 @@ export function StudyDeck(props: StudyDeckProps) {
             </>
           )}
 
-          {/* THE action bar: previous · grade · next, one 44px line. */}
-          <div className="mt-3 flex items-end gap-2">
+          {/* THE action bar: previous · grade · next, one 44px line (on a
+              narrow screen the grade row takes the full width, arrows below). */}
+          <div className="mt-3 flex flex-wrap items-end justify-between gap-2 sm:flex-nowrap">
             <Button
               type="button"
               variant="outline"
@@ -1385,10 +1389,10 @@ export function StudyDeck(props: StudyDeckProps) {
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <div className="min-w-0 flex-1">
+            <div className="order-first min-w-0 basis-full sm:order-none sm:basis-auto sm:flex-1">
               {currentKind === CARD_KIND.matching ? (
                 // Matching cards self-grade on completion — no grade row.
-                <div className="h-11" />
+                <div className="hidden h-11 sm:block" />
               ) : (
                 renderGradeControl()
               )}

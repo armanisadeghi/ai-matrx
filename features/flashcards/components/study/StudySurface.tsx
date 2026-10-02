@@ -47,6 +47,7 @@ export function StudySurface({ setId }: { setId: string }) {
               <OfflineDeckButton
                 setId={setId}
                 size="sm"
+                compact
                 disabled={study.loading || study.cards.length === 0}
               />
               <FlashcardStudyWindowDevTrigger

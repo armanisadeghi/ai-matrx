@@ -167,13 +167,20 @@ export function OfflineDeckButton({
   setId,
   disabled = false,
   size = "default",
+  compact = false,
   className,
 }: {
   setId: string;
   disabled?: boolean;
   size?: "default" | "sm";
+  /** Icon-only below `sm` (a phone header has no room for the label). */
+  compact?: boolean;
   className?: string;
 }) {
+  // Compact: the label hides on a phone and the icon drops its gap.
+  const iconGap = compact ? "sm:mr-1.5" : "mr-1.5";
+  const label = (text: string) =>
+    compact ? <span className="hidden sm:inline">{text}</span> : text;
   const { status, working, download, remove } = useOfflineDeck(setId);
   const [busy, startBusy] = useTransition();
   // Unknown yet — render the un-downloaded shape rather than a flicker of
@@ -186,11 +193,12 @@ export function OfflineDeckButton({
         variant="outline"
         size={size}
         disabled
+        aria-label="Offline unavailable"
         className={className}
         title="This browser can't store decks offline (private browsing, or no storage space)."
       >
-        <CloudOff className="mr-1.5 h-4 w-4" />
-        Offline unavailable
+        <CloudOff className={cn(iconGap, "h-4 w-4")} />
+        {label("Offline unavailable")}
       </Button>
     );
   }
@@ -203,17 +211,18 @@ export function OfflineDeckButton({
             variant="outline"
             size={size}
             disabled={disabled || busy}
+            aria-label="Downloaded for offline"
             className={cn(
               "border-emerald-500/40 text-emerald-700 dark:text-emerald-400",
               className,
             )}
           >
             {working ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              <Loader2 className={cn(iconGap, "h-4 w-4 animate-spin")} />
             ) : (
-              <Check className="mr-1.5 h-4 w-4" />
+              <Check className={cn(iconGap, "h-4 w-4")} />
             )}
-            Downloaded
+            {label("Downloaded")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -251,14 +260,15 @@ export function OfflineDeckButton({
       disabled={disabled || working}
       className={className}
       onClick={() => void download(false)}
+      aria-label="Download for offline"
       title="Keep this deck on this device so you can study it with no connection"
     >
       {working ? (
-        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+        <Loader2 className={cn(iconGap, "h-4 w-4 animate-spin")} />
       ) : (
-        <CloudDownload className="mr-1.5 h-4 w-4" />
+        <CloudDownload className={cn(iconGap, "h-4 w-4")} />
       )}
-      Download
+      {label("Download")}
     </Button>
   );
 }
