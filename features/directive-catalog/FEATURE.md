@@ -109,6 +109,8 @@ alias map. Consequences here:
 
 ## Change Log
 
+- 2026-10-02 — G6B review: the human form speaks the record's own words. Pick-list values read the feature's vocabulary (`valueVocabulary.ts` → `TASK_STATUS_META`, `PROJECT_STATUS_LABEL` in the new `features/projects/constants/status.ts`), a legacy value folded onto another is not offered twice (`incomplete` → Inbox) and a legacy default reads in words ("Default (Inbox)"); `SchemaField.enumLabels`, `resolveValueVocabulary` option. `recurrence_rule` is kind `recurrence`, labelled "Repeat", drawn with the task editor's `TaskRecurrencePicker` (new `emptyLabel` prop). `humanFormFields` drops derived fields by schema signal (`isDerived`): `X_name` beside `X_id`, `slug`, ordering integers (`position`, `sort_order`, …); the admin builder still shows them. Guard: `__tests__/a-person-form-asks-only-what-a-person-sets.test.tsx`.
+
 - 2026-10-02 — G5 review: `humanFormFields` drops fields the record sets itself (a `*_at`
   date-time such as `completed_at`, and `timezone`) — the admin builder still shows them; a
   person field (`user_profile`, e.g. `assignee_id`) renders the people search
