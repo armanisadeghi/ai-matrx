@@ -33,6 +33,14 @@
      owner consumes it so a fixed operational notice cannot cover final page
      actions or the shared toast viewport. */
   --shell-fixed-alert-clearance: 0px;
+  /* THE RIGHT INSET FOR APP CHROME. Fixed chrome anchored to the right edge
+     (toasts, the assists dock, the window tray) is positioned against the
+     VIEWPORT, so it ignores the shell root shrinking for the canvas column and
+     sits under it. Each such element uses
+     `right: calc(<its own gap> + var(--app-right-inset))` — one mechanism,
+     whatever later claims the right edge. --shell-canvas-w is written on
+     <html> by the canvas host (0px closed, forced 0px on phones). */
+  --app-right-inset: var(--shell-canvas-w, 0px);
   /* How much of the bottom-LEFT corner the shell's own floating chrome covers,
      measured and published by that chrome while it is on screen (today: the
      admin Error Inspector badge). Page content parked in that corner — a key

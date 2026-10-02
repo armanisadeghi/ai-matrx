@@ -222,6 +222,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       closeButton
       className="toaster group"
+      // Right-anchored: the stack stays left of an open canvas column
+      // (--app-right-inset, styles/shell.css). 24px is sonner's own gap.
+      offset={{ right: "calc(24px + var(--app-right-inset, 0px))" }}
       toastOptions={{
         classNames: {
           toast:

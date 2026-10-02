@@ -78,7 +78,8 @@ export function WindowTray() {
       className="fixed pointer-events-none"
       style={{
         bottom: TRAY_BOTTOM,
-        right: TRAY_RIGHT,
+        // Left of an open canvas column (--app-right-inset, styles/shell.css).
+        right: `calc(${TRAY_RIGHT}px + var(--app-right-inset, 0px))`,
         zIndex: 9999,
         display: "flex",
         flexDirection: "row-reverse",

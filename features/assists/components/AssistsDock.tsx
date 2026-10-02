@@ -170,7 +170,10 @@ export default function AssistsDock() {
   // the header beside its right cluster) — `--assist-dock-slot-*`, written by ../assistClearance.ts;
   // unset, each falls back to the floating resting place.
   const style = {
-    right: `var(--assist-dock-slot-right, ${offset.right}px)`,
+    // The resting place is measured from the app's right edge, not the
+    // viewport's: an open canvas column owns the strip beyond it. (A chrome
+    // slot is already an absolute measurement and needs no inset.)
+    right: `var(--assist-dock-slot-right, calc(${offset.right}px + var(--app-right-inset, 0px)))`,
     // + the auto-dock lift: off any control it would otherwise cover (../assistClearance.ts).
     bottom: `var(--assist-dock-slot-bottom, calc(${offset.bottom}px + var(--page-bottom-dock-h, 0px) + var(--assist-dock-lift, 0px)))`,
     top: "var(--assist-dock-slot-top, auto)",
@@ -185,7 +188,7 @@ export default function AssistsDock() {
     // A page with its own bottom dock (the phone note editor's toolbar)
     // publishes its height as --page-bottom-dock-h; the launcher sits above it
     // instead of covering the dock's last button.
-    right: "var(--assist-dock-slot-right, 0.75rem)",
+    right: "var(--assist-dock-slot-right, calc(0.75rem + var(--app-right-inset, 0px)))",
     bottom:
       "var(--assist-dock-slot-bottom, calc(max(0.75rem, env(safe-area-inset-bottom, 0px)) + var(--page-bottom-dock-h, 0px) + var(--assist-dock-lift, 0px)))",
     top: "var(--assist-dock-slot-top, auto)",
