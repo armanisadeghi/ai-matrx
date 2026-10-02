@@ -1090,7 +1090,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
          * size of the notebook.
          */}
         {allNotes.length > 0 && (
-          <div className="ml-auto flex items-center gap-0.5">
+          <div className="ml-auto flex items-center">
             <CopyButtons
               size="xs"
               label="Notes list"

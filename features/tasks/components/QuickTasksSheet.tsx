@@ -62,27 +62,15 @@ import {
   Inbox,
   CheckCircle,
   AlertCircle,
-  FolderPlus,
-  Eye,
-  EyeOff,
   Calendar,
   Flag,
   ChevronDown,
   ChevronUp,
-  PanelLeft,
-  PanelLeftClose,
 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import CompactTaskItem from "./CompactTaskItem";
 import TaskDetailsPanel from "./TaskDetailsPanel";
-import TaskSortControl from "./TaskSortControl";
 import { QuickTasksToolbarGroup } from "./QuickTasksToolbarGroup";
 import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import type { TaskFilterType } from "../types";
@@ -386,82 +374,6 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Compact Header */}
-        <div className="flex items-center gap-2 p-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-sm shrink-0"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-            aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-          >
-            {sidebarOpen ? (
-              <PanelLeftClose className="h-3.5 w-3.5" />
-            ) : (
-              <PanelLeft className="h-3.5 w-3.5" />
-            )}
-          </Button>
-
-          <span className="text-xs font-semibold ml-1 truncate flex-1">
-            {showAllProjects
-              ? filter === "all"
-                ? "All"
-                : filter === "incomplete"
-                  ? "Incomplete"
-                  : "Overdue"
-              : projects.find((p) => p.id === activeProject)?.name ||
-                "Select View"}
-          </span>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 rounded-full"
-                  onClick={() => setShowNewProjectForm(!showNewProjectForm)}
-                >
-                  <FolderPlus className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>New Project</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 rounded-full"
-                  onClick={() => dispatch(setShowCompleted(!showCompleted))}
-                >
-                  {showCompleted ? (
-                    <Eye className="h-3.5 w-3.5" />
-                  ) : (
-                    <EyeOff className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {showCompleted ? "Hide Completed" : "Show Completed"}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TaskSortControl
-            currentSort={sortBy}
-            onSortChange={(s) => dispatch(setSortBy(s))}
-            compact={true}
-            className="bg-background"
-          />
-
-
-        </div>
-
         {/* Main Content Area - Single View: List OR Details */}
         <div className="flex-1 overflow-hidden">
           {!selectedTask ? (
@@ -576,8 +488,8 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
                 </div>
               </div>
 
-              {/* Toolbar group — search + actions (header duplicates kept for now) */}
-              <div className="px-2 pb-2 border-b border-border">
+              {/* Toolbar group — search + actions, then the view on screen. */}
+              <div className="flex items-center gap-2 px-2 pb-2 border-b border-border">
                 <QuickTasksToolbarGroup
                   searchQuery={searchQuery}
                   onSearchChange={(q) => dispatch(setSearchQuery(q))}
@@ -593,6 +505,16 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
                     setShowNewProjectForm(!showNewProjectForm)
                   }
                 />
+                <span className="min-w-0 flex-1 truncate text-xs font-semibold text-muted-foreground">
+            {showAllProjects
+              ? filter === "all"
+                ? "All"
+                : filter === "incomplete"
+                  ? "Incomplete"
+                  : "Overdue"
+              : projects.find((p) => p.id === activeProject)?.name ||
+                "Select View"}
+          </span>
               </div>
 
               {/* Tasks List */}

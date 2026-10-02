@@ -23,6 +23,7 @@ import {
   registerSurface,
   unregisterSurface,
 } from "../../agents/redux/surfaces/surfaces.slice";
+import { selectHasMessages } from "../../agents/redux/execution-system/messages/messages.selectors";
 import { clearFocus } from "../../agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import type { ConversationListItem } from "../../agents/redux/conversation-list/conversation-list.types";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
@@ -286,10 +287,13 @@ function QuickChatSheetBody({
   // person turns it off per chat from the composer's context chip.
 
   // Tell the host which conversation is on screen (a canvas tab keeps it, so
-  // a reload brings the same conversation back).
+  // a reload brings the same conversation back) — once it has a message: a
+  // fresh conversation exists only in memory until the first send, and a
+  // remembered id of one would reopen as a failed read.
+  const hasMessages = useAppSelector(selectHasMessages(conversationId ?? ""));
   useEffect(() => {
-    if (conversationId && !resuming) onConversationChange?.({ conversationId, agentId });
-  }, [conversationId, agentId, resuming, onConversationChange]);
+    if (conversationId && hasMessages && !resuming) onConversationChange?.({ conversationId, agentId });
+  }, [conversationId, agentId, hasMessages, resuming, onConversationChange]);
 
   // Track the active surface key for the unmount clearFocus — written in an
   // effect (never during render) so the ref always holds the last committed key.
