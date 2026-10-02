@@ -93,7 +93,7 @@ try {
     const described = doors.some((d) => d.door === "drill_describe" && d.status < 400);
     return {
       ok: r.groups > 0 && !r.error && asked && described && adds && !doors.some((d) => d.status >= 400),
-      detail: `two-level drill: ${r.groups} groups sum ${sum} vs total ${sums.total} (${adds ? "add up" : "DO NOT add up"}); doors ${used.join(", ") || "none seen"}`,
+      detail: `two-level drill${r.error ? ` (error ${JSON.stringify(r.error.slice(0, 100))})` : ""} at ${admin.url().slice(-60)}: ${r.groups} groups sum ${sum} vs total ${sums.total} (${adds ? "add up" : "DO NOT add up"}); doors ${used.join(", ") || "none seen"}`,
     };
   });
 
