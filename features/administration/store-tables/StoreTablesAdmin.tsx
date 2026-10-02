@@ -68,7 +68,8 @@ interface HomeRow {
 async function readMemberTables(orgId: string | null): Promise<StoreTableRow[]> {
   const { data, error } = await customSchema().rpc(
     "data_home_tables",
-    orgId ? { p_organization_id: orgId } : {},
+    // An admin list sees every table, the app's own for agents' outputs included (CHAIR-DOORS-2).
+    { p_organization_id: orgId, p_include_app_tables: true },
   );
   if (error) throw new Error(error.message);
   return ((data ?? []) as HomeRow[]).map((r) => ({

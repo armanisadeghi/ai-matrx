@@ -12,12 +12,20 @@
  *
  * `newTabHref` is the route for every door that has one, so a chip can offer
  * "open in a new tab" beside the click.
+ *
+ * A record IN THE TRASH (`trashed`) opens none of those — the window's read
+ * hides a trashed row and said "We couldn't open this task…" (G6A review,
+ * 2026-10-02). Its click opens the trash door instead: Restore, or the way out
+ * (`ReferenceTrashDoor`). Every chip shows `trashed` up front.
  */
 
 import { useState, type ReactNode } from "react";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { referenceDoor, type ReferenceDoor } from "@/features/matrx-envelope/referenceDoor";
+import { useReferenceTrashed } from "@/features/matrx-envelope/referenceTrash";
+import { ReferenceTrashDoor } from "@/features/matrx-envelope/components/ReferenceTrashDoor";
+import { TRASH_HREF } from "@/features/trash/archiveCopy";
 
 export interface ReferenceDoorAction {
   door: ReferenceDoor;
@@ -31,6 +39,8 @@ export interface ReferenceDoorAction {
   newTabHref: string | null;
   /** Mount beside the trigger; renders the peek dialog while open. */
   peek: ReactNode;
+  /** The record is in the trash — the chip says so, and the click is the trash door. */
+  trashed: boolean;
 }
 
 export function useReferenceDoor(
@@ -40,7 +50,9 @@ export function useReferenceDoor(
 ): ReferenceDoorAction {
   const openItem = useOpenItemPresentation();
   const [peekOpen, setPeekOpen] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
   const door = referenceDoor(type, ref);
+  const trashed = useReferenceTrashed(type, ref) === true;
 
   if (door.kind === "none") {
     return {
@@ -51,6 +63,25 @@ export function useReferenceDoor(
       activate: () => {},
       newTabHref: null,
       peek: null,
+      trashed,
+    };
+  }
+
+  if (trashed) {
+    const token = door.token;
+    return {
+      door,
+      canOpen: true,
+      title: `${name} is in the trash`,
+      // No token to restore by → Trash itself, where it is listed.
+      primaryHref: token ? null : TRASH_HREF,
+      activate: () => setTrashOpen(true),
+      newTabHref: null,
+      peek:
+        token && trashOpen ? (
+          <ReferenceTrashDoor token={token} id={door.id} name={name} onClose={() => setTrashOpen(false)} />
+        ) : null,
+      trashed,
     };
   }
 
@@ -78,5 +109,6 @@ export function useReferenceDoor(
           onClose={() => setPeekOpen(false)}
         />
       ) : null,
+    trashed,
   };
 }

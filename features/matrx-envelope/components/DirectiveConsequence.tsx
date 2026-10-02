@@ -20,7 +20,7 @@
 
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import {
   itemTitle,
@@ -47,10 +47,7 @@ import {
   referenceChipLabel,
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
-import {
-  readDirectiveRecord,
-  useDirectiveRecordTrashed,
-} from "@/features/matrx-envelope/directiveRecordRow";
+import { readDirectiveRecord } from "@/features/matrx-envelope/directiveRecordRow";
 
 /** The live name of `{noun, id}`, or `fallback` until/unless it resolves. */
 export function useDirectiveRecordName(noun: string, id: string, fallback: string) {
@@ -77,14 +74,12 @@ export function DirectiveRecordName({
 /** The `renderRecord` seam: a row's target, or a record the apply wrote. */
 export function DirectiveRecordLink({ noun, id, fallback, context, trashed: aboutToBeTrashed }: DirectiveRecordProps) {
   const { name, loading } = useDirectiveRecordName(noun, id, fallback);
-  // The package says "in trash" only for the delete it just ran. A record that
-  // went to the trash ANY other way (a Delete card further down the note, the
-  // Tasks page) is read live, so a Create card never offers a door to a record
-  // that is gone (reviewer, 2026-10-02).
-  const liveTrashed = useDirectiveRecordTrashed(noun, id);
-  const trashed = aboutToBeTrashed === true || liveTrashed === true;
-  // The same door ladder every reference chip climbs (`referenceDoor`).
+  // The same door ladder every reference chip climbs (`referenceDoor`) — and its
+  // trash answer: a record that went to the trash ANY way (this delete, a Delete
+  // card further down the note, the Tasks page) says so, and its click is the
+  // trash door (Restore), never a window that cannot open it (G6A review).
   const door = useReferenceDoor(noun, { id }, name);
+  const trashed = aboutToBeTrashed === true || door.trashed;
 
   if (context === "dialog") {
     return <b className="font-semibold text-foreground">{name}</b>;
@@ -124,6 +119,56 @@ export function DirectiveRecordLink({ noun, id, fallback, context, trashed: abou
       </button>
       {door.peek}
     </>
+  );
+}
+
+/** Who an organization id is, by name — the host reads the person's memberships. */
+export type OrganizationNameOf = (organizationId: string) => string | null;
+
+/**
+ * THE ORGANIZATION AN UPDATE OR DELETE TOUCHES — the one the RECORD lives in,
+ * read from the record itself (`readDirectiveRecord`, the same shared read the
+ * change list uses). Not the active organization: a record keeps its own
+ * organization whatever the switcher says. One organization for every record →
+ * its name; records in several → says so; unknown → "its organization".
+ */
+function RecordsOrganization({
+  noun,
+  ids,
+  nameOf,
+}: {
+  noun: string;
+  ids: string[];
+  nameOf?: OrganizationNameOf;
+}) {
+  const key = `${noun}:${ids.join(",")}`;
+  const [answer, setAnswer] = useState<{ key: string; text: string | null }>({ key: "", text: null });
+  useEffect(() => {
+    let live = true;
+    const [readNoun, joined] = [key.slice(0, key.indexOf(":")), key.slice(key.indexOf(":") + 1)];
+    Promise.all(joined.split(",").map((id) => readDirectiveRecord({ noun: readNoun, id })))
+      .then((rows) => {
+        if (!live) return;
+        const orgIds = new Set(
+          rows.map((row) => (typeof row?.organization_id === "string" ? row.organization_id : "")),
+        );
+        if (orgIds.has("") || orgIds.size === 0) return setAnswer({ key, text: null });
+        if (orgIds.size > 1) return setAnswer({ key, text: "several organizations" });
+        const [only] = orgIds;
+        setAnswer({ key, text: nameOf?.(only) ?? null });
+      })
+      .catch(() => {
+        if (live) setAnswer({ key, text: null });
+      });
+    return () => {
+      live = false;
+    };
+  }, [key, nameOf]);
+  const text = answer.key === key ? answer.text : null;
+  return (
+    <b className="font-semibold text-foreground" data-directive-organization="">
+      {text ?? "its organization"}
+    </b>
   );
 }
 
@@ -240,8 +285,20 @@ export function directiveConsequenceDialog(
    * workspace" (reviewer, 2026-10-02). Unknown → "your organization".
    */
   organizationName?: string | null,
+  /** Names an update's or delete's own organization from the record's id. */
+  organizationNameOf?: OrganizationNameOf,
 ): ConfirmOptions {
   const { directive, items, nounLabel } = request;
+  // EVERY QUESTION NAMES ITS ORGANIZATION (G6A review, 2026-10-02: only Create's
+  // did). A create or an action lands in the organization it is sent with; an
+  // update or delete changes a record where that record lives.
+  const activeOrg = organizationName?.trim() || "your organization";
+  const recordIds = items
+    .map((item) => itemRecordId(item))
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+  const recordOrg = (
+    <RecordsOrganization noun={directive.noun} ids={recordIds} nameOf={organizationNameOf} />
+  );
   const noun = nounLabel.toLowerCase();
   const named = namedItems(request, nouns);
   const titleColumn = nounTitleColumn(directive.noun, nouns);
@@ -260,14 +317,14 @@ export function directiveConsequenceDialog(
           : `Delete ${many}${again ? " again" : ""}?`,
         description: one ? (
           <p>
-            {again ? `${ranBefore} ` : null}Moves {one.name} to the trash — the {noun} itself, not
-            just this text.{again ? null : " You can restore it from there."}
+            {again ? `${ranBefore} ` : null}Moves {one.name} to the trash in {recordOrg} — the{" "}
+            {noun} itself, not just this text.{again ? null : " You can restore it from there."}
           </p>
         ) : (
           <>
             <p>
-              {again ? `${ranBefore} ` : null}Moves these {many} to the trash — the records
-              themselves, not just this text.
+              {again ? `${ranBefore} ` : null}Moves these {many} to the trash in {recordOrg} — the
+              records themselves, not just this text.
             </p>
             <NameList named={named} withChanges={false} noun={directive.noun} />
           </>
@@ -283,9 +340,16 @@ export function directiveConsequenceDialog(
         description: (
           <>
             <p>
-              {again
-                ? `${ranBefore} Writes these fields again, as you.`
-                : `Overwrites ${one ? "these fields" : "the fields below"} as you. The old values are not kept.`}
+              {again ? (
+                <>
+                  {ranBefore} Writes these fields again in {recordOrg}, as you.
+                </>
+              ) : (
+                <>
+                  Overwrites {one ? "these fields" : "the fields below"} in {recordOrg}, as you. The
+                  old values are not kept.
+                </>
+              )}
             </p>
             {one ? (
               <ChangeList noun={directive.noun} item={one.item} titleColumn={titleColumn} />
@@ -309,8 +373,8 @@ export function directiveConsequenceDialog(
           <>
             <p>
               {again
-                ? `${ranBefore} Running it again adds a second copy${one ? "" : " of each"}.`
-                : `Adds ${one ? `this ${noun}` : `these ${many}`} to ${organizationName?.trim() || "your organization"}, as you — not just to this text.`}
+                ? `${ranBefore} Running it again adds a second copy${one ? "" : " of each"} to ${activeOrg}.`
+                : `Adds ${one ? `this ${noun}` : `these ${many}`} to ${activeOrg}, as you — not just to this text.`}
             </p>
             {one ? null : <NameList named={named} withChanges={false} noun={directive.noun} />}
           </>
@@ -326,8 +390,8 @@ export function directiveConsequenceDialog(
           <>
             <p>
               {again
-                ? `${ranBefore} Running it again repeats it, as you.`
-                : "Runs now, as you, and changes data outside this text. Continue only if you trust its source."}
+                ? `${ranBefore} Running it again repeats it in ${activeOrg}, as you.`
+                : `Runs now in ${activeOrg}, as you, and changes data outside this text. Continue only if you trust its source.`}
             </p>
             <NameList named={named} withChanges={false} noun={directive.noun} />
           </>

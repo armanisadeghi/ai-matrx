@@ -42,7 +42,13 @@ interface AddressDoors {
 }
 
 export type ReferenceDoor =
-  | ({ kind: "open"; itemType: KnownItemType; id: string } & AddressDoors)
+  | ({
+      kind: "open";
+      itemType: KnownItemType;
+      id: string;
+      /** The entity token (Trash's restore door needs it), when the registry has one. */
+      token: string | null;
+    } & AddressDoors)
   | ({ kind: "address"; token: string; id: string } & AddressDoors)
   | { kind: "none"; reason: string };
 
@@ -79,7 +85,7 @@ export function referenceDoor(
     const genericOverPeek =
       !opensOwnPresentation(config) && hasPeek(address.peekKind);
     if (recognized && opensTheRecord(config) && !genericOverPeek) {
-      return { kind: "open", itemType, id, ...address };
+      return { kind: "open", itemType, id, token, ...address };
     }
   }
   if (token && (address.href || address.canPeek)) {

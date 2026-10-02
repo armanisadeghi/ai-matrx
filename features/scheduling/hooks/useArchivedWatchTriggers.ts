@@ -31,7 +31,9 @@ export function useArchivedWatchTriggers(tasks: ReadonlyArray<AgendaTask>): Read
       for (const org of key.split(",")) {
         const res = await (supabase as unknown as SupabaseClient)
           .schema("custom")
-          .rpc("table_list_everywhere", { p_organization_id: org });
+          // Every LIVE table, the app's own included (an automation may watch an agent's outputs
+          // table, which the default list leaves out — CHAIR-DOORS-2): never "archived" by omission.
+          .rpc("table_list_everywhere", { p_organization_id: org, p_include_app_tables: true });
         if (res.error) {
           console.warn(`[schedules] could not read organization ${org}'s tables to check what its automations watch: ${res.error.message}`);
           continue;

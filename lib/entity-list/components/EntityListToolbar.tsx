@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { EntityColumnSpec } from "../columns";
-import type { EntityFacetSection, EntityScopeFacetSection } from "../config";
+import type { EntityFacetSection, EntityPanelSwitch, EntityScopeFacetSection } from "../config";
 import type {
   EntityFacets,
   EntityListQuery,
@@ -92,6 +92,8 @@ interface Props<TRow> {
   onSearch: (value: string) => void;
   /** Boolean filter toggles shown in the box while something is typed (config.searchToggles). */
   searchToggles?: Array<{ id: string; label: string }>;
+  /** Page-owned switches for the Filters panel (config.panelSwitches). */
+  panelSwitches?: EntityPanelSwitch[];
   onPatchQuery: (patch: Partial<EntityListQuery>) => void;
   onPatchPrefs: (patch: Partial<ListViewPrefs>) => void;
   onResetFilters: () => void;
@@ -167,6 +169,7 @@ export function EntityListToolbar<TRow>({
   hasRows,
   onSearch,
   searchToggles,
+  panelSwitches,
   onPatchQuery,
   onPatchPrefs,
   onResetFilters,
@@ -279,6 +282,7 @@ export function EntityListToolbar<TRow>({
           onOrgChange={onOrgChange}
           hasFavorites={hasFavorites}
           hasArchived={hasArchived}
+          panelSwitches={panelSwitches}
           sort={prefs.sort}
           direction={prefs.direction}
           hiddenColumns={prefs.hiddenColumns}

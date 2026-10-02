@@ -20,6 +20,7 @@ import { useScrollFade } from "@ai-matrx/design-system";
 import { SlidersHorizontal, RotateCcw, Star, ArrowUpDown } from "lucide-react";
 import {
   ArchiveFilter,
+  Checkbox,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -39,7 +40,7 @@ import {
   DATE_SORT_WORDS,
   type EntityColumnSpec,
 } from "../columns";
-import type { EntityFacetSection, EntityScopeFacetSection } from "../config";
+import type { EntityFacetSection, EntityPanelSwitch, EntityScopeFacetSection } from "../config";
 import {
   makeScope,
   scopeNarrowId,
@@ -119,6 +120,8 @@ interface Props<TRow> {
   hasFavorites: boolean;
   /** Offer the Archived section. */
   hasArchived: boolean;
+  /** Page-owned switches, one section each (config.panelSwitches). */
+  panelSwitches?: EntityPanelSwitch[];
   sort: string;
   direction: ListViewPrefs["direction"];
   /** Columns the person hid — not offered as a sort (unless current). */
@@ -211,6 +214,7 @@ export function EntityFilterPanel<TRow>({
   onOrgChange,
   hasFavorites,
   hasArchived,
+  panelSwitches = [],
   sort,
   direction,
   hiddenColumns,
@@ -245,6 +249,7 @@ export function EntityFilterPanel<TRow>({
   const hasFilters =
     hasFavorites ||
     hasArchived ||
+    panelSwitches.length > 0 ||
     scopeSections.some((section) => query.scope.kind === section.scope) ||
     facetSections.some(
       (section) =>
@@ -475,6 +480,15 @@ export function EntityFilterPanel<TRow>({
               />
             </FilterSection>
           )}
+
+          {panelSwitches.map((s) => (
+            <FilterSection key={s.id} label={s.section} active={s.on}>
+              <label className="flex items-center gap-1.5 text-xs text-foreground" data-panel-switch={s.id}>
+                <Checkbox checked={s.on} onCheckedChange={(next) => s.onChange(next === true)} aria-label={s.label} />
+                {s.label}
+              </label>
+            </FilterSection>
+          ))}
 
           {hasArchived && (
             <FilterSection

@@ -545,8 +545,26 @@ export interface EntityListConfig<TRow> {
    */
   searchToggles?: Array<{ id: string; label: string }>;
 
+  /**
+   * Page-owned on/off switches drawn in the Filters panel under one heading each — for a choice
+   * that changes WHAT the page reads (the data home's "Show app tables"), not a filter-bag entry.
+   * The page holds the state; the panel only draws it.
+   */
+  panelSwitches?: EntityPanelSwitch[];
+
   /** The active filters as removable chips under the toolbar (rendered only while any is set). */
   filterChips?: boolean;
 
   emptyState: { title: string; description: string };
+}
+
+/** One page-owned switch in the Filters panel (`EntityListConfig.panelSwitches`). */
+export interface EntityPanelSwitch {
+  id: string;
+  /** The panel section's heading. */
+  section: string;
+  /** The checkbox's label. */
+  label: string;
+  on: boolean;
+  onChange: (on: boolean) => void;
 }

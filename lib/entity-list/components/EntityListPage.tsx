@@ -1117,6 +1117,7 @@ export function EntityListPage<TRow>({
             hasRows={Boolean(rowsView)}
             onSearch={onSearch}
             searchToggles={config.searchToggles}
+            panelSwitches={config.panelSwitches}
             tableControlsRef={setTableControlsSlot}
             onPatchQuery={list.patchQuery}
             // Sort changes route through commitSort so the panel's sort and the

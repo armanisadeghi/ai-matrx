@@ -73,8 +73,14 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   const starredSet = useMemo(() => new Set(marks.starred), [marks.starred]);
   const starredKey = marks.starred.join(",");
 
+  // "SHOW APP TABLES" (CHAIR-DOORS-2, N-C8): the tables the app keeps for agents' outputs stay out
+  // of the home until the person turns this on in Filters; on, the corpus is read again with them.
+  const [showAppTables, setShowAppTables] = useState(false);
   // THE CORPUS (rows in hand) and the server search beside it — dataHomeCorpus.ts.
-  const corpus = useMemo(() => createDataHomeCorpus(client, dataSource), [client, dataSource]);
+  const corpus = useMemo(
+    () => createDataHomeCorpus(client, dataSource, { includeAppTables: showAppTables }),
+    [client, dataSource, showAppTables],
+  );
   // THE RECORDS COLUMN, lazily: cells on screen ask this; the list never waits on it.
   const recordCounts = useMemo(
     () => createRecordCountStore((organizationId, tableIds) => tableRowCounts(dataSource, organizationId, tableIds)),
@@ -136,7 +142,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // organizations the viewer belongs to or holds a grant in), so System is absent, not empty.
       lanes: { system: false },
       service,
-      serviceKey: `${starredKey}|${serverVersion}`,
+      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}`,
       columns,
       prefsVersion: 1,
       prefsDefaults: {
@@ -182,6 +188,9 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // full-text layer waits (its own 250 ms, dataHomeCorpus.ts).
       searchDebounceMs: 0,
       searchToggles: [{ id: "title_only", label: "Title only" }],
+      panelSwitches: [
+        { id: "app_tables", section: "App tables", label: "Show app tables", on: showAppTables, onChange: setShowAppTables },
+      ],
       searchTokens: (search) => tokensToFilters(search, corpus.meta),
       filterChips: true,
       ...(defaultKind !== ALL_KINDS ? { defaultFilters: { kind: { kind: "select", values: [defaultKind] } } } : {}),
@@ -232,7 +241,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
           }
         : { title: "No tables yet", description: "New table makes one." },
     };
-  }, [service, starredKey, serverVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, router, starredSet, marks]);
+  }, [service, starredKey, serverVersion, showAppTables, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, router, starredSet, marks]);
 
   return (
     <EntityListPage

@@ -2,11 +2,10 @@
  * @jest-environment jsdom
  */
 /**
- * THE G3 REVIEW, the confirm's half (nightly clone, 2026-10-02):
- *  - a note's title is stored in `label`, and the confirm said "Label" while the
- *    form said "Title" — the title column reads "Title" everywhere;
- *  - an update confirm said only the new value — it says old → new;
- *  - a create said "your workspace" — it names the organization the write lands in.
+ * THE G6A REVIEW, item 3 (nightly clone, 2026-10-02): only Create's confirm named
+ * the organization. Update, Delete and every "Run again" name it too — an update
+ * or delete the organization the RECORD lives in (read from the record, never
+ * the switcher), a create or action the one the write is sent with.
  */
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -36,22 +35,30 @@ jest.mock("@/features/matrx-envelope/referenceResolvers", () => ({
   useResolvedReferenceLabel: () => ({ display: "G3 note", status: "ready" }),
 }));
 jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
+  // The ACTIVE organization is a different one: an update must not borrow it.
   selectActiveOrganizationName: () => "Ashford Labs",
 }));
+jest.mock("@/features/scopes/redux/selectors/tree", () => ({
+  selectOrganizations: () => ({ "org-bellweather": { id: "org-bellweather", name: "Bellweather Co" } }),
+}));
 jest.mock("@/features/matrx-envelope/directiveRecordRow", () => ({
-  readDirectiveRecord: async () => ({ id: "x", label: "G3 old note title", content: "old body" }),
+  readDirectiveRecord: async () => ({ id: "x", title: "G6A old", organization_id: "org-bellweather" }),
 }));
 
 import { decodeDirective } from "@ai-matrx/content-ir";
 import type { DirectiveAskRequest } from "@ai-matrx/content-ir-react";
 import { matrxDirectiveHost } from "@/features/matrx-envelope/directiveHost";
 
-const NOTE_ID = "4127fbc8-0000-4000-8000-000000000002";
+const TASK_ID = "4127fbc8-0000-4000-8000-000000000003";
 
-function request(slug: string, items: Record<string, unknown>[], nounLabel: string): DirectiveAskRequest {
+function request(
+  slug: string,
+  items: Record<string, unknown>[],
+  again = false,
+): DirectiveAskRequest {
   const directive = decodeDirective({ __kind: slug, items });
   if (!directive) throw new Error(`test shell did not decode: ${slug}`);
-  return { directive, items, nounLabel };
+  return { directive, items, nounLabel: "Task", ...(again ? { again: true } : {}) };
 }
 
 async function dialogText(req: DirectiveAskRequest): Promise<string> {
@@ -67,27 +74,30 @@ async function dialogText(req: DirectiveAskRequest): Promise<string> {
   });
   // Let the current-values read land.
   await act(async () => {
-    await new Promise((r) => setTimeout(r, 0));
+    for (let i = 0; i < 4; i += 1) await new Promise((r) => setTimeout(r, 0));
   });
   const text = host.textContent ?? "";
   await act(async () => root.unmount());
   return text;
 }
 
-describe("the confirm says it the way the form does", () => {
-  it("a note's title column reads Title, never Label, and shows old → new", async () => {
-    const text = await dialogText(
-      request("directive_v1_update_note", [{ id: NOTE_ID, label: "G3 new note title" }], "Note"),
-    );
-    expect(text).toContain("Title");
-    expect(text).not.toContain("Label");
-    expect(text).toContain("G3 old note title");
-    expect(text).toContain("G3 new note title");
+describe("every confirm names the organization it touches", () => {
+  const update = ["directive_v1_update_task", [{ id: TASK_ID, title: "G6A new" }]] as const;
+  const remove = ["directive_v1_delete_task", [{ id: TASK_ID }]] as const;
+
+  it.each([
+    ["an update", update, false],
+    ["an update run again", update, true],
+    ["a delete", remove, false],
+    ["a delete run again", remove, true],
+  ])("%s names the organization the record lives in", async (_name, [slug, items], again) => {
+    const text = await dialogText(request(slug, [...items] as Record<string, unknown>[], again));
+    expect(text).toContain("Bellweather Co");
+    expect(text).not.toContain("Ashford Labs");
   });
 
-  it("a create names the organization the write lands in, never 'your workspace'", async () => {
-    const text = await dialogText(request("directive_v1_create_task", [{ title: "G3 task" }], "Task"));
+  it("a create run again names the organization it adds the copy to", async () => {
+    const text = await dialogText(request("directive_v1_create_task", [{ title: "G6A task" }], true));
     expect(text).toContain("Ashford Labs");
-    expect(text).not.toContain("workspace");
   });
 });

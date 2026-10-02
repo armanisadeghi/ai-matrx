@@ -1,14 +1,13 @@
 "use client";
 
 /**
- * THE RECORD A DIRECTIVE NAMES, AS IT IS NOW — one read, two answers:
+ * THE RECORD A DIRECTIVE NAMES, AS IT IS NOW — one read:
  *
  *  - `readDirectiveRecord` is the package's `readRecord` seam
  *    (`@ai-matrx/content-ir-react` 0.16.0): an update card and its confirm say
  *    "Status open → done", never just "→ done" (reviewer, 2026-10-02).
- *  - `useDirectiveRecordTrashed` answers whether a record a card names is in
- *    the trash NOW, so a Create card whose record was deleted afterwards says so
- *    (reviewer, 2026-10-02) instead of offering a live-looking door.
+ *  - whether a record a card names is in the trash NOW is answered for every
+ *    door by `referenceTrash.ts` (`useReferenceDoor().trashed`).
  *
  * Data goes React → Supabase directly, under the reader's own row security —
  * the same table the catalog names for the noun (`CATALOG_NOUNS`, server
@@ -17,7 +16,6 @@
  * answers `null`: honest absence, never a guess.
  */
 
-import { useEffect, useState } from "react";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { DirectiveRecordRef } from "@ai-matrx/content-ir-react";
 
@@ -27,7 +25,6 @@ import {
   CATALOG_ALIASES,
   CATALOG_NOUNS,
 } from "@/features/matrx-envelope/catalog-nouns.generated";
-import { useReferenceRecordVersion } from "@/features/matrx-envelope/referenceResolvers";
 
 function tableFor(noun: string): { schema: string; table: string } | null {
   const entry = CATALOG_NOUNS[CATALOG_ALIASES[noun] ?? noun];
@@ -64,41 +61,4 @@ export function readDirectiveRecord(
     .finally(() => inFlight.delete(key));
   inFlight.set(key, started);
   return started;
-}
-
-/** True when a soft-deleted row says so — `deleted_at` set or `is_deleted`. */
-export function isTrashedRow(row: Record<string, unknown> | null): boolean {
-  if (!row) return false;
-  if (row.deleted_at !== null && row.deleted_at !== undefined && row.deleted_at !== "") return true;
-  return row.is_deleted === true;
-}
-
-/**
- * Is `{noun, id}` in the trash right now? Re-read whenever a writer on this page
- * changes the record (`invalidateReferenceLabel`) — a Delete card applied in
- * the same note flips the Create card's door to "(in trash)" without a reload.
- * `null` while unknown.
- */
-export function useDirectiveRecordTrashed(noun: string, id: string): boolean | null {
-  const version = useReferenceRecordVersion(id);
-  const key = `${noun}:${id}:${version}`;
-  const [answer, setAnswer] = useState<{ key: string; trashed: boolean | null }>({
-    key: "",
-    trashed: null,
-  });
-  useEffect(() => {
-    let live = true;
-    readDirectiveRecord({ noun, id })
-      .then((row) => {
-        if (live) setAnswer({ key, trashed: row ? isTrashedRow(row) : null });
-      })
-      .catch(() => {
-        if (live) setAnswer({ key, trashed: null });
-      });
-    return () => {
-      live = false;
-    };
-  }, [key, noun, id]);
-  // A re-read of the same record keeps the last answer until the new one lands.
-  return answer.key.startsWith(`${noun}:${id}:`) ? answer.trashed : null;
 }

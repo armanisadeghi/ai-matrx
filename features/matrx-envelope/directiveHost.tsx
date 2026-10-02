@@ -71,6 +71,7 @@ import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
+import { selectOrganizations } from "@/features/scopes/redux/selectors/tree";
 import { readDirectiveRecord } from "@/features/matrx-envelope/directiveRecordRow";
 import { explainDirectiveFailure } from "@/features/matrx-envelope/directiveFailureWords";
 
@@ -141,12 +142,19 @@ function requireStore() {
  * Law: common-docs/policies/no-dead-ends.md — a generic
  * "Are you sure?" fails; the sentence has to name what changes.
  */
+/** An organization id → its name, from the person's memberships (null when unknown). */
+function organizationNameOf(organizationId: string): string | null {
+  const store = getStoreSingleton();
+  if (!store) return null;
+  return selectOrganizations(store.getState())[organizationId]?.name?.trim() || null;
+}
+
 function ask(request: DirectiveAskRequest): Promise<boolean> {
   // The organization the write will land in — the one `authedDirectiveHeaders`
   // sends with every directive write (the active organization is for writes).
   const organizationName = selectActiveOrganizationName(requireStore().getState());
   return confirmDialog(
-    directiveConsequenceDialog(request, matrxDirectiveNouns, organizationName),
+    directiveConsequenceDialog(request, matrxDirectiveNouns, organizationName, organizationNameOf),
   );
 }
 
@@ -177,6 +185,8 @@ async function confirm(shell: DirectiveShell): Promise<DirectiveApplyResult> {
       // THE TALLY IS A DOOR: every record the apply wrote, so "Applied 1" is a
       // way into what was created/changed (no dead ends).
       records,
+      // What an update replaced — the card's record of the change.
+      before: beforeByIndex(result.receipts, shell.items.length),
     };
   } catch (error) {
     // Prefer the server's gentle user_message; never dump Pydantic/wire detail.
@@ -184,6 +194,37 @@ async function confirm(shell: DirectiveShell): Promise<DirectiveApplyResult> {
     if (error instanceof BackendApiError) throw new Error(error.userMessage);
     throw error;
   }
+}
+
+/**
+ * An update's replaced values for item `index`, read by NARROWING: aidream
+ * ledgers `before` per item since 1122747fb5 (G6A review — the card draws
+ * "old → new" from it after the apply, never from a live re-read), and the
+ * generated contract in @ai-matrx/agents does not carry it yet. An older server
+ * omits it → null, and the card says only what each field was set to.
+ */
+function beforeOf(entry: unknown): Record<string, unknown> | null {
+  if (!entry || typeof entry !== "object" || !("before" in entry)) return null;
+  const before = (entry as { before?: unknown }).before;
+  return before && typeof before === "object" && !Array.isArray(before)
+    ? (before as Record<string, unknown>)
+    : null;
+}
+
+/** Per-item `before`, by the receipts' own `index` (a failed item has none). */
+function beforeByIndex(
+  receipts: ReadonlyArray<unknown>,
+  count: number,
+): Array<Record<string, unknown> | null> {
+  const out: Array<Record<string, unknown> | null> = Array.from({ length: count }, () => null);
+  receipts.forEach((receipt, position) => {
+    const index =
+      receipt && typeof receipt === "object" && "index" in receipt && typeof receipt.index === "number"
+        ? receipt.index
+        : position;
+    if (index >= 0 && index < count) out[index] = beforeOf(receipt);
+  });
+  return out;
 }
 
 interface PendingStateRead {
@@ -227,7 +268,13 @@ function toApplyState(state: DirectiveShellState): DirectiveApplyState {
         "copies" in item && typeof item.copies === "number" ? item.copies : 1,
       ),
     );
-    return { state: "applied", message, records, copies };
+    return {
+      state: "applied",
+      message,
+      records,
+      copies,
+      before: items.map((item) => beforeOf(item)),
+    };
   }
   if (items.some((item) => item.state === "in_flight")) return { state: "in_flight" };
   return { state: "not_applied" };

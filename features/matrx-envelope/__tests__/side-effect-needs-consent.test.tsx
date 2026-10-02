@@ -53,7 +53,6 @@ jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
 }));
 jest.mock("@/features/matrx-envelope/directiveRecordRow", () => ({
   readDirectiveRecord: async () => null,
-  useDirectiveRecordTrashed: () => null,
 }));
 
 import { decodeDirective } from "@ai-matrx/content-ir";

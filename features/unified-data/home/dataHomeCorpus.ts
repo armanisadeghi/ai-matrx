@@ -48,7 +48,13 @@ const keyOf = (search: string, organizationId: string | null) => `${organization
 export function createDataHomeCorpus(
   client: RecordsClient,
   dataSource: RecordsDataSource,
-  deps: { dataHome?: typeof doors.dataHome; dataHomeSearch?: typeof doors.dataHomeSearch; debounceMs?: number } = {},
+  deps: {
+    dataHome?: typeof doors.dataHome;
+    dataHomeSearch?: typeof doors.dataHomeSearch;
+    debounceMs?: number;
+    /** "Show app tables": also read the tables the app keeps for agents' outputs. */
+    includeAppTables?: boolean;
+  } = {},
 ): DataHomeCorpus {
   const dataHome = deps.dataHome ?? doors.dataHome;
   const dataHomeSearch = deps.dataHomeSearch ?? doors.dataHomeSearch;
@@ -65,7 +71,7 @@ export function createDataHomeCorpus(
   let inHand: DataHomeRow[] | undefined;
 
   const read = async (): Promise<DataHomeRow[]> => {
-    const answered = await dataHome(dataSource, null);
+    const answered = await dataHome(dataSource, null, { includeAppTables: deps.includeAppTables === true });
     if (!answered.ok) {
       throw new Error(`Could not read tables. ${doors.doorFailureLine(answered.error)}`, { cause: answered.error });
     }
@@ -94,7 +100,9 @@ export function createDataHomeCorpus(
 
   const ask = async (search: string, organizationId: string | null, key: string) => {
     inFlight.add(key);
-    const answered = await dataHomeSearch(dataSource, search, organizationId);
+    const answered = await dataHomeSearch(dataSource, search, organizationId, {
+      includeAppTables: deps.includeAppTables === true,
+    });
     inFlight.delete(key);
     if (!answered.ok) {
       meta.searchTrouble = answered.error.message;
