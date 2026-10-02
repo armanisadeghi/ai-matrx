@@ -77,7 +77,11 @@ import {
   updateCxWorkingDocumentContent,
 } from "./cx-working-document.service";
 import { selectUserId } from "../../../../host/identity";
-import { getActiveOrgId } from "../../../../host/org";
+import {
+  ensureOrgId,
+  getActiveOrgId,
+  isOrganizationSelectionCancelled,
+} from "../../../../host/org";
 
 interface ThunkConfig {
   state: ChatRootState;
@@ -352,6 +356,28 @@ function resolveOrgId(state: ChatRootState, conversationId: string): string | nu
     state.conversations.byConversationId[conversationId]?.organizationId ??
     getActiveOrgId()
   );
+}
+
+/**
+ * The organization a link the PERSON just asked for acts in: the
+ * conversation's own, else the active one, else the write is HELD and the
+ * host shows the person their memberships to choose one (never picks for
+ * them). Null when the person says "not now" — an answer, not a failure.
+ * Background writes (autosave, agent reflections) keep `resolveOrgId`, which
+ * refuses instead of raising a picker.
+ */
+async function orgForPersonLink(
+  state: ChatRootState,
+  conversationId: string,
+): Promise<string | null> {
+  try {
+    return await ensureOrgId(
+      state.conversations.byConversationId[conversationId]?.organizationId,
+    );
+  } catch (err) {
+    if (isOrganizationSelectionCancelled(err)) return null;
+    throw err;
+  }
 }
 
 /**
@@ -913,12 +939,15 @@ export const linkConversationDocumentThunk = createAsyncThunk<
         );
         return;
       }
-      const orgId = resolveOrgId(getState(), conversationId);
-      if (!orgId) {
-        console.error(
-          "[working-document] link: no org resolvable — edge not persisted",
-          { conversationId, kind, documentId },
-        );
+      let orgId: string | null;
+      try {
+        orgId = await orgForPersonLink(getState(), conversationId);
+      } catch (err) {
+        console.error("[working-document] link: no organization to save it in", {
+          conversationId,
+          documentId,
+          err,
+        });
         dispatch(
           markWorkingDocError({
             conversationId,
@@ -926,6 +955,15 @@ export const linkConversationDocumentThunk = createAsyncThunk<
             error:
               "Linked for this session, but saving the link failed — it may not survive a reload.",
           }),
+        );
+        return;
+      }
+      if (!orgId) {
+        // The person declined to choose an organization: the document stays
+        // linked for this session, as they chose.
+        console.info(
+          "[working-document] link: no organization chosen — linked for this session only",
+          { conversationId, kind, documentId },
         );
         return;
       }
@@ -1402,10 +1440,19 @@ export const openWorkspaceDocumentThunk = createAsyncThunk<
       // attach is session-only.
       const access = await getWorkingDocumentAccess(documentId);
       const viewOnly = access.level === "view" && !access.isOwner;
-      const orgId = resolveOrgId(getState(), attachTo);
+      const orgId = viewOnly
+        ? null
+        : await orgForPersonLink(getState(), attachTo).catch((err: unknown) => {
+            console.error("[working-document] attach: no organization to save it in", {
+              attachTo,
+              documentId,
+              err,
+            });
+            return null;
+          });
       if (!viewOnly && !orgId) {
-        console.error(
-          "[working-document] attach: no org resolvable — edge not persisted",
+        console.info(
+          "[working-document] attach: no organization chosen — attached for this session only",
           { attachTo, documentId },
         );
       }
