@@ -57,6 +57,9 @@ const RUN_SIGNALS: RegExp[] = [
 /** Top-menu disclosure signals. None renders page content. */
 const DISCLOSURE_SIGNALS: RegExp[] = [
   /useDeclaredSurfaceMandates\s*\(/,
+  // Flashcards' UI-free wrapper over useDeclaredSurfaceMandates
+  // (features/flashcards/data/mandate-disclosure.ts).
+  /useFlashcardMandates\s*\(/,
   /agentRoles\b/,
   /SurfaceAgentRole\b/,
   /MandateAgentPicker\b/,
