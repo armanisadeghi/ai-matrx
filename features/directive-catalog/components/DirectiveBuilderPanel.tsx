@@ -127,9 +127,14 @@ function PanelError({
   headline?: string;
 }) {
   const clean = stripTerminalCodes(raw).trim();
+  // The server's own sentence first (humanized: colour codes and ORM dumps
+  // removed); its generic status line only when there is no sentence at all.
+  // Until 2026-10-02 aidream sent "Bad request. Please check your input." as
+  // `user_message` with the real reason in `message` — preferring the status
+  // line hid "Nothing was applied — id is required." behind it.
   const headline =
-    (given ? stripTerminalCodes(given).trim() : "") ||
-    (humanizeBackendError(clean) ?? clean);
+    humanizeBackendError(clean) ??
+    ((given ? stripTerminalCodes(given).trim() : "") || clean);
   const hasDetail = clean.length > 0 && clean !== headline;
   return (
     <div
@@ -487,8 +492,10 @@ export function DirectiveBuilderPanel({
             : "Execute failed";
       const headline = e instanceof BackendApiError ? e.userMessage : undefined;
       setExecError({ raw, headline });
-      const clean = stripTerminalCodes(headline ?? raw);
-      toast.error(humanizeBackendError(clean) ?? clean);
+      toast.error(
+        humanizeBackendError(stripTerminalCodes(raw)) ??
+          stripTerminalCodes(headline ?? raw),
+      );
     } finally {
       setExecuting(false);
     }
@@ -742,76 +749,85 @@ export function DirectiveBuilderPanel({
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {/* Payload — the row's fields (shape mirrors the table). */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                The record&apos;s fields
-              </span>
-              {writeFields.length > 0 && (
-                <div
-                  role="radiogroup"
-                  aria-label="Payload editor"
-                  className="ml-auto flex rounded-md border border-border p-0.5 text-xs"
-                >
-                  {(["fields", "json"] as const).map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      role="radio"
-                      aria-checked={effectiveView === v}
-                      onClick={() => switchPayloadView(v)}
-                      className={cn(
-                        "min-h-7 rounded px-2",
-                        effectiveView === v
-                          ? "bg-primary/10 text-foreground"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {v === "fields" ? "Fields" : "JSON"}
-                    </button>
-                  ))}
-                </div>
+          {/* Payload — the row's fields (shape mirrors the table). A planned
+              type with no published field list has nothing to fill in: one
+              state line, no empty heading, no raw JSON box. */}
+          {noSchema && state !== "yes" ? (
+            <p className="text-xs text-muted-foreground">
+              Planned — no field list published yet.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  The record&apos;s fields
+                </span>
+                {writeFields.length > 0 && (
+                  <div
+                    role="radiogroup"
+                    aria-label="Payload editor"
+                    className="ml-auto flex rounded-md border border-border p-0.5 text-xs"
+                  >
+                    {(["fields", "json"] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        role="radio"
+                        aria-checked={effectiveView === v}
+                        onClick={() => switchPayloadView(v)}
+                        className={cn(
+                          "min-h-7 rounded px-2",
+                          effectiveView === v
+                            ? "bg-primary/10 text-foreground"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {v === "fields" ? "Fields" : "JSON"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {noSchema && (
+                <p className="text-xs text-muted-foreground">
+                  No field list published — write it as JSON.
+                </p>
+              )}
+              {viewNote && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  {viewNote}
+                </p>
+              )}
+              {effectiveView === "fields" ? (
+                <SchemaFieldsForm
+                  fields={writeFields}
+                  values={payloadValues}
+                  mode={verb === "update" ? "update" : "create"}
+                  warnings={builtPayload.warnings}
+                  onChange={(key, value) =>
+                    setPayloadValues((prev) =>
+                      applyFieldChange(prev, key, value),
+                    )
+                  }
+                />
+              ) : (
+                <>
+                  <Textarea
+                    value={writePayload}
+                    onChange={(e) => setWritePayload(e.target.value)}
+                    spellCheck={false}
+                    className={cn(
+                      "min-h-[120px] font-mono text-base lg:text-xs",
+                      payloadError &&
+                        "border-red-500 focus-visible:ring-red-500",
+                    )}
+                    placeholder={writePayloadPlaceholder}
+                  />
+                  {payloadError && <PanelError raw={payloadError} />}
+                </>
               )}
             </div>
-            {noSchema && (
-              <p className="text-xs text-muted-foreground">
-                {state === "yes"
-                  ? "No field list published — write it as JSON."
-                  : "No field list published for this yet."}
-              </p>
-            )}
-            {viewNote && (
-              <p className="text-xs text-amber-700 dark:text-amber-300">
-                {viewNote}
-              </p>
-            )}
-            {noSchema && state !== "yes" ? null : effectiveView === "fields" ? (
-              <SchemaFieldsForm
-                fields={writeFields}
-                values={payloadValues}
-                mode={verb === "update" ? "update" : "create"}
-                warnings={builtPayload.warnings}
-                onChange={(key, value) =>
-                  setPayloadValues((prev) => applyFieldChange(prev, key, value))
-                }
-              />
-            ) : (
-              <>
-                <Textarea
-                  value={writePayload}
-                  onChange={(e) => setWritePayload(e.target.value)}
-                  spellCheck={false}
-                  className={cn(
-                    "min-h-[120px] font-mono text-base lg:text-xs",
-                    payloadError && "border-red-500 focus-visible:ring-red-500",
-                  )}
-                  placeholder={writePayloadPlaceholder}
-                />
-                {payloadError && <PanelError raw={payloadError} />}
-              </>
-            )}
-          </div>
+          )}
 
           {state === "yes" && (
             <>
@@ -858,7 +874,7 @@ export function DirectiveBuilderPanel({
             </>
           )}
 
-          {state === "planned" && (
+          {state === "planned" && !noSchema && (
             <p className="text-xs text-muted-foreground">
               Planned — copy the envelope; it can&apos;t run yet.
             </p>

@@ -41,7 +41,18 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 - **Phone/tablet layout stays deliberate:** compact header metadata, 44 px filter/builder/action controls, and the shared `MOBILE_TABLE_FROZEN_THROUGH_TABLET` compatibility token keep the matrix content-sized without pinning any column. The grid wrapper is the single horizontal scroller, so the entire row moves together and every verb column remains reachable.
 - Component library: `Select`, `Input`, `Button`, `Badge`; Lucide icons; semantic tokens.
 
-## Execute (writes)
+## Choosing a type (the noun picker)
+
+- `nounOptions.ts` + `OptionCombobox`: searchable by name, token and family. The **Common**
+  tier leads — the org's `platform.reference_picker.common_types` knob, read through the
+  reference picker's own `useCommonReferenceTypes` (one knob, two surfaces; aliases followed
+  via `CATALOG_ALIASES`) — then Ready / Planned / Can't for the chosen verb. Names come from
+  `FRIENDLY_REFERENCE_TYPE_LABELS` (a conversation is "Chat"), else the server `label`.
+- **No default noun.** The builder opens on "Choose a type"; any pre-pick is a guess (it once
+  opened on `access_delta_probe`).
+- A planned type with no published schema shows one state line — no empty heading, no raw
+  JSON box, no dead Execute. Run controls (Force, the verb-named button) exist only on `yes`.
+
 
 - **Write forms are generated from the server's item schema — never hand-authored per noun.**
   `schemaFields.ts::deriveSchemaFields` maps every property of `noun.schemas[verb]` to a typed
@@ -97,6 +108,15 @@ alias map. Consequences here:
   reference resolvers derive from.
 
 ## Change Log
+
+- 2026-10-02 — Builder usability pass (lane E): common-types-first noun picker on the shared
+  knob, no default noun, form before envelope for writes, update/delete target leads the form
+  and is named by type (`schemaFields.ts` ranks `id` first), receipts offer "Update it" /
+  "Delete it" with the record carried over, a reference renders as soon as its record is
+  picked, run button named by verb, one-line state for planned/no-schema types. Errors:
+  execute uses `parseHttpError`; every rendered error string (panel, receipt summary,
+  catalog load/refresh, toggle toast) passes `stripTerminalCodes`; the headline prefers the
+  humanized server sentence over a generic status line.
 
 - 2026-10-02 — A directive write lands in the PERSON's organization, on an admin page too.
   `authedDirectiveHeaders` asks the gate with `personWrite: true`

@@ -257,6 +257,15 @@ describe("buildSchemaPayload", () => {
     expect(warnings.map((w) => w.key)).toEqual([null]);
   });
 
+  it("an update leads with the record it changes, named by its type — never 'id'", () => {
+    const adminUpdate = deriveSchemaFields(t.schemas!.update, {
+      titleColumn: t.title_column,
+      resolveRecordToken: (k) => (k === "id" ? ("task" as EntityTypeToken) : null),
+    });
+    expect(adminUpdate[0]).toMatchObject({ key: "id", label: "Task" });
+    expect(adminUpdate[1]?.key).toBe(t.title_column);
+  });
+
   it("converts a local date-time to ISO, and keeps bad JSON as text with a warning", () => {
     const { payload, warnings } = buildSchemaPayload(
       createFields,
