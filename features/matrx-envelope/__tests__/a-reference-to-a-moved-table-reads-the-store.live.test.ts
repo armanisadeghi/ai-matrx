@@ -55,7 +55,7 @@ if (!READY) {
   console.warn("[a-reference-to-a-moved-table-reads-the-store] SKIPPED: set GRID_PORT_SUPABASE_URL and GRID_PORT_SUPABASE_PUBLISHABLE_KEY (the dev clone).");
 }
 
-async function resolve(type: string, ref: Record<string, string>): Promise<string | undefined> {
+async function resolve(type: string, ref: Record<string, string>): Promise<string | null | undefined> {
   forgetAllTablePlacements(); // the resolver must find the table's home itself
   const resolver = getReferenceResolver(type);
   if (!resolver) throw new Error(`no resolver for ${type}`);
