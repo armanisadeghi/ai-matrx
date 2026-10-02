@@ -257,7 +257,7 @@ function UnderlineTabs({ items }: { items: string[] }) {
 function CapsuleTabs({ items }: { items: string[] }) {
   const [on, setOn] = useState(items[0]);
   return (
-    <div className="uc-seg matrx-glass-thin-border" role="group">
+    <div className="uc-seg" role="group">
       {items.map((i) => (
         <button key={i} type="button" className="uc-seg-item" data-on={on === i ? "" : undefined} onClick={() => setOn(i)}>
           {i}
@@ -528,11 +528,11 @@ export function SelectedInGroup() {
   return (
     <Scale scale={28}>
       <MeasuredBare>
-        <TapTargetButtonGroup>
+        <TapTargetButtonGroup surface="solid">
           <ListTapButton variant="group" ariaLabel="List view" pressed={view === "list"} onClick={() => setView("list")} />
           <LayoutGridTapButton variant="group" ariaLabel="Grid view" pressed={view === "grid"} onClick={() => setView("grid")} />
         </TapTargetButtonGroup>
-        <div className="uc-seg matrx-glass-thin-border" role="group" aria-label="Scope">
+        <div className="uc-seg" role="group" aria-label="Scope">
           {["all", "mine", "shared"].map((v) => (
             <button key={v} type="button" className="uc-seg-item" data-on={scope === v ? "" : undefined} onClick={() => setScope(v)}>
               {v === "all" ? "All" : v === "mine" ? "Mine" : "Shared"}

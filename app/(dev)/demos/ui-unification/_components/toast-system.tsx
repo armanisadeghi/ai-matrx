@@ -44,7 +44,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { TapTargetButton, TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent, TapTargetCopyButton } from "@ai-matrx/tap-target";
 import { ExternalLinkTapButton, MaximizeTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
 import { buildAgentPayload } from "@ai-matrx/kit/content-transfer";
 import { ChevronDown, CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from "lucide-react";
@@ -289,7 +289,7 @@ export function SmartToastCard({
       role={kind === "error" ? "alert" : "status"}
       data-toast-kind={kind}
       className={cn(
-        "flex w-[356px] max-w-full items-center rounded-lg border bg-card pl-3 shadow-lg",
+        "flex w-[356px] max-w-full items-center rounded-lg border bg-card pl-2.5 pr-[calc(var(--matrx-tap-gap)/2)] py-[calc(var(--matrx-tap-gap)/2-1px)] shadow-lg",
         k.surface,
         className,
       )}
@@ -315,7 +315,7 @@ export function SmartToastCard({
       )}
       <div className="flex shrink-0 items-center">
         {detail && (
-          <TapTargetButton
+          <TapTargetButtonTransparent
             icon={<ChevronDown />}
             ariaLabel="Details"
             tooltip="Details"
@@ -325,6 +325,7 @@ export function SmartToastCard({
         )}
         {detail && options.window && (
           <MaximizeTapButton
+            variant="transparent"
             ariaLabel="Open in window"
             tooltip="Open in window"
             onClick={() => openToastWindow({ title: windowTitle, kind, message, detail })}
@@ -332,6 +333,7 @@ export function SmartToastCard({
         )}
         {options.href && (
           <ExternalLinkTapButton
+            variant="transparent"
             ariaLabel="Open in new tab"
             tooltip="Open in new tab"
             href={options.href}
@@ -340,6 +342,7 @@ export function SmartToastCard({
           />
         )}
         <TapTargetCopyButton
+          variant="transparent"
           ariaLabel="Copy for AI"
           tooltip="Copy for AI"
           value={() =>
@@ -347,7 +350,7 @@ export function SmartToastCard({
           }
           onCopied={onCopied}
         />
-        <XTapButton ariaLabel="Close" tooltip="Close" onClick={onClose} />
+        <XTapButton variant="transparent" ariaLabel="Close" tooltip="Close" onClick={onClose} />
       </div>
     </div>
   );

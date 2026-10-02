@@ -21,11 +21,17 @@ The pattern has four pillars. All four must hold for the migration to be conside
 - **Tooltip auto-derives from `ariaLabel`.** Set `ariaLabel="Submit Feedback"` and the tooltip mirrors. Pass `tooltip="..."` only to override. Pass `tooltip={false}` to opt out.
 - **Anchor decorations to the visible 32×32 inner pill.** Badges/dots/pings use `top-1.5 right-1.5` (offset 6px from the 44×44 outer), not `top-0 right-0`.
 
+### THE PLACEMENT RULES (owner, 2026-10-02) — the guard enforces them
+
+- **Glass only floats.** Glass is see-through. It belongs only on a bar floating over moving content (sticky or fixed with the page scrolling behind it, like iOS Messages' header) or on a `data-matrx-glass-plane`. Everywhere else (a page, card, toast, dialog or table), pass `variant="transparent"` (or `outline`) and use `TapTargetButtonGroup surface="solid"`. Never take the glass default without choosing it.
+- **All glass or none.** A glass button never sits beside a non-glass element in the same row.
+- **The 3px half-gap.** The box adds 3px of unseen space per side. Whatever sits beside the button (breadcrumb text, a field, a container's edge) adds its own 3px, so the visible gap is always 6px.
+
 ### Mapping consumer `className` → `variant`
 
 | Old className intent | New variant |
 |---|---|
-| `shell-glass …` background | `variant="glass"` (default — omit) |
+| `shell-glass …` background, on a bar floating over scrolling content | `variant="glass"` (only there — see the placement rules) |
 | `hover:bg-accent` / hover-only background | `variant="transparent"` |
 | Solid filled button (e.g. primary CTA) | `variant="solid"` + `bgColor="bg-…"` |
 | Inside a `TapTargetButtonGroup` | `variant="group"` |

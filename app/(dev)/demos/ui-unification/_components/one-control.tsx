@@ -20,7 +20,7 @@
  */
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { TapTargetButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { TapTargetButtonGroup, TapTargetButtonOutline } from "@ai-matrx/tap-target";
 import {
   ArrowDownUpTapButton,
   FilterTapButton,
@@ -67,6 +67,8 @@ const ONE_CONTROL_CSS = `
 .uc-btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
 .uc-btn-primary:hover { background: hsl(var(--primary) / 0.9); }
 .uc-btn-quiet { background: transparent; }
+.uc-btn-outline { border: 1px solid hsl(var(--border)); background: hsl(var(--card)); }
+.uc-btn-outline:hover { background: hsl(var(--accent)); }
 .uc-btn-danger { background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
 .uc-btn-danger:hover { background: hsl(var(--destructive) / 0.9); }
 .uc-btn-quiet:hover { background: hsl(var(--accent)); }
@@ -85,7 +87,9 @@ const ONE_CONTROL_CSS = `
    inset from the OUTER edge equally on both axes (2px): pad = 2px - border. A
    thumb with its own ring inside a bordered track reads as two outlines at the
    rounded ends — the selected state is a fill and a hairline shadow, no ring. */
-.uc-seg { display: inline-flex; align-items: center; gap: 2px; padding-inline: calc(2px - var(--matrx-glass-border-width-thin, 1.5px)); border-radius: 9999px; }
+/* On a solid surface (glass only floats): a muted track, no stroke, so the
+   thumb is inset 2px from the edge on both axes. */
+.uc-seg { display: inline-flex; align-items: center; gap: 2px; padding-inline: 2px; border-radius: 9999px; background: hsl(var(--muted)); }
 .uc-seg-item {
   box-sizing: border-box; height: calc(var(--matrx-tap-wide-size) - 4px); padding-inline: 0.625rem;
   border-radius: 9999px; display: inline-flex; align-items: center; cursor: pointer;
@@ -215,18 +219,18 @@ export function UnifiedToolbar() {
       <button type="button" className="uc-select" style={{ width: "7rem" }} aria-label="Status">
         Open <ChevronDown aria-hidden />
       </button>
-      <div className="uc-seg matrx-glass-thin-border" role="group" aria-label="Scope">
+      <div className="uc-seg" role="group" aria-label="Scope">
         {["all", "mine", "shared"].map((v) => (
           <button key={v} type="button" className="uc-seg-item" data-on={scope === v ? "" : undefined} onClick={() => setScope(v)}>
             {v === "all" ? "All" : v === "mine" ? "Mine" : "Shared"}
           </button>
         ))}
       </div>
-      <TapTargetButtonGroup>
+      <TapTargetButtonGroup surface="solid">
         <FilterTapButton variant="group" ariaLabel="Filter" />
         <ArrowDownUpTapButton variant="group" ariaLabel="Sort" />
       </TapTargetButtonGroup>
-      <TapTargetButton icon={<Download />} label="Export" ariaLabel="Export" />
+      <TapTargetButtonOutline icon={<Download />} label="Export" ariaLabel="Export" />
       <SettingsTapButton variant="transparent" ariaLabel="Settings" />
     </MeasuredBare>
   );
@@ -391,7 +395,7 @@ export function DensityDense() {
               <Search aria-hidden />
               <input placeholder="Search" aria-label="Search" />
             </label>
-            <TapTargetButton icon={<Plus />} label="New" ariaLabel="New document" />
+            <TapTargetButtonOutline icon={<Plus />} label="New" ariaLabel="New document" />
           </div>
           <div className="px-3 pb-1 pt-2.5 text-[0.6875rem] font-medium text-muted-foreground">Recent</div>
           <div className="divide-y divide-border">
@@ -431,7 +435,7 @@ function PadToolbar() {
       <button type="button" className="uc-btn uc-btn-primary">
         <PlusGlyph /> New
       </button>
-      <button type="button" className="uc-btn matrx-glass-thin-border">Export</button>
+      <button type="button" className="uc-btn uc-btn-outline">Export</button>
       <label className="uc-field" style={{ width: "11rem" }}>
         <Search aria-hidden />
         <input placeholder="Search" aria-label="Search" />
@@ -439,7 +443,7 @@ function PadToolbar() {
       <button type="button" className="uc-select" style={{ width: "7rem" }} aria-label="Status">
         Open <ChevronDown aria-hidden />
       </button>
-      <div className="uc-seg matrx-glass-thin-border" role="group" aria-label="Scope">
+      <div className="uc-seg" role="group" aria-label="Scope">
         {["all", "mine"].map((v) => (
           <button key={v} type="button" className="uc-seg-item" data-on={scope === v ? "" : undefined} onClick={() => setScope(v)}>
             {v === "all" ? "All" : "Mine"}
@@ -447,7 +451,7 @@ function PadToolbar() {
         ))}
       </div>
       <SettingsTapButton variant="transparent" ariaLabel="Settings" />
-      <MoreHorizontalTapButton variant="glass" ariaLabel="More" />
+      <MoreHorizontalTapButton variant="transparent" ariaLabel="More" />
     </MeasuredBare>
   );
 }
