@@ -14,8 +14,10 @@
 
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
-import { webcrypto } from "node:crypto";
 import { AuthClient } from "@supabase/auth-js";
+import type { JWK } from "@supabase/supabase-js";
+
+const webcrypto = globalThis.crypto;
 import {
   PROJECT_SIGNING_KEYS,
   pinnedSigningKeysFor,
@@ -45,7 +47,8 @@ async function signedToken(kid: string, key: CryptoKey): Promise<string> {
 async function keyPair(kid: string) {
   const pair = await webcrypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
   const jwk = await webcrypto.subtle.exportKey("jwk", pair.publicKey);
-  return { privateKey: pair.privateKey, jwk: { ...jwk, kid, alg: "ES256", use: "sig", key_ops: ["verify"] } };
+  const pinned: JWK = { ...jwk, kty: "EC", kid, alg: "ES256", use: "sig", key_ops: ["verify"] };
+  return { privateKey: pair.privateKey, jwk: pinned };
 }
 
 describe("pinnedSigningKeysFor", () => {
