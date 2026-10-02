@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ToolUiComponentGenerator } from "@/features/tool-call-visualization/admin/ToolUiComponentGenerator";
 import { ToolUiComponentEditor } from "@/features/tool-call-visualization/admin/ToolUiComponentEditor";
 import { ToolComponentPreview } from "@/features/tool-call-visualization/admin/mcp-tools/ToolComponentPreview";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { invalidateToolRenderer } from "@ai-matrx/chat/tool-call-visualization/db-renderer/toolRendererCache";
 import type { Database } from "@/types/database.types";
 
@@ -136,7 +136,7 @@ export function ToolUiPage({ tool }: Props) {
         </h1>
         {tool.category && (
           <Badge variant="outline" className="ml-auto shrink-0 text-[10px]">
-            {formatText(tool.category)}
+            {humanizeIdentifier(tool.category)}
           </Badge>
         )}
       </div>

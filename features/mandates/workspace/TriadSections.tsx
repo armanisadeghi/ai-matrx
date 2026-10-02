@@ -34,7 +34,6 @@ import {
   ConfigurationTableRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -90,6 +89,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { toastFailure } from "@/lib/failure/toastFailure";
 import { outputConstraintsOf } from "./definition-output";
 import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** Plain words for H/V/A — never the letter alone. */
 export function GroundingBadge({ grounding }: { grounding: string | null }) {
@@ -780,7 +780,7 @@ export function TriadOutputSection({
               <EntityRef
                 token="shape"
                 id={data.mandate.output_kind}
-                name={displayLabelForKey(data.mandate.output_kind)}
+                name={humanizeIdentifier(data.mandate.output_kind) || data.mandate.output_kind}
                 href={`/shapes/${encodeURIComponent(data.mandate.output_kind)}`}
                 showIcon={false}
                 wrap
@@ -798,7 +798,7 @@ export function TriadOutputSection({
             value:
               data.contract.requiredOutputKeys.length > 0
                 ? data.contract.requiredOutputKeys
-                    .map((key) => displayLabelForKey(key))
+                    .map((key) => (humanizeIdentifier(key) || key))
                     .join(", ")
                 : "None declared",
             source: "Mandate contract",

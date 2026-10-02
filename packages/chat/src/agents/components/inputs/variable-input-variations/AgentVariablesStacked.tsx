@@ -6,7 +6,6 @@
  * Stacked full VariableInputComponent rows (no collapsed single-line + popover).
  */
 
-import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
 import { VariableInputComponent } from "../input-components/VariableInputComponent";
 import { BoundVariableChips } from "../BoundVariableChips";
@@ -82,7 +81,7 @@ export function AgentVariablesStacked({
                 onChange={(newValue) =>
                   handleVariableValueChange(variable.name, newValue)
                 }
-                variableName={variableRunLabel(variable, formatText)}
+                variableName={variableRunLabel(variable)}
                 customComponent={variable.customComponent}
                 helpText={variable.helpText}
                 compact

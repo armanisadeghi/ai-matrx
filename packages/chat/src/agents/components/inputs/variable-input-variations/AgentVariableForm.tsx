@@ -28,7 +28,7 @@ import {
 } from "@ai-matrx/design-system";
 import { ChevronDown } from "lucide-react";
 import { VoiceTextarea } from "@host/components/official/VoiceTextarea";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { formatText, humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { cn } from "@ai-matrx/design-system";
 import { motion } from "motion/react";
 import type {
@@ -189,7 +189,7 @@ interface VariableFieldProps {
 }
 
 function VariableField({ conversationId, def, value, onChange }: VariableFieldProps) {
-  const formattedName = formatText(def.name, { textCase: "title" });
+  const formattedName = humanizeIdentifier(def.name);
   const cc = def.customComponent;
   const fieldId = `var-${def.name}`;
   const fieldLabel = (

@@ -24,11 +24,11 @@ import {
 } from "@ai-matrx/chat/surfaces/redux/selectors";
 import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 import { SurfaceRolesSection } from "./SurfaceRolesSection";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 const TYPE_ICONS: Record<
   SurfaceValue["valueType"],
@@ -200,7 +200,7 @@ function SectionTitle() {
 function SurfaceValueCard({ value }: { value: SurfaceValue }) {
   const [open, setOpen] = useState(false);
   const Icon = TYPE_ICONS[value.valueType] ?? Type;
-  const display = value.label || formatVariableDisplayName(value.name);
+  const display = displayLabel(value.label, value.name);
 
   return (
     <li>

@@ -35,7 +35,6 @@ import {
 import { setExpandedVariableId } from "../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { VariableInputComponent } from "./input-components/VariableInputComponent";
 import { BoundVariableChips } from "./BoundVariableChips";
-import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunHint, variableRunLabel } from "@ai-matrx/agents";
 import { variableValueToDisplay, variableValueToInputText } from "../../utils/variable-utils";
 import { readMediaVariableFileId } from "../../utils/media-variable-value";
@@ -297,7 +296,7 @@ export function AgentVariablesInline({
                 )}
                 <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 min-h-8">
                   <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0">
-                    {variableRunLabel(variable, formatText)}:
+                    {variableRunLabel(variable)}:
                   </Label>
                   <div className="flex-1 min-w-0">
                     <VariableInputComponent
@@ -346,7 +345,7 @@ export function AgentVariablesInline({
                     tabIndex={index + 1}
                   >
                     <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer">
-                      {variableRunLabel(variable, formatText)}:
+                      {variableRunLabel(variable)}:
                     </Label>
                     <div className="flex-1 min-w-0">
                       {mediaFileId ? (
@@ -405,7 +404,7 @@ export function AgentVariablesInline({
                 className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer"
                 onClick={() => handleExpand(variable.name)}
               >
-                {variableRunLabel(variable, formatText)}:
+                {variableRunLabel(variable)}:
               </Label>
               {rowKind === "open-editor" && mediaFileId ? (
                 <div
@@ -471,7 +470,7 @@ export function AgentVariablesInline({
                   multiple={rowChoices.multiple}
                   value={inputText}
                   onChange={(v) => handleValueChange(variable.name, v)}
-                  label={variableRunLabel(variable, formatText)}
+                  label={variableRunLabel(variable)}
                 />
               )}
               <button

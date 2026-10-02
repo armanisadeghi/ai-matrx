@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toolsService, DatabaseTool } from '@/utils/supabase/tools-service';
 import { mapIcon } from '@/utils/icons/icon-mapper';
-import { formatText } from '@ai-matrx/kit/text-case';
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface Tool {
   id: string;           // The actual tool identifier used for tool calls (from database 'name' field)
@@ -48,7 +48,7 @@ export function useTools(options: UseToolsOptions = {}): UseToolsReturn {
     return databaseTools.map(dbTool => ({
       id: dbTool.name,                                    // Use database 'name' as the tool identifier
       name: dbTool.name,                                  // Same as id for backward compatibility
-      displayName: formatText(dbTool.name),               // Pretty formatted name for display
+      displayName: humanizeIdentifier(dbTool.name),               // Pretty formatted name for display
       description: dbTool.description,
       category: dbTool.category || 'Other',
       icon: mapIcon(dbTool.icon, dbTool.category ?? undefined)
@@ -152,7 +152,7 @@ export function useToolsByIds(ids: string[], autoFetch: boolean = true) {
       const mappedTools = databaseTools.map(dbTool => ({
         id: dbTool.name,                                    // Use database 'name' as the tool identifier
         name: dbTool.name,                                  // Same as id for backward compatibility
-        displayName: formatText(dbTool.name),               // Pretty formatted name for display
+        displayName: humanizeIdentifier(dbTool.name),               // Pretty formatted name for display
         description: dbTool.description,
         category: dbTool.category || 'Other',
         icon: mapIcon(dbTool.icon, dbTool.category ?? undefined)

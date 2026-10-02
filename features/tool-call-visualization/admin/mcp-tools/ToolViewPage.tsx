@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { mapIcon } from "@/utils/icons/icon-mapper";
 import { ToolTestSamplesViewer } from "@/features/tool-call-visualization/admin/ToolTestSamplesViewer";
 import { RegistryTab } from "@/features/tool-registry/tools-admin/components/RegistryTab";
@@ -160,7 +160,7 @@ function OverviewTab({ tool }: { tool: ToolRow }) {
           <InfoRow icon={<Tag className="h-3.5 w-3.5" />} label="Category">
             {tool.category ? (
               <Badge variant="outline" className="text-xs">
-                {formatText(tool.category)}
+                {humanizeIdentifier(tool.category)}
               </Badge>
             ) : (
               <span className="text-muted-foreground text-xs">None</span>
@@ -454,7 +454,7 @@ export function ToolViewPage({ tool }: Props) {
               </Badge>
               {tool.category && (
                 <Badge variant="outline" className="text-[10px]">
-                  {formatText(tool.category)}
+                  {humanizeIdentifier(tool.category)}
                 </Badge>
               )}
             </div>

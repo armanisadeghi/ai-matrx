@@ -7,7 +7,7 @@ import {
   type Crumb,
   type CrumbOption,
 } from "@/features/shell/components/header/templates/CrumbTrailHeader";
-import { formatTitleCase } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface RouteTreeBreadcrumbHeaderProps {
   /** Relative route paths, such as `tests/buttons/variants`. */
@@ -31,7 +31,7 @@ function toHref(basePath: string, segments: readonly string[]) {
 }
 
 function formatSegment(segment: string) {
-  return formatTitleCase(segment.replace(/[\[\].]/g, " ").trim());
+  return humanizeIdentifier(segment.replace(/[\[\].]/g, " ").trim());
 }
 
 /**

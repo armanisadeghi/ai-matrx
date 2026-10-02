@@ -32,10 +32,10 @@ import type {
   ValueMappingMap,
 } from "@ai-matrx/chat/surfaces/types";
 import {
-  formatVariableDisplayName,
   variableValueToDisplay,
 } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
 /**
  * One row in the binding form. Drives a single agent variable / context
@@ -212,7 +212,7 @@ export function SurfaceVariableBinding({
     });
   };
 
-  const displayName = target.label ?? formatVariableDisplayName(target.name);
+  const displayName = displayLabel(target.label, target.name);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -488,7 +488,7 @@ function AgentDefaultDetail({
         <p className="mt-2 text-amber-600 dark:text-amber-400">
           Note: the surface declares a value named{" "}
           <span className="font-medium text-foreground">
-            {formatVariableDisplayName(autoBindCandidate.name)}
+            {humanizeIdentifier(autoBindCandidate.name) || autoBindCandidate.name}
           </span>
           . Picking <strong>Surface Value</strong> would bind to it
           automatically; <strong>Agent Default</strong> explicitly ignores it.
@@ -553,7 +553,7 @@ function SurfaceValueDetail({
               <SelectItem key={sv.name} value={sv.name}>
                 <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
                   <span className="break-words text-sm font-medium">
-                    {sv.label || formatVariableDisplayName(sv.name)}
+                    {displayLabel(sv.label, sv.name)}
                   </span>
                   <span className="text-xs text-foreground">
                     {offeredAvailabilityLabel(sv.alwaysAvailable)}

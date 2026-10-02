@@ -35,7 +35,6 @@
 //   6. Everything else renders as text.
 
 import {
-  formatVariableDisplayName,
   variableValueToDisplay,
 } from "./variable-utils";
 import {
@@ -44,6 +43,7 @@ import {
 } from "@host/features/scopes/registry/entityRegistry";
 import { getCachedEntityTitle } from "@host/features/scopes/service/entityTitles";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface VariableDisplayLine {
   /** The raw variable name — a stable React key. */
@@ -136,7 +136,7 @@ export function buildVariableDisplayLines(
         lines.push({
           key: `${key}:${entity.token}:${entity.id}`,
           label:
-            index === 0 ? formatVariableDisplayName(key) || key : "",
+            index === 0 ? humanizeIdentifier(key) || key : "",
           entity,
           text: "",
         });
@@ -148,7 +148,7 @@ export function buildVariableDisplayLines(
     if (entity) {
       lines.push({
         key,
-        label: formatVariableDisplayName(key.replace(/_?id$/i, "")) || key,
+        label: humanizeIdentifier(key.replace(/_?id$/i, "")) || key,
         entity,
         text: "",
       });
@@ -162,7 +162,7 @@ export function buildVariableDisplayLines(
     if (!text.trim()) continue;
     lines.push({
       key,
-      label: formatVariableDisplayName(key),
+      label: (humanizeIdentifier(key) || key),
       entity: null,
       text,
     });

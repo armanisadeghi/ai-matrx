@@ -127,8 +127,8 @@ describe("parseTemplateDraftValue", () => {
 
 describe("humanizeManagedBy", () => {
   it("turns a job key into words a person reads", () => {
-    expect(humanizeManagedBy("crm.reply_drafting")).toBe("CRM reply drafting");
-    expect(humanizeManagedBy("notifications.digest")).toBe("Notifications digest");
+    expect(humanizeManagedBy("crm.reply_drafting")).toBe("CRM Reply Drafting");
+    expect(humanizeManagedBy("notifications.digest")).toBe("Notifications Digest");
   });
 });
 

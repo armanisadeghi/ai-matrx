@@ -1,4 +1,4 @@
-import { formatTitleCase } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import type { ModulePage } from "@/components/matrx/navigation/types";
 
 /** Filesystem parameter templates are inventory, never navigation destinations. */
@@ -32,13 +32,13 @@ export function groupRoutes(routes: string[]): Record<string, string[]> {
 }
 
 export function getRouteLabel(route: string, groupKey: string): string {
-  if (groupKey === "__root__") return formatTitleCase(route);
-  if (route === groupKey) return `${formatTitleCase(route)} (overview)`;
+  if (groupKey === "__root__") return humanizeIdentifier(route);
+  if (route === groupKey) return `${humanizeIdentifier(route)} (overview)`;
 
   const childParts = route.split("/").slice(1);
   return childParts.length > 0
-    ? childParts.map((part) => formatTitleCase(part)).join(" / ")
-    : formatTitleCase(route.split("/")[0]);
+    ? childParts.map((part) => humanizeIdentifier(part)).join(" / ")
+    : humanizeIdentifier(route.split("/")[0]);
 }
 
 export function toModulePages(
@@ -46,7 +46,7 @@ export function toModulePages(
   moduleHome: string,
 ): ModulePage[] {
   return routes.filter(isConcreteRoute).map((route) => ({
-    title: formatTitleCase(route.split("/").pop() ?? route),
+    title: humanizeIdentifier(route.split("/").pop() ?? route),
     path: route,
     relative: true,
     description: "",

@@ -57,7 +57,6 @@ import {
   OUTPUT_TYPES,
   clearOutput,
   isDefaultOutput,
-  prettifySlug,
   readOutputTypes,
   resolveKindSkillId,
   selectedOutputKinds,
@@ -66,6 +65,7 @@ import {
   toggleOutputType,
 } from "./output-selection";
 import { SHAPE_SOURCES, knownShapeLabel, useOutputShapeCatalog, type ShapeSource } from "./useOutputShapeCatalog";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 type IconType = ComponentType<{ className?: string }>;
 
@@ -84,7 +84,7 @@ const TYPE_ICONS: Record<string, IconType> = {
   data: Braces,
 };
 
-const kindLabel = (kind: string) => knownShapeLabel(kind) ?? prettifySlug(kind);
+const kindLabel = (kind: string) => knownShapeLabel(kind) ?? (humanizeIdentifier(kind) || kind);
 
 /** The Output selection for one conversation, and its writes. */
 function useComposerOutput(conversationId: string) {

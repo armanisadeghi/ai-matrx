@@ -28,6 +28,7 @@
 
 import { skillNamedForKind } from "@host/features/content-ir/admin/duplicate-skill-analysis";
 import { SHAPE_CHIP_DEFS, type ShapeChipSkillSource } from "../shape-chips";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export type OutputTypeGroup = "core" | "media" | "files";
 
@@ -58,16 +59,7 @@ export const DEFAULT_OUTPUT_TYPES: readonly string[] = ["text"];
 const TYPE_LABEL = new Map(OUTPUT_TYPES.map((type) => [type.id, type.label]));
 
 export function outputTypeLabel(id: string): string {
-  return TYPE_LABEL.get(id) ?? prettifySlug(id);
-}
-
-/** `flashcard_set` → `Flashcard Set` — the fallback label for a kind slug. */
-export function prettifySlug(slug: string): string {
-  return slug
-    .split(/[_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return TYPE_LABEL.get(id) ?? (humanizeIdentifier(id) || id);
 }
 
 /** The stored types, or the default (Text) when the chat never chose. */
@@ -226,7 +218,7 @@ export function isDefaultOutput(types: readonly string[], kindCount: number): bo
 export function summarizeOutput(
   types: readonly string[],
   kinds: readonly string[],
-  kindLabel: (kind: string) => string = prettifySlug,
+  kindLabel: (kind: string) => string = humanizeIdentifier,
 ): string {
   if (types.length === 0) {
     if (kinds.length === 0) return "Output";

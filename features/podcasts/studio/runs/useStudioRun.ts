@@ -60,7 +60,7 @@ import {
   reconcileRun,
   type ReconcileResult,
 } from "./reconcile";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
 import type {
   ToolEventPayload,
@@ -621,9 +621,9 @@ export function useStudioRun(runId: string): UseStudioRun {
             const activityMessage =
               t.message?.trim() ||
               (t.event === "tool_completed"
-                ? `${formatText(t.tool_name)} finished`
+                ? `${humanizeIdentifier(t.tool_name)} finished`
                 : t.event === "tool_error"
-                  ? `${formatText(t.tool_name)} failed`
+                  ? `${humanizeIdentifier(t.tool_name)} failed`
                   : "");
             // Terminal events must be retained even when the backend omits
             // their optional message; call_id is how earlier rows stop looking

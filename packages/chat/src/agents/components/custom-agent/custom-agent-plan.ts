@@ -14,7 +14,7 @@ import type { VariableDefinition } from "../../types/agent-definition.types";
 import type { ApplicationScope } from "../../types/scope.types";
 import type { AgentExecutionRuntime } from "../../types/agent-execution-config.types";
 import type { ValueMappingMap } from "../../../surfaces/types";
-import { humanizeName } from "../send-to-agent/send-to-agent-plan";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** A value the menu captured that the person can map onto an input. */
 export interface CustomAgentValueSource {
@@ -69,7 +69,7 @@ export function buildValueSources(
   const seen = new Set<string>();
   const sources: CustomAgentValueSource[] = [];
   for (const key of keys) {
-    const label = KNOWN_LABELS[key] ?? humanizeName(key).replace(/\bId\b|\bid\b/g, "ID");
+    const label = KNOWN_LABELS[key] ?? (humanizeIdentifier(key) || key);
     if (seen.has(label)) continue;
     seen.add(label);
     sources.push({ id: key, label, value: entries.get(key) ?? "" });
@@ -107,7 +107,7 @@ export function buildInputRows(
         : undefined;
     rows.push({
       id: v.name,
-      label: humanizeName(v.name),
+      label: (humanizeIdentifier(v.name) || v.name),
       ...(help ? { description: help } : {}),
       ...(disabledReason ? { disabledReason } : {}),
     });

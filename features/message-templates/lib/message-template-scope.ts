@@ -22,6 +22,7 @@ import {
   readMessageTemplateMetadata,
   type MessageTemplateDB,
 } from "../types/message-templates-db";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The record budget for one focused record (page-pass context budget). */
 const RECORD_CONTENT_MAX = 9000;
@@ -44,15 +45,14 @@ export function templateManagedBy(
 
 /**
  * A person-readable name for a `managed_by` job key: "crm.reply_drafting" →
- * "CRM reply drafting". The key itself stays in the agent's bundle.
+ * "CRM Reply Drafting". The key itself stays in the agent's bundle.
  */
 export function humanizeManagedBy(key: string): string {
   const words = key
     .split(/[._-]+/)
     .filter(Boolean)
-    .map((w) => (w.length <= 3 ? w.toUpperCase() : w.toLowerCase()));
-  const text = words.join(" ");
-  return text.charAt(0).toUpperCase() + text.slice(1);
+    .map((w) => (w.length <= 3 ? w.toUpperCase() : humanizeIdentifier(w) || w));
+  return words.join(" ");
 }
 
 /** THE record as one XML bundle. */

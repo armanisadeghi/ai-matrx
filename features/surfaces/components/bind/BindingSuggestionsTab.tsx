@@ -23,7 +23,6 @@ import {
 } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { selectAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { sourceFeatureFromSurfaceName } from "@ai-matrx/chat/agents/utils/source-feature-from-surface";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import {
   buildMapperVariables,
   describeSuggestion,
@@ -46,6 +45,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { asClause } from "@ai-matrx/kit/text";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export const BINDING_MAPPER_MANDATE_KEY = MANDATE_KEYS.surfaces_client__binding_mapper;
 
@@ -354,7 +354,7 @@ export function BindingSuggestionsTab({
                     )}
                   />
                   <p className="min-w-0 flex-1 break-words text-xs font-medium">
-                    {formatVariableDisplayName(s.target)}
+                    {humanizeIdentifier(s.target) || s.target}
                   </p>
                   <p className="shrink-0 text-[10px] text-muted-foreground">
                     {describeSuggestion(s)}
@@ -387,7 +387,7 @@ export function BindingSuggestionsTab({
                 >
                   <p className="text-xs">
                     <span className="font-medium">
-                      {formatVariableDisplayName(p.target)}
+                      {humanizeIdentifier(p.target) || p.target}
                     </span>
                     <span className="text-muted-foreground"> — {p.policy}</span>
                   </p>

@@ -8,7 +8,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
 import { VariableInputComponent } from "../../../agents/components/inputs/input-components/VariableInputComponent";
 import { useAppSelector, useAppDispatch } from "../../../store/hooks";
@@ -118,7 +117,7 @@ export function StackedVariableInputs({
                     onClick={() => handleExpandedVariableChange(variable.name)}
                   >
                     <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer">
-                      {variableRunLabel(variable, formatText)}:
+                      {variableRunLabel(variable)}:
                     </Label>
                     <div className="flex-1 text-xs text-foreground min-w-0">
                       {value ? (
@@ -162,7 +161,7 @@ export function StackedVariableInputs({
                   className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer"
                   onClick={() => handleExpandedVariableChange(variable.name)}
                 >
-                  {variableRunLabel(variable, formatText)}:
+                  {variableRunLabel(variable)}:
                 </Label>
                 <input
                   type="text"

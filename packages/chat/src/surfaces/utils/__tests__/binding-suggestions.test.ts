@@ -113,7 +113,7 @@ describe("many-to-one proposals", () => {
 // "system_prompt"` next to "System Prompt". Two names for one thing on one
 // screen is a lie about one of them, and the raw one reads as a different, more
 // technical system than the one the person is actually using. Both sides now go
-// through `formatVariableDisplayName` — the manual side's own helper.
+// through `humanizeIdentifier` — the manual side's own helper.
 
 describe("the proposal's names", () => {
   const one = (surfaceValue: string) =>

@@ -17,7 +17,6 @@
  * useHeadlessAgentJson).
  */
 
-import { formatVariableDisplayName } from "../../agents/utils/variable-utils";
 import type { AgentDefinition } from "../../agents/types/agent-definition.types";
 import type {
   SurfaceValue,
@@ -27,6 +26,7 @@ import type {
   WritePolicyMap,
 } from "../types";
 import { isSurfaceWritePolicy } from "../types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ---------------------------------------------------------------------------
 // Payload building
@@ -332,7 +332,7 @@ export function suggestionSourceKeys(s: BindingSuggestion): string[] {
  *
  * 🚨 NAMES READ AS THE MANUAL EDITOR PRINTS THEM (V2 finding G5a). The proposal
  * sits two inches from the manual mapping editor, which renders every input and
- * every value through `formatVariableDisplayName` — so a proposal saying
+ * every value through `humanizeIdentifier` — so a proposal saying
  * `From "system_prompt"` while the editor beside it says "System Prompt" reads
  * as a different, more technical system. Same helper, same words; the raw keys
  * are still shown by the row itself, on their own line.
@@ -343,8 +343,8 @@ export function describeSuggestion(s: BindingSuggestion): string {
       return s.alsoFrom.length > 0
         ? // D18.2 — say the whole combination and the order, because the order
           // IS the delivered text.
-          `From ${[s.mapping.target, ...s.alsoFrom].map((n) => `"${formatVariableDisplayName(n)}"`).join(" + ")}, joined in that order`
-        : `From "${formatVariableDisplayName(s.mapping.target)}"${s.mapping.required ? " (required)" : ""}`;
+          `From ${[s.mapping.target, ...s.alsoFrom].map((n) => `"${humanizeIdentifier(n) || n}"`).join(" + ")}, joined in that order`
+        : `From "${humanizeIdentifier(s.mapping.target) || s.mapping.target}"${s.mapping.required ? " (required)" : ""}`;
     case "direct_value":
       return `Fixed value: ${typeof s.mapping.target === "string" ? `"${s.mapping.target}"` : JSON.stringify(s.mapping.target)}`;
     case "prompt_user":
@@ -354,6 +354,6 @@ export function describeSuggestion(s: BindingSuggestion): string {
     case "offered_value":
       // Mandate consumption entries never appear in surface suggestions —
       // present, not silently absent, if data ever routes one here.
-      return `Mandate consumption entry for "${formatVariableDisplayName(String(s.mapping.target))}" (not a surface mapping)`;
+      return `Mandate consumption entry for "${humanizeIdentifier(String(s.mapping.target))}" (not a surface mapping)`;
   }
 }

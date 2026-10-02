@@ -8,7 +8,6 @@
 
 "use client";
 
-import { humanizeTemplateCategory } from "@/features/scopes/utils/templateCategory";
 import { useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { AlertTriangle, Zap } from "lucide-react";
@@ -29,6 +28,7 @@ import {
   currentSelection,
 } from "@/features/scopes/lib/scopes-surface-scope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function TemplatesGalleryPanel() {
   const { templates, status, error, refresh } = useTemplates();
@@ -147,7 +147,7 @@ export function TemplatesGalleryPanel() {
       {Object.entries(grouped).map(([category, list]) => (
         <section key={category} className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase">
-            {humanizeTemplateCategory(category)}
+            {humanizeIdentifier(category)}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {list.map((t) => (

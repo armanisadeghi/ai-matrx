@@ -50,6 +50,7 @@ import {
   Webhook,
   Workflow,
 } from "lucide-react";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * Sentinel key representing conversations whose `source_app` / `source_feature`
@@ -447,11 +448,7 @@ export function resolveSurfaceFilter(
 /** "transcription-cleanup" → "Transcription Cleanup". */
 export function humanizeSourceKey(value: string): string {
   if (value === EMPTY_SOURCE_KEY) return "Generic / system";
-  return value
-    .split(/[-_]/g)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+  return humanizeIdentifier(value) || value;
 }
 
 export function appMeta(app: string): SourceMeta {

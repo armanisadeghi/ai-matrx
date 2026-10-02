@@ -13,6 +13,7 @@
 import type { VariableDefinition } from "../../types/agent-definition.types";
 import type { ContextPolicy } from "../../types/agent-api-types";
 import type { AgentExecutionRuntime } from "../../types/agent-execution-config.types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** The ad-hoc context key the default destination lands under. */
 export const IMPORTANT_CONTEXT_KEY = "user_tagged_context";
@@ -101,7 +102,7 @@ export function buildDestinationOptions(
     options.push({
       id: destinationId(destination),
       destination,
-      label: humanizeName(v.name),
+      label: (humanizeIdentifier(v.name) || v.name),
       group: "variables",
       ...(help ? { description: help } : {}),
       ...(disabledReason ? { disabledReason } : {}),
@@ -138,12 +139,6 @@ export interface SendToAgentLaunchPlan {
   runtime: AgentExecutionRuntime;
   /** Open the variable panel so the person sees the value they are sending. */
   showVariablePanel: boolean;
-}
-
-/** "research_question" → "Research question" — a variable's name as a label. */
-export function humanizeName(name: string): string {
-  const words = name.replace(/[_-]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1).toLowerCase() : name;
 }
 
 /**

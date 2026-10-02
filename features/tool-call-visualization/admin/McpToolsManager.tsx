@@ -69,7 +69,7 @@ import { supabase } from "@/utils/supabase/client";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { usePendingWrites } from "@/lib/errors/usePendingWrites";
 import { putToolActive, setToolsActive } from "./mcp-tools/tool-active-writes";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { cn } from "@/styles/themes/utils";
 import {
@@ -376,7 +376,7 @@ export function McpToolsManager() {
         render: (t) =>
           t.category ? (
             <Badge variant="outline" className="text-[10px] h-4 px-1.5">
-              {formatText(t.category)}
+              {humanizeIdentifier(t.category)}
             </Badge>
           ) : (
             <span className="text-muted-foreground text-[10px]">—</span>
@@ -1400,7 +1400,7 @@ export function McpToolsManager() {
               <SelectContent>
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat} className="text-xs">
-                    {cat === "all" ? "All Categories" : formatText(cat)}
+                    {cat === "all" ? "All Categories" : humanizeIdentifier(cat)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1932,7 +1932,7 @@ function ColumnFilterControl({
                         }}
                       />
                       <span className="truncate" title={opt}>
-                        {formatText(opt)}
+                        {humanizeIdentifier(opt)}
                       </span>
                     </label>
                   );

@@ -64,12 +64,6 @@ export function counts(value: unknown): Record<string, number> {
   return out;
 }
 
-/** A readable label for an engine code (`unverified_no_corroboration` → "Unverified no corroboration"). */
-export function humanize(code: string): string {
-  const text = code.replace(/[._]+/g, " ").trim();
-  return text ? text[0].toUpperCase() + text.slice(1) : text;
-}
-
 // ── the run's parts, as the run view receives them ─────────────────────────
 
 export interface RunNotice {

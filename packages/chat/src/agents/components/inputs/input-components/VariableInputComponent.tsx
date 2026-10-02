@@ -26,7 +26,7 @@ import {
   isMediaVariableType,
   type VariableCustomComponent,
 } from "../../../types/agent-definition.types";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Label } from "@ai-matrx/design-system";
 import { useContainerWidth } from "./useContainerColumns";
 import { Button } from "@ai-matrx/design-system";
@@ -101,7 +101,7 @@ export function VariableInputComponent({
     customComponent?.imageRole
       ? IMAGE_ROLE_META[customComponent.imageRole]
       : null;
-  const formattedName = imageRoleMeta?.ask ?? formatText(variableName);
+  const formattedName = imageRoleMeta?.ask ?? humanizeIdentifier(variableName);
   const shownHelpText = helpText ?? imageRoleMeta?.explanation;
   const options = customComponent?.options ?? [];
   const hasOptions = options.length > 0;

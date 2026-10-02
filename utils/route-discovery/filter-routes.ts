@@ -3,7 +3,7 @@
  */
 
 import { isConcreteRoute } from "@/utils/route-discovery/shared";
-import { formatTitleCase } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface RouteSearchRow {
   /** Route segment path (no basePath prefix). */
@@ -27,12 +27,12 @@ export function buildRouteSearchRows(
   return routes.filter(isConcreteRoute).map((route) => {
     const parts = route.split("/");
     const segment = parts[parts.length - 1] ?? route;
-    const category = parts.length > 1 ? formatTitleCase(parts[0]!) : "Root";
+    const category = parts.length > 1 ? humanizeIdentifier(parts[0]!) : "Root";
 
     return {
       route,
       href: `${normalizedBase}/${route}`,
-      label: formatTitleCase(segment.replace(/[[\].]/g, " ").trim()),
+      label: humanizeIdentifier(segment.replace(/[[\].]/g, " ").trim()),
       category,
     };
   });

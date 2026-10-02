@@ -17,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceVariableDefinitions } from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { isCustomDataBinding } from "../../utils/variable-binding";
@@ -61,10 +61,10 @@ function DataBoundChip({
         <button
           type="button"
           className="inline-flex max-w-[280px] min-w-0 items-center gap-1.5 rounded-full border border-border bg-muted/60 py-0.5 pl-2 pr-2 text-xs text-foreground transition-colors hover:bg-muted"
-          title={`${formatText(name)} — filled from your data when the agent runs. It can't be changed here.`}
+          title={`${humanizeIdentifier(name)} — filled from your data when the agent runs. It can't be changed here.`}
         >
           <Lock className="h-3 w-3 shrink-0 opacity-70" />
-          <span className="shrink-0 font-medium">{formatText(name)}</span>
+          <span className="shrink-0 font-medium">{humanizeIdentifier(name)}</span>
           <CustomDataBindingSummary binding={binding} className="min-w-0" />
           <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
         </button>
@@ -79,7 +79,7 @@ function DataBoundChip({
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
             <span className="font-medium text-foreground">
-              {formatText(name)}
+              {humanizeIdentifier(name)}
             </span>{" "}
             is filled from your data each run, so it is locked.
           </p>

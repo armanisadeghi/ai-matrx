@@ -62,7 +62,6 @@ import {
   StatusToken,
   PropertyRow,
 } from "@/components/official/ConfigurationFields";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { Section } from "@/features/mandates/workspace/Section";
 import { EffectiveConfigLayers } from "@/features/mandates/components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";

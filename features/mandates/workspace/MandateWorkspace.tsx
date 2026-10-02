@@ -82,7 +82,6 @@ import {
   StatusToken,
   PropertyRow,
 } from "@/components/official/ConfigurationFields";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { Section } from "./Section";
 import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
@@ -117,6 +116,7 @@ import {
   type MandateLadderRow,
 } from "./useMandateLadder";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * Which principal a HOST speaks for. It PRE-SELECTS the rung in the binding
@@ -706,7 +706,7 @@ function OneMandateWorkspace({
               />
               <PropertyRow
                 label="Feature"
-                value={formatVariableDisplayName(feature)}
+                value={humanizeIdentifier(feature) || feature}
               />
               <PropertyRow
                 label="Enabled"
@@ -1222,7 +1222,7 @@ export function FulfillmentSection({ resolution }: { resolution: FulfillmentView
         {droppedRungs.map((dropped) => (
           <PropertyRow
             key={`${dropped.rung}:${dropped.reason}`}
-            label={`${formatVariableDisplayName(dropped.rung)} binding`}
+            label={`${humanizeIdentifier(dropped.rung) || dropped.rung} binding`}
             value={<StatusToken status="caution" label="Not applied" />}
             help={<TextWithDoors text={dropped.reason} defaultToken="agent" />}
           />

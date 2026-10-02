@@ -64,7 +64,7 @@ import { variableValueToDisplay } from "../../utils/variable-utils";
 import { setScopeContextValue } from "@host/features/scopes/redux/scopeContextView";
 import { ensureContextValues } from "@host/features/scopes/redux/thunks/ensureContextValues";
 import { buildScopeValuePayload } from "@host/features/scopes/utils/scopeValuePayload";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import type { ContextValueType } from "@host/features/scopes/redux/contextItemCatalog";
 import {
   selectScopeById,
@@ -248,7 +248,7 @@ function BoundChip({
     if (!writeScopeId || !info.binding.contextItemId || saving) return;
     const ok = await confirm({
       title: `Save to ${info.scopeTypeLabel}?`,
-      description: `Update “${formatText(info.name)}” on the active ${info.scopeTypeLabel} so every agent using it picks up this value. Decline to use it for this run only.`,
+      description: `Update “${humanizeIdentifier(info.name)}” on the active ${info.scopeTypeLabel} so every agent using it picks up this value. Decline to use it for this run only.`,
       confirmLabel: `Save to ${info.scopeTypeLabel}`,
       cancelLabel: "Just this run",
     });
@@ -287,11 +287,11 @@ function BoundChip({
               "inline-flex min-w-0 items-center gap-1.5 rounded-l-full py-0.5 pl-2 pr-1 transition-colors hover:bg-muted",
               !activeScopeId && "rounded-r-full pr-2",
             )}
-            title={`${formatText(info.name)} — auto-filled from ${scopeLabel}. Click to override.`}
+            title={`${humanizeIdentifier(info.name)} — auto-filled from ${scopeLabel}. Click to override.`}
           >
             <Link2 className="h-3 w-3 shrink-0 opacity-70" />
             <span className="font-medium shrink-0">
-              {formatText(info.name)}
+              {humanizeIdentifier(info.name)}
             </span>
             <span className="text-muted-foreground truncate">
               {displayValue || "—"}
@@ -305,7 +305,7 @@ function BoundChip({
             onClick={handleRemoveScope}
             className="inline-flex h-full shrink-0 items-center rounded-r-full py-0.5 pl-1 pr-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label={`Stop using ${scopeLabel}`}
-            title={`Stop using ${scopeLabel} — ${formatText(info.name)} goes back to a normal input`}
+            title={`Stop using ${scopeLabel} — ${humanizeIdentifier(info.name)} goes back to a normal input`}
           >
             <X className="h-3 w-3" />
           </button>

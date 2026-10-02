@@ -28,7 +28,7 @@ import {
 } from "@/features/marketing/lib/snapshot-content";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 import { isJsonRecord } from "@/features/marketing/types";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import type { Json } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -217,7 +217,7 @@ export function PageIdentityCard({
                 <div className="mb-2.5 flex flex-wrap gap-1.5">
                   {identity.cms ? (
                     <Badge variant="secondary">
-                      {formatText(identity.cms)}
+                      {humanizeIdentifier(identity.cms)}
                     </Badge>
                   ) : null}
                   {identity.pageTypes.map((type) => (
@@ -227,7 +227,7 @@ export function PageIdentityCard({
                   ))}
                   {identity.platformSignals.map((signal) => (
                     <Badge key={signal} variant="outline">
-                      {formatText(signal)}
+                      {humanizeIdentifier(signal)}
                     </Badge>
                   ))}
                   {identity.featuredImageSource ? (
@@ -456,7 +456,7 @@ function ResourceRow({ item }: { item: ParsedSnapshotResource }) {
         </p>
       </div>
       <Badge variant="outline" className="h-5 shrink-0 text-[9px]">
-        {formatText(item.kind)}
+        {humanizeIdentifier(item.kind)}
       </Badge>
     </div>
   );
@@ -506,7 +506,7 @@ export function PageResourcesCard({
             ["Resources", resources.count],
             ["Images", images.count],
             ...kinds.map(([kind, count]): [string, number] => [
-              formatText(kind),
+              humanizeIdentifier(kind),
               count,
             ]),
           ],
@@ -542,7 +542,7 @@ export function PageResourcesCard({
                   className="h-6 px-2 text-[10px]"
                   onClick={() => setSelectedKind(kind)}
                 >
-                  {formatText(kind)} {count}
+                  {humanizeIdentifier(kind)} {count}
                 </Button>
               ))}
             </div>

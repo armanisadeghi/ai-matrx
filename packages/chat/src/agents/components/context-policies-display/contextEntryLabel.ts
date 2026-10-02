@@ -8,7 +8,7 @@
  * under the run read "table_id  table_name  table_colu…". A label someone wrote wins; otherwise
  * the key is read aloud ("Table ID", "Table Columns") by the platform's one text-case reader.
  */
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function contextEntryLabel(
   entry: { key: string; label?: string | null },
@@ -18,5 +18,5 @@ export function contextEntryLabel(
   // A "label" that is the key itself (the table's agent button wrote label: "table_id") is the
   // machine's word again, not somebody's; it is read aloud like a missing one.
   if (written && written !== entry.key) return written;
-  return formatText(entry.key) || entry.key;
+  return humanizeIdentifier(entry.key) || entry.key;
 }

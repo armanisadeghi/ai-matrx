@@ -22,7 +22,7 @@ import type {
   VariableComponentType,
 } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
+import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
 /**
  * Column 2 — Agent.
@@ -212,7 +212,7 @@ function VariableRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-sm font-medium text-foreground truncate">
-              {formatVariableDisplayName(variable.name)}
+              {humanizeIdentifier(variable.name) || variable.name}
             </span>
             {variable.required && (
               <span className="shrink-0 inline-flex items-center px-1.5 h-4 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600">
@@ -267,7 +267,7 @@ function VariableDetailDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{formatVariableDisplayName(variable.name)}</DialogTitle>
+          <DialogTitle>{humanizeIdentifier(variable.name) || variable.name}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 pt-1 pb-2 text-sm">
           {variable.helpText && (
@@ -342,7 +342,7 @@ function ContextPolicyRow({
           <TypeIcon className="h-3 w-3" />
         </div>
         <div className="flex-1 min-w-0 text-sm font-medium text-foreground truncate">
-          {slot.label ?? formatVariableDisplayName(slot.key)}
+          {displayLabel(slot.label, slot.key)}
         </div>
         {slot.description && (
           <Info className="h-3 w-3 text-muted-foreground/60 shrink-0 group-hover:text-muted-foreground transition-colors" />
@@ -367,7 +367,7 @@ function ContextPolicyDetailDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {slot.label ?? formatVariableDisplayName(slot.key)}
+            {displayLabel(slot.label, slot.key)}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 pt-1 pb-2 text-sm">

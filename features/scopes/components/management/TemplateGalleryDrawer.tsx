@@ -11,7 +11,6 @@
 // server RPC takes no subset argument, so the client loops — parent-type
 // wiring is dropped and re-assigned via Edit later).
 
-import { humanizeTemplateCategory } from "@/features/scopes/utils/templateCategory";
 import { useEffect, useMemo, useState } from "react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
@@ -48,6 +47,7 @@ import type {
   FlatTemplateScopeType,
   TemplateScopeTypeDetail,
 } from "@/features/scopes/types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface TemplateGalleryDrawerProps {
   open: boolean;
@@ -68,7 +68,6 @@ const ALL = "__all__";
 
 type Mode = "templates" | "individual";
 
-const humanizeCategory = humanizeTemplateCategory;
 
 // The same scope ("Client") appears across a dozen templates. For the
 // "Individual scopes" mode — whose job is to TEACH the concept, not to
@@ -337,7 +336,7 @@ export function TemplateGalleryDrawer({
             {categories.map((c) => (
               <CategoryChip
                 key={c}
-                label={humanizeCategory(c)}
+                label={humanizeIdentifier(c)}
                 active={category === c}
                 onClick={() => setCategory(c)}
               />
@@ -645,7 +644,7 @@ function TemplateDetail({
           </p>
           <div className="flex flex-wrap gap-1.5 mt-2">
             <Badge variant="secondary" className="text-[10px]">
-              {humanizeCategory(template.category)}
+              {humanizeIdentifier(template.category)}
             </Badge>
             {template.audience === "individual" && (
               <Badge variant="outline" className="text-[10px]">
