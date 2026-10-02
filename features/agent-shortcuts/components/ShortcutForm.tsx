@@ -446,7 +446,7 @@ export function ShortcutForm({
           </div>
           {formData.surfaceName && (
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">surface_name:</span>
+              <span className="text-muted-foreground">Surface:</span>
               <span className="font-mono text-[11px] text-foreground">
                 {formData.surfaceName}
               </span>

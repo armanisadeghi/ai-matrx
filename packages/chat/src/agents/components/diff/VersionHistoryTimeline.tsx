@@ -32,6 +32,7 @@ import {
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@host/components/official/mobile-table/mobileTable";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface VersionHistoryTimelineProps {
   agentId: string;
@@ -370,7 +371,7 @@ function VersionRow({
                         : "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
                   )}
                 >
-                  {n.key}
+                  {humanizeIdentifier(n.key) || n.key}
                   {n.changeType === "added"
                     ? " +"
                     : n.changeType === "removed"

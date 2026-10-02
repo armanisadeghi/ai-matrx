@@ -1203,7 +1203,7 @@ function AddMemberForm({
       className="rounded-md border bg-muted/20 p-3 flex flex-col gap-2 sm:flex-row sm:items-end"
     >
       <label className="flex flex-col gap-1 text-xs">
-        <span className="text-muted-foreground">source_kind</span>
+        <span className="text-muted-foreground">Source kind</span>
         <select
           value={kind}
           onChange={(e) =>
@@ -1319,7 +1319,7 @@ function EditStoreForm({
         />
       </label>
       <label className="flex flex-col gap-1 text-xs">
-        <span className="text-muted-foreground">short_code</span>
+        <span className="text-muted-foreground">Short code</span>
         <Input
           value={draft.shortCode}
           onChange={(e) => setDraft({ ...draft, shortCode: e.target.value })}

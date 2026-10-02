@@ -876,7 +876,7 @@ function BatchDetailDialog({
                   <StatusBadge status={detail.status} />
                 </dd>
 
-                <dt className="text-muted-foreground">Provider batch_id</dt>
+                <dt className="text-muted-foreground">Provider batch ID</dt>
                 <dd className="font-mono text-xs break-all">
                   {detail.batch_id ?? "—"}
                 </dd>
