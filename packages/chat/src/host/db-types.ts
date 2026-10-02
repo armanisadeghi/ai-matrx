@@ -14577,6 +14577,21 @@ export type ChatDatabase = {
           slug: string
         }[]
       }
+      resolve_publish_binding_kind: {
+        Args: { p_slug: string }
+        Returns: {
+          kind: string
+          namespace: string
+          notice: string
+          organization_id: string
+          render_mode: string
+          resource_id: string
+          resource_type: string
+          slug: string
+          table_id: string
+          title: string
+        }[]
+      }
       role_label: { Args: { p_role: string }; Returns: string }
       role_vocabulary_offenders: {
         Args: never
@@ -25305,6 +25320,7 @@ export type ChatDatabase = {
         Args: { p_depth?: number; p_id: string; p_type: string }
         Returns: boolean
       }
+      is_client_channel: { Args: never; Returns: boolean }
       is_provisioning: { Args: never; Returns: boolean }
       is_service_only_history: { Args: { p_token: string }; Returns: boolean }
       is_sqlstate: { Args: { p_code: string }; Returns: boolean }
@@ -25613,6 +25629,10 @@ export type ChatDatabase = {
       link_trigger_is_attached: {
         Args: { p_schema: string; p_table: string; p_trigger: string }
         Returns: boolean
+      }
+      list_dimension_ids: {
+        Args: { p_entity_type: string; p_filters: Json }
+        Returns: string[]
       }
       list_dimension_match: {
         Args: { p_entity_id: string; p_entity_type: string; p_filters: Json }
