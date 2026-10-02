@@ -46,7 +46,7 @@ review dossier, or approval monitor.
 
 ## Invariants that survive from the old doc
 
-- MCP tools integrate through the **durable delegated tool path** — never a parallel execution path ([`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md)).
+- MCP tools integrate through the **durable delegated tool path** — never a parallel execution path ([`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/RESUME-AND-RECOVERY.md`]/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/RESUME-AND-RECOVERY.md)).
 - OAuth tokens stay server-side; the client never sees raw credentials.
 - Per-user MCP endpoint overrides travel through the OAuth session into the
   non-secret connection row and are honored by both direct discovery and the

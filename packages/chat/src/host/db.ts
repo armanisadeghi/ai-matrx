@@ -106,7 +106,7 @@ function userFromClaims(claims: JwtPayload | undefined): ChatClaimsUser | null {
  *    out" over an outage.
  *
  * Same contract as matrx-frontend's `utils/supabase/claimsUser.ts`
- * (common-docs/systems/platform/proxy-identity/FEATURE.md); keep the two in step.
+ * (common-docs/systems/platform/auth/proxy-identity/FEATURE.md); keep the two in step.
  */
 export async function getClaimsUser(
   client: ClaimsCapableClient,

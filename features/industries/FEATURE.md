@@ -2,7 +2,7 @@
 
 **Status:** v1 (foundation). Powers Shared Knowledge Resources entitlement; scope-template seeding + public industry pages are later phases.
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/platform/library/STATE.md` (the Matrx Library spine — industries are its audience axis).
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/account/library/STATE.md` (the Matrx Library spine — industries are its audience axis).
 
 ## What this is
 

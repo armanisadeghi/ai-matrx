@@ -12,7 +12,7 @@
 // conversation, so voice and text share it and one answer can never render in
 // two places.
 //
-// SoR: common-docs/systems/agents/voice/STATE.md
+// SoR: common-docs/systems/chat/voice/STATE.md
 
 import { useAppSelector } from "../../store/hooks";
 import { selectVoiceVoiceId } from "../state/selectors";

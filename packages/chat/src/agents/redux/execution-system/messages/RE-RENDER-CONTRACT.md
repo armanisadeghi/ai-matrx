@@ -1,6 +1,6 @@
 # `messages/` — re-render contract
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md` — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/CLIENT-RUNTIME.md` — read it before touching this feature in ANY repo.
 
 Message-body components do expensive work (markdown parsing, renderBlock compilation, tool-call
 visualizations, LaTeX, image loaders). The stream commit path fires several small status patches per

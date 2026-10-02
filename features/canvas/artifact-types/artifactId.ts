@@ -17,7 +17,7 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
  * persisted artifact." Used by the renderers (render-by-id vs inline) and by
  * materialization (skip-already-materialized vs create-new).
  *
- * See `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md` (R1–R3).
+ * See `/Users/armanisadeghi/code/common-docs/systems/publish/artifacts/VISION.md` (R1–R3).
  */
 
 /** True only for a canonical UUID — i.e. a real, persisted `canvas_items.id`. */

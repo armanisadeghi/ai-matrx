@@ -968,7 +968,7 @@ export function useDurableRun<TResult>(
   }, [state.status]);
 
   // ── Live adoption plumbing (only used when `live` is set) ────────────────
-  // Retention discipline (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md): the
+  // Retention discipline (/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/LIVE-RUN-RETENTION.md): the
   // fetch is aborted BEFORE the adopted row is reaped — an orphaned stream
   // draining into a missing row is the disappearing-run class.
   const adoptedRequestIdRef = useRef<string | null>(null);

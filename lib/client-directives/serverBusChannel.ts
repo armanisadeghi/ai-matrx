@@ -64,7 +64,7 @@ export function serverBusChannelSpec(
             `[directives] Dropped a payload on ${serverBusChannelName(audience)}: ` +
               `${result.reason} (${result.detail}). The publisher and ` +
               `lib/client-directives/directiveEnvelope.ts disagree; both sides plus ` +
-              `common-docs/systems/platform/realtime/CLIENT-DIRECTIVES.md must ` +
+              `common-docs/systems/architecture/realtime/CLIENT-DIRECTIVES.md must ` +
               `change together.`,
             data,
           );

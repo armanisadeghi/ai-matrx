@@ -16,7 +16,7 @@
 //
 // Provenance (`created_by_tier`) is a THIRD, independent question: who typed
 // it. NULL reads as a person — never backfilled, per
-// `common-docs/systems/platform/provenance/FEATURE.md`.
+// `common-docs/systems/architecture/provenance/FEATURE.md`.
 
 import type { ArchiveFilterValue } from "@ai-matrx/design-system";
 import type { ColumnFiltersState } from "@ai-matrx/design-system/data-table/types";

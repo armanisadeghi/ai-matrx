@@ -4,7 +4,7 @@
 **Tier:** 1 (sub-feature of `features/agents/`)
 **Last updated:** `2026-04-22`
 
-> **Platform versioning source of truth:** `common-docs/systems/platform/versioning/` (`/Users/armanisadeghi/code/common-docs/systems/platform/versioning/`). This doc is the repo-specific AGENT implementation on top of that standard; if they conflict, the common-docs set wins.
+> **Platform versioning source of truth:** `common-docs/systems/architecture/versioning/` (`/Users/armanisadeghi/code/common-docs/systems/architecture/versioning/`). This doc is the repo-specific AGENT implementation on top of that standard; if they conflict, the common-docs set wins.
 >
 > Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This is the load-bearing contract that lets Shortcuts and Agent Apps stay stable while agents evolve.
 
@@ -117,4 +117,4 @@ If the agent's `action` enum changes or `focus` is renamed to `current_item`, ev
 
 ---
 
-> **Keep-docs-live:** any change to version semantics, drift detection, or the `engine.isVersion` contract must update this doc AND `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`.
+> **Keep-docs-live:** any change to version semantics, drift detection, or the `engine.isVersion` contract must update this doc AND `/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md`.

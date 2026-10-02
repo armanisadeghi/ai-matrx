@@ -43,7 +43,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  * Dedupe: conversion forwards `messageId` (when present) and the html-pages API
  * also dedupes by identical content, so re-renders/reloads never insert
  * duplicate pages — on any surface. Canonical `<artifact>` rewrite/materialization
- * is owned by the artifact system (see /Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md).
+ * is owned by the artifact system (see /Users/armanisadeghi/code/common-docs/systems/publish/artifacts/VISION.md).
  */
 
 type Phase = "idle" | "converting" | "preview" | "error";

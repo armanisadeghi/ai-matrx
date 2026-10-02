@@ -4,7 +4,7 @@
 // public.catalog_entries_history. All shapes derive from the generated
 // Database types — never hand-mirrored.
 // Cross-repo system-of-record:
-// /Users/armanisadeghi/code/common-docs/systems/clients/remote-catalogs/FEATURE.md
+// /Users/armanisadeghi/code/common-docs/systems/apps/remote-catalogs/FEATURE.md
 
 import type { Database } from "@/types/database.types";
 

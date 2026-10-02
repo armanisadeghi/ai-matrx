@@ -24,7 +24,7 @@
  * the current user's `auth.users.id`.
  *
  * Wire format: see `BridgeEnvelope` and
- * /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md §4.
+ * /Users/armanisadeghi/code/common-docs/systems/apps/extension/CHANNELS.md §4.
  *
  * Usage notes:
  *   - `ExtensionBridgeSubscriber` mounts this once from `app/Providers.tsx`;

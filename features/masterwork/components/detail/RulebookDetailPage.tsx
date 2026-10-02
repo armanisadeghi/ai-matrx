@@ -839,7 +839,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   const [draftRevision, setDraftRevision] = useState(0);
   const [confirmActivate, setConfirmActivate] = useState(false);
   const [buildOpen, setBuildOpen] = useState(false);
-  // THE MATRX LIBRARY (common-docs/systems/platform/library/STATE.md): a
+  // THE MATRX LIBRARY (common-docs/systems/account/library/STATE.md): a
   // Rulebook that lives in the Library org can be GIVEN to an industry — or to
   // everyone — through the ONE generic publish panel. Only Library-owned rows
   // can be published (`library_publish` asserts it), so the door only appears
@@ -2435,7 +2435,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     you can name; this reaches a whole INDUSTRY, or everyone.
                     ONE spine, one panel: `platform.entity_grants` via
                     `public.library_publish`
-                    (common-docs/systems/platform/library/STATE.md). Only a
+                    (common-docs/systems/account/library/STATE.md). Only a
                     Library-owned Rulebook can be published — the RPC asserts
                     it — so the door appears nowhere else. */}
                 {isSuperAdmin && libraryOrgFailed ? (

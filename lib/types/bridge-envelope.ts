@@ -14,7 +14,7 @@
  * every consumer (hook, API route, demo page, future bridge code)
  * imports the same definitions.
  *
- * Canonical reference: `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md`.
+ * Canonical reference: `/Users/armanisadeghi/code/common-docs/systems/apps/extension/CHANNELS.md`.
  */
 
 import { defineChannelNamespace } from "@ai-matrx/realtime";

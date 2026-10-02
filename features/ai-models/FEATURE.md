@@ -1,6 +1,6 @@
 # FEATURE.md — `ai-models` (local mechanics)
 
-> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/agents/ai-models/STATE.md — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/ai/ai-models/STATE.md — read it before touching this feature in ANY repo.
 
 What this feature IS, what the catalog means, every decision behind it, and the remaining work live
 in that node kit. This file holds only the file map and the rules an agent editing THIS directory
@@ -127,7 +127,7 @@ must obey.
   absent; non-null prices still fail closed unless they are finite numbers. Previously the first
   character-input offering with a null output price rejected the entire live catalog.
 - `2026-09-09` — **Deprecated models RUN; retired is the dead state** (ai_075, ruling in
-  `../../../common-docs/systems/agents/ai-models/DECISIONS.md`). Deprecating Gemini 3.7 Flash had
+  `../../../common-docs/systems/ai/ai-models/DECISIONS.md`). Deprecating Gemini 3.7 Flash had
   made it vanish: `ai.model_config`/`model_public` filtered deprecated rows, so `fetchModelById`
   rejected 263 times with "Unknown error" on a mandate page that referenced it. The views now
   EXPOSE `is_deprecated` / `retired_at` / `successor_id`; `fetchModelById` reads any model by id

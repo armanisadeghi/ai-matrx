@@ -125,7 +125,7 @@ export const StreamAwareChatMarkdown: React.FC<
   // under a surface that is still showing it. Do NOT remove this because
   // "nothing seems to break" — the breakage is a mid-run blank screen on
   // whichever surface reaps last. Doctrine:
-  // /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md
+  // /Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/LIVE-RUN-RETENTION.md
   useRetainRequestForViewer(requestId, "markdown-stream");
 
   const [processedContent, setProcessedContent] = useState<string>(

@@ -11,7 +11,7 @@
 - The page keeps ordinary semantic HTML plus JSON-LD; it must never detect the extension or return special content to a reviewer.
 - Open Graph and Twitter metadata describe this demo page specifically and must not inherit generic site copy or placeholder account handles.
 - Links to the extension privacy policy and support remain direct and functional.
-- Submission instructions and screenshots that depend on this page live canonically in `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHROME-WEB-STORE.md`.
+- Submission instructions and screenshots that depend on this page live canonically in `/Users/armanisadeghi/code/common-docs/systems/apps/extension/CHROME-WEB-STORE.md`.
 
 ## Change log
 

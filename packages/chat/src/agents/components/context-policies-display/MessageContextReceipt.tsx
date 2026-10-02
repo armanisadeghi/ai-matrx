@@ -9,7 +9,7 @@
  * from live context values and never from the client's belief. Read-only:
  * a sent turn cannot be changed; rules are edited in the composer.
  *
- * Contract: common-docs/systems/scopes-context/context-delivery/RULES.md §5.
+ * Contract: common-docs/systems/account/scopes-context/context-delivery/RULES.md §5.
  */
 
 import { useMemo, useState } from "react";

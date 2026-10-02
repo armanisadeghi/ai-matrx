@@ -6,8 +6,8 @@ Product truth, the page IA law, the review-verb state matrix, the Approach catal
 the Record/corpus contract, the Checkup window's five rules and every Arman ruling now live in
 the node kit, NOT here:
 
-- `common-docs/systems/masterwork/rulebook-surface-contract.md` — this feature's own contract
-- `common-docs/systems/masterwork/distillation-contract.md` — the lanes behind the intake surfaces
+- `common-docs/systems/masterwork/rulebooks/rulebook-surface-contract.md` — this feature's own contract
+- `common-docs/systems/masterwork/distillation/distillation-contract.md` — the lanes behind the intake surfaces
 - `common-docs/systems/masterwork/build-and-audition-contract.md` — Build · Understudy · Audition · Encore lifecycle
 - `common-docs/systems/masterwork/expert-corpus-and-checkup-contract.md` — `getExpertCorpus` and the Checkup
 - `common-docs/systems/masterwork/improvement-brain-contract.md` — `journey.ts` and the `?assist=` contract
@@ -164,7 +164,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     so the record never claims individual review. Promotion to a rule is the Expert's act. Never
     reintroduce `standing`, `isEvidenceRule`, `RuleEvidenceDisclosure` or `promoteEvidenceRule`.
     Cross-repo SoR:
-    `../../../common-docs/systems/masterwork/distillation-contract.md` § Per-piece rules.
+    `../../../common-docs/systems/masterwork/distillation/distillation-contract.md` § Per-piece rules.
     Guard: `__tests__/bulk-approve-cannot-lie.test.tsx`.
 
 ## Files
@@ -192,7 +192,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `/masterwork/[id]/plan`). A PROGRAM over the other Approaches: the Expert says what they want
   covered and how much time they can give, and the planner picks the next method from the LIVE
   lanes, sizes each session, measures what it produced and re-plans. Cross-repo SoR:
-  `../../../common-docs/systems/masterwork/distillation-contract.md` § THE CAPTURE PLAN.
+  `../../../common-docs/systems/masterwork/distillation/distillation-contract.md` § THE CAPTURE PLAN.
   🚨 **No capture surface of its own** — `SessionHost.tsx` mounts the lane's OWN dialog in place
   or navigates to its OWN page, so there is never a second version of a lane to keep in step.
   🚨 **Yield is the DIFF of the Rulebook's rule ids across a session**, so no lane knows it is
@@ -1286,7 +1286,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   private routes (including deep query preservation), plus the public and Vision Interview
   exceptions.
 
-- `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
+- `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation/distillation-contract.md` § THE EVIDENCE STANDING.
 
 - `2026-09-15` — 🚨 **The Reject dialog refused the Expert's reason, and nobody else had touched the Rulebook.** Trial `teach-recent-interview`, first scored run: reviewing 34 drafts, she could reject some rules and not others — six refused 6–8 times each with "This Rulebook changed while you were editing (someone else saved a newer version)". The other writer was us. Every rules save fires `pokeUnderstudy`, whose server hook (`rulebook_writes._poke_understudy` → `_poke_coherence`) wakes the Coherence Partner; its batch scan writes `metadata.coherence` back onto the SAME `platform.rulebook` row up to a minute later, and `platform._touch_row` bumps `version` on that write like it does on every UPDATE. The version her own save had just returned was therefore stale by the time she finished reading the next rule and typing a reason — so whether the next decision landed was pure timing, which is exactly the some-yes-some-no signature. Evidence: `metadata.coherence.last_scan.at = 2026-09-15T12:50:02Z`, `lane: batch`, `rules_read: 57`, landing mid-review. `saveRules` now takes `base: Rulebook` (the row the edit was made against) and hands `guardedUpdate` the platform's own `rebase.isPhantom` — if `rules` as the server holds them still equal that base, the write is retried once against the live version instead of refused. A real edit to the rules, and a whole-`metadata` write (the Final Checkup) when metadata moved, are still refused exactly as before, so a rebase can never overwrite someone's work. Every review surface inherits it through the one funnel: Reject, Request changes, Improve, Edit, Approve, Approve-all, the review wizard, the Final Checkup apply/undo, the Oracle tap, the Add-rule window. The dialog also stopped relabelling itself "Request changes" on its way out after a successful Reject. Guard: `__tests__/reject-survives-the-coherence-bump.test.ts` (3 cases, proven failing then passing). Verified live on the preview as the Expert, before/after: `../../../common-docs/projects/teach-recent-interview/fix-evidence/w12-before-reject-2.png` vs `w12-after-reject-2.png`.
 

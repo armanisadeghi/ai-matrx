@@ -145,7 +145,7 @@ Every pipeline starts with an authenticated `POST` (Supabase JWT via `useBackend
 
 ### 2. Stream progress via NDJSON
 
-All long-running pipelines emit NDJSON: one JSON object per line, event types `phase` | `info` | `data` | `error` | `end`. The scraper hook uses `consumeStream` from `@/lib/api/stream-parser` and the typed event helpers in `@/lib/api/types`. PDF and research pipelines follow the same contract (see each hook's inline reader). This is the **same contract** documented in `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md` — there is one streaming contract across the whole app.
+All long-running pipelines emit NDJSON: one JSON object per line, event types `phase` | `info` | `data` | `error` | `end`. The scraper hook uses `consumeStream` from `@/lib/api/stream-parser` and the typed event helpers in `@/lib/api/types`. PDF and research pipelines follow the same contract (see each hook's inline reader). This is the **same contract** documented in `/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/CLIENT-RUNTIME.md` — there is one streaming contract across the whole app.
 
 Per-pipeline `data` payloads:
 
@@ -166,7 +166,7 @@ Per-pipeline `data` payloads:
 Agents consume ingestion output through two paths:
 
 1. **Direct context injection.** A resource attached to an agent instance (see `instanceResources` in `features/agents/FEATURE.md`) may be a PDF doc id, a transcript id, or a scraped URL; the server resolves it into prompt content at turn assembly.
-2. **Tool calls.** Agents invoke scraping / research / PDF lookup as tool calls (MCP or native) that hit the same Python endpoints, then hand back `doc_id` / `topic_id` / scraped-result references to persist state across turns. Durable tool calls are the norm for long-running ingestion (see `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md`).
+2. **Tool calls.** Agents invoke scraping / research / PDF lookup as tool calls (MCP or native) that hit the same Python endpoints, then hand back `doc_id` / `topic_id` / scraped-result references to persist state across turns. Durable tool calls are the norm for long-running ingestion (see `/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/RESUME-AND-RECOVERY.md`).
 
 The boundary is: **ingestion pipelines own persistence; agents read from those tables by id.** Agents never re-scrape or re-extract content the pipeline already owns — they reference it.
 
@@ -174,7 +174,7 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 
 ## Invariants & gotchas
 
-- **All long-running ingestion jobs conform to the NDJSON streaming contract.** If you add a new pipeline, implement `phase` / `info` / `data` / `error` / `end`. Do not invent a new event shape. Cross-reference `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`.
+- **All long-running ingestion jobs conform to the NDJSON streaming contract.** If you add a new pipeline, implement `phase` / `info` / `data` / `error` / `end`. Do not invent a new event shape. Cross-reference `/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/CLIENT-RUNTIME.md`.
 - **The legacy ingestion surfaces in this document sit behind their existing
   Next.js routes.** The Marketing site crawler is an explicit separate product
   boundary: `features/marketing/crawler/direct-client.ts` sends authenticated
@@ -193,8 +193,8 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 
 ## Related features
 
-- **Streaming contract:** [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md)
-- **Agent consumption:** [`features/agents/FEATURE.md`](../agents/FEATURE.md), [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md)
+- **Streaming contract:** [`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/CLIENT-RUNTIME.md`]/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/CLIENT-RUNTIME.md)
+- **Agent consumption:** [`features/agents/FEATURE.md`](../agents/FEATURE.md), [`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/RESUME-AND-RECOVERY.md`]/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/RESUME-AND-RECOVERY.md)
 - **Tasks integration (transcripts):** [`features/tasks/FEATURE.md`](../tasks/FEATURE.md)
 - **PDF API surface:** [`features/pdf-extractor/API.md`](../pdf-extractor/API.md)
 - **Research reference:** [`features/research/README.md`](../research/README.md), [`/Users/armanisadeghi/code/common-docs/systems/knowledge/research/STREAMING_GUIDE.md`](/Users/armanisadeghi/code/common-docs/systems/knowledge/research/STREAMING_GUIDE.md)

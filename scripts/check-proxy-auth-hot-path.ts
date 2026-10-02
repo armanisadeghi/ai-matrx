@@ -1,7 +1,7 @@
 /**
  * THE PROXY IDENTITY GUARD.
  *
- * Contract: `common-docs/systems/platform/proxy-identity/FEATURE.md`.
+ * Contract: `common-docs/systems/platform/auth/proxy-identity/FEATURE.md`.
  *
  * Three ways the 2026-09-20 `504 MIDDLEWARE_INVOCATION_TIMEOUT` class comes
  * back, and this refuses all three:
@@ -736,7 +736,7 @@ function main(): void {
 
   console.error(
     `\ncheck:proxy-auth-hot-path — ${findings.length} finding(s). ` +
-      "Contract: common-docs/systems/platform/proxy-identity/FEATURE.md\n",
+      "Contract: common-docs/systems/platform/auth/proxy-identity/FEATURE.md\n",
   );
   for (const f of findings) {
     console.error(`  ${f.where}\n    ${f.what}\n    -> ${f.remedy}\n`);

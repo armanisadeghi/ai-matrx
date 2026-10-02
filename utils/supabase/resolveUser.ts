@@ -54,7 +54,7 @@
  * still call it. That was true until 2026-09-21; every one of them now reads
  * `getServerAuth()` (claims) and the four fields arrive on the client through
  * `fetchAuthUserRecord`, the ONE allow-listed door. The full contract:
- * `common-docs/systems/platform/proxy-identity/FEATURE.md`.
+ * `common-docs/systems/platform/auth/proxy-identity/FEATURE.md`.
  *
  * Guard: `pnpm check:proxy-auth-hot-path` (+ `:self-test`).
  *

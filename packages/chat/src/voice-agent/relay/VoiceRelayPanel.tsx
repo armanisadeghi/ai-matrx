@@ -11,7 +11,7 @@
 // It composes the canonical voice components — `VoiceOrb`, `VoiceStatusPill`,
 // `VoiceMuteButton` — and adds no visual language of its own.
 //
-// SoR: common-docs/systems/agents/voice/STATE.md
+// SoR: common-docs/systems/chat/voice/STATE.md
 
 import { PhoneOff } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";

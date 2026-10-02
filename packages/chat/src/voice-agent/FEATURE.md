@@ -1,6 +1,6 @@
 # FEATURE.md — `voice-agent` (local mechanics only)
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/agents/voice/STATE.md — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/chat/voice/STATE.md — read it before touching this feature in ANY repo.
 
 What this feature IS, which surfaces exist, the persistence contract, the tool wire format,
 the decisions and the remaining work all live in that node home

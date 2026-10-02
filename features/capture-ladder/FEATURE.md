@@ -54,7 +54,7 @@ the **Send the rest to my browser** action) and by
 
 1. **Reads go direct to Postgres; writes go through aidream.** There is no
    outbound channel from aidream to a browser extension
-   (`common-docs/systems/clients/extension/CHANNELS.md` §2), so the queue has to
+   (`common-docs/systems/apps/extension/CHANNELS.md` §2), so the queue has to
    be a durable row both clients read for themselves. Writes deliberately do NOT
    take that shortcut: `POST /capture/handoffs` is where the ladder law, the
    per-rung knobs and the Library landing are enforced, and a client insert

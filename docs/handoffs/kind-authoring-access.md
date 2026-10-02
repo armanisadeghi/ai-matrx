@@ -15,7 +15,7 @@ at the DB. The third is now understood and chipped.
 
 ## Vision — Arman's words
 
-**Moved 2026-08-25 to [`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md).** Every quote that was here is preserved there verbatim,
+**Moved 2026-08-25 to [`/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/VISION.md).** Every quote that was here is preserved there verbatim,
 grouped by theme with its source and date, alongside the rest of his Content IR vision — which
 had been split across four work orders in this repo and was invisible to agents in every other
 repo. **Read it before touching anything here; it outranks this work order.**

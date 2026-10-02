@@ -20,7 +20,7 @@ export const MATRX_EXTEND_EXTENSION_IDS = [
 ] as const;
 
 /** The public Chrome Web Store item (`Published - public`, item identity in
- * common-docs/systems/clients/extension/CHROME-WEB-STORE.md). Built from the
+ * common-docs/systems/apps/extension/CHROME-WEB-STORE.md). Built from the
  * id above so the link and the id it detects can never drift apart. */
 export const MATRX_EXTEND_STORE_URL = `https://chromewebstore.google.com/detail/${MATRX_EXTEND_EXTENSION_IDS[1]}`;
 

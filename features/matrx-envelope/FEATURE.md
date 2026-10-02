@@ -15,7 +15,7 @@
 > Source of record: `docs/protocol/KIND_DIRECTIVES.md` (byte-identical in aidream). Read
 > [`/policies/strictness-law.md`](/Users/armanisadeghi/code/common-docs/policies/strictness-law.md)
 > before changing anything here. Cross-repo SoR:
-> `/Users/armanisadeghi/code/common-docs/systems/matrx-envelope/FEATURE.md`.
+> `/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/matrx-envelope/FEATURE.md`.
 
 **Detection is `__kind`, never `matrx_version`.** The retired 4-key shell
 (`{matrx_version, kind, type, items}`) is READ-ONLY: it is understood in exactly one
@@ -325,7 +325,7 @@ silently drops items the server would have happily applied.
   now never a chip, guarded by two regression tests), and the item name lost the space fight
   to its own fact chips ("Masterwork Conductor" at 37px against a 141px need). Open: the
   `action` class double-verbs its title — "Run Create agent definition" — in `nounDisplay.ts`.
-  Work order: `common-docs/systems/content-ir-system/HANDOFF-directives.md`.
+  Work order: `common-docs/systems/architecture/content-ir/HANDOFF-directives.md`.
 - 2026-09-01 — **Reference copy has a non-dead-end clipboard fallback.** All record,
   file, compound, menu, and bulk reference-copy controls now route through the canonical
   clipboard primitive. When browser clipboard access is blocked, the global manual-copy
@@ -447,7 +447,7 @@ silently drops items the server would have happily applied.
   `conversation_id`; without it the key is the display). Consumed by the new
   `value_store_stored` "result ready" card (`components/mardown-display/blocks/
   data-events/ValueStoreStoredBlock.tsx`), which renders the descriptor's fence via
-  `MatrxEnvelopeBlock`. Stream wiring: `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`
+  `MatrxEnvelopeBlock`. Stream wiring: `/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/CLIENT-RUNTIME.md`
   change log 2026-07-12.
 - 2026-07-11 — **`url` added to the reference taxonomy (8-type).** New `UrlRefItem { url, label? }`
   in `envelope.ts`; `urlReference.ts` (`buildUrlReferenceFence`/`buildMultiUrlReferenceFence`);

@@ -12,7 +12,7 @@ Admin UI + secured write API for the AI Matrx CMS platform: full multi-page clie
 (`client_*` tables) and standalone quick-publish HTML pages (`html_pages`, `features/html-pages/`,
 documented separately but same DB). This repo owns the only properly-authenticated write paths for
 both. Also ships the fleet-wide agent-activity visibility surface — see
-`common-docs/systems/website-platform/cms/STATE.md` for the full cross-repo picture (aidream's agent tool layer,
+`common-docs/systems/publish/cms/STATE.md` for the full cross-repo picture (aidream's agent tool layer,
 my-matrx's public renderer) and `aidream/docs/cms_agent_authoring/README.md` for the multi-agent
 build plan this feature is part of (project P5).
 
@@ -37,7 +37,7 @@ build plan this feature is part of (project P5).
   `history.replaceState` at the buffer grain (`html`/`css`/`js` while on Code), so any tab is
   deep-linkable and pre-fold `?tab=html|css|js` links land on the right buffer. **Plan**
   (`components/PagePlanTab.tsx`, `React.lazy` in-gate) is the page's BEFORE per
-  `/Users/armanisadeghi/code/common-docs/systems/website-platform/cms/HANDOFF.md`, and it is the REAL editor, not a partial view (Arman ruling
+  `/Users/armanisadeghi/code/common-docs/systems/publish/cms/HANDOFF.md`, and it is the REAL editor, not a partial view (Arman ruling
   2026-08-16): with `plan_node_id` set it mounts the canonical
   `features/marketing/content-plan/components/NodePanel` (hosted) with the workspace's own hook
   composition — full control, pipeline rail at the top, identical to the plan workspace. (The
@@ -211,7 +211,7 @@ Supabase MCP at the wrong project for this feature.
 
 ### Ownership — a CMS site belongs to the ORG, not just to whoever made it
 
-**Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/website-platform/cms/STATE.md` § Ownership and access — read it before touching this in ANY repo.**
+**Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/publish/cms/STATE.md` § Ownership and access — read it before touching this in ANY repo.**
 
 Arman, 2026-08-15: _"of course they should be ORG scoped and shareable."_ Before
 that, `client_sites` had `owner_user_id` and nothing else — which is exactly why a
@@ -486,7 +486,7 @@ logged. **This route only edits the setting — enforcement is P1's service-laye
 
 ## Related features
 
-- Cross-links: `common-docs/systems/website-platform/cms/STATE.md` (system-of-record, cross-repo), `features/html-pages/README.md` (the sibling quick-publish system, same DB), `aidream/docs/cms_agent_authoring/README.md` (the 5-project agent-authoring build this feature's P5 half belongs to), `aidream/packages/matrx-content-guard/matrx_content_guard/models.py` (F3 exception shape this feature's approvals queue is built against), `features/surfaces/FEATURE.md` (Surface Values contract the five CMS surfaces implement), `features/context-menu-v3/FEATURE.md` (canonical v3 menu every CMS route mounts), `features/cms/SKILL.md` (builder checklist for the surfaces + skill)
+- Cross-links: `common-docs/systems/publish/cms/STATE.md` (system-of-record, cross-repo), `features/html-pages/README.md` (the sibling quick-publish system, same DB), `aidream/docs/cms_agent_authoring/README.md` (the 5-project agent-authoring build this feature's P5 half belongs to), `aidream/packages/matrx-content-guard/matrx_content_guard/models.py` (F3 exception shape this feature's approvals queue is built against), `features/surfaces/FEATURE.md` (Surface Values contract the five CMS surfaces implement), `features/context-menu-v3/FEATURE.md` (canonical v3 menu every CMS route mounts), `features/cms/SKILL.md` (builder checklist for the surfaces + skill)
 
 ---
 
@@ -602,7 +602,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   _member_ of Titanium, now lists and opens Arman's `titaniummarketing-com` and
   `pbwlaw-com` (`access=organization`), is 403'd on a site in an org they do not
   belong to, and is 403'd on `delete`. See § Ownership; cross-repo SoR:
-  `common-docs/systems/website-platform/cms/STATE.md`. **Open:** aidream's
+  `common-docs/systems/publish/cms/STATE.md`. **Open:** aidream's
   `services/cms/access.py` is still owner-only.
 
 - `2026-08-14` — **`features/content-manager/` reconciled against this feature — nothing to port.** That
@@ -652,7 +652,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   `brandId` (the site surface base read it from `useParams()`, which only resolved under
   `/marketing/brands/[brandId]/...`), and new `getPageLocation` / `usePageLocation` resolve a bare
   `web.page` id to its site + brand. `CmsPageEditorTab` and the `cms-page` manifest's `active_tab`
-  prose gained `measure`. Work order: `/Users/armanisadeghi/code/common-docs/systems/website-platform/cms/HANDOFF.md` W2.
+  prose gained `measure`. Work order: `/Users/armanisadeghi/code/common-docs/systems/publish/cms/HANDOFF.md` W2.
 
 - `2026-08-14` — **W1 Plan tab: the page editor no longer forgets where the page came from.**
   `PageEditor` gains a lazy **Plan** tab (`components/PagePlanTab.tsx`) between Preview and SEO.
@@ -667,7 +667,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   optional `onRefetchPage` prop, wired from the route); (3) unpaired site — states that plainly
   and links `/marketing/content-plan`. Read-focused BY DESIGN — the NodePanel editors are not
   duplicated (THE CANONICAL COMPONENT LAW). `CmsPageEditorTab` and the `cms-page` manifest's
-  `active_tab` / `content` prose gained `plan`. Work order: `/Users/armanisadeghi/code/common-docs/systems/website-platform/cms/HANDOFF.md` W1.
+  `active_tab` / `content` prose gained `plan`. Work order: `/Users/armanisadeghi/code/common-docs/systems/publish/cms/HANDOFF.md` W1.
 
 - `2026-08-14` — **W3 reverse doors: a CMS page is now reachable from the surfaces that
   name it.** New `features/cms/utils/cmsRoutes.ts` owns the in-app CMS hrefs
@@ -677,13 +677,13 @@ UI-complete here but only take effect once P1's service layer reads them.
   "Edit in CMS" in the marketing PageWorkspace header (resolved off the existing push lane,
   durable `client_pages.web_page_id` join first, route match as fallback — no second data
   path) and every plan CMS badge (Draft/Published) opens its page in a new tab. Work order:
-  `/Users/armanisadeghi/code/common-docs/systems/website-platform/cms/HANDOFF.md` W3.
+  `/Users/armanisadeghi/code/common-docs/systems/publish/cms/HANDOFF.md` W3.
 
 - `2026-08-14` — **THE PAGE-HUB RULING (Arman): everything that makes a page is PART of the
   page.** The page editor becomes the page's hub — Plan / Measure tabs reusing the canonical
   plan-node and PageWorkspace components via the `plan_node_id` / `web_page_id` joins, plus
   reverse doors from workspace and plan. Work order + before/during/after doctrine:
-  `/Users/armanisadeghi/code/common-docs/systems/website-platform/cms/HANDOFF.md`. New PageEditor tabs MUST follow its tab-governance rules.
+  `/Users/armanisadeghi/code/common-docs/systems/publish/cms/HANDOFF.md`. New PageEditor tabs MUST follow its tab-governance rules.
 - `2026-08-14` — **Research lineage now survives research → plan → CMS at site and page granularity.** Six non-access-conveying MAIN-project association pairs make `research_topic` and `research_tag` attachable to `web_site`, `plan_node`, and `web_page`. Site/page settings reuse the canonical `AssociationList`; linked titles are real doors, including new flat resolver routes for `research_tag` and `plan_node`. Site-wide links are inherited at read time; plan-node links are copied by a symmetric database trigger whenever either the lineage edge or the `plan_node → web_page (realizes)` edge arrives. Because CMS rows live in a separate Supabase project, migration `0038` adds typed UUID-array scratch bridges on `client_sites` / `client_pages`; the UI writes canonical associations whenever a MAIN anchor exists and offers one-click promotion of scratch links once pairing becomes possible. Both CMS surface manifests require `research_lineage`, and the site/page context builders emit titles, ids, direct/inherited origin, anchor status, and loud load errors so an agent never mistakes unavailable lineage for an empty set.
 - `2026-08-13` — **WF-3 closed: frontend page/component writes now pass through
   aidream's canonical content guard.** New `_lib/validateContent.ts` forwards the

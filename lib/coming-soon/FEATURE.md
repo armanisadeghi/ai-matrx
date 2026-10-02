@@ -40,7 +40,7 @@ So: same handling as a found defect. **Report it, and ask to solve it.**
 
 ## A registered promise is now a fact the SERVER can read
 
-**Cross-repo SoR: `/Users/armanisadeghi/code/common-docs/systems/platform/route-liveness/STATE.md` — read it before touching this registry's route-facing half.**
+**Cross-repo SoR: `/Users/armanisadeghi/code/common-docs/systems/architecture/frontend/route-liveness/STATE.md` — read it before touching this registry's route-facing half.**
 
 🚨 **THIS REGISTRY STOPPED BEING A FRONTEND-ONLY CONCERN ON 2026-08-29.** An HR text message
 reached the owner's phone with a link to `/hr/me/schedule` — a route whose page mounts

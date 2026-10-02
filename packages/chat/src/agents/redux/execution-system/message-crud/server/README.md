@@ -1,6 +1,6 @@
 # message-crud / server
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/STATE.md` § 4 — the endpoint inventory for these thunks lives there. Read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/STATE.md` § 4 — the endpoint inventory for these thunks lives there. Read it before touching this feature in ANY repo.
 
 Thunks that talk to the **Python backend** via `callApi()` instead of going direct to Supabase via
 `supabase.rpc()`.

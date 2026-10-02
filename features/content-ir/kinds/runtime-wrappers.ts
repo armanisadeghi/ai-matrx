@@ -3,7 +3,7 @@
  * boundary they exist to hold.
  *
  * Cross-repo contract (system of record):
- * `common-docs/systems/content-ir-system/RUNTIME_WRAPPER_WIRE.md`.
+ * `common-docs/systems/architecture/content-ir/RUNTIME_WRAPPER_WIRE.md`.
  * Layer model: `KINDS_EVERYWHERE_PLAN.md` §4.1.
  *
  * ## Two layers, and the line between them

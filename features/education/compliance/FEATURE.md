@@ -179,7 +179,7 @@ no entry point to gate there.
   to require a harder verifiable-age step, plus which guardian verifiable method(s) to
   require + the gov-ID vendor + legal sign-off — see `../family/FEATURE.md` §Verifiable
   parental consent + the runbook
-  `/Users/armanisadeghi/code/common-docs/systems/education/COPPA_CONSENT_RUNBOOK.md`.
+  `/Users/armanisadeghi/code/common-docs/systems/education/child-safety/COPPA_CONSENT_RUNBOOK.md`.
 
 ## How a learner is identified — up front, never via an error
 

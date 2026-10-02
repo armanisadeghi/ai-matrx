@@ -10,7 +10,7 @@ net zero time."*
 
 Product truth for the Masterwork node lives in
 `../../../../common-docs/systems/masterwork/`; the voice system of record is
-`../../../../common-docs/systems/agents/voice/STATE.md`. Below is only what an
+`../../../../common-docs/systems/chat/voice/STATE.md`. Below is only what an
 agent editing THIS directory must not get wrong.
 
 ## Map

@@ -10,7 +10,7 @@
 // 🚨 It changes no rule's WORDS. If the Expert's answer means a rule should say
 // something different, that is a separate edit that lands as a draft they approve —
 // AI never overwrites human-authored work
-// (common-docs/systems/platform/provenance/FEATURE.md).
+// (common-docs/systems/architecture/provenance/FEATURE.md).
 //
 // 🚨 But a ruling is no longer INVISIBLE on the rules it was about (2026-09-12,
 // Arman's expertise mandate). "Both are right" keeps both rules and links them

@@ -302,7 +302,7 @@ The frontend never receives a password, seed, or generated code from that path.
   own fix, not a dead end. BOTH renders are guarded on presence and on shape,
   because the aidream half is deploying separately: a run with neither field
   renders exactly what it rendered before. Shapes are hand-typed from
-  `common-docs/systems/platform/residential-egress/FEATURE.md` until
+  `common-docs/systems/architecture/residential-egress/FEATURE.md` until
   `pnpm sync-types` carries them.
 - **2026-09-18 — the panel's chosen browser reaches the agent.** New
   `hooks/useCloudBrowserProfileContextSync.ts`, mounted in `CloudBrowserBody`, publishes

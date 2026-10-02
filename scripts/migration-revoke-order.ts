@@ -138,7 +138,7 @@ export class RevokeOrderRefusal extends Error {
       `${filename} — ${findings.length} REVOKE(s) that the door register undoes or contradicts. ` +
         `Nothing was applied, no ledger row was written.\n` +
         findings.map((f) => `  - ${f.message}`).join("\n") +
-        `\n  Law: close the row first, then revoke (common-docs/systems/platform/db-rules/FEATURE.md §6d; ` +
+        `\n  Law: close the row first, then revoke (common-docs/systems/architecture/database/FEATURE.md §6d; ` +
         `STORE-TXN-3, 2026-09-22).`,
     );
     this.name = "RevokeOrderRefusal";

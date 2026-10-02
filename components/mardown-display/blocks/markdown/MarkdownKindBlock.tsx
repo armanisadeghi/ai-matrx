@@ -7,7 +7,7 @@
  *
  * Arman's render law had two paths: "official declared kind component, or
  * streaming markdown — that's it"
- * (common-docs/systems/content-ir-system/WORKFLOW_KINDS_DESIGN.md §4). The
+ * (common-docs/systems/architecture/content-ir/WORKFLOW_KINDS_DESIGN.md §4). The
  * `markdown` kind — `{ text: string }`, the shape the agent output contract
  * (§6) folds prose into — collapses those two paths into ONE by making the
  * second path a kind whose component IS the proven streaming renderer.

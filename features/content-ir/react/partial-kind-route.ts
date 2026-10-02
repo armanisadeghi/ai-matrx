@@ -1,7 +1,7 @@
 /**
  * The Matrix binding of the PROVISIONAL (streaming partial kinds) route.
  *
- * Contract: `common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md`.
+ * Contract: `common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md`.
  * The reader/validator half is `@ai-matrx/content-ir` (`wire/partial-kind`);
  * the ROUTE half — withhold-by-default, the per-kind opt-in, the
  * anti-stuck-skeleton backstop, the terminal rules — is

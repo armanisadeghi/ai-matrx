@@ -105,7 +105,7 @@ Two paths:
 
 ## Sandbox runtime contract (summary)
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/infrastructure/sandboxes/STATE.md — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/architecture/sandboxes/STATE.md — read it before touching this feature in ANY repo.
 
 `/code` runs against three orchestrator tiers via the same adapter interface:
 

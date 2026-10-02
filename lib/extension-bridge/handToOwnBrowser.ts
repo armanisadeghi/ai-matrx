@@ -35,7 +35,7 @@
  *
  * Wire contract (matrx-extend `src/lib/frontend-bridge/handler.ts`, action
  * `captureHandoff.pickUp`) and the channel map:
- * /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md
+ * /Users/armanisadeghi/code/common-docs/systems/apps/extension/CHANNELS.md
  */
 
 import {

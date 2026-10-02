@@ -598,7 +598,7 @@ export async function processStream({
   // replayed on reconnect or arrive out of order, and `upsertRenderBlock`
   // REPLACES the stored block — so a stale event would regress this block's
   // provisional render. The gate carries the highest accepted event forward.
-  // Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md
+  // Contract: common-docs/systems/architecture/content-ir/STREAMING_PARTIAL_KINDS.md
   const gatePartialKindStaleness = makePartialKindStalenessGate();
 
   let textBuffer = "";
@@ -2959,7 +2959,7 @@ export async function processStream({
         // stream. For each item: retire its "waiting its turn" card, and (when
         // user-visible) seed the transcript bubble from the echoed text. The
         // echo makes this work even for items queued by another device/panel —
-        // no local record required (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md).
+        // no local record required (/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/TURN-BOUNDARY-INBOX.md).
         const visiblePositions = (event.data.items ?? [])
           .filter(
             (item) =>

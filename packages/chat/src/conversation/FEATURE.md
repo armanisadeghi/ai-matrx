@@ -68,7 +68,7 @@ Every chat/conversation surface — legacy and new — must support:
 - Don't extend. Read for context when debugging prod.
 - `packages/chat/src/cx-chat/MIGRATION-TRACKER.md` tracks consolidation.
 
-**Invocation path** — all surfaces go through `launchConversation` (see [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`](/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md)).
+**Invocation path** — all surfaces go through `launchConversation` (see [`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md`](/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md)).
 
 ---
 
@@ -134,7 +134,7 @@ Every chat/conversation surface — legacy and new — must support:
 ## Related features
 
 - **Depends on:** `features/agents/` (runtime), `features/artifacts/` (inline artifact rendering), `features/tool-call-visualization/` (tool UIs), `features/sharing/` (conversation shares), `features/agent-context/` (variable/scope resolution)
-- **Cross-links:** [`../agents/FEATURE.md`](../agents/FEATURE.md), [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`](/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md), [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`](/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md), [`CONVERSATION_SYSTEM.md`](./CONVERSATION_SYSTEM.md)
+- **Cross-links:** [`../agents/FEATURE.md`](../agents/FEATURE.md), [`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md`](/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md), [`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/CLIENT-RUNTIME.md`](/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/CLIENT-RUNTIME.md), [`CONVERSATION_SYSTEM.md`](./CONVERSATION_SYSTEM.md)
 
 ---
 

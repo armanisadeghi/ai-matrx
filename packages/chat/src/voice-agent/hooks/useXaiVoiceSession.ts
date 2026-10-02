@@ -133,7 +133,7 @@ interface UseXaiVoiceSessionOpts {
   isVersion?: boolean;
   /**
    * Voice Communication Layer binding (SoR:
-   * common-docs/systems/agents/voice/STATE.md). When present,
+   * common-docs/systems/chat/voice/STATE.md). When present,
    * the session declares `turn_detection.create_response: false` — the voice
    * model never auto-answers the user; the relay routes transcripts to a
    * primary text agent and cues speech explicitly. Attached for the session's

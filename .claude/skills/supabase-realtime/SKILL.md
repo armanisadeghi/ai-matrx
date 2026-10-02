@@ -5,7 +5,7 @@ description: "Doctrine for all Supabase realtime: postgres_changes, broadcast, p
 
 # Supabase Realtime — the Matrx doctrine
 
-> Cross-repo node: [`common-docs/systems/platform/realtime/STATE.md`](../../../../common-docs/systems/platform/realtime/STATE.md). `@ai-matrx/realtime` absorbs these rules as code — its README is the doctrine's home (R8) and this page is the frontend-specific companion.
+> Cross-repo node: [`common-docs/systems/architecture/realtime/STATE.md`](../../../../common-docs/systems/architecture/realtime/STATE.md). `@ai-matrx/realtime` absorbs these rules as code — its README is the doctrine's home (R8) and this page is the frontend-specific companion.
 >
 > 🚨 **As of 2026-08-31 the package is PUBLISHED (0.1.0), installed here as `"latest"`, and mounted ONCE at `providers/RealtimeHost.tsx` (wired in `app/Providers.tsx`). New realtime work uses the package — writing a fresh `.channel(` in this repo is a code-review defect.** Read the package README first; `useChannel` / `usePresence` / `useTyping` come from `@ai-matrx/realtime/react`, and non-hook owners (Redux middleware, refcounted module-level subscriptions) use `useRealtimeManager()` + `manager.open(...)`.
 >

@@ -1730,7 +1730,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         for (const f of based.findings) console.error(`  ${C.red}- ${f.message}${C.reset}`);
         console.error(
           `  ${C.dim}Law: a replace declares the body it is based on ` +
-            `(common-docs/systems/platform/db-rules/FEATURE.md §6d, DD-220).${C.reset}`,
+            `(common-docs/systems/architecture/database/FEATURE.md §6d, DD-220).${C.reset}`,
         );
         return 1;
       }

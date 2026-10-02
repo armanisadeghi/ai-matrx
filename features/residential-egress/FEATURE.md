@@ -1,7 +1,7 @@
 # Residential egress — the web app's half
 
 **Status:** built, partly live · **Cross-repo system of record:**
-[`common-docs/systems/platform/residential-egress/FEATURE.md`](../../../common-docs/systems/platform/residential-egress/FEATURE.md)
+[`common-docs/systems/architecture/residential-egress/FEATURE.md`](../../../common-docs/systems/architecture/residential-egress/FEATURE.md)
 — that document is the ONE contract; this file only says what THIS repo does and
 where its pieces are. Never restate the wire protocol, the table, the knobs or
 the helper here.

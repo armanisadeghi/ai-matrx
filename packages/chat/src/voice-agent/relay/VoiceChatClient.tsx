@@ -9,7 +9,7 @@
 // difference is a dock above the input and the fact that both the picker and
 // the URL promotion keep you in voice instead of dropping you into text.
 //
-// SoR: common-docs/systems/agents/voice/STATE.md
+// SoR: common-docs/systems/chat/voice/STATE.md
 
 import { ChatRoomClient } from "../../agents/components/chat/ChatRoomClient";
 import { chatRouteSurfaceKey } from "../../agents/components/chat/begin-fresh-chat";

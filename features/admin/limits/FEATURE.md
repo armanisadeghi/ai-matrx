@@ -129,7 +129,7 @@ A knob write publishes nothing from this UI. `platform.feature_knob.propagation`
 `next_load` (default) rides the 60s knob TTL; `instant` fires the platform client-directive
 channel from a DB trigger, and `FeatureKnobsPanel` opts in with one
 `registerDirectiveHandler("settings_changed", …)` so an open table re-reads without a reload.
-Contract: `../../../../common-docs/systems/platform/realtime/CLIENT-DIRECTIVES.md`.
+Contract: `../../../../common-docs/systems/architecture/realtime/CLIENT-DIRECTIVES.md`.
 
 ## Scoped configuration (2026-08-29)
 

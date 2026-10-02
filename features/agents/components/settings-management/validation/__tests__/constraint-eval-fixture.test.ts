@@ -37,7 +37,7 @@ if (!fs.existsSync(FIXTURE_PATH)) {
       "(aidream packages/matrx-ai/matrx_ai/catalog/constraint_eval.py), so a missing fixture is a",
       "RED contract, never a pass.",
       "Remedy: clone/refresh the sibling common-docs repo beside this one so",
-      "common-docs/systems/agents/ai-models/constraint-eval-fixture.json exists, or point",
+      "common-docs/systems/ai/ai-models/constraint-eval-fixture.json exists, or point",
       "MATRX_SHARED_FIXTURES_DIR at the directory that holds it. If the fixture was intentionally",
       "moved again, update DEFAULT_FIXTURES_DIR here AND the aidream test that reads the same file.",
     ].join(" "),

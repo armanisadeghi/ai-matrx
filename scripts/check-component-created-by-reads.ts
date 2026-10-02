@@ -5,7 +5,7 @@
  * WHY THIS EXISTS (2026-09-27)
  * ----------------------------
  * A `component` table takes its access from a parent (db-rules §6d-1, THE COMPONENT OWNERSHIP
- * LAW: `../common-docs/systems/platform/db-rules/FEATURE.md`). On those tables the trigger
+ * LAW: `../common-docs/systems/architecture/database/FEATURE.md`). On those tables the trigger
  * `zzz_component_created_by` (`platform.component_created_by_from_parent()`) REWRITES
  * `created_by` to the PARENT's owner on insert and reparent, on purpose. Whoever saved the row
  * is gone from that column. aidream read `seo.coverage_tracker.created_by` as "the person who

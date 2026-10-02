@@ -28,7 +28,7 @@ full, completed answer — the server ran the turn to the end after the person a
 JSX and `handleStop` (`InputActionButtons.tsx` → `cancelExecution(executingConversationId ?? conversationId)`)
 were unchanged by that work, so the gap is between `cancelExecution` and the server's run (client abort only,
 or a server that does not honour the cancel). Owner: whoever owns execution-runtime cancel
-(`common-docs/systems/agents/execution-runtime/`). A Stop that does not stop is a screen that lies (law 4).
+(`common-docs/systems/architecture/execution-runtime/`). A Stop that does not stop is a screen that lies (law 4).
 
 ### D355 — FIXED 2026-09-27 — Any signed-in person could grant themselves Premium: `billing.user_plan` was client-writable
 
@@ -746,7 +746,7 @@ execute either, so this is not an anon-exposure problem — it is an availabilit
 all 32 ungranted functions have **no `platform.client_callable_door` row**, and every
 `hr_*` function that HAS a door row IS granted. That is precisely the DB-wide guard
 documented in `CLAUDE.md` § Migrations and
-`../common-docs/systems/platform/db-rules/FEATURE.md` §6d-4: *a new client-callable
+`../common-docs/systems/architecture/database/FEATURE.md` §6d-4: *a new client-callable
 `SECURITY DEFINER` function needs a `platform.client_callable_door` row in the same
 migration BEFORE the GRANT, or a DB-wide guard revokes the client EXECUTE inside your
 GRANT.* Thirty-two doors were granted without the row first, so the guard revoked them
@@ -1241,7 +1241,7 @@ a restore commit.
 ### D301 — the route-manifest chain is broken at both links, and the half that has a guard runs nowhere
 
 Found by the `dedupe-and-verify` rotation pass on the `route-liveness` node, 2026-09-09.
-Cross-repo SoR: `../common-docs/systems/platform/route-liveness/STATE.md`.
+Cross-repo SoR: `../common-docs/systems/architecture/frontend/route-liveness/STATE.md`.
 
 The notification spine decides whether a deep link can be sent by reading a manifest
 generated from `app/**/page.tsx`. That chain has two links and **both are stale today**:
@@ -2728,7 +2728,7 @@ _(Filed 2026-08-16; recovered 2026-08-21 from inside the "claim the next free ID
 
 ### D229 — the FE mirrors aidream's contract inventory to serve one always-null lookup (2026-08-20)
 
-Fallout from the contract-artifact eviction (`../common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md` §10b item **5a**, which holds the full context). The 986 machine-minted I/O contracts left `content_ir.kind_definition` for `content_ir.io_contract`, and after the gate repairs (`c02e9b57b`) the shape doctor no longer reads the committed manifest at all.
+Fallout from the contract-artifact eviction (`../common-docs/systems/architecture/content-ir/KINDS_EVERYWHERE_PLAN.md` §10b item **5a**, which holds the full context). The 986 machine-minted I/O contracts left `content_ir.kind_definition` for `content_ir.io_contract`, and after the gate repairs (`c02e9b57b`) the shape doctor no longer reads the committed manifest at all.
 
 What's left: `scripts/shape/content-ir-contract-manifest.json` (~776 stale contract slugs) plus `scripts/shape/refresh-contract-manifest.ts`, `scripts/shape/contract-manifest-format.ts` and the `check:shapes:manifest:refresh` script. Its **only** remaining consumer is `familyByKind` in `features/content-ir/admin/shape-doctor-server.ts:442`, which now resolves `null` for every live kind because the map is built exclusively from contract slugs — so the admin board's Family column is dead (it was always null for real shapes; now it is null for everything).
 
@@ -3055,7 +3055,7 @@ deciding urgency; rotate the key if it is set.**
 **Fix:** delete both routes and the `@deepgram/sdk` dependency (nothing consumes
 either). If Deepgram is ever revived, the platform already has the right pattern
 for this — the **token broker** (`lib/api/broker/`, cross-repo SoR
-`common-docs/systems/platform/token-broker/FEATURE.md`), which exists precisely so a
+`common-docs/systems/architecture/token-broker/FEATURE.md`), which exists precisely so a
 client gets a scoped short-lived credential instead of a hand-rolled mint route.
 
 ### D205 — the committed `openapi.json` is AHEAD of the committed `api-types.ts`; regenerating breaks 48 files (2026-08-16)
@@ -3401,7 +3401,7 @@ verified live; `docs/db_changes/DB_REGRESSION_SWEEP.md` was deleted rather than 
 an archive. Both durable lessons moved to their permanent homes: "a migration file on
 disk changes nothing" is §Database migrations in [CLAUDE.md](CLAUDE.md), and the
 conformance checker's contract — **act on `audit.broken_functions.severity`, NEVER on
-`level`** — is `common-docs/systems/platform/db-rules/FEATURE.md` §11.
+`level`** — is `common-docs/systems/architecture/database/FEATURE.md` §11.
 
 ⚠️ **The old "`audit.broken_functions` is ~97% false positives" warning is obsolete —
 do not act on it.** That was true of the _broken_ checker: 101 rows for 3 genuinely
@@ -3440,7 +3440,7 @@ Found by the guard rail Arman required before folding GRANTs into `iam.apply_rls
 | Table                         | Variant | State                                                                               | `authenticated` grants                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ----------------------------- | ------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | ~~**`ui.ui_surface`**~~       | entity  | ✅ **FIXED 2026-08-14** — RLS ON, policied                                          | closed by `migrations/ui_surface_registry_rls_d184.sql` (read broadly, write admin-only, `service_role` bypass — the pattern its siblings `ui.ui_surface_value` / `ui.ui_surface_agent_role` / `tool.executor` already use). `anon` held the same four privileges and is closed by the absence of an anon write policy. Grants deliberately untouched: the fix is RLS, never grants                                            |
-| ~~**`agent.card`**~~          | —       | ✅ **NOT A DEFECT** — it is a **VIEW**, not a table                                 | **views have no RLS**; `agent.card` is the platform's one registered view, a deliberate public sharing surface with explicit `security_invoker=false` that **self-filters** (anon 138 rows vs authenticated 515). `security_invoker=true` would give anon **0** and kill public agent-card discovery. See `../aidream/docs/security/SUPABASE_ADVISOR_2026-08-13.md` + `../common-docs/systems/platform/db-rules/FEATURE.md` §1 |
+| ~~**`agent.card`**~~          | —       | ✅ **NOT A DEFECT** — it is a **VIEW**, not a table                                 | **views have no RLS**; `agent.card` is the platform's one registered view, a deliberate public sharing surface with explicit `security_invoker=false` that **self-filters** (anon 138 rows vs authenticated 515). `security_invoker=true` would give anon **0** and kill public agent-card discovery. See `../aidream/docs/security/SUPABASE_ADVISOR_2026-08-13.md` + `../common-docs/systems/architecture/database/FEATURE.md` §1 |
 | ~~**`batch.cost_event`**~~    | ledger  | ✅ **FIXED 2026-08-21** — RLS ON with generated policies (`svc_all` + `std_select`) | closed the RIGHT way: real policies first, then variant grants. `authenticated` is now `SELECT` only via `iam.apply_table_grants(...,'ledger')`; **`anon` — which held the same `SIUD` and is deliberately never touched by the generator — was revoked by hand** in the same migration, along with `provider_batch` and `work_item`. aidream `db/migrations/0438_batch_schema_canonical_access_model.sql`                     |
 | `public.system_error`         | entity  | RLS on, **0 policies**                                                              | `SIUD`                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `public.system_write_failure` | entity  | RLS on, **0 policies**                                                              | `SIUD`                                                                                                                                                                                                                                                                                                                                                                                                                         |

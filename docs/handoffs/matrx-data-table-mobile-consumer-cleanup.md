@@ -21,7 +21,7 @@ vision: []
 - Shared contract: `@ai-matrx/design-system/data-table`
 - Mobile skill: `.claude/skills/ios-mobile-first/SKILL.md`
 - Existing copy fleet: `docs/handoffs/agent-copy-everywhere.md`
-- Patrol: P3 in `../common-docs/systems/improvement/pattern-patrols/PATROL_REGISTRY.md`
+- Patrol: P3 in `../common-docs/systems/intelligence/pattern-patrols/PATROL_REGISTRY.md`
 - Representative route: `/marketing/brands` at 390x844
 
 ## Remaining work

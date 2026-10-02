@@ -16,7 +16,7 @@ The extension policy must describe the exact current packaged manifest and fresh
 - guest identity and retention behavior; and
 - the Chrome Web Store privacy-form declarations.
 
-Any Matrx Extend permission or privacy-default change updates this page in the same release. The canonical submission copy remains in `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHROME-WEB-STORE.md`.
+Any Matrx Extend permission or privacy-default change updates this page in the same release. The canonical submission copy remains in `/Users/armanisadeghi/code/common-docs/systems/apps/extension/CHROME-WEB-STORE.md`.
 
 ## Connected-provider invariant
 

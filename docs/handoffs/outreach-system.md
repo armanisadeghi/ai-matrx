@@ -446,7 +446,7 @@ A sending identity is a first-class record, not a config field: *which mailbox m
 org, how fast, and is it healthy right now.*
 
 > ✅ **Deliverability research DONE 2026-08-14 — read before building any of this.**
-> **`/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
+> **`/Users/armanisadeghi/code/common-docs/systems/marketing/outreach/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
 > — what Instantly/Smartlead/lemlist/Mailreach mechanically do, what actually moves inbox
 > placement, the safe/grey/reckless risk ledger, and the ship/optional/refuse ranking. It changes
 > items 1, 4, 5 and 6 below.
@@ -637,7 +637,7 @@ bypasses the four floor items closed above; see `ENGINEERING_GAPS.md` § "Still 
 
 ### ✅ Research pass DONE 2026-08-14 — read it before writing any send code
 
-**System-of-record: `/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/`**
+**System-of-record: `/Users/armanisadeghi/code/common-docs/systems/marketing/outreach/outreach-compliance/`**
 (cross-repo: the obligations land in this repo, in aidream, and in the shared DB). Full research
 against primary sources — CAN-SPAM §7704, CRTC/CASL, CNIL, §7 UWG, ICO/PECR, Australia's Spam Act,
 the Google/Yahoo/Microsoft bulk-sender regime, RFC 8058, and the eight vendor policies §5.1 names.
@@ -968,7 +968,7 @@ renamed agent slots to Mandates across these docs).
    door onto an empty room is worse than no door. The fold producer and provenance renderer already
    handle it; build it the day competitors are confirmed. SERP, broken-link, imported and captured
    prospects all have their doors today.
-4. **Compliance engineering gaps** that remain FLOOR items — `common-docs/systems/marketing/outreach-compliance/ENGINEERING_GAPS.md`
+4. **Compliance engineering gaps** that remain FLOOR items — `common-docs/systems/marketing/outreach/outreach-compliance/ENGINEERING_GAPS.md`
    § "Still open" (G2 anti-harvesting notice, prohibited-content classification). No tier and no
    trust level buys past them.
 5. **A first real `platform.assists` producer** for the two outreach surface strips — the strips are
@@ -1068,7 +1068,7 @@ EARNED-TRUST LADDER) before acting on any of these — it is the lens they were 
 
    ### ✅ Research pass DONE 2026-08-14 — the answer, in full, with sources
 
-   **`/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
+   **`/Users/armanisadeghi/code/common-docs/systems/marketing/outreach/outreach-compliance/DELIVERABILITY_AND_WARMUP.md`**
    — read it before building warmup, caps, health, or the sending-identity schema. Headlines:
 
    - **The decision is settled by precedent, not principle.** Google's 2022-11-18 notice ordered

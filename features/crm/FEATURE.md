@@ -34,7 +34,7 @@ first-class. "Company" here means **our users' clients**, never `iam.organizatio
   subscriber kind), which blocks Canada/EU/Australia sends and all of Lane A, and
   which cannot be retrofitted without re-contacting everyone. **Before adding any
   consent, unsubscribe, or send-eligibility field here, read
-  `/Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/` —**
+  `/Users/armanisadeghi/code/common-docs/systems/marketing/outreach/outreach-compliance/` —**
   `ENGINEERING_GAPS.md` GAP-4 specifies the exact columns, and the vocabulary must be
   the one `communication.sms_consent` folds into. One authority, one vocabulary.
 - **`crm.party_contact_point`** — says _who_ uses that medium, _how_ (purpose),
@@ -437,7 +437,7 @@ Wizard: source (CSV/TSV/pasted text, Excel `.xlsx/.xls`, or vCard `.vcf/.vcard`)
   until its own verification campaign closes (`lib/googleScopes.ts`).
 - Cross-repo vision, exhaustive source inventory, official MCP shortlist, and
   Extend/Local briefs:
-  `/Users/armanisadeghi/code/common-docs/systems/crm/IMPORT-SOURCES.md`.
+  `/Users/armanisadeghi/code/common-docs/systems/crm/contact-import/IMPORT-SOURCES.md`.
 - **Component inserts never use RETURNING** — see the service comment on
   `addContactPoint` and D181 in `FOUND_DEFECTS.md`: the id-list `std_select`
   policy on component tables cannot see a row being inserted, so
@@ -1776,7 +1776,7 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
   The tests exposed and fixed the
   pre-existing PapaParse double-`transformHeader` bug that renamed every header and
   defeated auto-mapping. Canonical multi-project program:
-  `common-docs/systems/crm/IMPORT-SOURCES.md`.
+  `common-docs/systems/crm/contact-import/IMPORT-SOURCES.md`.
 - 2026-08-15 — **`PartyNotes` stopped reporting a failed load as an empty record.**
   A `cmt_list` failure left `comments` at `[]`, so the panel rendered a calm
   `0` count and "No notes yet" over a record that may have many notes — the

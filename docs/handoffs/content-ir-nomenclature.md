@@ -4,8 +4,8 @@ updated: 2026-08-17
 repos: [matrx-frontend, aidream, common-docs]
 vision:
   [
-    /Users/armanisadeghi/code/common-docs/systems/content-ir-system/UNIFICATION.md,
-    /Users/armanisadeghi/code/common-docs/systems/content-ir-system/NOMENCLATURE.md,
+    /Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/UNIFICATION.md,
+    /Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/NOMENCLATURE.md,
     /Users/armanisadeghi/code/common-docs/systems/platform/vocabulary/FEATURE.md,
   ]
 ---
@@ -17,7 +17,7 @@ before starting anything, so you don't collide with a running chip.
 
 ## Vision — Arman's words
 
-**Moved 2026-08-25 to [`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md).** Every quote that was here is preserved there verbatim,
+**Moved 2026-08-25 to [`/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/VISION.md).** Every quote that was here is preserved there verbatim,
 grouped by theme with its source and date, alongside the rest of his Content IR vision — which
 had been split across four work orders in this repo and was invisible to agents in every other
 repo. **Read it before touching anything here; it outranks this work order.**
@@ -30,7 +30,7 @@ repo. **Read it before touching anything here; it outranks this work order.**
   the PACKAGE (`aidream/apps/shared/content-ir-core`, npm `@ai-matrx/content-ir`) — the source
   twin and `sync_content_ir_core.py` were RETIRED 2026-08-22 and `features/content-ir/core/` is
   deleted; rename in the package, release a version, adopt here same-session
-  (`common-docs/systems/content-ir-twin/FEATURE.md`).
+  (`common-docs/systems/architecture/content-ir/content-ir-twin-FEATURE.md`).
 - Verify: `pnpm type-check` · `pnpm check:shapes` · `pnpm check:content-ir:strict` no worse than
   before; regenerate generated files, never hand-edit. Report before/after grep counts → zero.
 - Protocol mirror: `MATRX_ENVELOPE.md` / `MATRX_REFERENCES.md` are byte-mirrored (edit aidream,

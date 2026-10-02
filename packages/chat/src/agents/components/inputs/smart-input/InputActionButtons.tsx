@@ -170,7 +170,7 @@ export function InputActionButtons({
 
   // While a run streams, the composer STAYS live: Send queues the text into
   // the Turn-Boundary Inbox (the running agent answers it at its next pause,
-  // on the same stream — /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md), and a separate Stop
+  // on the same stream — /Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/TURN-BOUNDARY-INBOX.md), and a separate Stop
   // button cancels the run. Content never controls submit eligibility; while
   // the mic is active the send path blocks so trailing audio isn't dropped.
   const isSendDisabled = disableSend || voiceBusy;

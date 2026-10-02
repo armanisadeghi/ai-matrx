@@ -133,7 +133,7 @@ export function SmartAgentInput({
   const variableIconShown = showVariableIcon && variablesPanelStyle !== "hidden";
   // Queued-while-running message cards render above EITHER variant, so every
   // surface that mounts a composer also sees / edits / withdraws its queue
-  // (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md). Renders null when the queue is empty.
+  // (/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/TURN-BOUNDARY-INBOX.md). Renders null when the queue is empty.
   const queueStrip =
     conversationId && !isAmbient ? (
       <InboxQueueStrip conversationId={conversationId} />

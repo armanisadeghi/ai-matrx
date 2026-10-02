@@ -4,7 +4,7 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/knowl
 
 What Knowledge is, what retrieval does, the ACL model, the schema, what is pending and every
 ruling live there. The Library **sharing spine** (grants, industries, curators, the catalog and
-the SUBSCRIBE law) is `/Users/armanisadeghi/code/common-docs/systems/platform/library/STATE.md`.
+the SUBSCRIBE law) is `/Users/armanisadeghi/code/common-docs/systems/account/library/STATE.md`.
 The cross-feature launch campaign is `/Users/armanisadeghi/code/common-docs/projects/knowledge-system/README.md`.
 
 This file is only what an agent editing `features/rag/` must obey.

@@ -10,7 +10,7 @@
  * entitlement-filtered catalog reader. No second grant mechanism, and no
  * client-side merge of two catalogs.
  *
- * THE SUBSCRIBE LAW (common-docs/systems/platform/library/STATE.md): what
+ * THE SUBSCRIBE LAW (common-docs/systems/account/library/STATE.md): what
  * "taking" a resource MEANS differs per type and the UI must not blur it.
  *   • data_store       → SUBSCRIBE (reference) — `library_subscribe` conveys a read.
  *   • seo_starter_pack → USE ON A SITE (copy) — adoption happens on one site,

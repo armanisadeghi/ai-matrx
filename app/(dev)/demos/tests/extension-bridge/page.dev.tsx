@@ -100,7 +100,7 @@ export default function ExtensionBridgeDemoPage() {
               Direct RPC, Supabase Broadcast, and the append-message API in one
               page. See{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md
+                /Users/armanisadeghi/code/common-docs/systems/apps/extension/CHANNELS.md
               </code>
               .
             </p>

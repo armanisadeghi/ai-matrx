@@ -1,5 +1,5 @@
 {
-  "__source": "Generated from the REAL Python bridge (matrx_ai.agents.variable_kinds). Regenerate: aidream scripts/generate_variable_kind_fixture.py. Drift gate: aidream packages/matrx-ai/tests/parity/test_variable_kind_fixture.py + matrx-frontend features/content-ir/__tests__/variable-kind-bridge-parity.test.ts. Contract: common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md §10d-C.",
+  "__source": "Generated from the REAL Python bridge (matrx_ai.agents.variable_kinds). Regenerate: aidream scripts/generate_variable_kind_fixture.py. Drift gate: aidream packages/matrx-ai/tests/parity/test_variable_kind_fixture.py + matrx-frontend features/content-ir/__tests__/variable-kind-bridge-parity.test.ts. Contract: common-docs/systems/architecture/content-ir/KINDS_EVERYWHERE_PLAN.md §10d-C.",
   "cases": [
     {
       "name": "bare_variable",

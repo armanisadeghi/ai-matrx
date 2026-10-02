@@ -152,7 +152,7 @@ metered to the organization.
   read ONCE here through `useHomeConnections` and handed down, never re-read per
   card. The live sentence at the top is now the SLOWER of the two channels —
   "Live" while half the page polls would be a lie. Contract:
-  `common-docs/systems/platform/residential-egress/FEATURE.md`.
+  `common-docs/systems/architecture/residential-egress/FEATURE.md`.
 - **2026-09-15** — Created (FS-L5): the Devices & sync tab, the honest storage
   meter, the admin page, and the deletion of the browser's second copy of the
   visibility rule.

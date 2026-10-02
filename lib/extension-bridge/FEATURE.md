@@ -1,6 +1,6 @@
 # Extension ↔ Frontend bridge
 
-> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/apps/extension/CHANNELS.md — read it before touching this feature in ANY repo.
 
 The bridge has two transports with one request/reply contract:
 

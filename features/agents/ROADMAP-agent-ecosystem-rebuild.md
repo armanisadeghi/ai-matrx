@@ -6,7 +6,7 @@
 >
 > **Companion docs:**
 > - Architecture overview: [`agent-system-mental-model.md`](agent-system-mental-model.md)
-> - Invocation contract: [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`](/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md)
+> - Invocation contract: [`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md`](/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md)
 > - Active TODO for Phase 0 item below: [`TODO-widget-tools-plan.md`](TODO-widget-tools-plan.md)
 >
 > **Audits persisted at [`packages/chat/src/agents/audits/`](audits/) — these are the operational tactical checklists that complement this strategic roadmap:**

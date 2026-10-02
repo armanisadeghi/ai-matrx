@@ -9,7 +9,7 @@
 //
 // Pure core + a module-level per-instance store the realtime client-tool
 // runner reaches through `ctx.instanceId`. SoR:
-// common-docs/systems/agents/voice/STATE.md
+// common-docs/systems/chat/voice/STATE.md
 
 import type { ResolvedRealtimeTool } from "../types";
 import { registerRealtimeClientTool } from "../runtime/client-tool-registry";

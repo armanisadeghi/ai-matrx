@@ -6,7 +6,7 @@
 // line (narration), plus the open-question ledger. Pure functions —
 // unit-tested in __tests__/relayProtocol.test.ts.
 //
-// SoR: common-docs/systems/agents/voice/STATE.md
+// SoR: common-docs/systems/chat/voice/STATE.md
 
 import type { DeliveryCueOptions } from "./types";
 

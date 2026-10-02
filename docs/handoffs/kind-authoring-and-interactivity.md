@@ -4,7 +4,7 @@ updated: 2026-09-08
 repos: [matrx-frontend, aidream]
 scope: program
 feature: Content IR
-vision: [/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/VISION.md]
 ---
 
 # Kind authoring and component interactivity — work order
@@ -14,12 +14,12 @@ admin at the kind registry, or by an agent — and how the component it renders 
 comes alive and DOES things instead of just displaying.
 **Scope:** Program
 **Feature:** Content IR
-**Vision:** [`common-docs/systems/content-ir-system/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md)
+**Vision:** [`common-docs/systems/architecture/content-ir/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/architecture/content-ir/VISION.md)
 
 Read the vision before touching anything here; it outranks this work order. The
 broader platform rollout (enforcement flips, tool_ui subsumption, workflows,
 bulk-bind) is [`content-ir-integration-map.md`](content-ir-integration-map.md).
-Evidence/counts system-of-record: `common-docs/systems/content-ir-system/FEATURE.md`.
+Evidence/counts system-of-record: `common-docs/systems/architecture/content-ir/FEATURE.md`.
 
 > **Everything below was re-verified against live code on 2026-09-08.** Claims that
 > had rotted were corrected, not appended to.

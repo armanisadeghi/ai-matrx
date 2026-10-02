@@ -1,6 +1,6 @@
 # FEATURE.md — `artifacts` (local mechanics)
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/STATE.md` — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/publish/artifacts/STATE.md` — read it before touching this feature in ANY repo.
 
 Everything about *what* artifacts are, why they exist, how materialization works, the wire
 contract, the data model, the decisions, and the open work lives in that node's doc kit

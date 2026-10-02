@@ -2,7 +2,7 @@
 /**
  * Realtime-tools drift gate — the matrx-frontend half of the realtime tool
  * bridge cross-repo contract
- * (common-docs/systems/agents/voice/REALTIME_TOOL_BRIDGE.md §6).
+ * (common-docs/systems/chat/voice/REALTIME_TOOL_BRIDGE.md §6).
  *
  * The browser is a PURE INTERMEDIARY for realtime tools: both the resolve and
  * execute endpoints read tool defs from the DB, and the FE just relays the
@@ -278,7 +278,7 @@ async function main(): Promise<void> {
   console.log("");
   console.log(
     `${DIM}Fix: align packages/chat/src/voice-agent/types.ts ResolvedRealtimeTool with ` +
-      `common-docs/systems/agents/voice/REALTIME_TOOL_BRIDGE.md §3 ` +
+      `common-docs/systems/chat/voice/REALTIME_TOOL_BRIDGE.md §3 ` +
       `(or update the contract if it changed).${RESET}`,
   );
   // Non-blocking by default (pre-commit), exit non-zero only with --strict (CI).

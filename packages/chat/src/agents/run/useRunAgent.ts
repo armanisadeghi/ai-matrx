@@ -13,7 +13,7 @@
 // stream event folds through `@ai-matrx/agents/projection/request` — the
 // portable projector's `answer` / `completion` / `error` are this flow's
 // result authority (its first production consumer; the v2 adoption gate in
-// /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/PACKAGE-CONTRACT.md).
+// /Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/PACKAGE-CONTRACT.md).
 // Auth, URL selection, request scope, API-version routing and diagnostics are
 // still callApi's machinery — imported, never re-implemented.
 //

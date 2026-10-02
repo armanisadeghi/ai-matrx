@@ -5,7 +5,7 @@
 // model to speak the primary agent's answers. Attach it to a session via
 // `useXaiVoiceSession`'s `relay` option; drive it from `useVoiceRelaySession`.
 //
-// Invariants owned here (SoR: common-docs/systems/agents/voice/STATE.md, THE ROUTING LAW):
+// Invariants owned here (SoR: common-docs/systems/chat/voice/STATE.md, THE ROUTING LAW):
 //   1. A user transcript is forwarded to `onUserUtterance` — never answered
 //      by the voice model. The session runs with
 //      `turn_detection.create_response: false`.

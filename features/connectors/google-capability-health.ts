@@ -18,7 +18,7 @@
 // 🚨 THE MARKER STAYS IN THE DATA. `__kind` is part of the value, not noise to
 // strip: this reader ACCEPTS-AND-IGNORES it as a capability key and carries it
 // on the parsed value (`kind`), per the kind-marker law
-// (`common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md` §4.2a).
+// (`common-docs/systems/architecture/content-ir/KINDS_EVERYWHERE_PLAN.md` §4.2a).
 //
 // 🚨 WHAT AN ABSENT FACT MEANS. Absent is "nothing recorded", never "it
 // worked" and never "it failed". A connection whose column is still the bare
@@ -52,7 +52,7 @@ export const GOOGLE_CAPABILITY_HEALTH_KIND =
  *
  * Accept-and-ignore, never strip: the marker that was READ is carried on the
  * parsed value (`kind`), whichever one it was (kind-marker law,
- * `common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md` §4.2a).
+ * `common-docs/systems/architecture/content-ir/KINDS_EVERYWHERE_PLAN.md` §4.2a).
  */
 export const CONNECTION_CAPABILITY_HEALTH_KIND = "connection_capability_health";
 

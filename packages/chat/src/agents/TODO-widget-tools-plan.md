@@ -292,7 +292,7 @@ Each migration also updates type imports and drops the old callback destructurin
 ## Phase 8 — Legacy shims + docs
 
 - [`features/agents/redux/legacy-shims/cx-message-actions-selectors.ts`](features/agents/redux/legacy-shims/cx-message-actions-selectors.ts) — audit for any reference to `callbackGroupId` and rename.
-- [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md) — rewrite the callbacks section to describe `widgetHandleId` only.
+- [`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md) — rewrite the callbacks section to describe `widgetHandleId` only.
 - [`features/agents/components/tools-management/CLIENT_SIDE_TOOLS.md`](features/agents/components/tools-management/CLIENT_SIDE_TOOLS.md) — append a "Widget Actions" section explaining that the `widget_*` tool family is the canonical way widgets expose capabilities, and that `client_tools` is auto-derived from the registered `WidgetHandle`.
 - New file [`features/agents/components/tools-management/WIDGET_TOOLS_SEED.sql`](features/agents/components/tools-management/WIDGET_TOOLS_SEED.sql) — full INSERT statements for the 10 rows.
 - New file [`features/agents/docs/WIDGET_HANDLE_SYSTEM.md`](features/agents/docs/WIDGET_HANDLE_SYSTEM.md) — end-to-end diagram + copy-pasteable widget example.

@@ -4,7 +4,7 @@ updated: 2026-08-29
 repos: [matrx-frontend]
 scope: tail
 feature: Artifacts + Canvas
-vision: [/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/publish/artifacts/VISION.md]
 ---
 
 # Canvas canonical-open sweep
@@ -13,7 +13,7 @@ vision: [/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canva
 its `canvas_items` row — instead of each one pushing its own private copy into the canvas slice.
 **Scope:** Tail
 **Feature:** Artifacts + Canvas
-**Vision:** [VISION.md](/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md)
+**Vision:** [VISION.md](/Users/armanisadeghi/code/common-docs/systems/publish/artifacts/VISION.md)
 
 ## Vision — Arman's words
 

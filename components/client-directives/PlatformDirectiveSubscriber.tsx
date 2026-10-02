@@ -21,7 +21,7 @@
  * toast. A FEATURE opts in from its own module with
  * `registerDirectiveHandler(...)` and never touches this file.
  *
- * Contract (cross-repo): common-docs/systems/platform/realtime/CLIENT-DIRECTIVES.md
+ * Contract (cross-repo): common-docs/systems/architecture/realtime/CLIENT-DIRECTIVES.md
  */
 
 import { useEffect } from "react";

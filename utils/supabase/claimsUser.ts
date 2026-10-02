@@ -19,7 +19,7 @@
 // `last_sign_in_at`, `*_confirmed_at`, `factors`) and for a read-after-write of
 // `auth.updateUser`.
 //
-// Contract: `common-docs/systems/platform/proxy-identity/FEATURE.md`.
+// Contract: `common-docs/systems/platform/auth/proxy-identity/FEATURE.md`.
 
 import {
   AuthError,

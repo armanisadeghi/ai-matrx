@@ -6,7 +6,7 @@ example carries the register and density the template can't.
 | Artifact | Worked example |
 |---|---|
 | Vision doc | `common-docs/systems/education/VISION.md` |
-| Competitive insights | `common-docs/systems/education/research/2026-07-competitive-insights.md` |
+| Competitive insights | `common-docs/systems/education/market-research/2026-07-competitive-insights.md` |
 | Master plan | `common-docs/projects/outreach-system/MASTER_PLAN.md` |
 | Project brief | `common-docs/projects/outreach-system/work-packages/wp1-pipeline-core.md` (best all-round), `wp4-architecture.md` (contract-owner shape) |
 | Assignment prompt | `common-docs/systems/education/STATE.md` §2.1 — Arman's own prompt, verbatim |

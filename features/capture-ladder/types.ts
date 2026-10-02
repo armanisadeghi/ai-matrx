@@ -31,7 +31,7 @@ export type Rung = (typeof RUNGS)[number];
  * from somewhere else, NOT a fifth rung. A trail may contain one at any
  * position; a trail without one is complete; nothing about which rung may
  * follow changes. Contract:
- * `common-docs/systems/platform/residential-egress/FEATURE.md`.
+ * `common-docs/systems/architecture/residential-egress/FEATURE.md`.
  *
  * 🚨 IT IS LISTED HERE BECAUSE OF WHAT HAPPENED WITHOUT IT. The ingress parse
  * in `captureHandoffTable.ts` validates every trail entry against this

@@ -6,7 +6,7 @@
 // (the Communicator — Mandate `voice.communicator`) speaking FOR one primary
 // text agent (the brain — an ordinary execution-system conversation).
 //
-// Flow (THE ROUTING LAW; SoR: common-docs/systems/agents/voice/STATE.md):
+// Flow (THE ROUTING LAW; SoR: common-docs/systems/chat/voice/STATE.md):
 //   user speech  → transcript → setUserInputText + smartExecute on the
 //                  primary conversation (the voice model never auto-answers)
 //   brain busy   → a MIRROR cue after a short delay: the Communicator reflects

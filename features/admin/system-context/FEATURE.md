@@ -1,6 +1,6 @@
 # FEATURE.md — System Context admin console
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md` — read it before touching this feature in any repo. The dedicated System Context table supersedes that document's older `is_system` scope-type implementation notes.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/account/scopes-context/STATE.md` — read it before touching this feature in any repo. The dedicated System Context table supersedes that document's older `is_system` scope-type implementation notes.
 
 **Status:** `active`. This is the Super Admin control plane for platform-wide truths available to every agent.
 

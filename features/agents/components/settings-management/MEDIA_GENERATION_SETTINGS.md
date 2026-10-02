@@ -8,7 +8,7 @@
 > longer the contract: per THE EQUIVALENCE LAW (Arman, 2026-08-17) the server CONVERTS to the
 > nearest equivalent and only drops when the capability genuinely does not exist — loudly, as a
 > client warning. See
-> /Users/armanisadeghi/code/common-docs/systems/agents/ai-models/STATE.md and
+> /Users/armanisadeghi/code/common-docs/systems/ai/ai-models/STATE.md and
 > /Users/armanisadeghi/code/common-docs/systems/platform/configuration-equivalence/FEATURE.md.
 
 > Companion to `AgentSettingsCore.tsx`, `validation/rules.ts`, `validation/constraints.ts`.
