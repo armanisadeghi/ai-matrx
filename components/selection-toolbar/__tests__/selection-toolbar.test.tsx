@@ -70,6 +70,8 @@ jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: ({ sour
 jest.mock("@/features/rich-document/annotations/LinkRecordSheet", () => ({ LinkRecordSheet: () => null }));
 // The root's identity + knob reads (the knob answers "not loaded": the code default holds).
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null, useAppDispatch: () => jest.fn() }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob: () => undefined }));
 // The frame is split out with next/dynamic in the app; here it loads synchronously.
 jest.mock("next/dynamic", () => () => {

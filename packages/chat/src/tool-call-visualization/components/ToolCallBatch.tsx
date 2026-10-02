@@ -31,7 +31,7 @@ import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { cn } from "@ai-matrx/design-system";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { ShimmerText } from "@host/components/loaders/ShimmerText";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 

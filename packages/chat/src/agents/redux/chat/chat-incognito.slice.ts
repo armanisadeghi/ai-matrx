@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 
 interface ChatIncognitoState {
   isActive: boolean;
@@ -27,5 +27,5 @@ export const { setChatIncognitoActive, toggleChatIncognito } =
 
 export default chatIncognitoSlice.reducer;
 
-export const selectChatIncognitoActive = (state: RootState): boolean =>
+export const selectChatIncognitoActive = (state: ChatRootState): boolean =>
   state.chatIncognito.isActive;

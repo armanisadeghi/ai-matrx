@@ -13,7 +13,7 @@
  * row (with its full raw event log) per run for the tab's lifetime.
  */
 
-import type { AppThunk } from "@host/lib/redux/store";
+import type { ChatThunk } from "../../../../store/root-state";
 
 import {
   releaseRequestForViewer,
@@ -36,7 +36,7 @@ export function addRunToSet(input: {
   setKey: string;
   requestId: string;
   label: string;
-}): AppThunk {
+}): ChatThunk {
   return (dispatch, getState) => {
     const { setKey, requestId, label } = input;
     if (!requestId) return;
@@ -76,7 +76,7 @@ export function addDataToSet(input: {
   id: string;
   label: string;
   block: Extract<RunSetEntry, { kind: "data" }>["block"];
-}): AppThunk {
+}): ChatThunk {
   return (dispatch, getState) => {
     dispatch(
       runSetEntryAdded({
@@ -99,7 +99,7 @@ export function addDataToSet(input: {
 export function removeRunSetEntry(input: {
   setKey: string;
   id: string;
-}): AppThunk {
+}): ChatThunk {
   return (dispatch, getState) => {
     const entries = selectRunSetEntries(getState(), input.setKey);
     const entry = entries.find((item) => item.id === input.id);
@@ -119,7 +119,7 @@ export function removeRunSetEntry(input: {
 /** Drop the whole set, releasing every held row. Call when the surface
  * starts a NEW logical session (not on unmount — surviving unmount is the
  * point). */
-export function clearRunSet(setKey: string): AppThunk {
+export function clearRunSet(setKey: string): ChatThunk {
   return (dispatch, getState) => {
     const entries = selectRunSetEntries(getState(), setKey);
     dispatch(runSetCleared({ setKey }));
@@ -138,8 +138,8 @@ export function clearRunSet(setKey: string): AppThunk {
 
 function evictOverflow(
   setKey: string,
-  dispatch: Parameters<AppThunk>[0],
-  getState: Parameters<AppThunk>[1],
+  dispatch: Parameters<ChatThunk>[0],
+  getState: Parameters<ChatThunk>[1],
 ) {
   const entries = selectRunSetEntries(getState(), setKey);
   const overflow = entries.length - RUN_SET_MAX_ENTRIES;

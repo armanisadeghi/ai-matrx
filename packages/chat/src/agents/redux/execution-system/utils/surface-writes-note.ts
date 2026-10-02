@@ -20,7 +20,7 @@ import {
   DEFAULT_SURFACE_KEY,
   type ContextRowSource,
 } from "@ai-matrx/agents/context";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 
 /** The context key the resumed request carries the note under. */
 export const SURFACE_WRITES_NOTE_KEY = "page_values_read_after_your_writes";
@@ -48,7 +48,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
  * as the resumed request should name them. Empty when there are none.
  */
 export function selectSuccessfulSurfaceWrites(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): ListedWrite[] {
   const requestIds = state.activeRequests.byConversationId[conversationId] ?? [];
@@ -83,7 +83,7 @@ export function selectSuccessfulSurfaceWrites(
  * `null` when this conversation made no successful page write.
  */
 export function buildSurfaceWritesNote(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   readAt: string = new Date().toISOString(),
 ): string | null {
@@ -107,7 +107,7 @@ export function buildSurfaceWritesNote(
  * page write.
  */
 export function surfaceWritesNoteSource(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   readAt?: string,
 ): ContextRowSource | null {

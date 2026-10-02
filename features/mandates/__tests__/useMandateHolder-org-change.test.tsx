@@ -8,6 +8,8 @@ let selectedOrg: string | null = null;
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (s: unknown) => unknown) => selector(undefined),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => selectedOrg,
 }));

@@ -17,7 +17,7 @@
  */
 
 import { useState } from "react";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../store/hooks";
 import { closeOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
@@ -34,7 +34,7 @@ import {
 } from "../../../agents/components/inputs/resources/attach-resource";
 import { cn } from "@ai-matrx/design-system";
 import type { Resource } from "../../../agents/resources/types";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceAgentId } from "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectAgentName } from "../../../agents/redux/agent-definition/selectors";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";

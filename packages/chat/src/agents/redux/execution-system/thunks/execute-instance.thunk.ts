@@ -26,7 +26,7 @@ import {
 
 import { mintClientTempId } from "@host/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type {
   AssembledAgentStartRequest,
   UserOverrides,
@@ -252,7 +252,7 @@ export const SUBMISSION_REFUSED_AT_ADMISSION =
  * This is a pure function of the Redux state — no side effects.
  */
 export function assembleRequest(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   opts?: {
     /**
@@ -447,7 +447,7 @@ export function assembleRequest(
  * `undefined` when nothing is set (so we omit the `user` field entirely and
  * let the backend resolve from the surface / agent / default cascade).
  */
-function buildUserOverrides(state: RootState): UserOverrides | undefined {
+function buildUserOverrides(state: ChatRootState): UserOverrides | undefined {
   const applyPolicy = state.userPreferences.assistant.directiveApplyPolicy;
   if (applyPolicy && applyPolicy !== "default") {
     return { apply_policy: applyPolicy };
@@ -523,7 +523,7 @@ interface ExecuteInstanceResult {
 export const executeInstance = createAsyncThunk<
   ExecuteInstanceResult,
   ExecuteInstanceArgs,
-  { state: RootState; rejectedMeta: ExecutionRejectionMeta }
+  { state: ChatRootState; rejectedMeta: ExecutionRejectionMeta }
 >(
   "instances/execute",
   async (
@@ -555,7 +555,7 @@ export const executeInstance = createAsyncThunk<
       // `let`, not `const`: the organization gate below can suspend for human
       // time and commit a new active organization, and everything downstream
       // (assembleRequest most of all) must see it.
-      let state = getState() as RootState;
+      let state = getState() as ChatRootState;
       const instance = state.conversations.byConversationId[conversationId];
 
       if (!instance) {
@@ -661,7 +661,7 @@ export const executeInstance = createAsyncThunk<
       // no-op-or-break: harmless when an org was already set, and a guaranteed
       // "Select an organization before sending this message" AFTER the person
       // had just selected one, which is the only case it exists for.
-      state = getState() as RootState;
+      state = getState() as ChatRootState;
       executionOrganizationForRequest(state, conversationId);
 
       // Capture the user's input BEFORE assembling (for history + display).
@@ -721,11 +721,11 @@ export const executeInstance = createAsyncThunk<
       // the server will read (RULES.md §3).
       // THE LIVE PAGE, read for this send — unless the caller just did.
       if (!surfaceRefreshed) {
-        await (dispatch as AppDispatch)(refreshSurfaceScope({ conversationId })).unwrap();
+        await (dispatch as ChatDispatch)(refreshSurfaceScope({ conversationId })).unwrap();
       }
       await dispatch(ensureContextRulesReady(conversationId));
       const mandateKillSwitch = await resolveMandateKillSwitch(instance.mandateKey);
-      state = getState() as RootState;
+      state = getState() as ChatRootState;
 
       // Assemble the request (sync — pure selector logic).
       const payload = assembleRequest(state, conversationId, {
@@ -877,7 +877,7 @@ export const executeInstance = createAsyncThunk<
           ? payload.user_input
           : "";
       const displayContent = assembledUserText;
-      const stateAtSubmit = getState() as RootState;
+      const stateAtSubmit = getState() as ChatRootState;
       // Context is part of the submitted user turn even when there is no text,
       // attachment, or variable. Snapshot it before deciding whether the live
       // transcript needs an optimistic row.
@@ -946,8 +946,8 @@ export const executeInstance = createAsyncThunk<
       // An image / video / audio run is a JOB: its own working line or card
       // (model, clock, estimated cost) replaces the generic shimmer.
       void labelGenerationJob(
-        dispatch as AppDispatch,
-        getState as () => RootState,
+        dispatch as ChatDispatch,
+        getState as () => ChatRootState,
         requestId,
         conversationId,
       );
@@ -1250,7 +1250,7 @@ export const executeInstance = createAsyncThunk<
             body: routedPayload,
             channel: backend.channel,
             dispatch,
-            getState: getState as () => RootState,
+            getState: getState as () => ChatRootState,
             submitAt,
             kind: "turn",
             forceLocalConversationId: isEphemeral,
@@ -1284,7 +1284,7 @@ export const executeInstance = createAsyncThunk<
               );
             }
             // An engineered run stays engineered after a reload (W-31).
-            if ((getState() as RootState).conversations.byConversationId[conversationId]?.engineeredInputs) {
+            if ((getState() as ChatRootState).conversations.byConversationId[conversationId]?.engineeredInputs) {
               await dispatch(
                 persistConversationFlag({ conversationId, flag: "engineered_inputs" }),
               );

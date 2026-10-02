@@ -22,8 +22,8 @@
 // file exists to remove.
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppDispatch, useAppStore } from "../store/hooks";
+import type { ChatRootState } from "../store/root-state";
 import { fetchFullAgent } from "../agents/redux/agent-definition/thunks";
 import { fetchModelIdentityById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { applyAgentConfig, setError } from "./state/voiceAgentSlice";
@@ -67,7 +67,7 @@ export interface HolderRealtimeModel {
 export async function resolveHolderRealtimeModel(
   agentId: string,
   dispatch: ReturnType<typeof useAppDispatch>,
-  getState: () => RootState,
+  getState: () => ChatRootState,
 ): Promise<HolderRealtimeModel> {
   let agent = getState().agentDefinition.agents?.[agentId];
   if (!agent?.modelId) {
@@ -133,7 +133,7 @@ export function useRealtimeHolderModel(opts: {
       const result = await resolveHolderRealtimeModel(
         agentId,
         dispatch,
-        () => store.getState() as RootState,
+        () => store.getState() as ChatRootState,
       );
       if (cancelled) return;
       if (result.wireModel) {

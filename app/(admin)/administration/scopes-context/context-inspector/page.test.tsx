@@ -32,6 +32,8 @@ jest.mock("@/lib/redux/hooks", () => {
   const store = { getState: () => ({ apiConfig: { recentCalls: [] } }) };
   return { ...jest.requireActual("@/lib/redux/hooks"), useAppStore: () => store };
 });
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/hooks/useDebugContext", () => ({
   useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
 }));

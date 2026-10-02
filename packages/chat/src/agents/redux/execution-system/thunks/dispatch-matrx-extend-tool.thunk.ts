@@ -7,7 +7,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { submitToolResult } from "../../../api/submit-tool-results";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
 import { invokeMatrxExtendTool } from "@host/lib/extension-bridge/matrx-extend-client";
@@ -24,7 +24,7 @@ export interface DispatchMatrxExtendToolPayload {
 export const dispatchMatrxExtendTool = createAsyncThunk<
   void,
   DispatchMatrxExtendToolPayload,
-  { state: RootState }
+  { state: ChatRootState }
 >(
   "matrxExtendTools/dispatch",
   async (

@@ -189,13 +189,13 @@ export default slice.reducer;
 
 // ─── Selectors ──────────────────────────────────────────────────────────────
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 
 const EMPTY_ASKS: PendingAsk[] = [];
 
 export const selectPendingAsksForConversation =
   (conversationId: string) =>
-  (state: RootState): PendingAsk[] =>
+  (state: ChatRootState): PendingAsk[] =>
     state.pendingAsks?.byConversationId[conversationId] ?? EMPTY_ASKS;
 
 /**
@@ -224,7 +224,7 @@ function activeAsksOf(all: PendingAsk[]): PendingAsk[] {
 
 export const selectActivePendingAsksForConversation =
   (conversationId: string) =>
-  (state: RootState): PendingAsk[] => {
+  (state: ChatRootState): PendingAsk[] => {
     const all = state.pendingAsks?.byConversationId?.[conversationId];
     if (!all || all.length === 0) return EMPTY_ASKS;
     return activeAsksOf(all);
@@ -233,7 +233,7 @@ export const selectActivePendingAsksForConversation =
 /** Whether the conversation has any open ask. Primitive; O(1) after the first read per source array. */
 export const selectHasActivePendingAsk =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     selectActivePendingAsksForConversation(conversationId)(state).length > 0;
 
 /**

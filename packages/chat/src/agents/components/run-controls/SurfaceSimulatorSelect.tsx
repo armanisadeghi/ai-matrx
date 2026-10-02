@@ -20,7 +20,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Monitor, X } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { Label } from "@ai-matrx/design-system";
 import {
   Command,

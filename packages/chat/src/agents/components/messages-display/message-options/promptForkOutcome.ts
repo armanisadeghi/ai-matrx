@@ -25,11 +25,11 @@
  */
 
 import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../../../store/root-state";
 import { requestSurfaceNavigation } from "../../../redux/surfaces/request-surface-navigation.thunk";
 
 export interface PromptForkOutcomeArgs {
-  dispatch: AppDispatch;
+  dispatch: ChatDispatch;
   surfaceKey: string;
   newConversationId: string;
 }

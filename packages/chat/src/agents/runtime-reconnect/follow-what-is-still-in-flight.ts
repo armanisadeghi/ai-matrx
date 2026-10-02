@@ -16,12 +16,12 @@
  * refused "Conversation already exists … Pass is_new=false".
  */
 
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../store/root-state";
 import { surfaceColdPendingCalls } from "../redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { reconnectServerOperation } from "./reconnect-server-operation.thunk";
 
 export function followWhatIsStillInFlight(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   conversationId: string,
 ): void {
   void dispatch(surfaceColdPendingCalls(conversationId));

@@ -29,7 +29,7 @@
 // voice-agent feature folder.
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 
 export interface LaunchRealtimeSessionOpts {
   /** The `agx_agent.id` whose runtime config drives the realtime session. */
@@ -50,7 +50,7 @@ export interface LaunchRealtimeSessionResult {
 export const launchRealtimeSession = createAsyncThunk<
   LaunchRealtimeSessionResult,
   LaunchRealtimeSessionOpts,
-  { state: RootState }
+  { state: ChatRootState }
 >("agents/runtime/launchRealtimeSession", async (opts) => {
   const { agentId, surfaceName } = opts;
 

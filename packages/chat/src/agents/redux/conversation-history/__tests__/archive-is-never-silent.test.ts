@@ -23,7 +23,7 @@ import reducer, {
 } from "../slice";
 import { makeSelectConversationHistoryItems } from "../selectors";
 import type { ConversationListItem } from "../../conversation-list/conversation-list.types";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 
 const row = (id: string, status: string): ConversationListItem =>
   ({
@@ -43,7 +43,7 @@ const row = (id: string, status: string): ConversationListItem =>
 const visible = (state: ReturnType<typeof reducer>) =>
   makeSelectConversationHistoryItems("chat")({
     conversationHistory: state,
-  } as unknown as RootState).map((i) => i.conversationId);
+  } as unknown as ChatRootState).map((i) => i.conversationId);
 
 function seeded() {
   let s = reducer(undefined, { type: "@@init" });

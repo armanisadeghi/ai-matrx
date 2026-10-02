@@ -27,7 +27,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   initializeChatAgents,
   isChatListStale,
@@ -41,7 +41,7 @@ import {
 } from "../_legacy-stubs";
 import type { LLMParams } from "@host/lib/types/agent-chat";
 import { DEFAULT_AGENTS } from "../components/agent/local-agents";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ export function useAgentBootstrap() {
     // The thunk is idempotent — it skips the network call if the record is already ready.
     dispatch(fetchAgentExecutionMinimal(agentId)).then(() => {
       // Read the record from state after the thunk resolves
-      dispatch((_: unknown, getState: () => RootState) => {
+      dispatch((_: unknown, getState: () => ChatRootState) => {
         const state = getState();
         const record = selectAgentById(state, agentId);
 

@@ -58,7 +58,7 @@ import {
 } from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteTarget } from "../../../../../surfaces/types";
 import { buildContextWire, resolveContextRow } from "@ai-matrx/agents/context";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import activeRequestsReducer, {
   createRequest,
 } from "../../active-requests/active-requests.slice";
@@ -120,7 +120,7 @@ async function write(
     const getState = () =>
       ({
         conversations: { byConversationId: { c1: { agentId: "agent-1" } } },
-      }) as unknown as RootState;
+      }) as unknown as ChatRootState;
     await dispatchSurfaceWrite({
       conversationId: "c1",
       requestId: "r1",
@@ -217,7 +217,7 @@ it("the resumed request labels the re-read page values as coming AFTER this conv
       activeRequests = activeRequestsReducer(activeRequests, a as never);
     }
   }
-  const state = { activeRequests } as unknown as RootState;
+  const state = { activeRequests } as unknown as ChatRootState;
 
   // What resumeInstance sends: the note is one more row of the one door,
   // and its envelope reaches the wire through `buildContextWire`.

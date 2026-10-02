@@ -20,6 +20,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => "org-1",
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (_org: string, _user: string, ref: { key: string }) =>
     ref.key === "notes_recent_count" ? 10 : 50,

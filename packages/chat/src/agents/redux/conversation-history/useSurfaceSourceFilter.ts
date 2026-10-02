@@ -16,7 +16,7 @@
  */
 
 import { useMemo } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import {
   resolveSurfaceFilter,
   type ResolvedSourceFilter,

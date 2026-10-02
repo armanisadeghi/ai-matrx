@@ -4,7 +4,7 @@
  * preferred class and the choice is silently lost.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import reducer, {
   initInstanceOverrides,
   setOverrides,
@@ -25,7 +25,7 @@ function harness(baseSettings: Record<string, unknown>) {
     initInstanceOverrides({ conversationId: "c1", baseSettings }),
   );
   const getState = () =>
-    ({ instanceModelOverrides: slice }) as unknown as RootState;
+    ({ instanceModelOverrides: slice }) as unknown as ChatRootState;
   const dispatch = (action: unknown): unknown => {
     if (typeof action === "function") return action(dispatch, getState);
     slice = reducer(slice, action as Parameters<typeof reducer>[1]);

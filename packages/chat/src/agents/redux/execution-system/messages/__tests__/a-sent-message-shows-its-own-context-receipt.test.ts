@@ -18,7 +18,7 @@
 jest.mock("@host/utils/supabase/client", () => ({ supabase: {} }));
 
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import type { CxMessageRow } from "../../thunks/conversation-bundle";
 import { messageRowToRecord } from "../../thunks/conversation-bundle";
 import messagesReducer, {
@@ -52,7 +52,7 @@ function makeStore() {
   });
 }
 type Store = ReturnType<typeof makeStore>;
-const asRoot = (store: Store) => store.getState() as unknown as RootState;
+const asRoot = (store: Store) => store.getState() as unknown as ChatRootState;
 
 function sendTurn(store: Store, tempId: string, requestId: string, text: string, position: number) {
   store.dispatch(

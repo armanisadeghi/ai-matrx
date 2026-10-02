@@ -46,6 +46,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => () => ({ unwrap: () => Promise.resolve([]) }),
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 /** A READ catalogue that does not contain the drafted agent — a real personal
  *  agent standing at the system rung, not an unloaded list. */

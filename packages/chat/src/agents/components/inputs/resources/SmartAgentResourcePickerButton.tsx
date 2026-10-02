@@ -15,7 +15,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { useDialogContainer } from "@ai-matrx/design-system";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { selectAttachmentCapabilities } from "../../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import { PlusAttachMenu } from "../smart-input/PlusAttachMenu";

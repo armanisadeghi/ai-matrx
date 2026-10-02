@@ -18,7 +18,7 @@
 
 import React, { useMemo } from "react";
 import { Handshake } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import {
   extractFlatText,
   selectMessageById,

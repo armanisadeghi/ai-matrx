@@ -29,7 +29,7 @@ import { Label } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
 import { Separator } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {
   clearMemoryToggleRequest,
   requestMemoryToggle,

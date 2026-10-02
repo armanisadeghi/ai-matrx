@@ -10,7 +10,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type {
   BuilderAdvancedSettings,
   InstanceUIState,
@@ -24,55 +24,55 @@ import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 
 export const selectInstanceUIState =
   (conversationId: string) =>
-  (state: RootState): InstanceUIState | undefined =>
+  (state: ChatRootState): InstanceUIState | undefined =>
     state.instanceUIState.byConversationId[conversationId];
 
 // ── Display Mode ─────────────────────────────────────────────────────────────
 
 export const selectDisplayMode =
   (conversationId: string) =>
-  (state: RootState): ResultDisplayMode | undefined =>
+  (state: ChatRootState): ResultDisplayMode | undefined =>
     state.instanceUIState.byConversationId[conversationId]?.displayMode;
 
 export const selectIsModalFull =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.displayMode ===
     "modal-full";
 
 export const selectIsModalCompact =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.displayMode ===
     "modal-compact";
 
 export const selectIsChatBubble =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.displayMode ===
     "chat-bubble";
 
 export const selectIsInline =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.displayMode ===
     "inline";
 
 export const selectIsPanel =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.displayMode ===
     "panel";
 
 export const selectIsToast =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.displayMode ===
     "toast";
 
 export const selectIsAnyModal =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const displayMode =
       state.instanceUIState.byConversationId[conversationId]?.displayMode;
     return displayMode === "modal-full" || displayMode === "modal-compact";
@@ -82,25 +82,25 @@ export const selectIsAnyModal =
 
 export const selectAutoRun =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.autoRun ?? true;
 
 export const selectAllowChat =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.allowChat ?? true;
 
 // ── Pre-execution gate ───────────────────────────────────────────────────────
 
 export const selectUsePreExecutionInput =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.showPreExecutionGate ?? false;
 
 export const selectPreExecutionSatisfied =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.preExecutionSatisfied ?? false;
 
@@ -110,7 +110,7 @@ export const selectPreExecutionSatisfied =
  */
 export const selectNeedsPreExecutionInput =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const entry = state.instanceUIState.byConversationId[conversationId];
     if (!entry) return false;
     return entry.showPreExecutionGate && !entry.preExecutionSatisfied;
@@ -120,25 +120,25 @@ export const selectNeedsPreExecutionInput =
 
 export const selectShowVariablePanel =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.showVariablePanel ??
     false;
 
 export const selectShowDefinitionMessages =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.showDefinitionMessages ?? true;
 
 export const selectShowDefinitionMessageContent =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.showDefinitionMessageContent ?? false;
 
 export const selectHiddenMessageCount =
   (conversationId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     state.instanceUIState.byConversationId[conversationId]
       ?.hiddenMessageCount ?? 0;
 
@@ -146,7 +146,7 @@ export const selectHiddenMessageCount =
 
 export const selectWidgetHandleId =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.instanceUIState.byConversationId[conversationId]?.widgetHandleId ??
     null;
 
@@ -155,7 +155,7 @@ export const selectWidgetHandleId =
  * the id. Selectors are cheap enough that curried + direct coexist.
  */
 export const selectWidgetHandleIdFor = (
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | null =>
   state.instanceUIState.byConversationId[conversationId]?.widgetHandleId ??
@@ -171,7 +171,7 @@ export const selectWidgetHandleIdFor = (
  */
 export const selectShouldShowInput =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const entry = state.instanceUIState.byConversationId[conversationId];
     if (!entry) return false;
     if (entry.allowChat) return true;
@@ -191,7 +191,7 @@ export const selectShouldShowInput =
 
 export const selectInstanceAgentId =
   (conversationId: string) =>
-  (state: RootState): string | undefined => {
+  (state: ChatRootState): string | undefined => {
     const inst = state.conversations.byConversationId[conversationId];
     console.log(
       "[selectInstanceAgentId] conversationId:",
@@ -208,12 +208,12 @@ export const selectInstanceAgentId =
 
 export const selectInstanceShortcutId =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.conversations.byConversationId[conversationId]?.shortcutId ?? null;
 
 export const selectInstanceOrigin =
   (conversationId: string) =>
-  (state: RootState): string | undefined =>
+  (state: ChatRootState): string | undefined =>
     state.conversations.byConversationId[conversationId]?.origin;
 
 // ── Instance title selectors (three tiers) ───────────────────────────────────
@@ -233,7 +233,7 @@ export const selectInstanceOrigin =
 /** Shortcut label — only available when the instance was created from a shortcut. */
 export const selectInstanceShortcutLabel =
   (conversationId: string) =>
-  (state: RootState): string | undefined => {
+  (state: ChatRootState): string | undefined => {
     const shortcutId =
       state.conversations.byConversationId[conversationId]?.shortcutId;
     if (!shortcutId) return undefined;
@@ -247,7 +247,7 @@ export const selectInstanceShortcutLabel =
  */
 export const selectInstanceAgentName =
   (conversationId: string) =>
-  (state: RootState): string | undefined => {
+  (state: ChatRootState): string | undefined => {
     const agentId =
       state.conversations.byConversationId[conversationId]?.agentId;
     if (!agentId) return undefined;
@@ -262,7 +262,7 @@ export const selectInstanceAgentName =
  */
 export const selectInstanceAgentDescription =
   (conversationId: string) =>
-  (state: RootState): string | null | undefined => {
+  (state: ChatRootState): string | null | undefined => {
     const agentId =
       state.conversations.byConversationId[conversationId]?.agentId;
     if (!agentId) return undefined;
@@ -275,7 +275,7 @@ export const selectInstanceAgentDescription =
  */
 export const selectInstanceTitle =
   (conversationId: string) =>
-  (state: RootState): string | undefined => {
+  (state: ChatRootState): string | undefined => {
     const instance = state.conversations.byConversationId[conversationId];
     if (!instance) return undefined;
 
@@ -304,7 +304,7 @@ export const selectInstanceTitle =
  */
 export const selectInstanceDisplayTitle =
   (conversationId: string) =>
-  (state: RootState): string => {
+  (state: ChatRootState): string => {
     const conversationTitle =
       state.messages.byConversationId[conversationId]?.title;
     if (conversationTitle) return conversationTitle;
@@ -332,81 +332,81 @@ export const selectInstanceDisplayTitle =
 
 export const selectSubmitOnEnter =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.submitOnEnter ??
     true;
 
 export const selectIsCreator =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.isCreator ?? false;
 
 export const selectShowCreatorDebug =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.showCreatorDebug ??
     false;
 
 export const selectExpandedVariableId =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.instanceUIState.byConversationId[conversationId]
       ?.expandedVariableId ?? null;
 
 export const selectAutoClearConversation =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.autoClearConversation ?? false;
 
 export const selectShowAutoClearToggle =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.showAutoClearToggle ?? false;
 
 export const selectIsExpanded =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.isExpanded ?? true;
 
 export const selectModeState =
   (conversationId: string) =>
-  (state: RootState): Record<string, unknown> | undefined =>
+  (state: ChatRootState): Record<string, unknown> | undefined =>
     state.instanceUIState.byConversationId[conversationId]?.modeState;
 
 export const selectReuseConversationId =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.reuseConversationId ?? false;
 
 export const selectBuilderAdvancedSettings =
   (conversationId: string) =>
-  (state: RootState): BuilderAdvancedSettings | undefined =>
+  (state: ChatRootState): BuilderAdvancedSettings | undefined =>
     state.instanceUIState.byConversationId[conversationId]
       ?.builderAdvancedSettings;
 
 export const selectBuilderDebug =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.builderAdvancedSettings?.debug ?? false;
 
 export const selectBuilderStore =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.builderAdvancedSettings?.store ?? false;
 
 export const selectUseStructuredSystemInstruction =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.builderAdvancedSettings?.useStructuredSystemInstruction ?? false;
 
 export const selectStructuredInstruction =
-  (conversationId: string) => (state: RootState) =>
+  (conversationId: string) => (state: ChatRootState) =>
     state.instanceUIState.byConversationId[conversationId]
       ?.builderAdvancedSettings?.structuredInstruction;
 
@@ -414,13 +414,13 @@ export const selectStructuredInstruction =
 
 export const selectHideReasoning =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.hideReasoning ??
     false;
 
 export const selectHideToolResults =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.hideToolResults ??
     false;
 
@@ -439,12 +439,12 @@ export type ToolDisplayPreference = "default" | "verbose" | "minimal";
  */
 export const selectToolDisplayPreference =
   (_conversationId?: string) =>
-  (_state: RootState): ToolDisplayPreference =>
+  (_state: ChatRootState): ToolDisplayPreference =>
     "default";
 
 export const selectResponseDensity =
   (conversationId: string) =>
-  (state: RootState): "comfortable" | "compact" =>
+  (state: ChatRootState): "comfortable" | "compact" =>
     state.instanceUIState.byConversationId[conversationId]?.responseDensity ??
     "comfortable";
 
@@ -454,70 +454,70 @@ export const selectResponseDensity =
 
 export const selectInputPlaceholder =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.instanceUIState.byConversationId[conversationId]?.inputPlaceholder ??
     null;
 
 export const selectShowFreeformInput =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.showFreeformInput ??
     true;
 
 export const selectShowAttachments =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.showAttachments ??
     true;
 
 export const selectShowMicrophone =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.showMicrophone ??
     true;
 
 export const selectShowUserMessageOptions =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.showUserMessageOptions ?? true;
 
 export const selectShowAssistantMessageOptions =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]
       ?.showAssistantMessageOptions ?? true;
 
 export const selectBufferStream =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUIState.byConversationId[conversationId]?.bufferStream ??
     false;
 
 export const selectPreExecutionMessage =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.instanceUIState.byConversationId[conversationId]
       ?.preExecutionMessage ?? null;
 
 export const selectBypassGateSeconds =
   (conversationId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     state.instanceUIState.byConversationId[conversationId]?.bypassGateSeconds ??
     0;
 
 export const selectVariableInputStyle =
   (conversationId: string) =>
-  (state: RootState): VariablesPanelStyle =>
+  (state: ChatRootState): VariablesPanelStyle =>
     state.instanceUIState.byConversationId[conversationId]
       ?.variablesPanelStyle ?? "inline";
 
 // ── Global preference selectors ───────────────────────────────────────────────
 
-export const selectIsBlockMode = (state: RootState): boolean =>
+export const selectIsBlockMode = (state: ChatRootState): boolean =>
   state.instanceUIState.isBlockMode;
 
-export const selectIsSnapshot = (state: RootState): boolean =>
+export const selectIsSnapshot = (state: ChatRootState): boolean =>
   state.instanceUIState.isSnapshot;
 
 /**
@@ -526,7 +526,7 @@ export const selectIsSnapshot = (state: RootState): boolean =>
  */
 export const selectMemoryToggleRequest =
   (conversationId: string | null | undefined) =>
-  (state: RootState): boolean | undefined =>
+  (state: ChatRootState): boolean | undefined =>
     conversationId
       ? state.instanceUIState.memoryToggleByConversationId?.[conversationId]
       : undefined;
@@ -534,10 +534,10 @@ export const selectMemoryToggleRequest =
 /** The page context was turned off for this conversation (and what it was), or undefined when on. */
 export const selectPageContextOff =
   (conversationId: string | null | undefined) =>
-  (state: RootState): { previousSurfaceName: string | null } | undefined =>
+  (state: ChatRootState): { previousSurfaceName: string | null } | undefined =>
     conversationId ? state.instanceUIState.pageContextOffByConversationId?.[conversationId] : undefined;
 
-export const selectMemoryScope = (state: RootState): "thread" | "resource" =>
+export const selectMemoryScope = (state: ChatRootState): "thread" | "resource" =>
   state.instanceUIState.memoryScope;
 
 // ── Global registry selectors (keyed by display Mode) ────────────────────────
@@ -546,7 +546,7 @@ export const selectInstanceIdsByDisplayMode = (
   displayMode: ResultDisplayMode,
 ) =>
   createSelector(
-    (state: RootState) => state.instanceUIState.byConversationId,
+    (state: ChatRootState) => state.instanceUIState.byConversationId,
     (byConversationId): string[] | undefined => {
       const ids = Object.keys(byConversationId).filter(
         (id) => byConversationId[id]?.displayMode === displayMode,
@@ -556,7 +556,7 @@ export const selectInstanceIdsByDisplayMode = (
   );
 
 export const selectModalInstanceIds = createSelector(
-  (state: RootState) => state.instanceUIState.byConversationId,
+  (state: ChatRootState) => state.instanceUIState.byConversationId,
   (byConversationId): string[] | undefined => {
     const ids = Object.keys(byConversationId).filter((id) => {
       const displayMode = byConversationId[id]?.displayMode;
@@ -567,7 +567,7 @@ export const selectModalInstanceIds = createSelector(
 );
 
 export const selectPersistentInstanceIds = createSelector(
-  (state: RootState) => state.instanceUIState.byConversationId,
+  (state: ChatRootState) => state.instanceUIState.byConversationId,
   (byConversationId): string[] | undefined => {
     const ids = Object.keys(byConversationId).filter((id) => {
       const displayMode = byConversationId[id]?.displayMode;
@@ -580,7 +580,7 @@ export const selectPersistentInstanceIds = createSelector(
 // ── All conversation IDs in instance UI state ─────────────────────────────────
 
 export const selectAllUIStateConversationIds = createSelector(
-  (state: RootState) => state.instanceUIState.byConversationId,
+  (state: ChatRootState) => state.instanceUIState.byConversationId,
   (byConversationId): string[] => Object.keys(byConversationId),
 );
 
@@ -597,9 +597,9 @@ export interface InstanceAgentGroup {
 }
 
 export const selectUIStateInstancesByAgent = createSelector(
-  (state: RootState) => state.instanceUIState.byConversationId,
-  (state: RootState) => state.conversations.byConversationId,
-  (state: RootState) => state.agentDefinition.agents,
+  (state: ChatRootState) => state.instanceUIState.byConversationId,
+  (state: ChatRootState) => state.conversations.byConversationId,
+  (state: ChatRootState) => state.agentDefinition.agents,
   (byUIConversationId, byExecConversationId, agents): InstanceAgentGroup[] => {
     const groupMap = new Map<string | null, string[]>();
 
@@ -649,5 +649,5 @@ export const selectUIStateInstancesByAgent = createSelector(
 
 // ── Full instance UI state slice (for slice viewer) ───────────────────────────
 
-export const selectFullInstanceUIStateSlice = (state: RootState) =>
+export const selectFullInstanceUIStateSlice = (state: ChatRootState) =>
   state.instanceUIState;

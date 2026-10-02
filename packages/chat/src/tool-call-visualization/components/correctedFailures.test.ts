@@ -1,7 +1,7 @@
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
 import { selectCorrectedToolCallIds } from "../../agents/redux/execution-system/observability/observability.selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 
 import { withoutCorrectedFailures } from "./correctedFailures";
 
@@ -72,7 +72,7 @@ describe("selectCorrectedToolCallIds — a reloaded turn, one group per iteratio
   const stateWith = (rows: ReturnType<typeof row>[]) =>
     ({
       observability: { toolCalls: Object.fromEntries(rows.map((r) => [r.id, r])) },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
 
   it("marks both refused calls as corrected once a later ask went through", () => {
     const ids = selectCorrectedToolCallIds("conv-1")(

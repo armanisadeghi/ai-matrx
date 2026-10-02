@@ -2,7 +2,7 @@
 
 import { CircleSlash, Loader2 } from "lucide-react";
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 
 /**

@@ -14,12 +14,12 @@
  * Guard: `__tests__/an-answered-ask-follows-the-resumed-turn.test.ts` (also a
  * census — every door rendering `ActionRequestInlineAnswer` goes through here).
  */
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../store/root-state";
 import { loadConversation } from "../redux/execution-system/thunks/load-conversation.thunk";
 import { followWhatIsStillInFlight } from "./follow-what-is-still-in-flight";
 
 export async function rereadAndFollow(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   conversationId: string,
   /** Names the door in the warning when the re-read fails. */
   label: string,

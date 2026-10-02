@@ -58,6 +58,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: string) => selector === "all-sessions" ? sessions : "success",
   useAppStore: () => ({ getState: () => ({ transcriptStudio: { byId: {} } }) }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 // Require after the external boundaries are replaced; this is a hook contract
 // test, so the persistence service is the only real side effect we observe.

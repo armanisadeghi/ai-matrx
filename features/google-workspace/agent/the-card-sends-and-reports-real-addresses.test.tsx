@@ -57,6 +57,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     subscribe: () => () => undefined,
   }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 /** The body editor brings a whole AI assist tree with it; the card's subject is
  *  the addresses, so it stands in as a plain textarea. */
 jest.mock("@/components/official/ProTextarea", () => ({

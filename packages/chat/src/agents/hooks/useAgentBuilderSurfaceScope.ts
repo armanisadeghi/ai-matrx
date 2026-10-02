@@ -25,7 +25,7 @@
 
 import { useCallback } from "react";
 
-import { useAppStore } from "@host/lib/redux/hooks";
+import { useAppStore } from "../../store/hooks";
 import { createAgentBuilderScope } from "@host/features/surfaces/manifests/agent-builder.manifest";
 import { extractAgentSystemInstruction } from "../utils/agent-system-instruction";
 import type { SurfaceScopePayload } from "../../surfaces/types";

@@ -6,7 +6,7 @@
  * (conversation org, app-selection fallback) and passes through untouched.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 jest.mock("@ai-matrx/data/net", () => ({
   resilientFetch: jest.fn(),
@@ -34,7 +34,7 @@ const mockedFetch = resilientFetch as jest.MockedFunction<
 >;
 const mockedResolve = resolveBackendForConversation as jest.Mock;
 const getState = () =>
-  ({ apiConfig: { activeServer: "production" } }) as unknown as RootState;
+  ({ apiConfig: { activeServer: "production" } }) as unknown as ChatRootState;
 
 beforeEach(() => {
   mockedFetch.mockReset();

@@ -47,7 +47,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/ta
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
 import MarkdownStream from "@host/components/MarkdownStream";
 import { SystemItemsLine } from "./SystemItemsLine";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectAllAgents } from "../../redux/agent-definition/selectors";
 import { fetchAgentsList } from "../../redux/agent-definition/thunks";
 import { callApi } from "@host/lib/api/call-api";

@@ -5,10 +5,12 @@ const mockDispatch = jest.fn();
 let mockAddedMcpServers: string[] = [];
 let mockInfoEvents: { code: string; metadata: { attachments: { slug: string; state: string; tool_count: number }[] } }[] = [];
 let mockWarnings: { code: string; metadata: { slug: string; reason: string } }[] = [];
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../../store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
   useAppDispatch: () => mockDispatch,
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
 jest.mock("../../../../hooks/useMcpTools", () => ({
   useMcpCatalog: () => ({
     catalog: [], status: "succeeded", availabilityStatus: "succeeded",

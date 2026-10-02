@@ -16,7 +16,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
 import { operationFailed } from "@host/utils/errors";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { clearMessages } from "../messages/messages.slice";
 import { clearForConversation as clearObservabilityForConversation } from "../observability/observability.slice";
@@ -38,8 +38,8 @@ interface SoftDeleteResult {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   rejectValue: { message: string };
 }
 

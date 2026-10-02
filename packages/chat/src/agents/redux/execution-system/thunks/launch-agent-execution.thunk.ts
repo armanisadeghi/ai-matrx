@@ -20,7 +20,7 @@
 
 import { adminLaneOrganizationId } from "@host/lib/api/admin-lane";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type {
   ManagedAgentOptions,
   ResultDisplayMode,
@@ -109,8 +109,8 @@ import {
 
 
 /** A real session (a JWT) — not a fingerprint guest and not an unbooted store. */
-function hasSignedInSession(state: RootState): boolean {
-  return Boolean((state as Partial<RootState>).userAuth?.accessToken);
+function hasSignedInSession(state: ChatRootState): boolean {
+  return Boolean((state as Partial<ChatRootState>).userAuth?.accessToken);
 }
 
 export interface LaunchResult {
@@ -146,7 +146,7 @@ async function pollForCompletion(
 ): Promise<string> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const state = getState() as RootState;
+    const state = getState() as ChatRootState;
     const request = selectRequest(requestId)(state);
     if (
       request &&
@@ -176,7 +176,7 @@ async function pollForCompletion(
 export const launchAgentExecution = createAsyncThunk<
   LaunchResult,
   ManagedAgentOptions,
-  { state: RootState }
+  { state: ChatRootState }
 >("instances/launch", async (options, { dispatch, getState }) => {
   const {
     agentId: providedAgentId,
@@ -518,10 +518,10 @@ export const launchAgentExecution = createAsyncThunk<
     // The agent catalog is a signed-in door: a sessionless visitor (a guest
     // on a public app) would only collect a 401 for a name the page never
     // shows, so it is not asked (page-pass /p/[slug], 2026-09-27).
-    if (hasSignedInSession(getState() as RootState)) {
+    if (hasSignedInSession(getState() as ChatRootState)) {
       void dispatch(ensureAgentIdentity(agentId));
     }
-    const preState = getState() as RootState;
+    const preState = getState() as ChatRootState;
     const payload = selectAgentCustomExecutionPayload(preState, agentId);
     const debugProjectCreate = isProjectCreateFlow(sourceFeature, agentId);
 
@@ -555,7 +555,7 @@ export const launchAgentExecution = createAsyncThunk<
         throw err;
       }
 
-      const postState = getState() as RootState;
+      const postState = getState() as ChatRootState;
       const postPayload = selectAgentCustomExecutionPayload(postState, agentId);
       const agentError =
         postState.agentDefinition.agents?.[agentId]?._error ?? null;
@@ -598,7 +598,7 @@ export const launchAgentExecution = createAsyncThunk<
     // shortcut (stale id, inactive, no access) reaches the throw below.
     await dispatch(ensureShortcutLoaded(shortcutId)).unwrap();
 
-    const state = getState() as RootState;
+    const state = getState() as ChatRootState;
     const shortcut = getShortcutRecordFromState(state, shortcutId);
 
     if (!shortcut) {
@@ -737,7 +737,7 @@ export const launchAgentExecution = createAsyncThunk<
 
     // THE PER-LAUNCH MAPPING (`runtime.valueMappings`) — see resolvePerLaunchMappings.
     const shortcutAgentRecord = shortcut.agentId
-      ? (getState() as RootState).agentDefinition.agents?.[shortcut.agentId]
+      ? (getState() as ChatRootState).agentDefinition.agents?.[shortcut.agentId]
       : undefined;
     const {
       variables: shortcutPinnedVariables,
@@ -855,7 +855,7 @@ export const launchAgentExecution = createAsyncThunk<
     onConversationCreated?.(conversationId);
 
     if (isProjectCreateFlow(sourceFeature, agentId)) {
-      const postCreateState = getState() as RootState;
+      const postCreateState = getState() as ChatRootState;
       const instanceDefs =
         postCreateState.instanceVariableValues?.byConversationId[conversationId]
           ?.definitions ?? [];
@@ -873,7 +873,7 @@ export const launchAgentExecution = createAsyncThunk<
     }
 
     if (applicationScope) {
-      const agState = getState() as RootState;
+      const agState = getState() as ChatRootState;
       const agent = agState.agentDefinition.agents?.[agentId];
       if (agent) {
         // When the caller passed `surfaceName`, resolve the layered
@@ -993,7 +993,7 @@ export const launchAgentExecution = createAsyncThunk<
     }
 
     // THE PER-LAUNCH MAPPING (`runtime.valueMappings`) — see resolvePerLaunchMappings.
-    const launchAgentRecord = (getState() as RootState).agentDefinition
+    const launchAgentRecord = (getState() as ChatRootState).agentDefinition
       .agents?.[agentId];
     const {
       variables: pinnedVariables,
@@ -1171,7 +1171,7 @@ export const launchAgentExecution = createAsyncThunk<
     dispatch(patchConversation({ conversationId, surfaceName }));
   }
 
-  const seededUiState = (getState() as RootState).instanceUIState
+  const seededUiState = (getState() as ChatRootState).instanceUIState
     .byConversationId[conversationId];
   // The gate is the interface-only flag that can still DELETE a run: it
   // returns the launch early behind an overlay, and on a headless mode there

@@ -9,7 +9,7 @@
 
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import {
   enqueuePendingAsk,
   resolvePendingAsk,
@@ -20,7 +20,7 @@ import type { AskUserResponse } from "../tools/schemas";
 import type { ApprovalChange } from "../ui/approval-types";
 import { REMEMBER_SENTINEL } from "../ui/approval-types";
 
-type Dispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
+type Dispatch = ThunkDispatch<ChatRootState, unknown, UnknownAction>;
 
 export type ApprovalDecision =
   | { kind: "approved"; remember: boolean }

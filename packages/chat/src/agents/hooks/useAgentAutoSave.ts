@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import isEqual from "lodash/isEqual";
 import {
   selectAgentById,

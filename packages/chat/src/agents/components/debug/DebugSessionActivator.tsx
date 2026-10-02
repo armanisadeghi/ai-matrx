@@ -12,7 +12,7 @@
  */
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { setDebugSession } from "../../redux/execution-system/conversations/conversations.slice";
 
 export function DebugSessionActivator() {

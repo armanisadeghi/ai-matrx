@@ -35,7 +35,7 @@ import {
   fetchConversationPendingCallsStrict,
 } from "../fetch-pending-calls";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type { ThunkAction } from "redux-thunk";
 
 const CONVERSATION_A = "11111111-1111-4111-8111-111111111111";
@@ -43,11 +43,11 @@ const CONVERSATION_B = "22222222-2222-4222-8222-222222222222";
 
 /** A dispatch that just runs the thunk, which is all these thunks need. */
 function dispatch<Result>(
-  thunk: ThunkAction<Result, RootState, unknown, UnknownAction>,
+  thunk: ThunkAction<Result, ChatRootState, unknown, UnknownAction>,
 ): Result;
 function dispatch<Action extends UnknownAction>(action: Action): Action;
 function dispatch(
-  action: UnknownAction | ThunkAction<unknown, RootState, unknown, UnknownAction>,
+  action: UnknownAction | ThunkAction<unknown, ChatRootState, unknown, UnknownAction>,
 ): unknown {
   if (typeof action === "function") {
     return action(dispatch, getState, undefined);
@@ -55,7 +55,7 @@ function dispatch(
   return action;
 }
 
-function getState(): RootState {
+function getState(): ChatRootState {
   throw new Error("The pending-call thunks do not read state.");
 }
 

@@ -29,7 +29,7 @@ if (typeof g.TextEncoder !== "function") g.TextEncoder = NodeTextEncoder;
 if (typeof g.TextDecoder !== "function") g.TextDecoder = NodeTextDecoder;
 
 import { processStream } from "../process-stream";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 jest.useFakeTimers();
 
@@ -106,7 +106,7 @@ function wedgedResponse(
 }
 
 /** Minimal state satisfying every slice processStream reads on this path. */
-function fakeState(): RootState {
+function fakeState(): ChatRootState {
   return {
     activeRequests: { byRequestId: {} },
     conversations: { byConversationId: {} },
@@ -116,7 +116,7 @@ function fakeState(): RootState {
     instanceVariableValues: { byConversationId: {} },
     messages: { byConversationId: {} },
     observability: { toolCalls: {}, userRequests: {}, requests: {} },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 test("a terminal stream whose socket never closes settles within the grace window", async () => {

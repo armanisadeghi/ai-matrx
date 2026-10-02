@@ -110,6 +110,8 @@ jest.mock("@/lib/redux/hooks", () => ({
       ? "5dc930e9-bd65-44a1-8369-af773f6e1a5b"
       : "dddddddd-1111-2222-3333-444444444444",
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({
   EntityRef: ({ name }: { name: string }) => <span data-door="entity-ref">{name}</span>,

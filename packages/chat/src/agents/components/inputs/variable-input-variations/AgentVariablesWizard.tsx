@@ -13,7 +13,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronsRight, ChevronRight } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,

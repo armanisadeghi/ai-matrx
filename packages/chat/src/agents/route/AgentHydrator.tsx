@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../store/hooks";
 import { upsertAgent } from "../redux/agent-definition/slice";
 import type { AgentDefinition } from "../types/agent-definition.types";
 

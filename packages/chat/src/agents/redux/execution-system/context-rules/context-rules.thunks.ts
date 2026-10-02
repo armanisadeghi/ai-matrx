@@ -24,7 +24,7 @@
  *      hold-and-set gate a send uses: the person is asked, then it saves.
  */
 
-import type { AppDispatch, AppThunk, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatThunk, ChatRootState } from "../../../../store/root-state";
 import { fetchAgentExecutionMinimal } from "../../agent-definition/thunks";
 import {
   CONTEXT_RULES_FEATURE,
@@ -40,13 +40,13 @@ import { isOrganizationSelectionCancelled } from "@host/lib/organization/selecti
 const EMPTY_ROWS: SavedContextRuleRows = {};
 
 /** The person's saved rows, as loaded (or optimistically written). */
-export const selectSavedContextRuleRows = (state: RootState): SavedContextRuleRows =>
+export const selectSavedContextRuleRows = (state: ChatRootState): SavedContextRuleRows =>
   (state.surfaceUserState?.byFeature[CONTEXT_RULES_FEATURE]?.rows as
     | SavedContextRuleRows
     | undefined) ?? EMPTY_ROWS;
 
 /** True once the rows have been read from the database at least once. */
-export const selectContextRulesLoaded = (state: RootState): boolean => {
+export const selectContextRulesLoaded = (state: ChatRootState): boolean => {
   const f = state.surfaceUserState?.byFeature[CONTEXT_RULES_FEATURE];
   return f?.status === "ready" || (f?.fetchedAt ?? null) !== null;
 };
@@ -76,7 +76,7 @@ export function awaitContextRuleWrites(): Promise<void> {
  */
 let reloadInFlight: Promise<void> | null = null;
 
-export function reloadContextRules(): AppThunk<Promise<void>> {
+export function reloadContextRules(): ChatThunk<Promise<void>> {
   return (dispatch) => {
     // Many composers may ask at once (a tab regaining focus): one read serves all.
     if (reloadInFlight) return reloadInFlight;
@@ -102,7 +102,7 @@ export function reloadContextRules(): AppThunk<Promise<void>> {
  * on its way, and the rows are what the database holds NOW (another tab or
  * device may have changed them since this screen loaded).
  */
-export function ensureContextRulesReady(conversationId: string): AppThunk<Promise<void>> {
+export function ensureContextRulesReady(conversationId: string): ChatThunk<Promise<void>> {
   return async (dispatch) => {
     await awaitContextRuleWrites();
     await Promise.all([
@@ -118,12 +118,12 @@ export function ensureContextRulesReady(conversationId: string): AppThunk<Promis
  * read is logged and the request goes out with the layer unknown; the
  * server applies it regardless and the receipt reports any difference.
  */
-export function ensureAgentContextLayer(conversationId: string): AppThunk<Promise<void>> {
+export function ensureAgentContextLayer(conversationId: string): ChatThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const agentId = getState().conversations?.byConversationId[conversationId]?.agentId;
     if (!agentId) return;
     try {
-      await (dispatch as AppDispatch)(fetchAgentExecutionMinimal(agentId)).unwrap();
+      await (dispatch as ChatDispatch)(fetchAgentExecutionMinimal(agentId)).unwrap();
     } catch (error) {
       console.error("[context-rules] could not load the agent's context policies", error);
     }
@@ -162,18 +162,18 @@ export function saveContextRule(args: {
   surfaceKey: string;
   key: string;
   rule: Partial<Record<keyof SavedContextRule, SavedContextRule[keyof SavedContextRule] | undefined>> | null;
-}): AppThunk<Promise<void>> {
+}): ChatThunk<Promise<void>> {
   return (dispatch, getState) => applyRowPatch(dispatch, getState, args.surfaceKey, rulePatch(args.key, args.rule));
 }
 
 /** Reset every rule on one surface row (the chip's "reset all"). */
-export function resetContextRules(surfaceKey: string): AppThunk<Promise<void>> {
+export function resetContextRules(surfaceKey: string): ChatThunk<Promise<void>> {
   return (dispatch, getState) => applyRowPatch(dispatch, getState, surfaceKey, () => ({}));
 }
 
 async function applyRowPatch(
-  dispatch: Parameters<AppThunk>[0],
-  getState: () => RootState,
+  dispatch: Parameters<ChatThunk>[0],
+  getState: () => ChatRootState,
   surfaceKey: string,
   patch: RowPatch,
 ): Promise<void> {

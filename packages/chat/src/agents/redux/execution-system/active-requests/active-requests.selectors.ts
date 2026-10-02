@@ -20,7 +20,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { blockMediaFileId } from "../utils/block-media-identity";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
 import { decisionAnswersText } from "@ai-matrx/agents/presentation/decision-answers";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type {
   ActiveRequest,
   ExtractedJsonSnapshot,
@@ -101,7 +101,7 @@ const EMPTY_ACTIVE_REQUESTS: ActiveRequest[] = [];
  */
 export const selectRequest =
   (requestId: string) =>
-  (state: RootState): ActiveRequest | undefined =>
+  (state: ChatRootState): ActiveRequest | undefined =>
     state.activeRequests.byRequestId[requestId];
 
 // =============================================================================
@@ -110,8 +110,8 @@ export const selectRequest =
 
 export const selectRequestsForInstance = (conversationId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests.byRequestId,
+    (state: ChatRootState) => state.activeRequests.byConversationId[conversationId],
+    (state: ChatRootState) => state.activeRequests.byRequestId,
     (ids, byRequestId): ActiveRequest[] => {
       if (!ids || ids.length === 0) return EMPTY_ACTIVE_REQUESTS;
       return ids
@@ -123,33 +123,33 @@ export const selectRequestsForInstance = (conversationId: string) =>
 /** Request id list for a conversation — stable empty ref when none exist yet. */
 export const selectConversationRequestIds =
   (conversationId: string) =>
-  (state: RootState): string[] =>
+  (state: ChatRootState): string[] =>
     state.activeRequests.byConversationId[conversationId] ?? EMPTY_REQUEST_IDS;
 
 export const selectConversationRequestCount =
   (conversationId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     selectConversationRequestIds(conversationId)(state).length;
 
 export const selectPrimaryRequest =
   (conversationId: string) =>
-  (state: RootState): ActiveRequest | undefined => {
+  (state: ChatRootState): ActiveRequest | undefined => {
     const ids = state.activeRequests.byConversationId[conversationId];
     if (!ids || ids.length === 0) return undefined;
     return state.activeRequests.byRequestId[ids[ids.length - 1]];
   };
 
-export const selectRequestStatus = (requestId: string) => (state: RootState) =>
+export const selectRequestStatus = (requestId: string) => (state: ChatRootState) =>
   state.activeRequests.byRequestId[requestId]?.status;
 
 export const selectProviderRetry =
   (requestId: string) =>
-  (state: RootState): ProviderRetryPayload | null =>
+  (state: ChatRootState): ProviderRetryPayload | null =>
     state.activeRequests.byRequestId[requestId]?.providerRetry ?? null;
 
 export const selectProviderRetryHistory =
   (requestId: string) =>
-  (state: RootState): ProviderRetryPayload[] | undefined =>
+  (state: ChatRootState): ProviderRetryPayload[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.providerRetryHistory;
 
 /**
@@ -291,11 +291,11 @@ export function deriveAnswerDocumentText(
  */
 export const selectAnswerText = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.editedText,
     (renderBlockOrder, renderBlocks, editedText): string =>
       deriveAnswerText({ renderBlockOrder, renderBlocks, editedText }),
@@ -320,11 +320,11 @@ export const selectAnswerDocumentText = (requestId: string) =>
  */
 export const selectAccumulatedText = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.editedText,
     (order, blocks, editedText): string => {
       if (editedText !== null && editedText !== undefined) return editedText;
@@ -401,7 +401,7 @@ export function deriveDecisionResultText(
 
 export const selectResultText = (requestId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId],
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId],
     (request): string => deriveResultText(request),
   );
 
@@ -414,14 +414,14 @@ export const selectSpokenText = selectAnswerText;
 
 export const selectRequestConversationId =
   (requestId: string) =>
-  (state: RootState): string | null => {
+  (state: ChatRootState): string | null => {
     const r = state.activeRequests.byRequestId[requestId];
     if (!r) return null;
     return r.conversationId;
   };
 
 export const selectHasActiveRequests = createSelector(
-  (state: RootState) => state.activeRequests.byRequestId,
+  (state: ChatRootState) => state.activeRequests.byRequestId,
   (byRequestId): boolean =>
     Object.values(byRequestId).some(
       (r) =>
@@ -439,13 +439,13 @@ export const selectHasActiveRequests = createSelector(
 /** The most recent phase for a request. Primitive — safe for useAppSelector. */
 export const selectCurrentPhase =
   (requestId: string) =>
-  (state: RootState): Phase | null =>
+  (state: ChatRootState): Phase | null =>
     state.activeRequests.byRequestId[requestId]?.currentPhase ?? null;
 
 /** Full phase history — existing state reference, so no memoization is needed. */
 export const selectPhaseHistory =
   (requestId: string) =>
-  (state: RootState): Phase[] | undefined =>
+  (state: ChatRootState): Phase[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.phaseHistory;
 
 // =============================================================================
@@ -455,13 +455,13 @@ export const selectPhaseHistory =
 /** All currently active (in-flight) operations. */
 export const selectActiveOperations =
   (requestId: string) =>
-  (state: RootState): Record<string, OperationEntry> | undefined =>
+  (state: ChatRootState): Record<string, OperationEntry> | undefined =>
     state.activeRequests.byRequestId[requestId]?.activeOperations;
 
 /** All completed operations. */
 export const selectCompletedOperations =
   (requestId: string) =>
-  (state: RootState): Record<string, CompletedOperationEntry> | undefined =>
+  (state: ChatRootState): Record<string, CompletedOperationEntry> | undefined =>
     state.activeRequests.byRequestId[requestId]?.completedOperations;
 
 /**
@@ -470,7 +470,7 @@ export const selectCompletedOperations =
  */
 export const selectHasActiveOperations =
   (requestId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const ops = state.activeRequests.byRequestId[requestId]?.activeOperations;
     if (!ops) return false;
     return Object.keys(ops).length > 0;
@@ -482,7 +482,7 @@ export const selectCompletedOperationsByType = (
   operation: Operation,
 ) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
     (ops): CompletedOperationEntry[] | undefined => {
       if (!ops) return undefined;
@@ -493,7 +493,7 @@ export const selectCompletedOperationsByType = (
 /** The user_request completion entry (the primary one). */
 export const selectUserRequestCompletion =
   (requestId: string) =>
-  (state: RootState): CompletedOperationEntry | undefined => {
+  (state: ChatRootState): CompletedOperationEntry | undefined => {
     const ops =
       state.activeRequests.byRequestId[requestId]?.completedOperations;
     if (!ops) return undefined;
@@ -507,21 +507,21 @@ export const selectUserRequestCompletion =
 /** A single render block by blockId. Primitive-ish — object ref stable until upserted. */
 export const selectRenderBlock =
   (requestId: string, blockId: string) =>
-  (state: RootState): RenderBlockPayload | undefined =>
+  (state: ChatRootState): RenderBlockPayload | undefined =>
     state.activeRequests.byRequestId[requestId]?.renderBlocks[blockId];
 
 /** Ordered blockIds for rendering. Stable array ref until a new block arrives. */
 export const selectRenderBlockOrder =
   (requestId: string) =>
-  (state: RootState): string[] | undefined =>
+  (state: ChatRootState): string[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.renderBlockOrder;
 
 /** All render blocks in emission order. Memoized. */
 export const selectAllRenderBlocks = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (order, blocks): RenderBlockPayload[] | undefined => {
       if (!order || !blocks) return undefined;
@@ -534,9 +534,9 @@ export const selectAllRenderBlocks = (requestId: string) =>
 /** Content blocks filtered by type (e.g., "code", "flashcards"). Memoized. */
 export const selectRenderBlocksByType = (requestId: string, type: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (order, blocks): RenderBlockPayload[] | undefined => {
       if (!order || !blocks) return undefined;
@@ -549,9 +549,9 @@ export const selectRenderBlocksByType = (requestId: string, type: string) =>
 /** Blocks still streaming. Memoized. */
 export const selectStreamingBlocks = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (order, blocks): RenderBlockPayload[] | undefined => {
       if (!order || !blocks) return undefined;
@@ -566,9 +566,9 @@ export const selectStreamingBlocks = (requestId: string) =>
 /** Blocks that are complete. Memoized. */
 export const selectCompletedBlocks = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (order, blocks): RenderBlockPayload[] | undefined => {
       if (!order || !blocks) return undefined;
@@ -583,7 +583,7 @@ export const selectCompletedBlocks = (requestId: string) =>
 /** How many content blocks exist for this request. Primitive. */
 export const selectRenderBlockCount =
   (requestId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     state.activeRequests.byRequestId[requestId]?.renderBlockOrder.length ?? 0;
 
 /**
@@ -604,7 +604,7 @@ export const selectRenderBlockCount =
  */
 const answerBlockCountByRequestId = new Map<
   string,
-  (state: RootState) => number
+  (state: ChatRootState) => number
 >();
 
 /**
@@ -615,14 +615,14 @@ const answerBlockCountByRequestId = new Map<
  */
 export const selectAnswerBlockCount = (
   requestId: string,
-): ((state: RootState) => number) => {
+): ((state: ChatRootState) => number) => {
   const cached = answerBlockCountByRequestId.get(requestId);
   if (cached) return cached;
   const selector = createSelector(
     [
-      (state: RootState) =>
+      (state: ChatRootState) =>
         state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-      (state: RootState) =>
+      (state: ChatRootState) =>
         state.activeRequests.byRequestId[requestId]?.renderBlocks,
     ],
     (order, blocks): number => {
@@ -662,9 +662,9 @@ export const selectAnswerBlockCount = (
  */
 export const selectKindEnvelope = (requestId: string, kind?: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (order, blocks): CanonicalBlockIR | null => {
       if (!order || !blocks) return null;
@@ -693,7 +693,7 @@ export const selectKindEnvelope = (requestId: string, kind?: string) =>
  */
 export const selectLiveCitations =
   (requestId: string) =>
-  (state: RootState): LiveCitationEntry[] | undefined =>
+  (state: ChatRootState): LiveCitationEntry[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.liveCitations;
 
 /**
@@ -707,7 +707,7 @@ export const selectLiveCitations =
  */
 export const selectLiveCitationIndex = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.liveCitations,
     (entries): LiveCitationIndex =>
       entries && entries.length > 0
@@ -744,11 +744,11 @@ export const selectLiveCitationMarkersByBlockId = (requestId: string) =>
  */
 export const selectAccumulatedTextWithCitationMarkers = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.editedText,
     selectLiveCitationIndex(requestId),
     (order, blocks, editedText, citationIndex): string => {
@@ -775,7 +775,7 @@ export const selectAccumulatedTextWithCitationMarkers = (requestId: string) =>
 /** A single tool lifecycle entry by callId. */
 export const selectToolLifecycle =
   (requestId: string, callId: string) =>
-  (state: RootState): ToolLifecycleEntry | undefined =>
+  (state: ChatRootState): ToolLifecycleEntry | undefined =>
     state.activeRequests.byRequestId[requestId]?.toolLifecycle[callId];
 
 /**
@@ -784,13 +784,13 @@ export const selectToolLifecycle =
  */
 export const selectToolLifecycleMap =
   (requestId: string) =>
-  (state: RootState): Record<string, ToolLifecycleEntry> | undefined =>
+  (state: ChatRootState): Record<string, ToolLifecycleEntry> | undefined =>
     state.activeRequests.byRequestId[requestId]?.toolLifecycle;
 
 /** All tool lifecycle entries. Memoized. */
 export const selectAllToolLifecycles = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.toolLifecycle,
     (lifecycle): ToolLifecycleEntry[] | undefined =>
       lifecycle ? Object.values(lifecycle) : undefined,
@@ -807,8 +807,8 @@ export const selectAllToolLifecycles = (requestId: string) =>
  */
 export const selectLiveToolLifecycleByConversation = (conversationId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests.byRequestId,
+    (state: ChatRootState) => state.activeRequests.byConversationId[conversationId],
+    (state: ChatRootState) => state.activeRequests.byRequestId,
     (requestIds, byRequestId): Map<string, ToolLifecycleEntry> | null => {
       if (!requestIds || requestIds.length === 0) return null;
       const map = new Map<string, ToolLifecycleEntry>();
@@ -827,7 +827,7 @@ export const selectLiveToolLifecycleByConversation = (conversationId: string) =>
 /** Tools that are actively running (started, progress, step). Memoized. */
 export const selectActiveTools = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.toolLifecycle,
     (lifecycle): ToolLifecycleEntry[] | undefined => {
       if (!lifecycle) return undefined;
@@ -843,7 +843,7 @@ export const selectActiveTools = (requestId: string) =>
 /** Tools that completed successfully. Memoized. */
 export const selectCompletedTools = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.toolLifecycle,
     (lifecycle): ToolLifecycleEntry[] | undefined => {
       if (!lifecycle) return undefined;
@@ -854,7 +854,7 @@ export const selectCompletedTools = (requestId: string) =>
 /** Tools that errored. Memoized. */
 export const selectToolErrors = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.toolLifecycle,
     (lifecycle): ToolLifecycleEntry[] | undefined => {
       if (!lifecycle) return undefined;
@@ -868,7 +868,7 @@ export const selectToolErrors = (requestId: string) =>
  */
 export const selectActiveToolCount = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.toolLifecycle,
     (lifecycle): number => {
       if (!lifecycle) return 0;
@@ -892,7 +892,7 @@ export const selectActiveToolCount = (requestId: string) =>
  */
 export const selectToolCallIdsInOrder = (requestId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId]?.timeline,
     (timeline): string[] => {
       if (!timeline) return EMPTY_REQUEST_IDS;
       const seen = new Set<string>();
@@ -1174,20 +1174,20 @@ const MEDIA_BLOCK_TYPES = new Set([
 
 export const selectUnifiedSlots = (requestId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
-    (state: RootState) =>
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId]?.timeline,
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.isTextStreaming,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.isReasoningStreaming,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.reasoningRunChunkStart,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.activeOperations,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
     (
       timeline,
@@ -1582,7 +1582,7 @@ export const selectUnifiedSlotRange = (
  */
 export const selectReasoningRunText =
   (requestId: string, chunkStartIndex: number, chunkEndIndex?: number) =>
-  (state: RootState): string => {
+  (state: ChatRootState): string => {
     const chunks = state.activeRequests.byRequestId[requestId]?.reasoningChunks;
     if (!chunks || chunks.length === 0) return "";
     const end = Math.min(chunkEndIndex ?? chunks.length, chunks.length);
@@ -1631,7 +1631,7 @@ export const selectIsLatestToolActivity = (requestId: string, callId: string) =>
 /** Pending tool calls that haven't been resolved yet. Memoized. */
 export const selectUnresolvedToolCalls = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.pendingToolCalls,
     (pendingToolCalls) => {
       if (!pendingToolCalls) return undefined;
@@ -1646,7 +1646,7 @@ export const selectUnresolvedToolCalls = (requestId: string) =>
 /** The completion payload for a request. null until completion event fires. */
 export const selectCompletion =
   (requestId: string) =>
-  (state: RootState): CompletionPayload | null =>
+  (state: ChatRootState): CompletionPayload | null =>
     state.activeRequests.byRequestId[requestId]?.completion ?? null;
 
 // =============================================================================
@@ -1687,7 +1687,7 @@ function getAllTypedResults<T extends Operation>(
 /** The user_request result with full usage, timing, and tool call stats. */
 export const selectUserRequestResult =
   (requestId: string) =>
-  (state: RootState): UserRequestResult | undefined =>
+  (state: ChatRootState): UserRequestResult | undefined =>
     getTypedResult(
       state.activeRequests.byRequestId[requestId]?.completedOperations,
       "user_request",
@@ -1696,7 +1696,7 @@ export const selectUserRequestResult =
 /** All LLM request results (one per iteration). */
 export const selectLlmRequestResults = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
     (ops): LlmRequestResult[] | undefined =>
       getAllTypedResults(ops, "llm_request"),
@@ -1705,7 +1705,7 @@ export const selectLlmRequestResults = (requestId: string) =>
 /** All tool execution results. */
 export const selectToolExecutionResults = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
     (ops): ToolExecutionResult[] | undefined =>
       getAllTypedResults(ops, "tool_execution"),
@@ -1714,7 +1714,7 @@ export const selectToolExecutionResults = (requestId: string) =>
 /** All sub-agent results. */
 export const selectSubAgentResults = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
     (ops): SubAgentResult[] | undefined => getAllTypedResults(ops, "sub_agent"),
   );
@@ -1743,12 +1743,12 @@ export interface AgentCallChildStream {
  */
 export const selectAgentCallTrace = (requestId: string, callId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
-    (state: RootState) =>
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId]?.timeline,
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.activeOperations,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.toolLifecycle,
     (
       timeline,
@@ -1767,13 +1767,13 @@ export const selectAgentCallTrace = (requestId: string, callId: string) =>
 
 export const selectAgentCallChildStream = (requestId: string, callId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.activeOperations,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (active, completed, order, blocks): AgentCallChildStream | null => {
       const findOp = (
@@ -1837,13 +1837,13 @@ export const selectAgentCallChildStream = (requestId: string, callId: string) =>
  */
 export const selectAgentCallChildSlots = (requestId: string, callId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.activeOperations,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (active, completed, order, blocks): UnifiedSlot[] => {
       const findOp = (
@@ -1893,14 +1893,14 @@ export const selectAgentCallChildSlots = (requestId: string, callId: string) =>
  */
 const workflowNodeStreamsSelectorCache = new Map<
   string,
-  (state: RootState) => WorkflowNodeStreamEntry[]
+  (state: ChatRootState) => WorkflowNodeStreamEntry[]
 >();
 
 export const selectWorkflowNodeStreams = (requestId: string) => {
   const cached = workflowNodeStreamsSelectorCache.get(requestId);
   if (cached) return cached;
   const selector = createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.nodeStreams,
     (streams): WorkflowNodeStreamEntry[] => {
       if (!streams) return [];
@@ -1921,13 +1921,13 @@ export const selectWorkflowNodeStreams = (requestId: string) => {
 /** One node's live stream entry (undefined until its first frame lands). */
 export const selectWorkflowNodeStream =
   (requestId: string, nodeId: string) =>
-  (state: RootState): WorkflowNodeStreamEntry | undefined =>
+  (state: ChatRootState): WorkflowNodeStreamEntry | undefined =>
     state.activeRequests.byRequestId[requestId]?.nodeStreams[nodeId];
 
 /** All persistence results. */
 export const selectPersistenceResults = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
     (ops): PersistenceResult[] | undefined =>
       getAllTypedResults(ops, "persistence"),
@@ -1973,7 +1973,7 @@ export const selectTypedDataPayloads = <T extends DataTypeName>(
   dataType: T,
 ) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.dataPayloads,
     (payloads): DataTypeMap[T][] | undefined => {
       if (!payloads) return undefined;
@@ -1984,7 +1984,7 @@ export const selectTypedDataPayloads = <T extends DataTypeName>(
 /** First data payload of the given type, or undefined. */
 export const selectFirstTypedDataPayload =
   <T extends DataTypeName>(requestId: string, dataType: T) =>
-  (state: RootState): DataTypeMap[T] | undefined => {
+  (state: ChatRootState): DataTypeMap[T] | undefined => {
     const payloads = state.activeRequests.byRequestId[requestId]?.dataPayloads;
     if (!payloads) return undefined;
     return payloads.find((p) => p.type === dataType) as
@@ -1994,13 +1994,13 @@ export const selectFirstTypedDataPayload =
 /** All data payloads as the existing typed state reference. */
 export const selectAllTypedDataPayloads =
   (requestId: string) =>
-  (state: RootState): (TypedDataPayload | UntypedDataPayload)[] | undefined =>
+  (state: ChatRootState): (TypedDataPayload | UntypedDataPayload)[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.dataPayloads;
 
 /** Distinct data types received for this request. Memoized. */
 export const selectReceivedDataTypes = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.dataPayloads,
     (payloads): string[] | undefined => {
       if (!payloads) return undefined;
@@ -2022,19 +2022,19 @@ export const selectReceivedDataTypes = (requestId: string) =>
  */
 export const selectAccumulatedReasoning =
   (requestId: string) =>
-  (state: RootState): string =>
+  (state: ChatRootState): string =>
     state.activeRequests.byRequestId[requestId]?.accumulatedReasoning ?? "";
 
 /** Whether reasoning tokens are currently streaming. Primitive. */
 export const selectIsReasoningStreaming =
   (requestId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.activeRequests.byRequestId[requestId]?.isReasoningStreaming ?? false;
 
 /** Whether any reasoning content exists for this request. Primitive. */
 export const selectHasReasoning =
   (requestId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     (state.activeRequests.byRequestId[requestId]?.reasoningChunks.length ?? 0) >
     0;
 
@@ -2045,19 +2045,19 @@ export const selectHasReasoning =
 /** All structured warnings for a request. Stable ref — only grows. */
 export const selectWarnings =
   (requestId: string) =>
-  (state: RootState): WarningPayload[] | undefined =>
+  (state: ChatRootState): WarningPayload[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.warnings;
 
 /** Warning count. Primitive. */
 export const selectWarningCount =
   (requestId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     state.activeRequests.byRequestId[requestId]?.warnings.length ?? 0;
 
 /** High-severity warnings only. Memoized. */
 export const selectHighWarnings = (requestId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.warnings,
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId]?.warnings,
     (warnings): WarningPayload[] | undefined => {
       if (!warnings) return undefined;
       return warnings.filter((w) => w.level === "high");
@@ -2088,7 +2088,7 @@ const PROMOTED_WARNING_CODES: ReadonlySet<string> = new Set([
  */
 export const selectVisibleWarnings = (requestId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.warnings,
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId]?.warnings,
     (warnings): WarningPayload[] | undefined => {
       if (!warnings) return undefined;
       return warnings.filter(
@@ -2104,7 +2104,7 @@ export const selectVisibleWarnings = (requestId: string) =>
 /** All info events for a request. Stable ref — only grows. */
 export const selectInfoEvents =
   (requestId: string) =>
-  (state: RootState): InfoPayload[] | undefined =>
+  (state: ChatRootState): InfoPayload[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.infoEvents;
 
 /**
@@ -2115,7 +2115,7 @@ export const selectInfoEvents =
  */
 const awaitingPersonByRequestId = new Map<
   string,
-  (state: RootState) => boolean
+  (state: ChatRootState) => boolean
 >();
 
 /** Memoized on the request's info events + tool lifecycle, one cached
@@ -2123,14 +2123,14 @@ const awaitingPersonByRequestId = new Map<
  * mounted message — the scan must only happen when those inputs change). */
 export const selectRequestAwaitingPerson = (
   requestId: string,
-): ((state: RootState) => boolean) => {
+): ((state: ChatRootState) => boolean) => {
   const cached = awaitingPersonByRequestId.get(requestId);
   if (cached) return cached;
   const selector = createSelector(
     [
-      (state: RootState) =>
+      (state: ChatRootState) =>
         state.activeRequests.byRequestId[requestId]?.infoEvents,
-      (state: RootState) =>
+      (state: ChatRootState) =>
         state.activeRequests.byRequestId[requestId]?.toolLifecycle,
     ],
     (infoEvents, toolLifecycle): boolean => {
@@ -2168,7 +2168,7 @@ export const selectRequestAwaitingPerson = (
  */
 export const selectSuspendedCallIds =
   (requestId: string) =>
-  (state: RootState): readonly unknown[] | undefined => {
+  (state: ChatRootState): readonly unknown[] | undefined => {
     const infos = state.activeRequests.byRequestId[requestId]?.infoEvents;
     if (!infos) return undefined;
     for (const info of infos) {
@@ -2186,19 +2186,19 @@ export const selectSuspendedCallIds =
 /** All reservations for a request. Stable ref. */
 export const selectReservations =
   (requestId: string) =>
-  (state: RootState): Record<string, ReservationRecord> | undefined =>
+  (state: ChatRootState): Record<string, ReservationRecord> | undefined =>
     state.activeRequests.byRequestId[requestId]?.reservations;
 
 /** A single reservation by record_id. */
 export const selectReservation =
   (requestId: string, recordId: string) =>
-  (state: RootState): ReservationRecord | undefined =>
+  (state: ChatRootState): ReservationRecord | undefined =>
     state.activeRequests.byRequestId[requestId]?.reservations[recordId];
 
 /** Reservations filtered by table name. Memoized. */
 export const selectReservationsByTable = (requestId: string, table: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.reservations,
     (reservations): ReservationRecord[] | undefined => {
       if (!reservations) return undefined;
@@ -2209,7 +2209,7 @@ export const selectReservationsByTable = (requestId: string, table: string) =>
 /** Reservations still in pending status. Memoized. */
 export const selectPendingReservations = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.reservations,
     (reservations): ReservationRecord[] | undefined => {
       if (!reservations) return undefined;
@@ -2220,7 +2220,7 @@ export const selectPendingReservations = (requestId: string) =>
 /** Reservations that have failed. Memoized. */
 export const selectFailedReservations = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.reservations,
     (reservations): ReservationRecord[] | undefined => {
       if (!reservations) return undefined;
@@ -2231,7 +2231,7 @@ export const selectFailedReservations = (requestId: string) =>
 /** Total count of reservations. Primitive. */
 export const selectReservationCount =
   (requestId: string) =>
-  (state: RootState): number => {
+  (state: ChatRootState): number => {
     const reservations =
       state.activeRequests.byRequestId[requestId]?.reservations;
     if (!reservations) return 0;
@@ -2241,7 +2241,7 @@ export const selectReservationCount =
 /** The conversation_id from the conversation reservation, if available. */
 export const selectReservedConversationId =
   (requestId: string) =>
-  (state: RootState): string | null => {
+  (state: ChatRootState): string | null => {
     const reservations =
       state.activeRequests.byRequestId[requestId]?.reservations;
     if (!reservations) return null;
@@ -2262,7 +2262,7 @@ export const selectReservedConversationId =
  */
 export const selectErrorIsFatal =
   (requestId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.activeRequests.byRequestId[requestId]?.status === "error";
 
 /**
@@ -2272,19 +2272,19 @@ export const selectErrorIsFatal =
  */
 export const selectRequestError =
   (requestId: string) =>
-  (state: RootState): ErrorPayload | undefined =>
+  (state: ChatRootState): ErrorPayload | undefined =>
     state.activeRequests.byRequestId[requestId]?.error ?? undefined;
 
 /** The generation job this run is, or null for a text run. */
 export const selectRequestGenerationJob =
   (requestId: string) =>
-  (state: RootState): RequestGenerationJob | null =>
+  (state: ChatRootState): RequestGenerationJob | null =>
     state.activeRequests.byRequestId[requestId]?.generationJob ?? null;
 
 /** When the run was submitted (ISO), for the job's elapsed clock. */
 export const selectRequestStartedAt =
   (requestId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.activeRequests.byRequestId[requestId]?.startedAt ?? null;
 
 // =============================================================================
@@ -2293,8 +2293,8 @@ export const selectRequestStartedAt =
 
 export const selectConversationTree = (conversationId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests.byRequestId,
+    (state: ChatRootState) => state.activeRequests.byConversationId[conversationId],
+    (state: ChatRootState) => state.activeRequests.byRequestId,
     (
       ids,
       byRequestId,
@@ -2330,25 +2330,25 @@ export const selectConversationTree = (conversationId: string) =>
 /** The full timeline for a request. Stable ref — only grows. */
 export const selectTimeline =
   (requestId: string) =>
-  (state: RootState): TimelineEntry[] | undefined =>
+  (state: ChatRootState): TimelineEntry[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.timeline;
 
 /** The raw event log — every event before processing. Stable ref — only grows. */
 export const selectRawEvents =
   (requestId: string) =>
-  (state: RootState): RawStreamEvent[] | undefined =>
+  (state: ChatRootState): RawStreamEvent[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.rawEvents;
 
 /** Timeline length. Primitive — safe for useAppSelector. */
 export const selectTimelineLength =
   (requestId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     state.activeRequests.byRequestId[requestId]?.timeline.length ?? 0;
 
 /** Whether text is currently streaming (inside a text_start..text_end run). */
 export const selectIsInTextRun =
   (requestId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.activeRequests.byRequestId[requestId]?.isTextStreaming ?? false;
 
 /** Timeline filtered to a specific kind. Memoized. */
@@ -2357,7 +2357,7 @@ export const selectTimelineByKind = (
   kind: TimelineEntry["kind"],
 ) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId]?.timeline,
     (timeline): TimelineEntry[] | undefined => {
       if (!timeline) return undefined;
       return timeline.filter((e) => e.kind === kind);
@@ -2367,7 +2367,7 @@ export const selectTimelineByKind = (
 /** Count of timeline entries by kind. Memoized. */
 export const selectTimelineKindCounts = (requestId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId]?.timeline,
     (timeline): Record<string, number> | undefined => {
       if (!timeline) return undefined;
       const counts: Record<string, number> = {};
@@ -2439,7 +2439,7 @@ const EMPTY_TIMING: TimelineDerivedTiming = {
  */
 export const selectTimelineDerivedTiming = (requestId: string) =>
   createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId]?.timeline,
     (timeline): TimelineDerivedTiming => {
       if (!timeline || timeline.length === 0) return EMPTY_TIMING;
 
@@ -2576,13 +2576,13 @@ export const selectTimelineDerivedTiming = (requestId: string) =>
 /** All extracted JSON values for a request. null = extraction not enabled. */
 export const selectExtractedJson =
   (requestId: string) =>
-  (state: RootState): ExtractedJsonSnapshot[] | null =>
+  (state: ChatRootState): ExtractedJsonSnapshot[] | null =>
     state.activeRequests.byRequestId[requestId]?.extractedJson ?? null;
 
 /** First extracted JSON object (not array, not primitive). */
 export const selectFirstExtractedObject =
   (requestId: string) =>
-  (state: RootState): ExtractedJsonSnapshot | null => {
+  (state: ChatRootState): ExtractedJsonSnapshot | null => {
     const results = state.activeRequests.byRequestId[requestId]?.extractedJson;
     if (!results) return null;
     return results.find((r) => r.type === "object") ?? null;
@@ -2591,7 +2591,7 @@ export const selectFirstExtractedObject =
 /** First extracted JSON value of any type. */
 export const selectFirstExtractedJson =
   (requestId: string) =>
-  (state: RootState): ExtractedJsonSnapshot | null => {
+  (state: ChatRootState): ExtractedJsonSnapshot | null => {
     const results = state.activeRequests.byRequestId[requestId]?.extractedJson;
     if (!results || results.length === 0) return null;
     return results[0];
@@ -2600,20 +2600,20 @@ export const selectFirstExtractedJson =
 /** Whether JSON extraction has completed its final pass. Primitive. */
 export const selectJsonExtractionComplete =
   (requestId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.activeRequests.byRequestId[requestId]?.jsonExtractionComplete ??
     false;
 
 /** Monotonic revision counter — for avoiding redundant work in consumers. Primitive. */
 export const selectJsonExtractionRevision =
   (requestId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     state.activeRequests.byRequestId[requestId]?.jsonExtractionRevision ?? 0;
 
 /** Whether all extracted JSON structures are complete (balanced). Primitive. */
 export const selectAllJsonComplete =
   (requestId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const results = state.activeRequests.byRequestId[requestId]?.extractedJson;
     if (!results || results.length === 0) return false;
     return results.every((r) => r.isComplete);
@@ -2622,7 +2622,7 @@ export const selectAllJsonComplete =
 /** Count of extracted JSON values. Primitive. */
 export const selectExtractedJsonCount =
   (requestId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     state.activeRequests.byRequestId[requestId]?.extractedJson?.length ?? 0;
 
 /**
@@ -2638,7 +2638,7 @@ export const selectExtractedJsonCount =
  */
 export const selectRequestCarriesKindEnvelope = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (renderBlocks): boolean => {
       if (!renderBlocks) return false;
@@ -2661,7 +2661,7 @@ export const selectRequestCarriesKindEnvelope = (requestId: string) =>
  */
 export const selectRequestStreamingPartialValue = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.renderBlocks,
     (renderBlocks): Record<string, unknown> | null => {
       if (!renderBlocks) return null;

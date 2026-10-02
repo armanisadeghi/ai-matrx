@@ -26,7 +26,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   selectFirstMessageId,
   selectHasMoreOlderMessages,

@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useMemo, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectInstanceVariableDefinitions } from "../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   mergeScopeVariableValues,

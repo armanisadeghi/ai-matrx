@@ -5,7 +5,7 @@
 // Migrated to pure Redux: no context dependencies.
 
 import { Blocks, Camera } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { selectIsAdmin } from "@host/lib/redux/slices/userSlice";
 import {
   selectActiveServer,

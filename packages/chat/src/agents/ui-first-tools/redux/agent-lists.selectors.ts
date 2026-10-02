@@ -3,7 +3,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type {
   CxAgentPlanRow,
   CxAgentTaskRow,
@@ -23,42 +23,42 @@ const DEFAULT_BUCKET: AgentListsForConversation = {
 
 export const selectAgentListsBucket =
   (conversationId: string) =>
-  (state: RootState): AgentListsForConversation =>
+  (state: ChatRootState): AgentListsForConversation =>
     state.agentLists?.byConversationId[conversationId] ?? DEFAULT_BUCKET;
 
 /** The hydrate read's status for one conversation's lists (RC-B12 r12). */
 export const selectAgentListsStatus =
   (conversationId: string) =>
-  (state: RootState): AgentListsForConversation["status"] =>
+  (state: ChatRootState): AgentListsForConversation["status"] =>
     state.agentLists?.byConversationId[conversationId]?.status ?? "idle";
 
 /** Why the hydrate read failed, or null — a failed read is not "no plan yet". */
 export const selectAgentListsError =
   (conversationId: string) =>
-  (state: RootState): string | null => {
+  (state: ChatRootState): string | null => {
     const bucket = state.agentLists?.byConversationId[conversationId];
     return bucket?.status === "error" ? (bucket.error ?? "The read failed.") : null;
   };
 
 export const selectAgentPlan =
   (conversationId: string) =>
-  (state: RootState): CxAgentPlanRow | null =>
+  (state: ChatRootState): CxAgentPlanRow | null =>
     state.agentLists?.byConversationId[conversationId]?.plan ?? null;
 
 export const selectAgentTasks =
   (conversationId: string) =>
-  (state: RootState): CxAgentTaskRow[] =>
+  (state: ChatRootState): CxAgentTaskRow[] =>
     state.agentLists?.byConversationId[conversationId]?.tasks ?? EMPTY_TASKS;
 
 export const selectUserTodosForConversation =
   (conversationId: string) =>
-  (state: RootState): CxUserTodoRow[] =>
+  (state: ChatRootState): CxUserTodoRow[] =>
     state.agentLists?.byConversationId[conversationId]?.userTodos ??
     EMPTY_TODOS;
 
 export const selectAgentTaskCounts = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.agentLists?.byConversationId[conversationId]?.tasks ?? EMPTY_TASKS,
     (tasks) => {
       let done = 0;
@@ -78,7 +78,7 @@ export const selectAgentTaskCounts = (conversationId: string) =>
 
 export const selectUserTodoCounts = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.agentLists?.byConversationId[conversationId]?.userTodos ??
       EMPTY_TODOS,
     (todos) => {
@@ -94,7 +94,7 @@ export const selectUserTodoCounts = (conversationId: string) =>
  */
 const EMPTY_BY_CONVERSATION: Record<string, AgentListsForConversation> = {};
 
-export const selectAllConversationLists = (state: RootState) =>
+export const selectAllConversationLists = (state: ChatRootState) =>
   state.agentLists?.byConversationId ?? EMPTY_BY_CONVERSATION;
 
 /**
@@ -103,7 +103,7 @@ export const selectAllConversationLists = (state: RootState) =>
  */
 export const selectHasAgentListsContent =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const bucket = state.agentLists?.byConversationId[conversationId];
     if (!bucket) return false;
     return (

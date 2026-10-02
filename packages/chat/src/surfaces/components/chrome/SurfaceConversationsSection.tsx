@@ -25,7 +25,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, History, Loader2, Search } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { toast } from "../../../host/notify";
 import { cn } from "@ai-matrx/design-system";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";

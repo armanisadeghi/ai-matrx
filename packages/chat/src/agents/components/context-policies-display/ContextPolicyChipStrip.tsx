@@ -12,8 +12,8 @@
  */
 
 import { useMemo } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppSelector } from "../../../store/hooks";
+import type { ChatRootState } from "../../../store/root-state";
 import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
 import type { ContextPolicy } from "../../types/agent-api-types";
 import type { InstanceContextEntry } from "../../types/instance.types";
@@ -38,7 +38,7 @@ export function ContextPolicyChipStrip({
   showLabel = false,
   entries,
 }: ContextPolicyChipStripProps) {
-  const policies = useAppSelector((state: RootState): ContextPolicy[] | undefined =>
+  const policies = useAppSelector((state: ChatRootState): ContextPolicy[] | undefined =>
     agentId ? selectAgentContextPolicies(state, agentId) : undefined,
   );
   const policyByKey = useMemo(() => {

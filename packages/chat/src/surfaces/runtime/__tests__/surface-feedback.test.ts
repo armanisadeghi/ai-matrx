@@ -31,7 +31,7 @@ jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
 jest.mock("@host/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
-jest.mock("@host/lib/redux/store-singleton", () => ({
+jest.mock("../../../store/store-singleton", () => ({
   getStoreSingleton: () => ({
     getState: () => ({ appContext: { organization_id: mockOrganizationId } }),
   }),

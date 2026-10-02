@@ -49,6 +49,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     }),
   useAppDispatch: () => () => undefined,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("next/dynamic", () => ({ __esModule: true, default: () => () => null }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
 jest.mock("@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer", () => ({

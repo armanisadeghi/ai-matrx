@@ -22,7 +22,7 @@ import { getUserId } from "@host/utils/auth/getUserId";
 import { operationFailed } from "@host/utils/errors";
 import { ensureEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs";
 import { selectActiveOrganizationId } from "@host/features/scopes/redux/selectors/active-context";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import type { ConversationListItem } from "./conversation-list.types";
 import {
   setTrashLoading,
@@ -45,8 +45,8 @@ const CONVERSATION_TRASH_PAGE_SIZE_KNOB = {
 };
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   rejectValue: { message: string };
 }
 

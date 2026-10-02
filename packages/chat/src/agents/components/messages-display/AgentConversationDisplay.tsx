@@ -19,8 +19,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
 // The canonical "this read failed — try again" primitive (docs/reuse-first.md).
 // A transcript that could not be read is exactly its `hasData={false}` case.
@@ -201,7 +201,7 @@ export function AgentConversationDisplay({
     setFindHistory({ state: "loading", loaded: 0 });
     // A thunk hands the pager a live getState without subscribing this
     // component to the whole store.
-    dispatch((d: AppDispatch, getState: () => RootState) => {
+    dispatch((d: ChatDispatch, getState: () => ChatRootState) => {
       void loadFullConversationHistory(d, getState, conversationId, (loaded) => {
         if (live) setFindHistory({ state: "loading", loaded });
       }).then((r) => {

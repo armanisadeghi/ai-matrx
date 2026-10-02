@@ -29,7 +29,7 @@ import {
   clearTranscriptJournal,
   readTranscriptJournal,
 } from "../transcript-journal";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const CONV = "conv-window";
 
@@ -93,7 +93,7 @@ describe("nextTranscriptPosition", () => {
     expect(nextTranscriptPosition(entry)).toBe(40);
     expect(
       selectNextMessagePosition(CONV)(
-        store.getState() as unknown as RootState,
+        store.getState() as unknown as ChatRootState,
       ),
     ).toBe(40);
   });
@@ -102,7 +102,7 @@ describe("nextTranscriptPosition", () => {
     const store = makeStore();
     expect(
       selectNextMessagePosition("nope")(
-        store.getState() as unknown as RootState,
+        store.getState() as unknown as ChatRootState,
       ),
     ).toBe(0);
     expect(nextTranscriptPosition(undefined)).toBe(0);

@@ -25,7 +25,7 @@
  */
 
 import React, { useCallback, useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { MicrophoneIconButton } from "@host/features/audio/components/MicrophoneIconButton";
 import type { MicVariant } from "@host/features/audio/components/MicrophoneIconButton";
 import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";

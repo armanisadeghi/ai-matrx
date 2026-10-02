@@ -11,7 +11,7 @@
  */
 
 import { selectAgentLineageIndex } from "../selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { AgentDefinitionRecord } from "../../../types/agent-definition.types";
 
 function agent(
@@ -29,12 +29,12 @@ function agent(
   } as unknown as AgentDefinitionRecord;
 }
 
-function stateWith(agents: AgentDefinitionRecord[]): RootState {
+function stateWith(agents: AgentDefinitionRecord[]): ChatRootState {
   return {
     agentDefinition: {
       agents: Object.fromEntries(agents.map((a) => [a.id, a])),
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 const PERSONAL = "b9c9ded5";

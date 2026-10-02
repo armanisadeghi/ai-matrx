@@ -51,7 +51,7 @@ import { agentNameTakenError } from "./agentNameTaken";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { withRetry } from "@ai-matrx/data/net";
 import { ConnectTimeoutError } from "@ai-matrx/data/net";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import type { Database } from "@host/types/database.types";
 import type { DbRpcRow } from "@host/types/supabase-rpc";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
@@ -119,7 +119,7 @@ import {
   versionSnapshotRowToAgentDefinition,
 } from "./converters";
 
-type ThunkApi = { dispatch: AppDispatch; state: RootState };
+type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 
 type AgentToolAssignmentRow = Pick<
   Database["agent"]["Tables"]["definition"]["Row"],
@@ -299,7 +299,7 @@ function toRegistryAccessLevel(
  * the registry owns (`isVersion`, `_fetchStatus`).
  */
 function mergeAgentSummaries(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   rows: readonly AgentSummary[],
 ) {
   for (const row of rows) {
@@ -345,7 +345,7 @@ function mergeAgentSummaries(
  * (true iff starred). A failed read logs and leaves the stars as they were.
  */
 async function overlayAgentFavorites(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   ids: readonly string[],
 ): Promise<void> {
   if (ids.length === 0) return;

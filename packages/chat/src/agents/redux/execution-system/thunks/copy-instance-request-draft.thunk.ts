@@ -9,7 +9,7 @@
  * destination agent's base and its own launch defaults.
  */
 
-import type { AppThunk } from "@host/lib/redux/store";
+import type { ChatThunk } from "../../../../store/root-state";
 import {
   setUserInputMessageParts,
   setUserInputText,
@@ -69,7 +69,7 @@ export function syncInstanceRequestDraftResources({
   "sourceConversationId" | "targetConversationId"
 > & {
   draftSourceConversationId?: string;
-}): AppThunk {
+}): ChatThunk {
   return (dispatch, getState) => {
     const state = getState();
     const rootResources =
@@ -178,7 +178,7 @@ export function copyInstanceRequestDraft({
   targetConversationId,
   copyVariables = true,
   chatSemantics = false,
-}: CopyInstanceRequestDraftArgs): AppThunk {
+}: CopyInstanceRequestDraftArgs): ChatThunk {
   return (dispatch, getState) => {
     if (sourceConversationId === targetConversationId) return;
 

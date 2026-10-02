@@ -11,7 +11,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { toast } from "../../../../host/notify";
 import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
@@ -54,7 +54,7 @@ export interface RefreshSurfaceScopeResult {
 export const refreshSurfaceScope = createAsyncThunk<
   RefreshSurfaceScopeResult,
   { conversationId: string; composerText?: string },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "instances/refreshSurfaceScope",
   async ({ conversationId, composerText = "" }, { getState, dispatch }) => {

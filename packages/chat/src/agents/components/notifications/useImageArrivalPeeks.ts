@@ -20,8 +20,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createSelector } from "@reduxjs/toolkit";
-import { useAppSelector } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppSelector } from "../../../store/hooks";
+import type { ChatRootState } from "../../../store/root-state";
 import type { UnifiedImageBlock } from "@host/features/files/blocks/image/types";
 import { isUnifiedImageBlock } from "@host/features/files/blocks/image/guards";
 
@@ -50,7 +50,7 @@ const announcedSet = new Set<string>();
  * Memoized — only recomputes when `byRequestId` changes.
  */
 const selectAllImageOutputBlocks = createSelector(
-  (state: RootState) => state.activeRequests.byRequestId,
+  (state: ChatRootState) => state.activeRequests.byRequestId,
   (byRequestId): PeekEntry[] => {
     const results: PeekEntry[] = [];
     for (const [requestId, req] of Object.entries(byRequestId)) {

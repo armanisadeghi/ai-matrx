@@ -9,7 +9,7 @@
  * call sites.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type { ConversationListItem } from "./conversation-list.types";
 import { conversationListCacheKey } from "./conversation-list.types";
 import { upsertConversationInCaches } from "./conversation-list.slice";
@@ -19,7 +19,7 @@ import { upsertConversationInCaches } from "./conversation-list.slice";
  * cache keys (version snapshots use parentAgentId).
  */
 export function buildConversationListItemFromExecution(
-  state: RootState,
+  state: ChatRootState,
   instanceId: string,
   conversationId: string,
   overrides?: Partial<ConversationListItem>,
@@ -77,7 +77,7 @@ export function buildConversationListItemFromExecution(
  * if the instance isn't in state. Dispatch from thunks / stream processor.
  */
 export function upsertConversationFromExecutionAction(
-  state: RootState,
+  state: ChatRootState,
   instanceId: string,
   conversationId: string,
   overrides?: Partial<ConversationListItem>,

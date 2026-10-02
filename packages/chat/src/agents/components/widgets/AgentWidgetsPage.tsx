@@ -17,7 +17,7 @@ import { useEffect, useRef, useState, type ComponentProps } from "react";
 import Link from "next/link";
 import { DynamicIcon } from "@ai-matrx/icons";
 import { Loader2, TestTube, ChevronDown, Rocket } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import {
   selectAgentExecutionPayload,

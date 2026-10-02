@@ -1,7 +1,7 @@
 "use client";
 
 import { createSelector } from "reselect";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type {
   AgentShortcut,
   AgentShortcutRecord,
@@ -20,7 +20,7 @@ import {
 // Slice root
 // ---------------------------------------------------------------------------
 
-const selectAgentShortcutSlice = (state: RootState) => state.agentShortcut;
+const selectAgentShortcutSlice = (state: ChatRootState) => state.agentShortcut;
 
 // ---------------------------------------------------------------------------
 // Registry & phase tracking
@@ -51,7 +51,7 @@ export const selectShortcutsContextLoaded = createSelector(
  * Key format: "workspace:{id}" | "project:{id}" | "task:{id}"
  */
 export const selectIsContextLoaded = createSelector(
-  [selectShortcutsContextLoaded, (_state: RootState, key: string) => key],
+  [selectShortcutsContextLoaded, (_state: ChatRootState, key: string) => key],
   (contextLoaded, key): boolean => contextLoaded[key] ?? false,
 );
 
@@ -77,7 +77,7 @@ export const selectShortcutsSliceError = createSelector(
  * For `useSelector` / `useAppSelector`, prefer memoized {@link selectShortcutById}.
  */
 export function getShortcutRecordFromState(
-  state: RootState,
+  state: ChatRootState,
   shortcutId: string,
 ): AgentShortcutRecord | undefined {
   const registry: AgentShortcutSliceState["shortcuts"] =
@@ -87,7 +87,7 @@ export function getShortcutRecordFromState(
 
 /** Returns the full record (including runtime flags) or undefined. */
 export const selectShortcutById = createSelector(
-  [selectAllShortcuts, (_state: RootState, id: string) => id],
+  [selectAllShortcuts, (_state: ChatRootState, id: string) => id],
   (shortcuts, id): AgentShortcutRecord | undefined => shortcuts[id],
 );
 
@@ -251,7 +251,7 @@ export const selectShortcutIsActive = createSelector(
 export const selectShortcutFieldIsLoaded = createSelector(
   [
     selectShortcutById,
-    (_state: RootState, _id: string, field: keyof AgentShortcut) => field,
+    (_state: ChatRootState, _id: string, field: keyof AgentShortcut) => field,
   ],
   (record, field): boolean =>
     record ? hasField(record._loadedFields, field) : false,
@@ -261,7 +261,7 @@ export const selectShortcutFieldIsLoaded = createSelector(
 export const selectShortcutFieldOriginalValue = createSelector(
   [
     selectShortcutById,
-    (_state: RootState, _id: string, field: keyof AgentShortcut) => field,
+    (_state: ChatRootState, _id: string, field: keyof AgentShortcut) => field,
   ],
   (record, field) => record?._fieldHistory[field] ?? undefined,
 );
@@ -287,7 +287,7 @@ export const selectShortcutIsSystem = createSelector(
 export const selectShortcutIsOwnedByUser = createSelector(
   [
     selectShortcutById,
-    (_state: RootState, _id: string, userId: string) => userId,
+    (_state: ChatRootState, _id: string, userId: string) => userId,
   ],
   (record, userId): boolean => record?.userId === userId,
 );
@@ -315,7 +315,7 @@ export const selectSystemShortcuts = createSelector(
 
 /** User-owned shortcuts — user_id matches. Pass the current user id. */
 export const selectUserOwnedShortcuts = createSelector(
-  [selectAllShortcutsArray, (_state: RootState, userId: string) => userId],
+  [selectAllShortcutsArray, (_state: ChatRootState, userId: string) => userId],
   (shortcuts, userId) => shortcuts.filter((s) => s.userId === userId),
 );
 
@@ -337,7 +337,7 @@ export const selectActiveShortcuts = createSelector(
  * e.g. selectShortcutsForFeature(state, "chat")
  */
 export const selectShortcutsForFeature = createSelector(
-  [selectActiveShortcuts, (_state: RootState, feature: string) => feature],
+  [selectActiveShortcuts, (_state: ChatRootState, feature: string) => feature],
   (shortcuts, feature) =>
     shortcuts.filter(
       (s) =>
@@ -352,7 +352,7 @@ export const selectShortcutsForFeature = createSelector(
 
 /** Shortcuts pointing to a specific agent id (stable identity). */
 export const selectShortcutsByAgentId = createSelector(
-  [selectAllShortcutsArray, (_state: RootState, agentId: string) => agentId],
+  [selectAllShortcutsArray, (_state: ChatRootState, agentId: string) => agentId],
   (shortcuts, agentId) => shortcuts.filter((s) => s.agentId === agentId),
 );
 
@@ -363,7 +363,7 @@ export const selectShortcutsByAgentId = createSelector(
 export const selectShortcutsByVersionId = createSelector(
   [
     selectAllShortcutsArray,
-    (_state: RootState, versionId: string) => versionId,
+    (_state: ChatRootState, versionId: string) => versionId,
   ],
   (shortcuts, versionId) =>
     shortcuts.filter((s) => s.agentVersionId === versionId),
@@ -431,13 +431,13 @@ export const selectActiveShortcutAgentId = createSelector(
 // Scope-aware selectors
 // ---------------------------------------------------------------------------
 
-const selectShortcutScopeLoadedMap = (state: RootState) =>
+const selectShortcutScopeLoadedMap = (state: ChatRootState) =>
   state.agentShortcut.scopeLoaded;
 
 export const selectIsShortcutScopeLoaded = createSelector(
   [
     selectShortcutScopeLoadedMap,
-    (_s: RootState, scope: Scope, scopeId?: string | null) =>
+    (_s: ChatRootState, scope: Scope, scopeId?: string | null) =>
       scopeIndexKey({ scope, scopeId: scopeId ?? null }),
   ],
   (scopeLoaded, key) => scopeLoaded[key] ?? false,
@@ -446,8 +446,8 @@ export const selectIsShortcutScopeLoaded = createSelector(
 export const selectShortcutsByScope = createSelector(
   [
     selectAllShortcutsArray,
-    (_s: RootState, scope: Scope, _scopeId?: string | null) => scope,
-    (_s: RootState, _scope: Scope, scopeId?: string | null) => scopeId ?? null,
+    (_s: ChatRootState, scope: Scope, _scopeId?: string | null) => scope,
+    (_s: ChatRootState, _scope: Scope, scopeId?: string | null) => scopeId ?? null,
   ],
   (shortcuts, scope, scopeId): AgentShortcutRecord[] =>
     shortcuts.filter((s) =>
@@ -456,7 +456,7 @@ export const selectShortcutsByScope = createSelector(
 );
 
 export const selectShortcutsByScopeRef = createSelector(
-  [selectAllShortcutsArray, (_s: RootState, ref: ScopeRef) => ref],
+  [selectAllShortcutsArray, (_s: ChatRootState, ref: ScopeRef) => ref],
   (shortcuts, ref) => shortcuts.filter((s) => matchesScope(s, ref)),
 );
 

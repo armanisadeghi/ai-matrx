@@ -16,7 +16,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, RotateCcw, X } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { selectPreSend } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setPreSend } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { smartExecute } from "../../../redux/execution-system/thunks/smart-execute.thunk";

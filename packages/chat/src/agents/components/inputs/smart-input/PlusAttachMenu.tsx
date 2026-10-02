@@ -30,7 +30,7 @@ import {
   PopoverContent,
 } from "@ai-matrx/design-system";
 import { Switch } from "@host/components/ui/switch";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
 import type { ResourcePickerViewId } from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { ResourcePickerSubViewHeader } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";

@@ -43,7 +43,7 @@ import agentDefinitionReducer, {
 import { surfaceUserStateReducer } from "../../../../../surfaces/redux/userStateSlice";
 import { ensureContextRulesReady } from "../context-rules.thunks";
 import { buildRequestContext } from "../request-context";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const fixed = <T,>(v: T) => (s: T = v) => s;
 
@@ -98,7 +98,7 @@ it.each([
     await (store.dispatch as any)(ensureContextRulesReady(CHAT));
 
     expect(rpc).toHaveBeenCalledWith("agx_get_execution_minimal", { p_agent_id: AGENT });
-    const { rows, context } = buildRequestContext(store.getState() as unknown as RootState, CHAT);
+    const { rows, context } = buildRequestContext(store.getState() as unknown as ChatRootState, CHAT);
     expect(rows.map((r) => r.include)).toEqual([included, included]);
     expect(Object.keys(context ?? {}).sort()).toEqual(sent);
   },

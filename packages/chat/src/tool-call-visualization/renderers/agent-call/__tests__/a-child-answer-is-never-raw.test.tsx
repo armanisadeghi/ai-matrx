@@ -20,9 +20,11 @@ import type { ToolLifecycleEntry } from "../../../../agents/types/request.types"
 
 let childStream: { status: string; text: string; label: string | null; childConversationId: string | null } | null = null;
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../store/hooks", () => ({
   useAppSelector: () => childStream,
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 jest.mock(
   "../../../../agents/redux/execution-system/active-requests/active-requests.selectors",
   () => ({ selectAgentCallChildStream: () => () => childStream }),

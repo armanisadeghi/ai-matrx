@@ -1,7 +1,7 @@
 "use client";
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type {
   ConversationListItem,
   ConversationListAgentCacheEntry,
@@ -18,7 +18,7 @@ const EMPTY_IDS: string[] = [];
 
 // ── Slice root ───────────────────────────────────────────────────────────────
 
-const selectSlice = (state: RootState) => state.conversationList;
+const selectSlice = (state: ChatRootState) => state.conversationList;
 
 // ── Global sidebar list ──────────────────────────────────────────────────────
 
@@ -35,27 +35,27 @@ export const selectGlobalConversationList = createSelector(
   },
 );
 
-export const selectGlobalConversationIds = (state: RootState): string[] =>
+export const selectGlobalConversationIds = (state: ChatRootState): string[] =>
   state.conversationList.allConversationIds;
 
 export const selectGlobalListStatus = (
-  state: RootState,
+  state: ChatRootState,
 ): ConversationListLoadStatus => state.conversationList.globalStatus;
 
-export const selectGlobalListError = (state: RootState): string | null =>
+export const selectGlobalListError = (state: ChatRootState): string | null =>
   state.conversationList.globalError;
 
-export const selectGlobalListHasMore = (state: RootState): boolean =>
+export const selectGlobalListHasMore = (state: ChatRootState): boolean =>
   state.conversationList.globalHasMore;
 
 export const selectGlobalListLastFetchedAt = (
-  state: RootState,
+  state: ChatRootState,
 ): number | null => state.conversationList.globalLastFetchedAt;
 
 /** True when the global list is fresh (no refetch needed). */
 export const selectGlobalListIsFresh =
   (ttlMs = CONVERSATION_LIST_TTL_MS) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const { globalLastFetchedAt, globalStatus } = state.conversationList;
     if (globalStatus === "loading") return true;
     if (!globalLastFetchedAt) return false;
@@ -66,19 +66,19 @@ export const selectGlobalListIsFresh =
 
 export const selectConversationListItemById =
   (conversationId: string) =>
-  (state: RootState): ConversationListItem | null =>
+  (state: ChatRootState): ConversationListItem | null =>
     state.conversationList.byConversationId[conversationId] ?? null;
 
 export const selectConversationIsPending =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.conversationList.pendingOperations.includes(conversationId);
 
 // ── Agent-scoped caches ──────────────────────────────────────────────────────
 
 export const selectAgentConversationsCache =
   (agentId: string, versionFilter: number | null) =>
-  (state: RootState): ConversationListAgentCacheEntry | undefined =>
+  (state: ChatRootState): ConversationListAgentCacheEntry | undefined =>
     state.conversationList.agentCaches[
       conversationListCacheKey(agentId, versionFilter)
     ];
@@ -93,7 +93,7 @@ export function makeSelectAgentConversationList(
 ) {
   const key = conversationListCacheKey(agentId, versionFilter);
   return createSelector(
-    [(state: RootState) => state.conversationList],
+    [(state: ChatRootState) => state.conversationList],
     (
       slice,
     ): {
@@ -136,7 +136,7 @@ export function makeSelectAgentConversationList(
 
 export const selectAgentConversationIds =
   (agentId: string, versionFilter: number | null) =>
-  (state: RootState): string[] =>
+  (state: ChatRootState): string[] =>
     state.conversationList.agentCaches[
       conversationListCacheKey(agentId, versionFilter)
     ]?.conversationIds ?? EMPTY_IDS;
@@ -153,7 +153,7 @@ export const makeSelectAgentConversations = makeSelectAgentConversationList;
  * Returns the full cache entry or undefined. Accepts canonical agent.definition.id.
  */
 export function selectAgentConversationsEntry(
-  state: RootState,
+  state: ChatRootState,
   agentId: string,
   versionFilter: number | null,
 ) {
@@ -167,7 +167,7 @@ export function selectAgentConversationsEntry(
  * instance → agent map key → canonical agent id, then reads the cache.
  */
 export function selectAgentConversationsEntryForInstance(
-  state: RootState,
+  state: ChatRootState,
   instanceId: string,
   versionFilter: number | null,
 ) {

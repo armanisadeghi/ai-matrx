@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type {
   CxUserRequestRecord,
   CxRequestRecord,
@@ -19,15 +19,15 @@ export const EMPTY_TOOL_CALLS: CxToolCallRecord[] = [];
 
 export const selectUserRequestIdsForConversation =
   (conversationId: string) =>
-  (state: RootState): string[] =>
+  (state: ChatRootState): string[] =>
     state.observability.userRequestsByConversationId[conversationId] ??
     EMPTY_STRING_ARRAY;
 
 export const selectUserRequestsForConversation = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.observability.userRequestsByConversationId[conversationId],
-    (state: RootState) => state.observability.userRequests,
+    (state: ChatRootState) => state.observability.userRequests,
     (ids, byId): CxUserRequestRecord[] => {
       if (!ids || ids.length === 0) return EMPTY_USER_REQUESTS;
       const out: CxUserRequestRecord[] = [];
@@ -41,7 +41,7 @@ export const selectUserRequestsForConversation = (conversationId: string) =>
 
 export const selectUserRequestById =
   (userRequestId: string) =>
-  (state: RootState): CxUserRequestRecord | undefined =>
+  (state: ChatRootState): CxUserRequestRecord | undefined =>
     state.observability.userRequests[userRequestId];
 
 // ---------------------------------------------------------------------------
@@ -50,9 +50,9 @@ export const selectUserRequestById =
 
 export const selectRequestsForUserRequest = (userRequestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.observability.requestsByUserRequestId[userRequestId],
-    (state: RootState) => state.observability.requests,
+    (state: ChatRootState) => state.observability.requests,
     (ids, byId): CxRequestRecord[] => {
       if (!ids || ids.length === 0) return EMPTY_REQUESTS;
       const out: CxRequestRecord[] = [];
@@ -70,9 +70,9 @@ export const selectRequestsForUserRequest = (userRequestId: string) =>
 
 export const selectToolCallsForUserRequest = (userRequestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.observability.toolCallsByUserRequestId[userRequestId],
-    (state: RootState) => state.observability.toolCalls,
+    (state: ChatRootState) => state.observability.toolCalls,
     (ids, byId): CxToolCallRecord[] => {
       if (!ids || ids.length === 0) return EMPTY_TOOL_CALLS;
       const out: CxToolCallRecord[] = [];
@@ -86,7 +86,7 @@ export const selectToolCallsForUserRequest = (userRequestId: string) =>
 
 export const selectToolCallById =
   (id: string) =>
-  (state: RootState): CxToolCallRecord | undefined =>
+  (state: ChatRootState): CxToolCallRecord | undefined =>
     state.observability.toolCalls[id];
 
 /**
@@ -96,7 +96,7 @@ export const selectToolCallById =
  */
 export const selectToolCallByCallId =
   (callId: string) =>
-  (state: RootState): CxToolCallRecord | undefined => {
+  (state: ChatRootState): CxToolCallRecord | undefined => {
     const uuid = state.observability.toolCallsByCallId[callId];
     if (!uuid) return undefined;
     return state.observability.toolCalls[uuid];
@@ -109,7 +109,7 @@ export const selectToolCallByCallId =
  */
 export const selectToolCallsForMessage = (messageId: string) =>
   createSelector(
-    (state: RootState) => state.observability.toolCalls,
+    (state: ChatRootState) => state.observability.toolCalls,
     (byId): CxToolCallRecord[] => {
       const out: CxToolCallRecord[] = [];
       for (const id in byId) {
@@ -133,7 +133,7 @@ export const selectToolCallsForMessage = (messageId: string) =>
  */
 export const selectToolCallsForConversation = (conversationId: string) =>
   createSelector(
-    (state: RootState) => state.observability.toolCalls,
+    (state: ChatRootState) => state.observability.toolCalls,
     (byId): CxToolCallRecord[] => {
       if (!conversationId) return EMPTY_TOOL_CALLS;
       const out: CxToolCallRecord[] = [];
@@ -188,5 +188,5 @@ const EMPTY_CALL_ID_SET: ReadonlySet<string> = new Set();
 
 export const selectTimelineForUserRequest =
   (userRequestId: string) =>
-  (state: RootState): ObservabilityUserRequestTimeline | undefined =>
+  (state: ChatRootState): ObservabilityUserRequestTimeline | undefined =>
     state.observability.timelines[userRequestId];

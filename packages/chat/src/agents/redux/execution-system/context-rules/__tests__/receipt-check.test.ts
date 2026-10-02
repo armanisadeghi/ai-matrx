@@ -9,7 +9,7 @@
 
 import { resolveContextRow } from "@ai-matrx/agents/context";
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const captured: Array<{ code?: string; message?: string; details?: string }> = [];
 jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
@@ -75,7 +75,7 @@ function run(
         : {},
     },
     userAuth: { isAdmin: false, adminLaneOpen: false },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
   recordContextReceipt(
     ((a: { type: string; payload: Record<string, unknown> }) => actions.push(a)) as never,
     () => state,

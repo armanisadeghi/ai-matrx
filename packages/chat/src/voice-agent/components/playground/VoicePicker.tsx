@@ -3,7 +3,7 @@
 //
 // Picker for one of xAI's five voices. Reads + writes through Redux.
 
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { Label } from "@ai-matrx/design-system";
 import {
   Select,

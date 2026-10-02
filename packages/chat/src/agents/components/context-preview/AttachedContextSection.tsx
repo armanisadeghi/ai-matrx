@@ -34,7 +34,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectInstanceContextEntries } from "../../redux/execution-system/instance-context/instance-context.selectors";
 import { removeContextEntry } from "../../redux/execution-system/instance-context/instance-context.slice";
 import {

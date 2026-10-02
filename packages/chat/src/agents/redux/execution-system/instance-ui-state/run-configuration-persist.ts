@@ -25,7 +25,7 @@
 
 import type { Middleware } from "@reduxjs/toolkit";
 import { mergeJsonColumn } from "@ai-matrx/data/db";
-import type { RootState } from "@host/lib/redux/rootReducer";
+import type { ChatRootState } from "../../../../store/root-state";
 import { supabase } from "@host/utils/supabase/client";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 
@@ -83,7 +83,7 @@ export function runConfigurationSignature(config: PersistedRunConfiguration): st
 }
 
 export function selectRunConfiguration(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): PersistedRunConfiguration {
   const s =
@@ -149,7 +149,7 @@ export async function persistRunConfiguration(
 }
 
 /** Conversations whose stored configuration may lag Redux. */
-function isPersistable(state: RootState, conversationId: string): boolean {
+function isPersistable(state: ChatRootState, conversationId: string): boolean {
   const record = state.conversations?.byConversationId[conversationId];
   if (!record || record.cacheOnly || record.isEphemeral) return false;
   return !(
@@ -171,7 +171,7 @@ export function markRunConfigurationStored(
   storedSignature.set(conversationId, runConfigurationSignature(config));
 }
 
-export const runConfigurationPersistMiddleware: Middleware<object, RootState> = (store) => {
+export const runConfigurationPersistMiddleware: Middleware<object, ChatRootState> = (store) => {
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   const lastSeen = new Map<string, string>();
   let lastUiState: unknown = undefined;

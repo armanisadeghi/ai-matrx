@@ -24,6 +24,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   // Every stack has something to undo and to redo.
   useAppSelector: () => true,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 import { useNoteUndoRedo } from "@/features/notes/hooks/useNoteUndoRedo";
 import { useInstanceInputUndoRedo } from "@ai-matrx/chat/agents/hooks/useInstanceInputUndoRedo";

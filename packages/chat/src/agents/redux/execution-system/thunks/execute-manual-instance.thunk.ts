@@ -80,7 +80,7 @@ import {
 import { mintClientTempId } from "@host/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type {
   ChatRequestPayload,
   SystemInstruction,
@@ -265,7 +265,7 @@ function extractSystemText(content: unknown): string {
  * through the messages slice.
  */
 export async function assembleManualRequest(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   opts?: {
     /**
@@ -684,10 +684,10 @@ export const executeManualInstance = createAsyncThunk<
       // snapshot the request is built from (RULES.md §3).
       // This thunk's generics carry no typed dispatch; the store's is the real one.
       if (!surfaceRefreshed) {
-        await (dispatch as AppDispatch)(refreshSurfaceScope({ conversationId })).unwrap();
+        await (dispatch as ChatDispatch)(refreshSurfaceScope({ conversationId })).unwrap();
       }
-      await (dispatch as AppDispatch)(ensureContextRulesReady(conversationId));
-      const state = getState() as RootState;
+      await (dispatch as ChatDispatch)(ensureContextRulesReady(conversationId));
+      const state = getState() as ChatRootState;
       const instance = state.conversations.byConversationId[conversationId];
       if (!instance) {
         // access-errors: ok — browser-local Redux lookup; the instance is absent from the loaded store, no record read involved
@@ -796,7 +796,7 @@ export const executeManualInstance = createAsyncThunk<
         // reader may mistake it for a durable message (lib/ids/durable-record-id.ts).
         userMessageClientTempId = mintClientTempId("user", uuidv4());
         const nextPosition = selectNextMessagePosition(conversationId)(
-          getState() as RootState,
+          getState() as ChatRootState,
         );
         const userMessageMetadata: Json | undefined =
           contextSnapshot.length > 0
@@ -1102,7 +1102,7 @@ export const executeManualInstance = createAsyncThunk<
       dispatch(setRequestStatus({ requestId, status: "streaming" }));
       dispatch(setNetPhase({ id: requestId, phase: "streaming" }));
 
-      const currentUiState = (getState() as RootState).instanceUIState
+      const currentUiState = (getState() as ChatRootState).instanceUIState
         ?.byConversationId[conversationId];
 
       streamStarted = true;
@@ -1113,7 +1113,7 @@ export const executeManualInstance = createAsyncThunk<
         submitAt,
         conversationIdAt,
         dispatch,
-        getState: getState as () => RootState,
+        getState: getState as () => ChatRootState,
         submittedVariableResourcePolicies:
           payload.variable_resource_context ?? {},
         jsonExtraction: currentUiState?.jsonExtraction ?? undefined,

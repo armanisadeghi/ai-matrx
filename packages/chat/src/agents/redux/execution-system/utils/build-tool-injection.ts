@@ -18,7 +18,7 @@
  *     for surfaces that need to override the saved agent definition.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type {
   ClientCapabilityName,
   ClientCapabilityPayloads,
@@ -195,7 +195,7 @@ async function buildSurfaceWriteInlineSpec(
 }
 
 export async function buildToolInjection(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   options: BuildOptions = {},
 ): Promise<ToolInjectionResult> {
@@ -505,7 +505,7 @@ export async function buildToolInjection(
  * else the conversation's stamp, else the route.
  */
 export function resolveClientSurface(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | undefined {
   const perConversation = selectBuilderAdvancedSettings(conversationId)(state);

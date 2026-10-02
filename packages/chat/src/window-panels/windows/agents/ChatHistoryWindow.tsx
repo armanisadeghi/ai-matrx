@@ -23,8 +23,8 @@ import { Flame, History } from "lucide-react";
 
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
+import type { ChatRootState } from "../../../store/root-state";
 
 import type { ConversationListItem } from "../../../agents/redux/conversation-list/conversation-list.types";
 import type { HistoryGrouping } from "../../../agents/redux/conversation-history/types";
@@ -120,7 +120,7 @@ function useChatHistoryBrowser(opts: {
       setSelectedAgentId(agentId);
       await hydrateConversationForReading(
         dispatch,
-        () => store.getState() as RootState,
+        () => store.getState() as ChatRootState,
         { conversationId, agentId, surfaceKey: SURFACE_KEY },
       );
     },
@@ -133,7 +133,7 @@ function useChatHistoryBrowser(opts: {
   const initialId = opts.initialSelectedConversationId;
   useEffect(() => {
     if (!initialId) return;
-    hydrateConversationForReading(dispatch, () => store.getState() as RootState, {
+    hydrateConversationForReading(dispatch, () => store.getState() as ChatRootState, {
       conversationId: initialId,
       agentId: null,
       surfaceKey: SURFACE_KEY,
@@ -152,7 +152,7 @@ function useChatHistoryBrowser(opts: {
   );
 
   // Subtitle shows the selected conversation's agent name when one is picked.
-  const selectedAgentName = useAppSelector((state: RootState) =>
+  const selectedAgentName = useAppSelector((state: ChatRootState) =>
     selectedAgentId
       ? (selectAgentById(state, selectedAgentId)?.name ?? null)
       : null,
@@ -334,12 +334,12 @@ function ChatHistoryWindowInner({
         : null,
     [scopeState.items, b.selectedId],
   );
-  const lastAssistantMessageId = useAppSelector((state: RootState) =>
+  const lastAssistantMessageId = useAppSelector((state: ChatRootState) =>
     b.selectedId
       ? selectLatestAssistantMessageId(b.selectedId)(state)
       : undefined,
   );
-  const lastAssistantRecord = useAppSelector((state: RootState) =>
+  const lastAssistantRecord = useAppSelector((state: ChatRootState) =>
     b.selectedId && lastAssistantMessageId
       ? selectMessageById(b.selectedId, lastAssistantMessageId)(state)
       : undefined,

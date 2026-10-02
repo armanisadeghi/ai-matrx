@@ -10,7 +10,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../../store/hooks";
 import { selectInstanceUIState } from "../instance-ui-state.selectors";
 import {
   selectInstanceAgentName,

@@ -8,7 +8,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { ContextStateEntry } from "./context-state.slice";
 
 // Conservative chars-per-token estimate for FE display. Matches the Python
@@ -25,7 +25,7 @@ const empty: ContextStateEntry | null = null;
 
 const EMPTY_BY_CONVERSATION: Record<string, ContextStateEntry> = {};
 
-const selectSliceMap = (state: RootState) =>
+const selectSliceMap = (state: ChatRootState) =>
   state.contextState?.byConversationId ?? EMPTY_BY_CONVERSATION;
 
 export const selectContextState = (conversationId: string) =>

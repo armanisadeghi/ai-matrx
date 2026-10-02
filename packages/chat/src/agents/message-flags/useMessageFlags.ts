@@ -5,7 +5,7 @@
  * door every message header (user/assistant items and the system message) uses.
  */
 
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectAgentMessages,
   selectAgentModelId,

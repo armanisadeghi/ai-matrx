@@ -6,10 +6,12 @@ import { createRoot } from "react-dom/client";
 
 const mockUseFloatingLiveRun = jest.fn();
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../store/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => [{ id: "run-1" }],
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 
 jest.mock("@host/features/overlays/openers/liveRunWindow", () => ({
   useFloatingLiveRun: (options: unknown) => mockUseFloatingLiveRun(options),

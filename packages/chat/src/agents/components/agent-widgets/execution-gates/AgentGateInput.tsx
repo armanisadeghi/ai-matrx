@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeftFromLine, ArrowRight, ArrowUp, X } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import {
   selectPreExecutionMessage,
   selectInstanceAgentName,

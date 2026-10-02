@@ -19,7 +19,7 @@ import {
   type ThunkDispatch,
   type UnknownAction,
 } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import messagesReducer, {
   hydrateMessages,
   reserveMessage,
@@ -205,7 +205,7 @@ const settle = (
   store: ReturnType<typeof makeStore>,
   args: Parameters<typeof settleAfterStop>[0],
 ) =>
-  (store.dispatch as ThunkDispatch<RootState, unknown, UnknownAction>)(
+  (store.dispatch as ThunkDispatch<ChatRootState, unknown, UnknownAction>)(
     settleAfterStop(args),
   ).unwrap();
 

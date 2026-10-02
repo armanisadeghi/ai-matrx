@@ -37,12 +37,12 @@ import { ClipboardCopy, Download, MoreHorizontal, Pin, Search, Send, Share, X } 
 import { useAssociations } from "@ai-matrx/associations/react";
 import { ItemMenu } from "@host/components/official/item/ItemMenu";
 import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { openConversationRename } from "../conversation-actions/conversation-verbs";
 import { useOpenGmailComposeWindow } from "@host/features/overlays/openers/gmailComposeWindow";
 import type { ItemMenuSection } from "@host/components/official/item/types";
 import { conversationEmailEntrances } from "./conversation-email-entrance";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { selectConversationMessages } from "../../redux/execution-system/messages/messages.selectors";
 import {
   usePinnedMessageIds,
@@ -152,7 +152,7 @@ export function ConversationPageMenu({
   const runTransfer = (row: ConversationTransferRow) => {
     // A thunk hands the runner a live getState without subscribing the
     // header to the whole store. The runner loads on click.
-    dispatch((d: AppDispatch, getState: () => RootState) => {
+    dispatch((d: ChatDispatch, getState: () => ChatRootState) => {
       void import("../../conversation-export/conversation-transfer").then(
         ({ runConversationTransfer }) => runConversationTransfer({ dispatch: d, getState }, conversationId, row),
       );

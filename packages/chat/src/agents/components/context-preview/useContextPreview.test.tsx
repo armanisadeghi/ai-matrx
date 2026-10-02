@@ -17,7 +17,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 jest.mock("@host/lib/api/call-api", () => ({ callApi: jest.fn() }));
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../store/hooks", () => ({
   // The door itself is the mock, so dispatch only hands back what it produced.
   // A function thunk (the door read) runs against an empty state.
   useAppDispatch: () => (thunk: unknown) =>

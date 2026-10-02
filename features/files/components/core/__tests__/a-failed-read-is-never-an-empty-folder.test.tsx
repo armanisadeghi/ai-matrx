@@ -31,6 +31,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => ({ sortBy: "name", sortDir: "asc" }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/files/components/core/FileTree/useTreeExpansion", () => ({
   useTreeExpansion: () => ({ rows: [], isExpanded: () => false, toggle: jest.fn(), expandAll: jest.fn(), collapseAll: jest.fn(), expand: jest.fn(), collapse: jest.fn() }),
 }));

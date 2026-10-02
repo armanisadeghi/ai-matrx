@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";
 import { fetchAgentConversations } from "../../../agents/redux/conversation-list/conversation-list.thunks";
 import { makeSelectAgentConversations } from "../../../agents/redux/conversation-list/conversation-list.selectors";
@@ -27,8 +27,8 @@ import type { ConversationListItem } from "../../../agents/redux/conversation-li
 import { AgentConversationDisplay } from "../../../agents/components/messages-display/AgentConversationDisplay";
 import { loadConversation } from "../../../agents/redux/execution-system/thunks/load-conversation.thunk";
 import { createManualInstance } from "../../../agents/redux/execution-system/thunks/create-instance.thunk";
-import type { RootState } from "@host/lib/redux/store";
-import { useAppStore } from "@host/lib/redux/hooks";
+import type { ChatRootState } from "../../../store/root-state";
+import { useAppStore } from "../../../store/hooks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ItemRow } from "@host/components/official/item/ItemRow";
 import { buildConversationMenu } from "../../../agents/components/conversation-actions/conversationActionRegistry";
@@ -226,11 +226,11 @@ function RunHistorySidebar({
 }) {
   const dispatch = useAppDispatch();
 
-  const agentName = useAppSelector((state: RootState) =>
+  const agentName = useAppSelector((state: ChatRootState) =>
     agentId ? (selectAgentById(state, agentId)?.name ?? null) : null,
   );
 
-  const canonicalAgentId = useAppSelector((state: RootState) => {
+  const canonicalAgentId = useAppSelector((state: ChatRootState) => {
     if (!agentId) return null;
     const agent = selectAgentById(state, agentId);
     return agent?.parentAgentId ?? agent?.id ?? agentId;
@@ -409,7 +409,7 @@ function RunHistoryBody({
   agentId: string;
   selectedConversationId: string | null;
 }) {
-  const runTitle = useAppSelector((state: RootState) =>
+  const runTitle = useAppSelector((state: ChatRootState) =>
     selectedConversationId
       ? selectConversationTitle(selectedConversationId)(state)
       : null,
@@ -523,7 +523,7 @@ function AgentRunHistoryWindowInner({
 
       if (!agentId) return;
 
-      const exists = !!(store.getState() as RootState).conversations
+      const exists = !!(store.getState() as ChatRootState).conversations
         ?.byConversationId?.[conversationId];
 
       if (!exists) {
@@ -554,7 +554,7 @@ function AgentRunHistoryWindowInner({
     [agentId, selectedConversationId],
   );
 
-  const agentName = useAppSelector((state: RootState) =>
+  const agentName = useAppSelector((state: ChatRootState) =>
     agentId ? (selectAgentById(state, agentId)?.name ?? null) : null,
   );
 
@@ -588,7 +588,7 @@ function AgentRunHistoryWindowInner({
    * already-resolved store state the window rendered from.
    */
   const buildSurfaceScope = () => {
-    const state = store.getState() as RootState;
+    const state = store.getState() as ChatRootState;
     const history = historyRef.current;
     const selectedRow = selectedConversationId
       ? history?.conversations.find(

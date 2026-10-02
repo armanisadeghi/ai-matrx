@@ -17,7 +17,7 @@
 
 import { RotateCcw } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { selectAgentModelId } from "../../redux/agent-definition/selectors";
 import { selectAgentIdFromInstance } from "../../redux/execution-system/conversations/conversations.selectors";

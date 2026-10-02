@@ -37,7 +37,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 
 import { prependMessages, setOlderLoading } from "../messages/messages.slice";
 import { mergeToolCalls } from "../observability/observability.slice";
@@ -63,8 +63,8 @@ interface LoadOlderMessagesResult {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   rejectValue: { reason: string };
 }
 

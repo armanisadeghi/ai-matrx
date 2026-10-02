@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useCallback, useRef } from "react";
-import { useAppSelector, useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch, useAppStore } from "../../store/hooks";
 import {
   disposeFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,

@@ -11,7 +11,7 @@
 // there is nothing to reset TO, so the button stays disabled rather than
 // offering a stale default.
 
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { Label } from "@ai-matrx/design-system";

@@ -29,6 +29,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => mockDispatch,
   useAppSelector: () => mockFile,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/files/redux/thunks", () => ({
   saveFileNewVersion: (args: { fileId: string; content: string }) => {
     saved.push({ fileId: args.fileId, content: args.content });

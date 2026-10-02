@@ -14,7 +14,7 @@
  */
 
 import { toast } from "../../../../host/notify";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../../store/hooks";
 import { renameFile } from "@host/features/files/redux/thunks";
 import { useAttachedDocumentDisplayName } from "../../inputs/resources/attached-documents";
 import { PdfNamedSurfaceSwitcher } from "@host/features/pdf/components/PdfNamedSurfaceSwitcher";

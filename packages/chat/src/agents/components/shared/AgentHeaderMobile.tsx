@@ -3,7 +3,7 @@
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Check, MoreHorizontal, Pencil, Play, Webhook } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectAgentIsDirty } from "../../redux/agent-definition/selectors";
 import {
   TapTargetButtonForGroup,

@@ -43,7 +43,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   fetchConversationHistory,
   fetchSourceFacets,

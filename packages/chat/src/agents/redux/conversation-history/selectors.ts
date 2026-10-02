@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type { ConversationListItem } from "../conversation-list/conversation-list.types";
 import { selectAgentById } from "../agent-definition/selectors";
 import {
@@ -14,12 +14,12 @@ import {
   type ConversationLane,
 } from "./lanes";
 
-const selectConversationHistory = (state: RootState) =>
+const selectConversationHistory = (state: ChatRootState) =>
   state.conversationHistory;
 
 // ── Source facets (user-wide, powers the filter tree) ────────────────────────
 
-export const selectSourceFacets = (state: RootState) =>
+export const selectSourceFacets = (state: ChatRootState) =>
   state.conversationHistory.sourceFacets;
 
 /** Per-lane conversation totals for the lane toggle badges. */
@@ -34,7 +34,7 @@ export const selectLaneCounts = createSelector(
   },
 );
 
-const selectStoredLanes = (state: RootState) =>
+const selectStoredLanes = (state: ChatRootState) =>
   state.userPreferences.conversationFilters?.lanes;
 
 /** The viewer's enabled lanes (persisted preference, normalized). */
@@ -43,10 +43,10 @@ export const selectConversationLanes = createSelector(
   (stored) => normalizeLanes(stored),
 );
 
-export const selectSourceFacetsStatus = (state: RootState) =>
+export const selectSourceFacetsStatus = (state: ChatRootState) =>
   state.conversationHistory.sourceFacetsStatus;
 
-export const selectSourceFacetsError = (state: RootState) =>
+export const selectSourceFacetsError = (state: ChatRootState) =>
   state.conversationHistory.sourceFacetsError;
 
 /**
@@ -182,7 +182,7 @@ export interface AgentBucket {
 export const makeSelectGroupedByAgent = (scopeId: string) => {
   const selectItems = makeSelectConversationHistoryItems(scopeId);
   return createSelector(
-    [selectItems, (state: RootState) => state],
+    [selectItems, (state: ChatRootState) => state],
     (items, state): AgentBucket[] => {
       const buckets = new Map<string | null, ConversationListItem[]>();
       for (const item of items) {

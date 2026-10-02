@@ -86,6 +86,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   },
   useAppDispatch: () => jest.fn(async () => {}),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 // The record door pulls the entity registry and the peek host — neither is
 // under test here. The label is what a person reads; that is what we assert.

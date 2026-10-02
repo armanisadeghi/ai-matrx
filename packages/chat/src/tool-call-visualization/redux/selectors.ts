@@ -11,7 +11,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import {
   selectAllToolLifecycles as selectAllToolLifecyclesBase,
@@ -35,9 +35,9 @@ export const selectToolCallIdsInOrder = selectToolCallIdsInOrderBase;
  */
 export const selectOrderedToolLifecycles = (requestId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.toolLifecycle,
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
+    (state: ChatRootState) => state.activeRequests.byRequestId[requestId]?.timeline,
     (lifecycle, timeline): ToolLifecycleEntry[] => {
       if (!lifecycle) return [];
       if (!timeline || timeline.length === 0) {

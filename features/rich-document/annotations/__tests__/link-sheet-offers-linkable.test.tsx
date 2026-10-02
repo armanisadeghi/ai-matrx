@@ -25,6 +25,8 @@ jest.mock("@ai-matrx/design-system", () => ({
   SheetDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "me" }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "me" }));
 // The picker's own lister check: pickable kinds with a title column or a host lister. Mirrors the
 // live registry for this source — fc_card, document and record link but cannot be listed.

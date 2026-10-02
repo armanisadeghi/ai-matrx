@@ -58,6 +58,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     selector({ activeRequests: { byRequestId: {} } }),
   useAppDispatch: () => () => undefined,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 jest.mock(
   "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema",

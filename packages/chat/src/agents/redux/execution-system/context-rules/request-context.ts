@@ -16,7 +16,7 @@
  * on an agent request.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import {
   DEFAULT_INLINE_CAP,
   DEFAULT_SURFACE_KEY,
@@ -99,7 +99,7 @@ export interface PageContextDirective {
  * ordinary conversation (a window or panel chat over the page) that follows it.
  */
 export function pageContextFor(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): PageContextDirective | null {
   const owner = pageOwningConversation(conversationId);
@@ -161,7 +161,7 @@ function rowLabel(key: string, ...written: Array<string | null | undefined>): st
   return humanizeContextKey(key) || key;
 }
 
-function attachedFileLabel(state: RootState, conversationId: string, fileId: string): string {
+function attachedFileLabel(state: ChatRootState, conversationId: string, fileId: string): string {
   const resources = state.instanceResources?.byConversationId[conversationId];
   for (const resource of Object.values(resources ?? {})) {
     const source = resource.source;
@@ -182,12 +182,12 @@ function attachedFileLabel(state: RootState, conversationId: string, fileId: str
  * table and the send path alike (a table that showed four system values the
  * manual send never carried was found live, 2026-09-30).
  */
-export function ambientIncluded(state: RootState, conversationId: string): boolean {
+export function ambientIncluded(state: ChatRootState, conversationId: string): boolean {
   const mode = state.messages?.byConversationId?.[conversationId]?.apiEndpointMode ?? "agent";
   return mode !== "manual" && isFirstTurn(state, conversationId);
 }
 
-function agentContextLayerKnownFor(state: RootState, agentId: string | null): boolean {
+function agentContextLayerKnownFor(state: ChatRootState, agentId: string | null): boolean {
   return Boolean(agentId && selectAgentReadyForExecution(state, agentId));
 }
 
@@ -195,14 +195,14 @@ function agentContextLayerKnownFor(state: RootState, agentId: string | null): bo
  * Whether the rows can name the agent's layer (its Context Policies and kill
  * switch): true with no agent, or once its execution definition is loaded.
  */
-export function agentContextLayerKnown(state: RootState, conversationId: string): boolean {
+export function agentContextLayerKnown(state: ChatRootState, conversationId: string): boolean {
   const agentId = state.conversations?.byConversationId[conversationId]?.agentId ?? null;
   return !agentId || agentContextLayerKnownFor(state, agentId);
 }
 
 /** Every value this conversation's next turn would carry, before any rule. */
 export function collectContextRowSources(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   opts: RequestContextOptions = {},
 ): ContextRowSource[] {
@@ -359,7 +359,7 @@ export function collectContextRowSources(
  * that the page values were read AFTER the writes this conversation made.
  */
 export function buildResumeRequestContext(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   mandateKillSwitch: boolean,
 ): RequestContext {
@@ -371,7 +371,7 @@ export function buildResumeRequestContext(
 }
 
 /** The inline cap the server last reported (a platform knob), else the default. */
-export function selectContextInlineCap(state: RootState, conversationId: string): number {
+export function selectContextInlineCap(state: ChatRootState, conversationId: string): number {
   return (
     state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt.cap ??
     DEFAULT_INLINE_CAP
@@ -380,7 +380,7 @@ export function selectContextInlineCap(state: RootState, conversationId: string)
 
 /** Rows (what the table shows) and the request `context` built from them. */
 export function buildRequestContext(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   opts: RequestContextOptions = {},
 ): RequestContext {
@@ -417,7 +417,7 @@ export interface PreviewRequestContext {
 }
 
 export function buildPreviewRequestContext(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): PreviewRequestContext {
   const door = buildRequestContext(state, conversationId);
@@ -434,7 +434,7 @@ export function buildPreviewRequestContext(
 
 const EMPTY_ROWS: ResolvedContextRow[] = [];
 
-function displayInputs(state: RootState, conversationId: string): readonly unknown[] {
+function displayInputs(state: ChatRootState, conversationId: string): readonly unknown[] {
   const conversation = state.conversations?.byConversationId[conversationId];
   const agentId = conversation?.agentId ?? null;
   return [
@@ -460,7 +460,7 @@ const rowsMemo = new Map<string, { inputs: readonly unknown[]; rows: ResolvedCon
  */
 export const selectResolvedContextRows =
   (conversationId: string, mandateKillSwitch = false) =>
-  (state: RootState): ResolvedContextRow[] => {
+  (state: ChatRootState): ResolvedContextRow[] => {
     const inputs = [...displayInputs(state, conversationId), mandateKillSwitch];
     const memoKey = conversationId;
     const hit = rowsMemo.get(memoKey);
@@ -513,7 +513,7 @@ export function durableAttachmentKey(token: string, resourceId: string): string 
  * kind not read yet leaves its rows unchanged.
  */
 export function reconcileDurableAttachments(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   rows: ResolvedContextRow[],
   groups: readonly DurableAttachmentGroup[],
@@ -563,7 +563,7 @@ export function contextRowsForRequest(request: object): ResolvedContextRow[] {
 // ── What the table DISPLAYS ─────────────────────────────────────────────────
 
 /** The receipt persisted on the conversation's most recent sent message, if any. */
-function lastPersistedReceipt(state: RootState, conversationId: string) {
+function lastPersistedReceipt(state: ChatRootState, conversationId: string) {
   const entry = state.messages?.byConversationId?.[conversationId];
   const ids = entry?.orderedIds ?? [];
   for (let i = ids.length - 1; i >= 0; i--) {
@@ -600,7 +600,7 @@ const displayMemo = new Map<
  */
 export const selectDisplayContextRows =
   (conversationId: string, mandateKillSwitch = false) =>
-  (state: RootState): ResolvedContextRow[] => {
+  (state: ChatRootState): ResolvedContextRow[] => {
     const rows = selectResolvedContextRows(conversationId, mandateKillSwitch)(state);
     // This session's latest receipt; on a fresh load, the receipt persisted on
     // the conversation's last sent message — so values the server adds every

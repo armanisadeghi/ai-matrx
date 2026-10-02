@@ -4,7 +4,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { recordUnavailable } from "@host/lib/records/recordUnavailable";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { AgentShortcut } from "../types";
 import { fetchFullShortcut } from "../thunks";
 import type { Database } from "@host/types/database.types";
@@ -73,7 +73,7 @@ type RpcArgs =
 export const createShortcutFromAgentSurface = createAsyncThunk<
   string,
   CreateShortcutFromAgentSurfaceArgs,
-  { dispatch: AppDispatch; state: RootState }
+  { dispatch: ChatDispatch; state: ChatRootState }
 >("agentShortcut/createFromAgentSurface", async (args, { dispatch }) => {
   const organizationId = await ensureOrgId(args.organizationId);
   // Postgres reads missing params as null. The generated `Args` type marks

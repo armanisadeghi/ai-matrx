@@ -17,7 +17,7 @@ jest.mock("../../../../../surfaces/services/bind-agent-to-surface.service", () =
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import conversationsReducer, {
   createInstance,
   patchConversation,
@@ -124,11 +124,11 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
     );
 
     try {
-      await (store.dispatch as unknown as AppDispatch)(
+      await (store.dispatch as unknown as ChatDispatch)(
         refreshSurfaceScope({ conversationId: CONVERSATION_ID }),
       ).unwrap();
 
-      let state = store.getState() as unknown as RootState;
+      let state = store.getState() as unknown as ChatRootState;
       expect(
         state.instanceVariableValues.byConversationId[CONVERSATION_ID]
           ?.scopeValues.renamed_agent_input,
@@ -139,11 +139,11 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
       ).toEqual({});
 
       liveInput = "Matrx is the product name (not matrix) — second submit";
-      await (store.dispatch as unknown as AppDispatch)(
+      await (store.dispatch as unknown as ChatDispatch)(
         refreshSurfaceScope({ conversationId: CONVERSATION_ID }),
       ).unwrap();
 
-      state = store.getState() as unknown as RootState;
+      state = store.getState() as unknown as ChatRootState;
       expect(
         state.instanceVariableValues.byConversationId[CONVERSATION_ID]
           ?.scopeValues.renamed_agent_input,
@@ -185,14 +185,14 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
     );
 
     try {
-      await (store.dispatch as unknown as AppDispatch)(
+      await (store.dispatch as unknown as ChatDispatch)(
         refreshSurfaceScope({
           conversationId: CONVERSATION_ID,
           composerText: "What is on page 14?",
         }),
       ).unwrap();
 
-      const state = store.getState() as unknown as RootState;
+      const state = store.getState() as unknown as ChatRootState;
       expect(beforeExecute).toHaveBeenCalledWith({
         conversationId: CONVERSATION_ID,
         composerText: "What is on page 14?",
@@ -227,7 +227,7 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
 
     try {
       await expect(
-        (store.dispatch as unknown as AppDispatch)(
+        (store.dispatch as unknown as ChatDispatch)(
           refreshSurfaceScope({
             conversationId: CONVERSATION_ID,
             composerText: "Keep this draft intact",
@@ -254,7 +254,7 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
     );
 
     await expect(
-      (store.dispatch as unknown as AppDispatch)(
+      (store.dispatch as unknown as ChatDispatch)(
         refreshSurfaceScope({
           conversationId: CONVERSATION_ID,
           composerText: "Do not send without current evidence",
@@ -283,11 +283,11 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
       1,
     );
     try {
-      await (store.dispatch as unknown as AppDispatch)(
+      await (store.dispatch as unknown as ChatDispatch)(
         refreshSurfaceScope({ conversationId: CONVERSATION_ID }),
       ).unwrap();
       const entries =
-        (store.getState() as unknown as RootState).instanceContext.byConversationId[CONVERSATION_ID] ?? {};
+        (store.getState() as unknown as ChatRootState).instanceContext.byConversationId[CONVERSATION_ID] ?? {};
       expect(String(entries.surface_closed?.value)).toContain("has been closed");
       const chain = entries.surface_chain?.value as Array<{ surface: string }>;
       expect(chain.map((level) => level.surface)).toEqual(["matrx-user/data-tables"]);
@@ -321,11 +321,11 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
     expect(isPageOwnConversation(CONVERSATION_ID)).toBe(true);
     newChatPage();
 
-    const result = await (store.dispatch as unknown as AppDispatch)(
+    const result = await (store.dispatch as unknown as ChatDispatch)(
       refreshSurfaceScope({ conversationId: CONVERSATION_ID }),
     ).unwrap();
     const entries =
-      (store.getState() as unknown as RootState).instanceContext.byConversationId[CONVERSATION_ID] ?? {};
+      (store.getState() as unknown as ChatRootState).instanceContext.byConversationId[CONVERSATION_ID] ?? {};
     expect(entries.surface_closed).toBeUndefined();
     expect(result.reason).toBe("own_page_conversation");
   });

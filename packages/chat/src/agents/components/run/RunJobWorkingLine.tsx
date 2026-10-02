@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from "react";
 import { ShimmerText } from "@host/components/loaders/ShimmerText";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import {
   selectRequestGenerationJob,
   selectRequestStartedAt,

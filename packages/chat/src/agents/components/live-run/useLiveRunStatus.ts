@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import {
   selectCurrentPhase,
   selectRequestError,

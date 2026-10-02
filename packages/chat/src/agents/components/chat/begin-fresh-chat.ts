@@ -2,8 +2,7 @@
 
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import type { AppDispatch } from "@host/lib/redux/store";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { clearFocus } from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
 import { resolveMandate } from "../../../mandates/service";
 import {
@@ -41,7 +40,7 @@ export function parseChatPath(pathname: string): {
  *  the caller supplies that mandate's resolved agent (`defaultAgentId`). */
 export function resolveActiveChatAgentId(
   pathname: string,
-  state: RootState,
+  state: ChatRootState,
   defaultAgentId: string | null,
 ): string | undefined {
   const { activeConversationId, activeAgentId } = parseChatPath(pathname);
@@ -104,9 +103,9 @@ export function stageChatAgentSwitch({
   sourceConversationId,
   href = `/chat/a/${encodeURIComponent(targetAgentId)}`,
 }: {
-  dispatch: AppDispatch;
+  dispatch: ChatDispatch;
   router: AppRouterInstance;
-  getState: () => RootState;
+  getState: () => ChatRootState;
   targetAgentId: string;
   sourceAgentId?: string;
   sourceConversationId?: string | null;
@@ -185,10 +184,10 @@ export async function beginFreshChat({
   pathname,
   getState,
 }: {
-  dispatch: AppDispatch;
+  dispatch: ChatDispatch;
   router: AppRouterInstance;
   pathname: string;
-  getState: () => RootState;
+  getState: () => ChatRootState;
 }): Promise<void> {
   const state = getState();
   let defaultAgentId: string | null = null;

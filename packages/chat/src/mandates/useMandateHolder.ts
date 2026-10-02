@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../store/hooks";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import {
   MandateOrganizationUnresolvedError,

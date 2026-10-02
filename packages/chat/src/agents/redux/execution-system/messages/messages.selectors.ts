@@ -9,7 +9,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { nextTranscriptPosition, type MessageRecord } from "./messages.slice";
 import type {
   ContentSegment,
@@ -95,7 +95,7 @@ const EMPTY_SEGMENTS: ContentSegment[] = [];
 // `MessageRecord[]` (broke `.length` / iteration at call sites).
 const conversationMessagesSelectorCache = new Map<
   string,
-  (state: RootState) => MessageRecord[]
+  (state: ChatRootState) => MessageRecord[]
 >();
 
 // ---------------------------------------------------------------------------
@@ -108,9 +108,9 @@ export const selectConversationMessages = (conversationId: string) => {
   if (cached) return cached;
 
   const selector = createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.messages.byConversationId[conversationId]?.orderedIds,
-    (state: RootState) => state.messages.byConversationId[conversationId]?.byId,
+    (state: ChatRootState) => state.messages.byConversationId[conversationId]?.byId,
     (orderedIds, byId): MessageRecord[] => {
       if (!orderedIds || !byId || orderedIds.length === 0) return EMPTY_RECORDS;
       const out: MessageRecord[] = [];
@@ -127,7 +127,7 @@ export const selectConversationMessages = (conversationId: string) => {
 
 export const selectOrderedMessageIds =
   (conversationId: string) =>
-  (state: RootState): string[] =>
+  (state: ChatRootState): string[] =>
     state.messages.byConversationId[conversationId]?.orderedIds ?? EMPTY_IDS;
 
 /**
@@ -137,7 +137,7 @@ export const selectOrderedMessageIds =
  */
 export const selectFirstMessageId =
   (conversationId: string) =>
-  (state: RootState): string | undefined =>
+  (state: ChatRootState): string | undefined =>
     state.messages.byConversationId[conversationId]?.orderedIds?.[0];
 
 // ---------------------------------------------------------------------------
@@ -148,32 +148,32 @@ export const selectFirstMessageId =
 
 export const selectHasMoreOlderMessages =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.messages.byConversationId[conversationId]?.hasMoreOlder ?? false;
 
 export const selectIsLoadingOlderMessages =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.messages.byConversationId[conversationId]?.isLoadingOlder ?? false;
 
 export const selectVisibleMessageGroupLimit =
   (conversationId: string) =>
-  (state: RootState): number | null =>
+  (state: ChatRootState): number | null =>
     state.messages.byConversationId[conversationId]?.visibleGroupLimit ?? null;
 
 export const selectOldestLoadedPosition =
   (conversationId: string) =>
-  (state: RootState): number | null =>
+  (state: ChatRootState): number | null =>
     state.messages.byConversationId[conversationId]?.oldestPosition ?? null;
 
 export const selectMessageById =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord | undefined =>
+  (state: ChatRootState): MessageRecord | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId];
 
 export const selectMessageCount =
   (conversationId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     state.messages.byConversationId[conversationId]?.orderedIds?.length ?? 0;
 
 /**
@@ -183,12 +183,12 @@ export const selectMessageCount =
  */
 export const selectNextMessagePosition =
   (conversationId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     nextTranscriptPosition(state.messages.byConversationId[conversationId]);
 
 export const selectHasMessages =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     (state.messages.byConversationId[conversationId]?.orderedIds?.length ?? 0) >
     0;
 
@@ -199,7 +199,7 @@ export const selectHasMessages =
  */
 export const selectMessagesHydrationFailure =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.messages.byConversationId[conversationId]?.hydrationFailure ?? null;
 
 // ---------------------------------------------------------------------------
@@ -212,51 +212,51 @@ export const selectMessagesHydrationFailure =
 
 export const selectMessageContent =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord["content"] | undefined =>
+  (state: ChatRootState): MessageRecord["content"] | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId]?.content;
 
 export const selectMessageStatus =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord["status"] | undefined =>
+  (state: ChatRootState): MessageRecord["status"] | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId]?.status;
 
 export const selectMessageClientStatus =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord["_clientStatus"] | undefined =>
+  (state: ChatRootState): MessageRecord["_clientStatus"] | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId]
       ?._clientStatus;
 
 export const selectMessageRole =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord["role"] | undefined =>
+  (state: ChatRootState): MessageRecord["role"] | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId]?.role;
 
 export const selectMessagePosition =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord["position"] | undefined =>
+  (state: ChatRootState): MessageRecord["position"] | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId]
       ?.position;
 
 export const selectMessageAgentId =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord["agentId"] | undefined =>
+  (state: ChatRootState): MessageRecord["agentId"] | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId]?.agentId;
 
 export const selectMessageMetadata =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord["metadata"] | undefined =>
+  (state: ChatRootState): MessageRecord["metadata"] | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId]
       ?.metadata;
 
 export const selectMessageContentHistory =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord["contentHistory"] | undefined =>
+  (state: ChatRootState): MessageRecord["contentHistory"] | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId]
       ?.contentHistory;
 
 export const selectMessageStreamRequestId =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageRecord["_streamRequestId"] | undefined =>
+  (state: ChatRootState): MessageRecord["_streamRequestId"] | undefined =>
     state.messages.byConversationId[conversationId]?.byId?.[messageId]
       ?._streamRequestId;
 
@@ -268,7 +268,7 @@ export const selectMessageStreamRequestId =
  */
 export const selectIsLatestAssistantMessage =
   (conversationId: string, messageId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const entry = state.messages.byConversationId[conversationId];
     if (!entry) return false;
     const ordered = entry.orderedIds;
@@ -289,7 +289,7 @@ export const selectIsLatestAssistantMessage =
  */
 export const selectLatestAssistantMessageId =
   (conversationId: string) =>
-  (state: RootState): string | undefined => {
+  (state: ChatRootState): string | undefined => {
     const entry = state.messages.byConversationId[conversationId];
     const ordered = entry?.orderedIds;
     const byId = entry?.byId;
@@ -311,7 +311,7 @@ export const selectLatestAssistantMessageId =
  */
 export const selectLatestAnswerText =
   (conversationId: string) =>
-  (state: RootState): string => {
+  (state: ChatRootState): string => {
     const id = selectLatestAssistantMessageId(conversationId)(state);
     if (!id) return "";
     return extractFlatText(
@@ -322,7 +322,7 @@ export const selectLatestAnswerText =
 /** The latest committed answer as a lossless Content-IR document string. */
 export const selectLatestAnswerDocumentText =
   (conversationId: string) =>
-  (state: RootState): string => {
+  (state: ChatRootState): string => {
     const id = selectLatestAssistantMessageId(conversationId)(state);
     if (!id) return "";
     return extractAnswerDocumentText(
@@ -336,22 +336,22 @@ export const selectLatestAnswerDocumentText =
 
 export const selectApiEndpointMode =
   (conversationId: string) =>
-  (state: RootState): ApiEndpointMode =>
+  (state: ChatRootState): ApiEndpointMode =>
     state.messages.byConversationId[conversationId]?.apiEndpointMode ?? null;
 
 export const selectConversationTitle =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.messages.byConversationId[conversationId]?.title ?? null;
 
 export const selectConversationDescription =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.messages.byConversationId[conversationId]?.description ?? null;
 
 export const selectConversationKeywords =
   (conversationId: string) =>
-  (state: RootState): string[] | null =>
+  (state: ChatRootState): string[] | null =>
     state.messages.byConversationId[conversationId]?.keywords ?? null;
 
 // ---------------------------------------------------------------------------
@@ -797,9 +797,9 @@ export const selectMessageInterleavedContent = (
   messageId: string,
 ) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.messages.byConversationId[conversationId]?.byId?.[messageId],
-    (state: RootState) => state.observability.toolCalls,
+    (state: ChatRootState) => state.observability.toolCalls,
     (record, toolCallsById): ContentSegment[] => {
       if (!record) return EMPTY_SEGMENTS;
       if ((record.role as string) === "tool") return EMPTY_SEGMENTS;
@@ -1068,7 +1068,7 @@ export const selectMessagesInterleavedRuns = (
     selectMessageInterleavedContent(conversationId, id),
   );
   let last: ContentSegment[][] | null = null;
-  return (state: RootState): ContentSegment[][] => {
+  return (state: ChatRootState): ContentSegment[][] => {
     const next = perRow.map((select) => select(state));
     if (
       last &&

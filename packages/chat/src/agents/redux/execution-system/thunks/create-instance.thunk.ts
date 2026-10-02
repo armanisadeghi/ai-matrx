@@ -17,7 +17,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { createInstanceFull } from "../create-instance-full";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type {
   AgentType,
   VariableDefinition,
@@ -94,7 +94,7 @@ import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 // =============================================================================
 
 function readAgentSnapshot(
-  state: RootState,
+  state: ChatRootState,
   agentId: string,
 ): {
   agentType: AgentType;
@@ -238,17 +238,17 @@ export const createManualInstance = createAsyncThunk<
   // seeded an empty base model before loadConversation hydrated the transcript.
   // Builder/manual mode deliberately keeps its live, possibly-unsaved Redux
   // definition and must never refetch over it.
-  const preSnapshotState = getState() as RootState;
+  const preSnapshotState = getState() as ChatRootState;
   const preSnapshotAgent = preSnapshotState.agentDefinition.agents?.[agentId];
   if (
     apiEndpointMode !== "manual" &&
     preSnapshotAgent &&
     !hasField(preSnapshotAgent._loadedFields, "modelId")
   ) {
-    await (dispatch as AppDispatch)(fetchAgentExecutionFull(agentId)).unwrap();
+    await (dispatch as ChatDispatch)(fetchAgentExecutionFull(agentId)).unwrap();
   }
 
-  const state = getState() as RootState;
+  const state = getState() as ChatRootState;
 
   const snapshot = readAgentSnapshot(state, agentId);
   const resolvedAgentType = agentType ?? snapshot.agentType;
@@ -408,7 +408,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
   } = args;
 
   const conversationId = generateConversationId();
-  const state = getState() as RootState;
+  const state = getState() as ChatRootState;
   const shortcut = getShortcutRecordFromState(state, shortcutId);
 
   // access-errors: ok — browser-local Redux lookup; the shortcut is absent from the loaded store, no record read involved
@@ -702,7 +702,7 @@ export const createTestInstance = createAsyncThunk<
     { dispatch, getState },
   ) => {
     const conversationId = generateConversationId();
-    const state = getState() as RootState;
+    const state = getState() as ChatRootState;
 
     const snapshot = readAgentSnapshot(state, agentId);
     const resolvedAgentType = agentType ?? snapshot.agentType;
@@ -852,7 +852,7 @@ export const startNewConversation = createAsyncThunk<
 >(
   "instances/startNewConversation",
   async ({ currentConversationId, surfaceKey }, { dispatch, getState }) => {
-    const state = getState() as RootState;
+    const state = getState() as ChatRootState;
 
     const instance =
       state.conversations.byConversationId[currentConversationId];
@@ -995,14 +995,14 @@ interface StartNewConversationAndExecuteResult {
 export const startNewConversationAndExecute = createAsyncThunk<
   StartNewConversationAndExecuteResult,
   StartNewConversationAndExecuteArgs,
-  { state: RootState }
+  { state: ChatRootState }
 >(
   "instances/startNewConversationAndExecute",
   async (
     { currentConversationId, surfaceKey, debug = false },
     { dispatch, getState },
   ) => {
-    const state = getState() as RootState;
+    const state = getState() as ChatRootState;
 
     const currentInput =
       state.instanceUserInput.byConversationId[currentConversationId];
@@ -1191,7 +1191,7 @@ export const splitInputIntoNewConversation = createAsyncThunk<
 >(
   "instances/splitInputIntoNewConversation",
   async ({ currentConversationId, surfaceKey }, { dispatch, getState }) => {
-    const state = getState() as RootState;
+    const state = getState() as ChatRootState;
 
     const currentInput =
       state.instanceUserInput.byConversationId[currentConversationId];
@@ -1420,7 +1420,7 @@ interface SetAutoClearModeArgs {
 export const setAutoClearMode = createAsyncThunk<
   void,
   SetAutoClearModeArgs,
-  { state: RootState }
+  { state: ChatRootState }
 >(
   "instances/setAutoClearMode",
   async ({ conversationId, value, surfaceKey }, { dispatch, getState }) => {

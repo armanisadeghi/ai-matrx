@@ -32,6 +32,8 @@ jest.mock("@/lib/organization/organization-gate", () => ({
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => "org-active",
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => "org-active" }));
 jest.mock("@/components/errors/ErrorNotice", () => ({
   ErrorNotice: ({ title, message }: { title: string; message: string }) => (

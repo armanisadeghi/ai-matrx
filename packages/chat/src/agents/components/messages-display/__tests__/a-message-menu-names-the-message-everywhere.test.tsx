@@ -33,11 +33,13 @@ const SENT_AT = "2026-09-27T18:50:00Z";
 
 let mockState: Record<string, unknown> = {};
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector(mockState),
   useAppDispatch: () => jest.fn(),
   useAppStore: () => ({ getState: () => mockState }),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <p>{content}</p>,

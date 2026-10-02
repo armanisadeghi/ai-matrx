@@ -16,7 +16,7 @@ import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 
 jest.mock("@host/lib/api/call-api", () => ({ callApi: jest.fn() }));
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => (thunk: unknown) => thunk,
   useAppSelector: (selector: (state: unknown) => unknown) => selector(undefined),
 }));

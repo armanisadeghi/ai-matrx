@@ -15,11 +15,13 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let operation: unknown = null;
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => jest.fn(() => ({ finally: () => undefined })),
   useAppSelector: (sel: (s: unknown) => unknown) =>
     sel({ conversations: { byConversationId: { "conv-1": { serverOperation: operation } } } }),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
 jest.mock("../../ui-first-tools/redux/pending-asks.slice", () => ({
   selectActivePendingAsksForConversation: () => () => [],
 }));

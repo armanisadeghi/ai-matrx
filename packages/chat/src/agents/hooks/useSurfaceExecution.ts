@@ -25,7 +25,7 @@
  * reflect and cancel the run that is genuinely in flight on this surface.
  */
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { selectIsExecuting } from "../redux/execution-system/selectors/aggregate.selectors";
 import { selectDisplayConversation } from "../redux/execution-system/conversation-focus/conversation-focus.selectors";
 

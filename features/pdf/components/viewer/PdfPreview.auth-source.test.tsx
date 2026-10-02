@@ -31,6 +31,8 @@ jest.mock("@/features/files/hooks/usePdfRemoteSource", () => ({
   usePdfRemoteSource: (...args: unknown[]) => mockUsePdfRemoteSource(...args),
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/files/redux/selectors", () => ({ selectFileById: () => null }));
 jest.mock("./PdfSourceUnavailable", () => ({
   __esModule: true,

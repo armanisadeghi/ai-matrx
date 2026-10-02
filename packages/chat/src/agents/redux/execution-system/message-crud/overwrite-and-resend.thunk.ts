@@ -36,7 +36,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { editMessage } from "./edit-message.thunk";
 import { mergeEditedText } from "./content-blocks.util";
 import { markCacheBypass } from "./cache-bypass.slice";
@@ -61,8 +61,8 @@ interface OverwriteAndResendResult {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   rejectValue: { message: string };
 }
 

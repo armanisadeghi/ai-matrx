@@ -18,7 +18,7 @@ import { AudioVariableInput } from "../input-components/AudioVariableInput";
 import { VideoVariableInput } from "../input-components/VideoVariableInput";
 import { DocumentVariableInput } from "../input-components/DocumentVariableInput";
 import { YoutubeVariableInput } from "../input-components/YoutubeVariableInput";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,

@@ -10,7 +10,7 @@
  * default rode a Search-agents switch into a Claude Sonnet agent's run).
  */
 
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../../../store/root-state";
 import type { FeLlmParams } from "../../../types/agent-api-types";
 import {
   isBasicWorkMandate,
@@ -19,7 +19,7 @@ import {
 import { seedOverrides } from "./instance-model-overrides.slice";
 
 export async function applyLaunchModelOverrides(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   {
     conversationId,
     mandateKey,

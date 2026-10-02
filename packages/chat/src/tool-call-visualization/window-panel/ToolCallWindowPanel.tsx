@@ -38,14 +38,14 @@ import { cn } from "@ai-matrx/design-system";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
 import { ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { upsertToolCall } from "../../agents/redux/execution-system/observability/observability.slice";
 import {
   EMPTY_TOOL_CALLS,
   selectToolCallsForConversation,
 } from "../../agents/redux/execution-system/observability/observability.selectors";
 import { selectLiveToolLifecycleByConversation } from "../../agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
@@ -325,7 +325,7 @@ function useConversationToolEntries(
     () =>
       conversationId
         ? selectToolCallsForConversation(conversationId)
-        : (_state: RootState) => EMPTY_TOOL_CALLS,
+        : (_state: ChatRootState) => EMPTY_TOOL_CALLS,
     [conversationId],
   );
   const persisted = useAppSelector(selectPersisted);
@@ -336,7 +336,7 @@ function useConversationToolEntries(
     () =>
       conversationId && enabled
         ? selectLiveToolLifecycleByConversation(conversationId)
-        : (_state: RootState) => null as Map<string, ToolLifecycleEntry> | null,
+        : (_state: ChatRootState) => null as Map<string, ToolLifecycleEntry> | null,
     [conversationId, enabled],
   );
   const liveByCallId = useAppSelector(selectLiveByCallId);

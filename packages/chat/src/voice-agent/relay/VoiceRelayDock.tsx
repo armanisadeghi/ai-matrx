@@ -14,7 +14,7 @@
 //
 // SoR: common-docs/systems/agents/voice/STATE.md
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { selectVoiceVoiceId } from "../state/selectors";
 import { LiveVoiceDoor } from "../components/LiveVoiceDoor";
 import { AudioLines } from "lucide-react";

@@ -11,7 +11,7 @@
  * bearer token is bound, and these are the guards for that.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { resolveAgentCacheBustBackend } from "../agent-cache-bust-request";
 
 const ORGANIZATION_ID = "f9cb3e35-1b2c-4d5e-8f60-71a2b3c4d5e6";
@@ -21,7 +21,7 @@ function stateWith(overrides: {
   accessToken?: string | null;
   fingerprintId?: string | null;
   organizationId?: string | null;
-}): RootState {
+}): ChatRootState {
   return {
     apiConfig: {
       activeServer: "production",
@@ -38,7 +38,7 @@ function stateWith(overrides: {
       shellDataLoaded: true,
     },
     appContext: { organization_id: overrides.organizationId ?? null },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 describe("resolveAgentCacheBustBackend organization admission", () => {

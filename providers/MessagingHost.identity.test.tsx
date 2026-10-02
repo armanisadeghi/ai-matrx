@@ -169,6 +169,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector(REDUX_STATE),
   useAppStore: () => ({ getState: () => REDUX_STATE }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 // THE STALE COPY, verbatim: Redux names one account for the whole file.
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({

@@ -12,7 +12,7 @@
 // Only launch handles are released; a surface's own handle id is a no-op.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/rootReducer";
+import type { ChatRootState } from "../../../../store/root-state";
 import { releaseLaunchWidgetHandle } from "../../../utils/launch-widget-handles";
 import {
   destroyInstance,
@@ -22,14 +22,14 @@ import {
 const CLOSE_OVERLAY = "overlays/closeOverlay";
 const DEFAULT_INSTANCE_ID = "default";
 
-function handleIdOf(state: RootState, conversationId: string): string | null {
+function handleIdOf(state: ChatRootState, conversationId: string): string | null {
   return (
     state.instanceUIState?.byConversationId[conversationId]?.widgetHandleId ??
     null
   );
 }
 
-function closingConversationId(state: RootState, payload: unknown): string | null {
+function closingConversationId(state: ChatRootState, payload: unknown): string | null {
   if (!payload || typeof payload !== "object") return null;
   const { overlayId, instanceId = DEFAULT_INSTANCE_ID } = payload as {
     overlayId?: string;
@@ -44,7 +44,7 @@ function closingConversationId(state: RootState, payload: unknown): string | nul
   return typeof id === "string" && id ? id : null;
 }
 
-export const launchHandleReleaseMiddleware: Middleware<object, RootState> =
+export const launchHandleReleaseMiddleware: Middleware<object, ChatRootState> =
   (store) => (next) => (action) => {
     const before = store.getState();
     const release: string[] = [];

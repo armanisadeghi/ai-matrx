@@ -14,6 +14,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => undefined,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 jest.mock("@/styles/themes/useThemeMode", () => ({ useThemeMode: () => "dark" }));
 jest.mock("@/features/canvas/hooks/useCanvas", () => ({ useCanvas: () => ({ open: jest.fn() }) }));

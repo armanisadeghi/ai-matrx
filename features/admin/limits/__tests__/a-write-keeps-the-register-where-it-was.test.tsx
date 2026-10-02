@@ -50,6 +50,8 @@ jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [], loading: false, error: null, refresh: () => {} }),
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: (selector: unknown) => (selector as () => unknown)() }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => null }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",

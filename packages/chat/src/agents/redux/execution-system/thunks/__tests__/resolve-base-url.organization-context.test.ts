@@ -4,19 +4,19 @@
  * the active organization for a new conversation) before any transport runs.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 jest.mock("@host/lib/redux/slices/apiConfigSlice", () => ({
   selectResolvedBaseUrl: () => "https://backend.test",
   selectActiveServer: () => "production",
 }));
 jest.mock("@host/lib/redux/slices/userSlice", () => ({
-  selectAccessToken: (state: RootState) =>
+  selectAccessToken: (state: ChatRootState) =>
     (state as unknown as { token: string | null }).token,
   selectFingerprintId: () => null,
 }));
 jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: (state: RootState) =>
+  selectOrganizationId: (state: ChatRootState) =>
     (state as unknown as { selectedOrganizationId: string | null })
       .selectedOrganizationId,
 }));
@@ -38,7 +38,7 @@ const SELECTED_ORG = "22222222-2222-4222-8222-222222222222";
 function state(options: {
   conversationOrganizationId?: string | null;
   selectedOrganizationId?: string | null;
-}): RootState {
+}): ChatRootState {
   return {
     token: "authenticated-jwt",
     selectedOrganizationId: options.selectedOrganizationId ?? null,
@@ -50,7 +50,7 @@ function state(options: {
         },
       },
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 describe("resolveBackendForConversation organization admission", () => {

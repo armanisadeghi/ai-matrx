@@ -32,7 +32,7 @@ import activeRequestsReducer, {
 import { deriveAnswerText } from "../../active-requests/active-requests.selectors";
 import { processStream } from "../process-stream";
 import { STREAM_FLUSH_INTERVAL_MS } from "../stream-flush-scheduler";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
@@ -188,13 +188,13 @@ async function runStreams(streams: number[]) {
         submitAt: 0,
         conversationIdAt: null,
         dispatch: store.dispatch as never,
-        getState: store.getState as unknown as () => RootState,
+        getState: store.getState as unknown as () => ChatRootState,
         abortController: new AbortController(),
       }),
     ),
   );
   const elapsedMs = performance.now() - startedAt;
-  const state = store.getState() as unknown as RootState;
+  const state = store.getState() as unknown as ChatRootState;
   const answers = streams.map((s) => {
     const request = state.activeRequests.byRequestId[requestIdOf(s)];
     if (!request) throw new Error(`request ${s} vanished`);

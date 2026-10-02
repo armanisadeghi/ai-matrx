@@ -19,7 +19,7 @@
 import type { ConversationTransferRow } from "./conversation-transfer-rows";
 import type { Coverage, Payload, Section, Source } from "@ai-matrx/alchemy/operate";
 import type { FormatAdapter } from "@ai-matrx/kit/content-transfer";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../store/root-state";
 import { toast } from "../../host/notify";
 import { unwrapKindEnvelopes } from "@host/lib/markdown/plain-text";
 import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
@@ -70,7 +70,7 @@ function fileSafe(name: string): string {
 
 /** The conversation as it stands in the store (no paging). */
 export function conversationFromState(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   complete = true,
 ): CapturedConversation {
@@ -104,8 +104,8 @@ export function conversationFromState(
 
 /** Page in EVERY message first, with progress, then read the conversation. */
 export async function captureConversation(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   conversationId: string,
   onProgress?: (loaded: number) => void,
 ): Promise<CapturedConversation> {
@@ -274,8 +274,8 @@ export function conversationTransferSources(conversationId: string, title: strin
 // ─── Running a row ───────────────────────────────────────────────────────────
 
 export interface ConversationTransferHost {
-  dispatch: AppDispatch;
-  getState: () => RootState;
+  dispatch: ChatDispatch;
+  getState: () => ChatRootState;
 }
 
 const MIME_LABEL: Record<string, string> = {

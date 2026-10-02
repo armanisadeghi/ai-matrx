@@ -13,7 +13,7 @@ import {
   selectAccessToken,
   selectFingerprintId,
 } from "@host/lib/redux/slices/userSlice";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type { components } from "@host/types/python-generated/api-types";
 
 export type InvalidateAgentCacheResponse =
@@ -25,7 +25,7 @@ export interface AgentCacheBustBackend {
 }
 
 export function resolveAgentCacheBustBackend(
-  state: RootState,
+  state: ChatRootState,
 ): AgentCacheBustBackend | null {
   const baseUrl = selectResolvedBaseUrl(state);
   if (!baseUrl) return null;

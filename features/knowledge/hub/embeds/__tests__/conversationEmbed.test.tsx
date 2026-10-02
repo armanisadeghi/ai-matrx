@@ -20,6 +20,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => mockDispatch,
   useAppStore: () => mockStore,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 let row: { initial_agent_id: string | null } | null = { initial_agent_id: "agent-1" };
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => {

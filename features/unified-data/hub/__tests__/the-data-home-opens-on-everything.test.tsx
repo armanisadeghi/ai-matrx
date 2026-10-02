@@ -271,6 +271,8 @@ jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => ME,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/organizations/hooks", () => ({
   useUserRole: () => ({ role: "owner", loading: false }),
   // The shell's organization filter reads her memberships itself (EntityOrgFilter).

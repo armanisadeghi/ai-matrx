@@ -27,7 +27,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { patchConversation } from "../../agents/redux/execution-system/conversations/conversations.slice";
 import { replaceSurfaceVariableValues } from "../../agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { replaceSurfaceContextEntries } from "../../agents/redux/execution-system/instance-context/instance-context.slice";

@@ -27,7 +27,7 @@ import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 import React, { useState } from "react";
 import { Copy, Check } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import { selectInstanceUIState } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectResolvedBaseUrl } from "@host/lib/redux/slices/apiConfigSlice";
 import type { BackendChannel } from "../../../redux/execution-system/thunks/resolve-base-url";

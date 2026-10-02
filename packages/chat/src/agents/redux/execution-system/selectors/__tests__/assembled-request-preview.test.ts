@@ -15,13 +15,13 @@ import { makeSelectAssembledRequest } from "../aggregate.selectors";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
 import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
 import type { DirectiveApplyPolicy } from "@host/lib/redux/preferences/userPreferencesSlice";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const CONVERSATION_ID = "conversation-1";
 
 function makeState(
   directiveApplyPolicy: DirectiveApplyPolicy = "default",
-): RootState {
+): ChatRootState {
   return {
     conversations: {
       byConversationId: {
@@ -58,7 +58,7 @@ function makeState(
     userPreferences: {
       assistant: { directiveApplyPolicy },
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 describe("makeSelectAssembledRequest", () => {

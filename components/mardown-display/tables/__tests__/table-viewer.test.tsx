@@ -17,6 +17,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     selector({ userAuth: { id: mockSignedIn ? "u-1" : null } }),
   useAppDispatch: () => jest.fn(),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }) }));
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => mockMobile }));
 jest.mock("@/components/rich-content/RichContent", () => ({

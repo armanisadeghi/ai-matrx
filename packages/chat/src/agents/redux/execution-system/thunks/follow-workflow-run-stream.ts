@@ -34,7 +34,7 @@
  */
 
 import { readMatrxSseStream } from "@ai-matrx/agents/stream/sse";
-import type { AppThunk } from "@host/lib/redux/store";
+import type { ChatThunk } from "../../../../store/root-state";
 import {
   appendWorkflowNodeStream,
   settleWorkflowNodeStream,
@@ -186,7 +186,7 @@ export interface FollowWorkflowRunOptions {
 
 export function followWorkflowRunStream(
   opts: FollowWorkflowRunOptions,
-): AppThunk<Promise<void>> {
+): ChatThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const backend = resolveBackendForConversation(
       getState(),

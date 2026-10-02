@@ -3,7 +3,7 @@
 import { variableValueToInputText } from "../../../utils/variable-utils";
 
 import { useState } from "react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import { isControlVariable } from "@ai-matrx/agents";
 import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { BoundVariableChips } from "../BoundVariableChips";

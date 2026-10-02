@@ -12,7 +12,7 @@
  */
 
 import type { ResolvedContextRow } from "@ai-matrx/agents/context";
-import { useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "../../../../store/hooks";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
 import { useContainerLinks } from "@host/features/scopes/hooks/useContainerLinks";
@@ -26,7 +26,7 @@ import {
   type DurableAttachment,
 } from "../../../redux/execution-system/context-rules/request-context";
 import { selectConversationAttachmentsEntry } from "@host/features/connectors/redux/attachments.slice";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import {
   ATTACHED_DOCUMENT_TOKENS,
   attachedDocumentFileId,
@@ -84,7 +84,7 @@ export function useConversationDisplayRows(
           label: row.display_name,
         }))
       : null;
-  return reconcileDurableAttachments(store.getState() as RootState, conversationId, rows, [
+  return reconcileDurableAttachments(store.getState() as ChatRootState, conversationId, rows, [
     { prefixes: DOCUMENT_ATTACHMENT_PREFIXES, items: documents },
     { prefixes: RESOURCE_ATTACHMENT_PREFIXES, items: resources },
   ]);

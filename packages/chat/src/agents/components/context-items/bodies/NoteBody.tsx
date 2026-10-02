@@ -14,7 +14,7 @@ import { NoteContentEditor } from "@host/features/notes/components/NoteContentEd
 import { NoteViewControls } from "@host/features/notes/components/NoteViewControls";
 import { NoteVersionHistory } from "@host/features/notes/components/NoteVersionHistory";
 import { NotesInstanceProvider } from "@host/features/notes/context/NotesInstanceContext";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {
   selectNoteById,
   selectNoteContentLoadStatus,

@@ -9,7 +9,7 @@
  * it as JSON without calling the model or persisting anything.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import { selectEndpointOverrideConfig } from "@host/lib/redux/slices/apiConfigSlice";
 import { resolveEndpointPath } from "@host/lib/api/resolve-endpoint-path";
 import { ENDPOINTS } from "@host/lib/api/endpoints";
@@ -20,7 +20,7 @@ import type { PromptPreview } from "./types";
 const trimRoot = (baseUrl: string): string => baseUrl.replace(/\/+$/, "");
 
 export async function requestPromptPreview(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): Promise<PromptPreview> {
   const payload = await assembleManualRequest(state, conversationId);

@@ -48,7 +48,7 @@ import {
   type SurfaceWriteHandlers,
 } from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteTarget } from "../../../../../surfaces/types";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const createClasses = {
   name: "create_classes",
@@ -82,7 +82,7 @@ async function run(
     const getState = () =>
       ({
         conversations: { byConversationId: { c1: { agentId: "agent-1" } } },
-      }) as unknown as RootState;
+      }) as unknown as ChatRootState;
     await dispatchSurfaceWrite({
       conversationId: "c1",
       requestId: "r1",

@@ -22,7 +22,7 @@ import { Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/design-system";
 import RichEditor from "@host/components/rich-editor/RichEditor";
 import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { updateMessageRecord } from "../../../redux/execution-system/messages/messages.slice";
 import {

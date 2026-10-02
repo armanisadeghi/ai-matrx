@@ -34,7 +34,7 @@ import {
   extractFlatText,
   selectConversationMessages,
 } from "../../../agents/redux/execution-system/messages/messages.selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 
 /**
  * What the sidebar knows, handed UP to the window's provider.
@@ -104,7 +104,7 @@ export function toRunHistoryRow(c: ConversationListItem): AgentRunHistoryRow {
  * 400ms poll.
  */
 export function readSelectedRunTranscript(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string | null,
   rowMessageCount: number | undefined,
 ): AgentRunHistoryTranscriptEntry[] | undefined {

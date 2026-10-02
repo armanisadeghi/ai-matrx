@@ -19,7 +19,7 @@
 
 import { useEffect, useRef } from "react";
 import { toast } from "../../../../host/notify";
-import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "../../../../store/hooks";
 import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
 import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
 import { normalize } from "@host/features/files/handler/input/normalize";

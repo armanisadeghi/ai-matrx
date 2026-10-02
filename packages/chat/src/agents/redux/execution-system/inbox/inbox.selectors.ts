@@ -2,20 +2,20 @@
  * conversationInbox selectors — queued-while-running message cards.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { ConversationInboxItem } from "./inbox.slice";
 
 const EMPTY_ITEMS: ConversationInboxItem[] = [];
 
 /** All queued items for a conversation, FIFO. Stable empty reference. */
 export const selectInboxItems = (conversationId: string) =>
-  (state: RootState): ConversationInboxItem[] =>
+  (state: ChatRootState): ConversationInboxItem[] =>
     state.conversationInbox?.byConversationId[conversationId] ?? EMPTY_ITEMS;
 
 /** Count of items still waiting (sending + pending). Primitive — no memo needed. */
 export const selectInboxWaitingCount =
   (conversationId: string) =>
-  (state: RootState): number => {
+  (state: ChatRootState): number => {
     const items = state.conversationInbox?.byConversationId[conversationId];
     if (!items) return 0;
     let n = 0;
@@ -34,7 +34,7 @@ export const selectInboxWaitingCount =
  */
 export const selectInboxItemStatus =
   (conversationId: string, injectionId: string) =>
-  (state: RootState): ConversationInboxItem["status"] | null =>
+  (state: ChatRootState): ConversationInboxItem["status"] | null =>
     state.conversationInbox?.byConversationId[conversationId]?.find(
       (i) => i.injectionId === injectionId,
     )?.status ?? null;

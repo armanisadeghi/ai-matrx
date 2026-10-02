@@ -7,15 +7,15 @@
 
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 
 export interface ScribeToolHandlerContext {
   /** The conversation that issued the tool call (used to resolve the session). */
   conversationId: string;
   callId: string;
   userId: string;
-  dispatch: ThunkDispatch<RootState, unknown, UnknownAction>;
-  getState: () => RootState;
+  dispatch: ThunkDispatch<ChatRootState, unknown, UnknownAction>;
+  getState: () => ChatRootState;
 }
 
 export interface ScribeToolHandler<TArgs, TResult> {

@@ -17,7 +17,7 @@
  * person is sending".
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type {
   AssembledAgentStartRequest,
   UserInputPart,
@@ -44,7 +44,7 @@ export interface FrozenSubmission {
 }
 
 export function captureSubmission(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): FrozenSubmission {
   const entry = state.instanceUserInput?.byConversationId[conversationId];

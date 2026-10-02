@@ -29,7 +29,7 @@ import {
   Timer,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import {
   selectRecentMemoryEvents,
 } from "../../../redux/execution-system/observational-memory/observational-memory.selectors";

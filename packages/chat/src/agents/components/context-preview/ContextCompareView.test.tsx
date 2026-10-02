@@ -13,10 +13,12 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 jest.mock("@host/lib/api/call-api", () => ({ callApi: jest.fn() }));
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => (thunk: unknown) => thunk,
   useAppSelector: (selector: (state: unknown) => unknown) => selector(undefined),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
 jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
   selectScopeSelectionsContext: () => ({}),
 }));

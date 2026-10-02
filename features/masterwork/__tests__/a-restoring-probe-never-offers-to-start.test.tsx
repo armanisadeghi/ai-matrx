@@ -41,6 +41,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => undefined,
   useAppStore: () => ({ dispatch: mockDispatch, getState: () => ({}) }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 jest.mock("@/lib/api/call-api", () => ({
   callApi: (request: Record<string, unknown>) => request,

@@ -12,7 +12,7 @@
  *     send thunks never merge garbage onto the request body.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import { getRegisteredCapabilities } from "../registry";
 import "../agent-fs.provider";
 import { parseRequestOverrides } from "../../utils/request-overrides";
@@ -21,14 +21,14 @@ const CONV = "conv-1";
 
 function stateWithSettings(
   settings: Record<string, unknown> | undefined,
-): RootState {
+): ChatRootState {
   return {
     instanceUIState: {
       byConversationId: {
         [CONV]: { builderAdvancedSettings: settings },
       },
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 function agentFsProvider() {

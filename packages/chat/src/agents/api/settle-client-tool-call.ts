@@ -33,7 +33,7 @@
 
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import { upsertToolLifecycle } from "../redux/execution-system/active-requests/active-requests.slice";
 import {
   patchToolCall,
@@ -62,7 +62,7 @@ function serializeOutput(output: unknown): string | null {
 
 export const settleClientToolCall = (
   answer: SettledToolAnswer,
-): ThunkAction<void, RootState, unknown, UnknownAction> => {
+): ThunkAction<void, ChatRootState, unknown, UnknownAction> => {
   return (dispatch, getState) => {
     const { conversationId, call_id: callId } = answer;
     const isError = Boolean(answer.is_error);

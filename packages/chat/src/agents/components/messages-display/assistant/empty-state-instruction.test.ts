@@ -68,9 +68,9 @@ describe("emptyStateInstruction", () => {
 // "Show Form Inputs" press flipped `showVariablePanel` and brought the
 // sentence back over a chat box with nothing in it.
 import { selectIsVariableFormShown } from "../../../redux/execution-system/selectors/aggregate.selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 
-function stateWith(ui: Record<string, unknown>): RootState {
+function stateWith(ui: Record<string, unknown>): ChatRootState {
   return {
     instanceVariableValues: {
       byConversationId: { c1: { definitions: [{ name: "rulebook_id" }] } },
@@ -78,7 +78,7 @@ function stateWith(ui: Record<string, unknown>): RootState {
     messages: { byConversationId: { c1: { orderedIds: [] } } },
     conversations: { byConversationId: { c1: { status: "ready" } } },
     instanceUIState: { byConversationId: { c1: ui } },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 describe("selectIsVariableFormShown", () => {

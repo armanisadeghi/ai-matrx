@@ -13,11 +13,11 @@
 
 import { useEffect, useState } from "react";
 import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
-import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "../store/hooks";
 import { fetchFullAgent } from "../agents/redux/agent-definition/thunks";
 import { selectAgentReadyForBuilder } from "../agents/redux/agent-definition/selectors";
 import { useMandate } from "../mandates/useMandate";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../store/root-state";
 
 /** The agent row's system message, or "" when it has none. */
 export function readInstructionsFromAgent(messages: unknown): string {
@@ -72,7 +72,7 @@ export function useMandateAgentInstructions(
       // healthy agent as broken. The slice states this rule in
       // agent-definition/selectors.ts; `selectAgentReadyForBuilder` is the
       // authoritative "this record has messages" signal.
-      if (!selectAgentReadyForBuilder(store.getState() as RootState, agentId)) {
+      if (!selectAgentReadyForBuilder(store.getState() as ChatRootState, agentId)) {
         await dispatch(fetchFullAgent(agentId))
           .unwrap()
           .catch(() => {
@@ -80,7 +80,7 @@ export function useMandateAgentInstructions(
           });
       }
       if (cancelled) return;
-      const agent = (store.getState() as RootState).agentDefinition.agents?.[
+      const agent = (store.getState() as ChatRootState).agentDefinition.agents?.[
         agentId
       ];
       const instructions = agent

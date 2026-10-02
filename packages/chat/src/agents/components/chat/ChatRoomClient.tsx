@@ -7,7 +7,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { shallowEqual } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectAgentExecutionPayload } from "../../redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import { selectAuthReady } from "@host/lib/redux/selectors/userSelectors";

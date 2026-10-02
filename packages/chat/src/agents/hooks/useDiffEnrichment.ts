@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import {
   selectAllTools,
   selectToolIdentityMap,
 } from "../redux/tools/tools.selectors";
 import { selectMcpCatalog } from "../redux/mcp/mcp.slice";
 import type { EnrichmentContext } from "@ai-matrx/diff/react";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import { selectModelIdentityMap } from "@host/features/ai-models/redux/modelRegistrySlice";
 
 export function useDiffEnrichment(): EnrichmentContext {
@@ -16,7 +16,7 @@ export function useDiffEnrichment(): EnrichmentContext {
   const toolIdentities = useAppSelector(selectToolIdentityMap);
   const mcpCatalog = useAppSelector(selectMcpCatalog);
   const modelEntities = useAppSelector(
-    (state: RootState) => state.modelRegistry.entities,
+    (state: ChatRootState) => state.modelRegistry.entities,
   );
   const modelIdentities = useAppSelector(selectModelIdentityMap);
 

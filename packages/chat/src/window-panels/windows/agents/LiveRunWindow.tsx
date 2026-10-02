@@ -35,7 +35,7 @@ import {
   type LiveRunProgressState,
 } from "../../../agents/components/live-run/LiveRunProgress";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { CHAT_WINDOWS } from "../../../host/windows";
 

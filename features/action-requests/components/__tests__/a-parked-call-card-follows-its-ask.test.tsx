@@ -17,6 +17,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 const dispatch = jest.fn(() => ({ unwrap: () => Promise.resolve() }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk", () => ({
   loadConversation: (arg: { conversationId: string }) => ({ type: "load", ...arg }),
 }));

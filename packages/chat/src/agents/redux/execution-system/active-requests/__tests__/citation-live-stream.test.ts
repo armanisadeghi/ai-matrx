@@ -30,7 +30,7 @@ import {
   CITATION_MARKER_RE,
   type NormalizedCitation,
 } from "../../messages/message-citations";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 function makeStore() {
   return configureStore({
@@ -75,7 +75,7 @@ function citationEvent(
   c: NormalizedCitation,
   providerBlockIndex: number | null = 0,
 ) {
-  const state = store.getState() as unknown as RootState;
+  const state = store.getState() as unknown as ChatRootState;
   const request = state.activeRequests.byRequestId[REQ];
   let anchorBlockId: string | null = null;
   let anchorOffset: number | null = null;
@@ -117,8 +117,8 @@ function setup(): { store: Store; acc: StreamBlockAccumulator } {
   return { store, acc };
 }
 
-const asRoot = (store: Store): RootState =>
-  store.getState() as unknown as RootState;
+const asRoot = (store: Store): ChatRootState =>
+  store.getState() as unknown as ChatRootState;
 
 describe("live citation accumulation (reducer + index selector)", () => {
   it("accumulates citation events into a deduped, numbered live index", () => {

@@ -21,7 +21,7 @@ import {
   type ReactNode,
 } from "react";
 import { RotateCcw, AppWindow, SlidersHorizontal, Brain } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { CHAT_WINDOWS, openOverlay } from "../../../host/windows";
 import { useChatWindows, useHasChatManagedWindow } from "../../../host/windows-react";
 import { selectIsSuperAdmin } from "@host/lib/redux/slices/userSlice";

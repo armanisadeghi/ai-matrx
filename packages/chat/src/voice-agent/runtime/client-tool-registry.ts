@@ -24,7 +24,7 @@
 
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import { extractErrorMessage } from "@host/utils/errors";
 import { getUiFirstToolEntry } from "../../agents/ui-first-tools/tools/registry";
 
@@ -43,8 +43,8 @@ export interface RealtimeClientToolContext {
   userId: string | null;
   /** Studio session id, when the surface is Scribe Live. */
   sessionId?: string | null;
-  dispatch: ThunkDispatch<RootState, unknown, UnknownAction>;
-  getState: () => RootState;
+  dispatch: ThunkDispatch<ChatRootState, unknown, UnknownAction>;
+  getState: () => ChatRootState;
 }
 
 /** A voice-surface client tool: name + a runner returning the string output. */

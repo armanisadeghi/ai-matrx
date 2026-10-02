@@ -46,7 +46,7 @@ import {
   refusesEmptyTurn,
 } from "../execute-instance.thunk";
 import { isExecutionClaimed } from "../submit-claims";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 type AnyAction = { type: string; payload?: unknown };
 
@@ -60,7 +60,7 @@ function harness(conversationId: string) {
     instanceUserInput: { byConversationId: {} },
   };
   const actions: AnyAction[] = [];
-  const getState = () => state as unknown as RootState;
+  const getState = () => state as unknown as ChatRootState;
   const dispatch: (action: unknown) => unknown = jest.fn((action: unknown) => {
     if (typeof action === "function") {
       return (action as (d: unknown, g: unknown, e: unknown) => unknown)(

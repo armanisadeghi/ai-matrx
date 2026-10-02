@@ -1,4 +1,4 @@
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { adminLaneHeadersFor, adminLaneOrganizationId } from "@host/lib/api/admin-lane";
 import {
   selectResolvedBaseUrl,
@@ -53,7 +53,7 @@ const EC2_SANDBOX_SERVER_URL =
  * "localhost" would silently do nothing for any sandbox-bound conversation.
  */
 function dedicatedEc2ServerForConversation(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | null {
   // Respect an explicit server choice — only auto-route on the prod default.
@@ -89,7 +89,7 @@ function dedicatedEc2ServerForConversation(
  * `warmLocalEngineForConversation` in the execute/resume thunks.
  */
 function localEngineUrlForConversation(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | null {
   if (selectActiveServer(state) !== "production") return null;
@@ -115,7 +115,7 @@ function localEngineUrlForConversation(
  * to the aidream local-proxy path rather than failing.
  */
 export async function warmLocalEngineForConversation(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): Promise<void> {
   const ref = getEffectiveSandboxRef(state, conversationId);
@@ -160,7 +160,7 @@ export interface ResolvedBackend {
  * never has to know which auth scheme each channel uses.
  */
 export function resolveBaseUrlForConversation(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | null {
   const override =
@@ -200,7 +200,7 @@ export function resolveBaseUrlForConversation(
  * Returns `null` when no URL is configured — caller surfaces the error.
  */
 export function resolveBackendForConversation(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): ResolvedBackend | null {
   const entry =

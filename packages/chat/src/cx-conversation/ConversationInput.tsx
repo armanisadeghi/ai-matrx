@@ -51,7 +51,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../store/hooks";
 import { chatConversationsActions } from "./_legacy-stubs";
 import { sendMessage } from "./_legacy-stubs";
 import {

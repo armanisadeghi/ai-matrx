@@ -8,7 +8,7 @@ jest.mock("@host/utils/supabase/client", () => ({
   },
 }));
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { fetchAgentAccessLevel } from "../thunks";
 
 describe("fetchAgentAccessLevel session boundary", () => {
@@ -46,8 +46,8 @@ describe("fetchAgentAccessLevel session boundary", () => {
       data: { session: { access_token: "restored" } },
       error: null,
     });
-    const dispatch = jest.fn() as unknown as AppDispatch;
-    const getState = (() => ({})) as () => RootState;
+    const dispatch = jest.fn() as unknown as ChatDispatch;
+    const getState = (() => ({})) as () => ChatRootState;
     const consoleError = jest
       .spyOn(console, "error")
       .mockImplementation(() => undefined);

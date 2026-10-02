@@ -10,7 +10,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { ManagedResource } from "../../../types/instance.types";
 import {
   isMessagePart,
@@ -617,7 +617,7 @@ function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
  */
 export const selectInstanceResources = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceResources.byConversationId[conversationId],
     (resources) => {
       if (!resources) return EMPTY_RESOURCES;
@@ -638,7 +638,7 @@ export const selectInstanceResources = (conversationId: string) =>
  */
 export const selectHasUnsentResources =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const resources = state.instanceResources.byConversationId[conversationId];
     if (!resources) return false;
     const ids = Object.keys(resources);
@@ -657,7 +657,7 @@ export const selectHasUnsentResources =
  */
 export const selectResource =
   (conversationId: string, resourceId: string) =>
-  (state: RootState): ManagedResource | undefined =>
+  (state: ChatRootState): ManagedResource | undefined =>
     state.instanceResources.byConversationId[conversationId]?.[resourceId];
 
 /**
@@ -665,7 +665,7 @@ export const selectResource =
  */
 export const selectReadyResources = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceResources.byConversationId[conversationId],
     (resources) => {
       if (!resources) return EMPTY_RESOURCES;
@@ -681,7 +681,7 @@ export const selectReadyResources = (conversationId: string) =>
  */
 export const selectPendingResources = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceResources.byConversationId[conversationId],
     (resources) => {
       if (!resources) return EMPTY_RESOURCES;
@@ -699,7 +699,7 @@ export const selectPendingResources = (conversationId: string) =>
  */
 export const selectAllResourcesResolved =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const resources = state.instanceResources.byConversationId[conversationId];
     if (!resources) return true;
     for (const key in resources) {
@@ -715,7 +715,7 @@ export const selectAllResourcesResolved =
  */
 export const selectResourcePayloads = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceResources.byConversationId[conversationId],
     (resources) => {
       if (!resources) return EMPTY_PAYLOADS;
@@ -747,7 +747,7 @@ export const selectResourcePayloads = (conversationId: string) =>
  */
 export const selectResourceContextPayload = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceResources.byConversationId[conversationId],
     (resources): Record<string, unknown> | undefined => {
       if (!resources) return undefined;
@@ -788,7 +788,7 @@ export const selectResourceContextPayload = (conversationId: string) =>
  */
 export const selectEditorResources = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceResources.byConversationId[conversationId],
     (resources) => {
       if (!resources) return EMPTY_EDITOR_RESOURCES;

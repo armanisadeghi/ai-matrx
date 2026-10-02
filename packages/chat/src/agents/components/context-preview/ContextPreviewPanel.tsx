@@ -26,7 +26,7 @@ import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   CONTEXT_PREVIEW_SURFACE_NAME,

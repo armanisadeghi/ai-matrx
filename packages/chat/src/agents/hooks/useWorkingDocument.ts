@@ -30,7 +30,7 @@
 
 import { toast } from "../../host/notify";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { saveNoteField } from "@host/features/notes/redux/thunks";
 import { useAutoLabel } from "@host/features/notes/hooks/useAutoLabel";

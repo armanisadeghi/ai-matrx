@@ -13,7 +13,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
   selectUserInputText,

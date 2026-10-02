@@ -16,7 +16,7 @@
  * Returned dict is merged into `payload.context` in `executeInstance`.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import {
   selectOrganizationId,
   selectOrganizationName,
@@ -83,7 +83,7 @@ function snapshotRoute(engineered: boolean): AmbientContextSnapshot["route_brief
  * server-side use of these keys is moot.
  */
 export function buildAmbientContext(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): Record<string, unknown> | null {
   const auth = state.userAuth;
@@ -172,7 +172,7 @@ export function buildAmbientContext(
  * even one previous turn will have at least the user message reserved.
  */
 export function isFirstTurn(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): boolean {
   const entry = state.messages?.byConversationId?.[conversationId];

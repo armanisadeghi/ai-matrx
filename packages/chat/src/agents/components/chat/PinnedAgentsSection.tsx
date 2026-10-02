@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../store/hooks";
 import {
   FavoriteAgentButton,
   useAgentCatalogRows,
@@ -13,7 +13,7 @@ import {
 } from "@ai-matrx/agents/catalog/react";
 import { makeSelectFilteredAgents } from "@ai-matrx/agents/catalog";
 import { initializeChatAgents } from "../../redux/agent-definition/thunks";
-import { useAppStore } from "@host/lib/redux/hooks";
+import { useAppStore } from "../../../store/hooks";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";
 
 interface PinnedAgentsSectionProps {

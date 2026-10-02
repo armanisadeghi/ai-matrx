@@ -41,7 +41,7 @@ import { getManifest } from "@host/features/surfaces/manifests/registry";
 import { useSurfaceConfig } from "../hooks/useSurfaceConfig";
 import type { MenuConfig } from "../config/namespace-registry";
 import { useLiveSurfaceScope } from "./useLiveSurfaceScope";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAllShortcutsArray } from "../../agents/redux/agent-shortcuts/selectors";
 import { fetchUnifiedMenu } from "../../agents/redux/agent-shortcuts/thunks";
 import type { AgentShortcutRecord } from "../../agents/redux/agent-shortcuts/types";

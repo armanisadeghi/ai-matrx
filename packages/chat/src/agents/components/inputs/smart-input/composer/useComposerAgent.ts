@@ -15,7 +15,7 @@ import { useEffect } from "react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { useMandate } from "../../../../../mandates/useMandate";
 import { selectAgentIdFromInstance } from "../../../../redux/execution-system/conversations/conversations.selectors";
 import {

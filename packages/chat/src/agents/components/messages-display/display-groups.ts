@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type { MessageRecord } from "../../redux/execution-system/messages/messages.slice";
 import type { MessageRole } from "../../types/agent-message-types";
 import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
@@ -378,7 +378,7 @@ export function applyAnchoredDisplayGroupWindow(
 // ---------------------------------------------------------------------------
 const loadedGroupCountSelectorCache = new Map<
   string,
-  (state: RootState) => number
+  (state: ChatRootState) => number
 >();
 
 export const selectLoadedDisplayGroupCount = (conversationId: string) => {

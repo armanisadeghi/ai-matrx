@@ -10,14 +10,14 @@
 
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 
 export interface HandlerContext {
   conversationId: string;
   callId: string;
   userId: string;
-  dispatch: ThunkDispatch<RootState, unknown, UnknownAction>;
-  getState: () => RootState;
+  dispatch: ThunkDispatch<ChatRootState, unknown, UnknownAction>;
+  getState: () => ChatRootState;
 }
 
 export interface ToolHandler<TArgs, TResult> {

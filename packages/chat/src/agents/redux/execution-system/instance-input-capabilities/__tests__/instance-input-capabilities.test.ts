@@ -5,7 +5,7 @@ import reducer, {
   updateBaseInputCapabilities,
 } from "../instance-input-capabilities.slice";
 import { selectAttachmentCapabilities } from "../instance-input-capabilities.selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import { parsePersistedInputCapabilities } from "../instance-input-capabilities.persistence";
 
 describe("instance input capabilities", () => {
@@ -32,7 +32,7 @@ describe("instance input capabilities", () => {
 
     const state = {
       instanceInputCapabilities: overridden,
-    } as RootState;
+    } as ChatRootState;
 
     expect(selectAttachmentCapabilities("c1")(state)).toEqual({
       supportsImageUrls: true,
@@ -63,7 +63,7 @@ describe("instance input capabilities", () => {
     expect(
       selectAttachmentCapabilities("c1")({
         instanceInputCapabilities: reset,
-      } as RootState).supportsImageUrls,
+      } as ChatRootState).supportsImageUrls,
     ).toBe(true);
     expect(reset.byConversationId.c1?.persistence).toBe("pending");
   });

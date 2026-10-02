@@ -4,7 +4,7 @@ import { isRfc9562Uuid } from "@ai-matrx/kit/uuid";
 import { toast } from "../../../../host/notify";
 
 import { fetchConversationPendingCallsStrict } from "../../../api/fetch-pending-calls";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { hasAbortController } from "./abort-registry";
 import { loadConversation } from "./load-conversation.thunk";
 import { resumeInstance } from "./resume-instance.thunk";
@@ -102,7 +102,7 @@ export interface WatchDesktopDelegationArgs {
  */
 export const watchDesktopDelegation = (
   args: WatchDesktopDelegationArgs,
-): ThunkAction<Promise<void>, RootState, unknown, UnknownAction> => {
+): ThunkAction<Promise<void>, ChatRootState, unknown, UnknownAction> => {
   return (dispatch, getState) => {
     const { conversationId, lifecycleRequestId, callId } = args;
     let userRequestId = asServerUserRequestId(args.userRequestId);

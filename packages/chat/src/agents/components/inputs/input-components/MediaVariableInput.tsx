@@ -49,7 +49,7 @@ import {
 import { cn } from "@ai-matrx/design-system";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
 import { ResourceFamilyPolicyEditor } from "../resources/ResourceFamilyPolicyEditor";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { setRuntimeVariableResourcePolicy } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectRuntimeVariableResourcePolicies } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";

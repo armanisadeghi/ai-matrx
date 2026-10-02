@@ -15,7 +15,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { VariableDefinition } from "../../../types/agent-definition.types";
 import { selectAllContextItems } from "@host/features/scopes/redux/contextItemCatalog";
 import type { ContextItem } from "@host/features/scopes/redux/contextItemCatalog";
@@ -65,7 +65,7 @@ function applyInheritedComponents(
 // createSelector (empty size-1 cache) and recompute + return a new array every render,
 // defeating memoization. The Map gives each conversationId one stable memoized selector
 // (same pattern as selectIsInstanceReady).
-type DefsSelector = (state: RootState) => VariableDefinition[];
+type DefsSelector = (state: ChatRootState) => VariableDefinition[];
 const effectiveCache = new Map<string, DefsSelector>();
 const visibleCache = new Map<string, DefsSelector>();
 
@@ -75,7 +75,7 @@ export const selectEffectiveVariableDefinitions = (
   let sel = effectiveCache.get(conversationId);
   if (!sel) {
     sel = createSelector(
-      (state: RootState) =>
+      (state: ChatRootState) =>
         state.instanceVariableValues.byConversationId[conversationId]
           ?.definitions,
       selectAllContextItems,
@@ -95,7 +95,7 @@ export const selectVisibleInputDefinitions = (
   let sel = visibleCache.get(conversationId);
   if (!sel) {
     sel = createSelector(
-      (state: RootState) =>
+      (state: ChatRootState) =>
         state.instanceVariableValues.byConversationId[conversationId],
       selectAllContextItems,
       (entry, items): VariableDefinition[] => {

@@ -6,7 +6,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectAccessToken,
   selectAuthReady,

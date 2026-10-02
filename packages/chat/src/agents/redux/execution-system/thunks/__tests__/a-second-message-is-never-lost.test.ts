@@ -136,7 +136,7 @@ import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesS
 import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
 import { configureRecordingWindows } from "../../../../../host/__tests__/recording-windows";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import { smartExecute } from "../smart-execute.thunk";
 
 const AGENT_ID = "compass-itinerary-clerk";
@@ -223,14 +223,14 @@ function type(store: TestStore, conversationId: string, text: string) {
   store.dispatch(setUserInputText({ conversationId, text }));
 }
 function pressEnter(store: TestStore, conversationId: string) {
-  void (store.dispatch as unknown as AppDispatch)(
+  void (store.dispatch as unknown as ChatDispatch)(
     smartExecute({ conversationId }),
   );
 }
 const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function userRows(store: TestStore, conversationId: string): string[] {
-  const entry = (store.getState() as unknown as RootState).messages
+  const entry = (store.getState() as unknown as ChatRootState).messages
     .byConversationId[conversationId];
   if (!entry) return [];
   return entry.orderedIds
@@ -244,12 +244,12 @@ function userRows(store: TestStore, conversationId: string): string[] {
     );
 }
 function composer(store: TestStore, conversationId: string) {
-  return (store.getState() as unknown as RootState).instanceUserInput
+  return (store.getState() as unknown as ChatRootState).instanceUserInput
     .byConversationId[conversationId];
 }
 function queueCards(store: TestStore, conversationId: string) {
   return (
-    (store.getState() as unknown as RootState).conversationInbox
+    (store.getState() as unknown as ChatRootState).conversationInbox
       .byConversationId[conversationId] ?? []
   );
 }

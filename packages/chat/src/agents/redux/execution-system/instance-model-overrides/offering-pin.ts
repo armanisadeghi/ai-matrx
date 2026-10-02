@@ -14,7 +14,7 @@
  * "the API must not receive this key" state — never a stored null/"").
  */
 
-import type { AppThunk } from "@host/lib/redux/store";
+import type { ChatThunk } from "../../../../store/root-state";
 import type { InstanceModelOverrideState } from "../../../types/instance.types";
 import {
   markRemoved,
@@ -46,7 +46,7 @@ export function setOfferingPin({
   offeringId: string | undefined;
   /** A launch default (the person's Custom default), not a pick for this chat. */
   seeded?: boolean;
-}): AppThunk {
+}): ChatThunk {
   return (dispatch, getState) => {
     const entry =
       getState().instanceModelOverrides.byConversationId[conversationId];
@@ -66,7 +66,7 @@ export function setOfferingPin({
 }
 
 /** Back to the agent's own model AND its own class — the two move together. */
-export function resetModelChoice(conversationId: string): AppThunk {
+export function resetModelChoice(conversationId: string): ChatThunk {
   return (dispatch) => {
     dispatch(resetOverride({ conversationId, key: "model" }));
     dispatch(resetOverride({ conversationId, key: OFFERING_KEY }));

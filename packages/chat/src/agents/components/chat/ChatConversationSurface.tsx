@@ -16,7 +16,7 @@
  */
 
 import type { ReactNode } from "react";
-import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "../../../store/hooks";
 import { waitForConversationPersisted } from "../../redux/execution-system/conversations/conversation-persistence";
 import { setUserInputText } from "../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import {

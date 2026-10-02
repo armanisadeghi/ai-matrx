@@ -11,7 +11,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type {
   VariableDefinition,
   VariableResourceContextConfig,
@@ -36,7 +36,7 @@ const EMPTY_PROVENANCE: Record<string, "user" | "scope" | "default" | "none"> =
  */
 export const selectInstanceVariableDefinitions =
   (conversationId: string) =>
-  (state: RootState): VariableDefinition[] =>
+  (state: ChatRootState): VariableDefinition[] =>
     state.instanceVariableValues.byConversationId[conversationId]
       ?.definitions ?? EMPTY_DEFINITIONS;
 
@@ -45,7 +45,7 @@ export const selectInstanceVariableDefinitions =
  */
 export const selectUserVariableValues =
   (conversationId: string) =>
-  (state: RootState): Record<string, unknown> =>
+  (state: ChatRootState): Record<string, unknown> =>
     state.instanceVariableValues.byConversationId[conversationId]?.userValues ??
     EMPTY_RECORD;
 
@@ -55,7 +55,7 @@ export const selectUserVariableValues =
  */
 export const selectHostVariableNames =
   (conversationId: string) =>
-  (state: RootState): string[] =>
+  (state: ChatRootState): string[] =>
     state.instanceVariableValues.byConversationId[conversationId]
       ?.hostValueNames ?? EMPTY_NAMES;
 
@@ -78,7 +78,7 @@ export const selectHostVariableNames =
  */
 export const selectOwnVariableValues = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceVariableValues.byConversationId[conversationId],
     (entry) => {
       if (!entry) return EMPTY_RECORD;
@@ -95,7 +95,7 @@ export const selectOwnVariableValues = (conversationId: string) =>
 /** Immutable first-turn values, excluding names the host supplied. */
 export const selectOwnSubmittedFirstTurnValues = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceVariableValues.byConversationId[conversationId],
     (entry) => {
       if (!entry?.submittedFirstTurnValues) return EMPTY_RECORD;
@@ -118,7 +118,7 @@ export const selectOwnSubmittedFirstTurnValues = (conversationId: string) =>
  */
 export const selectHostSubmittedFirstTurnValues = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceVariableValues.byConversationId[conversationId],
     (entry) => {
       if (!entry?.submittedFirstTurnValues) return EMPTY_RECORD;
@@ -137,13 +137,13 @@ export const selectHostSubmittedFirstTurnValues = (conversationId: string) =>
  */
 export const selectScopeVariableValues =
   (conversationId: string) =>
-  (state: RootState): Record<string, unknown> =>
+  (state: ChatRootState): Record<string, unknown> =>
     state.instanceVariableValues.byConversationId[conversationId]
       ?.scopeValues ?? EMPTY_RECORD;
 
 export const selectRuntimeVariableResourcePolicies =
   (conversationId: string) =>
-  (state: RootState): Record<string, VariableResourceContextConfig> =>
+  (state: ChatRootState): Record<string, VariableResourceContextConfig> =>
     state.instanceVariableValues.byConversationId[conversationId]
       ?.resourcePolicies ?? EMPTY_RESOURCE_POLICIES;
 
@@ -156,7 +156,7 @@ export const selectRuntimeVariableResourcePolicies =
  */
 export const selectResolvedVariables = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceVariableValues.byConversationId[conversationId],
     (entry) => {
       if (!entry) return EMPTY_RECORD;
@@ -197,7 +197,7 @@ export const selectResolvedVariables = (conversationId: string) =>
  */
 export const selectVariablesForRequest = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceVariableValues.byConversationId[conversationId],
     (entry) => {
       if (!entry) return EMPTY_RECORD;
@@ -212,7 +212,7 @@ export const selectVariablesForRequest = (conversationId: string) =>
  */
 export const selectMissingRequiredVariables = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceVariableValues.byConversationId[conversationId],
     (entry) => {
       if (!entry) return EMPTY_NAMES;
@@ -256,7 +256,7 @@ export const selectMissingRequiredVariables = (conversationId: string) =>
  */
 export const selectVariableProvenance = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceVariableValues.byConversationId[conversationId],
     (entry) => {
       if (!entry) return EMPTY_PROVENANCE;

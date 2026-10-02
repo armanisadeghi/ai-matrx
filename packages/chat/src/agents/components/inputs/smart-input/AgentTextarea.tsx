@@ -23,7 +23,7 @@ import React, {
   useCallback,
 } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import {
   selectUserInputText,
   selectInputCharCount,

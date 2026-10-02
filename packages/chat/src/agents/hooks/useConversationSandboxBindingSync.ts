@@ -23,7 +23,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectIsStreaming } from "../redux/execution-system/selectors/aggregate.selectors";
 import { refreshConversationSandboxBinding } from "../redux/execution-system/thunks/refresh-conversation-binding.thunk";
 

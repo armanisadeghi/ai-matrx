@@ -61,6 +61,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   // ids. Nothing selected is the honest starting state.
   useAppSelector: () => [],
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 import { RECORDED_PAGE_INTENTS_ROUND22 } from "../../../redux/__fixtures__/listPageIntentsRound22";
 import type { TopicalMapKnobs } from "../../../knobs";

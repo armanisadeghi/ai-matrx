@@ -30,14 +30,14 @@ import {
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
 import { ShareModal } from "@host/features/sharing/components/ShareModal";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 // The main list reads the REAL conversation list — the same slice and fetch
 // the chat-history sidebar uses (features/agents/redux/conversation-list).
 // It used to read inert stub selectors whose status was always "idle", so
 // the list never loaded, never said it was empty, and its retry did nothing.
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import {
   selectConversationIsPending,
   selectGlobalConversationList,
@@ -62,7 +62,7 @@ const toSidebarItem = (c: ConversationListItem): CxConversationListItem => ({
   messageCount: c.messageCount,
   status: c.status,
 });
-const selectSidebarConversations = (state: RootState) => selectGlobalConversationList(state);
+const selectSidebarConversations = (state: ChatRootState) => selectGlobalConversationList(state);
 import type { SharedCxConversationSummary } from "../types/cx-tables";
 
 // ── Types ─────────────────────────────────────────────────────────────────────

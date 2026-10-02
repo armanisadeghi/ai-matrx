@@ -1,9 +1,9 @@
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import { selectInstanceAgentName } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectInstanceAgentDescription } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { Webhook } from "lucide-react";
 import dynamic from "next/dynamic";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 // The MarkdownStream FRONT DOOR (already a dynamic ssr:false shell) — never
 // re-wrap or bypass it with a second boundary on MarkdownStreamImpl; that
 // duplicated the whole rich-document engine into a second chunk group.
@@ -33,17 +33,17 @@ export function AgentEmptyMessageDisplay({
   // `displayIconNameOverride` on the instance UI state. Falls back to
   // the agent's name/description and a built-in Webhook icon.
   const nameOverride = useAppSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceUIState.byConversationId[conversationId]
         ?.displayNameOverride,
   );
   const descriptionOverride = useAppSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceUIState.byConversationId[conversationId]
         ?.displayDescriptionOverride,
   );
   const iconNameOverride = useAppSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceUIState.byConversationId[conversationId]
         ?.displayIconNameOverride,
   );

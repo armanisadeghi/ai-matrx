@@ -22,8 +22,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, Pencil, Check, X, RefreshCw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import type { ChatRootState } from "../../../store/root-state";
 import type {
   ContextObjectType,
   ContextPolicy,
@@ -51,13 +51,13 @@ import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 const EMPTY_SLOTS: ContextPolicy[] = [];
 
 function makeSelectAgentIdForConversation(conversationId: string) {
-  return (state: RootState): string | null =>
+  return (state: ChatRootState): string | null =>
     state.conversations.byConversationId[conversationId]?.agentId ?? null;
 }
 
 /** Instance context map for this conversation, or undefined if none. */
 function makeSelectInstanceContextMap(conversationId: string) {
-  return (state: RootState): Record<string, InstanceContextEntry> | undefined =>
+  return (state: ChatRootState): Record<string, InstanceContextEntry> | undefined =>
     state.instanceContext.byConversationId[conversationId];
 }
 const EMPTY_MAP: Record<string, InstanceContextEntry> = {};

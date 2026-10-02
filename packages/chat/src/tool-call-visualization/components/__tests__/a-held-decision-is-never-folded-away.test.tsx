@@ -21,10 +21,12 @@ jest.mock("@host/lib/scoped-config/sessionKnob", () => ({
   useSessionKnob: () => knob,
   getSessionKnob: () => knob,
 }));
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../store/hooks", () => ({
   useAppSelector: () => "default",
   useAppDispatch: () => jest.fn(),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
 jest.mock(
   "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors",
   () => ({ selectToolDisplayPreference: jest.fn() }),

@@ -19,7 +19,7 @@
 import { createElement, useState } from "react";
 import { ChevronLeft, ChevronRight, Send } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../store/hooks";
 import { addResource } from "../../redux/execution-system/instance-resources/instance-resources.slice";
 import { toast } from "../../../host/notify";
 import {

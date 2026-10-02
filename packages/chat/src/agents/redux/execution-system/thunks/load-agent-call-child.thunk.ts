@@ -12,7 +12,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { hydrateMessages } from "../messages/messages.slice";
 import { hydrateObservability } from "../observability/observability.slice";
 import {
@@ -31,7 +31,7 @@ const inFlight = new Map<string, Promise<void>>();
 export const loadAgentCallChildConversation = createAsyncThunk<
   void,
   { childConversationId: string },
-  { dispatch: AppDispatch; state: RootState }
+  { dispatch: ChatDispatch; state: ChatRootState }
 >(
   "conversations/loadAgentCallChild",
   async ({ childConversationId }, { dispatch, getState }) => {

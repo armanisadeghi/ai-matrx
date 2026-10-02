@@ -15,7 +15,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { patchConversation } from "../conversations/conversations.slice";
 import { replaceSurfaceVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { replaceSurfaceContextEntries } from "../instance-context/instance-context.slice";
@@ -25,7 +25,7 @@ import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 export const setPageContextEnabled = createAsyncThunk<
   void,
   { conversationId: string; enabled: boolean },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >("instances/setPageContextEnabled", async ({ conversationId, enabled }, { getState, dispatch }) => {
   const state = getState();
   if (!enabled) {

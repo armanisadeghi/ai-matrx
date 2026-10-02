@@ -10,7 +10,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState, AppDispatch } from "@host/lib/redux/store";
+import type { ChatRootState, ChatDispatch } from "../../../../store/root-state";
 import {
   setUserVariableValue,
   setUserVariableValues,
@@ -20,7 +20,7 @@ import { pushInputSnapshot } from "../instance-user-input/instance-user-input.sl
 export const setVariableValueWithUndo = createAsyncThunk<
   void,
   { conversationId: string; name: string; value: unknown },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "instanceVariableValues/setValueWithUndo",
   async ({ conversationId, name, value }, { getState, dispatch }) => {
@@ -48,7 +48,7 @@ export const setVariableValueWithUndo = createAsyncThunk<
 export const setVariableValuesWithUndo = createAsyncThunk<
   void,
   { conversationId: string; values: Record<string, unknown> },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "instanceVariableValues/setValuesWithUndo",
   async ({ conversationId, values }, { getState, dispatch }) => {

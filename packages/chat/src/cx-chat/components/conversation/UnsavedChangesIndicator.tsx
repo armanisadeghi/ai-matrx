@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { CircleDot, Save, Loader2 } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import {
   selectSessionHasUnsavedChanges,
   selectDirtyMessages,

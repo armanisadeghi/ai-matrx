@@ -1,7 +1,7 @@
 "use client";
 
 import { createSelector } from "reselect";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type {
   AgentShortcutCategoryDef,
   AgentShortcutCategoryRecord,
@@ -13,7 +13,7 @@ import {
   type ScopeRef,
 } from "../shared/scope";
 
-const selectAgentShortcutCategorySlice = (state: RootState) =>
+const selectAgentShortcutCategorySlice = (state: ChatRootState) =>
   state.agentShortcutCategory;
 
 export const selectAllCategoriesMap = createSelector(
@@ -49,7 +49,7 @@ export const selectCategoryScopeLoaded = createSelector(
 export const selectIsCategoryScopeLoaded = createSelector(
   [
     selectCategoryScopeLoaded,
-    (_s: RootState, scope: Scope, scopeId?: string | null) =>
+    (_s: ChatRootState, scope: Scope, scopeId?: string | null) =>
       scopeIndexKey({ scope, scopeId: scopeId ?? null }),
   ],
   (scopeLoaded, key) => scopeLoaded[key] ?? false,
@@ -61,7 +61,7 @@ export const selectAllCategoriesArray = createSelector(
 );
 
 export const selectCategoryById = createSelector(
-  [selectAllCategoriesMap, (_s: RootState, id: string) => id],
+  [selectAllCategoriesMap, (_s: ChatRootState, id: string) => id],
   (map, id): AgentShortcutCategoryRecord | undefined => map[id],
 );
 
@@ -100,8 +100,8 @@ export const selectCategoryError = createSelector(
 export const selectCategoriesByScope = createSelector(
   [
     selectAllCategoriesArray,
-    (_s: RootState, scope: Scope, _scopeId?: string | null) => scope,
-    (_s: RootState, _scope: Scope, scopeId?: string | null) => scopeId ?? null,
+    (_s: ChatRootState, scope: Scope, _scopeId?: string | null) => scope,
+    (_s: ChatRootState, _scope: Scope, scopeId?: string | null) => scopeId ?? null,
   ],
   (categories, scope, scopeId): AgentShortcutCategoryRecord[] =>
     categories.filter((c) =>
@@ -112,7 +112,7 @@ export const selectCategoriesByScope = createSelector(
 export const selectCategoriesByPlacementType = createSelector(
   [
     selectAllCategoriesArray,
-    (_s: RootState, placementType: string) => placementType,
+    (_s: ChatRootState, placementType: string) => placementType,
   ],
   (categories, placementType) =>
     categories.filter((c) => c.placementType === placementType),
@@ -164,7 +164,7 @@ export const selectCategoryTreeStructuredByScope = createSelector(
 );
 
 export const selectCategoriesByScopeRef = createSelector(
-  [selectAllCategoriesArray, (_s: RootState, ref: ScopeRef) => ref],
+  [selectAllCategoriesArray, (_s: ChatRootState, ref: ScopeRef) => ref],
   (categories, ref) => categories.filter((c) => matchesScope(c, ref)),
 );
 
@@ -181,14 +181,14 @@ export const selectGlobalCategories = createSelector(
 );
 
 export const selectUserCategories = createSelector(
-  [selectAllCategoriesArray, (_s: RootState, userId: string) => userId],
+  [selectAllCategoriesArray, (_s: ChatRootState, userId: string) => userId],
   (categories, userId) => categories.filter((c) => c.userId === userId),
 );
 
 export const selectOrgCategories = createSelector(
   [
     selectAllCategoriesArray,
-    (_s: RootState, organizationId: string) => organizationId,
+    (_s: ChatRootState, organizationId: string) => organizationId,
   ],
   (categories, organizationId) =>
     categories.filter((c) => c.organizationId === organizationId),

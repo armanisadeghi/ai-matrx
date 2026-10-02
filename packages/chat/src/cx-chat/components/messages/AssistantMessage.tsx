@@ -13,7 +13,7 @@ import { Button } from "@ai-matrx/design-system";
 import MarkdownStream from "@host/components/MarkdownStream";
 import AudioOutputBlockSkeleton from "@host/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
 import { useDomCapturePrint } from "../../../conversation/hooks/useDomCapturePrint";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { selectMessageHasUnsavedChanges } from "../../_legacy-stubs";
 import { editMessage } from "../../_legacy-stubs";
 import { buildContentBlocksForSave } from "../../utils/buildContentBlocksForSave";

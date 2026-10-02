@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import { selectInboxItems } from "../inbox.selectors";
 import conversationInboxReducer, { addInboxItem } from "../inbox.slice";
 
@@ -19,7 +19,7 @@ test("inbox items retain their state reference without an identity-selector warn
       queuedAt: "2026-09-15T23:00:00.000Z",
     }),
   );
-  const state = store.getState() as unknown as RootState;
+  const state = store.getState() as unknown as ChatRootState;
   const stateItems = state.conversationInbox.byConversationId[
     "conversation-selector-warning"
   ];

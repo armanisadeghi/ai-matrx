@@ -48,7 +48,7 @@ import {
   childConversationIdFromResult,
   persistedAgentCallTrace,
 } from "../../utils/agent-call-trace";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const REQ = "req_compass_dispatch";
 const PARENT_CALL = "toolu_dispatch_to_lane_planner";
@@ -146,7 +146,7 @@ function live() {
   tool(PARENT_CALL, { result: "hub: MEX", child_conversation_id: LANE_CONV });
   say("Mexico City: hub MEX, weather Haze.");
 
-  const state = s.getState() as unknown as RootState;
+  const state = s.getState() as unknown as ChatRootState;
   return {
     parent: selectAgentCallTrace(REQ, PARENT_CALL)(state),
     child: selectAgentCallTrace(REQ, CHILD_CALL)(state),
@@ -205,7 +205,7 @@ function reloaded() {
   s.dispatch(
     hydrateObservability({ conversationId: LANE_CONV, userRequests: [], requests: [], toolCalls: [row] }),
   );
-  const state = s.getState() as unknown as RootState;
+  const state = s.getState() as unknown as ChatRootState;
   const runs = (conv: string, rows: MessageRecord[]) =>
     selectMessagesInterleavedRuns(
       conv,

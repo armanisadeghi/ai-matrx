@@ -22,7 +22,7 @@ import { ChevronDown, Layers, Star } from "lucide-react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../../../host/notify";
 import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";

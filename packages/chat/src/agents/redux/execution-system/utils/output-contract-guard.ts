@@ -41,7 +41,7 @@
  * normal case and leaves injection exactly as it was.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { selectAgentById } from "../../agent-definition/selectors";
 import { hasField } from "../../shared/field-flags";
 import { peekMandateCatalogueEntry } from "@host/features/mandates/catalogue";
@@ -74,7 +74,7 @@ function schemaName(schema: unknown): string | null {
  * its job is to RETURN an object, not to act on the page.
  */
 export async function resolveRunOutputContract(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): Promise<OutputContractVerdict | null> {
   const conversation = state.conversations.byConversationId[conversationId];

@@ -11,7 +11,7 @@ import {
   TooltipTrigger,
 } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { useSidePanelSurface } from "@host/features/overlays/surfaces/SidePanelSurface";
 import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "../../agents/components/shared/AgentConversationColumn";

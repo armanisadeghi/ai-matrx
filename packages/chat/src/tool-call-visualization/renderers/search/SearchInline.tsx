@@ -56,7 +56,7 @@ import {
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { useOpenScraperWindow } from "../../../host/window-openers";
 import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { ToolRendererProps } from "../../types";

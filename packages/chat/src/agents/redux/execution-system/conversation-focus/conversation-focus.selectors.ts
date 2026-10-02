@@ -1,4 +1,4 @@
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 
 /**
  * Returns the "input" conversation id for a surface — the one bound to the
@@ -8,7 +8,7 @@ import type { RootState } from "@host/lib/redux/store";
  */
 export const selectFocusedConversation =
   (surfaceKey: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.conversationFocus?.bySurface[surfaceKey]?.input ?? null;
 
 export const selectInputConversation = selectFocusedConversation;
@@ -20,7 +20,7 @@ export const selectInputConversation = selectFocusedConversation;
  */
 export const selectDisplayConversation =
   (surfaceKey: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.conversationFocus?.bySurface[surfaceKey]?.display ?? null;
 
 /**
@@ -29,17 +29,17 @@ export const selectDisplayConversation =
  */
 export const selectIsFocusSplit =
   (surfaceKey: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const entry = state.conversationFocus?.bySurface[surfaceKey];
     if (!entry) return false;
     return entry.display !== entry.input;
   };
 
-export const selectAllSurfaceFocus = (state: RootState) =>
+export const selectAllSurfaceFocus = (state: ChatRootState) =>
   state.conversationFocus?.bySurface;
 
 /** The surfaceKey whose focus was set most recently (or null). */
-export const selectLastFocusedSurfaceKey = (state: RootState): string | null =>
+export const selectLastFocusedSurfaceKey = (state: ChatRootState): string | null =>
   state.conversationFocus?.lastSurfaceKey ?? null;
 
 /**
@@ -48,7 +48,7 @@ export const selectLastFocusedSurfaceKey = (state: RootState): string | null =>
  * (the global Creator Hub) that have no surfaceKey of their own.
  */
 export const selectLastFocusedInputConversation = (
-  state: RootState,
+  state: ChatRootState,
 ): string | null => {
   const key = state.conversationFocus?.lastSurfaceKey;
   if (!key) return null;
@@ -57,7 +57,7 @@ export const selectLastFocusedInputConversation = (
 
 /** The "display" conversation id of the most-recently-focused surface. */
 export const selectLastFocusedDisplayConversation = (
-  state: RootState,
+  state: ChatRootState,
 ): string | null => {
   const key = state.conversationFocus?.lastSurfaceKey;
   if (!key) return null;

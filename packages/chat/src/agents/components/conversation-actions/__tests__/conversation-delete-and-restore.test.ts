@@ -29,7 +29,7 @@ import {
 } from "../../../redux/conversation-list/conversation-list.slice";
 import type { ConversationListItem } from "../../../redux/conversation-list/conversation-list.types";
 import { buildConversationMenu } from "../conversationActionRegistry";
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../../../store/root-state";
 
 const repoRoot = path.resolve(__dirname, "../../../../../../..");
 
@@ -46,7 +46,7 @@ function findEntry(config: ReturnType<typeof buildConversationMenu>, id: string)
   return undefined;
 }
 
-const noopDispatch = (() => undefined) as unknown as AppDispatch;
+const noopDispatch = (() => undefined) as unknown as ChatDispatch;
 
 const baseCtx = {
   conversationId: "c1",

@@ -26,6 +26,8 @@ jest.mock("@/utils/supabase/client", () => ({
 // A STABLE dispatch: the panel's reads key on it, so a fresh one per render re-reads forever.
 const stableDispatch = jest.fn();
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => stableDispatch, useAppSelector: () => "user-1" }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
   peekEffectiveKnob: () => 10,
   ensureEffectiveKnob: async () => 10,

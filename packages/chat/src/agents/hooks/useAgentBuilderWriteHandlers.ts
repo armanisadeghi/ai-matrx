@@ -31,7 +31,7 @@
 
 import { useCallback } from "react";
 
-import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "../../store/hooks";
 import {
   selectAgentAccessResolved,
   selectAgentById,
@@ -44,7 +44,7 @@ import {
 } from "../redux/agent-definition/slice";
 import { withAgentSystemInstruction } from "../utils/agent-system-instruction";
 import type { AgentDefinition } from "../types/agent-definition.types";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 
 /** A non-empty string, trimmed — or a throw naming the target. */
 function requireText(value: unknown, target: string): string {
@@ -63,7 +63,7 @@ function requireText(value: unknown, target: string): string {
  * gates the check: while access metadata is still in flight `isReadOnly` reads
  * `false` for everyone, so we only refuse once we actually know.
  */
-function requireEditableAgent(state: RootState, agentId: string) {
+function requireEditableAgent(state: ChatRootState, agentId: string) {
   const record = selectAgentById(state, agentId);
   if (!record) {
     throw new Error(

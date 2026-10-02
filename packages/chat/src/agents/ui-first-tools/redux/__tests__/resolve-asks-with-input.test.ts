@@ -22,7 +22,7 @@ import {
 import { setAskDraft, __clearAllDraftsForTests } from "../ask-draft-registry";
 import { resolvePendingAsksWithInput } from "../resolve-asks-with-input.thunk";
 import { EMPTY_ASK_RESPONSE, type AskUserResponse } from "../../tools/schemas";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 
 const CONVERSATION = "conv-1";
 
@@ -58,8 +58,8 @@ function enqueue(
 
 function submit(store: ReturnType<typeof makeStore>, text: string): boolean {
   return resolvePendingAsksWithInput(CONVERSATION, text)(
-    store.dispatch as unknown as AppDispatch,
-    store.getState as unknown as () => RootState,
+    store.dispatch as unknown as ChatDispatch,
+    store.getState as unknown as () => ChatRootState,
   );
 }
 

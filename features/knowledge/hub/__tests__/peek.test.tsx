@@ -50,6 +50,8 @@ jest.mock("@/features/shell/components/header/RouteHeader", () => ({
   ),
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@ai-matrx/associations/react", () => ({
   useEntityTitles: () => ({ titleFor: () => "Untitled", isUnresolved: () => false, loading: false }),
   useAssociations: () => ({ edges: [], status: "ready", error: null, reload: async () => undefined }),

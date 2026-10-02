@@ -20,7 +20,7 @@
  * the person's values being withheld with the page.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import { buildPreviewRequestContext, buildRequestContext, pageContextFor } from "../request-context";
 import { buildContinuationBody } from "../../utils/continuation-body";
 import { copyInstanceRequestDraft } from "../../thunks/copy-instance-request-draft.thunk";
@@ -53,7 +53,7 @@ function firstTurnState(opts: {
   pageOff?: boolean;
   surfaceName?: string | null;
   entries?: Array<{ key: string; value: unknown }>;
-}): RootState {
+}): ChatRootState {
   const byKey: Record<string, unknown> = {};
   for (const e of opts.entries ?? []) {
     byKey[e.key] = { key: e.key, value: e.value, slotMatched: false, type: "text", label: e.key };
@@ -89,10 +89,10 @@ function firstTurnState(opts: {
       organization_id: "c41f9e20-3a7d-4b15-8e62-91d0a4b7f3c8",
       organization_name: "Harbor Point",
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
-function rowsByKey(state: RootState) {
+function rowsByKey(state: ChatRootState) {
   const built = buildRequestContext(state, "c1");
   return { ...built, row: (key: string) => built.rows.find((r) => r.key === key) };
 }

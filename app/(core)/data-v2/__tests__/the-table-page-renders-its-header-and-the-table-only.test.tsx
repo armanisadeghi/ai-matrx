@@ -103,6 +103,8 @@ jest.mock("@/features/unified-data/components/TableSwitcher", () => ({
   TableSwitcher: ({ name }: { name: string }) => require("react").createElement("button", { "data-table-switcher": "" }, name),
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "87a6e699-3622-4869-8843-d0867456c0dd", useAppDispatch: () => jest.fn() }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => null }));
 jest.mock("@/features/organizations/service", () => ({ getOrganizationMembers: jest.fn() }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({ OrganizationContextNotice: () => null }));

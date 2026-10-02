@@ -16,7 +16,7 @@
 import React, { useCallback, useState } from "react";
 import { ArrowUp, Braces, CircleStop, AudioLines } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import { RunControlsMenu } from "./RunControlsMenu";
 import { InputButton } from "./InputActionButtons";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";

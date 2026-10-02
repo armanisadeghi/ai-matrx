@@ -1,10 +1,10 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
 
 export const selectInputCapabilitiesState =
   (conversationId: string) =>
-  (state: RootState) =>
+  (state: ChatRootState) =>
     state.instanceInputCapabilities.byConversationId[conversationId];
 
 export interface AttachmentCapabilities {
@@ -23,18 +23,18 @@ const DEFAULT_ATTACHMENT_CAPABILITIES: AttachmentCapabilities = {
 
 const selectorsByConversationId = new Map<
   string,
-  (state: RootState) => AttachmentCapabilities
+  (state: ChatRootState) => AttachmentCapabilities
 >();
 
 /** Effective UI configuration: stored agent base plus conversation deltas. */
 export const selectAttachmentCapabilities = (
   conversationId: string,
-): ((state: RootState) => AttachmentCapabilities) => {
+): ((state: ChatRootState) => AttachmentCapabilities) => {
   let selector = selectorsByConversationId.get(conversationId);
   if (!selector) {
     selector = createSelector(
       [
-        (state: RootState) =>
+        (state: ChatRootState) =>
           state.instanceInputCapabilities.byConversationId[conversationId],
       ],
       (entry): AttachmentCapabilities => {
@@ -55,5 +55,5 @@ export const selectAttachmentCapabilities = (
 
 export const selectInputCapabilityOverrides =
   (conversationId: string) =>
-  (state: RootState): Partial<UiGates> | undefined =>
+  (state: ChatRootState): Partial<UiGates> | undefined =>
     state.instanceInputCapabilities.byConversationId[conversationId]?.overrides;

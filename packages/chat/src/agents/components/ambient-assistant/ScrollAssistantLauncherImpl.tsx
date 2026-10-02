@@ -17,7 +17,7 @@ import { sourceFeatureFromSurfaceName } from "../../utils/source-feature-from-su
 import { useOpenQuickChatSheet } from "../../../host/window-openers";
 import { useAuthGuardedAction } from "@host/features/auth/components/useAuthGuardedAction";
 import { useSurfaceRuntime } from "../../../surfaces/runtime/SurfaceRuntimeContext";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectIsAuthenticated } from "@host/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { CHAT_WINDOWS } from "../../../host/windows";

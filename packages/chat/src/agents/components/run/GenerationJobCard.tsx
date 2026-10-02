@@ -25,7 +25,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Clapperboard } from "lucide-react";
 import { Progress } from "@ai-matrx/design-system";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import {
   selectRequest,

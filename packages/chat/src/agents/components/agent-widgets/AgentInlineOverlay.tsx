@@ -26,7 +26,7 @@
 import { useEffect } from "react";
 import { Button } from "@ai-matrx/design-system";
 import { X } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceStatus } from "../../redux/execution-system/conversations/conversations.selectors";
 import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { AgentRunner } from "../smart/AgentRunner";

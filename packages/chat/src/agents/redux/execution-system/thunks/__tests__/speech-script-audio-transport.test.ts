@@ -25,7 +25,7 @@ import activeRequestsReducer, {
 } from "../../active-requests/active-requests.slice";
 import messagesReducer from "../../messages/messages.slice";
 import { processStream } from "../process-stream";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
@@ -83,7 +83,7 @@ async function run(lines: string[], burst: boolean) {
       instanceResources: { byConversationId: {} },
       instanceVariableValues: { byConversationId: {} },
       observability: { toolCalls: {}, userRequests: {}, requests: {} },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
   const dispatch = (action: unknown) => {
     if (typeof action === "function") return undefined;
     active = activeRequestsReducer(active, action as never);
@@ -106,7 +106,7 @@ async function run(lines: string[], burst: boolean) {
   return getState();
 }
 
-function blocksOf(state: RootState) {
+function blocksOf(state: ChatRootState) {
   const req = state.activeRequests.byRequestId[REQ];
   return (req?.renderBlockOrder ?? []).map((id) => req!.renderBlocks[id]!);
 }

@@ -29,7 +29,7 @@ import {
   decisionAnswersMarkdownFromValue,
 } from "@host/features/content-ir/kinds/decision-answers";
 import type { ActiveRequest } from "../../../../types/request.types";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const REQ = "req_decision_text";
 const CONV = "conv_decision_text";
@@ -86,7 +86,7 @@ function run(blocks: Array<Record<string, unknown>>) {
       }) as never,
     ),
   );
-  const state = store.getState() as unknown as RootState;
+  const state = store.getState() as unknown as ChatRootState;
   const request = (
     state.activeRequests as unknown as {
       byRequestId: Record<string, ActiveRequest>;

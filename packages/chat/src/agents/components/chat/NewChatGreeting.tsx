@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useAppStore } from "@host/lib/redux/hooks";
+import { useAppStore } from "../../../store/hooks";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";
 import { ConnectorPromptHost } from "@host/features/connectors/ConnectorPromptHost";

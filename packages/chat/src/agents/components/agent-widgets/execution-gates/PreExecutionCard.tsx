@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, X } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import { selectPreExecutionMessage } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectInstanceAgentName } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectHasUserInput } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";

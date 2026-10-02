@@ -8,7 +8,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   mandateKeyForBuiltin,
   type SystemAgentKey,
@@ -96,7 +96,7 @@ function extractCodeFromResponse(response: string): string | null {
 
 async function waitForAgentCompletion(
   conversationId: string,
-  getState: () => RootState,
+  getState: () => ChatRootState,
   timeoutMs: number,
   pollingIntervalMs: number,
 ): Promise<{ fullResponse: string; requestId?: string; phase: StreamPhase }> {
@@ -128,8 +128,8 @@ async function waitForAgentCompletion(
 
 async function runBuiltinAgent(
   payload: BaseExtractionPayload,
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   jsonExtractionEnabled: boolean,
 ): Promise<{ conversationId: string; requestId?: string }> {
   const mandateKey = mandateKeyForBuiltin(payload.builtinKey);
@@ -179,7 +179,7 @@ async function runBuiltinAgent(
 export const executeBuiltinWithCodeExtraction = createAsyncThunk<
   CodeExtractionResult,
   BaseExtractionPayload,
-  { dispatch: AppDispatch; state: RootState }
+  { dispatch: ChatDispatch; state: ChatRootState }
 >(
   "agentExecution/executeBuiltinWithCodeExtraction",
   async (payload, { dispatch, getState }) => {
@@ -253,7 +253,7 @@ export const executeBuiltinWithCodeExtraction = createAsyncThunk<
 export const executeBuiltinWithJsonExtraction = createAsyncThunk<
   JsonExtractionResult,
   BaseExtractionPayload,
-  { dispatch: AppDispatch; state: RootState }
+  { dispatch: ChatDispatch; state: ChatRootState }
 >(
   "agentExecution/executeBuiltinWithJsonExtraction",
   async (payload, { dispatch, getState }) => {

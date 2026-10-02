@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import {
   selectAllTypedDataPayloads,
   selectPhaseHistory,
@@ -9,7 +9,7 @@ import activeRequestsReducer, { createRequest } from "../active-requests.slice";
 
 const REQUEST_ID = "request-selector-warning";
 
-function makeState(): RootState {
+function makeState(): ChatRootState {
   const store = configureStore({
     reducer: { activeRequests: activeRequestsReducer },
   });
@@ -19,7 +19,7 @@ function makeState(): RootState {
       conversationId: "conversation-selector-warning",
     }),
   );
-  return store.getState() as unknown as RootState;
+  return store.getState() as unknown as ChatRootState;
 }
 
 test("raw execution arrays retain their state references without Reselect identity warnings", () => {

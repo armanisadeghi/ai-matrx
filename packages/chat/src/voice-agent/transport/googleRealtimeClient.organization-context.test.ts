@@ -24,7 +24,7 @@ jest.mock("@host/utils/supabase/client", () => ({
   },
 }));
 
-jest.mock("@host/lib/redux/store-singleton", () => ({
+jest.mock("../../store/store-singleton", () => ({
   // No store at all — the same as "no organization selected anywhere".
   getStore: () => null,
 }));

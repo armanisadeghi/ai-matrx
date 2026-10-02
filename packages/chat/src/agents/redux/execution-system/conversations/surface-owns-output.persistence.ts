@@ -20,7 +20,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { Database } from "@host/types/database.types";
 import { supabase } from "@host/utils/supabase/client";
 import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
@@ -59,7 +59,7 @@ export function parsePersistedEngineeredInputs(metadata: unknown): boolean {
 export const persistConversationFlag = createAsyncThunk<
   void,
   { conversationId: string; flag: PersistedConversationFlag },
-  { dispatch: AppDispatch; state: RootState }
+  { dispatch: ChatDispatch; state: ChatRootState }
 >("conversations/persistConversationFlag", async ({ conversationId, flag }) => {
   if (!(await hasBrowserSession())) return;
   const persisted = await waitForConversationPersisted(conversationId);

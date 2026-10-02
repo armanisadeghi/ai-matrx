@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Aperture, ImageIcon } from "lucide-react";
 import MarkdownStream from "@host/components/MarkdownStream";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectAgentCallChildStream } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 
 import type { ToolRendererProps } from "../../types";

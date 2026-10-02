@@ -8,7 +8,7 @@ import {
   formatTranscriptIntegrityReport,
 } from "../transcript-integrity-report";
 import type { MessageRecord } from "../../../redux/execution-system/messages/messages.slice";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { clearTranscriptJournal } from "../../../redux/execution-system/messages/transcript-journal";
 
 const CONV = "conv-report";
@@ -47,7 +47,7 @@ function stateWith(
     visibleGroupLimit: number | null;
   }> = {},
   request?: { status: string; startedAt: string; completedAt: string | null },
-): RootState {
+): ChatRootState {
   const byId: Record<string, MessageRecord> = {};
   for (const r of records) byId[r.id] = r;
   const state = {
@@ -91,7 +91,7 @@ function stateWith(
       byConversationId: request ? { [CONV]: ["req-1"] } : {},
     },
   };
-  return state as unknown as RootState;
+  return state as unknown as ChatRootState;
 }
 
 const ARGS = {

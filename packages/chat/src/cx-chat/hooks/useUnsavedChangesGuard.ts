@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { selectSessionHasUnsavedChanges } from "../_legacy-stubs";
 
 /**

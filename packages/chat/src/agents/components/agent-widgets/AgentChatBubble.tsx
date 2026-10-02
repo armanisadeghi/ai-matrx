@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectIsExecuting } from "../../redux/execution-system/selectors/aggregate.selectors";
 import { Button } from "@ai-matrx/design-system";
 import { MessageSquare, Minimize2, X } from "lucide-react";

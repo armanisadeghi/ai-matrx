@@ -43,7 +43,7 @@ jest.mock("../settle-after-stop.thunk", () => ({
 import { processStream } from "../process-stream";
 import { cancelExecution } from "../smart-execute.thunk";
 import { registerAbortController } from "../abort-registry";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 jest.useFakeTimers();
 
@@ -79,7 +79,7 @@ function openResponse(scripted: Uint8Array[], signal: AbortSignal): Response {
   } as unknown as Response;
 }
 
-function fakeState(): RootState {
+function fakeState(): ChatRootState {
   return {
     activeRequests: { byRequestId: {}, byConversationId: {} },
     conversations: { byConversationId: {} },
@@ -89,7 +89,7 @@ function fakeState(): RootState {
     instanceVariableValues: { byConversationId: {} },
     messages: { byConversationId: {} },
     observability: { toolCalls: {}, userRequests: {}, requests: {} },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 test("an aborted stream commits its applied cursor at the instant of Stop", async () => {
@@ -148,7 +148,7 @@ test("Stop aborts first, then sends the page's cursor with the cancel", async ()
         },
       },
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
   const controller = new AbortController();
   // The aborted processor's synchronous commit lands frame 41 in the store.
   controller.signal.addEventListener("abort", () => {

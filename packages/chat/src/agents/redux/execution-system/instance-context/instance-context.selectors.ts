@@ -1,12 +1,12 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { InstanceContextEntry } from "../../../types/instance.types";
 
 const EMPTY_CONTEXT_ENTRIES: InstanceContextEntry[] = [];
 
 export const selectInstanceContextEntries = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceContext.byConversationId[conversationId],
     (context): InstanceContextEntry[] => {
       if (!context) return EMPTY_CONTEXT_ENTRIES;
@@ -17,7 +17,7 @@ export const selectInstanceContextEntries = (conversationId: string) =>
 
 export const selectInstanceContextEntry =
   (conversationId: string, key: string) =>
-  (state: RootState): InstanceContextEntry | undefined =>
+  (state: ChatRootState): InstanceContextEntry | undefined =>
     state.instanceContext.byConversationId[conversationId]?.[key];
 
 /**
@@ -25,7 +25,7 @@ export const selectInstanceContextEntry =
  */
 export const selectSlotMatchedContext = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceContext.byConversationId[conversationId],
     (context): InstanceContextEntry[] => {
       if (!context) return EMPTY_CONTEXT_ENTRIES;
@@ -39,7 +39,7 @@ export const selectSlotMatchedContext = (conversationId: string) =>
  */
 export const selectAdHocContext = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceContext.byConversationId[conversationId],
     (context): InstanceContextEntry[] => {
       if (!context) return EMPTY_CONTEXT_ENTRIES;
@@ -57,5 +57,5 @@ const EMPTY_SURFACE_KEYS: readonly string[] = [];
  */
 export const selectSurfaceContextKeys =
   (conversationId: string) =>
-  (state: RootState): readonly string[] =>
+  (state: ChatRootState): readonly string[] =>
     state.instanceContext.surfaceKeysByConversationId[conversationId] ?? EMPTY_SURFACE_KEYS;

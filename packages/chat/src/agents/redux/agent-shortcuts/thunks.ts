@@ -25,7 +25,7 @@ import { pgErrorToError } from "@ai-matrx/data";
 import { ensureOrgId } from "@host/lib/organizations/ensureOrgId";
 import { resolveSystemOrgId } from "@host/lib/organizations/systemOrg";
 import { toGlobalOwnershipRecord } from "@host/lib/organizations/globalOwnership";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { assignField } from "../shared/field-flags";
 import type {
@@ -242,7 +242,7 @@ import {
   shortcutMappingColumnsAreShared,
 } from "./converters";
 
-type ThunkApi = { dispatch: AppDispatch; state: RootState };
+type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 
 // ---------------------------------------------------------------------------
 // buildAgentShortcutMenu — app load
@@ -1489,7 +1489,7 @@ export const fetchUnifiedMenu = createAsyncThunk<
         arg && typeof arg === "object" && "scope" in arg
           ? { scope: arg.scope, scopeId: arg.scopeId ?? null }
           : { scope: "global", scopeId: null };
-      const state = getState() as RootState;
+      const state = getState() as ChatRootState;
       // Only the menu's own rows-in-hand flag skips the fetch. A fetch already
       // in flight is NOT skipped here: the payload creator hands this caller
       // the same promise, so its `.unwrap()` settles when the rows arrive —
@@ -1524,7 +1524,7 @@ export const fetchUnifiedMenu = createAsyncThunk<
 export const ensureShortcutLoaded = createAsyncThunk<void, string, ThunkApi>(
   "agentShortcut/ensureLoaded",
   async (shortcutId, { dispatch, getState }) => {
-    const existing = (getState() as RootState).agentShortcut.shortcuts[
+    const existing = (getState() as ChatRootState).agentShortcut.shortcuts[
       shortcutId
     ];
     if (existing) return;
@@ -1536,7 +1536,7 @@ export const ensureShortcutLoaded = createAsyncThunk<void, string, ThunkApi>(
     // RLS on the underlying tables.
     await dispatch(fetchUnifiedMenu({ scope: "user", scopeId: null })).unwrap();
 
-    const after = (getState() as RootState).agentShortcut.shortcuts[shortcutId];
+    const after = (getState() as ChatRootState).agentShortcut.shortcuts[shortcutId];
     if (!after) {
       throw new Error(
         `Shortcut ${shortcutId} not available to this user. The id may be stale, the shortcut may be inactive, or the user lacks access. (Menu fetch completed without returning this shortcut.)`,

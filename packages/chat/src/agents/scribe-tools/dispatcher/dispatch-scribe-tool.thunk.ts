@@ -13,7 +13,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import { extractErrorMessage } from "@host/utils/errors";
 import { submitToolResult } from "../../api/submit-tool-results";
 import { upsertToolLifecycle } from "../../redux/execution-system/active-requests/active-requests.slice";
@@ -31,7 +31,7 @@ export interface DispatchScribeToolPayload {
 export const dispatchScribeTool = createAsyncThunk<
   void,
   DispatchScribeToolPayload,
-  { state: RootState }
+  { state: ChatRootState }
 >(
   "scribeTools/dispatch",
   async (

@@ -37,7 +37,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@ai-matrx/design-system";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import {
   selectAllModels,
   selectModelFullyLoaded,

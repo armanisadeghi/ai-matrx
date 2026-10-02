@@ -1,6 +1,6 @@
 "use client";
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { useEffect, useState } from "react";
 import { useFile } from "@host/features/files/handler/hooks/useFile";
 import { fileHandler } from "@host/features/files/handler/handler";
@@ -144,7 +144,7 @@ export function resolveAttachedDocumentDisplayName(args: {
  * Uses the cloud-files row already in Redux when the user picked from the picker.
  */
 export function documentAttachLabelFromState(
-  state: RootState,
+  state: ChatRootState,
   fileId: string,
   resourceFilenameFallback: string,
 ): string {

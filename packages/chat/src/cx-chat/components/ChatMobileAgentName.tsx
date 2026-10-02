@@ -9,7 +9,7 @@ import { useState, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { selectAgentById } from "../../agents/redux/agent-definition/selectors";
 import { pushAppHref } from "@host/lib/deployment/navigate";
 

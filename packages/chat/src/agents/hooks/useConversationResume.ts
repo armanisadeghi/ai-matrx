@@ -35,7 +35,7 @@
 // common-docs/policies/table-stakes-are-never-a-question.md.
 
 import { useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "../../store/hooks";
 import { createManualInstance } from "../redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "../redux/execution-system/thunks/load-conversation.thunk";
 import { followWhatIsStillInFlight } from "../runtime-reconnect/follow-what-is-still-in-flight";

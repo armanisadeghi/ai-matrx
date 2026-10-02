@@ -13,7 +13,7 @@
  */
 
 import { useEffect } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { selectResolvedBaseUrl } from "@host/lib/redux/slices/apiConfigSlice";
 import { warmAgent } from "@host/lib/api/warm-helpers";
 

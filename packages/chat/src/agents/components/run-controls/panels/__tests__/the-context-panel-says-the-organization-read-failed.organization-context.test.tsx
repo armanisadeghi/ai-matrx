@@ -47,13 +47,15 @@ const dispatch = (action: unknown) => {
   return promise;
 };
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../../store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ appContext }),
   useAppDispatch: () => dispatch,
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
 
-jest.mock("@host/lib/redux/store-singleton", () => ({
+jest.mock("../../../../../store/store-singleton", () => ({
   getStoreSingleton: () => ({ dispatch: () => {} }),
 }));
 jest.mock("@host/lib/redux/thunks/activeOrgBootstrap", () => ({

@@ -11,7 +11,7 @@
  */
 
 import { useEffect } from "react";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../store/hooks";
 import {
   initializeChatAgents,
   isChatListStale,

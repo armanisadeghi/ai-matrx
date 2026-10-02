@@ -24,7 +24,7 @@
 import { callApi, type ApiCallResult } from "@host/lib/api/call-api";
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import type { components } from "@host/types/python-generated/api-types";
 
 // ── Local types ──────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ export const fetchConversationPendingCalls = (
   conversationId: string,
 ): ThunkAction<
   Promise<PendingCallSummary[]>,
-  RootState,
+  ChatRootState,
   unknown,
   UnknownAction
 > => {
@@ -124,7 +124,7 @@ export const fetchConversationPendingCallsStrict = (
   conversationId: string,
 ): ThunkAction<
   Promise<PendingCallSummary[]>,
-  RootState,
+  ChatRootState,
   unknown,
   UnknownAction
 > => {
@@ -149,7 +149,7 @@ export const fetchConversationPendingCallsStrict = (
  */
 export const fetchUserPendingCalls = (): ThunkAction<
   Promise<PendingCallSummary[]>,
-  RootState,
+  ChatRootState,
   unknown,
   UnknownAction
 > => {

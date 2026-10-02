@@ -24,7 +24,7 @@
 
 import { useMemo, useState } from "react";
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import {
   selectPrimaryRequest,
   selectToolLifecycleMap,

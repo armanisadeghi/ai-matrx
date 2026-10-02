@@ -52,6 +52,8 @@ jest.mock("@ai-matrx/records-ui", () => ({
   recordsDataSource: () => ({}),
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "87a6e699-3622-4869-8843-d0867456c0dd" }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/utils/permissions/orgResources", () => ({ listOrgSharedResources: async () => [] }));
 jest.mock("@/features/organizations/peek/ResourcePeekHost", () => ({ ResourcePeekHost: () => null }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));

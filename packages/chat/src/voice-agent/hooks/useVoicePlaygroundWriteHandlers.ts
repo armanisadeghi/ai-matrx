@@ -38,8 +38,8 @@
 import { useMemo } from "react";
 
 import type { SurfaceWriteHandlers } from "../../surfaces/runtime/SurfaceRuntimeContext";
-import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppDispatch, useAppStore } from "../../store/hooks";
+import type { ChatRootState } from "../../store/root-state";
 import { VOICES } from "../constants";
 import { updateConfig } from "../state/voiceAgentSlice";
 import {
@@ -73,7 +73,7 @@ export function useVoicePlaygroundWriteHandlers(
      * Throws unless the playground's settings state is mounted AND no voice
      * session is live. Reads the store fresh on every call — see the header.
      */
-    const assertEditable = (state: RootState) => {
+    const assertEditable = (state: ChatRootState) => {
       // Refuse loudly rather than staging into nothing: with no instance
       // there is no settings state this target could mean. Checked BEFORE the
       // preset, because the selectors fall back to a frozen `intro` instance

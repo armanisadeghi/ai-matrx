@@ -1,4 +1,4 @@
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import { destroyInstance } from "../conversations.slice";
 import { destroyInstanceIfAbandoned } from "../conversations.thunks";
 
@@ -8,7 +8,7 @@ function stateWithInput(
   submissionPhase: "idle" | "pending" | "persisted",
   text: string,
   handoffSourceConversationId?: string,
-): RootState {
+): ChatRootState {
   return {
     conversations: {
       debugSessionActive: false,
@@ -46,11 +46,11 @@ function stateWithInput(
           }
         : null,
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
-function runCleanup(state: RootState) {
-  const dispatch = jest.fn() as unknown as AppDispatch;
+function runCleanup(state: ChatRootState) {
+  const dispatch = jest.fn() as unknown as ChatDispatch;
   destroyInstanceIfAbandoned(CONVERSATION_ID)(dispatch, () => state, undefined);
   return dispatch;
 }

@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { toast } from "../../../host/notify";
 import { Checkbox } from "@host/components/ui/checkbox";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
 import {
   selectConversationSandboxBinding,

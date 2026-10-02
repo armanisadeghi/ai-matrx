@@ -36,7 +36,7 @@ const StackedVariableInputs = dynamic(
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import { InputActionButtons } from "./InputActionButtons";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { selectIsSuperAdminDebugger } from "@host/lib/redux/slices/userSlice";
 // Instance-system state
 import { selectUserInputText } from "../../../agents/redux/execution-system/instance-user-input/instance-user-input.selectors";

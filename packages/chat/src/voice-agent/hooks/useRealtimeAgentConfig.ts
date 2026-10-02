@@ -28,7 +28,7 @@
 // `postJson` here.
 
 import { useEffect, useState } from "react";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../store/hooks";
 import { applyAgentConfig } from "../state/voiceAgentSlice";
 import { useRealtimeHolderModel } from "../realtimeModel";
 import type { RealtimeToolSet, ResolvedRealtimeTool } from "../types";

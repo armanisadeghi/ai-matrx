@@ -7,7 +7,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type { CodeAgentFilter } from "@host/lib/redux/preferences/userPreferencesSlice";
 import type { AgentDefinitionRecord } from "../../types/agent-definition.types";
 import { selectActiveAgents } from "../agent-definition/selectors";
@@ -25,7 +25,7 @@ export const makeSelectAgentsForFilter = () =>
   createSelector(
     [
       selectActiveAgents,
-      (_state: RootState, filter: CodeAgentFilter | null | undefined) => filter,
+      (_state: ChatRootState, filter: CodeAgentFilter | null | undefined) => filter,
     ],
     (agents, filter): AgentDefinitionRecord[] => {
       if (!filter || filter.mode === "all") return agents;
@@ -62,9 +62,9 @@ export const makeSelectAgentIdsForFilter = () => {
   const selectAgents = makeSelectAgentsForFilter();
   return createSelector(
     [
-      (state: RootState, filter: CodeAgentFilter | null | undefined) =>
+      (state: ChatRootState, filter: CodeAgentFilter | null | undefined) =>
         selectAgents(state, filter),
-      (_state: RootState, filter: CodeAgentFilter | null | undefined) => filter,
+      (_state: ChatRootState, filter: CodeAgentFilter | null | undefined) => filter,
     ],
     (agents, filter): string[] =>
       conversationHistoryAgentIds(

@@ -17,7 +17,7 @@
 // the default must not depend on a backfill.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/rootReducer";
+import type { ChatRootState } from "../../../../store/root-state";
 import {
   clearUserInput,
   markInputPersisted,
@@ -96,7 +96,7 @@ export function flushComposerDraftWrite(conversationId: string): void {
   if (text !== undefined) writeComposerDraft(conversationId, text);
 }
 
-export function isDraftRestoreEnabled(state: RootState): boolean {
+export function isDraftRestoreEnabled(state: ChatRootState): boolean {
   // `!== false` and never `=== true`: a preferences blob persisted before this
   // key existed has no value for it, and the default is ON.
   return state.userPreferences?.prompts?.restoreUnsentDrafts !== false;
@@ -110,7 +110,7 @@ export function isDraftRestoreEnabled(state: RootState): boolean {
  * text as typed. Reading the resulting state is the only honest way to know
  * which happened — anything else would drop a draft the slice just saved.
  */
-function reconcile(conversationId: string, state: RootState): void {
+function reconcile(conversationId: string, state: ChatRootState): void {
   cancel(conversationId);
   const text =
     state.instanceUserInput.byConversationId[conversationId]?.text ?? "";
@@ -120,7 +120,7 @@ function reconcile(conversationId: string, state: RootState): void {
 
 export const composerDraftMiddleware: Middleware<
   Record<string, never>,
-  RootState
+  ChatRootState
 > = (api) => (next) => (action: unknown) => {
   const type =
     typeof action === "object" && action !== null && "type" in action

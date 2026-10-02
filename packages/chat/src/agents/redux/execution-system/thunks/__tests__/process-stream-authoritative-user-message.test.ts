@@ -14,7 +14,7 @@ import messagesReducer, {
 import { extractFlatText } from "../../messages/messages.selectors";
 import { processStream } from "../process-stream";
 import { refetchSingleMessage } from "../../message-crud/refetch-single-message.thunk";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 jest.mock("@host/utils/supabase/client", () => {
   const mockQuery = {
@@ -152,10 +152,10 @@ test("refreshes a server-assembled user row after its status update without refe
       instanceResources: { byConversationId: {} },
       instanceVariableValues: { byConversationId: {} },
       observability: { toolCalls: {}, userRequests: {}, requests: {} },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
   const dispatch = (action: unknown): unknown => {
     if (typeof action === "function") {
-      return (action as (dispatch: (action: unknown) => unknown, getState: () => RootState) => unknown)(
+      return (action as (dispatch: (action: unknown) => unknown, getState: () => ChatRootState) => unknown)(
         dispatch,
         getState,
       );
@@ -267,10 +267,10 @@ test("a frozen optimistic send is not rewritten when the reply's user row comple
       instanceResources: { byConversationId: {} },
       instanceVariableValues: { byConversationId: {} },
       observability: { toolCalls: {}, userRequests: {}, requests: {} },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
   const dispatch = (action: unknown): unknown => {
     if (typeof action === "function") {
-      return (action as (dispatch: (action: unknown) => unknown, getState: () => RootState) => unknown)(
+      return (action as (dispatch: (action: unknown) => unknown, getState: () => ChatRootState) => unknown)(
         dispatch,
         getState,
       );
@@ -349,10 +349,10 @@ test("stream refetch keeps the frozen send when the durable row is a different p
   });
 
   let messages = messagesReducer(undefined, { type: "test/init" });
-  const getState = () => ({ messages }) as unknown as RootState;
+  const getState = () => ({ messages }) as unknown as ChatRootState;
   const dispatch = (action: unknown): unknown => {
     if (typeof action === "function") {
-      return (action as (dispatch: (action: unknown) => unknown, getState: () => RootState, extra: unknown) => unknown)(dispatch, getState, undefined);
+      return (action as (dispatch: (action: unknown) => unknown, getState: () => ChatRootState, extra: unknown) => unknown)(dispatch, getState, undefined);
     }
     messages = messagesReducer(messages, action as never);
     return action;
@@ -387,10 +387,10 @@ test("ordinary CRUD refetch accepts an intentional empty content update", async 
   mockQuery.maybeSingle.mockReset().mockResolvedValue({ data: row([]), error: null });
 
   let messages = messagesReducer(undefined, { type: "test/init" });
-  const getState = () => ({ messages }) as unknown as RootState;
+  const getState = () => ({ messages }) as unknown as ChatRootState;
   const dispatch = (action: unknown): unknown => {
     if (typeof action === "function") {
-      return (action as (dispatch: (action: unknown) => unknown, getState: () => RootState, extra: unknown) => unknown)(dispatch, getState, undefined);
+      return (action as (dispatch: (action: unknown) => unknown, getState: () => ChatRootState, extra: unknown) => unknown)(dispatch, getState, undefined);
     }
     messages = messagesReducer(messages, action as never);
     return action;
@@ -428,10 +428,10 @@ test("terminal host-authored empty row is authoritative without polling", async 
     error: null,
   });
   let messages = messagesReducer(undefined, { type: "test/init" });
-  const getState = () => ({ messages }) as unknown as RootState;
+  const getState = () => ({ messages }) as unknown as ChatRootState;
   const dispatch = (action: unknown): unknown => {
     if (typeof action === "function") {
-      return (action as (dispatch: (action: unknown) => unknown, getState: () => RootState, extra: unknown) => unknown)(dispatch, getState, undefined);
+      return (action as (dispatch: (action: unknown) => unknown, getState: () => ChatRootState, extra: unknown) => unknown)(dispatch, getState, undefined);
     }
     messages = messagesReducer(messages, action as never);
     return action;

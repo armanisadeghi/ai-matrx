@@ -13,6 +13,8 @@ const openCanvas = jest.fn();
 const openArtifact = jest.fn(async () => ({ ok: true }));
 let state: unknown = {};
 jest.mock("@/lib/redux/hooks", () => ({ useAppStore: () => ({ getState: () => state }) }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/canvas/hooks/useCanvas", () => ({ useCanvas: () => ({ open: openCanvas }) }));
 const toastInfo = jest.fn();
 jest.mock("@/lib/toast", () => ({ toast: { info: (...a: unknown[]) => toastInfo(...a) } }));

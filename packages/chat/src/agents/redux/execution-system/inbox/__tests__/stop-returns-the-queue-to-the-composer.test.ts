@@ -16,7 +16,7 @@ import {
   type ThunkDispatch,
   type UnknownAction,
 } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import inboxReducer, { addInboxItem, type ConversationInboxItem } from "../inbox.slice";
 import instanceUserInputReducer, {
   setUserInputText,
@@ -68,7 +68,7 @@ function store(draft: string) {
 // The store holds only the two slices this thunk reads; type its dispatch
 // as the app's thunk dispatch so the RootState-typed thunk can be driven.
 const run = (s: ReturnType<typeof store>) =>
-  (s.dispatch as ThunkDispatch<RootState, unknown, UnknownAction>)(
+  (s.dispatch as ThunkDispatch<ChatRootState, unknown, UnknownAction>)(
     returnQueuedToComposer({ conversationId: CONV }),
   ).unwrap();
 

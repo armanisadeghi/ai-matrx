@@ -25,7 +25,7 @@
 
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import {
   defineChannelNamespace,
   subscribeToRealtimeManager,
@@ -51,7 +51,7 @@ import type {
 
 type AgentListsThunk = ThunkAction<
   Promise<void>,
-  RootState,
+  ChatRootState,
   unknown,
   UnknownAction
 >;
@@ -97,7 +97,7 @@ const activeChannels = new Map<string, () => void>();
 
 export function subscribeAgentLists(
   conversationId: string,
-): ThunkAction<void, RootState, unknown, UnknownAction> {
+): ThunkAction<void, ChatRootState, unknown, UnknownAction> {
   return (dispatch) => {
     if (activeChannels.has(conversationId)) return;
 
@@ -189,7 +189,7 @@ export function subscribeAgentLists(
 
 export function unsubscribeAgentLists(
   conversationId: string,
-): ThunkAction<void, RootState, unknown, UnknownAction> {
+): ThunkAction<void, ChatRootState, unknown, UnknownAction> {
   return () => {
     const stop = activeChannels.get(conversationId);
     if (!stop) return;

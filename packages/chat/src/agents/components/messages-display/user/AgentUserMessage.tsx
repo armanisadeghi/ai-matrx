@@ -15,7 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import {
   selectMessageById,
   selectFirstMessageId,
@@ -47,7 +47,7 @@ import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
 import { isAttachmentMessagePart } from "../../context-items/normalize";
 import MarkdownStream from "@host/components/MarkdownStream";
 import type { InstanceContextEntry } from "../../../types/instance.types";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { buildVariableDisplayLines } from "../../../utils/variable-display-lines";
 import type {
   MessagePart,
@@ -182,7 +182,7 @@ export function AgentUserMessage({
   // The agent driving this conversation — used by ContextPolicyChipStrip to
   // resolve slot definitions for type/label/description on each chip.
   const agentId = useAppSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.conversations.byConversationId[conversationId]?.agentId ?? null,
   );
 

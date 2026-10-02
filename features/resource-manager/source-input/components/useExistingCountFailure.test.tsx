@@ -29,6 +29,8 @@ jest.mock("@/features/resource-manager/source-input/savedWebPages", () => ({
 jest.mock("@/features/resource-manager/source-input/itemStage", () => ({ useKindItemStages: () => new Map() }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
 
 import { UseExisting } from "./UseExisting";

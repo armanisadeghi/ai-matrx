@@ -28,8 +28,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "../../../../host/notify";
-import type { AppDispatch } from "@host/lib/redux/store";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { supabase } from "@host/utils/supabase/client";
 import { loadConversation } from "./load-conversation.thunk";
 import { setRequestStatus } from "../active-requests/active-requests.slice";
@@ -61,7 +60,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const recoverDroppedStream = createAsyncThunk<
   RecoverDroppedStreamResult,
   RecoverDroppedStreamArgs,
-  { dispatch: AppDispatch; state: RootState }
+  { dispatch: ChatDispatch; state: ChatRootState }
 >(
   "execution/recoverDroppedStream",
   async (

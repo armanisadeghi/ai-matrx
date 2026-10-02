@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Eye, Pencil, Play, History, Plus } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import {
   selectAgentIsDirty,
   selectAgentById,

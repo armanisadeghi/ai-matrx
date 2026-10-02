@@ -35,6 +35,8 @@ jest.mock("next/navigation", () => ({
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => OWNER,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));

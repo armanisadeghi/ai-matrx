@@ -18,7 +18,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";

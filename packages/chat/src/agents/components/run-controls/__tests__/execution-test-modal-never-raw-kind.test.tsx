@@ -11,7 +11,9 @@ import { createRoot, type Root } from "react-dom/client";
 const SET_JSON = JSON.stringify({ __kind: "flashcard_set", title: "Cell biology", cards: [] });
 let answer = SET_JSON;
 
-jest.mock("@host/lib/redux/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
+jest.mock("../../../../store/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 jest.mock("../../../redux/execution-system/selectors/aggregate.selectors", () => ({
   selectLatestAccumulatedText: () => () => answer,
   selectLatestRequestStatus: () => () => "complete",

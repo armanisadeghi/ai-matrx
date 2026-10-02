@@ -57,6 +57,8 @@ jest.mock("@/features/scopes/service/associationsService", () => ({ associations
 jest.mock("@/hooks/useBackendApi", () => ({ useBackendApi: () => ({ post: jest.fn() }) }));
 jest.mock("@/lib/knobs/featureKnobs", () => ({ knobInt: () => Promise.resolve(2_000_000) }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   ...jest.requireActual("@/lib/redux/slices/appContextSlice"),

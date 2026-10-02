@@ -31,7 +31,7 @@ import {
   ListOrdered,
   EyeOff,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { ProInput } from "@host/components/official/ProInput";
 import { cn } from "@ai-matrx/design-system";

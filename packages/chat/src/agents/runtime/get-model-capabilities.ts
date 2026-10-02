@@ -13,7 +13,7 @@
 // Hot-path-safe: pure selectors + the parser. No allocations beyond
 // what the parser does.
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySlice";
 import {
   parseCapabilities,
@@ -22,7 +22,7 @@ import {
 
 /** Resolves capabilities from the agent attached to `conversationId`. */
 export function getCapabilitiesForConversation(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): ModelCapabilities | null {
   const instance = state.conversations.byConversationId[conversationId];
@@ -39,7 +39,7 @@ export function getCapabilitiesForConversation(
 
 /** Resolves capabilities for an arbitrary model id. */
 export function getCapabilitiesForModel(
-  state: RootState,
+  state: ChatRootState,
   modelId: string,
 ): ModelCapabilities | null {
   const model = selectModelById(state, modelId);

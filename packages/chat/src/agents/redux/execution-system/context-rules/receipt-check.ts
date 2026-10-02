@@ -13,7 +13,7 @@
  *     admins also get a toast and a console dump of the full diff.
  */
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   compareReceipt,
   type ContextReceipt,
@@ -66,8 +66,8 @@ export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
 
 /** Store the receipt and run the expected-vs-actual check for this request. */
 export function recordContextReceipt(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   args: { conversationId: string; requestId: string; data: ContextReceiptData },
 ): void {
   const { conversationId, requestId, data } = args;

@@ -19,13 +19,15 @@ let state: Record<string, unknown> = {};
 let activePage: string | null = null;
 let ownConversation = false;
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => (action: unknown) => {
     dispatched.push(action as { type: string });
     return action;
   },
   useAppSelector: (selector: (s: unknown) => unknown) => selector(state),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
 jest.mock("../../../agents/redux/execution-system/thunks/refresh-surface-scope.thunk", () => ({
   refreshSurfaceScope: (arg: { conversationId: string }) => ({ type: "refreshSurfaceScope", payload: arg }),
 }));

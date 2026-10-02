@@ -39,7 +39,7 @@ import type {
   ItemMenuConfig,
   ItemMenuSection,
 } from "@host/components/official/item/types";
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../../store/root-state";
 import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
 import {
   copyConversationLink,
@@ -130,7 +130,7 @@ export interface ConversationMenuContext {
   onMutationSuccess?: () => void;
   /** Open the canonical project association picker for this conversation. */
   onAddToProject?: () => void;
-  dispatch: AppDispatch;
+  dispatch: ChatDispatch;
 }
 
 export function buildConversationMenu(

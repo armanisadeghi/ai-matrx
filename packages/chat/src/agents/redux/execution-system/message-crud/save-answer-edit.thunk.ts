@@ -29,7 +29,7 @@
 
 import { durableRecordId } from "@host/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { Json } from "@host/types/database.types";
 import { supabase } from "@host/utils/supabase/client";
 import { editMessage } from "./edit-message.thunk";
@@ -81,8 +81,8 @@ export interface SaveAnswerEditResult {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   /** `code: "stale"` — the saved answer changed since the editor opened. */
   rejectValue: { message: string; code?: "stale"; storedText?: string };
 }
@@ -153,8 +153,8 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
  * when nothing was written.
  */
 export async function saveMessageDisplayEdit(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   args: { conversationId: string; messageId: string; previous: string; next: string },
 ): Promise<void> {
   const record = getState().messages.byConversationId[args.conversationId]?.byId?.[args.messageId];

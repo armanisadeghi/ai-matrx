@@ -10,7 +10,7 @@
 
 import { SettingDoor } from "@host/features/settings/doors/SettingDoor";
 import { VOICE_SETTING_DOORS } from "@host/features/settings/tabs/voices/voiceSettingDoors";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { voiceDisplayName } from "@host/lib/voices/voiceSets";
 
 export function LiveVoiceDoor({

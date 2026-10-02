@@ -14,7 +14,7 @@ import { useState } from "react";
 import { Share2, Blocks, Camera } from "lucide-react";
 import dynamic from "next/dynamic";
 import { IconButton, PageHeaderPortal } from "../../host/chrome";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import {
   selectIsAuthenticated,
   selectIsSuperAdminDebugger,

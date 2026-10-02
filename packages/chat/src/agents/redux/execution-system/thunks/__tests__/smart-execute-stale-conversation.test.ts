@@ -1,4 +1,4 @@
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import { toast } from "../../../../../host/notify";
 import {
   hasConversationAtExecutionBoundary,
@@ -15,7 +15,7 @@ describe("smartExecute stale conversation admission", () => {
     // A second submit of a DIFFERENT draft is held, never dropped — pinned in
     // a-second-message-is-never-lost.test.ts.
     const conversationId = "duplicate-before-send";
-    const dispatch = jest.fn() as unknown as AppDispatch;
+    const dispatch = jest.fn() as unknown as ChatDispatch;
     const getState = () =>
       ({
         conversations: { byConversationId: { [conversationId]: {} } },
@@ -28,7 +28,7 @@ describe("smartExecute stale conversation admission", () => {
             },
           },
         },
-      }) as unknown as RootState;
+      }) as unknown as ChatRootState;
     const consoleError = jest
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
@@ -52,11 +52,11 @@ describe("smartExecute stale conversation admission", () => {
 
   it("drops a submit whose browser-local conversation was removed — telling the person, reporting no incident", async () => {
     const conversationId = "removed-before-submit";
-    const dispatch = jest.fn() as unknown as AppDispatch;
+    const dispatch = jest.fn() as unknown as ChatDispatch;
     const getState = () =>
       ({
         conversations: { byConversationId: {} },
-      }) as unknown as RootState;
+      }) as unknown as ChatRootState;
     const consoleError = jest
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
@@ -86,10 +86,10 @@ describe("smartExecute stale conversation admission", () => {
       conversations: {
         byConversationId: { [conversationId]: { organizationId: "org-1" } },
       },
-    } as unknown as RootState;
+    } as unknown as ChatRootState;
     const afterPreflight = {
       conversations: { byConversationId: {} },
-    } as unknown as RootState;
+    } as unknown as ChatRootState;
 
     expect(
       hasConversationAtExecutionBoundary(beforePreflight, conversationId),
@@ -101,7 +101,7 @@ describe("smartExecute stale conversation admission", () => {
 
   it("keeps missing-organization validation visible without reporting an incident", async () => {
     const conversationId = "new-conversation-without-org";
-    const dispatch = jest.fn() as unknown as AppDispatch;
+    const dispatch = jest.fn() as unknown as ChatDispatch;
     const getState = () =>
       ({
         conversations: {
@@ -112,7 +112,7 @@ describe("smartExecute stale conversation admission", () => {
         appContext: { organization_id: null },
         instanceUserInput: { byConversationId: {} },
         instanceResources: { byConversationId: {} },
-      }) as unknown as RootState;
+      }) as unknown as ChatRootState;
     const consoleError = jest
       .spyOn(console, "error")
       .mockImplementation(() => undefined);

@@ -21,7 +21,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { SourceFeature } from "@host/types/python-generated/source-attribution";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
 import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";
 import { setUserInputText } from "../../agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { smartExecute } from "../../agents/redux/execution-system/thunks/smart-execute.thunk";

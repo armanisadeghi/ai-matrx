@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import { keyEventInside } from "@host/utils/keyboard-scope";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   undoAgentEdit,
   redoAgentEdit,

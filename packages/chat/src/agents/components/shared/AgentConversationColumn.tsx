@@ -21,7 +21,7 @@ import { TranscriptIntegrityCopyButton } from "../messages-display/TranscriptInt
 import { PendingAsksZone } from "../../ui-first-tools/ui/PendingAsksZone";
 import { ServerOperationBanner } from "../../runtime-reconnect/ServerOperationBanner";
 import { ProposedDirectivesZone } from "@host/features/matrx-envelope/components/ProposedDirectivesZone";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
 import {
   revealOlderGroups,

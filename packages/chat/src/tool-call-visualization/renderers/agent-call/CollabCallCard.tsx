@@ -22,7 +22,7 @@
 
 import React, { useMemo } from "react";
 import { GitBranch, Handshake, Inbox, ScrollText, TriangleAlert } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectAgentCallChildStream } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useConversationTitle } from "../../../agents/hooks/useConversationTitle";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";

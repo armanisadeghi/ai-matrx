@@ -51,7 +51,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
 import type { ResourcePickerViewId } from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { useRunControlCounts } from "@host/features/resource-manager/resource-picker/useRunControlCounts";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import FloatingSheet from "@host/components/official/FloatingSheet";
 import { AgentRunner } from "../smart/AgentRunner";

@@ -20,7 +20,7 @@
  * Stored files are saved by their permanent file id.
  */
 
-import type { AppThunk, RootState } from "@host/lib/redux/store";
+import type { ChatThunk, ChatRootState } from "../../../../store/root-state";
 import { isSignedUrl } from "@host/lib/media/signed-url";
 import type {
   BuilderAdvancedSettings,
@@ -158,7 +158,7 @@ function durablePreview(preview: unknown): unknown | null {
 }
 
 export function captureRequestDraft(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): CapturedRequestDraft {
   const input = state.instanceUserInput.byConversationId[conversationId];
@@ -248,7 +248,7 @@ export function applyRequestDraft({
 }: {
   snapshot: RequestDraftSnapshot;
   conversationId: string;
-}): AppThunk {
+}): ChatThunk {
   return (dispatch, getState) => {
     dispatch(
       setUserInputText({

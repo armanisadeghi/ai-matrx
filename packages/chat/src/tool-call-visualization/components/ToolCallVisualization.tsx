@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
 import { ShimmerText } from "@host/components/loaders/ShimmerText";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";

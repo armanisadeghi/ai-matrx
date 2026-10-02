@@ -17,7 +17,7 @@
 
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { chatConversationsActions } from "../_legacy-stubs";
 import { sendMessage } from "../_legacy-stubs";
 import { loadConversationHistory } from "../_legacy-stubs";

@@ -3,7 +3,7 @@
 import { CircleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { useAppStore } from "@host/lib/redux/hooks";
+import { useAppStore } from "../../../store/hooks";
 import { ChatRoomClient } from "./ChatRoomClient";
 import { chatRouteSurfaceKey, stageChatAgentSwitch } from "./begin-fresh-chat";
 import { ChatSplashComposerShell, NewChatGreeting } from "./NewChatGreeting";

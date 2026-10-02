@@ -38,7 +38,7 @@
 // fact.
 
 import { createContext, useContext } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectShowCreatorPanel } from "@host/lib/redux/preferences/creatorDebugSlice";
 
 /**

@@ -42,7 +42,7 @@ import MarkdownStream from "@host/components/MarkdownStream";
 import { RecordAnnotations } from "@host/features/rich-document/annotations/RecordAnnotations";
 import { annotationRecordOf } from "@host/features/rich-document/annotations/record-of-source";
 import type { AnnotationSource } from "@host/features/rich-document/annotations/types";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { PrefillNote } from "../../../message-flags/PrefillNote";
 import { StoppedNote } from "../../../message-flags/StoppedNote";
 import { useDebugContext } from "@host/hooks/useDebugContext";

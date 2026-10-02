@@ -14,7 +14,7 @@
  */
 
 import { Columns2 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import {
   openCanvas,

@@ -17,7 +17,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { callApi } from "@host/lib/api/call-api";
 import { toast } from "../../../../host/notify";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { components } from "@host/types/python-generated/api-types";
 import {
   addInboxItem,
@@ -60,7 +60,7 @@ const modeForDelivery = (delivery: string | null | undefined): InboxItemMode =>
 export const promoteQueuedToSteer = createAsyncThunk<
   void,
   { conversationId: string; injectionId: string },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "conversationInbox/promoteQueuedToSteer",
   async ({ conversationId, injectionId }, { dispatch, getState }) => {
@@ -109,7 +109,7 @@ export interface EnqueueInboxMessageResult {
 export const enqueueInboxMessage = createAsyncThunk<
   EnqueueInboxMessageResult,
   EnqueueInboxMessageArgs,
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "conversationInbox/enqueue",
   async (
@@ -195,7 +195,7 @@ export const enqueueInboxMessage = createAsyncThunk<
 export const retractInboxItem = createAsyncThunk<
   "retracted" | "already_drained" | "error",
   { conversationId: string; injectionId: string },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "conversationInbox/retract",
   async ({ conversationId, injectionId }, { dispatch }) => {
@@ -239,7 +239,7 @@ export const retractInboxItem = createAsyncThunk<
 export const editInboxItem = createAsyncThunk<
   void,
   { conversationId: string; injectionId: string; text: string },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "conversationInbox/edit",
   async ({ conversationId, injectionId, text }, { dispatch }) => {
@@ -287,7 +287,7 @@ export const editInboxItem = createAsyncThunk<
 export const hydrateInbox = createAsyncThunk<
   void,
   { conversationId: string },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >("conversationInbox/hydrate", async ({ conversationId }, { dispatch }) => {
   const result = await dispatch(
     callApi({
@@ -334,7 +334,7 @@ export const hydrateInbox = createAsyncThunk<
 export const returnQueuedToComposer = createAsyncThunk<
   number,
   { conversationId: string },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "conversationInbox/returnQueuedToComposer",
   async ({ conversationId }, { dispatch, getState }) => {

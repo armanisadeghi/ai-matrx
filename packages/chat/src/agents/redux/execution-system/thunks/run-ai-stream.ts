@@ -39,7 +39,7 @@ import {
  * suspend→submit→resume round-trip this runner powers.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
 import { toast } from "../../../../host/notify";
 
@@ -292,7 +292,7 @@ export interface RunAiStreamArgs {
   /** Backend channel resolved by the caller; recorded for telemetry. */
   channel: BackendChannel;
   dispatch: StreamDispatch;
-  getState: () => RootState;
+  getState: () => ChatRootState;
   /** `performance.now()` at the true submit moment (t=0 for client timing). */
   submitAt: number;
   /**

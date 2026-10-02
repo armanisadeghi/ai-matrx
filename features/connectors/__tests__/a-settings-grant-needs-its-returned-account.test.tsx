@@ -20,6 +20,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     selector({ appContext, userAuth: { id: "user-1" } }),
   useAppDispatch: () => jest.fn(),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({
   selectOrganizationsList: () => [],
 }));

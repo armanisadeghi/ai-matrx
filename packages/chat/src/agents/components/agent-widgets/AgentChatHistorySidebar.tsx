@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { ScrollArea } from "@ai-matrx/design-system";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 import { selectInstanceAgentId } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -12,7 +12,7 @@ import type { ConversationListItem } from "../../redux/conversation-list/convers
 import { ItemRow } from "@host/components/official/item/ItemRow";
 import { buildConversationMenu } from "../conversation-actions/conversationActionRegistry";
 import { renameConversation } from "../../redux/conversation-list/conversation-row-actions.thunks";
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../../store/root-state";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 /** Stable idle result — a fresh literal per call re-rendered the sidebar on every dispatch. */
@@ -128,7 +128,7 @@ function ConversationRow({
 }: {
   conv: ConversationListItem;
   agentId: string;
-  dispatch: AppDispatch;
+  dispatch: ChatDispatch;
 }) {
   const date = conv.updatedAt
     ? new Date(conv.updatedAt).toLocaleDateString(undefined, {

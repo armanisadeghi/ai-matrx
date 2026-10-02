@@ -9,7 +9,7 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import { selectComposerHasSomethingToSend } from "../aggregate.selectors";
 
 const C = "c-kiln";
@@ -20,7 +20,7 @@ function state(over: {
   submittedIds?: string[];
   definitions?: unknown[];
   status?: string;
-}): RootState {
+}): ChatRootState {
   return {
     instanceUserInput: { byConversationId: { [C]: { text: over.text ?? "" } } },
     instanceResources: {
@@ -30,10 +30,10 @@ function state(over: {
     instanceVariableValues: { byConversationId: { [C]: { definitions: over.definitions ?? [] } } },
     messages: { byConversationId: { [C]: { orderedIds: [] } } },
     conversations: { byConversationId: { [C]: { status: over.status ?? "ready" } } },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
-const has = (s: RootState) => selectComposerHasSomethingToSend(C)(s);
+const has = (s: ChatRootState) => selectComposerHasSomethingToSend(C)(s);
 
 it("an empty draft has nothing to send", () => {
   expect(has(state({}))).toBe(false);

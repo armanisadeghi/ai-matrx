@@ -25,7 +25,7 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { useIsMobile } from "@host/hooks/use-mobile";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {
   Dialog,
   DialogContent,

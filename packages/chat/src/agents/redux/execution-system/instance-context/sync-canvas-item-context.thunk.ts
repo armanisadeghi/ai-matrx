@@ -5,7 +5,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { setContextEntry } from "./instance-context.slice";
 import {
   buildCanvasItemContextValue,
@@ -22,8 +22,8 @@ import { isMaterializedArtifactId } from "@host/features/canvas/artifact-types/a
 import { recordUnavailable } from "@host/lib/records/recordUnavailable";
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   rejectValue: { message: string };
 }
 
@@ -60,7 +60,7 @@ export function applyAgentCanvasItemDelta(args: {
   conversationId: string;
   key: string;
   delta: ContextDeltaData;
-}): (dispatch: AppDispatch, getState: () => RootState) => boolean {
+}): (dispatch: ChatDispatch, getState: () => ChatRootState) => boolean {
   return (dispatch, getState) => {
     if (!isMaterializedArtifactId(args.key)) return false;
     const entry =

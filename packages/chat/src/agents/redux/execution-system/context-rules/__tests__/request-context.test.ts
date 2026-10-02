@@ -10,7 +10,7 @@
  * the agent's kill switch withholds; the rows ARE the wire.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import { attachmentContextKey } from "@ai-matrx/agents/context";
 import {
   ambientIncluded,
@@ -50,7 +50,7 @@ function makeState(opts: {
   policies?: Array<{ key: string; max_inline_chars?: number; label?: string }>;
   killSwitch?: boolean;
   agentFetchStatus?: "list" | "execution" | "full";
-}): RootState {
+}): ChatRootState {
   const byKey: Record<string, unknown> = {};
   for (const e of opts.entries) {
     byKey[e.key] = {
@@ -91,10 +91,10 @@ function makeState(opts: {
     },
     messages: { byConversationId: { c1: { orderedIds: ["m1"] } } },
     instanceUIState: { byConversationId: {} },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
-const build = (state: RootState) =>
+const build = (state: ChatRootState) =>
   buildRequestContext(state, "c1", { includeAmbient: false });
 
 describe("the page's limit and description", () => {
@@ -260,13 +260,13 @@ describe("an attached file reaches the server as the reference it resolves", () 
 });
 
 describe("the table and the send agree on the first turn's system values", () => {
-  function firstTurn(apiEndpointMode: "agent" | "manual"): RootState {
+  function firstTurn(apiEndpointMode: "agent" | "manual"): ChatRootState {
     const state = makeState({ entries: [] }) as unknown as Record<string, unknown>;
     state.messages = { byConversationId: { c1: { orderedIds: [], apiEndpointMode } } };
     state.userAuth = { id: "u1", email: "admin@admin.com" };
     state.userProfile = {};
     state.appContext = { scope_selections: {} };
-    return state as unknown as RootState;
+    return state as unknown as ChatRootState;
   }
 
   it("an agent-door conversation's first turn shows AND sends them", () => {
@@ -303,7 +303,7 @@ describe("the table's rows are memoized on their inputs", () => {
           },
         },
       },
-    } as unknown as RootState;
+    } as unknown as ChatRootState;
     expect(select(changed)).not.toBe(select(state));
     expect(select(changed)[0]?.include).toBe(false);
   });
@@ -383,13 +383,13 @@ describe("the person's rule holds whichever side files the value differently", (
 // clone: `conversation` filed under `matrx-user/chat`, limit from the page) —
 // every new chat went amber on its first turn.
 describe("system values get the primary surface's page layer, as on the server", () => {
-  function firstTurnOn(surfaceName: string | null): RootState {
+  function firstTurnOn(surfaceName: string | null): ChatRootState {
     const state = makeState({ entries: [], surfaceName }) as unknown as Record<string, unknown>;
     state.messages = { byConversationId: { c1: { orderedIds: [], apiEndpointMode: "agent" } } };
     state.userAuth = { id: "u1", email: "admin@admin.com" };
     state.userProfile = {};
     state.appContext = { scope_selections: {} };
-    return state as unknown as RootState;
+    return state as unknown as ChatRootState;
   }
 
   it.each([
@@ -481,7 +481,7 @@ describe("values the server added are shown and governable", () => {
     client_sent_excluded: false,
     blocked_by: null,
   });
-  function afterTurn(withExpected: boolean, withReceipt: boolean): RootState {
+  function afterTurn(withExpected: boolean, withReceipt: boolean): ChatRootState {
     const state = makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "plain", value: "Standup notes" }] });
     const ctx = (state as unknown as { instanceContext: Record<string, unknown> }).instanceContext;
     const sent = build(state).rows.map((row) => ({ ...row, value: undefined }));
@@ -601,7 +601,7 @@ describe("on load, server-added values come from the last persisted receipt", ()
     client_sent_excluded: false,
     blocked_by: null,
   });
-  function reloaded(): RootState {
+  function reloaded(): ChatRootState {
     const state = makeState({ entries: [] }) as unknown as Record<string, unknown>;
     const receipt = (rows: unknown[]) => ({
       type: "context_receipt",
@@ -635,7 +635,7 @@ describe("on load, server-added values come from the last persisted receipt", ()
         },
       },
     };
-    return state as unknown as RootState;
+    return state as unknown as ChatRootState;
   }
 
   it("lists the attachments of the LAST sent message, never values the client sent", () => {
@@ -648,7 +648,7 @@ describe("on load, server-added values come from the last persisted receipt", ()
 // Break this catches: resume forcing the first turn's system values on every
 // resume (includeAmbient: true) — values the chip never showed for the turn.
 describe("a resume sends exactly what the chip shows", () => {
-  function conversation(orderedIds: string[]): RootState {
+  function conversation(orderedIds: string[]): ChatRootState {
     const state = makeState({
       surfaceName: "matrx-user/demo",
       entries: [{ key: "plain", value: "Draft agenda for the Harbor Dental review" }],
@@ -658,7 +658,7 @@ describe("a resume sends exactly what the chip shows", () => {
     state.userProfile = {};
     state.appContext = { scope_selections: {} };
     state.activeRequests = { byConversationId: {}, byRequestId: {} };
-    return state as unknown as RootState;
+    return state as unknown as ChatRootState;
   }
 
   it.each([

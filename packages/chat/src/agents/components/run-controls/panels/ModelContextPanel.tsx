@@ -22,7 +22,7 @@
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useEffect, useMemo, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
 import { fetchContextState } from "@host/lib/api/context-api";

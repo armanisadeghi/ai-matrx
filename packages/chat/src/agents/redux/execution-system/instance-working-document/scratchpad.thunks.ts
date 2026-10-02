@@ -19,7 +19,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { setPreference } from "@host/lib/redux/preferences/userPreferencesSlice";
 import { getActiveOrgId } from "@host/lib/organizations/activeOrg";
 import {
@@ -49,19 +49,19 @@ import {
 } from "./cx-working-document.service";
 
 interface ThunkConfig {
-  state: RootState;
-  dispatch: AppDispatch;
+  state: ChatRootState;
+  dispatch: ChatDispatch;
 }
 
 /** Point the durable active-scratchpad preference at a document (or none). */
-function setActivePreference(dispatch: AppDispatch, id: string | null): void {
+function setActivePreference(dispatch: ChatDispatch, id: string | null): void {
   dispatch(
     setPreference({ module: "scratchpad", preference: "activeId", value: id }),
   );
 }
 
 /** Load a scratchpad row into its `sp:<id>` slice entry (always enabled). */
-function applyScratchpadDoc(dispatch: AppDispatch, doc: CxWorkingDocument): void {
+function applyScratchpadDoc(dispatch: ChatDispatch, doc: CxWorkingDocument): void {
   const scope = scratchScopeId(doc.id);
   dispatch(setWorkingDocEnabled({ conversationId: scope, kind: "scratch", enabled: true }));
   dispatch(
@@ -93,7 +93,7 @@ function applyScratchpadDoc(dispatch: AppDispatch, doc: CxWorkingDocument): void
 }
 
 /** Reserve a slice entry for a scratchpad whose row doesn't exist yet. */
-function reserveScratchpadEntry(dispatch: AppDispatch, documentId: string): void {
+function reserveScratchpadEntry(dispatch: ChatDispatch, documentId: string): void {
   const scope = scratchScopeId(documentId);
   dispatch(setWorkingDocEnabled({ conversationId: scope, kind: "scratch", enabled: true }));
   dispatch(
@@ -290,7 +290,7 @@ export const deleteScratchpadThunk = createAsyncThunk<
 
 /** The org used for scratchpad attach edges (conversation's org, else active). */
 function orgForConversation(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | null {
   return (

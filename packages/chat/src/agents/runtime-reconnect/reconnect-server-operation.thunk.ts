@@ -39,7 +39,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { runtimeOperationRejoinPath, settleRunPickup } from "@ai-matrx/agents/matrx";
 import { toast } from "../../host/notify";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../store/root-state";
 import { setRequestStatus } from "../redux/execution-system/active-requests/active-requests.slice";
 import { createRequest } from "../redux/execution-system/active-requests/active-requests.slice";
 import {
@@ -101,7 +101,7 @@ function stopFollower(conversationId: string): void {
 export const reconnectServerOperation = createAsyncThunk<
   ReconnectServerOperationResult,
   ReconnectServerOperationArgs,
-  { dispatch: AppDispatch; state: RootState }
+  { dispatch: ChatDispatch; state: ChatRootState }
 >(
   "execution/reconnectServerOperation",
   async ({ conversationId, source, requestId }, { dispatch, getState }) => {

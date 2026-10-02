@@ -105,7 +105,7 @@ import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesS
 import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
 import { configureRecordingWindows } from "../../../../../host/__tests__/recording-windows";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import { storedMandateKey } from "@host/features/mandates/mandate-key";
 
 // Fully-loaded agent record: Step 0.5's readiness check passes so the thunk
@@ -183,7 +183,7 @@ async function launch(
   // The mini store covers only the slices this flow touches; its inferred
   // state type is narrower than RootState, so route dispatch through the
   // app-level thunk dispatch type.
-  return (store.dispatch as unknown as AppDispatch)(
+  return (store.dispatch as unknown as ChatDispatch)(
     launchAgentExecution({
       mandateKey: "plan_client.shape_planner",
       surfaceKey: "test-surface",
@@ -236,7 +236,7 @@ describe("launchAgentExecution mandateKey — THE DOOR is the run target", () =>
     const store = makeStore();
     const { conversationId } = await launch(store);
 
-    const state = store.getState() as unknown as RootState;
+    const state = store.getState() as unknown as ChatRootState;
     // THE POINT: `executeInstance` reads this field to choose the door.
     expect(
       state.conversations.byConversationId[conversationId]?.mandateKey,
@@ -251,7 +251,7 @@ describe("launchAgentExecution mandateKey — THE DOOR is the run target", () =>
     const store = makeStore();
     const { conversationId } = await launch(store);
 
-    const state = store.getState() as unknown as RootState;
+    const state = store.getState() as unknown as ChatRootState;
     const request = assembleRequest(state, conversationId);
     // Echoing the client-resolved binding back would land as the EXPLICIT
     // layer and beat the binding itself inside `resolve_mandated_agent_start`.
@@ -268,7 +268,7 @@ describe("launchAgentExecution mandateKey — THE DOOR is the run target", () =>
       },
     });
 
-    const state = store.getState() as unknown as RootState;
+    const state = store.getState() as unknown as ChatRootState;
     const request = assembleRequest(state, conversationId);
     expect(request?.config_overrides).toMatchObject({
       model: "caller-model",
@@ -284,7 +284,7 @@ describe("launchAgentExecution mandateKey — THE DOOR is the run target", () =>
 
     // The surface already knew what to paint, so nothing was resolved here.
     expect(resolveMandate).not.toHaveBeenCalled();
-    const state = store.getState() as unknown as RootState;
+    const state = store.getState() as unknown as ChatRootState;
     const record = state.conversations.byConversationId[conversationId];
     expect(record?.agentId).toBe(AGENT_ID);
     // …and the RUN still goes through the door.
@@ -329,7 +329,7 @@ describe("launchAgentExecution mandateKey — a required document variable is a 
       message: expect.stringContaining("rulebook_document"),
     });
     // Nothing was created: refusing means refusing, not half-starting.
-    const state = store.getState() as unknown as RootState;
+    const state = store.getState() as unknown as ChatRootState;
     expect(Object.keys(state.conversations.byConversationId)).toHaveLength(0);
   });
 
@@ -358,7 +358,7 @@ describe("launchAgentExecution mandateKey — a required document variable is a 
       },
     });
 
-    const state = store.getState() as unknown as RootState;
+    const state = store.getState() as unknown as ChatRootState;
     const request = assembleRequest(state, conversationId);
     // THE POINT: the Rulebook arrives under its own NAME, not as prose in the
     // human's turn and not as a tool result the model chose to fetch.

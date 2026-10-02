@@ -11,7 +11,7 @@ import {
   Check,
   LayoutDashboard,
 } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../../store/hooks";
 import {
   selectUIStateInstancesByAgent,
   selectAllUIStateConversationIds,

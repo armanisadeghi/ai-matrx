@@ -41,6 +41,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     selector(mockState()),
   useAppDispatch: () => () => undefined,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 // Only Next's dynamic boundaries are replaced: the markdown core and the
 // engine's BlockRenderer load their REAL implementations.

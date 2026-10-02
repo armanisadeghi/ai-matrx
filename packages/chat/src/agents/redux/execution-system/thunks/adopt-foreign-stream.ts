@@ -46,7 +46,7 @@
  * Never a parse session, never a hand-picked component.
  */
 
-import type { AppThunk } from "@host/lib/redux/store";
+import type { ChatThunk } from "../../../../store/root-state";
 import type { TypedStreamEvent } from "@host/types/python-generated/stream-events";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import { isStreamTransportLost } from "@host/lib/api/errors";
@@ -132,7 +132,7 @@ export type ForeignStreamConsumer = (
 
 export function adoptForeignStream(
   options: AdoptForeignStreamOptions = {},
-): AppThunk<ForeignStreamConsumer> {
+): ChatThunk<ForeignStreamConsumer> {
   const {
     onAdopted,
     onEvent,

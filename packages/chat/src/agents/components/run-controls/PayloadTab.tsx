@@ -23,8 +23,8 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Copy, Check } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppSelector } from "../../../store/hooks";
+import type { ChatRootState } from "../../../store/root-state";
 import type {
   ContextObjectType,
   ContextPolicy,
@@ -54,14 +54,14 @@ const EMPTY_SLOTS: ContextPolicy[] = [];
 const EMPTY_MAP: Record<string, InstanceContextEntry> = {};
 
 function selectAgentIdForConversation(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | null {
   return state.conversations.byConversationId[conversationId]?.agentId ?? null;
 }
 
 function selectInstanceContextMap(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): Record<string, InstanceContextEntry> {
   return state.instanceContext.byConversationId[conversationId] ?? EMPTY_MAP;

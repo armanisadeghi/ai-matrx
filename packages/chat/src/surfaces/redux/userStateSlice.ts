@@ -6,7 +6,7 @@
 // in-flight dedup on the loader thunk.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { AppThunk } from "@host/lib/redux/store";
+import type { ChatThunk } from "../../store/root-state";
 import { requireUserId } from "@host/utils/auth/getUserId";
 import {
   surfaceUserStateService,
@@ -79,7 +79,7 @@ const inflight = new Map<string, Promise<void>>();
 const TTL_MS = 30_000;
 
 /** Load a feature's rows once (dedup in-flight + skip if fresh). */
-export function ensureSurfaceFeatureLoaded(feature: string, force = false): AppThunk<Promise<void>> {
+export function ensureSurfaceFeatureLoaded(feature: string, force = false): ChatThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const existing = getState().surfaceUserState.byFeature[feature];
     if (
@@ -116,7 +116,7 @@ export function saveSurfaceState(
   feature: string,
   surfaceKey: string,
   state: Record<string, unknown>,
-): AppThunk<Promise<void>> {
+): ChatThunk<Promise<void>> {
   return async (dispatch) => {
     dispatch(surfaceUserStateActions.rowSet({ feature, surfaceKey, state }));
     try {

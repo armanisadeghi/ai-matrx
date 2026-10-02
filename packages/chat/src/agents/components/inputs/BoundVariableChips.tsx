@@ -35,7 +35,7 @@ import { Button } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../host/notify";
 import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 // Surface A: the "Select {ScopeType}" prompt sets the globally-active scope so a
 // globally-triggered agent run resolves its bound variables (the server fills them
 // authoritatively from request.scope_ids). Explicit active-context selection.

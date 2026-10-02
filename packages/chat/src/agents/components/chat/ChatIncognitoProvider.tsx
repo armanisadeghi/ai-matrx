@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   selectChatIncognitoActive,
   setChatIncognitoActive,

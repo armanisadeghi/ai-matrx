@@ -20,6 +20,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "user-1", useAppDispatch: () => jest.fn() }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
   peekEffectiveKnob: () => 10,
   ensureEffectiveKnob: async () => 10,

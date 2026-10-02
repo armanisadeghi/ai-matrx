@@ -13,7 +13,7 @@
  * second tick tried to attach it again (PB-04 real-test friction).
  */
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { useConversationMaterialized } from "../../../hooks/useConversationMaterialized";
 import { useContainerLinks } from "@host/features/scopes/hooks/useContainerLinks";

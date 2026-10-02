@@ -12,7 +12,7 @@
 // because the validation happens at APPLY time, inside one synchronous
 // dispatch, not at peek time.
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { setUserInputText } from "./instance-user-input.slice";
 import {
   isComposerDraftTokenLive,
@@ -39,8 +39,8 @@ export type ComposerDraftRestoreOutcome =
 
 export function applyComposerDraft(token: ComposerDraftToken) {
   return (
-    dispatch: AppDispatch,
-    getState: () => RootState,
+    dispatch: ChatDispatch,
+    getState: () => ChatRootState,
   ): ComposerDraftRestoreOutcome => {
     const state = getState();
     if (!isDraftRestoreEnabled(state)) return "disabled";

@@ -21,7 +21,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import { extractErrorMessage } from "@host/utils/errors";
 import { submitToolResult } from "../../api/submit-tool-results";
 import { upsertToolLifecycle } from "../../redux/execution-system/active-requests/active-requests.slice";
@@ -39,7 +39,7 @@ export interface DispatchUiFirstToolPayload {
 export const dispatchUiFirstTool = createAsyncThunk<
   void,
   DispatchUiFirstToolPayload,
-  { state: RootState }
+  { state: ChatRootState }
 >(
   "uiFirstTools/dispatch",
   async (

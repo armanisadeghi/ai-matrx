@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { Database, Json } from "@host/types/database.types";
 import { supabase } from "@host/utils/supabase/client";
 import { hasBrowserSession } from "@host/lib/supabase/hasBrowserSession";
@@ -21,8 +21,8 @@ type ConversationMetadataRow = Pick<
 >;
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
 }
 
 export interface PersistedInputCapabilities {

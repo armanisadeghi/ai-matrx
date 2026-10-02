@@ -20,7 +20,7 @@ import { currentPointsRate } from "@host/components/cost/pointsRate";
 
 import React from "react";
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { ActiveRequest } from "../../../types/request.types";
 import type {
   UserRequestResult,
@@ -39,8 +39,8 @@ export const EMPTY_REQUEST_LIST: ActiveRequest[] = [];
  */
 export function makeSelectConversationRequests(conversationId: string) {
   return createSelector(
-    (state: RootState) => state.activeRequests.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests.byRequestId,
+    (state: ChatRootState) => state.activeRequests.byConversationId[conversationId],
+    (state: ChatRootState) => state.activeRequests.byRequestId,
     (ids, byId): ActiveRequest[] => {
       if (!ids || ids.length === 0) return EMPTY_REQUEST_LIST;
       const out: ActiveRequest[] = [];
@@ -55,7 +55,7 @@ export function makeSelectConversationRequests(conversationId: string) {
 
 /** Picks the newest ActiveRequest for this conversation, or undefined. */
 export function makeSelectLastConversationRequest(conversationId: string) {
-  return (state: RootState): ActiveRequest | undefined => {
+  return (state: ChatRootState): ActiveRequest | undefined => {
     const ids = state.activeRequests.byConversationId[conversationId];
     if (!ids || ids.length === 0) return undefined;
     return state.activeRequests.byRequestId[ids[ids.length - 1]];
@@ -68,7 +68,7 @@ export function makeSelectLastConversationRequest(conversationId: string) {
  * to a specific assistant message via `_streamRequestId`).
  */
 export function makeSelectRequestById(requestId: string) {
-  return (state: RootState): ActiveRequest | undefined =>
+  return (state: ChatRootState): ActiveRequest | undefined =>
     state.activeRequests.byRequestId[requestId];
 }
 

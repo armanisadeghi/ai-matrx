@@ -15,8 +15,8 @@
 import { useMemo } from "react";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
-import { useAppSelector } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppSelector } from "../../../store/hooks";
+import type { ChatRootState } from "../../../store/root-state";
 import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
 import type {
   ContextObjectType,
@@ -65,7 +65,7 @@ export function ContextPolicyDetailSheet({
   snapshotLabel,
   snapshotType,
 }: ContextPolicyDetailSheetProps) {
-  const policy = useAppSelector((state: RootState): ContextPolicy | undefined => {
+  const policy = useAppSelector((state: ChatRootState): ContextPolicy | undefined => {
     if (!agentId) return undefined;
     const policies = selectAgentContextPolicies(state, agentId);
     return policies?.find((s) => s.key === contextKey);

@@ -36,7 +36,7 @@ import {
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { UserOverrides } from "../../../types/request.types";
 
 import { generateRequestId } from "../utils/ids";
@@ -139,7 +139,7 @@ export const resumeInstance = createAsyncThunk<
     // The backend the resume went to — a live-run refusal rejoins on the SAME server.
     let resumeBackend: ReturnType<typeof resolveBackendForConversation> | null = null;
     try {
-      const state = getState() as RootState;
+      const state = getState() as ChatRootState;
 
       // Double-resume guard. A stream is already registered for this
       // conversation (either the original turn is unexpectedly still alive, or
@@ -268,7 +268,7 @@ export const resumeInstance = createAsyncThunk<
       // agent the change never landed (found live 2026-09-26, ARE-010). Re-
       // read the live screen first; a failure keeps the cached tier, loudly.
       // This thunk's generics carry no typed dispatch; the store's is the real one.
-      await (dispatch as AppDispatch)(refreshSurfaceScope({ conversationId }))
+      await (dispatch as ChatDispatch)(refreshSurfaceScope({ conversationId }))
         .unwrap()
         .catch((error: unknown) =>
           console.error(
@@ -276,8 +276,8 @@ export const resumeInstance = createAsyncThunk<
             error,
           ),
         );
-      await (dispatch as AppDispatch)(ensureContextRulesReady(conversationId));
-      const freshState = getState() as RootState;
+      await (dispatch as ChatDispatch)(ensureContextRulesReady(conversationId));
+      const freshState = getState() as ChatRootState;
       // THE ONE DOOR — the same rows the chip shows for this conversation
       // (system values only on a first turn, like every send path) plus the
       // note that the page values were read AFTER this conversation's writes,
@@ -387,7 +387,7 @@ export const resumeInstance = createAsyncThunk<
         body,
         channel: backend.channel,
         dispatch,
-        getState: getState as () => RootState,
+        getState: getState as () => ChatRootState,
         submitAt,
         kind: "resume",
         // Resume never read the input box — leaving the user's draft (if any)
@@ -420,7 +420,7 @@ export const resumeInstance = createAsyncThunk<
             body: {},
             channel: backend.channel,
             dispatch,
-            getState: getState as () => RootState,
+            getState: getState as () => ChatRootState,
             submitAt: performance.now(),
             kind: "rejoin",
             clearInputOnError: false,
@@ -436,7 +436,7 @@ export const resumeInstance = createAsyncThunk<
           const { reconnectServerOperation } = await import(
             "../../../runtime-reconnect/reconnect-server-operation.thunk"
           );
-          void (dispatch as AppDispatch)(
+          void (dispatch as ChatDispatch)(
             reconnectServerOperation({ conversationId, requestId, source: "stream-loss" }),
           );
           return { requestId, conversationId };

@@ -38,7 +38,7 @@
 
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
 import { toast } from "../../../../host/notify";
 
@@ -157,7 +157,7 @@ export interface SurfaceDelegatedToolCallArgs {
 
 export const surfaceDelegatedToolCall = (
   args: SurfaceDelegatedToolCallArgs,
-): ThunkAction<void, RootState, unknown, UnknownAction> => {
+): ThunkAction<void, ChatRootState, unknown, UnknownAction> => {
   return (dispatch) => {
     const {
       conversationId,

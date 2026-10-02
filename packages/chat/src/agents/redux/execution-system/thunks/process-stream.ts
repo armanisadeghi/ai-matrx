@@ -13,7 +13,7 @@
  *  - Old CompletionStats replaced with UserRequestResult from completion.result
  */
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { CompletionStats } from "../../../types/instance.types";
 import type { ClientMetrics } from "../../../types/request.types";
 import type { ToolLifecycleStatus } from "../../../types/request.types";
@@ -284,7 +284,7 @@ interface ProcessStreamArgs {
   submitAt: number;
   conversationIdAt: number | null;
   dispatch: (action: unknown) => unknown;
-  getState: () => RootState;
+  getState: () => ChatRootState;
   submittedVariableResourcePolicies?: Record<
     string,
     VariableResourceContextConfig
@@ -1668,7 +1668,7 @@ export async function processStream({
           // composer's context table and the expected-vs-actual check. Until
           // 2026-09-30 it fell to `unknown_data_event` and printed an Unknown
           // Data Event card under every reply.
-          recordContextReceipt(dispatch as AppDispatch, getState, {
+          recordContextReceipt(dispatch as ChatDispatch, getState, {
             conversationId,
             requestId,
             data: d as ContextReceiptData,

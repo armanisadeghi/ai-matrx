@@ -9,7 +9,7 @@
 import * as React from "react";
 import { useOpenerHost } from "@ai-matrx/kit/opener-react";
 import { TextInputDialog } from "@host/components/dialogs/text-input/TextInputDialog";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../../store/hooks";
 import { renameConversationTitle } from "../conversation-verbs";
 import { conversationRenameOpener } from "./conversationRenameOpener";
 

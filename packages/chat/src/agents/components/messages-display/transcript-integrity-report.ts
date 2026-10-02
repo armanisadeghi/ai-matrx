@@ -16,7 +16,7 @@
  */
 
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type { MessageRecord } from "../../redux/execution-system/messages/messages.slice";
 import { extractFlatText } from "../../redux/execution-system/messages/messages.selectors";
 import {
@@ -141,7 +141,7 @@ function rowReport(record: MessageRecord): TranscriptRowReport {
 }
 
 export function buildTranscriptIntegrityReport(
-  state: RootState,
+  state: ChatRootState,
   args: {
     conversationId: string;
     surfaceKey: string;

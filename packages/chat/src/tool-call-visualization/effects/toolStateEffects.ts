@@ -33,7 +33,7 @@
  * its own `context_changed` re-read; the scratchpad is agent-readonly.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import {
   refreshNoteContent,
   fetchNotesList,
@@ -55,7 +55,7 @@ export interface ToolEffectContext {
   /** The completed tool's result, verbatim. */
   result: unknown;
   dispatch: LooseDispatch;
-  getState: () => RootState;
+  getState: () => ChatRootState;
 }
 
 interface ToolStateEffect {

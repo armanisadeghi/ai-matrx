@@ -24,7 +24,7 @@
  * surface (page grows downward only) or inside a fixed-size window body.
  */
 
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import MarkdownStream from "@host/components/MarkdownStream";
 import { cn } from "@ai-matrx/design-system";
 

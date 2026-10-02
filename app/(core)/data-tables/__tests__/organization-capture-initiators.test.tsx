@@ -46,6 +46,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => selectedOrganizationId,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/organization/organization-gate", () => ({
   ensureOrganizationContext: (...args: unknown[]) =>
     ensureOrganizationContext(...args),

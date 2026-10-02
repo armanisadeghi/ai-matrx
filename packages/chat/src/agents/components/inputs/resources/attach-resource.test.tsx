@@ -6,7 +6,9 @@ const dispatch = jest.fn();
 const state: { instanceResources: { byConversationId: Record<string, Record<string, unknown>> } } = {
   instanceResources: { byConversationId: {} },
 };
-jest.mock("@host/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch, useAppStore: () => ({ getState: () => state }) }));
+jest.mock("../../../../store/hooks", () => ({ useAppDispatch: () => dispatch, useAppStore: () => ({ getState: () => state }) }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 jest.mock("@host/features/scopes/host/associationsStore", () => ({ getAssociationsStore: () => ({ add, remove: jest.fn(), load: jest.fn(), getEdges: () => ({ status: "ready", edges: [] }) }) }));
 jest.mock("../../../redux/execution-system/conversations/conversations.selectors", () => ({ selectIsCacheOnly: () => () => false }));
 jest.mock("../../../redux/execution-system/instance-resources/resource-source", () => ({ refineBlockType: (x: unknown) => x, resourceDataToSource: (_t: unknown, data: unknown) => data }));

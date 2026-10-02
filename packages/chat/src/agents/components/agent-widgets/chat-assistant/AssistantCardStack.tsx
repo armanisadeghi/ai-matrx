@@ -19,7 +19,7 @@
 
 import { useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import { selectConversationMessages } from "../../../redux/execution-system/messages/messages.selectors";
 import type { MessageRole } from "../../../types/agent-message-types";
 import {

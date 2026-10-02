@@ -33,7 +33,7 @@ import React, { useMemo, useState } from "react";
 
 import { cn } from "@ai-matrx/design-system";
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectWorkingDocContent } from "../../../agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import { AnimatedDiffReveal } from "@ai-matrx/diff/react";

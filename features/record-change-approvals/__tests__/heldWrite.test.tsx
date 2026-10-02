@@ -24,6 +24,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   // and any id-set selector the shell reads.
   useAppSelector: () => new Set<string>(),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/slices/overlaySlice", () => ({ openOverlay: jest.fn() }));
 jest.mock("@/components/loaders/ShimmerText", () => ({
   ShimmerText: ({ text }: { text: string }) => <span>{text}</span>,

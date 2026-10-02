@@ -22,7 +22,7 @@ import {
   CONTEXT_RULES_FEATURE,
   type SavedContextRule,
 } from "@ai-matrx/agents/context";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { ensureSurfaceFeatureLoaded } from "../../../../surfaces/redux/userStateSlice";
 import { selectPageContextOff } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";

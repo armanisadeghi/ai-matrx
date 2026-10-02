@@ -12,7 +12,7 @@
  * the shell can never disagree again. Closing the shell unregisters the token.
  */
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { useUrlSync } from "@host/features/window-panels/url-sync/useUrlSync";
 import { agentPanelUrlArgs } from "../../../window-panels/windows/agents/agentPanelSurfaceAddress";
 import type { ResultDisplayMode } from "../../utils/run-ui-utils";

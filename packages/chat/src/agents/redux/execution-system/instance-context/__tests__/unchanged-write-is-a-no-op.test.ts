@@ -16,7 +16,7 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import type { InstanceContextEntry } from "../../../../types/instance.types";
 import instanceContextReducer, {
   replaceSurfaceContextEntries,
@@ -53,7 +53,7 @@ function makeStore() {
 type Store = ReturnType<typeof makeStore>;
 
 function entriesOf(store: Store, select: ReturnType<typeof selectInstanceContextEntries>) {
-  return select(store.getState() as unknown as RootState);
+  return select(store.getState() as unknown as ChatRootState);
 }
 
 function surfaceEntry(key: string, label: string, value: unknown): InstanceContextEntry {

@@ -9,7 +9,7 @@
  */
 
 import { useState } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { setUserVariableValue } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   selectInstanceVariableDefinitions,
@@ -18,7 +18,7 @@ import {
 import type { VariableDefinition } from "../../../types/agent-definition.types";
 import { ChevronDown, ChevronRight, Minus, Plus, Play } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../../../store/root-state";
 
 interface ChatAssistantVariableInputsProps {
   conversationId: string;
@@ -87,7 +87,7 @@ interface MicroVariableRowProps {
   conversationId: string;
   variable: VariableDefinition;
   value: unknown;
-  dispatch: AppDispatch;
+  dispatch: ChatDispatch;
 }
 
 function MicroVariableRow({

@@ -35,7 +35,7 @@
  * card) + a delayed `sweepPendingAsks` (removes it after the fade).
  */
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import {
   selectActivePendingAsksForConversation,
   resolvePendingAsk,
@@ -56,7 +56,7 @@ export function resolvePendingAsksWithInput(
   conversationId: string,
   text: string,
 ) {
-  return (dispatch: AppDispatch, getState: () => RootState): boolean => {
+  return (dispatch: ChatDispatch, getState: () => ChatRootState): boolean => {
     const asks =
       selectActivePendingAsksForConversation(conversationId)(getState());
     if (asks.length === 0) return false;

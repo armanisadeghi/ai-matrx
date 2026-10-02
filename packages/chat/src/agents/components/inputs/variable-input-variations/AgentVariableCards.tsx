@@ -5,7 +5,7 @@
  */
 
 import { useState } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { selectInstanceVariableDefinitions } from "../../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { BoundVariableChips } from "../BoundVariableChips";

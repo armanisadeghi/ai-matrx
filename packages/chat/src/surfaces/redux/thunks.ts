@@ -2,7 +2,7 @@
 
 import { serializeSurfaceBindingError } from "../services/surface-registration-error";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../store/root-state";
 import {
   listSurfacesWithStats,
   listSurfaceValues,
@@ -39,7 +39,7 @@ import {
   removeBinding,
 } from "./agentSurfaceBindingsSlice";
 
-type ThunkApi = { dispatch: AppDispatch; state: RootState };
+type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 
 interface LoadOpts {
   /** Re-fetch even if already loaded. */

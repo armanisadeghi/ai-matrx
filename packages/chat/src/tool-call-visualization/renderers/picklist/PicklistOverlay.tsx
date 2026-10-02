@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Loader2, AlertTriangle, ExternalLink } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { ListDetailClient } from "@host/features/user-lists/components/ListDetailClient";
 import type { ToolRendererProps } from "../../types";

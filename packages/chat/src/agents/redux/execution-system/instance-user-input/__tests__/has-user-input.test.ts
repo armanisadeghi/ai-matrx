@@ -1,4 +1,4 @@
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import { selectHasUserInput } from "../instance-user-input.selectors";
 
 const CID = "11111111-1111-4111-8111-111111111111";
@@ -11,7 +11,7 @@ function stateWith({
   text?: string;
   messageParts?: Array<{ type: "text"; text: string }>;
   resources?: Record<string, unknown>;
-}): RootState {
+}): ChatRootState {
   return {
     instanceUserInput: {
       byConversationId: {
@@ -21,7 +21,7 @@ function stateWith({
     instanceResources: {
       byConversationId: { [CID]: resources },
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 describe("selectHasUserInput", () => {

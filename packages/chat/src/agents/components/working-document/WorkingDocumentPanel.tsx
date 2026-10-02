@@ -26,7 +26,7 @@ import { cn } from "@ai-matrx/design-system";
 import { NotePickerPopover } from "@host/features/notes/components/NotePickerPopover";
 import { useWorkingDocument } from "../../hooks/useWorkingDocument";
 import { DocumentLinkPicker } from "./DocumentLinkPicker";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   scratchDocIdFromScope,
   type WorkingDocumentKind,

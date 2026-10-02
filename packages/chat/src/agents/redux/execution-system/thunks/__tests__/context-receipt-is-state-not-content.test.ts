@@ -25,7 +25,7 @@ import activeRequestsReducer, {
 import messagesReducer from "../../messages/messages.slice";
 import instanceContextReducer from "../../instance-context/instance-context.slice";
 import { processStream } from "../process-stream";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
@@ -120,7 +120,7 @@ async function run() {
       instanceResources: { byConversationId: {} },
       instanceVariableValues: { byConversationId: {} },
       observability: { toolCalls: {}, userRequests: {}, requests: {} },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
   const dispatch = (action: unknown) => {
     if (typeof action === "function") return undefined;
     active = activeRequestsReducer(active, action as never);

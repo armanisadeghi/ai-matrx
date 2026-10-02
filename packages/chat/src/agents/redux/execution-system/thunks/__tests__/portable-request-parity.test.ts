@@ -22,7 +22,7 @@ import {
   PORTABLE_PARITY_SERVER_TOOL_EVENTS,
   PORTABLE_PARITY_SETTLED_EVENTS,
 } from "../../../../runtime/portable-request-parity.fixtures";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
@@ -99,7 +99,7 @@ function matrixHarness() {
       messages: { byConversationId: {} },
       observability: { toolCalls: {}, userRequests: {}, requests: {} },
       agentDefinition: { agents: {} },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
 
   const dispatch = (action: unknown) => {
     if (
@@ -389,7 +389,7 @@ test("an orphaned retained processor is discarded before it can read a rejoin re
     return {
       ...state,
       activeRequests: { ...state.activeRequests, byRequestId: {} },
-    } as RootState;
+    } as ChatRootState;
   };
   await expect(
     processStream({

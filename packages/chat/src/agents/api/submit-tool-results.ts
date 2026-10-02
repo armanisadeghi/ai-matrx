@@ -76,9 +76,9 @@ import { toast } from "../../host/notify";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { ThunkAction, ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 
-type ToolResultsDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
+type ToolResultsDispatch = ThunkDispatch<ChatRootState, unknown, UnknownAction>;
 import type { components } from "@host/types/python-generated/api-types";
 import { setInstanceStatus } from "../redux/execution-system/conversations/conversations.slice";
 import { settleClientToolCall } from "./settle-client-tool-call";
@@ -169,7 +169,7 @@ function scheduleOutboxDrain(
  */
 export const flushUndeliveredToolResults = (
   conversationId: string,
-): ThunkAction<void, RootState, unknown, UnknownAction> => {
+): ThunkAction<void, ChatRootState, unknown, UnknownAction> => {
   return (dispatch) => {
     const held = outbox.get(conversationId);
     if (!held || held.size === 0) return;
@@ -237,7 +237,7 @@ function isRetryableError(err: { status?: number; type?: string }): boolean {
 function postToolResults(
   conversationId: string,
   results: ClientToolResult[],
-): ThunkAction<Promise<void>, RootState, unknown, UnknownAction> {
+): ThunkAction<Promise<void>, ChatRootState, unknown, UnknownAction> {
   return async (dispatch, getState) => {
     const callIds = results.map((r) => r.call_id).join(", ");
 
@@ -402,7 +402,7 @@ function postToolResults(
  */
 function holdUndelivered(
   dispatch: ToolResultsDispatch,
-  getState: () => RootState,
+  getState: () => ChatRootState,
   conversationId: string,
   results: ClientToolResult[],
   reason: string,
@@ -441,7 +441,7 @@ function holdUndelivered(
  */
 async function failLifecycleForCalls(
   dispatch: ToolResultsDispatch,
-  getState: () => RootState,
+  getState: () => ChatRootState,
   conversationId: string,
   results: ClientToolResult[],
   errorType: string,
@@ -494,7 +494,7 @@ async function failLifecycleForCalls(
  */
 export const submitToolResult = (
   pending: PendingToolResult,
-): ThunkAction<void, RootState, unknown, UnknownAction> => {
+): ThunkAction<void, ChatRootState, unknown, UnknownAction> => {
   return (dispatch) => {
     // The answerer is first to know the call is finished — tell this client's
     // own stores NOW, in the same tick the server is told (see
@@ -524,7 +524,7 @@ export const submitToolResult = (
  */
 export const flushToolResults = (): ThunkAction<
   void,
-  RootState,
+  ChatRootState,
   unknown,
   UnknownAction
 > => {

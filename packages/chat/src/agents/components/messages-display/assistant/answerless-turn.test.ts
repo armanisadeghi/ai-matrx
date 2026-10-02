@@ -5,7 +5,7 @@ import {
   type AnswerlessTurnInput,
 } from "./answerless-turn";
 import { selectRequestAwaitingPerson } from "../../../redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 
 /**
  * The witness for the production case found on 2026-09-18: `Quick Test Agent`
@@ -214,7 +214,7 @@ describe("a turn parked on the person is waiting, never answerless", () => {
         activeRequests: {
           byRequestId: { r1: { infoEvents: [], toolLifecycle: {}, ...request } },
         },
-      }) as unknown as RootState;
+      }) as unknown as ChatRootState;
 
     expect(selectRequestAwaitingPerson("r1")(stateWith({}))).toBe(false);
     expect(

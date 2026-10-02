@@ -31,7 +31,7 @@ import { selectUnifiedSlotRange } from "../active-requests.selectors";
 import messagesReducer from "../../messages/messages.slice";
 import { processStream } from "../../thunks/process-stream";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
@@ -110,7 +110,7 @@ async function run(lines: string[], burst: boolean) {
       instanceResources: { byConversationId: {} },
       instanceVariableValues: { byConversationId: {} },
       observability: { toolCalls: {}, userRequests: {}, requests: {} },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
   const dispatch = (action: unknown) => {
     if (typeof action === "function") return undefined;
     active = activeRequestsReducer(active, action as never);

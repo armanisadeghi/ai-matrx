@@ -13,20 +13,20 @@ import {
   buildContinuationBody,
 } from "../continuation-body";
 import type { AssembledAgentStartRequest } from "../../../../types/request.types";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const CONV = "c027c75d-4b45-4b57-b830-75a72d90ca58";
 const AGENT = "fb92012c-5efd-47eb-9763-de8ec7542ce9";
 const SKILL = "502365e7-2bde-4e61-8de5-a6b3fa63b6b5";
 
-function stateWithAddedSkill(): RootState {
+function stateWithAddedSkill(): ChatRootState {
   return {
     conversations: { byConversationId: { [CONV]: { agentId: AGENT } } },
     instanceUIState: {
       byConversationId: { [CONV]: { builderAdvancedSettings: { addedSkills: [SKILL] } } },
     },
     agentDefinition: { agents: {} },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 describe("buildContinuationBody", () => {

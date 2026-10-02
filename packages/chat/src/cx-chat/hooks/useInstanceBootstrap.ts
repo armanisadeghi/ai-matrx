@@ -44,7 +44,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../store/hooks";
 import {
   initializeChatAgents,
   isChatListStale,
@@ -54,7 +54,7 @@ import { launchAgentExecution } from "../../agents/redux/execution-system/thunks
 import { loadConversation } from "../../agents/redux/execution-system/thunks/load-conversation.thunk";
 import { toast } from "../../host/notify";
 import { DEFAULT_AGENT_ID } from "../components/agent/local-agents";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
 
 // ── URL parsing ───────────────────────────────────────────────────────────────
@@ -146,7 +146,7 @@ export function useInstanceBootstrap() {
       // Check URL-specified instance — it may still be alive in Redux.
       if (urlInstanceId) {
         const stillAlive = await dispatch(
-          (_: unknown, getState: () => RootState) =>
+          (_: unknown, getState: () => ChatRootState) =>
             !!getState().conversations.byConversationId[urlInstanceId],
         );
         if (stillAlive) resolvedId = urlInstanceId;
@@ -157,7 +157,7 @@ export function useInstanceBootstrap() {
         const cached = instanceByAgentId.current.get(agentId);
         if (cached) {
           const stillAlive = await dispatch(
-            (_: unknown, getState: () => RootState) =>
+            (_: unknown, getState: () => ChatRootState) =>
               !!getState().conversations.byConversationId[cached],
           );
           if (stillAlive) resolvedId = cached;

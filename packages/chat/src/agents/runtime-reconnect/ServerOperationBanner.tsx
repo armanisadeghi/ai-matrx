@@ -22,7 +22,7 @@ import {
   Play,
 } from "lucide-react";
 import { useState } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import type { ServerOperationState } from "./types";
 import { selectActivePendingAsksForConversation } from "../ui-first-tools/redux/pending-asks.slice";
 import { resumeInstance } from "../redux/execution-system/thunks/resume-instance.thunk";

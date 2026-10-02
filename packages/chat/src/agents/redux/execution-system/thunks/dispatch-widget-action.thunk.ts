@@ -17,7 +17,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { callbackManager } from "@host/utils/callbackManager";
 import { extractErrorMessage } from "@host/utils/errors";
 import {
@@ -41,7 +41,7 @@ export interface DispatchWidgetActionPayload {
 export const dispatchWidgetAction = createAsyncThunk<
   WidgetActionResult,
   DispatchWidgetActionPayload,
-  { state: RootState }
+  { state: ChatRootState }
 >(
   "widgetAction/dispatch",
   async (

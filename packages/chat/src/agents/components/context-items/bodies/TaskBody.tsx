@@ -8,7 +8,7 @@
 
 import { useEffect } from "react";
 import TaskEditor from "@host/features/tasks/components/TaskEditor";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import {
   selectTaskById,
   type TaskRecord,

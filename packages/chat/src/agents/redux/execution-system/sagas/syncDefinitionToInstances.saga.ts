@@ -38,7 +38,7 @@
  */
 
 import { debounce, put, select, takeEvery } from "redux-saga/effects";
-import type { RootState } from "@host/lib/redux/rootReducer";
+import type { ChatRootState } from "../../../../store/root-state";
 import {
   setAgentVariableDefinitions,
   setAgentSettings,
@@ -76,7 +76,7 @@ function* handleVariableDefinitionsChanged(
   const { id: agentId, variableDefinitions } = action.payload;
 
   // Read state after the debounce window — guaranteed to be the latest value.
-  const state = (yield select()) as RootState;
+  const state = (yield select()) as ChatRootState;
   const allIds = state.conversations.allConversationIds;
   const byId = state.conversations.byConversationId;
 
@@ -97,7 +97,7 @@ function* handleSettingsChanged(
 ): Generator {
   const { id: agentId, settings } = action.payload;
 
-  const state = (yield select()) as RootState;
+  const state = (yield select()) as ChatRootState;
   // updateBaseSettings REPLACES baseSettings wholesale, so re-fold the current
   // model to preserve the override delta guard.
   const agent = state.agentDefinition.agents?.[agentId];
@@ -128,7 +128,7 @@ function* handleModelChanged(
   if (action.payload.field !== "modelId") return;
   const agentId = action.payload.id;
 
-  const state = (yield select()) as RootState;
+  const state = (yield select()) as ChatRootState;
   const agent = state.agentDefinition.agents?.[agentId];
   const allIds = state.conversations.allConversationIds;
   const byId = state.conversations.byConversationId;
@@ -170,7 +170,7 @@ export function* handleDefinitionResync(action: {
     return;
   }
   const agentId = action.payload.id;
-  const state = (yield select()) as RootState;
+  const state = (yield select()) as ChatRootState;
   const agent = state.agentDefinition.agents?.[agentId];
   if (!agent) return;
   const allIds = state.conversations.allConversationIds;
@@ -197,7 +197,7 @@ function* handleUiGatesChanged(
   action: ReturnType<typeof setAgentUiGates>,
 ): Generator {
   const { id: agentId, uiGates } = action.payload;
-  const state = (yield select()) as RootState;
+  const state = (yield select()) as ChatRootState;
   const allIds = state.conversations.allConversationIds;
   const byId = state.conversations.byConversationId;
 

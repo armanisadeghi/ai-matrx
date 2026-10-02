@@ -9,7 +9,7 @@
  * organization, exactly as before.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import {
   ensureExecutionOrganization,
   executionOrganizationForRequest,
@@ -22,7 +22,7 @@ function storeState(opts: {
   accessToken: string | null;
   fingerprintId: string | null;
   organizationId: string | null;
-}): RootState {
+}): ChatRootState {
   return {
     userAuth: { accessToken: opts.accessToken },
     userProfile: { fingerprintId: opts.fingerprintId },
@@ -32,7 +32,7 @@ function storeState(opts: {
         [CONVERSATION]: { cacheOnly: true, organizationId: null },
       },
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 describe("execution organization — the fingerprint guest", () => {

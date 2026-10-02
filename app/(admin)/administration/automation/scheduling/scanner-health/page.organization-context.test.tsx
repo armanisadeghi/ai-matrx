@@ -47,6 +47,8 @@ jest.mock("@/features/admin/attention/item-mute", () => ({
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => true,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 jest.mock("@/hooks/useNow", () => ({ useNow: () => new Date(0) }));
 

@@ -16,7 +16,7 @@ import {
   groupDisplayEntries,
 } from "../../../../components/messages-display/display-groups";
 import { processStream } from "../process-stream";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
@@ -111,7 +111,7 @@ function harness(events: unknown[]) {
       instanceResources: { byConversationId: {} },
       instanceVariableValues: { byConversationId: {} },
       observability: { toolCalls: {}, userRequests: {}, requests: {} },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
   const dispatch = (action: unknown) => {
     active = activeRequestsReducer(active, action as never);
     messages = messagesReducer(messages, action as never);
@@ -133,7 +133,7 @@ function harness(events: unknown[]) {
     }),
   };
 }
-function slots(state: RootState, start = 0, end?: number) {
+function slots(state: ChatRootState, start = 0, end?: number) {
   const request = state.activeRequests.byRequestId[REQ];
   return selectUnifiedSlotRange(
     REQ,
@@ -148,7 +148,7 @@ function slots(state: RootState, start = 0, end?: number) {
     return slot.kind;
   });
 }
-function groups(state: RootState, active = false) {
+function groups(state: ChatRootState, active = false) {
   const e = state.messages.byConversationId[CONV];
   return groupDisplayEntries(
     buildDisplayEntries({

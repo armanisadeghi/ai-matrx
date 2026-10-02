@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import {
   fetchSurfaceMenuAgentsGrouped,

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { useAgentLauncher } from "./useAgentLauncher";
 import { selectInstance } from "../redux/execution-system/conversations/conversations.selectors";
 import { selectResolvedVariables } from "../redux/execution-system/instance-variable-values/instance-variable-values.selectors";

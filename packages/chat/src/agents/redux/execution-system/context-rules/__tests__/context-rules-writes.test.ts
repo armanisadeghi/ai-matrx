@@ -130,8 +130,8 @@ import {
   saveContextRule,
   selectSavedContextRuleRows,
 } from "../context-rules.thunks";
-import type { RootState } from "@host/lib/redux/store";
-import { setStoreSingleton } from "@host/lib/redux/store-singleton";
+import type { ChatRootState } from "../../../../../store/root-state";
+import { setStoreSingleton } from "../../../../../store/store-singleton";
 
 /** The app's own store, as the organization gate reads it: which workspace is selected. */
 function selectWorkspace(organizationId: string | null) {
@@ -144,7 +144,7 @@ function openTab() {
   return configureStore({ reducer: { surfaceUserState: surfaceUserStateReducer } });
 }
 type Tab = ReturnType<typeof openTab>;
-const rulesIn = (tab: Tab) => selectSavedContextRuleRows(tab.getState() as unknown as RootState);
+const rulesIn = (tab: Tab) => selectSavedContextRuleRows(tab.getState() as unknown as ChatRootState);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- thunk dispatch on a narrow test store
 const run = (tab: Tab, thunk: unknown) => (tab.dispatch as any)(thunk) as Promise<void>;
 

@@ -113,6 +113,8 @@ jest.mock("@/features/marketing/google/service", () => ({
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
   selectActiveOrganizationId: () => "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
 }));

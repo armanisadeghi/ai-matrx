@@ -15,7 +15,7 @@
  * show another turn's receipt; without a persisted receipt it has none.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import {
   receiptRowToResolved as packageReceiptRowToResolved,
   type ContextReceiptMismatch,
@@ -66,7 +66,7 @@ export function modelContextFromRow(raw: Json | null | undefined): ModelContext 
 /** The receipt this message's turn produced, by the priority above. */
 export const selectMessageContextReceipt =
   (conversationId: string, messageId: string) =>
-  (state: RootState): ContextReceiptData | undefined => {
+  (state: ChatRootState): ContextReceiptData | undefined => {
     const record = state.messages.byConversationId[conversationId]?.byId[messageId];
     if (!record || record.role !== "user") return undefined;
     const persisted = record.modelContext?.delivery?.receipt;
@@ -80,7 +80,7 @@ export const selectMessageContextReceipt =
 /** Where the receipt came from — `undefined` when the message has none. */
 export const selectMessageContextReceiptSource =
   (conversationId: string, messageId: string) =>
-  (state: RootState): MessageContextReceiptSource | undefined => {
+  (state: ChatRootState): MessageContextReceiptSource | undefined => {
     const record = state.messages.byConversationId[conversationId]?.byId[messageId];
     if (!record || record.role !== "user") return undefined;
     if (record.modelContext?.delivery?.receipt) return "persisted";
@@ -97,7 +97,7 @@ export const selectMessageContextReceiptSource =
  */
 export const selectMessageContextMismatches =
   (conversationId: string, messageId: string) =>
-  (state: RootState): ContextReceiptMismatch[] | undefined => {
+  (state: ChatRootState): ContextReceiptMismatch[] | undefined => {
     const record = state.messages.byConversationId[conversationId]?.byId[messageId];
     if (!record) return undefined;
     const live = state.instanceContext?.receiptByConversationId[conversationId];

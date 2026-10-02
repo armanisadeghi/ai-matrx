@@ -7,10 +7,12 @@ import { createRoot, type Root } from "react-dom/client";
 
 const dispatch = jest.fn();
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../store/hooks", () => ({
   useAppDispatch: () => dispatch,
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 
 jest.mock(
   "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors",

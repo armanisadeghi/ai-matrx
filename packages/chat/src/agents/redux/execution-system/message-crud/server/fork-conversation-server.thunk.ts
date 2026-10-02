@@ -19,7 +19,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import {
   callConversationFork,
   type ConversationForkBody,
@@ -58,8 +58,8 @@ interface ForkConversationServerResult {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   rejectValue: { message: string };
 }
 

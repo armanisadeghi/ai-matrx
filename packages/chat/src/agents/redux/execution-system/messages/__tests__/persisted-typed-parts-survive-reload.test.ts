@@ -25,7 +25,7 @@ import { normalizeMessagePart } from "../../../../components/context-items/norma
 import { fromCxMediaPart } from "@host/features/files/blocks/image/adapters/from-cx-media-part";
 import { fromCxVideoPart } from "@host/features/files/blocks/adapters/from-cx-av-part";
 import type { MessageRecord } from "../messages.slice";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import type {
   ImageMediaPart,
   MessagePart,
@@ -91,11 +91,11 @@ function record(role: "user" | "assistant", content: unknown[]): MessageRecord {
   return { id: "m1", role, content } as unknown as MessageRecord;
 }
 
-function stateWith(rec: MessageRecord): RootState {
+function stateWith(rec: MessageRecord): ChatRootState {
   return {
     messages: { byConversationId: { c1: { byId: { m1: rec } } } },
     observability: { toolCalls: {} },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 const isText = (part: MessagePart) => part.type === "text";

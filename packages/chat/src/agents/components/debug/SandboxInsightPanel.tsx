@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import { Box, FolderTree, TerminalSquare, FileText } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { resolveAgentSandboxRef } from "@host/lib/sandbox/active-binding";
 import { SandboxDiagnosticsPanel } from "@host/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 import { SimpleTerminal } from "@host/features/code/terminal/SimpleTerminal";

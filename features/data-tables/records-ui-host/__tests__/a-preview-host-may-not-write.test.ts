@@ -15,6 +15,8 @@ jest.mock("@/features/unified-data/grid-agent-context/RecordStoreTableSurface", 
   useGridContextChannel: () => null,
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("./../mergedGridKnob", () => ({ useMergedGridKnob: () => false }));
 jest.mock("@/features/unified-data/recordsReferences", () => ({ RECORDS_REFERENCES: {} }));

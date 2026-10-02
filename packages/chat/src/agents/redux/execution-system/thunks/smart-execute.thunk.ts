@@ -1,6 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { serializeExecutionRejection } from "@host/lib/diagnostics/executionRejectionMeta";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { selectAutoClearConversation } from "../instance-ui-state/instance-ui-state.selectors";
 import {
   executeInstance,
@@ -83,7 +83,7 @@ interface SmartExecuteArgs {
 }
 
 export function hasConversationAtExecutionBoundary(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): boolean {
   return state.conversations.byConversationId[conversationId] !== undefined;
@@ -117,8 +117,8 @@ function announceMissingConversation(conversationId: string): void {
  * submit that is HELD behind an in-flight send.
  */
 function detachFromComposer(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   conversationId: string,
   submission: FrozenSubmission,
 ): void {
@@ -134,8 +134,8 @@ function detachFromComposer(
  * next message the person has started is never touched.
  */
 function settleComposer(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   conversationId: string,
   submission: FrozenSubmission,
 ): void {
@@ -151,8 +151,8 @@ function settleComposer(
  * kept — the returned message first, then what they typed.
  */
 function returnToComposer(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   conversationId: string,
   submission: FrozenSubmission,
 ): void {
@@ -187,8 +187,8 @@ const HOLD_POLL_MS = 25;
  * started, goes as the next turn). Never dropped, never silent.
  */
 function holdBehindInFlightSend(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   args: {
     conversationId: string;
     surfaceKey?: string;
@@ -254,7 +254,7 @@ function holdBehindInFlightSend(
 export const smartExecute = createAsyncThunk<
   void,
   SmartExecuteArgs,
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "instances/smartExecute",
   async (
@@ -703,7 +703,7 @@ export const smartExecute = createAsyncThunk<
  * `X-Request-ID` header). Null when no stream has opened yet.
  */
 function latestServerRequestId(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | null {
   const requestIds = state.activeRequests?.byConversationId[conversationId];
@@ -721,7 +721,7 @@ function latestServerRequestId(
  * cursor synchronously. Undefined when no frame carried a cursor.
  */
 function appliedTransportSeq(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   serverRequestId: string,
 ): number | undefined {
@@ -740,7 +740,7 @@ function appliedTransportSeq(
 export const cancelExecution = createAsyncThunk<
   void,
   string,
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "instances/cancelExecution",
   async (conversationId, { getState, dispatch }) => {
@@ -822,7 +822,7 @@ export const cancelExecution = createAsyncThunk<
 export const interruptAndSend = createAsyncThunk<
   void,
   SmartExecuteArgs,
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "instances/interruptAndSend",
   async ({ conversationId, surfaceKey }, { getState, dispatch }) => {

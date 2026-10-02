@@ -31,7 +31,7 @@ import {
   type ThunkDispatch,
   type UnknownAction,
 } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import inboxReducer, {
   addInboxItem,
   confirmInboxItem,
@@ -229,7 +229,7 @@ describe("a queued message sends when the turn ends", () => {
   it("leaves the line to the server when a run is live again", async () => {
     const s = makeStore("running");
     s.dispatch(addInboxItem(item("f11fc457-e37a", MESSAGE_2)));
-    await (s.dispatch as ThunkDispatch<RootState, unknown, UnknownAction>)(
+    await (s.dispatch as ThunkDispatch<ChatRootState, unknown, UnknownAction>)(
       deliverStrandedQueue({ conversationId: CONV }),
     );
     expect(deleted).toEqual([]);

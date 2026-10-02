@@ -60,7 +60,7 @@ import { createInstanceFull } from "../../create-instance-full";
 import { destroyInstanceIfAbandoned } from "../../conversations/conversations.thunks";
 import { destroyInstance } from "../../conversations/conversations.slice";
 import { buildToolInjection } from "../../utils/build-tool-injection";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const CONVERSATION = "conv-new-chat";
 const AGENT = "agent-new-chat";
@@ -162,7 +162,7 @@ describe("a per-run MCP attachment survives every step of the /chat/new handoff"
           messages: { byConversationId: {} },
           instanceUserInput: { byConversationId: {} },
           instanceUIState: uiState,
-        }) as unknown as RootState;
+        }) as unknown as ChatRootState;
       destroyInstanceIfAbandoned(CONVERSATION)(
         ((action: unknown) => {
           dispatched.push(action);
@@ -218,7 +218,7 @@ describe("a per-run MCP attachment survives every step of the /chat/new handoff"
       instanceUIState: uiState,
       creatorDebug: { settings: {} },
       adminPreferences: {},
-    } as unknown as RootState;
+    } as unknown as ChatRootState;
 
     const result = await buildToolInjection(state, CONVERSATION, {
       mode: "additive",

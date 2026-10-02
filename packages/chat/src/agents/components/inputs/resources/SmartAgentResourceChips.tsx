@@ -11,7 +11,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { FileText, Layers } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import { selectInstanceResources } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectSubmissionPhase } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {

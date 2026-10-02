@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Youtube } from "@host/components/icons/brand-icons";
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../../store/hooks";
 import {
   initInstanceContext,
   setContextEntry,

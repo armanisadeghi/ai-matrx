@@ -1,4 +1,4 @@
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { ApplicationScope } from "../../../utils/scope-mapping";
 import { buildApplicationScopeFromMenuContext } from "@host/features/context-menu-v3/utils/build-application-scope";
 import { buildChatContextData } from "./buildChatContextData";
@@ -25,7 +25,7 @@ import type {
  * documents `run_configuration` as empty in that case.
  */
 export function buildChatRunConfiguration(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): ChatRunConfigurationRef | null {
   const settings = selectBuilderAdvancedSettings(conversationId)(state);
@@ -83,7 +83,7 @@ export function buildChatRunConfiguration(
  * any current window selection as a best-effort baseline.
  */
 export function buildRunControlsApplicationScope(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): ApplicationScope {
   const selectedText =

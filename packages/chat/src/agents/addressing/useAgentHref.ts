@@ -18,7 +18,7 @@
 
 import { useContext, useEffect, useState, useSyncExternalStore } from "react";
 import { ReactReduxContext } from "react-redux";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import { selectIsAdmin } from "@host/lib/redux/selectors/userSelectors";
 import {
   type AgentAddressViewer,
@@ -63,7 +63,7 @@ const noSubscribe = () => () => {};
 export function useAgentAddressViewer(): AgentAddressViewer | undefined {
   const store = useContext(ReactReduxContext)?.store;
   const read = () =>
-    store ? selectIsAdmin(store.getState() as RootState) : undefined;
+    store ? selectIsAdmin(store.getState() as ChatRootState) : undefined;
   const isAdmin = useSyncExternalStore(
     store ? store.subscribe : noSubscribe,
     read,

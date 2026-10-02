@@ -16,7 +16,7 @@
  */
 
 import type { EditorPrimaryAction } from "@host/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../../../store/root-state";
 import { toast } from "../../../../host/notify";
 
 export const USER_EDIT_ACTIONS: EditorPrimaryAction[] = [
@@ -40,7 +40,7 @@ export interface RouteUserEditActionArgs {
  * an acknowledged save.
  */
 export async function routeUserEditAction(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   {
     actionId,
     conversationId,

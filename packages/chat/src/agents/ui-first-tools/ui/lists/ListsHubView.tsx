@@ -15,7 +15,7 @@ import Link from "next/link";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { supabase } from "@host/utils/supabase/client";
 import { db } from "../../service/supabase-typed";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { cn } from "@ai-matrx/design-system";
 import {

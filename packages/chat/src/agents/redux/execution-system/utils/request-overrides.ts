@@ -10,7 +10,7 @@
  * sent WITHOUT the override rather than with garbage.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { selectBuilderAdvancedSettings } from "../instance-ui-state/instance-ui-state.selectors";
 
 export interface RequestOverridesResult {
@@ -48,7 +48,7 @@ export function parseRequestOverrides(
 
 /** Resolve the override object for a conversation from Redux state. */
 export function resolveRequestOverrides(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): RequestOverridesResult {
   return parseRequestOverrides(

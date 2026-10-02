@@ -28,7 +28,7 @@ import {
   TextDecoder as NodeTextDecoder,
   TextEncoder as NodeTextEncoder,
 } from "node:util";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -41,23 +41,25 @@ if (!globals.TextDecoder) globals.TextDecoder = NodeTextDecoder;
 
 // The store the components read: the harness's live state, with every slice
 // this test does not drive reading as empty.
-let currentState: RootState | null = null;
+let currentState: ChatRootState | null = null;
 const EMPTY_SLICE = new Proxy(
   {},
   { get: (_t, key) => (key === "then" ? undefined : undefined) },
 );
-function stateForComponents(): RootState {
+function stateForComponents(): ChatRootState {
   const base = currentState as unknown as Record<string, unknown>;
   return new Proxy(base, {
     get: (target, key: string) => (key in target ? target[key] : EMPTY_SLICE),
-  }) as unknown as RootState;
+  }) as unknown as ChatRootState;
 }
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector(stateForComponents()),
   useAppDispatch: () => () => undefined,
   useAppStore: () => ({ getState: () => stateForComponents() }),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () => () => null,
@@ -260,7 +262,7 @@ function harness() {
       instanceUIState: { byConversationId: {} },
       instanceResources: { byConversationId: {} },
       instanceVariableValues: { byConversationId: {} },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
   const dispatch = (action: unknown) => {
     active = activeRequestsReducer(active, action as never);
     messages = messagesReducer(messages, action as never);
@@ -286,7 +288,7 @@ function harness() {
 
 /** The transcript's assistant turns, keyed exactly as AgentConversationDisplay keys them. */
 function Turns({ streamActive }: { streamActive: boolean }) {
-  const state = currentState as RootState;
+  const state = currentState as ChatRootState;
   const conv = state.messages.byConversationId[CONV];
   if (!conv) return null;
   const groups = groupDisplayEntries(

@@ -2,7 +2,7 @@
 // no network) so the action registry can decide display synchronously.
 // The thunk that acts on it lives in ./regenerate-answer.
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 
 export interface RegenerateAnchorInput {
   id: string;
@@ -44,7 +44,7 @@ export function findRegenerateAnchor(
 
 /** Anchor lookup against the live Redux transcript. */
 export function selectRegenerateAnchor(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   assistantMessageId: string,
 ): RegenerateAnchor | null {

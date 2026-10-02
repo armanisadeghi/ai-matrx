@@ -52,6 +52,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     selector({ appContext, userAuth: { id: "user-1" } }),
   useAppDispatch: () => jest.fn(),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 // The panel reads the organization GATE (it says the fourth state out loud —
 // V-24 NEW-3), so the stand-in carries the selectors the gate reads. An

@@ -22,8 +22,8 @@
 
 import type { Dispatch } from "@reduxjs/toolkit";
 import { toast } from "../../../../host/notify";
-import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppDispatch, useAppStore } from "../../../../store/hooks";
+import type { ChatRootState } from "../../../../store/root-state";
 import {
   addResource,
   removeResource,
@@ -159,7 +159,7 @@ function stableJson(value: unknown): string {
  * code" ×3 in the PB-01 real test — and each copy was sent to the model.
  */
 export function findIdenticalResourceId(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   blockType: ResourceBlockType,
   source: unknown,
@@ -176,7 +176,7 @@ export function findIdenticalResourceId(
 
 function attachBinary(
   dispatch: Dispatch,
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   blockType: ResourceBlockType,
   data: unknown,
@@ -220,7 +220,7 @@ function pendingFileId(source: unknown): string | null {
 /** Hold a stored-file attachment by identity until the server persists its edge. */
 function attachPendingFileReference(
   dispatch: Dispatch,
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   fileId: string,
   label: string,
@@ -298,7 +298,7 @@ export function useAttachResource(
   const store = useAppStore();
 
   return async (resource: Resource) => {
-    const getState = () => store.getState() as RootState;
+    const getState = () => store.getState() as ChatRootState;
     const baseBlockType = resourceTypeToBlockType(resource.type);
     const blockType = refineBlockType(baseBlockType, resource.data);
     const resourcePreviewLabel = cleanDocumentLabel(resourceLabel(resource));
@@ -473,7 +473,7 @@ export function useDetachResource(
     const fileId = extractFileId(resource);
     if (!fileId) return false;
 
-    const getState = () => store.getState() as RootState;
+    const getState = () => store.getState() as ChatRootState;
     const isDurableConversation =
       !selectIsCacheOnly(conversationId)(getState());
 

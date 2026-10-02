@@ -7,7 +7,7 @@
 // covered without its callers knowing this exists.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/rootReducer";
+import type { ChatRootState } from "../../../../store/root-state";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { DISPLAY_MODE_TO_OVERLAY_ID } from "../display-mode-overlay";
 import {
@@ -54,7 +54,7 @@ function bindPagehideFlush(): void {
  * (2026-10-01, the /notes page agents panel).
  */
 export function conversationWasSent(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): boolean {
   const conv = state.conversations.byConversationId[conversationId];
@@ -67,7 +67,7 @@ export function conversationWasSent(
 
 /** The recipe for an unsent conversation shown in a window, or null. */
 export function buildUnsentLaunchRecipe(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): UnsentLaunchRecipe | null {
   const conv = state.conversations.byConversationId[conversationId];
@@ -126,7 +126,7 @@ function conversationIdOf(action: unknown): string | null {
 
 export const unsentLaunchMiddleware: Middleware<
   Record<string, never>,
-  RootState
+  ChatRootState
 > = (api) => (next) => (action: unknown) => {
   const type =
     typeof action === "object" && action !== null && "type" in action

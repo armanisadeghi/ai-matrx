@@ -40,7 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { selectWorkingDocTitle } from "../../agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { useCanvas } from "@host/features/canvas/hooks/useCanvas";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";

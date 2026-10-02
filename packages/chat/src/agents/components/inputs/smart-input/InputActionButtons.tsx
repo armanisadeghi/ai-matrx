@@ -22,7 +22,7 @@ import {
   AudioLines,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import { announceComingSoon } from "@host/lib/coming-soon/announce";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import { RunControlsMenu } from "./RunControlsMenu";

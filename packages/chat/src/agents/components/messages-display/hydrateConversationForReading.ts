@@ -9,14 +9,14 @@
  * they rendered blank). Only the instance create must precede the load.
  */
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
 import { createManualInstance } from "../../redux/execution-system/thunks/create-instance.thunk";
 
 export async function hydrateConversationForReading(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   opts: { conversationId: string; agentId: string | null; surfaceKey: string },
 ): Promise<void> {
   const { conversationId, agentId, surfaceKey } = opts;

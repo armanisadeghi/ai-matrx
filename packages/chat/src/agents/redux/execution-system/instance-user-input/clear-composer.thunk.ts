@@ -23,7 +23,7 @@
 //   • "clear"   → `clearUserInput` (stream-success / send-failure sites): wipes
 //                 the just-sent text + returns submissionPhase to "idle".
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   clearUserInput,
   markInputPersisted,
@@ -42,7 +42,7 @@ export function clearComposerIfUnsubmitted(
   conversationId: string,
   opts?: { via?: ClearComposerVia },
 ) {
-  return (dispatch: AppDispatch, getState: () => RootState): void => {
+  return (dispatch: ChatDispatch, getState: () => ChatRootState): void => {
     const via = opts?.via ?? "clear";
     const entry =
       getState().instanceUserInput.byConversationId[conversationId];

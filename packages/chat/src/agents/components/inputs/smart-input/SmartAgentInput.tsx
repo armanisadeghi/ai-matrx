@@ -17,7 +17,7 @@
  */
 
 import React, { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { setVariablesPanelStyle } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { SmartAgentInputStacked } from "./SmartAgentInputStacked";
 import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";

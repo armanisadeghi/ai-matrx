@@ -62,7 +62,7 @@ import {
 } from "./RunControlsTabPanel";
 import type { Resource } from "../../../resources/types";
 import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";

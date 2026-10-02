@@ -30,7 +30,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { TextInputDialog } from "@host/components/dialogs/text-input/TextInputDialog";
 import IconButton from "@host/components/official/IconButton";
 import {

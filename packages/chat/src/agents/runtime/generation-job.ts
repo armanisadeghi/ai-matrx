@@ -7,12 +7,11 @@
 // job card (model · clock · estimated cost) never appeared — only the
 // builder's manual path set it. Both paths now label the request the same way.
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState, ChatDispatch } from "../../store/root-state";
 import {
   fetchModelById,
   selectModelById,
 } from "@host/features/ai-models/redux/modelRegistrySlice";
-import type { AppDispatch } from "@host/lib/redux/store";
 import { setRequestGenerationJob } from "../redux/execution-system/active-requests/active-requests.slice";
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
 import { selectCurrentSettings } from "../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
@@ -23,7 +22,7 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 /** The model this conversation's next run uses: a run-time model override
  *  wins, else the agent's own model. Null when neither is known. */
 export function selectRunModelId(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | null {
   const settings = selectCurrentSettings(conversationId)(state) as
@@ -42,7 +41,7 @@ export function selectRunModelId(
  * loaded catalog yet (see `labelGenerationJob`, which loads it).
  */
 export function resolveGenerationJob(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): RequestGenerationJob | null {
   const modelId = selectRunModelId(state, conversationId);
@@ -70,8 +69,8 @@ export function resolveGenerationJob(
  * way, and the label lands a moment later.
  */
 export async function labelGenerationJob(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   requestId: string,
   conversationId: string,
 ): Promise<void> {

@@ -15,7 +15,7 @@
  * the two paths cannot drift.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { MessageRecord } from "../messages/messages.slice";
 import {
   extractContentBlocks,
@@ -57,7 +57,7 @@ export function recordsToMessages(records: MessageRecord[]): WireMessage[] {
  * naturally excluded — it travels as `user_input`, not as history.
  */
 export function selectWireTranscript(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): WireMessage[] {
   const entry = state.messages.byConversationId[conversationId];

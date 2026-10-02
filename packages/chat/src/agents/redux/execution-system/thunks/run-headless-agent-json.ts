@@ -26,7 +26,7 @@
  * throw-on-failure semantics use the hook (or check `.success` themselves).
  */
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { MessagePart } from "@host/types/python-generated/stream-events";
 import type {
   ContextAnchor,
@@ -426,7 +426,7 @@ async function deliverResult(
  * result passes through untouched.
  */
 export async function failWarnedOutputMissingKeys(
-  getState: () => RootState,
+  getState: () => ChatRootState,
   opts: Pick<HeadlessAgentJsonOptions, "mandateKey" | "surfaceKey" | "expect">,
   result: HeadlessAgentJsonResult,
 ): Promise<HeadlessAgentJsonResult> {
@@ -519,8 +519,8 @@ export function mandateOutputUnusableSentence(
 }
 
 export async function runHeadlessAgentJson(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   opts: HeadlessAgentJsonOptions,
 ): Promise<HeadlessAgentJsonResult> {
   const result = await failWarnedOutputMissingKeys(
@@ -592,8 +592,8 @@ export interface AdoptedAgentJsonOptions {
  * throws; resolves a structured result, exactly like `runHeadlessAgentJson`.
  */
 export async function adoptHeadlessAgentJson(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   opts: AdoptedAgentJsonOptions,
 ): Promise<HeadlessAgentJsonResult> {
   const agentRef = opts.agentRef ?? "adopted-run";
@@ -646,8 +646,8 @@ export async function adoptHeadlessAgentJson(
 }
 
 async function launchAndWait(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   opts: HeadlessAgentJsonOptions,
 ): Promise<HeadlessAgentJsonResult> {
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -862,7 +862,7 @@ async function launchAndWait(
  * function exists to make unrepeatable.
  */
 function resolveRunData(
-  getState: () => RootState,
+  getState: () => ChatRootState,
   requestId: string,
   conversationId: string,
 ): { data: unknown | null; via: string } {
@@ -894,7 +894,7 @@ function resolveRunData(
  * lost extraction) without re-running the agent.
  */
 function reportNoResult(
-  getState: () => RootState,
+  getState: () => ChatRootState,
   args: {
     requestId: string;
     conversationId: string;
@@ -927,8 +927,8 @@ function reportNoResult(
 }
 
 async function waitForExtraction(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   args: {
     conversationId: string;
     requestId: string;

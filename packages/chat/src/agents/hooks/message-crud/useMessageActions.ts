@@ -24,7 +24,7 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../store/hooks";
 import type { Json } from "@host/types/database.types";
 import { editMessage } from "../../redux/execution-system/message-crud/edit-message.thunk";
 import { forkConversation } from "../../redux/execution-system/message-crud/fork-conversation.thunk";

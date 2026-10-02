@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { assignField } from "../shared/field-flags";
 import {
   buildScopeQueryString,
@@ -36,7 +36,7 @@ import { applyOrganizationContextHeader } from "@host/lib/api/organization-conte
 import { requireSelectedOrgId } from "@host/lib/organizations/activeOrg";
 import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
 
-type ThunkApi = { dispatch: AppDispatch; state: RootState };
+type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   if (!response.ok) {

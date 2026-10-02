@@ -22,7 +22,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { cancelAgentRunRequest } from "@host/lib/api/matrx-transport";
 import { fetchOperationsByLink } from "../../../runtime-reconnect/api";
 import type {
@@ -89,7 +89,7 @@ const FINISHED_BEFORE_STOP: ReadonlySet<string> = new Set([
 
 /** The conversation's requests that were still running when Stop was pressed. */
 export function selectInFlightRequestIds(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string[] {
   const ids = state.activeRequests?.byConversationId[conversationId] ?? [];
@@ -105,7 +105,7 @@ export function selectInFlightRequestIds(
  * saved SHORTER than shown (keep the stream render; report the gap).
  */
 export function classifyStoppedRequests(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   requestIds: string[],
 ): {
@@ -143,7 +143,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const settleAfterStop = createAsyncThunk<
   SettleAfterStopOutcome,
   SettleAfterStopArgs,
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "instances/settleAfterStop",
   async (

@@ -41,14 +41,14 @@ jest.mock("@host/utils/supabase/client", () => ({
 }));
 
 import { buildToolInjection } from "../build-tool-injection";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 const SURFACE = "matrx-user/chat";
 
 function makeState(args: {
   conversationId: string;
   addedMcpServers?: string[];
-}): RootState {
+}): ChatRootState {
   const agentId = "agent-mcp-test";
   return {
     agentDefinition: {
@@ -85,7 +85,7 @@ function makeState(args: {
     },
     creatorDebug: { settings: {} },
     adminPreferences: {},
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 describe("an MCP attached to the conversation rides every continue turn as client.mcp", () => {

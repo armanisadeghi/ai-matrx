@@ -25,7 +25,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { callApi } from "@host/lib/api/call-api";
 import { selectScopeSelectionsContext } from "@host/lib/redux/slices/appContextSlice";
 import { selectConversationScopeIds } from "../../redux/execution-system/conversations/conversations.selectors";

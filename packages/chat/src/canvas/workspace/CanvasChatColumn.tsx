@@ -23,7 +23,7 @@ import { Building2, RotateCcw } from "lucide-react";
 import { AgentConversationColumn } from "../../agents/components/shared/AgentConversationColumn";
 import type { AttachedContextRailItem } from "../../agents/components/inputs/smart-input/ConversationContextRail";
 import { setContextEntries } from "../../agents/redux/execution-system/instance-context/instance-context.slice";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../store/hooks";
 import { Button } from "@ai-matrx/design-system";
 import { ErrorNotice } from "@host/components/errors/ErrorNotice";
 import { cn } from "@ai-matrx/design-system";

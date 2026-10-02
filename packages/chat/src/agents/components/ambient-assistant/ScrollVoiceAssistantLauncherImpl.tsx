@@ -25,7 +25,7 @@ import { OrganizationContextNotice } from "@host/features/organizations/componen
 import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";
 import { VOICE_COMMUNICATOR_MANDATE_KEY } from "../../../voice-agent/relay/useVoiceRelaySession";
 import { VoiceOrb } from "../../../voice-agent/components/VoiceOrb";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectIsAuthenticated } from "@host/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { CHAT_WINDOWS } from "../../../host/windows";

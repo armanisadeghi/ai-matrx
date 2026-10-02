@@ -9,6 +9,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 const mockDispatch = (a: unknown) => a;
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => mockDispatch }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/notes/redux/thunks", () => ({ fetchNoteContent: (id: string) => ({ type: "fetch", id }) }));
 const instance = jest.fn();
 jest.mock("@/features/notes/hooks/useEmbeddedNoteInstance", () => ({

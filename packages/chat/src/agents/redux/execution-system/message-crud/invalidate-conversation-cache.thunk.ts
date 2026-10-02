@@ -15,7 +15,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { resolveBackendForConversation } from "../thunks/resolve-base-url";
 import { clearCacheBypass } from "./cache-bypass.slice";
 
@@ -28,8 +28,8 @@ interface InvalidateResult {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   rejectValue: { message: string };
 }
 

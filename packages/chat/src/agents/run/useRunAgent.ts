@@ -38,8 +38,8 @@
 import { useCallback, useRef, useState } from "react";
 import type { Action } from "redux";
 import type { ThunkAction } from "redux-thunk";
-import { useAppDispatch } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppDispatch } from "../../store/hooks";
+import type { ChatRootState } from "../../store/root-state";
 import {
   startAgentRun,
   type MatrxAgentStartRequest,
@@ -172,7 +172,7 @@ const stringField = (bag: unknown, key: string): string | null => {
  */
 export function runAgentViaMatrxClient(
   args: RunAgentArgs,
-): ThunkAction<Promise<string>, RootState, unknown, Action> {
+): ThunkAction<Promise<string>, ChatRootState, unknown, Action> {
   return async (_dispatch, getState) => {
     await waitForAuthReady(getState);
     const state = getState();

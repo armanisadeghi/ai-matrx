@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "../../../store/hooks";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
 import type { SourceFeature } from "../../types/instance.types";
 import { selectInstanceStatus } from "../../redux/execution-system/conversations/conversations.selectors";

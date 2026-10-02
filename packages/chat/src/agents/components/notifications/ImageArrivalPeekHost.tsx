@@ -20,7 +20,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef } from "react";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../store/hooks";
 import { useImageArrivalPeeks } from "./useImageArrivalPeeks";
 import { ImageArrivalPeek } from "./ImageArrivalPeek";
 import { openImageViewer } from "@host/features/overlays/openers/imageViewer";

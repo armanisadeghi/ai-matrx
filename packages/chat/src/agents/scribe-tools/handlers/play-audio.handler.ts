@@ -14,13 +14,13 @@
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { requestScribeAudioSeek } from "@host/features/transcript-studio/state/scribeAudioBus";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type { ScribeToolHandler, ScribeToolResultBase } from "./types";
 import type { ScribePlayAudioArgs } from "../tools/schemas";
 
 /** Find the studio session bound to this assistant conversation, if any. */
 function resolveSessionIdForConversation(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | undefined {
   const byId = state.transcriptStudio?.byId ?? {};

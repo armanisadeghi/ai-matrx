@@ -9,7 +9,9 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@host/lib/redux/hooks", () => ({ useAppSelector: () => ({}) }));
+jest.mock("../../../../../store/hooks", () => ({ useAppSelector: () => ({}) }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
 jest.mock("@host/features/scopes/hooks/useEntityTitles", () => ({
   useEntityTitles: () => ({ titleFor: () => undefined }),
 }));

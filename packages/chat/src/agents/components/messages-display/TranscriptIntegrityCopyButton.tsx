@@ -10,7 +10,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Stethoscope } from "lucide-react";
-import { useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectIsSuperAdmin } from "@host/lib/redux/selectors/userSelectors";
 import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
 import { selectStreamPhase } from "../../redux/execution-system/selectors/aggregate.selectors";

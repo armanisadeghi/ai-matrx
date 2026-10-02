@@ -30,7 +30,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ContextDeltaData } from "@host/types/python-generated/stream-events";
 import { applyContextDeltaToContent } from "./contextDelta";
 import { studioDocumentContentChanged } from "@host/features/transcript-studio/redux/slice";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { NotesAPI } from "@host/features/notes/service/notesApi";
 import { getActiveOrgId } from "@host/lib/organizations/activeOrg";
 import {
@@ -80,8 +80,8 @@ import {
 } from "./cx-working-document.service";
 
 interface ThunkConfig {
-  state: RootState;
-  dispatch: AppDispatch;
+  state: ChatRootState;
+  dispatch: ChatDispatch;
 }
 
 // =============================================================================
@@ -132,7 +132,7 @@ const flushInFlight = new Set<string>();
  *   or has queued ops → queue.
  */
 function shouldQueueEdgeOps(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): boolean {
   const rec = state.conversations.byConversationId[conversationId];
@@ -175,7 +175,7 @@ function queueEdgeOp(conversationId: string, next: PendingEdgeOp): void {
  * handling on those outcomes.
  */
 async function persistOrQueueLink(
-  getState: () => RootState,
+  getState: () => ChatRootState,
   args: {
     conversationId: string;
     documentId: string;
@@ -347,7 +347,7 @@ export function deriveWorkingDocTitle(content: string): string {
  * canonical `getActiveOrgId()`. Only returns null in the impossible case where
  * neither is present — callers still guard, but in practice it's never null.
  */
-function resolveOrgId(state: RootState, conversationId: string): string | null {
+function resolveOrgId(state: ChatRootState, conversationId: string): string | null {
   return (
     state.conversations.byConversationId[conversationId]?.organizationId ??
     getActiveOrgId()
@@ -1127,7 +1127,7 @@ export function applyAgentWorkingDocDelta({
   kind?: WorkingDocumentKind;
   delta: ContextDeltaData;
 }) {
-  return (dispatch: AppDispatch, getState: () => RootState): boolean => {
+  return (dispatch: ChatDispatch, getState: () => ChatRootState): boolean => {
     const state = getState();
 
     // ── Scribe: the doc lives in the transcript-studio slice ────────────────

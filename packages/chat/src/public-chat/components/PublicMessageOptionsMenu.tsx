@@ -33,7 +33,7 @@ import { useSelector } from "react-redux";
 import { selectUser } from "@host/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@host/lib/organization/organization-gate";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../store/hooks";
 import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
 import { removeCodeSpans, replaceFences } from "@host/lib/markdown/code-ranges";
 

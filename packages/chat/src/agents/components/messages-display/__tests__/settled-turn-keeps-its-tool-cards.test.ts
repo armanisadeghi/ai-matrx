@@ -55,7 +55,7 @@ import { renderSettledFromRecord } from "@host/components/mardown-display/chat-m
 import { persistedToolEntry } from "../../../../tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 import { readSurfaceWrite } from "../../../../tool-call-visualization/surface-write/readSurfaceWrite";
 import type { ToolLifecycleEntry } from "../../../types/request.types";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
@@ -221,7 +221,7 @@ function harness(events: unknown[]) {
       instanceUIState: { byConversationId: {} },
       instanceResources: { byConversationId: {} },
       instanceVariableValues: { byConversationId: {} },
-    }) as unknown as RootState;
+    }) as unknown as ChatRootState;
   const dispatch = (action: unknown) => {
     active = activeRequestsReducer(active, action as never);
     messages = messagesReducer(messages, action as never);
@@ -257,7 +257,7 @@ interface CardOnScreen {
  * components make: display groups → turn-group members → per-member content
  * source → tool entries.
  */
-function toolCardsOnScreen(state: RootState, streamActive: boolean): CardOnScreen[] {
+function toolCardsOnScreen(state: ChatRootState, streamActive: boolean): CardOnScreen[] {
   const conv = state.messages.byConversationId[CONV];
   const groups = groupDisplayEntries(
     buildDisplayEntries({
@@ -382,7 +382,7 @@ test("a reload of the same turn shows the same card (the reference the settled s
         [CONV]: { ...conv, byId: reloadedById },
       },
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
   expect(
     toolCardsOnScreen(reloaded, false).map((c) => `${c.toolName}:${c.callId}`),
   ).toEqual(toolCardsOnScreen(settled, false).map((c) => `${c.toolName}:${c.callId}`));
@@ -475,7 +475,7 @@ const ERRORED_FIRST_CALL_EVENTS: unknown[] = [
   { event: "end", data: {} },
 ];
 
-function partTypes(state: RootState, rowId: string): string[] {
+function partTypes(state: ChatRootState, rowId: string): string[] {
   const content = state.messages.byConversationId[CONV].byId[rowId].content;
   return (Array.isArray(content) ? content : []).map((p) =>
     p && typeof p === "object" && !Array.isArray(p)

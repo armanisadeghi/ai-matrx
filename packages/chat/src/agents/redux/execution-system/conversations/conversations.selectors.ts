@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { ExecutionInstance } from "../../../types/instance.types";
 import type { ConversationRecord } from "./conversations.slice";
 
@@ -8,10 +8,10 @@ const EMPTY_CONVERSATION_IDS_BY_AGENT: Record<string, string[]> = {};
 
 export const selectInstance =
   (conversationId: string) =>
-  (state: RootState): ConversationRecord | undefined =>
+  (state: ChatRootState): ConversationRecord | undefined =>
     state.conversations.byConversationId[conversationId];
 
-export const selectAllConversationIds = (state: RootState): string[] =>
+export const selectAllConversationIds = (state: ChatRootState): string[] =>
   state.conversations.allConversationIds;
 
 /** @deprecated Use selectAllConversationIds */
@@ -19,8 +19,8 @@ export const selectAllInstanceIds = selectAllConversationIds;
 
 /** Conversation IDs grouped by agent ID; stable empty object when none. */
 export const selectConversationIdsByAgent = createSelector(
-  (state: RootState) => state.conversations.allConversationIds,
-  (state: RootState) => state.conversations.byConversationId,
+  (state: ChatRootState) => state.conversations.allConversationIds,
+  (state: ChatRootState) => state.conversations.byConversationId,
   (allIds, byId): Record<string, string[]> => {
     const map: Record<string, string[]> = {};
     for (const cid of allIds) {
@@ -38,8 +38,8 @@ export const selectConversationIdsByAgent = createSelector(
 
 export const selectInstancesByAgent = (agentId: string) =>
   createSelector(
-    (state: RootState) => state.conversations.allConversationIds,
-    (state: RootState) => state.conversations.byConversationId,
+    (state: ChatRootState) => state.conversations.allConversationIds,
+    (state: ChatRootState) => state.conversations.byConversationId,
     (allIds, byId): ConversationRecord[] => {
       const result = allIds
         .map((id) => byId[id])
@@ -54,7 +54,7 @@ export const selectInstancesByAgent = (agentId: string) =>
  * turns into canvas items / feature records. Memoized on the record.
  */
 export const selectConversationSurfaceOwnsOutput = createSelector(
-  (state: RootState, conversationId: string | null | undefined) =>
+  (state: ChatRootState, conversationId: string | null | undefined) =>
     conversationId
       ? state.conversations.byConversationId[conversationId]
       : undefined,
@@ -62,12 +62,12 @@ export const selectConversationSurfaceOwnsOutput = createSelector(
 );
 
 export const selectInstanceStatus =
-  (conversationId: string) => (state: RootState) =>
+  (conversationId: string) => (state: ChatRootState) =>
     state.conversations.byConversationId[conversationId]?.status;
 
 export const selectRunningInstances = createSelector(
-  (state: RootState) => state.conversations.allConversationIds,
-  (state: RootState) => state.conversations.byConversationId,
+  (state: ChatRootState) => state.conversations.allConversationIds,
+  (state: ChatRootState) => state.conversations.byConversationId,
   (allIds, byId): ConversationRecord[] => {
     const result = allIds
       .map((id) => byId[id])
@@ -82,12 +82,12 @@ export const selectRunningInstances = createSelector(
 
 export const selectAgentIdFromInstance =
   (conversationId: string) =>
-  (state: RootState): string | undefined =>
+  (state: ChatRootState): string | undefined =>
     state.conversations.byConversationId[conversationId]?.agentId;
 
 export const selectIsCacheOnly =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.conversations.byConversationId[conversationId]?.cacheOnly ?? true;
 
 // ---------------------------------------------------------------------------
@@ -96,32 +96,32 @@ export const selectIsCacheOnly =
 
 export const selectConversationTitle =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.conversations.byConversationId[conversationId]?.title ?? null;
 
 export const selectConversationDescription =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.conversations.byConversationId[conversationId]?.description ?? null;
 
 export const selectConversationKeywords =
   (conversationId: string) =>
-  (state: RootState): string[] | null =>
+  (state: ChatRootState): string[] | null =>
     state.conversations.byConversationId[conversationId]?.keywords ?? null;
 
 export const selectConversationIsEphemeral =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.conversations.byConversationId[conversationId]?.isEphemeral ?? false;
 
 export const selectApiEndpointMode =
-  (conversationId: string) => (state: RootState) =>
+  (conversationId: string) => (state: ChatRootState) =>
     state.conversations.byConversationId[conversationId]?.apiEndpointMode ??
     null;
 
 export const selectConversationSurfaceKey =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.conversations.byConversationId[conversationId]?.surfaceKey ?? null;
 
 /**
@@ -135,7 +135,7 @@ export const selectConversationSurfaceKey =
 export const selectConversationSandboxBinding =
   (conversationId: string) =>
   (
-    state: RootState,
+    state: ChatRootState,
   ): {
     rowId: string;
     proxyUrl: string;
@@ -152,13 +152,13 @@ export const selectConversationSandboxBinding =
  */
 export const selectConversationSandboxPersisted =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.conversations.byConversationId[conversationId]
       ?.sandboxBindingPersisted ?? false;
 
 export const selectConversationScopeIds = (conversationId: string) =>
   createSelector(
-    (state: RootState) => state.conversations.byConversationId[conversationId],
+    (state: ChatRootState) => state.conversations.byConversationId[conversationId],
     (record) => ({
       organizationId: record?.organizationId ?? null,
       projectId: record?.projectId ?? null,
@@ -174,13 +174,13 @@ export const selectConversationScopeIds = (conversationId: string) =>
  */
 export const selectViewerCanReply =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.conversations.byConversationId[conversationId]?.viewerCanReply !==
     false;
 
 /** The conversation's own organization — frozen at creation, never the shell's. */
 export const selectConversationOrganizationId =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.conversations.byConversationId[conversationId]?.organizationId ??
     null;

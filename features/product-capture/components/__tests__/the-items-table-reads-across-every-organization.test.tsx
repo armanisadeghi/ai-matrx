@@ -28,6 +28,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ appContext }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 /** jsdom has no matchMedia; the breakpoint is not what this test is about. */
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));

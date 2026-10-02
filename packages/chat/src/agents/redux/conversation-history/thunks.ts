@@ -14,7 +14,7 @@ import { getUserId } from "@host/utils/auth/getUserId";
 import { supabase } from "@host/utils/supabase/client";
 import type { ConversationListItem } from "../conversation-list/conversation-list.types";
 import { applyFavoritesFromUes } from "../conversation-list/conversation-list.thunks";
-import type { AppThunk, RootState } from "@host/lib/redux/store";
+import type { ChatThunk, ChatRootState } from "../../../store/root-state";
 import {
   setScopeArchivedCount,
   setScopePageSuccess,
@@ -93,7 +93,7 @@ const HISTORY_COLUMNS =
 export const fetchConversationHistory = createAsyncThunk<
   FetchConversationHistoryResult,
   FetchConversationHistoryArgs,
-  { state: RootState; rejectValue: string }
+  { state: ChatRootState; rejectValue: string }
 >(
   "conversationHistory/fetchPage",
   async (args, { dispatch, getState, rejectWithValue }) => {
@@ -325,7 +325,7 @@ export const fetchConversationHistory = createAsyncThunk<
 export const fetchSourceFacets = createAsyncThunk<
   SourceFacet[],
   { force?: boolean } | undefined,
-  { state: RootState; rejectValue: string }
+  { state: ChatRootState; rejectValue: string }
 >(
   "conversationHistory/fetchSourceFacets",
   async (args, { dispatch, getState, rejectWithValue }) => {
@@ -376,7 +376,7 @@ export const fetchSourceFacets = createAsyncThunk<
  */
 export function ensureConversationHistoryFresh(
   scopeId: string,
-): AppThunk<void> {
+): ChatThunk<void> {
   return (dispatch, getState) => {
     const scope = getState().conversationHistory.scopes[scopeId];
     if (!scope) {

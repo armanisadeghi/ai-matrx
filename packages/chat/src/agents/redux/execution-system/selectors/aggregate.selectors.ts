@@ -20,7 +20,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { AssembledAgentStartRequest } from "../../../types/request.types";
 import type {
   ActiveRequest,
@@ -67,7 +67,7 @@ import {
  */
 export const selectLatestRequestForConversation =
   (conversationId: string) =>
-  (state: RootState): ActiveRequest | undefined => {
+  (state: ChatRootState): ActiveRequest | undefined => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return undefined;
     return state.activeRequests?.byRequestId[ids[ids.length - 1]];
@@ -80,7 +80,7 @@ export const selectLatestRequestForConversation =
 /** Is this conversation currently executing (in-flight or streaming)? */
 export const selectIsExecuting =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const status =
       state.conversations?.byConversationId[conversationId]?.status;
     return status === "running" || status === "streaming";
@@ -89,14 +89,14 @@ export const selectIsExecuting =
 /** Is this instance actively streaming a response? */
 export const selectIsStreaming =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.conversations?.byConversationId[conversationId]?.status ===
     "streaming";
 
 /** Is this instance paused waiting for client tool results? */
 export const selectIsAwaitingTools =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.conversations?.byConversationId[conversationId]?.status === "paused";
 
 /**
@@ -113,7 +113,7 @@ export const selectIsAwaitingTools =
  */
 export const selectAutoClearWithConversationHistory =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     if (!selectAutoClearConversation(conversationId)(state)) return false;
     return selectHasMessages(conversationId)(state);
   };
@@ -131,7 +131,7 @@ export const selectAutoClearWithConversationHistory =
  */
 export const selectShouldShowAutoClearToggle =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     selectShowAutoClearToggle(conversationId)(state);
 
 // =============================================================================
@@ -147,9 +147,9 @@ export const selectShouldShowAutoClearToggle =
  */
 export const selectLatestAnswerText = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests?.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests?.byRequestId,
+    (state: ChatRootState) => state.activeRequests?.byRequestId,
     (requestIds, byRequestId): string => {
       if (!requestIds || requestIds.length === 0) return "";
       const latest = byRequestId[requestIds[requestIds.length - 1]];
@@ -168,9 +168,9 @@ export const selectLatestAnswerText = (conversationId: string) =>
  */
 export const selectLatestAccumulatedText = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests?.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests?.byRequestId,
+    (state: ChatRootState) => state.activeRequests?.byRequestId,
     (requestIds, byRequestId): string => {
       if (!requestIds || requestIds.length === 0) return "";
       const latest = byRequestId[requestIds[requestIds.length - 1]];
@@ -205,7 +205,7 @@ export const selectLatestAccumulatedText = (conversationId: string) =>
  */
 export const selectLatestConversationId =
   (conversationId: string) =>
-  (state: RootState): string | null => {
+  (state: ChatRootState): string | null => {
     const instance = state.conversations?.byConversationId[conversationId];
     if (!instance) return null;
     if (instance.cacheOnly) return null;
@@ -214,7 +214,7 @@ export const selectLatestConversationId =
 
 /** The current apiEndpointMode for this instance (agent | manual). */
 export const selectApiEndpointMode =
-  (conversationId: string) => (state: RootState) =>
+  (conversationId: string) => (state: ChatRootState) =>
     state.messages?.byConversationId[conversationId]?.apiEndpointMode ??
     "agent";
 
@@ -226,7 +226,7 @@ export const selectApiEndpointMode =
  */
 export const selectIsManualExecutionMode =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     selectApiEndpointMode(conversationId)(state) === "manual";
 
 /**
@@ -236,7 +236,7 @@ export const selectIsManualExecutionMode =
  */
 export const selectLatestRequestId =
   (conversationId: string) =>
-  (state: RootState): string | undefined => {
+  (state: ChatRootState): string | undefined => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     return ids && ids.length > 0 ? ids[ids.length - 1] : undefined;
   };
@@ -248,7 +248,7 @@ export const selectLatestRequestId =
  */
 export const selectLatestRequestStatus =
   (conversationId: string) =>
-  (state: RootState): RequestStatus | undefined => {
+  (state: ChatRootState): RequestStatus | undefined => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return undefined;
     return state.activeRequests?.byRequestId[ids[ids.length - 1]]?.status;
@@ -260,7 +260,7 @@ export const selectLatestRequestStatus =
  */
 export const selectIsConnecting =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return false;
     return (
@@ -275,7 +275,7 @@ export const selectIsConnecting =
  */
 export const selectIsWaitingForFirstToken =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const instanceStatus =
       state.conversations?.byConversationId[conversationId]?.status;
     if (instanceStatus === "running") return true;
@@ -293,7 +293,7 @@ export const selectIsWaitingForFirstToken =
  */
 export const selectLatestRequestStartedAt =
   (conversationId: string) =>
-  (state: RootState): string | undefined => {
+  (state: ChatRootState): string | undefined => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return undefined;
     return state.activeRequests?.byRequestId[ids[ids.length - 1]]?.startedAt;
@@ -307,7 +307,7 @@ export const selectLatestRequestStartedAt =
  */
 export const selectLatestError =
   (conversationId: string) =>
-  (state: RootState): ErrorPayload | undefined => {
+  (state: ChatRootState): ErrorPayload | undefined => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return undefined;
     return (
@@ -324,9 +324,9 @@ export const selectLatestError =
  */
 export const selectPendingToolCallsForInstance = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests?.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests?.byRequestId,
+    (state: ChatRootState) => state.activeRequests?.byRequestId,
     (requestIds, byRequestId): PendingToolCall[] | undefined => {
       if (!requestIds || requestIds.length === 0) return undefined;
       const latest = byRequestId[requestIds[requestIds.length - 1]];
@@ -345,7 +345,7 @@ export const selectPendingToolCallsForInstance = (conversationId: string) =>
  */
 export const selectHasAnyContent =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const userInput = state.instanceUserInput?.byConversationId[conversationId];
     const hasText = (userInput?.text?.trim().length ?? 0) > 0;
     if (hasText) return true;
@@ -371,7 +371,7 @@ const INSTANCE_READY_NOT_FOUND: InstanceReadyCheck = {
 
 const instanceReadySelectorsByConversationId = new Map<
   string,
-  (state: RootState) => InstanceReadyCheck
+  (state: ChatRootState) => InstanceReadyCheck
 >();
 
 /**
@@ -382,16 +382,16 @@ const instanceReadySelectorsByConversationId = new Map<
  */
 export const selectIsInstanceReady = (
   conversationId: string,
-): ((state: RootState) => InstanceReadyCheck) => {
+): ((state: ChatRootState) => InstanceReadyCheck) => {
   let selector = instanceReadySelectorsByConversationId.get(conversationId);
   if (!selector) {
     selector = createSelector(
       [
-        (state: RootState) =>
+        (state: ChatRootState) =>
           state.conversations?.byConversationId[conversationId],
-        (state: RootState) =>
+        (state: ChatRootState) =>
           state.instanceResources?.byConversationId[conversationId],
-        (state: RootState) =>
+        (state: ChatRootState) =>
           state.instanceVariableValues?.byConversationId[conversationId],
       ],
       (conversation, resources, varEntry): InstanceReadyCheck => {
@@ -470,25 +470,25 @@ export const selectIsInstanceReady = (
 export function makeSelectAssembledRequest(conversationId: string) {
   return createSelector(
     [
-      (s: RootState) => s.conversations,
-      (s: RootState) => s.instanceUIState,
-      (s: RootState) => s.instanceUserInput,
-      (s: RootState) => s.instanceResources,
-      (s: RootState) => s.instanceVariableValues,
-      (s: RootState) => s.instanceModelOverrides,
-      (s: RootState) => s.instanceContext,
-      (s: RootState) => s.instanceClientTools,
-      (s: RootState) => s.appContext,
-      (s: RootState) => s.adminPreferences,
-      (s: RootState) => s.userPreferences,
+      (s: ChatRootState) => s.conversations,
+      (s: ChatRootState) => s.instanceUIState,
+      (s: ChatRootState) => s.instanceUserInput,
+      (s: ChatRootState) => s.instanceResources,
+      (s: ChatRootState) => s.instanceVariableValues,
+      (s: ChatRootState) => s.instanceModelOverrides,
+      (s: ChatRootState) => s.instanceContext,
+      (s: ChatRootState) => s.instanceClientTools,
+      (s: ChatRootState) => s.appContext,
+      (s: ChatRootState) => s.adminPreferences,
+      (s: ChatRootState) => s.userPreferences,
       // The context door (buildRequestContext) reads these too: the agent's
       // policies + kill switch, the person's saved context rules, whether this
       // is the first turn, and who is signed in (first-turn system values).
-      (s: RootState) => s.agentDefinition,
-      (s: RootState) => s.surfaceUserState,
-      (s: RootState) => s.messages,
-      (s: RootState) => s.userAuth,
-      (s: RootState) => s.userProfile,
+      (s: ChatRootState) => s.agentDefinition,
+      (s: ChatRootState) => s.surfaceUserState,
+      (s: ChatRootState) => s.messages,
+      (s: ChatRootState) => s.userAuth,
+      (s: ChatRootState) => s.userProfile,
     ],
     (
       conversations,
@@ -525,7 +525,7 @@ export function makeSelectAssembledRequest(conversationId: string) {
         messages,
         userAuth,
         userProfile,
-      } as RootState;
+      } as ChatRootState;
       return assembleRequest(state, conversationId);
     },
   );
@@ -541,20 +541,20 @@ export const selectAssembledRequest = makeSelectAssembledRequest;
  */
 export const selectInstanceSummary = (conversationId: string) =>
   createSelector(
-    (state: RootState) => state.conversations?.byConversationId[conversationId],
-    (state: RootState) =>
+    (state: ChatRootState) => state.conversations?.byConversationId[conversationId],
+    (state: ChatRootState) =>
       state.instanceModelOverrides?.byConversationId[conversationId],
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceResources?.byConversationId[conversationId],
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceContext?.byConversationId[conversationId],
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceUserInput?.byConversationId[conversationId],
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.instanceUIState?.byConversationId[conversationId],
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests?.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests?.byRequestId,
+    (state: ChatRootState) => state.activeRequests?.byRequestId,
     (
       instance,
       overrides,
@@ -608,7 +608,7 @@ export const selectInstanceSummary = (conversationId: string) =>
  */
 export const selectShouldShowVariables =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const definitions =
       state.instanceVariableValues?.byConversationId[conversationId]
         ?.definitions;
@@ -638,7 +638,7 @@ export const selectShouldShowVariables =
  */
 export const selectIsVariableFormShown =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const ui = state.instanceUIState?.byConversationId[conversationId];
     if (ui?.variablesPanelStyle === "hidden") return false;
     return (
@@ -660,7 +660,7 @@ export const selectIsVariableFormShown =
  */
 export const selectComposerHasSomethingToSend =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     selectInputCharCount(conversationId)(state) > 0 ||
     selectHasUnsentResources(conversationId)(state) ||
     selectShouldShowVariables(conversationId)(state) ||
@@ -679,7 +679,7 @@ export const selectComposerHasSomethingToSend =
  */
 export const selectConversationExists =
   (conversationId: string) =>
-  (state: RootState): string | null =>
+  (state: ChatRootState): string | null =>
     state.conversations?.byConversationId[conversationId]
       ? conversationId
       : null;
@@ -702,9 +702,9 @@ export const selectInstanceIdByConversationId = selectConversationExists;
  */
 export const makeSelectInstanceDisplaySnapshot = () =>
   createSelector(
-    (state: RootState, conversationId: string) =>
+    (state: ChatRootState, conversationId: string) =>
       state.instanceUIState?.byConversationId[conversationId],
-    (state: RootState, conversationId: string) =>
+    (state: ChatRootState, conversationId: string) =>
       state.conversations?.byConversationId[conversationId],
     (uiState, instance) => {
       if (!uiState || !instance) return undefined;
@@ -725,8 +725,8 @@ export const makeSelectInstanceDisplaySnapshot = () =>
  * Returns undefined (not {}) when there are no active instances.
  */
 export const selectActiveInstancesByDisplayMode = createSelector(
-  (state: RootState) => state.conversations?.byConversationId,
-  (state: RootState) => state.instanceUIState?.byConversationId,
+  (state: ChatRootState) => state.conversations?.byConversationId,
+  (state: ChatRootState) => state.instanceUIState?.byConversationId,
   (executionByConversationId, uiByConversationId) => {
     type DisplayModeMap = Record<string, string[]>;
     const result: DisplayModeMap = {};
@@ -761,8 +761,8 @@ export const selectActiveInstancesByDisplayMode = createSelector(
  * "direct" and "background" are excluded — rendered by their host component.
  */
 export const selectOverlayInstancesByDisplayMode = createSelector(
-  (state: RootState) => state.conversations?.byConversationId,
-  (state: RootState) => state.instanceUIState?.byConversationId,
+  (state: ChatRootState) => state.conversations?.byConversationId,
+  (state: ChatRootState) => state.instanceUIState?.byConversationId,
   (executionByConversationId, uiByConversationId) => {
     type DisplayModeMap = Record<string, string[]>;
     const result: DisplayModeMap = {};
@@ -791,8 +791,8 @@ export const selectOverlayInstancesByDisplayMode = createSelector(
  * All conversationIds that should be rendered as modals right now.
  */
 export const selectActiveModalInstanceIds = createSelector(
-  (state: RootState) => state.conversations?.byConversationId,
-  (state: RootState) => state.instanceUIState?.byConversationId,
+  (state: ChatRootState) => state.conversations?.byConversationId,
+  (state: ChatRootState) => state.instanceUIState?.byConversationId,
   (executionByConversationId, uiByConversationId): string[] | undefined => {
     const ids = Object.keys(executionByConversationId).filter((id) => {
       const status = executionByConversationId[id]?.status;
@@ -808,8 +808,8 @@ export const selectActiveModalInstanceIds = createSelector(
  * All conversationIds that should be rendered as persistent panels or chat bubbles.
  */
 export const selectActivePanelInstanceIds = createSelector(
-  (state: RootState) => state.conversations?.byConversationId,
-  (state: RootState) => state.instanceUIState?.byConversationId,
+  (state: ChatRootState) => state.conversations?.byConversationId,
+  (state: ChatRootState) => state.instanceUIState?.byConversationId,
   (executionByConversationId, uiByConversationId): string[] | undefined => {
     const ids = Object.keys(executionByConversationId).filter((id) => {
       const status = executionByConversationId[id]?.status;
@@ -831,7 +831,7 @@ export const selectActivePanelInstanceIds = createSelector(
  */
 export const selectLatestCurrentPhase =
   (conversationId: string) =>
-  (state: RootState): Phase | null => {
+  (state: ChatRootState): Phase | null => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return null;
     return (
@@ -845,7 +845,7 @@ export const selectLatestCurrentPhase =
  */
 export const selectLatestInfoUserMessage =
   (conversationId: string) =>
-  (state: RootState): string | null => {
+  (state: ChatRootState): string | null => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return null;
     const request = state.activeRequests?.byRequestId[ids[ids.length - 1]];
@@ -866,9 +866,9 @@ export const selectLatestInfoUserMessage =
  */
 export const selectLatestRenderBlocks = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests?.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests?.byRequestId,
+    (state: ChatRootState) => state.activeRequests?.byRequestId,
     (requestIds, byRequestId): RenderBlockPayload[] | undefined => {
       if (!requestIds || requestIds.length === 0) return undefined;
       const latest = byRequestId[requestIds[requestIds.length - 1]];
@@ -884,7 +884,7 @@ export const selectLatestRenderBlocks = (conversationId: string) =>
  */
 export const selectLatestRenderBlockCount =
   (conversationId: string) =>
-  (state: RootState): number => {
+  (state: ChatRootState): number => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return 0;
     return (
@@ -903,9 +903,9 @@ export const selectLatestRenderBlockCount =
  */
 export const selectLatestActiveTools = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests?.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests?.byRequestId,
+    (state: ChatRootState) => state.activeRequests?.byRequestId,
     (requestIds, byRequestId): ToolLifecycleEntry[] | undefined => {
       if (!requestIds || requestIds.length === 0) return undefined;
       const latest = byRequestId[requestIds[requestIds.length - 1]];
@@ -925,9 +925,9 @@ export const selectLatestActiveTools = (conversationId: string) =>
  */
 export const selectLatestToolLifecycles = (conversationId: string) =>
   createSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests?.byConversationId[conversationId],
-    (state: RootState) => state.activeRequests?.byRequestId,
+    (state: ChatRootState) => state.activeRequests?.byRequestId,
     (requestIds, byRequestId): ToolLifecycleEntry[] | undefined => {
       if (!requestIds || requestIds.length === 0) return undefined;
       const latest = byRequestId[requestIds[requestIds.length - 1]];
@@ -946,7 +946,7 @@ export const selectLatestToolLifecycles = (conversationId: string) =>
  */
 export const selectLatestCompletion =
   (conversationId: string) =>
-  (state: RootState): CompletionPayload | null => {
+  (state: ChatRootState): CompletionPayload | null => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return null;
     return (
@@ -966,7 +966,7 @@ export const selectLatestCompletion =
  */
 export const selectLatestErrorIsFatal =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return false;
     return (
@@ -985,7 +985,7 @@ export const selectLatestErrorIsFatal =
  */
 export const selectLatestTimeline =
   (conversationId: string) =>
-  (state: RootState): TimelineEntry[] | undefined => {
+  (state: ChatRootState): TimelineEntry[] | undefined => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return undefined;
     return state.activeRequests?.byRequestId[ids[ids.length - 1]]?.timeline;
@@ -996,7 +996,7 @@ export const selectLatestTimeline =
  */
 export const selectIsInTextRun =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return false;
     return (
@@ -1008,7 +1008,7 @@ export const selectIsInTextRun =
 /** Whether reasoning tokens are currently streaming for the latest request. */
 export const selectIsReasoningStreaming =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return false;
     return (
@@ -1023,7 +1023,7 @@ export const selectIsReasoningStreaming =
  */
 export const selectLatestAccumulatedReasoning =
   (conversationId: string) =>
-  (state: RootState): string => {
+  (state: ChatRootState): string => {
     const ids = state.activeRequests?.byConversationId[conversationId];
     if (!ids || ids.length === 0) return "";
     const latest = state.activeRequests?.byRequestId[ids[ids.length - 1]];
@@ -1035,7 +1035,7 @@ export const selectLatestAccumulatedReasoning =
 export const selectLatestReservations =
   (conversationId: string) =>
   (
-    state: RootState,
+    state: ChatRootState,
   ):
     | Record<
         string,
@@ -1075,7 +1075,7 @@ export type StreamPhase =
 
 export const selectStreamPhase =
   (conversationId: string) =>
-  (state: RootState): StreamPhase => {
+  (state: ChatRootState): StreamPhase => {
     const instance = state.conversations?.byConversationId[conversationId];
     if (!instance) return "idle";
 
@@ -1119,7 +1119,7 @@ export const selectStreamPhase =
  */
 export const makeSelectAvailableShortcuts = (context: ShortcutContext) =>
   createSelector(
-    (state: RootState) => state.agentShortcut.shortcuts,
+    (state: ChatRootState) => state.agentShortcut.shortcuts,
     (shortcuts) =>
       Object.values(shortcuts)
         .filter(
@@ -1133,7 +1133,7 @@ export const makeSelectAvailableShortcuts = (context: ShortcutContext) =>
  * This non-memoized version creates a new array on every call.
  */
 export const selectAvailableShortcuts =
-  (context: ShortcutContext) => (state: RootState) => {
+  (context: ShortcutContext) => (state: ChatRootState) => {
     return Object.values(state.agentShortcut.shortcuts)
       .filter(
         (s) => s != null && s.isActive && s.enabledFeatures.includes(context),

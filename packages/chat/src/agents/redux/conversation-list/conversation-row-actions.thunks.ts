@@ -23,7 +23,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
 import { tryWriteOne } from "@host/utils/supabase/writeOne";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { favoritesService } from "@host/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@host/features/scopes/types";
 import { assertWriteLanded, describeWriteFailure } from "@host/lib/errors/writeFailure";
@@ -59,8 +59,8 @@ function landedOrRefusal(rows: unknown[] | null, technical: string): unknown {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   rejectValue: { message: string };
 }
 

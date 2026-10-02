@@ -33,7 +33,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { useIsMobile } from "@host/hooks/use-mobile";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import { selectToolCallsForMessage } from "../../../redux/execution-system/observability/observability.selectors";
 
 interface DeleteMessageDialogProps {

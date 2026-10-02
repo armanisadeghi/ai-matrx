@@ -20,6 +20,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => () => undefined,
   useAppSelector: (sel: (s: unknown) => unknown) => sel({ scopesTree: state }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({
   selectTreeStatus: (s: { scopesTree: typeof state }) => s.scopesTree.treeStatus,
   selectTreeError: (s: { scopesTree: typeof state }) => s.scopesTree.treeError,

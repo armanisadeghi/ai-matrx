@@ -11,7 +11,7 @@
  * `./register-all.ts` for its registration side-effect.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type {
   ClientCapabilityName,
   ClientCapabilityPayloads,
@@ -39,7 +39,7 @@ export interface ClientCapabilityProvider<
    * on demand. `buildToolInjection` awaits all providers in parallel.
    */
   selectPayload: (
-    state: RootState,
+    state: ChatRootState,
     conversationId: string,
   ) =>
     | ClientCapabilityPayloads[TName]

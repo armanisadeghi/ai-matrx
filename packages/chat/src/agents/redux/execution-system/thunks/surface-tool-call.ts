@@ -13,14 +13,14 @@
 
 import type { ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { SurfaceToolCall } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import { selectAgentById } from "../../agent-definition/selectors";
 import { resolveAgentName } from "../../../../surfaces/hooks/useAgentNames";
 import { requestInlineApproval } from "../../../ui-first-tools/redux/request-approval";
 import { buildSurfaceWriteApprovalChange } from "./surface-write-approval-change";
 
-type Dispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
+type Dispatch = ThunkDispatch<ChatRootState, unknown, UnknownAction>;
 
 export async function createSurfaceToolCall({
   conversationId,
@@ -33,7 +33,7 @@ export async function createSurfaceToolCall({
   callId: string;
   toolName: string;
   dispatch: Dispatch;
-  getState: () => RootState;
+  getState: () => ChatRootState;
 }): Promise<SurfaceToolCall> {
   const state = getState();
   const agentId = state.conversations.byConversationId[conversationId]?.agentId;

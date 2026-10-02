@@ -27,7 +27,7 @@ jest.mock("../../../agents/redux/execution-system/thunks/resume-conversation.thu
     return { type: "test/resume", args };
   },
 }));
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => () => ({ unwrap: () => Promise.resolve() }),
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
@@ -35,6 +35,8 @@ jest.mock("@host/lib/redux/hooks", () => ({
       conversations: { byConversationId: new Proxy({}, { get: () => ({ cacheOnly }) }) },
     }),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
 jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => "org-1",
   selectShouldPromptForOrganization: () => false,

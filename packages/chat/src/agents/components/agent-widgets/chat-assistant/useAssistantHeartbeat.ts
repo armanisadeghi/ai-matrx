@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import { selectModeState } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { updateModeState } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 

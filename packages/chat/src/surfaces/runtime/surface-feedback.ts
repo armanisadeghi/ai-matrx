@@ -21,7 +21,7 @@
 
 import { getChatHost } from "../../host/configure";
 import type { ChatFeedbackInput, ChatFeedbackType } from "../../host/contract";
-import { getStoreSingleton } from "@host/lib/redux/store-singleton";
+import { getStoreSingleton } from "../../store/store-singleton";
 import type { SurfaceWriteTarget } from "../types";
 import type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
 

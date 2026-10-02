@@ -32,7 +32,7 @@ import {
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { ObservationalMemoryCore } from "../../../agents/components/observational-memory/ObservationalMemoryCore";
 import {
@@ -44,7 +44,7 @@ import {
 } from "../../../agents/redux/execution-system/observational-memory/observational-memory.selectors";
 import { selectInstance } from "../../../agents/redux/execution-system/conversations/conversations.selectors";
 import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { useCostDisplay } from "@host/components/cost/useCostDisplay";
@@ -220,7 +220,7 @@ function MemorySidebarRowConnector({
   const degraded = useAppSelector(selectMemoryDegraded(conversationId));
   const counters = useAppSelector(selectMemoryCounters(conversationId));
   const instance = useAppSelector(selectInstance(conversationId));
-  const agentName = useAppSelector((state: RootState) =>
+  const agentName = useAppSelector((state: ChatRootState) =>
     instance?.agentId
       ? (selectAgentById(state, instance.agentId)?.name ?? null)
       : null,

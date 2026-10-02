@@ -1,4 +1,4 @@
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { adminLaneOrganizationId } from "@host/lib/api/admin-lane";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 
@@ -13,10 +13,10 @@ import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
  * `/p/<slug>`, so no signed-out visitor could run anything. Every other caller
  * still names its organization exactly as before.
  */
-export function isFingerprintGuestExecution(state: RootState): boolean {
+export function isFingerprintGuestExecution(state: ChatRootState): boolean {
   // Read defensively: partial stores (tests, demos) may carry neither slice,
   // and a store with no fingerprint is never the guest lane.
-  const partial = state as Partial<RootState>;
+  const partial = state as Partial<ChatRootState>;
   return (
     !partial.userAuth?.accessToken && Boolean(partial.userProfile?.fingerprintId)
   );
@@ -28,7 +28,7 @@ export function isFingerprintGuestExecution(state: RootState): boolean {
  * `requireExecutionOrganizationId` does), and nothing for a fingerprint guest.
  */
 export function executionOrganizationForRequest(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | undefined {
   if (isFingerprintGuestExecution(state)) return undefined;
@@ -74,7 +74,7 @@ export function executionOrganizationForRequest(
  * declines. Callers must treat that as "nothing happened".
  */
 export async function ensureExecutionOrganization(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): Promise<string | null> {
   // A fingerprint guest is never asked: the server resolves its organization.
@@ -109,7 +109,7 @@ export async function ensureExecutionOrganization(
 }
 
 export function requireExecutionOrganizationId(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string {
   const instance = state.conversations.byConversationId[conversationId];

@@ -45,7 +45,7 @@ import {
   membersForRender,
   rendersFromPersistedRows,
 } from "./collapse-by-request-id";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import {
   AgentWorkTurnProvider,
   AgentWorkMemberScope,

@@ -55,7 +55,7 @@ import {
   Search,
   Webhook,
 } from "lucide-react";
-import { useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "../../../store/hooks";
 import {
   Popover,
   PopoverTrigger,

@@ -11,6 +11,8 @@ let mockLibrary: { myShows: unknown[]; episodes: unknown[]; loading: boolean; er
 jest.mock("next/link", () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => <a>{children}</a> }));
 jest.mock("@/components/ui/button", () => ({ Button: ({ children }: { children: React.ReactNode }) => <button type="button">{children}</button> }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "user-1" }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
 jest.mock("@/features/podcasts/hooks/useMyPodcasts", () => ({ useMyPodcasts: () => mockLibrary }));
 jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({

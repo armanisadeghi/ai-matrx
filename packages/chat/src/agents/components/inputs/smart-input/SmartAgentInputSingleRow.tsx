@@ -24,7 +24,7 @@ import { UninitializedShell } from "./UninitializedShell";
 import { SmartInputFileDropTarget } from "./SmartInputFileDropTarget";
 import { smartExecute } from "../../../redux/execution-system/thunks/smart-execute.thunk";
 import { selectAllResourcesResolved } from "../../../redux/execution-system/instance-resources/instance-resources.selectors";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import type { VariablesPanelStyle } from "../../../types/instance.types";
 import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 

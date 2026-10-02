@@ -71,7 +71,7 @@ import {
 } from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
 import { invalidateOutputSchemaCache } from "../../../../../mandates/output-contract";
 import { resetMandateCatalogueCache } from "@host/features/mandates/catalogue";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 // React 19 refuses `act` outside an act environment.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -127,7 +127,7 @@ function makeState(args: {
   /** `undefined` = the slice never loaded the field (every execution launch). */
   outputSchema?: typeof RULE_IMPROVER_OUTPUT_SCHEMA | null;
   mandateKey?: string | null;
-}): RootState {
+}): ChatRootState {
   const loadedFields: Record<string, true> = {
     name: true,
     modelId: true,
@@ -161,7 +161,7 @@ function makeState(args: {
     instanceUIState: { byConversationId: {} },
     creatorDebug: { settings: {} },
     adminPreferences: {},
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 /**

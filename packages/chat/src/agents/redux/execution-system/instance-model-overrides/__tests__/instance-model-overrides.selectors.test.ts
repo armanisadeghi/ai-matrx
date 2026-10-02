@@ -11,7 +11,7 @@ import {
   selectSettingsForChatApi,
   selectSettingsOverridesForApi,
 } from "../instance-model-overrides.selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import reducer, {
   initInstanceOverrides,
   replaceOverrides,
@@ -24,7 +24,7 @@ function makeState(entry: {
   baseSettings?: Record<string, unknown>;
   overrides?: Record<string, unknown>;
   removals?: string[];
-}): RootState {
+}): ChatRootState {
   return {
     instanceModelOverrides: {
       byConversationId: {
@@ -36,11 +36,11 @@ function makeState(entry: {
         },
       },
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
-const api = (s: RootState) => selectSettingsOverridesForApi("c1")(s);
-const chatApi = (s: RootState) => selectSettingsForChatApi("c1")(s);
+const api = (s: ChatRootState) => selectSettingsOverridesForApi("c1")(s);
+const chatApi = (s: ChatRootState) => selectSettingsForChatApi("c1")(s);
 
 describe("THE AUTO RULE — 'auto' effort is the absence of an override (Arman, 2026-09-28)", () => {
   it("never sends reasoning_effort 'auto', whichever panel wrote it", () => {
@@ -125,7 +125,7 @@ describe("selectSettingsOverridesForApi — genuine-delta guard", () => {
     expect(
       api({
         instanceModelOverrides: { byConversationId: {} },
-      } as unknown as RootState),
+      } as unknown as ChatRootState),
     ).toBeUndefined();
   });
 });

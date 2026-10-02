@@ -31,11 +31,13 @@ jest.mock("../SmartInputFileDropTarget", () => ({
 jest.mock("../../resources/SmartAgentResourceChips", () => ({ SmartAgentResourceChips: () => null }));
 jest.mock("../../resources/AttachedDocumentChips", () => ({ AttachedDocumentChips: () => null }));
 jest.mock("../../variable-input-variations/SmartAgentVariables", () => ({ SmartAgentVariables: () => null }));
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../../store/hooks", () => ({
   useAppDispatch: () => () => undefined,
   // showFreeformInput true, not executing, resources resolved.
   useAppSelector: () => true,
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
 
 import { SmartAgentInputStacked } from "../SmartAgentInputStacked";
 

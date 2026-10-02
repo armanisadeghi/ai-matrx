@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { applyOrganizationContextHeader } from "@host/lib/api/organization-context";
 import { duplicateAgent } from "../../redux/agent-definition/thunks";

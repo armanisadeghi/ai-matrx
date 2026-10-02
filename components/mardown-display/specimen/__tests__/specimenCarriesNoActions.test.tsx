@@ -31,6 +31,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   // Signed in: Save to / Edit are absent for a guest (table-viewer.ts canWrite).
   useAppSelector: () => true,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/hooks/useToastManager", () => ({
   __esModule: true,
   useToastManager: () => ({

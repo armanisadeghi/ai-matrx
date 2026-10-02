@@ -46,7 +46,7 @@
 
 import React, { createContext, useContext, useMemo } from "react";
 
-import { getStoreSingleton } from "@host/lib/redux/store-singleton";
+import { getStoreSingleton } from "../../store/store-singleton";
 import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@host/lib/redux/selectors/userSelectors";
 import { useEffectiveKnob } from "@host/lib/scoped-config/effectiveKnobs.client";

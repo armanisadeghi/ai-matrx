@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectIsLatestToolActivity } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { ToolRendererProps } from "../../types";
 import { collectMessages, isTerminal, isSuccess } from "../_shared";

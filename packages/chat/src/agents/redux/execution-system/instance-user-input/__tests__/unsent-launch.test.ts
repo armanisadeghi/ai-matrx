@@ -13,14 +13,14 @@ import {
   readUnsentLaunch,
   writeUnsentLaunch,
 } from "../unsent-launch-store";
-import type { RootState } from "@host/lib/redux/rootReducer";
+import type { ChatRootState } from "../../../../../store/root-state";
 
 function stateWith(opts: {
   cacheOnly?: boolean;
   displayMode?: string;
   messageIds?: string[];
   requestIds?: string[];
-}): RootState {
+}): ChatRootState {
   return {
     messages: {
       byConversationId: opts.messageIds ? { c1: { orderedIds: opts.messageIds } } : {},
@@ -55,7 +55,7 @@ function stateWith(opts: {
         c1: { user_tagged_context: { key: "user_tagged_context", value: { content: "tagged" } } },
       },
     },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 describe("the unsent-window recipe", () => {

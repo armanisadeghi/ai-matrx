@@ -24,7 +24,7 @@ import {
 } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@host/components/ui/confirm-dialog";
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import { scratchScopeId } from "../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   selectActiveScratchpadId,

@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type { ComposerMode } from "../../components/inputs/smart-input/composer/composer-types";
 
 interface ChatRouteState {
@@ -87,11 +87,11 @@ export const {
 
 export default chatRouteSlice.reducer;
 
-export const selectChatFreshSessionNonce = (state: RootState): number =>
+export const selectChatFreshSessionNonce = (state: ChatRootState): number =>
   state.chatRoute.freshSessionNonce;
 
-export const selectChatDraftHandoff = (state: RootState) =>
+export const selectChatDraftHandoff = (state: ChatRootState) =>
   state.chatRoute.draftHandoff;
 
-export const selectComposerMode = (state: RootState): ComposerMode | null =>
+export const selectComposerMode = (state: ChatRootState): ComposerMode | null =>
   state.chatRoute.composerMode;

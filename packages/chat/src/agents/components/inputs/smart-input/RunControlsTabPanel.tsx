@@ -31,7 +31,7 @@ import {
   Brain,
   Zap,
 } from "lucide-react";
-import { useAppSelector, useAppDispatch, useAppStore } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch, useAppStore } from "../../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";

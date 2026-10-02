@@ -38,7 +38,7 @@
 //   session running someone else's prompt.
 
 import { useEffect, useMemo, useRef } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
 import { DEFAULT_INTRO_TOOLS, DEFAULT_INTRO_VOICE } from "../constants";
 import {
   applyAgentConfig,
@@ -52,7 +52,7 @@ import type {
   VoiceId,
 } from "../types";
 import { fetchFullAgent } from "../../agents/redux/agent-definition/thunks";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 import { readInstructionsFromAgent } from "../agentInstructions";
 import { selectAgentReadyForBuilder } from "../../agents/redux/agent-definition/selectors";
 import { recordUnavailableMessage } from "@host/lib/records/recordUnavailable";
@@ -177,7 +177,7 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
         // here; it only stayed invisible because nothing lists agents on the
         // intro route before this runs.)
         if (
-          !selectAgentReadyForBuilder(store.getState() as RootState, o.agentId!)
+          !selectAgentReadyForBuilder(store.getState() as ChatRootState, o.agentId!)
         ) {
           await dispatch(fetchFullAgent(o.agentId!))
             .unwrap()
@@ -186,7 +186,7 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
             });
         }
         if (cancelled) return;
-        const state1 = store.getState() as RootState;
+        const state1 = store.getState() as ChatRootState;
         const agent = state1.agentDefinition.agents?.[o.agentId!];
         const instructions = agent
           ? readInstructionsFromAgent(agent.messages)

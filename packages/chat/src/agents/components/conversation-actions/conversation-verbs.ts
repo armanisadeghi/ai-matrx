@@ -12,7 +12,7 @@
 
 import { toast } from "../../../host/notify";
 import { toastDoor } from "@host/components/official/entity-ref/toastDoor";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import {
   duplicateConversation,
@@ -27,7 +27,7 @@ export function displayConversationTitle(title: string | null | undefined): stri
 
 /** The conversation's title from whichever store already holds it — never fetched. */
 export function conversationTitleFromState(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
 ): string | null {
   return (
@@ -60,7 +60,7 @@ export async function copyConversationLink(href: string): Promise<void> {
 
 /** Share… — the canonical ShareModal for resourceType "conversation". */
 export function shareConversation(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   conversationId: string,
   title: string | null,
 ): void {
@@ -78,7 +78,7 @@ export function shareConversation(
 
 /** Duplicate — a full copy, with a toast door to the copy. */
 export async function duplicateConversationVerb(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   conversationId: string,
   options: { surfaceKey?: string; onSuccess?: () => void } = {},
 ): Promise<void> {
@@ -101,7 +101,7 @@ export async function duplicateConversationVerb(
 
 /** Rename — the one write. Resolves true when the title landed. */
 export async function renameConversationTitle(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   conversationId: string,
   title: string,
 ): Promise<boolean> {

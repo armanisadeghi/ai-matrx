@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { toast } from "../../../host/notify";
 import { cn } from "@ai-matrx/design-system";
 import { extractErrorMessage } from "@host/utils/errors";

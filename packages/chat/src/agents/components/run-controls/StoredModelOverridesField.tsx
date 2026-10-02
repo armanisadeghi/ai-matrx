@@ -40,7 +40,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import {
   initInstanceOverrides,
   setOverrides,

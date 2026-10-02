@@ -5,7 +5,7 @@
  * run path never labelled anything, so the job card never appeared.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 
 const fetchModelById = jest.fn((id: string) => ({ type: "fetchModelById", id }));
 jest.mock("@host/features/ai-models/redux/modelRegistrySlice", () => ({
@@ -36,7 +36,7 @@ function makeState(withModel: boolean) {
     conversations: { byConversationId: { c1: { agentId: "a1" } } },
     agentDefinition: { agents: { a1: { modelId: VEO.id } } },
     modelRegistry: { entities: withModel ? { [VEO.id]: VEO } : {} },
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 test("the run model is the agent's own when nothing overrides it", () => {

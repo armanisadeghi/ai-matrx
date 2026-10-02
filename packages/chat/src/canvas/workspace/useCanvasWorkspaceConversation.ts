@@ -37,7 +37,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "../../agents/components/chat/chat-quick-actions.config";
 import { resumeConversation } from "../../agents/redux/execution-system/thunks/resume-conversation.thunk";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectOrganizationId,
   selectShouldPromptForOrganization,

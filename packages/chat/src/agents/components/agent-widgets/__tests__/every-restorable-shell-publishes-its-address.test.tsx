@@ -11,7 +11,9 @@ import { join } from "node:path";
 import { DISPLAY_MODE_TO_OVERLAY_ID } from "../../../redux/execution-system/display-mode-overlay";
 import { resolveAgentPanelDisplayMode } from "@host/features/window-panels/url-sync/initUrlHydration";
 
-jest.mock("@host/lib/redux/hooks", () => ({ useAppSelector: () => null }));
+jest.mock("../../../../store/hooks", () => ({ useAppSelector: () => null }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 const useUrlSync = jest.fn();
 jest.mock("@host/features/window-panels/url-sync/useUrlSync", () => ({
   useUrlSync: (...a: unknown[]) => useUrlSync(...a),

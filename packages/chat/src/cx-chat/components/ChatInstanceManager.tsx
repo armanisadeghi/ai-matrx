@@ -18,14 +18,14 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../store/hooks";
 import { fetchAgentExecutionMinimal } from "../../agents/redux/agent-definition/thunks";
 import { createManualInstance } from "../../agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "../../agents/redux/execution-system/thunks/load-conversation.thunk";
 import { selectConversationExists } from "../../agents/redux/execution-system/selectors/aggregate.selectors";
 import ChatWelcomeClient from "./ChatWelcomeClient";
 import ChatConversationClient from "./core/ChatConversationClient";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -70,7 +70,7 @@ export function ChatInstanceManager(props: ChatInstanceManagerProps) {
       //    here mid-stream or just after). Reuse it directly.
       if (urlConversationId) {
         const existingId = await dispatch(
-          (_: unknown, getState: () => RootState) =>
+          (_: unknown, getState: () => ChatRootState) =>
             selectConversationExists(urlConversationId)(getState()),
         );
         if (existingId) {
@@ -88,7 +88,7 @@ export function ChatInstanceManager(props: ChatInstanceManagerProps) {
       const cached = conversationByAgentId.current.get(agentId);
       if (cached) {
         const stillAlive = await dispatch(
-          (_: unknown, getState: () => RootState) =>
+          (_: unknown, getState: () => ChatRootState) =>
             !!getState().conversations.byConversationId[cached],
         );
         if (stillAlive) newId = cached;

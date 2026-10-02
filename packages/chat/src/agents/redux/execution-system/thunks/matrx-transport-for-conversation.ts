@@ -23,7 +23,7 @@
  * `features/agents/FEATURE.md`.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { MatrxTransport } from "@ai-matrx/agents/matrx";
 import {
   createMatrxTransportFromTarget,
@@ -38,7 +38,7 @@ import { resolveBackendForConversation } from "./resolve-base-url";
  * URL is configured — the same misconfiguration the thunks surface loudly.
  */
 export function createMatrxTransportForConversation(
-  getState: () => RootState,
+  getState: () => ChatRootState,
   conversationId: string,
   options: MatrxTransportOptions = {},
 ): MatrxTransport {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { InputCapabilitiesEditor } from "@host/features/agents/components/settings-management/ui-gates/InputCapabilitiesEditor";
 import { selectInputCapabilitiesState } from "../../redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import {

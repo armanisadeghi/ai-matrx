@@ -10,7 +10,7 @@
  * dispatch plumbing for you.
  */
 
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../store/root-state";
 import { launchAgentExecution } from "../redux/execution-system/thunks/launch-agent-execution.thunk";
 import type {
   JsonExtractionConfig,
@@ -58,7 +58,7 @@ export interface TriggerShortcutArgs {
  * Returns the launch result `{ conversationId, displayMode }`.
  */
 export function triggerShortcut(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   args: TriggerShortcutArgs,
 ) {
   const {

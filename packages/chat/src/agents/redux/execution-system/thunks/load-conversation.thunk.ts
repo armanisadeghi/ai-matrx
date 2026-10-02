@@ -20,7 +20,7 @@
 import { ensureAgentIdentity } from "../../agent-definition/thunks";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   sourceAppFromStorage,
   sourceFeatureFromStorage,
@@ -166,8 +166,8 @@ export interface LoadConversationArgs {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
 }
 
 /**
@@ -329,7 +329,7 @@ export const loadConversation = createAsyncThunk<
     const storedRun = parsePersistedRunConfiguration(conv.metadata);
     if (storedRun) {
       markRunConfigurationStored(conversationId, storedRun);
-      const local = selectRunConfiguration(getState() as RootState, conversationId);
+      const local = selectRunConfiguration(getState() as ChatRootState, conversationId);
       const changes: {
         addedTools?: string[];
         addedSkills?: string[];

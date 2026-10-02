@@ -1,4 +1,4 @@
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { MessagePart } from "@host/types/python-generated/stream-events";
 import type {
   InputSubmissionPhase,
@@ -14,7 +14,7 @@ const EMPTY_USER_VALUES: Record<string, unknown> = Object.freeze({});
  */
 export const selectUserInputText =
   (conversationId: string) =>
-  (state: RootState): string =>
+  (state: ChatRootState): string =>
     state.instanceUserInput.byConversationId[conversationId]?.text ?? "";
 
 /**
@@ -25,7 +25,7 @@ export const selectUserInputText =
  */
 export const selectUserInputMessageParts =
   (conversationId: string) =>
-  (state: RootState): MessagePart[] | undefined =>
+  (state: ChatRootState): MessagePart[] | undefined =>
     state.instanceUserInput.byConversationId[conversationId]?.messageParts ??
     undefined;
 
@@ -36,7 +36,7 @@ export const selectUserInputMessageParts =
  */
 export const selectInputCharCount =
   (conversationId: string) =>
-  (state: RootState): number =>
+  (state: ChatRootState): number =>
     state.instanceUserInput.byConversationId[conversationId]?.text?.length ?? 0;
 
 /**
@@ -50,12 +50,12 @@ export const selectInputCharCount =
  */
 export const selectUserInputEntryExists =
   (conversationId: string) =>
-  (state: RootState): boolean =>
+  (state: ChatRootState): boolean =>
     state.instanceUserInput.byConversationId[conversationId] !== undefined;
 
 export const selectHasUserInput =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const entry = state.instanceUserInput.byConversationId[conversationId];
     return (
       (entry?.text.trim().length ?? 0) > 0 ||
@@ -72,7 +72,7 @@ export const selectHasUserInput =
  */
 export const selectPreSend =
   (conversationId: string) =>
-  (state: RootState): PreSendState | null =>
+  (state: ChatRootState): PreSendState | null =>
     state.instanceUserInput.byConversationId[conversationId]?.preSend ?? null;
 
 /**
@@ -83,7 +83,7 @@ export const selectPreSend =
  */
 export const selectSubmissionPhase =
   (conversationId: string) =>
-  (state: RootState): InputSubmissionPhase =>
+  (state: ChatRootState): InputSubmissionPhase =>
     state.instanceUserInput.byConversationId[conversationId]?.submissionPhase ??
     "idle";
 
@@ -93,7 +93,7 @@ export const selectSubmissionPhase =
  */
 export const selectLastSubmittedText =
   (conversationId: string) =>
-  (state: RootState): string =>
+  (state: ChatRootState): string =>
     state.instanceUserInput.byConversationId[conversationId]
       ?.lastSubmittedText ?? "";
 
@@ -103,7 +103,7 @@ export const selectLastSubmittedText =
  */
 export const selectLastSubmittedUserValues =
   (conversationId: string) =>
-  (state: RootState): Record<string, unknown> =>
+  (state: ChatRootState): Record<string, unknown> =>
     state.instanceUserInput.byConversationId[conversationId]
       ?.lastSubmittedUserValues ?? EMPTY_USER_VALUES;
 
@@ -114,7 +114,7 @@ export const selectLastSubmittedUserValues =
  */
 export const selectHasReapplyableInput =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const entry = state.instanceUserInput.byConversationId[conversationId];
     if (!entry) return false;
     if (entry.submissionPhase === "pending") return false;

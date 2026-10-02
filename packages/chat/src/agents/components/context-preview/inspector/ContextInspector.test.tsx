@@ -64,10 +64,12 @@ const TREE = [
 
 // The page capture reads the store's request log and publishes to the admin
 // debug context; both are Redux-backed, so the test hands them a stand-in store.
-jest.mock("@host/lib/redux/hooks", () => {
+jest.mock("../../../../store/hooks", () => {
   const store = { getState: () => ({ apiConfig: { recentCalls: [] } }) };
-  return { ...jest.requireActual("@host/lib/redux/hooks"), useAppStore: () => store };
+  return { ...jest.requireActual("../../../../store/hooks"), useAppStore: () => store };
 });
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 jest.mock("@host/hooks/useDebugContext", () => ({
   useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
 }));

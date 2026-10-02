@@ -7,7 +7,7 @@
 
 import { useCostDisplay } from "@host/components/cost/useCostDisplay";
 import { useMemo } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import {
   EmptyStats,
   StatRow,

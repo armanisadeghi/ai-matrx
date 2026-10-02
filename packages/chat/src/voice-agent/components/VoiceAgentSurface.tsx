@@ -18,7 +18,7 @@ import { TapTargetButton } from "@ai-matrx/tap-target";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { RouteHeader } from "../../host/chrome";
 import { toast } from "../../host/notify";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { useVoiceAgentInstance } from "../hooks/useVoiceAgentInstance";
 import { useRealtimeAgentConfig } from "../hooks/useRealtimeAgentConfig";

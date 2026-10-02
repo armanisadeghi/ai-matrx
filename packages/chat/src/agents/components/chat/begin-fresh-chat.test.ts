@@ -3,7 +3,7 @@ jest.mock("../../../mandates/service", () => ({
 }));
 
 import { resolveMandate } from "../../../mandates/service";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import {
   beginFreshChat,
   interceptChatAgentLink,
@@ -56,7 +56,7 @@ describe("stageChatAgentSwitch", () => {
               },
             },
           },
-        }) as unknown as RootState,
+        }) as unknown as ChatRootState,
       sourceConversationId: "visible-conversation",
       targetAgentId: "next-agent",
     });
@@ -93,7 +93,7 @@ describe("stageChatAgentSwitch", () => {
               },
             },
           },
-        }) as unknown as RootState,
+        }) as unknown as ChatRootState,
       sourceAgentId: "current-agent",
       targetAgentId: "next-agent",
     });
@@ -133,7 +133,7 @@ describe("stageChatAgentSwitch", () => {
       getState: () =>
         ({
           conversationFocus: { lastSurfaceKey: null, bySurface: {} },
-        }) as unknown as RootState,
+        }) as unknown as ChatRootState,
       sourceConversationId: "visible-conversation",
     });
 
@@ -155,7 +155,7 @@ describe("stageChatAgentSwitch", () => {
     interceptChatAgentLink(event as never, {
       dispatch: dispatch as never,
       router: { push } as never,
-      getState: () => ({}) as RootState,
+      getState: () => ({}) as ChatRootState,
     });
     expect(event.preventDefault).not.toHaveBeenCalled();
 
@@ -164,7 +164,7 @@ describe("stageChatAgentSwitch", () => {
     interceptChatAgentLink(event as never, {
       dispatch: dispatch as never,
       router: { push } as never,
-      getState: () => ({}) as RootState,
+      getState: () => ({}) as ChatRootState,
     });
     expect(event.preventDefault).not.toHaveBeenCalled();
     expect(event.stopPropagation).toHaveBeenCalledTimes(1);
@@ -189,7 +189,7 @@ describe("beginFreshChat guest boundary", () => {
           // A server-minted anonymous guest has an auth UUID. Checking only
           // `id === null` regresses the organization-admission failure.
           userAuth: { id: "guest-auth-user", isAnonymous: true },
-        }) as RootState,
+        }) as ChatRootState,
     });
 
     expect(resolveMandateMock).not.toHaveBeenCalled();
@@ -208,7 +208,7 @@ describe("beginFreshChat guest boundary", () => {
         ({
           userAuth: { id: "guest-auth-user", isAnonymous: true },
           conversations: { byConversationId: {} },
-        }) as RootState,
+        }) as ChatRootState,
     });
 
     expect(resolveMandateMock).not.toHaveBeenCalled();
@@ -227,7 +227,7 @@ describe("beginFreshChat guest boundary", () => {
       getState: () =>
         ({
           userAuth: { id: "authenticated-user", isAnonymous: false },
-        }) as RootState,
+        }) as ChatRootState,
     });
 
     expect(resolveMandateMock).toHaveBeenCalledTimes(1);

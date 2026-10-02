@@ -7,7 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 let mockPhase = "complete";
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../store/hooks", () => ({
   useAppSelector: (selector: string) => {
     if (selector === "phase") return mockPhase;
     if (selector === "limit") return null;
@@ -19,6 +19,8 @@ jest.mock("@host/lib/redux/hooks", () => ({
   // suite only exercises the context menu, so the dispatch is a no-op here.
   useAppDispatch: () => () => undefined,
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 
 jest.mock(
   "../../../redux/execution-system/messages/messages.selectors",

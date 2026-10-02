@@ -17,7 +17,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectAgentName } from "../../redux/agent-definition/selectors";
 import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";

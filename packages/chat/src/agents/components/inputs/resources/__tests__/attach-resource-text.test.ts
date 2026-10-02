@@ -1,10 +1,12 @@
 import type { Resource } from "../../../../resources/types";
 
 jest.mock("../../../../../host/notify", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../../store/hooks", () => ({
   useAppDispatch: jest.fn(),
   useAppStore: jest.fn(),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
 jest.mock("../../../../redux/execution-system/instance-resources/instance-resources.slice", () => ({
   addResource: jest.fn(),
   setResourcePreview: jest.fn(),

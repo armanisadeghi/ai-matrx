@@ -4,6 +4,8 @@ import { createRoot, type Root } from "react-dom/client";
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => "org-test",
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [], loading: false }),
 }));

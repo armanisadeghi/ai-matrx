@@ -41,7 +41,7 @@ import { join } from "node:path";
 
 let creatorPanelOn = false;
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../../store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ creatorDebug: { showCreatorPanel: creatorPanelOn } }),
 }));

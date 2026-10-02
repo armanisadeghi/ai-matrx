@@ -13,9 +13,9 @@ import reducer, {
   requestMemoryToggle,
 } from "../instance-ui-state.slice";
 import { selectMemoryToggleRequest } from "../instance-ui-state.selectors";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 
-const asRoot = (instanceUIState: ReturnType<typeof reducer>) => ({ instanceUIState }) as unknown as RootState;
+const asRoot = (instanceUIState: ReturnType<typeof reducer>) => ({ instanceUIState }) as unknown as ChatRootState;
 
 describe("memory toggle is queued per conversation", () => {
   it("a switch flipped in A is pending only for A", () => {

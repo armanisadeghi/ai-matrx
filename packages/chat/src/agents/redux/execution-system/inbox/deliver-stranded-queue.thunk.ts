@@ -22,7 +22,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { toast } from "../../../../host/notify";
 import { retractInboxItem } from "./inbox.thunks";
 import { isStrandablePersonLine } from "./inbox.selectors";
@@ -33,7 +33,7 @@ import { setUserInputText } from "../instance-user-input/instance-user-input.sli
 const inFlight = new Set<string>();
 const IDLE_WAIT_MS = 10_000;
 
-function isLive(state: RootState, conversationId: string): boolean {
+function isLive(state: ChatRootState, conversationId: string): boolean {
   const status = state.conversations?.byConversationId[conversationId]?.status;
   return status === "running" || status === "streaming" || status === "paused";
 }
@@ -43,7 +43,7 @@ export type StrandedQueueOutcome = "sent" | "returned" | "none";
 export const deliverStrandedQueue = createAsyncThunk<
   StrandedQueueOutcome,
   { conversationId: string },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "conversationInbox/deliverStrandedQueue",
   async ({ conversationId }, { dispatch, getState }) => {

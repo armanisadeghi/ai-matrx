@@ -36,8 +36,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Brain, Loader2, Plus, RotateCw } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import type { ChatRootState } from "../../../store/root-state";
 import { toast } from "../../../host/notify";
 import { CHAT_WINDOWS } from "../../../host/windows";
 import { useChatManagedWindowCount } from "../../../host/windows-react";
@@ -130,7 +130,7 @@ function SessionChatRow({
   );
   // Until the server confirms the row, the only title is the local transcript's.
   const localTitle = useAppSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.messages.byConversationId[chat.conversationId]?.title ?? null,
   );
   const row: ConversationListItem = listItem
@@ -169,7 +169,7 @@ function AgentRunWindowSidebar({
   sessionChats: SessionChat[];
   onSelect: (conversation: ConversationListItem) => void;
 }) {
-  const canonicalAgentId = useAppSelector((state: RootState) => {
+  const canonicalAgentId = useAppSelector((state: ChatRootState) => {
     if (!agentId) return null;
     const agent = selectAgentById(state, agentId);
     return agent?.parentAgentId ?? agent?.id ?? agentId;
@@ -650,7 +650,7 @@ function AgentRunBodyMenu({
   children: React.ReactNode;
 }) {
   const dispatch = useAppDispatch();
-  const agentName = useAppSelector((state: RootState) => selectAgentName(state, agentId) ?? null);
+  const agentName = useAppSelector((state: ChatRootState) => selectAgentName(state, agentId) ?? null);
   const agentSection = buildAgentMenuSection({
     agentId,
     agentName,
@@ -673,10 +673,10 @@ function AgentRunBodyMenu({
 // Tracks the live conversation in the window for persistence (so reopening
 // lands you on whatever you last had focused rather than the initial pick).
 function useLiveConversationId(surfaceKey: string | null): string | null {
-  const focusedId = useAppSelector((state: RootState) =>
+  const focusedId = useAppSelector((state: ChatRootState) =>
     surfaceKey ? selectFocusedConversation(surfaceKey)(state) : null,
   );
-  return useAppSelector((state: RootState) =>
+  return useAppSelector((state: ChatRootState) =>
     focusedId
       ? (selectLatestConversationId(focusedId)(state) ?? focusedId)
       : null,
@@ -828,7 +828,7 @@ function AgentRunWindowInner({
   // — but only while we're still on the agent that name belongs to. Once the
   // user picks a different agent, the seed no longer applies (the dropdown has
   // loaded real names by then), so we drop to the generic placeholder.
-  const liveAgentName = useAppSelector((state: RootState) =>
+  const liveAgentName = useAppSelector((state: ChatRootState) =>
     agentId ? (selectAgentName(state, agentId) ?? null) : null,
   );
   const agentName =

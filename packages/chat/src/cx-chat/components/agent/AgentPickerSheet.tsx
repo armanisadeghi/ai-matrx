@@ -2,7 +2,7 @@
 
 import { toast } from "../../../host/notify";
 import { useIsMobile } from "@host/hooks/use-mobile";
-import { useAppStore } from "@host/lib/redux/hooks";
+import { useAppStore } from "../../../store/hooks";
 import {
   Drawer,
   DrawerContent,

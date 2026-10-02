@@ -28,6 +28,8 @@ jest.mock("@ai-matrx/records-ui", () => ({
   }),
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => ORG }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/unified-data/objectOrganization", () => ({
   useObjectOrganization: () => ({ state: "found", organizationId: ORG }),
 }));

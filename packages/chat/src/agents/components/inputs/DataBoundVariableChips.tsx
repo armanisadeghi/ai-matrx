@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceVariableDefinitions } from "../../redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { isCustomDataBinding } from "../../utils/variable-binding";
 import type { CustomDataBinding } from "../../types/agent-definition.types";

@@ -22,7 +22,7 @@ import {
 } from "react";
 import { ChevronRight } from "lucide-react";
 import { isMandateKey, type MandateKey } from "@ai-matrx/agents/mandates";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../../store/hooks";
 import { selectActiveUserName } from "@host/lib/redux/selectors/userSelectors";
 import { useMandateSet } from "../../../../../mandates/useMandateSet";
 import { useSessionKnob } from "@host/lib/scoped-config/sessionKnob";

@@ -6,6 +6,8 @@ const mockCallApi = jest.fn((request: Record<string, unknown>) => request);
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => mockDispatch,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 jest.mock("@/lib/api/call-api", () => ({
   callApi: (request: Record<string, unknown>) => mockCallApi(request),

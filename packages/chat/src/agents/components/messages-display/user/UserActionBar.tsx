@@ -41,7 +41,7 @@ import {
 } from "@ai-matrx/tap-target";
 import { copyToClipboard } from "@host/components/matrx/buttons/markdown-copy-utils";
 import { SpeakerButton } from "@host/features/tts/components/SpeakerButton";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../../../store/hooks";
 import { useOpenFullScreenMarkdownEditorBridge } from "@host/features/overlays/openers/fullScreenEditor";
 import { selectMessagePosition } from "../../../redux/execution-system/messages/messages.selectors";
 import { selectShowUserMessageOptions } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";

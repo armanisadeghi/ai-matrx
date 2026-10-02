@@ -1,4 +1,4 @@
-import type { AppThunk } from "@host/lib/redux/store";
+import type { ChatThunk } from "../../../../store/root-state";
 import {
   destroyInstance,
   destroyInstancesForAgent,
@@ -10,7 +10,7 @@ import {
  * it ensures debug-retained sessions are never accidentally wiped.
  */
 export const destroyInstanceIfAllowed =
-  (conversationId: string): AppThunk =>
+  (conversationId: string): ChatThunk =>
   (dispatch, getState) => {
     if (getState().conversations.debugSessionActive) return;
     dispatch(destroyInstance(conversationId));
@@ -21,7 +21,7 @@ export const destroyInstanceIfAllowed =
  * NOT active.
  */
 export const destroyInstancesForAgentIfAllowed =
-  (agentId: string): AppThunk =>
+  (agentId: string): ChatThunk =>
   (dispatch, getState) => {
     if (getState().conversations.debugSessionActive) return;
     dispatch(destroyInstancesForAgent(agentId));
@@ -45,7 +45,7 @@ export const destroyInstancesForAgentIfAllowed =
  * session).
  */
 export const destroyInstanceIfAbandoned =
-  (conversationId: string): AppThunk =>
+  (conversationId: string): ChatThunk =>
   (dispatch, getState) => {
     const state = getState();
     // A chat agent switch copies this still-live instance after the target

@@ -9,7 +9,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { editMessage } from "./edit-message.thunk";
 import { mergeEditedText } from "./content-blocks.util";
 
@@ -21,8 +21,8 @@ interface EditMessageTextArgs {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
 }
 
 export const editMessageText = createAsyncThunk<

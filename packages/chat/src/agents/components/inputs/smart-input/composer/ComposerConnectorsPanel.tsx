@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Paperclip, Search } from "lucide-react";
 import { Switch } from "@host/components/ui/switch";
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { useMcpCatalog, type McpServerState } from "../../../../hooks/useMcpTools";
 import { selectAgentReadyForCustomExecution, selectAgentMcpServers } from "../../../../redux/agent-definition/selectors";
 import { selectAgentIdFromInstance } from "../../../../redux/execution-system/conversations/conversations.selectors";

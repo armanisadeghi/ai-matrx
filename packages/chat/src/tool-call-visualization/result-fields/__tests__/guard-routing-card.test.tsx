@@ -16,11 +16,13 @@ import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   // correctedIds (a Set), suspended ids (not an array), display pref (no match).
   useAppSelector: () => new Set<string>(),
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
 jest.mock("../../db-renderer/useDbToolMeta", () => ({
   useDbToolRendererState: () => ({ resolution: "static" }),
 }));

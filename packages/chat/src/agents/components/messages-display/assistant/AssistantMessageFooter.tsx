@@ -19,8 +19,8 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { useAppSelector } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppSelector } from "../../../../store/hooks";
+import type { ChatRootState } from "../../../../store/root-state";
 import { cn } from "@ai-matrx/design-system";
 import { RichDocumentActions } from "@host/features/rich-document/RichDocumentActions";
 import { RegistryContextMenu } from "@host/features/rich-document/RegistryContextMenu";
@@ -103,7 +103,7 @@ export function useAssistantMessageActions({
     agentId ? selectAgentIsConfirmedOwner(s, agentId) : false,
   );
   const byId = useAppSelector(
-    (state: RootState) => state.messages.byConversationId[conversationId]?.byId,
+    (state: ChatRootState) => state.messages.byConversationId[conversationId]?.byId,
   );
   const orderedIds = useAppSelector(selectOrderedMessageIds(conversationId));
 

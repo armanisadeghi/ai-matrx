@@ -9,6 +9,8 @@
  */
 
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => jest.fn() }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/api/call-api", () => ({ callApi: jest.fn() }));
 jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream", () => ({
   adoptForeignStream: jest.fn(),

@@ -86,6 +86,8 @@ jest.mock("@/lib/redux/hooks", () => ({
       userAuth: { id: selectedActorId },
     }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 let selectedActorId = "user-1";
 const getBulk = jest.fn(async (..._args: unknown[]) => ({

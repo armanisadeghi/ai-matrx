@@ -63,7 +63,7 @@ import {
 import { registerSurfaceRuntime } from "../../../../../surfaces/runtime/SurfaceRuntimeContext";
 import { invalidateOutputSchemaCache } from "../../../../../mandates/output-contract";
 import { resetMandateCatalogueCache } from "@host/features/mandates/catalogue";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import type { ToolInjectionResult } from "../../../../types/tool-injection.types";
 
 const SURFACE = masterworkRulebookManifest.surfaceName;
@@ -82,7 +82,7 @@ function emittedJsonSchema(): unknown {
   return exported.schema;
 }
 
-function makeState(conversationId: string, agentId: string): RootState {
+function makeState(conversationId: string, agentId: string): ChatRootState {
   return {
     agentDefinition: {
       agents: {
@@ -115,7 +115,7 @@ function makeState(conversationId: string, agentId: string): RootState {
     instanceUIState: { byConversationId: {} },
     creatorDebug: { settings: {} },
     adminPreferences: {},
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 function surfaceWriteDescription(result: ToolInjectionResult): string {

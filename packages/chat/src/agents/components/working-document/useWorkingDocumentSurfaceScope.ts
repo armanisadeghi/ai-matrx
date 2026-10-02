@@ -15,7 +15,7 @@
 import { useCallback } from "react";
 import type { RefObject } from "react";
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import type { SurfaceScopePayload } from "../../../surfaces/types";
 import { selectInstanceContextEntries } from "../../redux/execution-system/instance-context/instance-context.selectors";
 import { selectScopeSelectionsContext } from "@host/lib/redux/slices/appContextSlice";

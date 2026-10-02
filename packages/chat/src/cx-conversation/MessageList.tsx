@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { MessageSquare } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../store/hooks";
 import {
   selectGroupedMessages,
   selectMessages,

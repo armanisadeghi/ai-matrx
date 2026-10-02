@@ -8,14 +8,14 @@
  * store (the run configuration Chat Options edits) — never a stale snapshot.
  */
 
-import type { AppStore } from "@host/lib/redux/store";
+import type { ChatAppStore } from "../../../../store/root-state";
 import { buildApplicationScopeFromMenuContext } from "@host/features/context-menu-v3/utils/build-application-scope";
 import type { ComposerTextMenu } from "../../inputs/smart-input/composer/composer-types";
 import { buildChatContextData, CHAT_CONTEXT_MENU_PROPS } from "./buildChatContextData";
 import { buildChatRunConfiguration } from "./buildChatRunConfiguration";
 
 export function buildChatComposerTextMenu(args: {
-  store: AppStore;
+  store: ChatAppStore;
   conversationId: string;
   agentId: string;
 }): ComposerTextMenu {

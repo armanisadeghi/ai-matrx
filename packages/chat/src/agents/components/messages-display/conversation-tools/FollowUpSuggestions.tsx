@@ -18,7 +18,7 @@
 
 import React from "react";
 import { CornerDownRight } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { selectMessageById } from "../../../redux/execution-system/messages/messages.selectors";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 

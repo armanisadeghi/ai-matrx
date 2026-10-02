@@ -42,7 +42,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   getConversationSandboxBinding,
   getSurfaceSeedRef,
@@ -71,9 +71,9 @@ function toStoredRef(ref: ResolvedSandboxRef) {
 
 /** Remove the surface seed for this conversation's surface, if it has one. */
 function clearSurfaceSeed(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
 ): void {
   const sourceFeature =
     state.conversations?.byConversationId?.[conversationId]?.sourceFeature;
@@ -102,7 +102,7 @@ function clearSurfaceSeed(
 export const detachSandboxForConversation = createAsyncThunk<
   void,
   string,
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "sandbox/detachForConversation",
   async (conversationId, { getState, dispatch }) => {
@@ -135,7 +135,7 @@ export const detachSandboxForConversation = createAsyncThunk<
 export const promoteSurfaceSeedToConversation = createAsyncThunk<
   void,
   { conversationId: string; ref: ResolvedSandboxRef },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "sandbox/promoteSeed",
   async ({ conversationId, ref }, { dispatch }) => {
@@ -160,7 +160,7 @@ export type SandboxGateOutcome = "proceed" | "blocked";
 export const ensureSandboxOrDecide = createAsyncThunk<
   SandboxGateOutcome,
   { conversationId: string },
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "sandbox/ensureOrDecide",
   async ({ conversationId }, { getState, dispatch }) => {

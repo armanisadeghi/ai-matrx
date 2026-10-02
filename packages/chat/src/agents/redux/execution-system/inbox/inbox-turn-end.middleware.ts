@@ -8,18 +8,18 @@
 // is an enqueue the server acknowledges after the turn already ended locally.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/rootReducer";
+import type { ChatRootState } from "../../../../store/root-state";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { confirmInboxItem } from "./inbox.slice";
 import { isStrandablePersonLine } from "./inbox.selectors";
 
-function hasPersonLineWaiting(state: RootState, conversationId: string): boolean {
+function hasPersonLineWaiting(state: ChatRootState, conversationId: string): boolean {
   return (state.conversationInbox?.byConversationId[conversationId] ?? []).some(
     isStrandablePersonLine,
   );
 }
 
-export const inboxTurnEndMiddleware: Middleware<object, RootState> =
+export const inboxTurnEndMiddleware: Middleware<object, ChatRootState> =
   (store) => (next) => (action) => {
     const result = next(action);
     let conversationId: string | null = null;

@@ -78,6 +78,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     }),
   useAppDispatch: () => () => {},
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 // The retry the fourth state's press must reach — the ONE bootstrap re-run,
 // dispatched through the store singleton (a pure leaf, so no surface test needs

@@ -17,7 +17,7 @@
 
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 
 import {
   fetchConversationPendingCalls,
@@ -30,7 +30,7 @@ import { selectActivePendingAsksForConversation } from "../../../ui-first-tools/
 export const surfaceColdPendingCalls = (
   conversationId: string,
   options?: { strict?: boolean },
-): ThunkAction<Promise<number>, RootState, unknown, UnknownAction> => {
+): ThunkAction<Promise<number>, ChatRootState, unknown, UnknownAction> => {
   return async (dispatch, getState) => {
     if (!conversationId) return 0;
 

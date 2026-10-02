@@ -3,7 +3,9 @@
  * /agent-apps/[id]/run). It read "Run History — Agent": an app's agent often has
  * no name of its own. The app passes its name as the subject.
  */
-jest.mock("@host/lib/redux/hooks", () => ({ useAppDispatch: () => jest.fn(), useAppSelector: jest.fn(), useAppStore: jest.fn() }));
+jest.mock("../../../../store/hooks", () => ({ useAppDispatch: () => jest.fn(), useAppSelector: jest.fn(), useAppStore: jest.fn() }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 import { runHistoryWindowTitle } from "../AgentRunHistoryWindow";
 
 describe("runHistoryWindowTitle", () => {

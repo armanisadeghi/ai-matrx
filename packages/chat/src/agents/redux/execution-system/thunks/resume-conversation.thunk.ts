@@ -25,7 +25,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { SourceFeature } from "../../../types/instance.types";
 import type { ResultDisplayMode } from "../../../types/instance.types";
 import { reconnectServerOperation } from "../../../runtime-reconnect/reconnect-server-operation.thunk";
@@ -64,7 +64,7 @@ export interface ResumeConversationResult {
 export const resumeConversation = createAsyncThunk<
   ResumeConversationResult,
   ResumeConversationArgs,
-  { state: RootState; dispatch: AppDispatch }
+  { state: ChatRootState; dispatch: ChatDispatch }
 >(
   "instances/resumeConversation",
   async (

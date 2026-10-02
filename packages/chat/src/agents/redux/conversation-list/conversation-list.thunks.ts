@@ -11,7 +11,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@host/utils/supabase/client";
 import { getUserId } from "@host/utils/auth/getUserId";
 import type { Database } from "@host/types/database.types";
-import type { AppThunk, RootState } from "@host/lib/redux/store";
+import type { ChatThunk, ChatRootState } from "../../../store/root-state";
 import { favoritesService } from "@host/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@host/features/scopes/types";
 import type { ConversationListItem } from "./conversation-list.types";
@@ -56,7 +56,7 @@ export interface FetchAgentConversationsResult {
 
 export function resolveCanonicalAgentIdForConversationsFetch(
   input: FetchAgentConversationsArgInput,
-  state: RootState,
+  state: ChatRootState,
 ): { canonicalAgentId: string; versionFilter: number | null } | null {
   const versionFilter =
     input.versionFilter === undefined ? null : input.versionFilter;
@@ -199,11 +199,11 @@ export const fetchAgentConversationsNormalized = createAsyncThunk<
  */
 export function fetchAgentConversations(
   input: FetchAgentConversationsArgInput,
-): AppThunk<Promise<FetchAgentConversationsResult>> {
+): ChatThunk<Promise<FetchAgentConversationsResult>> {
   return async (dispatch, getState) => {
     const resolved = resolveCanonicalAgentIdForConversationsFetch(
       input,
-      getState() as RootState,
+      getState() as ChatRootState,
     );
     if (!resolved) {
       throw new Error(

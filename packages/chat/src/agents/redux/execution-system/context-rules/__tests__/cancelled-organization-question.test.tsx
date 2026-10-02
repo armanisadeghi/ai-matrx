@@ -59,13 +59,13 @@ jest.mock("@host/features/scopes/service/scopesService", () => ({
 import appContext from "@host/lib/redux/slices/appContextSlice";
 import userAuth, { setUserAuth } from "@host/lib/redux/slices/userAuthSlice";
 import scopesTree, { scopesActions } from "@host/features/scopes/redux/scopesSlice";
-import { setStoreSingleton } from "@host/lib/redux/store-singleton";
+import { setStoreSingleton } from "../../../../../store/store-singleton";
 import { settleOrganizationSelection } from "@host/lib/organization/organization-gate";
 import { surfaceUserStateReducer } from "../../../../../surfaces/redux/userStateSlice";
 import { ContextRulesChip } from "@ai-matrx/agents/context/react";
 import { resolveContextRow } from "@ai-matrx/agents/context";
 import { OrganizationGateDialog } from "@host/features/organizations/gate/OrganizationGateDialog";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { saveContextRule, selectSavedContextRuleRows } from "../context-rules.thunks";
 
 function Table() {

@@ -21,7 +21,7 @@
  * accumulators, not identities of the run. The run's identity is its `run_id`.
  */
 
-import type { AppThunk } from "@host/lib/redux/store";
+import type { ChatThunk } from "../../../../store/root-state";
 import { createRequest } from "../active-requests/active-requests.slice";
 import { generateConversationId, generateRequestId } from "../utils/ids";
 import {
@@ -42,7 +42,7 @@ export interface AttachWorkflowRunOptions {
 
 export function attachWorkflowRun(
   opts: AttachWorkflowRunOptions,
-): AppThunk<Promise<void>> {
+): ChatThunk<Promise<void>> {
   return async (dispatch) => {
     const requestId = generateRequestId();
     const conversationId = generateConversationId();

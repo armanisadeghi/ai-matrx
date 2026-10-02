@@ -13,7 +13,7 @@
  * tools), the wire capabilities, and the tool names sent.
  */
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { selectRequestsForInstance } from "../../redux/execution-system/active-requests/active-requests.selectors";
 import type { RequestRouting } from "../../types/request.types";
 import {

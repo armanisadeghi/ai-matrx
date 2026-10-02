@@ -4,7 +4,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { shallowEqual } from "react-redux";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { setDebugSession } from "../../redux/execution-system/conversations/conversations.slice";
 import {
   selectConversationRequestCount,

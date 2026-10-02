@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { resolveBackendForConversation } from "./resolve-base-url";
 
 export type ProviderRetryControlAction = "cancel" | "retry_now";
@@ -47,7 +47,7 @@ function parseErrorMessage(body: unknown, fallback: string): string {
 export const sendProviderRetryControl = createAsyncThunk<
   ProviderRetryControlResult,
   ProviderRetryControlArgs,
-  { state: RootState; rejectValue: string }
+  { state: ChatRootState; rejectValue: string }
 >(
   "activeRequests/sendProviderRetryControl",
   async ({ requestId, action }, { getState, rejectWithValue }) => {

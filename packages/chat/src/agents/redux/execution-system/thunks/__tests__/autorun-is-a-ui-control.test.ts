@@ -132,7 +132,7 @@ import { editorStateReducer } from "@host/features/code-editor/redux/editor-stat
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
 import { configureRecordingWindows, type RecordingWindows } from "../../../../../host/__tests__/recording-windows";
 import { CHAT_WINDOWS } from "../../../../../host/windows";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import { storedMandateKey } from "@host/features/mandates/mandate-key";
 
 // Fully-loaded agent record: Step 0.5's readiness check passes so the thunk
@@ -201,7 +201,7 @@ function dispatchLaunch(
   store: ReturnType<typeof makeStore>,
   extra: Partial<Parameters<typeof launchAgentExecution>[0]> = {},
 ) {
-  return (store.dispatch as unknown as AppDispatch)(
+  return (store.dispatch as unknown as ChatDispatch)(
     launchAgentExecution({
       mandateKey: "plan_client.shape_planner",
       surfaceKey: "test-surface",

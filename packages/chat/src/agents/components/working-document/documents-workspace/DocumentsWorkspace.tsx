@@ -38,7 +38,7 @@ import {
   createDocumentsWorkspaceScope,
 } from "@host/features/surfaces/manifests/documents-workspace.manifest";
 import { cn } from "@ai-matrx/design-system";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../../../store/hooks";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import {
   isScratchScope,

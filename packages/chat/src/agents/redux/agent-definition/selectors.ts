@@ -1,7 +1,7 @@
 "use client";
 
 import { createSelector } from "reselect";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../store/root-state";
 import type {
   AgentDefinition,
   AgentDefinitionRecord,
@@ -14,7 +14,7 @@ import { fieldFlagsSize, hasField } from "../shared/field-flags";
 // Slice root
 // ---------------------------------------------------------------------------
 
-const selectAgentDefinitionSlice = (state: RootState) => state.agentDefinition;
+const selectAgentDefinitionSlice = (state: ChatRootState) => state.agentDefinition;
 
 // ---------------------------------------------------------------------------
 // Registry & active id
@@ -46,7 +46,7 @@ export const selectAgentsSliceError = createSelector(
 
 /** Returns the full record (including runtime flags) or undefined. */
 export const selectAgentById = createSelector(
-  [selectAllAgents, (_state: RootState, id: string) => id],
+  [selectAllAgents, (_state: ChatRootState, id: string) => id],
   (agents, id): AgentDefinitionRecord | undefined => agents[id],
 );
 
@@ -311,7 +311,7 @@ export const selectAgentMessages = createSelector(
  * Returns undefined when the record or index doesn't exist — handle in component.
  */
 export const selectAgentMessageAtIndex = createSelector(
-  [selectAgentById, (_state: RootState, _id: string, index: number) => index],
+  [selectAgentById, (_state: ChatRootState, _id: string, index: number) => index],
   (record, index) => record?.messages?.[index],
 );
 
@@ -528,7 +528,7 @@ export const selectAgentIsFavorite = createSelector(
 export const selectAgentFieldOriginalValue = createSelector(
   [
     selectAgentById,
-    (_state: RootState, _id: string, field: keyof AgentDefinition) => field,
+    (_state: ChatRootState, _id: string, field: keyof AgentDefinition) => field,
   ],
   (record, field) => record?._fieldHistory[field] ?? undefined,
 );
@@ -537,7 +537,7 @@ export const selectAgentFieldOriginalValue = createSelector(
 export const selectAgentFieldIsLoaded = createSelector(
   [
     selectAgentById,
-    (_state: RootState, _id: string, field: keyof AgentDefinition) => field,
+    (_state: ChatRootState, _id: string, field: keyof AgentDefinition) => field,
   ],
   (record, field): boolean =>
     record ? hasField(record._loadedFields, field) : false,
@@ -645,7 +645,7 @@ export const selectAllVersionRecords = createSelector(
 export const selectVersionsByParentAgentId = createSelector(
   [
     selectAllAgentsArray,
-    (_state: RootState, parentAgentId: string) => parentAgentId,
+    (_state: ChatRootState, parentAgentId: string) => parentAgentId,
   ],
   (agents, parentAgentId) =>
     agents
@@ -756,7 +756,7 @@ export const selectAgentLineageIndex = createSelector(
 
 /** Lineage for one agent. Empty (not undefined) when unknown. */
 export const selectAgentLineage = createSelector(
-  [selectAgentLineageIndex, (_state: RootState, id: string) => id],
+  [selectAgentLineageIndex, (_state: ChatRootState, id: string) => id],
   (index, id): AgentLineage => index[id] ?? EMPTY_LINEAGE,
 );
 
@@ -799,7 +799,7 @@ export const selectEditableAgents = createSelector(
 );
 
 export const selectAgentsByCategory = createSelector(
-  [selectAllAgentsArray, (_state: RootState, category: string) => category],
+  [selectAllAgentsArray, (_state: ChatRootState, category: string) => category],
   (agents, category) => agents.filter((a) => a.category === category),
 );
 

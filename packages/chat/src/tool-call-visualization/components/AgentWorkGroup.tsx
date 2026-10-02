@@ -35,7 +35,7 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { cn } from "@ai-matrx/design-system";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../store/hooks";
 import { selectToolDisplayPreference } from "../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 
 import { formatWorkDuration } from "../grouping/foldAgentWork";

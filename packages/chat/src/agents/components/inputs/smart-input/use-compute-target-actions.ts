@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { toast } from "../../../../host/notify";
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { setConversationSandbox } from "../../../redux/conversation-list/conversation-row-actions.thunks";
 import { selectChatIncognitoActive } from "../../../redux/chat/chat-incognito.slice";
 import { selectConversationIsEphemeral } from "../../../redux/execution-system/conversations/conversations.selectors";

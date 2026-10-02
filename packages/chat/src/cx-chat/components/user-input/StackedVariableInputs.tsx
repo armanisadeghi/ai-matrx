@@ -11,7 +11,7 @@ import {
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
 import { VariableInputComponent } from "../../../agents/components/inputs/input-components/VariableInputComponent";
-import { useAppSelector, useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,

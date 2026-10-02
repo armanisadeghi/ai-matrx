@@ -14,7 +14,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import { callCompactTurns, type CompactTurnsResult } from "@host/lib/api/call-api";
 import { loadConversation } from "../../thunks/load-conversation.thunk";
 import { markCacheBypass } from "../cache-bypass.slice";
@@ -44,8 +44,8 @@ interface CompactTurnsArgs {
 }
 
 interface ThunkApi {
-  dispatch: AppDispatch;
-  state: RootState;
+  dispatch: ChatDispatch;
+  state: ChatRootState;
   rejectValue: { message: string };
 }
 

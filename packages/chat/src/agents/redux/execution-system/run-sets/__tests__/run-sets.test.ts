@@ -8,7 +8,7 @@
 
 import { configureStore } from "@reduxjs/toolkit";
 
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../../../../store/root-state";
 
 import activeRequestsReducer, {
   createRequest,
@@ -33,7 +33,7 @@ type Store = ReturnType<typeof makeStore>;
 
 /** House pattern for dispatching AppThunks on a partial test store. */
 const thunkDispatch = (store: Store) =>
-  store.dispatch as unknown as AppDispatch;
+  store.dispatch as unknown as ChatDispatch;
 
 const SET_KEY = "test-surface:phrase";
 

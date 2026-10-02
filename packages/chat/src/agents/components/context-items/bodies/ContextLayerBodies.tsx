@@ -14,7 +14,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Building2, Briefcase, ExternalLink } from "lucide-react";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import { selectActiveOrganizationName } from "@host/features/scopes/redux/selectors/active-context";
 import { useScopeTree } from "@host/features/scopes/hooks/useScopeTree";
 import { useContextValues } from "@host/features/scopes/hooks/useContextValues";

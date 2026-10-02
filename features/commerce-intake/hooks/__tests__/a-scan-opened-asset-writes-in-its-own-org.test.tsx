@@ -22,6 +22,8 @@ const createAsset = jest.fn();
 const ensureOpenBatch = jest.fn();
 
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => ACTIVE_ORG }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => ACTIVE_ORG }));
 jest.mock("@/features/organizations/awaitWorkspace", () => ({
   awaitEffectiveOrganizationId: async () => ({ status: "ready", organizationId: ACTIVE_ORG }),

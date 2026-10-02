@@ -16,8 +16,8 @@
  * it never needs to parse, convert, or enrich — it just announces the callId.
  */
 
-import { useAppSelector } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppSelector } from "../../store/hooks";
+import type { ChatRootState } from "../../store/root-state";
 import { ToolCallVisualization } from "./ToolCallVisualization";
 
 interface LiveToolCallCardProps {
@@ -42,7 +42,7 @@ export function LiveToolCallCard({
   hasContentAfter = false,
 }: LiveToolCallCardProps) {
   const entry = useAppSelector(
-    (state: RootState) =>
+    (state: ChatRootState) =>
       state.activeRequests.byRequestId[requestId]?.toolLifecycle[callId],
   );
 

@@ -11,7 +11,7 @@
  * agent's persisted skill_config.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { selectAgentSkillConfig } from "../../agent-definition/selectors";
 import type { SkillConfig } from "@host/features/skills/types";
 
@@ -65,7 +65,7 @@ const EMPTY_SKILL_CONFIG: SkillConfig = {
  * the Smart Input skills picker has additive picks for this conversation.
  */
 export function attachSkillConfigFromState(
-  state: RootState,
+  state: ChatRootState,
   conversationId: string,
   payload: { skill_config?: Record<string, unknown> | null },
 ): void {

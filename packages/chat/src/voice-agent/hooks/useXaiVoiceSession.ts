@@ -26,8 +26,8 @@ import {
   OrganizationSelectionCancelled,
 } from "@host/lib/organization/organization-gate";
 import { useCallback, useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
-import type { RootState } from "@host/lib/redux/store";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
+import type { ChatRootState } from "../../store/root-state";
 import {
   addLatencySample,
   appendAssistantTurn,
@@ -386,7 +386,7 @@ export function useXaiVoiceSession(
   // Kept out of the hot event path: only constructed when the model actually
   // calls a tool, so a tool-less session pays nothing.
   const buildToolLoopContext = useCallback((): ToolLoopContext => {
-    const state = store.getState() as RootState;
+    const state = store.getState() as ChatRootState;
     // Canonical memoized user-id selector — NOT a hand-read of state.userAuth.id.
     // If the slice mount key ever moves, the selector follows; a hand-read would
     // silently yield null and every auth-needing client tool would throw.
@@ -430,7 +430,7 @@ export function useXaiVoiceSession(
         userId,
         sessionId: sessionIdRef.current,
         dispatch,
-        getState: store.getState as () => RootState,
+        getState: store.getState as () => ChatRootState,
       },
     };
   }, [dispatch, instanceId, store]);
@@ -1014,7 +1014,7 @@ export function useXaiVoiceSession(
     // (Only awaited when none is selected — the common path stays synchronous
     // so the AudioContext invariants below keep their user-gesture window.)
     try {
-      if (!selectActiveOrganizationId(store.getState() as RootState)) {
+      if (!selectActiveOrganizationId(store.getState() as ChatRootState)) {
         await ensureOrganizationContext();
       }
     } catch (error) {

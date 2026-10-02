@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import { Brain, FileText, PanelRight } from "lucide-react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import { CHAT_CONTEXT_MENU_PROPS } from "../chat/agent-context/buildChatContextData";
 import { buildRunControlsApplicationScope } from "../chat/agent-context/buildChatRunConfiguration";
 import { cn } from "@ai-matrx/design-system";

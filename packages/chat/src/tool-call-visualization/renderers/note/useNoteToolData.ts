@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 import { faviconRouteData } from "@host/constants/favicon-route-data";

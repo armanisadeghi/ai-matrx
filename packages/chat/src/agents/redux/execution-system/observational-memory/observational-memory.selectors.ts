@@ -8,7 +8,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type {
   MemoryEventEntry,
   ObservationalMemoryConversationState,
@@ -22,13 +22,13 @@ import type {
 
 export const selectObservationalMemoryState =
   (conversationId: string | null | undefined) =>
-  (state: RootState): ObservationalMemoryConversationState | undefined => {
+  (state: ChatRootState): ObservationalMemoryConversationState | undefined => {
     if (!conversationId) return undefined;
     return state.observationalMemory.byConversationId[conversationId];
   };
 
 export const selectAllObservationalMemoryConversations = (
-  state: RootState,
+  state: ChatRootState,
 ): Record<string, ObservationalMemoryConversationState> =>
   state.observationalMemory.byConversationId;
 
@@ -36,7 +36,7 @@ export const selectAllObservationalMemoryConversations = (
 
 export const selectMemoryMetadata =
   (conversationId: string | null | undefined) =>
-  (state: RootState): ObservationalMemoryMetadata | null => {
+  (state: ChatRootState): ObservationalMemoryMetadata | null => {
     if (!conversationId) return null;
     return (
       state.observationalMemory.byConversationId[conversationId]?.metadata ??
@@ -46,7 +46,7 @@ export const selectMemoryMetadata =
 
 export const selectIsMemoryEnabledForConversation =
   (conversationId: string | null | undefined) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     if (!conversationId) return false;
     return (
       state.observationalMemory.byConversationId[conversationId]?.isEnabled ??
@@ -56,7 +56,7 @@ export const selectIsMemoryEnabledForConversation =
 
 export const selectMemoryModelForConversation =
   (conversationId: string | null | undefined) =>
-  (state: RootState): string | null => {
+  (state: ChatRootState): string | null => {
     if (!conversationId) return null;
     return (
       state.observationalMemory.byConversationId[conversationId]?.metadata
@@ -66,7 +66,7 @@ export const selectMemoryModelForConversation =
 
 export const selectMemoryScopeForConversation =
   (conversationId: string | null | undefined) =>
-  (state: RootState): string | null => {
+  (state: ChatRootState): string | null => {
     if (!conversationId) return null;
     return (
       state.observationalMemory.byConversationId[conversationId]?.metadata
@@ -78,7 +78,7 @@ export const selectMemoryScopeForConversation =
 
 export const selectMemoryDegraded =
   (conversationId: string | null | undefined) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     if (!conversationId) return false;
     return (
       state.observationalMemory.byConversationId[conversationId]?.degraded ??
@@ -88,7 +88,7 @@ export const selectMemoryDegraded =
 
 export const selectMemoryLastError =
   (conversationId: string | null | undefined) =>
-  (state: RootState): ObservationalMemoryConversationState["lastError"] => {
+  (state: ChatRootState): ObservationalMemoryConversationState["lastError"] => {
     if (!conversationId) return null;
     return (
       state.observationalMemory.byConversationId[conversationId]?.lastError ??
@@ -102,7 +102,7 @@ const EMPTY_EVENTS: readonly MemoryEventEntry[] = Object.freeze([]);
 
 export const selectMemoryEvents =
   (conversationId: string | null | undefined) =>
-  (state: RootState): readonly MemoryEventEntry[] => {
+  (state: ChatRootState): readonly MemoryEventEntry[] => {
     if (!conversationId) return EMPTY_EVENTS;
     return (
       state.observationalMemory.byConversationId[conversationId]?.events ??
@@ -112,7 +112,7 @@ export const selectMemoryEvents =
 
 export const selectMemoryCounters =
   (conversationId: string | null | undefined) =>
-  (state: RootState): MemoryRunningCounters | null => {
+  (state: ChatRootState): MemoryRunningCounters | null => {
     if (!conversationId) return null;
     return (
       state.observationalMemory.byConversationId[conversationId]?.counters ??
@@ -131,7 +131,7 @@ export const selectRecentMemoryEvents = (
 ) =>
   createSelector(
     [
-      (state: RootState) =>
+      (state: ChatRootState) =>
         conversationId
           ? (state.observationalMemory.byConversationId[conversationId]
               ?.events ?? EMPTY_EVENTS)
@@ -149,7 +149,7 @@ export const selectRecentMemoryEvents = (
 
 export const selectMemoryCostSummary =
   (conversationId: string | null | undefined) =>
-  (state: RootState): MemoryCostSummary | null => {
+  (state: ChatRootState): MemoryCostSummary | null => {
     if (!conversationId) return null;
     return (
       state.observationalMemory.byConversationId[conversationId]?.costSummary ??
@@ -159,7 +159,7 @@ export const selectMemoryCostSummary =
 
 export const selectMemoryCostFetchState =
   (conversationId: string | null | undefined) =>
-  (state: RootState): MemoryCostFetchState | null => {
+  (state: ChatRootState): MemoryCostFetchState | null => {
     if (!conversationId) return null;
     return (
       state.observationalMemory.byConversationId[conversationId]?.costFetch ??

@@ -10,7 +10,7 @@
  */
 
 import { openOverlay, CHAT_WINDOWS } from "../../../../host/windows";
-import type { AppDispatch } from "@host/lib/redux/store";
+import type { ChatDispatch } from "../../../../store/root-state";
 
 export interface OpenStructuredRawViewerArgs {
   /** Pretty-printed JSON of the stored payload (extractInspectableText). */
@@ -27,7 +27,7 @@ export interface OpenStructuredRawViewerArgs {
  * save path — the payload cannot be corrupted from this view.
  */
 export function openStructuredRawViewer(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   { content, messageId, metadata }: OpenStructuredRawViewerArgs,
 ): void {
   dispatch(

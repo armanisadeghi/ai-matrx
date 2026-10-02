@@ -22,7 +22,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../../store/hooks";
 import { getEffectiveSandboxRef } from "@host/lib/sandbox/active-binding";
 import {
   selectCanvasIsOpen,

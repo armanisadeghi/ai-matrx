@@ -23,6 +23,8 @@ jest.mock("@/features/secrets/vault-service", () => ({
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => selectedOrganizationId,
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {

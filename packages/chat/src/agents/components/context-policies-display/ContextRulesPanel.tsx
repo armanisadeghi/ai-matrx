@@ -24,7 +24,7 @@ import * as contextCore from "@ai-matrx/agents/context";
 import { ContextRulesPanelBody } from "@ai-matrx/agents/context/react";
 import type { ResolvedContextRow } from "@ai-matrx/agents/context";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
-import { useAppSelector } from "@host/lib/redux/hooks";
+import { useAppSelector } from "../../../store/hooks";
 import { useIsMobile } from "@host/hooks/use-mobile";
 import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
 import {

@@ -45,7 +45,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import { extractErrorMessage } from "@host/utils/errors";
 import { submitToolResult } from "../../../api/submit-tool-results";
 import { applySurfaceWrite } from "../../../../surfaces/runtime/surface-writeback";
@@ -65,7 +65,7 @@ export interface DispatchSurfaceWritePayload {
 export const dispatchSurfaceWrite = createAsyncThunk<
   void,
   DispatchSurfaceWritePayload,
-  { state: RootState }
+  { state: ChatRootState }
 >(
   "surfaceWriteback/dispatchAgentWrite",
   async (

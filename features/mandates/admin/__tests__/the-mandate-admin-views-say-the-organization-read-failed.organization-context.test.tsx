@@ -36,6 +36,8 @@ jest.mock("@/lib/redux/hooks", () => ({
     selector({ appContext }),
   useAppDispatch: () => () => Promise.resolve({ data: null, error: null }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 jest.mock("../references", () => ({
   SINGLE_SITE_SENTENCE: "one site",

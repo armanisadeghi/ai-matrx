@@ -4,7 +4,7 @@
 // RPC's ceiling) until the server says there is none, reporting progress so
 // the caller can say "Loading all messages… 120 loaded".
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../store/root-state";
 import { loadOlderMessages } from "../redux/execution-system/thunks/load-older-messages.thunk";
 
 const PAGE_SIZE = 200;
@@ -12,8 +12,8 @@ const PAGE_SIZE = 200;
 const MAX_PAGES = 200;
 
 export async function loadFullConversationHistory(
-  dispatch: AppDispatch,
-  getState: () => RootState,
+  dispatch: ChatDispatch,
+  getState: () => ChatRootState,
   conversationId: string,
   onProgress?: (loaded: number) => void,
 ): Promise<{ complete: boolean; loaded: number }> {

@@ -24,7 +24,7 @@ import React from "react";
 import { HandHelping } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system";
-import { useAppDispatch } from "@host/lib/redux/hooks";
+import { useAppDispatch } from "../../../store/hooks";
 import { rereadAndFollow } from "../../../agents/runtime-reconnect/reread-and-follow";
 import { ActionRequestInlineAnswer } from "@host/features/action-requests/components/ActionRequestInlineAnswer";
 import { usePendingActionRequest } from "@host/features/action-requests/hooks/usePendingActionRequest";

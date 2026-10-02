@@ -10,7 +10,7 @@
  * injection into the request body.
  */
 
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../store/root-state";
 
 jest.mock("@ai-matrx/agents/matrx", () => ({
   startAgentRun: jest.fn(),
@@ -38,7 +38,7 @@ const mockedStart = startAgentRun as jest.Mock;
 const dispatch = jest.fn();
 const getState = () =>
   ({ adminPreferences: { desktopTargetInstanceId: null } }) as unknown as
-    RootState;
+    ChatRootState;
 
 interface Envelope {
   event: string;

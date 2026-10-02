@@ -41,7 +41,7 @@
  * components. A failed save toasts (persistInlineEdit).
  */
 
-import type { AppDispatch, RootState } from "@host/lib/redux/store";
+import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   clearRequestEditedText,
   setRequestEditedText,
@@ -104,7 +104,7 @@ interface CommitInlineEditArgs {
  */
 export const commitInlineContentEdit =
   ({ conversationId, messageId, requestId, newText: rawNewText, previousText }: CommitInlineEditArgs) =>
-  (dispatch: AppDispatch, getState: () => RootState) => {
+  (dispatch: ChatDispatch, getState: () => ChatRootState) => {
     // Inline `<matrxcite n="…" />` citation markers are RENDER-ONLY — the
     // displayed text a cited message hands to inline editors contains them,
     // but they must never reach `cx_message.content` (or the DB). Strip once
@@ -178,7 +178,7 @@ export const commitInlineContentEdit =
  * (e.g. fork, retry, navigate away).
  */
 export const flushPendingInlineEdit =
-  (messageId: string) => (dispatch: AppDispatch, getState: () => RootState) => {
+  (messageId: string) => (dispatch: ChatDispatch, getState: () => ChatRootState) => {
     const entry = pendingByMessageId.get(messageId);
     if (!entry) return;
     clearTimeout(entry.timer);
@@ -199,7 +199,7 @@ export const flushPendingInlineEdit =
   };
 
 async function persistInlineEdit(
-  dispatch: AppDispatch,
+  dispatch: ChatDispatch,
   conversationId: string,
   messageId: string,
   entry: PendingEdit,

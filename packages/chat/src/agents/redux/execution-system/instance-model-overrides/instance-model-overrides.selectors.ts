@@ -7,7 +7,7 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../store/root-state";
 import type { InstanceModelOverrideState } from "../../../types/instance.types";
 import type {
   LLMParams,
@@ -19,7 +19,7 @@ import type {
  */
 export const selectInstanceOverrideState =
   (conversationId: string) =>
-  (state: RootState): InstanceModelOverrideState | undefined =>
+  (state: ChatRootState): InstanceModelOverrideState | undefined =>
     state.instanceModelOverrides.byConversationId[conversationId];
 
 /**
@@ -34,7 +34,7 @@ export const selectInstanceOverrideState =
  */
 export const selectCurrentSettings =
   (conversationId: string) =>
-  (state: RootState): Partial<FeLlmParams> | undefined => {
+  (state: ChatRootState): Partial<FeLlmParams> | undefined => {
     const overrideState =
       state.instanceModelOverrides.byConversationId[conversationId];
     if (!overrideState) return undefined;
@@ -67,7 +67,7 @@ export const selectCurrentSettings =
  */
 export const selectSettingsOverridesForApi =
   (conversationId: string) =>
-  (state: RootState): Record<string, unknown> | undefined => {
+  (state: ChatRootState): Record<string, unknown> | undefined => {
     const overrideState =
       state.instanceModelOverrides.byConversationId[conversationId];
     if (!overrideState) return undefined;
@@ -113,7 +113,7 @@ export const selectSettingsOverridesForApi =
  */
 export const selectSettingsForChatApi =
   (conversationId: string) =>
-  (state: RootState): Partial<FeLlmParams> | undefined => {
+  (state: ChatRootState): Partial<FeLlmParams> | undefined => {
     const overrideState =
       state.instanceModelOverrides.byConversationId[conversationId];
     if (!overrideState) return undefined;
@@ -138,7 +138,7 @@ export const selectSettingsForChatApi =
  */
 export const selectHasOverrides =
   (conversationId: string) =>
-  (state: RootState): boolean => {
+  (state: ChatRootState): boolean => {
     const entry = state.instanceModelOverrides.byConversationId[conversationId];
     if (!entry) return false;
     return Object.keys(entry.overrides).length > 0 || entry.removals.length > 0;
@@ -151,7 +151,7 @@ export type OverriddenKeysView = {
 
 const overriddenKeysSelectorsByConversationId = new Map<
   string,
-  (state: RootState) => OverriddenKeysView | undefined
+  (state: ChatRootState) => OverriddenKeysView | undefined
 >();
 
 /**
@@ -163,12 +163,12 @@ const overriddenKeysSelectorsByConversationId = new Map<
  */
 export const selectOverriddenKeys = (
   conversationId: string,
-): ((state: RootState) => OverriddenKeysView | undefined) => {
+): ((state: ChatRootState) => OverriddenKeysView | undefined) => {
   let selector = overriddenKeysSelectorsByConversationId.get(conversationId);
   if (!selector) {
     selector = createSelector(
       [
-        (state: RootState) =>
+        (state: ChatRootState) =>
           state.instanceModelOverrides.byConversationId[conversationId],
       ],
       (entry): OverriddenKeysView | undefined => {

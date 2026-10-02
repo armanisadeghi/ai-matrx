@@ -36,7 +36,7 @@ import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreference
 import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
 import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
-import type { RootState } from "@host/lib/redux/store";
+import type { ChatRootState } from "../../../../../store/root-state";
 import {
   DEFAULT_BUILDER_ADVANCED_SETTINGS,
   type ManagedResource,
@@ -80,7 +80,7 @@ function makeState(
       }
     >;
   } = {},
-): RootState {
+): ChatRootState {
   const orderedIds = (partial.history ?? []).map((m) => m.id);
   const byId: Record<string, unknown> = {};
   for (const m of partial.history ?? []) {
@@ -212,13 +212,13 @@ function makeState(
     // Deliberately omit instanceModelOverrides: this path MUST NOT read it.
     // If a future refactor reaches into the slice, accessing it will throw
     // and these tests will fail.
-  } as unknown as RootState;
+  } as unknown as ChatRootState;
 }
 
 function makeStoredAssemblyState(
   partial: Parameters<typeof makeState>[0] = {},
-): RootState {
-  const state = makeState(partial) as RootState & {
+): ChatRootState {
+  const state = makeState(partial) as ChatRootState & {
     instanceModelOverrides: { byConversationId: Record<string, unknown> };
   };
   state.instanceModelOverrides = { byConversationId: {} };
@@ -268,7 +268,7 @@ describe("assembleManualRequest — live read contract", () => {
       sortOrder: 0,
     };
     (
-      state as RootState & {
+      state as ChatRootState & {
         instanceResources: {
           byConversationId: Record<string, Record<string, ManagedResource>>;
         };
@@ -314,7 +314,7 @@ describe("assembleManualRequest — live read contract", () => {
       sortOrder: 0,
     };
     (
-      state as RootState & {
+      state as ChatRootState & {
         instanceResources: {
           byConversationId: Record<string, Record<string, ManagedResource>>;
         };

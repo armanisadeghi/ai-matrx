@@ -68,6 +68,8 @@ let doorsAnswer = true;
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
 
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "Test Org" }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "u-1" }));
 jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
     selectActiveOrganizationName: () => "Test Org",

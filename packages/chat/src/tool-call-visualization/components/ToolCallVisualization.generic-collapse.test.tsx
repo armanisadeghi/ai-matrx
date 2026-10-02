@@ -4,10 +4,12 @@ import { createRoot, type Root } from "react-dom/client";
 
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 
-jest.mock("@host/lib/redux/hooks", () => ({
+jest.mock("../../store/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => "default",
 }));
+// The host code this test renders reads the app's own hooks (P3): one double covers both.
+jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../store/hooks"));
 jest.mock("../../host/windows", () => ({ ...jest.requireActual("../../host/windows"),
   openOverlay: jest.fn(),
 }));
