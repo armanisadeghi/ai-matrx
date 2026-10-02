@@ -438,7 +438,8 @@ Write | Review | Build | Publish`. Every chip is always clickable — an
    pillar tier auto-collapse into counts unless clicked open. Click a card →
    it SELECTS (edges to parent and children light primary, the card widens
    and shows its FULL un-truncated URL) and opens the canonical NodePanel in
-   the 760px `SidePanelSurface`; **drag a card onto another = real reparent**
+   a resizable pane beside the map (in place of the map on a phone, with a
+   Close back to it); **drag a card onto another = real reparent**
    (same dnd-kit sensors + cycle pre-check as the tree; DB trigger stays the
    authority). Per-branch chevron collapse (+N count), a Collapse-branches
    overview, search + status/keyword filters via the shared ancestor-keeping
@@ -894,6 +895,7 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-10-02 — Map-view and phone-tree node detail moved off the floating `SidePanelSurface` into the page: a resizable `content-plan-map` pane beside the map on desktop, the editor in place of the map/tree on a phone. `NodePanel` takes an optional `onClose` for a dismissible pane.
 - 2026-09-27 — **The commit is never drawer-only on a phone.** "Create N pages"
   lived only in the "Pages that will exist" drawer below `md`. The commit bar is
   now `SetupCommitBar` (exported from `setup/components/SetupPreviewColumn.tsx`),

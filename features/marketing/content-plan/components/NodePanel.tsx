@@ -14,6 +14,7 @@ import {
   Loader2,
   PenLine,
   Trash2,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -144,6 +145,7 @@ export function NodePanel({
   pipelineProgress,
   pageKpis,
   hosted = false,
+  onClose,
 }: {
   node: PlanNodeRow;
   siteId: string;
@@ -177,6 +179,8 @@ export function NodePanel({
    * under the host close button.
    */
   hosted?: boolean;
+  /** When set, the panel's own toolbar ends with a Close control (a page pane that can be dismissed). */
+  onClose?: () => void;
 }) {
   const update = useUpdatePlanNode(siteId);
   // The brand segment for the Topic field's map doors; null on the flat route.
@@ -866,6 +870,17 @@ export function NodePanel({
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
+          {onClose ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground"
+              aria-label="Close page detail"
+              onClick={onClose}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          ) : null}
         </div>
 
         {/* Live AI output renders in a FLOATING window, never as a block bolted

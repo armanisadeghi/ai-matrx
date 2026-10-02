@@ -75,8 +75,8 @@ const PRESENTATIONS: {
     value: "docked",
     label: "Docked",
     Icon: PanelRight,
-    // Docked right, no backdrop; renders as a bottom sheet on phones.
-    blurb: "Resizable panel docked beside your work",
+    // A record-peek canvas tab; the canvas is full screen on phones.
+    blurb: "A tab in the canvas beside your work",
   },
   {
     value: "page",
@@ -280,12 +280,12 @@ export function DetailShowcase() {
               <Smartphone className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-medium text-foreground">The same record at phone width (390px), live</h2>
             </div>
-            {/* Left: page presentation. Right: docked deep link (a bottom sheet at phone width).
+            {/* Left: page presentation. Right: docked deep link (the full-screen canvas at phone width).
                 Both are the real app in a framed viewport. */}
             <div className="flex flex-wrap gap-4">
               {[
                 { title: "Page", src: detailPageHref(ref) },
-                { title: "Docked (sheet)", src: deepLinkFor(ref, "docked", here) },
+                { title: "Docked (canvas)", src: deepLinkFor(ref, "docked", here) },
               ].map((frame) => (
                 <figure key={frame.title} className="flex flex-col gap-1">
                   <figcaption className="text-[11px] font-medium text-muted-foreground">{frame.title}</figcaption>

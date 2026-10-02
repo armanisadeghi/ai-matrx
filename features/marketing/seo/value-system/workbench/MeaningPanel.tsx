@@ -44,7 +44,7 @@ import { cn } from "@/styles/themes/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
-import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
@@ -256,15 +256,26 @@ export function MeaningPanel({
     (topicValues.data?.topics ?? []).map((topic) => [topic.id, topic]),
   );
 
+  // A pane of the workbench itself (beside the keyword table, resizable), not a
+  // floating panel: everything here edits THIS site's meaning and reads the
+  // page's own bands. Value is deterministic arithmetic over meaning the site
+  // ratified — never the system's opinion; an explicit ruling always beats it.
   return (
-    <SidePanelSurface
-      title="How value is computed"
-      description="Deterministic arithmetic over meaning you ratified — never the system's opinion. Your explicit ruling always beats it."
-      onClose={onClose}
-      storageKey="value-workbench-meaning-panel"
-      defaultWidth={480}
+    <section
+      aria-labelledby="value-meaning-pane-title"
+      className="flex h-full min-h-0 flex-col bg-card"
+      data-value-meaning-pane
     >
-      <div className="space-y-5 overflow-y-auto overscroll-contain p-3 scrollbar-thin">
+      <div className="flex shrink-0 items-center gap-0 pl-3">
+        <h2
+          id="value-meaning-pane-title"
+          className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground"
+        >
+          How value is computed
+        </h2>
+        <XTapButton variant="transparent" ariaLabel="Close" onClick={onClose} />
+      </div>
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 pb-3 scrollbar-thin">
         {/* THE DOOR to industry starter packs. This panel is where the expert
             discovers the site has no meaning of its own; the pack catalogue is
             where a day-one answer comes from, so the link belongs here. */}
@@ -732,6 +743,6 @@ export function MeaningPanel({
           onClose={() => setEditingArea(undefined)}
         />
       ) : null}
-    </SidePanelSurface>
+    </section>
   );
 }

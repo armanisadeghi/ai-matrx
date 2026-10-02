@@ -14,7 +14,7 @@
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
-import { Panel, type Layout } from "react-resizable-panels";
+import { Group, Panel, type Layout } from "react-resizable-panels";
 
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -27,7 +27,6 @@ import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { Skeleton } from "@ai-matrx/design-system";
-import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
@@ -760,6 +759,30 @@ export function ContentPlanWorkbench({
     );
   }
 
+  // The selected page's editor as a DISMISSIBLE pane of this page: beside the
+  // map on a desktop, in place of the map or tree on a phone. (The tree view's
+  // own detail column is the same NodePanel, permanent, so it has no Close.)
+  const selectedNodeDetail = (node: PlanNodeRow) =>
+    siteId ? (
+      <NodePanel
+        key={node.id}
+        node={node}
+        siteId={siteId}
+        entities={entities.data ?? []}
+        parties={siteParties.data ?? []}
+        profiles={profiles.data ?? []}
+        boundProfileId={site?.plan_profile_id ?? null}
+        onDeleted={() => setSelectedNodeId(null)}
+        deepen={deepen}
+        cmsPage={cmsPages.pagesByNodeId.get(node.id) ?? null}
+        cmsSiteId={resolvedCmsSiteId}
+        cmsPagesByNodeId={cmsPages.pagesByNodeId}
+        pipelineProgress={pipelineByNodeId.get(node.id) ?? null}
+        pageKpis={pageKpis}
+        onClose={() => setSelectedNodeId(null)}
+      />
+    ) : null;
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/content-plan"
@@ -990,16 +1013,45 @@ export function ContentPlanWorkbench({
                 />
               )}
             />
+          ) : view === "map" && isMobile && selectedNode ? (
+            // A phone shows the selected page IN PLACE of the map; Close returns.
+            selectedNodeDetail(selectedNode)
           ) : view === "map" ? (
-            <SiteMap
-              nodes={nodeRows}
-              statusSlugById={statusSlugById}
-              liveById={liveById}
-              onSelect={setSelectedNodeId}
-              onReparent={handleReparent}
-            />
+            // The selected page opens beside the map as a pane of this page.
+            <Group
+              id="content-plan-map"
+              orientation="horizontal"
+              className="h-full w-full"
+            >
+              <Panel id="content-plan-map-canvas" minSize="30%">
+                <div className="h-full overflow-hidden">
+                  <SiteMap
+                    nodes={nodeRows}
+                    statusSlugById={statusSlugById}
+                    liveById={liveById}
+                    onSelect={setSelectedNodeId}
+                    onReparent={handleReparent}
+                  />
+                </div>
+              </Panel>
+              {selectedNode ? (
+                <>
+                  <Handle />
+                  <Panel
+                    id="content-plan-map-detail"
+                    defaultSize="45%"
+                    minSize="25%"
+                  >
+                    {selectedNodeDetail(selectedNode)}
+                  </Panel>
+                </>
+              ) : null}
+            </Group>
           ) : nodes.isLoading ? (
             <TreeViewSkeleton />
+          ) : isMobile && selectedNode ? (
+            // A phone shows the selected page IN PLACE of the tree; Close returns.
+            selectedNodeDetail(selectedNode)
           ) : isMobile ? (
             <PlanTree
               nodes={nodeRows}
@@ -1113,42 +1165,6 @@ export function ContentPlanWorkbench({
           }}
         />
 
-        {/* Table rows own their window-first detail through MatrxDataTable.
-          Map nodes and the mobile tree keep a secondary docked presentation,
-          now using the same non-blocking adjustable SidePanelSurface. */}
-        {siteId &&
-        view !== "table" &&
-        (view === "map" || isMobile) &&
-        selectedNode ? (
-          <SidePanelSurface
-            title={selectedNode.label}
-            description={selectedNode.route ?? "No route yet"}
-            defaultWidth={760}
-            onClose={() => setSelectedNodeId(null)}
-          >
-            {/* The mobile presentation is a portaled Drawer, so it sits
-              outside this body's touch-target root and needs its own. */}
-            <div className="matrx-touch-targets h-full min-h-0">
-              <NodePanel
-                key={selectedNode.id}
-                node={selectedNode}
-                siteId={siteId}
-                entities={entities.data ?? []}
-                parties={siteParties.data ?? []}
-                profiles={profiles.data ?? []}
-                boundProfileId={site?.plan_profile_id ?? null}
-                onDeleted={() => setSelectedNodeId(null)}
-                deepen={deepen}
-                cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
-                cmsSiteId={resolvedCmsSiteId}
-                cmsPagesByNodeId={cmsPages.pagesByNodeId}
-                pipelineProgress={pipelineByNodeId.get(selectedNode.id) ?? null}
-                pageKpis={pageKpis}
-                hosted
-              />
-            </div>
-          </SidePanelSurface>
-        ) : null}
 
         {siteId && site ? (
           <NewNodeDialog

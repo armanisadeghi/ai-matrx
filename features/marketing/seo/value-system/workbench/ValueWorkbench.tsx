@@ -181,6 +181,9 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ReasonChainDetail } from "./ReasonChain";
 import { MeaningPanel } from "./MeaningPanel";
+import { Group, Panel } from "react-resizable-panels";
+import { Handle } from "@/features/resizable-panels/Handle";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { MeaningHealth } from "./MeaningHealth";
 import { DimensionCoverage } from "@/features/marketing/seo/value-system/coverage/DimensionCoverage";
 import { RulingDialog, type RulingDraft } from "./RulingDialog";
@@ -351,6 +354,7 @@ export function ValueWorkbench() {
     null,
   );
   const [meaningOpen, setMeaningOpen] = useState(false);
+  const isMobile = useIsMobile();
   const [draft, setDraft] = useState<RulingDraft | null>(null);
   /** P23 — "+ Add a level" from the tier chip; the string is what was typed. */
   const [addingLevel, setAddingLevel] = useState<string | null>(null);
@@ -1122,609 +1126,629 @@ export function ValueWorkbench() {
       One scroll surface, at natural height, is what the rest of this family
       does (topics, rules, packs) and what a 50-row page wants.
     */}
-      <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-textured px-3 pb-3 sm:px-4 sm:pb-4">
-        {/* THE KPI BAND — first, always. The numbers a person came for, and the
-          only block on this page allowed to be the biggest thing on it. */}
-        {summary.isError ? (
-          <InlineQueryError
-            what="the value decomposition"
-            error={summary.error}
-            onRetry={() => void summary.refetch()}
-          />
-        ) : (
-          <ValueKpiBand
-            kpis={kpis}
-            rulings={rulings.data ?? null}
-            // isPending, not isLoading: a paused fetch (offline) must show the
-            // skeleton — zero-filled tiles for data that never arrived are a lie.
-            isLoading={summary.isPending}
-            activeBand={bandFilter}
-            activeSource={sourceFilter}
-            onFilterBand={(band) => filterBy("value_band", band)}
-            onFilterSource={(source) => filterBy("value_source", source)}
-            onClearFilters={() =>
-              table.onStateChange({
-                ...table.state,
-                page: 1,
-                columnFilters: {},
-              })
-            }
-            onShowLevels={() => {
-              setLevelsOpen(true);
-              levelsRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "center",
-              });
-            }}
-            onStartSession={() => setSessionOpen(true)}
-            onQuickAnswers={() =>
-              dispatch(
-                openOverlay({
-                  overlayId: "keywordQuickAnswersWindow",
-                  data: {
-                    siteId,
-                    siteLabel: site.name ?? site.domain,
-                    dimensionSlug: dimensionColumns[0] ?? null,
-                  },
-                }),
-              )
-            }
-            sessionOpen={sessionOpen}
-            trafficInsight={
-              verdict?.contrastBand && verdict.contrastPct !== null
-                ? {
-                    band: verdict.contrastBand,
-                    label: bandMetaFor(metas, verdict.contrastBand).label,
-                    pct: verdict.contrastPct,
-                    detail: `${verdict.headline} ${verdict.detail}`,
-                  }
-                : null
-            }
-          />
-        )}
-
-        {/* WHAT THE AGENTS PROPOSED and you have not answered yet — rendered in
-          BOTH postures. The ruling session's trial proposes rule changes into
-          exactly this queue, so a session that hid it would tell a person to
-          "approve it below" and then show them nothing. */}
-        {sessionOpen ? (
-          <ApprovalQueue
-            scope={{
-              key: siteId,
-              siteId,
-              brandId,
-              organizationId: site.organization_id,
-              siteLabel: site.domain,
-            }}
-            className="shrink-0"
-          />
-        ) : null}
-
-        {sessionOpen ? (
-          <RulingSession
-            siteId={siteId}
-            siteLabel={`${site.name ?? site.domain} (${site.domain})`}
-            organizationId={site.organization_id}
-            window={window}
-            metas={metas}
-            dimensions={dimensions}
-            dimensionsLoading={catalog.isLoading}
-            totalUnvalued={unvaluedQueries}
-            ruledCount={sessionRuled}
-            rulingPending={ruling.isPending}
-            onRule={(input) =>
-              ruling.mutate({
-                keywordIds: input.keywordIds,
-                tier: input.tier,
-                notes: input.notes,
-                label: input.label,
-              })
-            }
-            onExit={() => {
-              setSessionOpen(false);
-              setSessionRuled(0);
-            }}
-          />
-        ) : (
-          <>
-            {/* THE LEVEL BREAKDOWN — kept on Arman's explicit instruction ("don't
-          get rid of them yet") and marked for exactly what he said about it:
-          he is not sure the tiles are meaningful. So they stay UNDER the
-          KPIs and collapse by default behind a header that says so. Every tile
-          is still a live filter into the table. */}
-            <section ref={levelsRef} className="shrink-0 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setLevelsOpen((open) => !open)}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground transition-colors hover:text-primary"
-                >
-                  <ChevronDown
-                    className={cn(
-                      "h-3 w-3 transition-transform",
-                      !levelsOpen && "-rotate-90",
-                    )}
-                  />
-                  By level
-                </button>
-                <span
-                  className="rounded border border-border bg-muted/40 px-1.5 py-px text-[10px] uppercase tracking-wide text-muted-foreground"
-                  title="Provisional. These tiles predate the level system and Arman has not yet ruled on whether the split is the right one — they are kept, and deliberately subordinate to the KPIs above, until he does."
-                >
-                  provisional
-                </span>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 px-1.5 text-[11px] max-lg:h-11"
-                  onClick={() => setMeaningOpen((open) => !open)}
-                >
-                  <BookOpenText className="h-3.5 w-3.5" />
-                  How value works
-                </Button>
-                {bandFilter ? (
-                  <button
-                    type="button"
-                    onClick={() => filterBy("value_band", null)}
-                    className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
-                  >
-                    Showing {bandMetaFor(metas, bandFilter).label} only — clear
-                  </button>
-                ) : (
-                  <span className="text-[11px] text-muted-foreground">
-                    click a level to filter the table
-                  </span>
-                )}
-              </div>
-
-              {vocab.isError ? (
-                <InlineQueryError
-                  what="the value-band vocabulary"
-                  error={vocab.error}
-                  onRetry={() => void vocab.refetch()}
-                />
-              ) : levelsOpen && !summary.isError ? (
-                <BandScoreboard
-                  metas={metas}
-                  summary={summary.data}
-                  isLoading={summary.isPending || vocab.isPending}
-                  activeBand={bandFilter}
-                  onSelectBand={(band) => filterBy("value_band", band)}
-                />
-              ) : null}
-            </section>
-
-            {/* Setup and coverage affect whether a valuation can be trusted,
-              so they remain visible as compact status doors. Their explanations
-              and actual work live on the owning setup screens. */}
-            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-              <MeaningHealth
-                rows={health.data}
-                isLoading={health.isPending}
-                error={health.isError ? health.error : null}
-                onRetry={() => void health.refetch()}
-                brandId={brandId}
-                siteId={siteId}
+      {/*
+      "How value is computed" is a pane of THIS page, not a floating panel: it
+      edits this site's meaning and reads the page's own bands, so it opens
+      beside the keyword table (resizable) and, on a phone, in its place.
+    */}
+      <Group id="value-workbench" orientation="horizontal" className="h-full w-full">
+        {isMobile && meaningOpen ? null : (
+          <Panel id="value-workbench-main" minSize="30%">
+          <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-textured px-3 pb-3 sm:px-4 sm:pb-4">
+            {/* THE KPI BAND — first, always. The numbers a person came for, and the
+              only block on this page allowed to be the biggest thing on it. */}
+            {summary.isError ? (
+              <InlineQueryError
+                what="the value decomposition"
+                error={summary.error}
+                onRetry={() => void summary.refetch()}
               />
-              <DimensionCoverage
-                siteId={siteId}
-                brandId={brandId}
-                variant="compact"
+            ) : (
+              <ValueKpiBand
+                kpis={kpis}
+                rulings={rulings.data ?? null}
+                // isPending, not isLoading: a paused fetch (offline) must show the
+                // skeleton — zero-filled tiles for data that never arrived are a lie.
+                isLoading={summary.isPending}
+                activeBand={bandFilter}
+                activeSource={sourceFilter}
+                onFilterBand={(band) => filterBy("value_band", band)}
+                onFilterSource={(source) => filterBy("value_source", source)}
+                onClearFilters={() =>
+                  table.onStateChange({
+                    ...table.state,
+                    page: 1,
+                    columnFilters: {},
+                  })
+                }
+                onShowLevels={() => {
+                  setLevelsOpen(true);
+                  levelsRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
+                }}
+                onStartSession={() => setSessionOpen(true)}
+                onQuickAnswers={() =>
+                  dispatch(
+                    openOverlay({
+                      overlayId: "keywordQuickAnswersWindow",
+                      data: {
+                        siteId,
+                        siteLabel: site.name ?? site.domain,
+                        dimensionSlug: dimensionColumns[0] ?? null,
+                      },
+                    }),
+                  )
+                }
+                sessionOpen={sessionOpen}
+                trafficInsight={
+                  verdict?.contrastBand && verdict.contrastPct !== null
+                    ? {
+                        band: verdict.contrastBand,
+                        label: bandMetaFor(metas, verdict.contrastBand).label,
+                        pct: verdict.contrastPct,
+                        detail: `${verdict.headline} ${verdict.detail}`,
+                      }
+                    : null
+                }
               />
-            </div>
+            )}
 
-            {/* WHAT THE AGENTS PROPOSED and you have not answered yet. Nothing here
-          has touched a matcher, a worth row, a stamp or the guidelines — that
-          is P12. It used to sit above every number, which put a suggestion
-          ahead of the site's own facts; it is one chip row, below them, and
-          it renders nothing at all when the queue is empty. */}
-            <ApprovalQueue
-              scope={{
-                key: siteId,
-                siteId,
-                brandId,
-                organizationId: site.organization_id,
-                siteLabel: site.domain,
-              }}
-              className="shrink-0"
-            />
-
-            {/* ONE assignment surface, borrowed whole from the shared keyword
-          actions — never a second implementation of "assign with a reason".
-          MOUNTED INLINE, not in a Dialog: the value picker inside it opens its
-          own portalled popover, and a Radix Dialog reads that click as an
-          outside interaction and closes itself mid-assignment. Caught in the
-          live pass on 2026-08-24 — if you move this into an overlay, that bug
-          comes straight back. */}
-            {surfaces.isOpen ? (
-              <div className="shrink-0">{surfaces.node}</div>
+            {/* WHAT THE AGENTS PROPOSED and you have not answered yet — rendered in
+              BOTH postures. The ruling session's trial proposes rule changes into
+              exactly this queue, so a session that hid it would tell a person to
+              "approve it below" and then show them nothing. */}
+            {sessionOpen ? (
+              <ApprovalQueue
+                scope={{
+                  key: siteId,
+                  siteId,
+                  brandId,
+                  organizationId: site.organization_id,
+                  siteLabel: site.domain,
+                }}
+                className="shrink-0"
+              />
             ) : null}
 
-            {/* The row cells and bulk mode share ONE dimension-value editor and
-          ONE stamp RPC. Keep this inline: the picker's portalled menu and a
-          modal overlay fight over outside-click ownership. Selection stays in
-          place after a write so the same batch can receive another dimension. */}
-            {bulkAssignTarget ? (
-              <div className="shrink-0 rounded-lg border border-border bg-card p-3 shadow-sm">
-                <AssignPanel
-                  siteId={siteId}
-                  dimensions={dimensions}
-                  dimensionsLoading={catalog.isLoading}
-                  target={bulkAssignTarget}
-                  onCancel={() => setBulkAssignTarget(null)}
-                  onDone={(result, picked) => {
-                    setBulkAssignTarget(null);
-                    void refreshAfterStamp();
-                    if (
-                      result.written > 0 &&
-                      !dimensionColumns.includes(picked.dimensionSlug)
-                    ) {
-                      setDimensionColumns([
-                        ...dimensionColumns,
-                        picked.dimensionSlug,
-                      ]);
-                    }
-                    toast.success(
-                      result.cleared > 0
-                        ? `Removed ${picked.valueLabel} from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`
-                        : `${picked.dimensionLabel}: ${picked.valueLabel} on ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}${result.notesSaved ? " — your reason is saved with them." : "."}`,
-                    );
-                  }}
-                />
-              </div>
-            ) : null}
-
-            {/* Review table — ONE v3 menu around the whole pane. */}
-            <NonEditableContextMenu
-              sourceFeature="marketing"
-              surfaceName={KEYWORD_VALUE_WORKBENCH_SURFACE_NAME}
-              contentSource={{ type: "raw" }}
-              // The surface's declared values ride along — the SAME emitter the page
-              // provider uses. A `surfaceName` without them makes the v3
-              // value-mapping guard scream, and it would be right to.
-              contextData={{ ...getScope(), content: "" }}
-              resolveContextOnOpen={(target) => {
-                const id = target
-                  ?.closest("[data-row-id]")
-                  ?.getAttribute("data-row-id");
-                const row =
-                  (id && rows.find((r) => r.keyword_id === id)) || null;
-                clickedRow.current = row;
-                if (!row) return null;
-                return {
-                  // ONE menu serves every row, so the ROW's entity — not the pane's —
-                  // owns Attach To. v3 rebuilds the entity actions from this key
-                  // (`CONTEXT_MENU_ENTITY_KEY`); Share stays hidden because a keyword
-                  // is not a shareable resource, which is honest rather than fake.
-                  [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
-                    phrase: row.keyword,
-                    keywordId: row.keyword_id,
-                  }),
-                  content: [
-                    `Keyword: ${row.keyword}`,
-                    `Level: ${bandMetaFor(metas, row.value_band).label}`,
-                    `Score: ${formatScore(row.value_score)}`,
-                    `Class: ${row.traffic_class ? humanizeSlug(row.traffic_class) : "not set"}`,
-                    `Decided by: ${SOURCE_META[row.value_source]?.label ?? row.value_source}`,
-                    `Clicks: ${formatCount(row.clicks)} · Impressions: ${formatCount(row.impressions)}`,
-                  ].join("\n"),
-                  keyword: row.keyword,
-                  keyword_id: row.keyword_id,
-                };
-              }}
-              extraSections={[keywordSection]}
-            >
-              <div className="flex flex-col rounded-lg border border-border bg-card p-2">
-                {review.isError ? (
-                  <InlineQueryError
-                    what="the keyword value review"
-                    error={review.error}
-                    onRetry={() => void review.refetch()}
-                  />
-                ) : null}
-                <MatrxDataTable<ValueReviewRow>
-                  data={rows}
-                  columns={columns}
-                  getRowId={(row) => row.keyword_id}
-                  isLoading={review.isPending}
-                  isFetching={review.isFetching}
-                  query={{
-                    mode: "controlled",
-                    state: table.state,
-                    totalItems: total,
-                    onStateChange: table.onStateChange,
-                  }}
-                  toolbar={{
-                    searchPlaceholder: "Search keywords…",
-                    // KI-026 — the site's own dimensions, offered as columns. Same
-                    // chooser the Keyword Workbench uses; its core-column half is
-                    // omitted because this page's other columns are its own ruled
-                    // layout, not the shared core set.
-                    actions: (
-                      <ColumnChooser
-                        dimensions={dimensions}
-                        loading={catalog.isLoading}
-                        selected={dimensionColumns}
-                        onSelectedChange={setDimensionColumns}
-                        newDimensionHref={`/marketing/brands/${brandId}/sites/${siteId}/value/dimensions`}
+            {sessionOpen ? (
+              <RulingSession
+                siteId={siteId}
+                siteLabel={`${site.name ?? site.domain} (${site.domain})`}
+                organizationId={site.organization_id}
+                window={window}
+                metas={metas}
+                dimensions={dimensions}
+                dimensionsLoading={catalog.isLoading}
+                totalUnvalued={unvaluedQueries}
+                ruledCount={sessionRuled}
+                rulingPending={ruling.isPending}
+                onRule={(input) =>
+                  ruling.mutate({
+                    keywordIds: input.keywordIds,
+                    tier: input.tier,
+                    notes: input.notes,
+                    label: input.label,
+                  })
+                }
+                onExit={() => {
+                  setSessionOpen(false);
+                  setSessionRuled(0);
+                }}
+              />
+            ) : (
+              <>
+                {/* THE LEVEL BREAKDOWN — kept on Arman's explicit instruction ("don't
+              get rid of them yet") and marked for exactly what he said about it:
+              he is not sure the tiles are meaningful. So they stay UNDER the
+              KPIs and collapse by default behind a header that says so. Every tile
+              is still a live filter into the table. */}
+                <section ref={levelsRef} className="shrink-0 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLevelsOpen((open) => !open)}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground transition-colors hover:text-primary"
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "h-3 w-3 transition-transform",
+                          !levelsOpen && "-rotate-90",
+                        )}
                       />
-                    ),
-                  }}
-                  selection={{
-                    selectedIds,
-                    onSelectedIdsChange: setSelectedIds,
-                    noun: "keyword",
-                    actions: (_selected, ids) => (
-                      <>
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="h-7 gap-1 px-2 text-xs"
-                          disabled={ids.length === 0 || catalog.isLoading}
-                          onClick={() =>
-                            setBulkAssignTarget({
-                              keywordIds: ids,
-                              label: `${ids.length.toLocaleString()} keyword${ids.length === 1 ? "" : "s"}`,
-                            })
-                          }
-                        >
-                          <Tag className="h-3 w-3" /> Set dimensions…
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-7 gap-1 px-2 text-xs"
-                          disabled={ruling.isPending}
-                          onClick={() =>
-                            setDraft({
-                              keywordIds: ids,
-                              label: `${ids.length} keywords`,
-                              mode: "set",
-                              tier: null,
-                            })
-                          }
-                        >
-                          <Gavel className="h-3 w-3" /> Set level…
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-                          disabled={ruling.isPending}
-                          onClick={() =>
-                            setDraft({
-                              keywordIds: ids,
-                              label: `${ids.length} keywords`,
-                              mode: "clear",
-                              tier: null,
-                            })
-                          }
-                        >
-                          <Undo2 className="h-3 w-3" /> Clear rulings
-                        </Button>
-                      </>
-                    ),
-                  }}
-                  detail={{
-                    title: (row) => row.keyword,
-                    defaultWidth: 440,
-                    headerActions: (row) => (
-                      <Button
+                      By level
+                    </button>
+                    <span
+                      className="rounded border border-border bg-muted/40 px-1.5 py-px text-[10px] uppercase tracking-wide text-muted-foreground"
+                      title="Provisional. These tiles predate the level system and Arman has not yet ruled on whether the split is the right one — they are kept, and deliberately subordinate to the KPIs above, until he does."
+                    >
+                      provisional
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 gap-1 px-1.5 text-[11px] max-lg:h-11"
+                      onClick={() => setMeaningOpen((open) => !open)}
+                    >
+                      <BookOpenText className="h-3.5 w-3.5" />
+                      How value works
+                    </Button>
+                    {bandFilter ? (
+                      <button
                         type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-7 gap-1.5 px-2 text-xs"
-                        title="Everything the platform knows about this keyword"
-                        onClick={() =>
-                          openKeywordWindow({
-                            phrase: row.keyword,
-                            siteId,
-                            brandId,
-                            organizationId: site.organization_id,
-                          })
-                        }
+                        onClick={() => filterBy("value_band", null)}
+                        className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
                       >
-                        <PanelRightOpen className="h-3.5 w-3.5" /> Keyword intel
-                      </Button>
-                    ),
-                    render: (row) => {
-                      const meta = bandMetaFor(metas, row.value_band);
-                      return (
-                        <div className="space-y-4 p-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={cn(
-                                "rounded border px-2 py-0.5 text-xs font-medium",
-                                meta.chip,
-                              )}
-                            >
-                              {meta.label}
-                            </span>
-                            <SourceChip source={row.value_source} />
-                            <span className="text-xs tabular-nums text-muted-foreground">
-                              score {formatScore(row.value_score)}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-3 gap-2 text-center">
-                            {[
-                              ["Clicks", formatCount(row.clicks)],
-                              ["Impressions", formatCount(row.impressions)],
-                            ].map(([label, value]) => (
-                              <div
-                                key={label}
-                                className="rounded-md border border-border bg-muted/30 px-2 py-1.5"
-                              >
-                                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                  {label}
-                                </p>
-                                <p className="text-sm font-semibold tabular-nums">
-                                  {value}
-                                </p>
-                              </div>
-                            ))}
-                            {/* Class is SETTABLE, so it is never a stat tile here
-                        either — same rule as the column. */}
-                            <button
-                              type="button"
-                              disabled={!row.keyword_id}
-                              onClick={() =>
-                                surfaces.openDimension(
-                                  {
-                                    phrase: row.keyword,
-                                    keywordId: row.keyword_id,
-                                  },
-                                  "traffic_class",
-                                )
-                              }
-                              className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-center transition-colors hover:border-primary/40 hover:bg-accent"
-                              title="Set this keyword's class — the same write as the Keyword Workbench, with room for your reason."
-                            >
-                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                Class
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {row.traffic_class
-                                  ? humanizeSlug(row.traffic_class)
-                                  : "Set it"}
-                              </p>
-                            </button>
-                          </div>
-                          <div>
-                            <p className="mb-1.5 text-xs font-semibold text-foreground">
-                              Why this level
-                            </p>
-                            {/* P26 — THE FULL LOOP. Without `linkContext` this
-                              receipt explained the number and then left the
-                              reader holding it: no step opened the rule, the
-                              dimension value, the offering or the thresholds
-                              that produced it (found by the 2026-08-25 surface
-                              test). The doors are the ONE mapping in
-                              reason-links.ts — this passes the context, it does
-                              not fork a second receipt. */}
-                            <ReasonChainDetail
-                              reasons={row.reasons}
-                              source={row.value_source}
-                              linkContext={{
-                                brandId,
-                                siteId,
-                                keyword: row.keyword,
-                              }}
-                            />
-                          </div>
-                          <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+                        Showing {bandMetaFor(metas, bandFilter).label} only — clear
+                      </button>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">
+                        click a level to filter the table
+                      </span>
+                    )}
+                  </div>
+
+                  {vocab.isError ? (
+                    <InlineQueryError
+                      what="the value-band vocabulary"
+                      error={vocab.error}
+                      onRetry={() => void vocab.refetch()}
+                    />
+                  ) : levelsOpen && !summary.isError ? (
+                    <BandScoreboard
+                      metas={metas}
+                      summary={summary.data}
+                      isLoading={summary.isPending || vocab.isPending}
+                      activeBand={bandFilter}
+                      onSelectBand={(band) => filterBy("value_band", band)}
+                    />
+                  ) : null}
+                </section>
+
+                {/* Setup and coverage affect whether a valuation can be trusted,
+                  so they remain visible as compact status doors. Their explanations
+                  and actual work live on the owning setup screens. */}
+                <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                  <MeaningHealth
+                    rows={health.data}
+                    isLoading={health.isPending}
+                    error={health.isError ? health.error : null}
+                    onRetry={() => void health.refetch()}
+                    brandId={brandId}
+                    siteId={siteId}
+                  />
+                  <DimensionCoverage
+                    siteId={siteId}
+                    brandId={brandId}
+                    variant="compact"
+                  />
+                </div>
+
+                {/* WHAT THE AGENTS PROPOSED and you have not answered yet. Nothing here
+              has touched a matcher, a worth row, a stamp or the guidelines — that
+              is P12. It used to sit above every number, which put a suggestion
+              ahead of the site's own facts; it is one chip row, below them, and
+              it renders nothing at all when the queue is empty. */}
+                <ApprovalQueue
+                  scope={{
+                    key: siteId,
+                    siteId,
+                    brandId,
+                    organizationId: site.organization_id,
+                    siteLabel: site.domain,
+                  }}
+                  className="shrink-0"
+                />
+
+                {/* ONE assignment surface, borrowed whole from the shared keyword
+              actions — never a second implementation of "assign with a reason".
+              MOUNTED INLINE, not in a Dialog: the value picker inside it opens its
+              own portalled popover, and a Radix Dialog reads that click as an
+              outside interaction and closes itself mid-assignment. Caught in the
+              live pass on 2026-08-24 — if you move this into an overlay, that bug
+              comes straight back. */}
+                {surfaces.isOpen ? (
+                  <div className="shrink-0">{surfaces.node}</div>
+                ) : null}
+
+                {/* The row cells and bulk mode share ONE dimension-value editor and
+              ONE stamp RPC. Keep this inline: the picker's portalled menu and a
+              modal overlay fight over outside-click ownership. Selection stays in
+              place after a write so the same batch can receive another dimension. */}
+                {bulkAssignTarget ? (
+                  <div className="shrink-0 rounded-lg border border-border bg-card p-3 shadow-sm">
+                    <AssignPanel
+                      siteId={siteId}
+                      dimensions={dimensions}
+                      dimensionsLoading={catalog.isLoading}
+                      target={bulkAssignTarget}
+                      onCancel={() => setBulkAssignTarget(null)}
+                      onDone={(result, picked) => {
+                        setBulkAssignTarget(null);
+                        void refreshAfterStamp();
+                        if (
+                          result.written > 0 &&
+                          !dimensionColumns.includes(picked.dimensionSlug)
+                        ) {
+                          setDimensionColumns([
+                            ...dimensionColumns,
+                            picked.dimensionSlug,
+                          ]);
+                        }
+                        toast.success(
+                          result.cleared > 0
+                            ? `Removed ${picked.valueLabel} from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`
+                            : `${picked.dimensionLabel}: ${picked.valueLabel} on ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}${result.notesSaved ? " — your reason is saved with them." : "."}`,
+                        );
+                      }}
+                    />
+                  </div>
+                ) : null}
+
+                {/* Review table — ONE v3 menu around the whole pane. */}
+                <NonEditableContextMenu
+                  sourceFeature="marketing"
+                  surfaceName={KEYWORD_VALUE_WORKBENCH_SURFACE_NAME}
+                  contentSource={{ type: "raw" }}
+                  // The surface's declared values ride along — the SAME emitter the page
+                  // provider uses. A `surfaceName` without them makes the v3
+                  // value-mapping guard scream, and it would be right to.
+                  contextData={{ ...getScope(), content: "" }}
+                  resolveContextOnOpen={(target) => {
+                    const id = target
+                      ?.closest("[data-row-id]")
+                      ?.getAttribute("data-row-id");
+                    const row =
+                      (id && rows.find((r) => r.keyword_id === id)) || null;
+                    clickedRow.current = row;
+                    if (!row) return null;
+                    return {
+                      // ONE menu serves every row, so the ROW's entity — not the pane's —
+                      // owns Attach To. v3 rebuilds the entity actions from this key
+                      // (`CONTEXT_MENU_ENTITY_KEY`); Share stays hidden because a keyword
+                      // is not a shareable resource, which is honest rather than fake.
+                      [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+                        phrase: row.keyword,
+                        keywordId: row.keyword_id,
+                      }),
+                      content: [
+                        `Keyword: ${row.keyword}`,
+                        `Level: ${bandMetaFor(metas, row.value_band).label}`,
+                        `Score: ${formatScore(row.value_score)}`,
+                        `Class: ${row.traffic_class ? humanizeSlug(row.traffic_class) : "not set"}`,
+                        `Decided by: ${SOURCE_META[row.value_source]?.label ?? row.value_source}`,
+                        `Clicks: ${formatCount(row.clicks)} · Impressions: ${formatCount(row.impressions)}`,
+                      ].join("\n"),
+                      keyword: row.keyword,
+                      keyword_id: row.keyword_id,
+                    };
+                  }}
+                  extraSections={[keywordSection]}
+                >
+                  <div className="flex flex-col rounded-lg border border-border bg-card p-2">
+                    {review.isError ? (
+                      <InlineQueryError
+                        what="the keyword value review"
+                        error={review.error}
+                        onRetry={() => void review.refetch()}
+                      />
+                    ) : null}
+                    <MatrxDataTable<ValueReviewRow>
+                      data={rows}
+                      columns={columns}
+                      getRowId={(row) => row.keyword_id}
+                      isLoading={review.isPending}
+                      isFetching={review.isFetching}
+                      query={{
+                        mode: "controlled",
+                        state: table.state,
+                        totalItems: total,
+                        onStateChange: table.onStateChange,
+                      }}
+                      toolbar={{
+                        searchPlaceholder: "Search keywords…",
+                        // KI-026 — the site's own dimensions, offered as columns. Same
+                        // chooser the Keyword Workbench uses; its core-column half is
+                        // omitted because this page's other columns are its own ruled
+                        // layout, not the shared core set.
+                        actions: (
+                          <ColumnChooser
+                            dimensions={dimensions}
+                            loading={catalog.isLoading}
+                            selected={dimensionColumns}
+                            onSelectedChange={setDimensionColumns}
+                            newDimensionHref={`/marketing/brands/${brandId}/sites/${siteId}/value/dimensions`}
+                          />
+                        ),
+                      }}
+                      selection={{
+                        selectedIds,
+                        onSelectedIdsChange: setSelectedIds,
+                        noun: "keyword",
+                        actions: (_selected, ids) => (
+                          <>
                             <Button
                               type="button"
                               size="sm"
                               className="h-7 gap-1 px-2 text-xs"
-                              disabled={ruling.isPending}
+                              disabled={ids.length === 0 || catalog.isLoading}
                               onClick={() =>
-                                setDraft({
-                                  keywordIds: [row.keyword_id],
-                                  label: row.keyword,
-                                  mode: "set",
-                                  tier:
-                                    row.value_source === "override" &&
-                                    row.value_band !== "unvalued"
-                                      ? row.value_band
-                                      : null,
+                                setBulkAssignTarget({
+                                  keywordIds: ids,
+                                  label: `${ids.length.toLocaleString()} keyword${ids.length === 1 ? "" : "s"}`,
                                 })
                               }
                             >
-                              <Gavel className="h-3 w-3" />
-                              {row.value_source === "override"
-                                ? "Change your ruling…"
-                                : "Rule the tier…"}
+                              <Tag className="h-3 w-3" /> Set dimensions…
                             </Button>
-                            {row.value_source === "override" ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-                                disabled={ruling.isPending}
-                                onClick={() =>
-                                  ruling.mutate({
-                                    keywordIds: [row.keyword_id],
-                                    tier: null,
-                                    label: row.keyword,
-                                  })
-                                }
-                              >
-                                <Undo2 className="h-3 w-3" /> Clear ruling
-                              </Button>
-                            ) : null}
-                          </div>
-                        </div>
-                      );
-                    },
-                  }}
-                  window={{ enabled: false }}
-                  pageSize={50}
-                  read={readOf(review, { what: "the value review" })}
-                  emptyState={{
-                    icon: (
-                      <CircleDollarSign className="h-8 w-8 text-muted-foreground" />
-                    ),
-                    title: review.isError
-                      ? "Keywords unknown — the review above did not load"
-                      : bandFilter || sourceFilter || state.search
-                        ? "No keywords match this view"
-                        : "No GSC-active keywords in this window",
-                    description: review.isError
-                      ? "This list is unknown until the read succeeds — use Try again on the notice above."
-                      : bandFilter || sourceFilter || state.search
-                        ? "Clear the tier tile, the filters, or the search to widen the view."
-                        : "Connect Search Console and run a sync — keyword value starts from real search traffic.",
-                  }}
-                />
-              </div>
-            </NonEditableContextMenu>
-          </>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 gap-1 px-2 text-xs"
+                              disabled={ruling.isPending}
+                              onClick={() =>
+                                setDraft({
+                                  keywordIds: ids,
+                                  label: `${ids.length} keywords`,
+                                  mode: "set",
+                                  tier: null,
+                                })
+                              }
+                            >
+                              <Gavel className="h-3 w-3" /> Set level…
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                              disabled={ruling.isPending}
+                              onClick={() =>
+                                setDraft({
+                                  keywordIds: ids,
+                                  label: `${ids.length} keywords`,
+                                  mode: "clear",
+                                  tier: null,
+                                })
+                              }
+                            >
+                              <Undo2 className="h-3 w-3" /> Clear rulings
+                            </Button>
+                          </>
+                        ),
+                      }}
+                      detail={{
+                        title: (row) => row.keyword,
+                        defaultWidth: 440,
+                        headerActions: (row) => (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1.5 px-2 text-xs"
+                            title="Everything the platform knows about this keyword"
+                            onClick={() =>
+                              openKeywordWindow({
+                                phrase: row.keyword,
+                                siteId,
+                                brandId,
+                                organizationId: site.organization_id,
+                              })
+                            }
+                          >
+                            <PanelRightOpen className="h-3.5 w-3.5" /> Keyword intel
+                          </Button>
+                        ),
+                        render: (row) => {
+                          const meta = bandMetaFor(metas, row.value_band);
+                          return (
+                            <div className="space-y-4 p-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className={cn(
+                                    "rounded border px-2 py-0.5 text-xs font-medium",
+                                    meta.chip,
+                                  )}
+                                >
+                                  {meta.label}
+                                </span>
+                                <SourceChip source={row.value_source} />
+                                <span className="text-xs tabular-nums text-muted-foreground">
+                                  score {formatScore(row.value_score)}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                {[
+                                  ["Clicks", formatCount(row.clicks)],
+                                  ["Impressions", formatCount(row.impressions)],
+                                ].map(([label, value]) => (
+                                  <div
+                                    key={label}
+                                    className="rounded-md border border-border bg-muted/30 px-2 py-1.5"
+                                  >
+                                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                      {label}
+                                    </p>
+                                    <p className="text-sm font-semibold tabular-nums">
+                                      {value}
+                                    </p>
+                                  </div>
+                                ))}
+                                {/* Class is SETTABLE, so it is never a stat tile here
+                            either — same rule as the column. */}
+                                <button
+                                  type="button"
+                                  disabled={!row.keyword_id}
+                                  onClick={() =>
+                                    surfaces.openDimension(
+                                      {
+                                        phrase: row.keyword,
+                                        keywordId: row.keyword_id,
+                                      },
+                                      "traffic_class",
+                                    )
+                                  }
+                                  className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-center transition-colors hover:border-primary/40 hover:bg-accent"
+                                  title="Set this keyword's class — the same write as the Keyword Workbench, with room for your reason."
+                                >
+                                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    Class
+                                  </p>
+                                  <p className="text-sm font-semibold">
+                                    {row.traffic_class
+                                      ? humanizeSlug(row.traffic_class)
+                                      : "Set it"}
+                                  </p>
+                                </button>
+                              </div>
+                              <div>
+                                <p className="mb-1.5 text-xs font-semibold text-foreground">
+                                  Why this level
+                                </p>
+                                {/* P26 — THE FULL LOOP. Without `linkContext` this
+                                  receipt explained the number and then left the
+                                  reader holding it: no step opened the rule, the
+                                  dimension value, the offering or the thresholds
+                                  that produced it (found by the 2026-08-25 surface
+                                  test). The doors are the ONE mapping in
+                                  reason-links.ts — this passes the context, it does
+                                  not fork a second receipt. */}
+                                <ReasonChainDetail
+                                  reasons={row.reasons}
+                                  source={row.value_source}
+                                  linkContext={{
+                                    brandId,
+                                    siteId,
+                                    keyword: row.keyword,
+                                  }}
+                                />
+                              </div>
+                              <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  className="h-7 gap-1 px-2 text-xs"
+                                  disabled={ruling.isPending}
+                                  onClick={() =>
+                                    setDraft({
+                                      keywordIds: [row.keyword_id],
+                                      label: row.keyword,
+                                      mode: "set",
+                                      tier:
+                                        row.value_source === "override" &&
+                                        row.value_band !== "unvalued"
+                                          ? row.value_band
+                                          : null,
+                                    })
+                                  }
+                                >
+                                  <Gavel className="h-3 w-3" />
+                                  {row.value_source === "override"
+                                    ? "Change your ruling…"
+                                    : "Rule the tier…"}
+                                </Button>
+                                {row.value_source === "override" ? (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                                    disabled={ruling.isPending}
+                                    onClick={() =>
+                                      ruling.mutate({
+                                        keywordIds: [row.keyword_id],
+                                        tier: null,
+                                        label: row.keyword,
+                                      })
+                                    }
+                                  >
+                                    <Undo2 className="h-3 w-3" /> Clear ruling
+                                  </Button>
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        },
+                      }}
+                      window={{ enabled: false }}
+                      pageSize={50}
+                      read={readOf(review, { what: "the value review" })}
+                      emptyState={{
+                        icon: (
+                          <CircleDollarSign className="h-8 w-8 text-muted-foreground" />
+                        ),
+                        title: review.isError
+                          ? "Keywords unknown — the review above did not load"
+                          : bandFilter || sourceFilter || state.search
+                            ? "No keywords match this view"
+                            : "No GSC-active keywords in this window",
+                        description: review.isError
+                          ? "This list is unknown until the read succeeds — use Try again on the notice above."
+                          : bandFilter || sourceFilter || state.search
+                            ? "Clear the tier tile, the filters, or the search to widen the view."
+                            : "Connect Search Console and run a sync — keyword value starts from real search traffic.",
+                      }}
+                    />
+                  </div>
+                </NonEditableContextMenu>
+              </>
+            )}
+
+            {addingLevel !== null ? (
+              <AddLevelDialog
+                siteId={siteId}
+                kind="value_band"
+                initialLabel={addingLevel}
+                onCancel={() => setAddingLevel(null)}
+                onCreated={() => setAddingLevel(null)}
+              />
+            ) : null}
+
+            {draft ? (
+              <RulingDialog
+                siteId={siteId}
+                draft={draft}
+                metas={metas}
+                busy={ruling.isPending}
+                onCancel={() => setDraft(null)}
+                onApply={(tier, notes) =>
+                  ruling.mutate({
+                    keywordIds: draft.keywordIds,
+                    tier: draft.mode === "clear" ? null : tier,
+                    notes: notes || undefined,
+                    label: draft.label,
+                  })
+                }
+              />
+            ) : null}
+          </div>
+          </Panel>
         )}
-
         {meaningOpen ? (
-          <MeaningPanel
-            siteId={siteId}
-            siteDomain={site.domain}
-            brandId={brandId}
-            window={window}
-            bandMetas={metas}
-            bandsAreTemplate={bandsAreTemplate}
-            onClose={() => setMeaningOpen(false)}
-          />
+          <>
+            {isMobile ? null : <Handle />}
+            <Panel
+              id="value-workbench-meaning"
+              defaultSize={isMobile ? "100%" : "34%"}
+              minSize="22%"
+              maxSize={isMobile ? "100%" : "60%"}
+            >
+              <MeaningPanel
+                siteId={siteId}
+                siteDomain={site.domain}
+                brandId={brandId}
+                window={window}
+                bandMetas={metas}
+                bandsAreTemplate={bandsAreTemplate}
+                onClose={() => setMeaningOpen(false)}
+              />
+            </Panel>
+          </>
         ) : null}
-
-        {addingLevel !== null ? (
-          <AddLevelDialog
-            siteId={siteId}
-            kind="value_band"
-            initialLabel={addingLevel}
-            onCancel={() => setAddingLevel(null)}
-            onCreated={() => setAddingLevel(null)}
-          />
-        ) : null}
-
-        {draft ? (
-          <RulingDialog
-            siteId={siteId}
-            draft={draft}
-            metas={metas}
-            busy={ruling.isPending}
-            onCancel={() => setDraft(null)}
-            onApply={(tier, notes) =>
-              ruling.mutate({
-                keywordIds: draft.keywordIds,
-                tier: draft.mode === "clear" ? null : tier,
-                notes: notes || undefined,
-                label: draft.label,
-              })
-            }
-          />
-        ) : null}
-      </div>
+      </Group>
     </SurfaceRuntimeProvider>
   );
 }
