@@ -61,6 +61,8 @@ function shellState(
   };
 }
 
+const RAN_TWICE = { copies: 2 };
+
 describe("the host reads the ledger so a card survives a reload", () => {
   beforeEach(() => {
     fetchDirectiveApplyState.mockReset();
@@ -181,8 +183,10 @@ describe("the host reads the ledger so a card survives a reload", () => {
       conversation_id: null,
       shells: [
         shellState("directive_v1_create_task", [
-          { state: "applied", message: "Created task.", resource_ids: [TASK_A], copies: 2 },
-          { state: "applied", message: "Created task.", resource_ids: [TASK_B], copies: 2 },
+          // `copies` is newer than the generated contract (aidream cc87e4e53c),
+          // so it rides a spread exactly as the wire would carry it.
+          { state: "applied", message: "Created task.", resource_ids: [TASK_A], ...RAN_TWICE },
+          { state: "applied", message: "Created task.", resource_ids: [TASK_B], ...RAN_TWICE },
         ]),
       ],
     });
