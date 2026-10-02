@@ -4,7 +4,8 @@
  *
  * The ladder (ruling R35, the same one `RecordDoor` climbs):
  *   1. `open`    — an item type opens the record IN PLACE and loads it (a
- *                  bespoke window, or the Detail primitive with a source).
+ *                  bespoke window, or the Detail primitive with a source —
+ *                  the GENERIC Detail only when the entity has no peek).
  *   2. `address` — otherwise the entity's own address: a route (open / new
  *                  tab) and/or a registered peek, from the entity registry.
  *   3. `none`    — neither exists; the chip is an honest name, never a button
@@ -23,10 +24,12 @@ import type { KnownItemType } from "@/features/item-presentation/types";
 import {
   entityTokenForItemType,
   getItemConfig,
+  opensOwnPresentation,
   opensTheRecord,
   recordTableTarget,
 } from "@/features/item-presentation/registry";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
+import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { getReferenceResolver } from "./referenceResolvers";
 
 interface AddressDoors {
@@ -69,7 +72,13 @@ export function referenceDoor(
 
   if (itemType) {
     const { config, recognized } = getItemConfig(itemType);
-    if (recognized && opensTheRecord(config)) {
+    // The generic Detail shows the bare row (raw id, "Version / Visibility /
+    // Origin"); the entity's OWN peek (a bespoke one — not the generic
+    // registry peek, which is the same row dump) is its real view, so it wins
+    // (G2 review, 2026-10-02: a project chip opened the row dump).
+    const genericOverPeek =
+      !opensOwnPresentation(config) && hasPeek(address.peekKind);
+    if (recognized && opensTheRecord(config) && !genericOverPeek) {
       return { kind: "open", itemType, id, ...address };
     }
   }

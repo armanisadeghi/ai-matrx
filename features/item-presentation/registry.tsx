@@ -1005,6 +1005,10 @@ export const FALLBACK_CONFIG: ItemTypeConfig = {
 const OWN_WINDOW_OPEN_KINDS: ReadonlySet<ItemOpenKind["kind"]> = new Set([
   "agent",
   "note",
+  // A task opens THE task editor window (`taskEditorWindow`), never the
+  // generic Detail row dump (raw id, "Version / Visibility / Origin" — G2
+  // review, 2026-10-02).
+  "task",
   "conversation",
   "file",
   "structured_list",
@@ -1019,6 +1023,17 @@ const OWN_WINDOW_OPEN_KINDS: ReadonlySet<ItemOpenKind["kind"]> = new Set([
  * nothing of it, the "0 Words, 0 Characters" class. A door that lands there
  * must take the entity's address (route / peek) instead.
  */
+/**
+ * True when opening this type shows the type's OWN presentation — a bespoke
+ * window, or a Detail the type refines (`refineDetail`). False for the generic
+ * Detail, which renders the bare row (its id, version, visibility, origin):
+ * a door that has the entity's own peek must prefer the peek over it.
+ */
+export function opensOwnPresentation(config: ItemTypeConfig): boolean {
+  if (!config.open) return false;
+  return OWN_WINDOW_OPEN_KINDS.has(config.open.kind) || !!config.refineDetail;
+}
+
 export function opensTheRecord(config: ItemTypeConfig): boolean {
   if (!config.open) return false;
   return (

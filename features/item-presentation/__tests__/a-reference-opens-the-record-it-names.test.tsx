@@ -21,6 +21,7 @@ const openNoteInfo = jest.fn();
 const openAgent = jest.fn();
 const openFile = jest.fn();
 const openDetail = jest.fn();
+const openTask = jest.fn();
 
 jest.mock("@/features/overlays/openers/notesWindow", () => ({
   useOpenNotesWindow: () => openNotesWindow,
@@ -39,6 +40,9 @@ jest.mock("@/features/overlays/openers/structuredListManagerV2Window", () => ({
 }));
 jest.mock("@/features/overlays/openers/siteQuickViewWindow", () => ({
   useOpenSiteQuickViewWindow: () => jest.fn(),
+}));
+jest.mock("@/features/overlays/openers/taskEditorWindow", () => ({
+  useOpenTaskEditorWindow: () => openTask,
 }));
 jest.mock("@ai-matrx/detail/react", () => ({
   ...jest.requireActual("@ai-matrx/detail/react"),
@@ -75,7 +79,7 @@ async function openWith(type: ItemType): Promise<boolean | null> {
 }
 
 beforeEach(() => {
-  for (const f of [openNotesWindow, openNoteInfo, openAgent, openFile, openDetail])
+  for (const f of [openNotesWindow, openNoteInfo, openAgent, openFile, openDetail, openTask])
     f.mockClear();
 });
 
@@ -95,7 +99,8 @@ describe("a note reference opens the note", () => {
 describe("census: each reference type the picker offers first opens its record", () => {
   // noun → the ref the picker emits → the opener that must run
   const CASES: Array<[string, Record<string, string>, () => jest.Mock]> = [
-    ["task", { id: ID }, () => openDetail],
+    // THE task editor window — never the generic Detail row dump (G2, 2026-10-02).
+    ["task", { id: ID }, () => openTask],
     ["project", { id: ID }, () => openDetail],
     ["workbook", { id: ID }, () => openDetail],
     ["udt_document", { id: ID }, () => openDetail],
@@ -115,6 +120,17 @@ describe("census: each reference type the picker offers first opens its record",
     expect(await openWith(openType)).toBe(true);
     expect(expected()).toHaveBeenCalledTimes(1);
     expect(openNoteInfo).not.toHaveBeenCalled();
+  });
+
+  it("a task chip opens the task editor; a project chip opens the project's own peek", async () => {
+    await openWith("task");
+    expect(openTask).toHaveBeenCalledWith({ taskId: ID });
+    expect(openDetail).not.toHaveBeenCalled();
+    // The generic Detail shows the bare row (raw id, Version / Visibility /
+    // Origin); a project has its own peek, and the door prefers it.
+    expect(referenceDoor("project", { id: ID })).toEqual(
+      expect.objectContaining({ kind: "address", canPeek: true, peekKind: "project" }),
+    );
   });
 
   it("a studio session opens its studio page — never a seed-only Detail panel", () => {

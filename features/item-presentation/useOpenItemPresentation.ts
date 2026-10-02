@@ -28,6 +28,7 @@ import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenSiteQuickViewWindow } from "@/features/overlays/openers/siteQuickViewWindow";
+import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { useOpenDetail } from "@ai-matrx/detail/react";
 
 import { getItemConfig } from "./registry";
@@ -45,6 +46,7 @@ export function useOpenItemPresentation() {
   const openFile = useOpenFilePreviewWindow();
   const openPicklist = useOpenStructuredListManagerV2Window();
   const openSite = useOpenSiteQuickViewWindow();
+  const openTask = useOpenTaskEditorWindow();
   const openDetail = useOpenDetail();
 
   return useCallback(
@@ -129,10 +131,14 @@ export function useOpenItemPresentation() {
         case "web_site":
           openSite({ siteId: id, siteLabel: seed?.name ?? null });
           return true;
+        // A task opens THE task editor window — the canonical in-place task
+        // (one window per task id), never the generic Detail row dump.
+        case "task":
+          openTask({ taskId: id });
+          return true;
         // Everything else opens the Detail primitive. As a type earns a
         // bespoke window, add its branch above — nothing else changes.
         case "app":
-        case "task":
         case "project":
         case "scope":
         case "scope_type":
@@ -165,6 +171,6 @@ export function useOpenItemPresentation() {
           return openGenericDetail();
       }
     },
-    [openAgent, openNote, openFile, openPicklist, openSite, openDetail],
+    [openAgent, openNote, openFile, openPicklist, openSite, openTask, openDetail],
   );
 }

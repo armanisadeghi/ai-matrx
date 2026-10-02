@@ -38,6 +38,9 @@ jest.mock("@/features/overlays/openers/notesWindow", () => ({
 jest.mock("@/features/overlays/openers/filePreviewWindow", () => ({
   useOpenFilePreviewWindow: () => jest.fn(),
 }));
+jest.mock("@/features/overlays/openers/taskEditorWindow", () => ({
+  useOpenTaskEditorWindow: () => jest.fn(),
+}));
 jest.mock("@/features/overlays/openers/structuredListManagerV2Window", () => ({
   useOpenStructuredListManagerV2Window: () => jest.fn(),
 }));
