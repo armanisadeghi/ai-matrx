@@ -16,6 +16,7 @@ import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { operationFailed } from "@/utils/errors";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 
 /**
  * An OAuth popup only observes same-origin completion messages. A raw route
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   let backend: Response;
   let started: unknown;
   try {
-    backend = await fetch(`${AIDREAM_PRODUCTION_URL}/api/github-integrations/authorize`, {
+    backend = await sendMatrxRequest(buildMatrxRequestUrl(AIDREAM_PRODUCTION_URL, "/api/github-integrations/authorize"), {
       method: "POST",
       headers: applyOrganizationContextHeader({
         Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token ?? ""}`,

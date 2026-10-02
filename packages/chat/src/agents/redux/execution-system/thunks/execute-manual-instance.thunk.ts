@@ -172,7 +172,11 @@ import {
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { toast } from "../../../../host/notify";
-import { resilientFetch } from "@ai-matrx/data/net";
+import {
+  buildMatrxRequestUrl,
+  extractMatrxErrorMessage,
+  fetchWithMatrxProtocolFallback,
+} from "@ai-matrx/agents/matrx";
 import { logApiTarget } from "@ai-matrx/agents/matrx";
 import { toNetError } from "@ai-matrx/data/net";
 import {
@@ -893,7 +897,7 @@ export const executeManualInstance = createAsyncThunk<
             ENDPOINTS.ai.manual,
             selectEndpointOverrideConfig(state),
           );
-      const url = `${baseUrl}${manualPath}`;
+      const url = buildMatrxRequestUrl(baseUrl, manualPath);
 
       // Factual routing record — see execute-instance.thunk for the rationale.
       // The outbound payload variable in this thunk is `payload` (assembled by
@@ -1036,7 +1040,9 @@ export const executeManualInstance = createAsyncThunk<
       // resilientFetch: the first-response wait above, no wall-clock ceiling
       // on the body (the heartbeat watchdog on processStream is the streaming
       // ceiling).
-      const { response } = await resilientFetch(
+      // THE shared execution (`@ai-matrx/agents/matrx`): resilient fetch
+      // plus the v2 → v1 protocol fallback every typed call rides.
+      const { response } = await fetchWithMatrxProtocolFallback(
         url,
         {
           method: "POST",
@@ -1054,9 +1060,8 @@ export const executeManualInstance = createAsyncThunk<
       if (!response.ok) {
         let serverMessage = `${response.status} ${response.statusText}`;
         try {
-          const body = await response.json();
-          serverMessage =
-            body?.detail?.message ?? body?.detail ?? serverMessage;
+          const body: unknown = await response.json();
+          serverMessage = extractMatrxErrorMessage(body) ?? serverMessage;
         } catch {
           /* non-JSON error body */
         }

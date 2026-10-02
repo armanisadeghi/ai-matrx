@@ -7,6 +7,7 @@ import {
   applyOrganizationContextHeader,
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const destination = new URL("/code", requestBaseUrl(request));
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(destination);
   }
   const backendBase = AIDREAM_PRODUCTION_URL;
-  const response = await fetch(`${backendBase}/api/github-integrations/sync`, {
+  const response = await sendMatrxRequest(buildMatrxRequestUrl(backendBase, "/api/github-integrations/sync"), {
     method: "POST",
     headers: applyOrganizationContextHeader(
       {

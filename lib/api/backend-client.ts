@@ -5,6 +5,7 @@
 import type { AuthCredentials, ContextScope, TypedStreamEvent } from "./types";
 import { BackendApiError, parseHttpError } from "./errors";
 import { parseNdjsonStream, consumeStream } from "./stream-parser";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import type { StreamCallbacks } from "./stream-parser";
 import { BACKEND_URLS, ENDPOINTS } from "./endpoints";
 import {
@@ -121,10 +122,10 @@ export class BackendClient {
     body: Record<string, unknown> = {},
     signal?: AbortSignal,
   ): Promise<Response> {
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = buildMatrxRequestUrl(this.baseUrl, endpoint);
     const mergedBody = this.mergeScope(body);
 
-    const response = await fetch(url, {
+    const response = await sendMatrxRequest(url, {
       method: "POST",
       headers: this.buildHeaders(),
       body: JSON.stringify(mergedBody),
@@ -153,9 +154,9 @@ export class BackendClient {
    * GET request returning the raw Response.
    */
   async rawGet(endpoint: string, signal?: AbortSignal): Promise<Response> {
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = buildMatrxRequestUrl(this.baseUrl, endpoint);
 
-    const response = await fetch(url, {
+    const response = await sendMatrxRequest(url, {
       method: "GET",
       headers: this.buildHeaders(true, "GET"),
       signal,
@@ -178,10 +179,10 @@ export class BackendClient {
     formData: FormData,
     signal?: AbortSignal,
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = buildMatrxRequestUrl(this.baseUrl, endpoint);
     const headers = this.buildHeaders(false);
 
-    const response = await fetch(url, {
+    const response = await sendMatrxRequest(url, {
       method: "POST",
       headers,
       body: formData,
@@ -237,8 +238,11 @@ export class BackendClient {
    */
   async cancelRequest(requestId: string): Promise<void> {
     try {
-      const url = `${this.baseUrl}${ENDPOINTS.ai.cancel(requestId)}`;
-      await fetch(url, {
+      const url = buildMatrxRequestUrl(
+        this.baseUrl,
+        ENDPOINTS.ai.cancel(requestId),
+      );
+      await sendMatrxRequest(url, {
         method: "POST",
         headers: this.buildHeaders(),
       });

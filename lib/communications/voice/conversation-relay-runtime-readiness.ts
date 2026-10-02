@@ -4,6 +4,7 @@ import "server-only";
 
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import type { components } from "@ai-matrx/agents/generated/api-types";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 
 const READINESS_PATH = "/communications/voice/conversation-relay/readiness";
 
@@ -31,8 +32,8 @@ function isRuntimeReadiness(
 }
 
 export async function getConversationRelayRuntimeReadiness(): Promise<ConversationRelayRuntimeReadiness> {
-  const response = await fetch(
-    `${AIDREAM_PRODUCTION_URL.replace(/\/$/, "")}${READINESS_PATH}`,
+  const response = await sendMatrxRequest(
+    buildMatrxRequestUrl(AIDREAM_PRODUCTION_URL.replace(/\/$/, ""), READINESS_PATH),
     { cache: "no-store" },
   );
   if (!response.ok) {

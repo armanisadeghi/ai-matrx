@@ -5,6 +5,7 @@ import "server-only";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 
 export const CONVERSATION_RELAY_PUBLIC_URL =
   "wss://server.app.matrxserver.com/communications/voice/conversation-relay";
@@ -85,8 +86,11 @@ export async function prepareConversationRelaySession(
 ): Promise<ConversationRelaySessionReference> {
   let response: Response;
   try {
-    response = await fetch(
-      `${AIDREAM_PRODUCTION_URL.replace(/\/$/, "")}/communications/voice/conversation-relay/session-reference`,
+    response = await sendMatrxRequest(
+      buildMatrxRequestUrl(
+        AIDREAM_PRODUCTION_URL.replace(/\/$/, ""),
+        "/communications/voice/conversation-relay/session-reference",
+      ),
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

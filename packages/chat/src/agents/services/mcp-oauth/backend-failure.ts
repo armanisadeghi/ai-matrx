@@ -1,3 +1,5 @@
+import { sendMatrxRequest } from "@ai-matrx/agents/matrx";
+
 /** Classify a failed aidream response without confusing edge HTML with API JSON. */
 export interface McpBackendFailure {
   userMessage: string;
@@ -10,7 +12,7 @@ const TRANSIENT_GATEWAY_STATUSES = new Set([502, 503, 504]);
 export async function persistMcpOAuthTokens(
   input: string,
   init: RequestInit,
-  fetcher: typeof fetch = fetch,
+  fetcher: (input: string, init: RequestInit) => Promise<Response> = sendMatrxRequest,
 ): Promise<Response> {
   const maxAttempts = 3;
   let response: Response | null = null;

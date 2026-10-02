@@ -12,6 +12,7 @@ import {
 import { isValidOAuthState } from "@ai-matrx/chat/agents/services/mcp-oauth/state";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { buildMatrxRequestUrl } from "@ai-matrx/agents/matrx";
 
 interface OAuthSession {
   serverId: string;
@@ -185,7 +186,11 @@ export async function GET(req: NextRequest) {
 
     const backendBase = AIDREAM_PRODUCTION_URL;
     const persistRes = await persistMcpOAuthTokens(
-      `${backendBase}/api/mcp-connections/${encodeURIComponent(session.serverId)}/oauth-tokens`,
+      buildMatrxRequestUrl(
+        backendBase,
+        "/api/mcp-connections/{server_id}/oauth-tokens",
+        { server_id: session.serverId },
+      ),
       {
         method: "POST",
         headers: {

@@ -34,6 +34,7 @@
  */
 
 import { readMatrxSseStream } from "@ai-matrx/agents/stream/sse";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import type { ChatThunk } from "../../../../store/root-state";
 import {
   appendWorkflowNodeStream,
@@ -263,11 +264,11 @@ export function followWorkflowRunStream(
         const headers: Record<string, string> = { ...wire.headers };
         delete headers["Content-Type"]; // GET has no body
         headers["Accept"] = "application/json";
-        const res = await fetch(`${wire.baseUrl}/runs/${opts.runId}`, { // org-filter: server-call the run's backend headers carry the organization; the read is by run id
-          method: "GET",
-          headers,
-          signal: opts.signal,
-        });
+        // org-filter: server-call the run's backend headers carry the organization; the read is by run id
+        const res = await sendMatrxRequest(
+          buildMatrxRequestUrl(wire.baseUrl, "/runs/{run_id}", { run_id: opts.runId }),
+          { method: "GET", headers, signal: opts.signal },
+        );
         if (!res.ok) return false;
         const row = (await res.json()) as RunRowSnapshot;
         const event = reconcileEventFromRunRow(opts.runId, row);
@@ -312,8 +313,11 @@ export function followWorkflowRunStream(
         headers["Accept"] = "text/event-stream";
         if (cursor > 0) headers["Last-Event-ID"] = String(cursor);
 
-        const res = await fetch( // org-filter: server-call the run's backend headers carry the organization; the read is by run id
-          `${wire.baseUrl}/runs/${opts.runId}/events/stream`,
+        // org-filter: server-call the run's backend headers carry the organization; the read is by run id
+        const res = await sendMatrxRequest(
+          buildMatrxRequestUrl(wire.baseUrl, "/runs/{run_id}/events/stream", {
+            run_id: opts.runId,
+          }),
           { method: "GET", headers, signal: controller.signal },
         );
         if (!res.ok || !res.body) {

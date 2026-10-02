@@ -17,6 +17,7 @@ import type {
 } from "./types";
 import { unwrapRows } from "./unwrap";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 
 /** SQL runner using the admin client + execute_admin_query RPC. */
 export async function createAdminSqlRunner(): Promise<SqlRunner> {
@@ -101,9 +102,14 @@ export function createDownloadProbe(
 
   return async (fileId: string) => {
     const start = Date.now();
-    const url = `${backend}/files/${encodeURIComponent(fileId)}/download?inline=true`;
+    const url = buildMatrxRequestUrl(
+      backend,
+      "/files/{file_id}/download",
+      { file_id: fileId },
+      { inline: true },
+    );
     try {
-      const res = await fetch(url, {
+      const res = await sendMatrxRequest(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

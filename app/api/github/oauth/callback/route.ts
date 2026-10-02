@@ -6,6 +6,7 @@ import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { operationFailed } from "@/utils/errors";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 
 type GitHubCompletion = {
   status: string;
@@ -103,8 +104,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     | "continuation_url" = "complete_request";
   let failureStatus = 503;
   try {
-    const response = await fetch(
-      `${backendBase}/api/github-integrations/complete`,
+    const response = await sendMatrxRequest(
+      buildMatrxRequestUrl(backendBase, "/api/github-integrations/complete"),
       {
         method: "POST",
         headers: applyOrganizationContextHeader(
