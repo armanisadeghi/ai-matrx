@@ -17,6 +17,11 @@
 -- Measured before writing: 0 rows carry the prefix on the main database, 3 (all distinct) on the
 -- clone, so the build cannot fail on an existing duplicate.
 
-create unique index concurrently if not exists dm_messages_notification_replay_key_uidx
+-- A CONCURRENTLY build that is cancelled (lock timeout behind a long transaction) leaves an
+-- INVALID index that `if not exists` would then skip forever — so the file drops whatever is
+-- there and builds it, which is re-runnable after any partial attempt.
+drop index concurrently if exists communication.dm_messages_notification_replay_key_uidx;
+
+create unique index concurrently dm_messages_notification_replay_key_uidx
   on communication.dm_messages (client_message_id)
   where client_message_id like 'notification:%';

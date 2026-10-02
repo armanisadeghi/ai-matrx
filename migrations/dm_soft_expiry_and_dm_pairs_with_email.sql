@@ -99,6 +99,41 @@ begin
 end;
 $function$;
 
+-- ── 1b'. what the inbox's ONE soft-expiry timer needs ────────────────────────────────────
+-- @ai-matrx/messaging re-reads a conversation's unread count when its counted message lapses.
+-- It asks this for the soonest pending expiry PER conversation — one row each, so a busy thread
+-- can never push its neighbours out of a row cap — and the database's own clock, so lapse is
+-- judged on the server's clock and a fast browser never hides a message the server still counts.
+-- SECURITY INVOKER: the caller's row security decides which messages exist for them. At most 200
+-- conversations per call (the package chunks).
+create or replace function public.get_dm_pending_soft_expiries(p_conversation_ids uuid[])
+ returns jsonb
+ language sql
+ stable
+ security invoker
+ set search_path to ''
+as $function$
+  select jsonb_build_object(
+    'server_now', now(),
+    'pending', coalesce((
+      select jsonb_agg(jsonb_build_object('conversation_id', x.conversation_id,
+                                          'soft_expires_at', x.soonest))
+        from (select m.conversation_id, min(m.soft_expires_at) as soonest
+                from communication.dm_messages m
+               where m.conversation_id = any ((p_conversation_ids)[1:200])
+                 and m.sender_id is distinct from (select auth.uid())
+                 and m.deleted_at is null
+                 and m.soft_expires_at > now()
+               group by m.conversation_id) x), '[]'::jsonb))
+$function$;
+
+comment on function public.get_dm_pending_soft_expiries(uuid[]) is
+  'Per conversation (max 200): the soonest future soft_expires_at among other people''s live '
+  'messages the caller can see, plus server_now. Read by @ai-matrx/messaging''s soft-expiry timer.';
+
+revoke all on function public.get_dm_pending_soft_expiries(uuid[]) from public, anon;
+grant execute on function public.get_dm_pending_soft_expiries(uuid[]) to authenticated, service_role;
+
 -- ── 1c. the in-app notice lapses with its DM ──────────────────────────────────────────────
 -- `notify()` writes `metadata.soft_expires_at` (ISO 8601 WITH a zone) on the in-app leg of a
 -- notice whose DM lapses. Anything else in that key — absent, malformed, zone-less — is "never
