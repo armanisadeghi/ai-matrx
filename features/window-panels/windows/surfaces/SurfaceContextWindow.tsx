@@ -31,6 +31,9 @@ import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { InfoHint } from "@/components/official/InfoHint";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 
 export interface SurfaceContextWindowProps {
   isOpen: boolean;
@@ -111,6 +114,9 @@ export default function SurfaceContextWindow({
   isEditable = false,
 }: SurfaceContextWindowProps) {
   const live = useLiveSurfaceScope({ enabled: isOpen, surfaceName });
+  // A value's machine name is an engineer's handle — admin-only, like the
+  // surface key in the Agents menu. Everyone else reads the label.
+  const isAdmin = useAppSelector(selectIsAdmin);
   /**
    * THE AVAILABILITY HALF (census #52, THE-MODEL law 3). This window's whole
    * job is completeness — what this page declares, supplies, and can be
@@ -490,11 +496,13 @@ export default function SurfaceContextWindow({
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-xs font-medium">
-                          {item.declaration?.label ?? item.key}
+                          {item.declaration?.label ?? humanizeIdentifier(item.key)}
                         </span>
-                        <code className="block truncate text-[10px] text-muted-foreground">
-                          {item.key}
-                        </code>
+                        {isAdmin ? (
+                          <code className="block truncate text-[10px] text-muted-foreground">
+                            {item.key}
+                          </code>
+                        ) : null}
                       </span>
                       {item.kind === "runtime" && (
                         <Badge
@@ -635,9 +643,11 @@ export default function SurfaceContextWindow({
         </div>
       }
       footerRight={
-        <code className="max-w-[300px] truncate font-mono text-[10px] text-muted-foreground">
-          {surfaceName}
-        </code>
+        isAdmin ? (
+          <code className="max-w-[300px] truncate font-mono text-[10px] text-muted-foreground">
+            {surfaceName}
+          </code>
+        ) : null
       }
     >
       <NonEditableContextMenu
@@ -652,11 +662,13 @@ export default function SurfaceContextWindow({
             <div className="flex flex-wrap items-start gap-2">
               <div className="min-w-0 basis-full flex-1">
                 <h2 className="truncate text-base font-semibold">
-                  {selected.declaration?.label ?? selected.key}
+                  {selected.declaration?.label ?? humanizeIdentifier(selected.key)}
                 </h2>
-                <code className="block truncate text-xs text-muted-foreground">
-                  {selected.key}
-                </code>
+                {isAdmin ? (
+                  <code className="block truncate text-xs text-muted-foreground">
+                    {selected.key}
+                  </code>
+                ) : null}
               </div>
               {selected.declaration && (
                 <>
