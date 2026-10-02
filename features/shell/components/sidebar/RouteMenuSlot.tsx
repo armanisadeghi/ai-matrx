@@ -213,6 +213,8 @@ export default function RouteMenuSlot() {
       {routeNavTarget &&
         createPortal(
           <>
+            {/* Shown only when this family's menu is a domain panel (shell.css). */}
+            <div className="shell-domain-panel-title">{match.label}</div>
             {loading && (
               <div className="shell-sidebar-route-loading">
                 {[1, 2, 3, 4, 5].map((i) => (

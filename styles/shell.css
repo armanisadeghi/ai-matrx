@@ -1102,12 +1102,23 @@ button.shell-nav-flyout-item {
     --shell-sidebar-w-expanded: calc(var(--shell-sidebar-w) + var(--shell-domain-panel-w));
   }
 
-  .shell-root[data-domain-panel] .shell-sidebar-nav {
+  /* The panel runs the sidebar's full height from the very top; the strip's
+     toggle, icons and footer stack in the first column. `display: contents`
+     lifts the nav's two menus into the sidebar's own grid. */
+  .shell-root[data-domain-panel] .shell-sidebar {
     display: grid;
     grid-template-columns: var(--shell-sidebar-w) var(--shell-domain-panel-w);
-    padding: 0;
-    gap: 0;
-    overflow: hidden;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .shell-root[data-domain-panel] .shell-sidebar-nav {
+    display: contents;
+  }
+
+  .shell-root[data-domain-panel] .shell-sidebar-brand {
+    grid-column: 1;
+    grid-row: 1;
+    width: var(--shell-sidebar-w);
   }
 
   .shell-root[data-domain-panel] .shell-sidebar-switch {
@@ -1124,12 +1135,36 @@ button.shell-nav-flyout-item {
   }
 
   .shell-root[data-domain-panel] .shell-sidebar-main-nav {
+    grid-column: 1;
+    grid-row: 2;
     padding: 0.25rem 0.375rem;
   }
 
+  .shell-root[data-domain-panel] .shell-sidebar-footer {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
   .shell-root[data-domain-panel] .shell-sidebar-route-nav {
-    padding: 0.25rem 0.5rem;
+    grid-column: 2;
+    grid-row: 1 / -1;
+    padding: 0 0.5rem 0.25rem;
     border-left: 1px solid var(--shell-sidebar-border-expanded);
+  }
+
+  /* The panel's first row names the domain, on the header's line. */
+  .shell-root[data-domain-panel] .shell-domain-panel-title {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    /* The brand row's height, which canvas chrome keeps when it zeroes
+       --shell-header-h (the workspace header is the same 2.75rem). */
+    height: 2.75rem;
+    padding: 0 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--shell-nav-text-hover);
+    white-space: nowrap;
   }
 
   /* The strip: collapsed whatever the checkbox says. */
@@ -1157,6 +1192,10 @@ button.shell-nav-flyout-item {
   .shell-root[data-domain-panel] .shell-sidebar-footer {
     width: var(--shell-sidebar-w);
   }
+}
+
+.shell-domain-panel-title {
+  display: none;
 }
 
 .shell-sidebar-settings-home {
@@ -2696,10 +2735,17 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   padding-right: max(0px, calc(var(--shell-edge-gutter) - var(--matrx-tap-gap, 0px) / 2));
 }
 
-/* The phone's left control gets the same gutter, so both ends match there too. */
+/* The phone's left control gets the same gutter, so both ends match there
+   too. It sits on the header, never on the tap button's own wrapper (the
+   tap-target guard refuses padding around a tap button). */
 .shell-mobile-trigger {
   flex-shrink: 0;
-  padding-left: max(0px, calc(var(--shell-edge-gutter) - var(--matrx-tap-gap, 0px) / 2));
+}
+
+@media (max-width: 1023px) {
+  .shell-header {
+    padding-left: max(0px, calc(var(--shell-edge-gutter) - var(--matrx-tap-gap, 0px) / 2));
+  }
 }
 
 .shell-header-right-inject {

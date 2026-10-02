@@ -86,7 +86,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 ## Change log
 
-- `2026-10-01` — Claude: THE DOMAIN PANEL. A route-menu entry with `layout: "panel"` keeps the main menu as the icon strip and puts its own menu beside it on desktop (no flip); the sidebar toggle opens/closes the panel. `.shell-root[data-domain-panel]` (AppShell + NavActiveSync) redefines `--shell-sidebar-w-expanded` as strip + panel so every width rule follows. Pilot: Marketing. Phones keep the drawer flip for now.
+- `2026-10-01` — Claude: THE DOMAIN PANEL. A route-menu entry with `layout: "panel"` keeps the main menu as the icon strip and puts its own menu beside it on desktop (no flip); the sidebar toggle opens/closes the panel. `.shell-root[data-domain-panel]` (AppShell + NavActiveSync) redefines `--shell-sidebar-w-expanded` as strip + panel so every width rule follows. Pilot: Marketing. Phones keep the drawer flip for now. Same day: the panel runs full height from the top (the sidebar becomes a two-column grid, `.shell-sidebar-nav` is `display: contents`) and opens with `.shell-domain-panel-title`; Marketing is wrapped in `ChatCanvasWorkspace` (`SIGNED_IN_CHAT_WORKSPACE_ROUTES`) so the chat sits beside its menu, as on the Board.
 
 - `2026-09-19` — Cursor: group highlight is ownership-only. A flyout shortcut into another module (AI Work → `/chat/new`) no longer lights the parent beside the real owner; Agents declares `/agent-connections` as its alternate namespace.
 

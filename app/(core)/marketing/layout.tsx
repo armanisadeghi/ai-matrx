@@ -18,6 +18,11 @@ import MarketingLanding from "@/features/auth/components/module-landing/landings
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { getMarketingRouteMetadata } from "@/features/marketing/lib/route-metadata";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
+import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
+import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies.server";
+import { readComposerModeCookie } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-mode.server";
+
+const MARKETING_WORKSPACE_ID = "marketing";
 
 export async function generateMetadata() {
   const pathname = (await headers()).get("x-pathname") ?? "/marketing";
@@ -39,5 +44,20 @@ export default async function MarketingLayout({
     );
   }
 
-  return children;
+  // Signed in: the chat beside the module, as on the Board and Education
+  // (SIGNED_IN_CHAT_WORKSPACE_ROUTES gives the first paint canvas chrome). The
+  // sidebar keeps Marketing's own menu as the domain panel; marketing pages'
+  // <PageHeader> portals into the workspace header.
+  const [initialLayout, initialMode] = await Promise.all([
+    readCanvasWorkspaceLayout(MARKETING_WORKSPACE_ID),
+    readComposerModeCookie(),
+  ]);
+  return (
+    <ChatCanvasWorkspace
+      id={MARKETING_WORKSPACE_ID}
+      initialLayout={initialLayout}
+      initialMode={initialMode}
+      canvas={<div className="h-full min-h-0 overflow-y-auto">{children}</div>}
+    />
+  );
 }

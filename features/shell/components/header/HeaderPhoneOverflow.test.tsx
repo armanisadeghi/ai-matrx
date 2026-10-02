@@ -116,7 +116,7 @@ describe("the header right set on a phone — source", () => {
     for (const control of [
       "<CommandBarHeaderButton",
       "<SurfaceAgentsHeaderButton",
-      "<CanvasShellHeaderToggle",
+      "<CanvasToggle",
       "<MessagesHeaderButton",
       "<InboxHeaderButton",
     ]) {

@@ -42,7 +42,7 @@ describe("the header right set", () => {
     const order = [
       "<CommandBarHeaderButton",
       "<SurfaceAgentsHeaderButton",
-      "<CanvasShellHeaderToggle",
+      "<CanvasToggle",
       "<MessagesHeaderButton",
       "<InboxHeaderButton",
     ];

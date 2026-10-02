@@ -37,6 +37,15 @@ export const CANVAS_CHROME_ROUTES: readonly RegExp[] = [
 export const SIGNED_IN_CANVAS_CHROME_ROUTES: readonly RegExp[] = [/^\/education(?:\/|$)/];
 
 /**
+ * Signed-in modules wrapped in the chat workspace whose sidebar keeps their OWN
+ * domain menu (route-menu-registry `layout: "panel"`), so they stay out of
+ * CANVAS_WORKSPACE_MENU_PATTERN: the chat's history lives in the chat panel's
+ * own title menu, not in the sidebar (owner, 2026-10-01: the chat on every
+ * page, beside the domain menu — pilot: Marketing).
+ */
+export const SIGNED_IN_CHAT_WORKSPACE_ROUTES: readonly RegExp[] = [/^\/marketing(?:\/|$)/];
+
+/**
  * Every page that can host the canvas workspace, as ONE pattern — the shell
  * sidebar's Chats menu (route-menu-registry) opens its conversations in that
  * page's chat panel. Signed-out Education matches too; its chat menu simply
@@ -52,7 +61,8 @@ export const SHELL_SIGNED_IN_ATTRIBUTE = "data-signed-in";
 export function isCanvasChromeRoute(pathname: string, signedIn = false): boolean {
   return (
     CANVAS_CHROME_ROUTES.some((pattern) => pattern.test(pathname)) ||
-    (signedIn && SIGNED_IN_CANVAS_CHROME_ROUTES.some((pattern) => pattern.test(pathname)))
+    (signedIn &&
+      [...SIGNED_IN_CANVAS_CHROME_ROUTES, ...SIGNED_IN_CHAT_WORKSPACE_ROUTES].some((pattern) => pattern.test(pathname)))
   );
 }
 
