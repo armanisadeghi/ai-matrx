@@ -36,7 +36,7 @@ The platform's print hub: one index at `/print` of everything AI Matrx can put o
 **Services / APIs**
 
 - Printing under `/print/*` except `order` runs in the browser against `@ai-matrx/print`. Optional agent menus use the shared surface registry, user bindings and execution services; they do not move printing to a server.
-- `/print/order` calls `GET /lulu/catalog`, `POST /lulu/price`, the shipping and order endpoints, and `GET /lulu/payment-mode` on aidream — all through the generated typed client (`lib/api/typed-client`), all bound to `types/python-generated/api-types.ts`.
+- `/print/order` calls `GET /lulu/catalog`, `POST /lulu/price`, the shipping and order endpoints, and `GET /lulu/payment-mode` on aidream — all through the generated typed client (`lib/api/typed-client`), all bound to `@ai-matrx/agents/generated/api-types`.
 
 **Redux slice(s)** — none. `/print/order` reads `selectOrganizationId` from `appContextSlice`; nothing here owns state.
 

@@ -7,7 +7,7 @@
  *
  * Every verb is typed against the GENERATED OpenAPI paths: the path string,
  * its `{param}` set, and the request body all come from
- * `types/python-generated/api-types.ts`. A route or field that moves on the
+ * `@ai-matrx/agents/generated/api-types`. A route or field that moves on the
  * server becomes a compile error here — which is the whole point, so never
  * reintroduce a stringly-typed `post(path, ...)` helper.
  *

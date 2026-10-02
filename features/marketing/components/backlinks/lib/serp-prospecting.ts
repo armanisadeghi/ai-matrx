@@ -12,7 +12,7 @@
  * without a browser.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** A search-expansion strategy the server can apply to each seed keyword. */
 export type SerpQueryVariant = components["schemas"]["QueryVariant"];

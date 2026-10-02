@@ -6,7 +6,7 @@ import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { getJson, patchJson, postJson } from "@/lib/python-client";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { RESEARCH_ENDPOINTS } from "./service/research-endpoints";
 import type {
   ResearchTopic,

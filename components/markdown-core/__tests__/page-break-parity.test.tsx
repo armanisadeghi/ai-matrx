@@ -54,7 +54,7 @@ import {
   splitContentIntoBlocksWith,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-core";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 const FORMS = [
   "<!-- pagebreak -->",

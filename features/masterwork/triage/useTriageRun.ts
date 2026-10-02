@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
 import { parseTriageResult, type TriageResult } from "./types";

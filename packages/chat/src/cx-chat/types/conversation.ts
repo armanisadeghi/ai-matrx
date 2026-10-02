@@ -9,7 +9,7 @@
  * - streamEvents per message enables both normal NDJSON and block-mode streaming
  */
 
-import type { TypedStreamEvent } from "@host/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import type { LLMParams } from "../../host/server/types";
 import type { Json } from "../../host/db-types";
 import type {

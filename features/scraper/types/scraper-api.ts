@@ -19,14 +19,14 @@
 // REQUEST TYPES — aliases of the generated backend contract
 // ============================================================================
 //
-// These are NOT hand-written mirrors. `types/python-generated/api-types.ts` is
+// These are NOT hand-written mirrors. `@ai-matrx/agents/generated/api-types` is
 // the source of truth (regenerate with `pnpm sync-types`); aliasing here keeps
 // ONE definition of the request shape for every caller. There is exactly one
 // client path to these endpoints — `useScraperApi` — selecting the standalone
 // scraper service directly. Never re-declare these option sets or assemble a
 // scraper URL anywhere else. `pnpm check:scraper-routing` enforces the boundary.
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export type QuickScrapeRequest = components["schemas"]["QuickScrapeRequest"];
 export type SearchKeywordsRequest =

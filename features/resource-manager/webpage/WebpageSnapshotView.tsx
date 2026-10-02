@@ -2,7 +2,7 @@
 
 import { CalendarClock, FileText } from "lucide-react";
 import { ScrapedContentPretty } from "@/features/scraper/parts/ScrapedContentPretty";
-import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
+import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
 
 interface WebpageSnapshotViewProps {
   snapshot: PreFetchedUrl;

@@ -21,7 +21,7 @@ experience a human has and how quickly and easily we can do things."*
 | File | What it is |
 |---|---|
 | `types.ts` | The contract's TypeScript face. Nothing here is invented. |
-| ~~`contract-paths.ts`~~ | 🚨 **GONE, exactly as designed (2026-09-18).** It bound the contract's shapes to `callApi`'s `paths` while the server lane built, and it promised to delete itself the moment `pnpm sync-types` wrote the real `/media` operations. That happened: every key collided (TS2717), `pnpm type-check` failed by name, and the file was deleted in that session — along with `features/connected-sources/contract-paths.ts` and the `lib/api/contract-ahead-route.ts` wrapper both used. Paths and bodies now come from `types/python-generated/api-types.ts` and nothing else. |
+| ~~`contract-paths.ts`~~ | 🚨 **GONE, exactly as designed (2026-09-18).** It bound the contract's shapes to `callApi`'s `paths` while the server lane built, and it promised to delete itself the moment `pnpm sync-types` wrote the real `/media` operations. That happened: every key collided (TS2717), `pnpm type-check` failed by name, and the file was deleted in that session — along with `features/connected-sources/contract-paths.ts` and the `lib/api/contract-ahead-route.ts` wrapper both used. Paths and bodies now come from `@ai-matrx/agents/generated/api-types` and nothing else. |
 | `api.ts` | Every call the screen makes, through the ONE door. |
 | `format.ts` | Pure formatting, so one number is formatted once. |
 
@@ -316,7 +316,7 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 
 - `2026-09-18` — **The generated contract arrived, and four calls turned out to
   be calling nothing.** `pnpm sync-types:live` wrote the real `/media/*`
-  operations into `types/python-generated/api-types.ts`, `contract-paths.ts`
+  operations into `@ai-matrx/agents/generated/api-types`, `contract-paths.ts`
   collided on every key and was deleted exactly as its header promised, and the
   truth underneath it was that this module named four endpoints the server never
   built — each one marked `implemented: False` in

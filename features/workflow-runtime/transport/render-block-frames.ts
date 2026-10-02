@@ -21,7 +21,7 @@
  * (`ProgressTrackingEmitter._publish_render_block`).
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import type { NodeStreamEvent } from "../types";
 
 /** Frame sets held open at once before the oldest is abandoned. */

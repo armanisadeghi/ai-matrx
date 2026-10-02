@@ -35,7 +35,7 @@ import type { Database } from "@/types/database.types";
 import { isJsonObject, toJsonRecord, type JsonObject } from "@/types/json";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 /** Mandate/exemplar rows are platform rows owned by the system org. */
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 /** OWNERSHIP + the admin refusal come from the ONE list door, never from here. */

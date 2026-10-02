@@ -23,7 +23,7 @@ import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentP
 import { podcastService } from "@/features/podcasts/service";
 import { topicFromIdea } from "@/features/podcasts/generator/topic-idea";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import type { PodcastClientTopicIdeaRequestOffer } from "@/types/python-generated/provision-offers";
+import type { PodcastClientTopicIdeaRequestOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 /** How many ideas one request asks for (the by-name `idea_count`). */
 const IDEA_COUNT = 5;

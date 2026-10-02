@@ -1,4 +1,4 @@
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import { createMatrxNdjsonFramer } from "@ai-matrx/agents/stream/ndjson";
 import type { BackendStreamFoldState } from "./fold-stream-events";
 import { foldBackendStreamEvents } from "./fold-stream-events";

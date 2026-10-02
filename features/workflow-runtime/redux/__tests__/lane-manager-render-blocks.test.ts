@@ -12,7 +12,7 @@
  */
 
 import { RunLaneManager } from "../lane-manager";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 const RUN = "run-1";
 const KEY = "node-1::root:0";

@@ -16,11 +16,11 @@
 // 🚨 The real mounted paths are `/seo/sites/{site_id}/crm/...` — aidream
 // router prefixes are BARE, so the `/api/...` form written in the handoff is
 // unreachable at runtime even though it appears in `/openapi.json`. They are
-// typed against `types/python-generated/api-types.ts` through
+// typed against `@ai-matrx/agents/generated/api-types` through
 // `@/lib/api/typed-client`, so a wrong path is a compile error, not a 404 a
 // user discovers.
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { apiGet, apiPost, apiPut, buildPath } from "@/lib/api/typed-client";
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";

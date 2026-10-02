@@ -45,7 +45,7 @@ import { SchemaValidator, validateAgainstSchema } from "./SchemaValidator";
 import { CostEstimateTable } from "./CostEstimateTable";
 import { ToolRendererPreview } from "@/features/tool-call-visualization/testing/ToolRendererPreview";
 import { useSaveSample } from "../hooks/useSaveSample";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import type { ToolStreamEvent, FinalPayload, ExecutionStatus } from "@/features/tool-call-visualization/testing/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

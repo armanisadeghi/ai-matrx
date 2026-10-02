@@ -32,7 +32,7 @@ const ROOT = path.resolve(__dirname, "..");
 
 /** Where the ONE predicate lives, and the generated set it wraps. */
 const CANONICAL = "features/workflow-runtime/types.ts";
-const GENERATED = "types/python-generated/workflow-events.ts";
+const GENERATED = "node_modules/@ai-matrx/agents/generated/workflow-events.ts";
 
 /**
  * THE ENGINE ALLOWLIST — the only places allowed to ask the generated set.
@@ -187,7 +187,7 @@ const terminal = runStatus !== null && TERMINAL.has(runStatus);`,
       name: "renamed private set (name test would miss it)",
       file: "features/x/Floating.tsx",
       red: true,
-      text: `import type { WorkflowRunStatus } from "@/types/python-generated/workflow-events";
+      text: `import type { WorkflowRunStatus } from "@ai-matrx/agents/generated/workflow-events";
 const OVER = ["completed", "failed", "cancelled", "errored"];`,
     },
     {
@@ -238,7 +238,7 @@ const over = runIsOver(runStatus);`,
       name: "an allowlisted engine site",
       file: "features/workflow-runtime/components/run/run-controls.ts",
       red: false,
-      text: `import { TERMINAL_RUN_STATUSES } from "@/types/python-generated/workflow-events";
+      text: `import { TERMINAL_RUN_STATUSES } from "@ai-matrx/agents/generated/workflow-events";
 function isTerminal(status: WorkflowRunStatus | null) {
   return status !== null && TERMINAL_RUN_STATUSES.has(status);
 }`,

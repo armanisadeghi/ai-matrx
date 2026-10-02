@@ -32,7 +32,7 @@
 // owns every default; see `useInterviewSettings.ts`. There is no code default
 // anywhere in this file on purpose.
 
-import type { MasterworkScoutInterviewOffer } from "@/types/python-generated/provision-offers";
+import type { MasterworkScoutInterviewOffer } from "@ai-matrx/agents/generated/provision-offers";
 import type { RulebookOfferFacts } from "@/features/masterwork/agent-context/rulebookDocument";
 
 /** What the interviewer is handed before its first question. */

@@ -9,7 +9,7 @@
  *  2. `GoogleDocumentRecordResponse` — what `POST /google-sync/documents/refresh`
  *     answers. HAND-TYPED from the ONE generator's source, aidream's
  *     `DocumentRecordResponse` in `aidream/api/routers/google_sync.py`, because
- *     the google_sync routes are NOT in `types/python-generated/api-types.ts`
+ *     the google_sync routes are NOT in `@ai-matrx/agents/generated/api-types`
  *     yet (`pnpm sync-types` needs the aidream checkout's DB environment, which
  *     this box does not hold). When that contract is regenerated this interface
  *     is DELETED and the generated one imported — it is a stand-in that names
@@ -22,7 +22,7 @@
  */
 
 import type { Database } from "@/types/database.types";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export type GoogleDocumentRow =
   Database["workbench"]["Tables"]["google_document"]["Row"];
@@ -42,7 +42,7 @@ export type GoogleDocumentMimeKind = "document" | "spreadsheet" | "other";
 /**
  * THE DAY THE HEADER PROMISED ARRIVED (check:generated-contracts, 2026-09-22).
  * Both of these were hand-typed stand-ins because the google_sync routes were
- * not yet in `types/python-generated/api-types.ts`. They are now, so the
+ * not yet in `@ai-matrx/agents/generated/api-types`. They are now, so the
  * stand-ins are DELETED and the generated contracts imported, exactly as the
  * header above says to do. The local names keep their `Google` prefix — a bare
  * `DocumentRecordResponse` says nothing in a feature that also has library

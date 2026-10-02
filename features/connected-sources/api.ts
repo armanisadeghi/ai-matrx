@@ -3,7 +3,7 @@
  *
  * `callApi` owns auth, base URL, organization scope and error capture. Paths
  * and bodies are typed by the GENERATED contract
- * (`types/python-generated/api-types.ts`) — the `/connected-sources/*`
+ * (`@ai-matrx/agents/generated/api-types`) — the `/connected-sources/*`
  * operations landed there on 2026-09-18 and the contract-ahead augmentation
  * that stood in for them deleted itself, exactly as its header promised.
  *

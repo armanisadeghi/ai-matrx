@@ -1,4 +1,4 @@
-import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
 import type { ToolStreamEvent } from "../types";
 
 /**

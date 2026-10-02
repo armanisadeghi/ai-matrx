@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@ai-matrx/kit/format";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import type {
   PipelineState,
   StageKind,

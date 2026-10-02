@@ -15,7 +15,7 @@ import {
   stepOffersControls,
   verbAvailability,
 } from "./run-controls";
-import type { WorkflowRunStatus } from "@/types/python-generated/workflow-events";
+import type { WorkflowRunStatus } from "@ai-matrx/agents/generated/workflow-events";
 
 const TERMINAL: WorkflowRunStatus[] = ["completed", "failed", "cancelled"];
 const EVERY_STATUS: WorkflowRunStatus[] = [

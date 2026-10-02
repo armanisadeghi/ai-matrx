@@ -25,7 +25,7 @@ import { callApi, type ApiCallResult } from "../../host/server/call-api";
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../store/root-state";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 // ── Local types ──────────────────────────────────────────────────────────────
 //
@@ -34,7 +34,7 @@ import type { components } from "@host/types/python-generated/api-types";
 // are re-run against a backend that exposes the new endpoints, replace this
 // block with:
 //
-//     import type { components } from "@/types/python-generated/api-types";
+//     import type { components } from "@ai-matrx/agents/generated/api-types";
 //     export type PendingCallSummary = components["schemas"]["PendingCallSummary"];
 
 export type PendingCallSummary = components["schemas"]["PendingCallSummary"];

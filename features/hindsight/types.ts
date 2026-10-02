@@ -5,7 +5,7 @@
  * (`pnpm sync-types`), never hand-mirrored — a backend rename turns each
  * drifted callsite into a compile error instead of a runtime surprise.
  */
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export type Enrollment = components["schemas"]["EnrollmentOut"];
 export type EnrollmentDetail = components["schemas"]["EnrollmentDetailOut"];

@@ -3,7 +3,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { parseStreamError, BackendApiError } from "@/lib/api/errors";
 import { getLatestCollectionFailure } from "@/features/marketing/data/collection-runs";
 import type { TypedStreamEvent } from "@/lib/api/types";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** Types generated from aidream's live OpenAPI — never mirror these locally. */
 export type PagePerformanceResponse =

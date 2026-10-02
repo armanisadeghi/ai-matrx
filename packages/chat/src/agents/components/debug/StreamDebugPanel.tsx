@@ -54,7 +54,7 @@ import type {
   Phase,
   RenderBlockPayload,
   CompletionPayload,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { InstanceStatus } from "../../types/instance.types";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
@@ -485,13 +485,13 @@ function timelineSummary(
   entry: TimelineEntry,
   renderBlocks: Record<
     string,
-    import("@host/types/python-generated/stream-events").RenderBlockPayload
+    import("@ai-matrx/agents/generated/stream-events").RenderBlockPayload
   >,
   renderBlockOrder: string[],
   reasoningChunks?: string[],
 ): string {
   // Backend-mirrored variants: read fields off `entry.data` (snake_case as
-  // emitted by the Python backend, see types/python-generated/stream-events.ts).
+  // emitted by the Python backend, see @ai-matrx/agents/generated/stream-events).
   // Client-derived variants (text_start/end, reasoning_start/end, unknown)
   // keep their custom shape — they are coalesced from chunk events on the
   // client and have no backend equivalent.
@@ -628,7 +628,7 @@ function TimelineRow({
   baseTime: number;
   renderBlocks: Record<
     string,
-    import("@host/types/python-generated/stream-events").RenderBlockPayload
+    import("@ai-matrx/agents/generated/stream-events").RenderBlockPayload
   >;
   renderBlockOrder: string[];
   reasoningChunks?: string[];

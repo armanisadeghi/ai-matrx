@@ -30,7 +30,7 @@ import {
   isRecordUpdateEvent,
   isTypedDataEvent,
   type TypedStreamEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { BackendApiError } from "@/lib/api/errors";
 import { isJsonObject } from "@/types/json";
 

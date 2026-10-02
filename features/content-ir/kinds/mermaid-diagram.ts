@@ -20,7 +20,7 @@
  * strictly for raw Mermaid source.
  */
 
-import type { MermaidBlockData } from "@/types/python-generated/stream-events";
+import type { MermaidBlockData } from "@ai-matrx/agents/generated/stream-events";
 import type { KindSchema } from "@ai-matrx/content-ir";
 import type { KindDefinition } from "@ai-matrx/content-ir";
 import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";

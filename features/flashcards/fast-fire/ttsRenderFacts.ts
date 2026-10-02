@@ -7,7 +7,7 @@
 // receives exactly what it did before; a binding's consumption map can pick
 // them up. An absent fact is OMITTED — never "" or null.
 
-import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
+import type { FlashcardsTtsRenderOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 export interface TtsRenderFactsInput {
   renderLane: "spoken_front" | "helper";

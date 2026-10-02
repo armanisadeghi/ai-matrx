@@ -18,7 +18,7 @@
  * Pure — no React, no Redux, no fetch.
  */
 
-import type { WorkflowRunStatus } from "@/types/python-generated/workflow-events";
+import type { WorkflowRunStatus } from "@ai-matrx/agents/generated/workflow-events";
 import { runIsOver } from "../types";
 
 /** One row of a runs list. */

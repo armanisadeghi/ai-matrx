@@ -1,5 +1,5 @@
 import type { StreamCallbacks } from "@/lib/api/stream-parser";
-import type { HeartbeatPayload } from "@/types/python-generated/stream-events";
+import type { HeartbeatPayload } from "@ai-matrx/agents/generated/stream-events";
 import type {
   StreamEventHandlers,
   ToolStreamEvent,

@@ -39,7 +39,7 @@ import { continuesTable, isGfmDelimiterRow, opensTable, tableContainerIndent, ta
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { ClientOnlyBlockType } from "./client-blocks";
 import {
   parseYouTubeUrl,

@@ -8,7 +8,7 @@
  */
 
 import { resolveContextRow } from "@ai-matrx/agents/context";
-import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
+import type { ContextReceiptData } from "@ai-matrx/agents/generated/stream-events";
 import type { ChatRootState } from "../../../../../store/root-state";
 
 const captured: Array<{ code?: string; message?: string; details?: string }> = [];

@@ -5,7 +5,7 @@
 //
 // 🚨 WHY THESE ARE HAND-WRITTEN, AND WHAT MUST HAPPEN NEXT.
 // `lib/api/FEATURE.md` rule 1 is that request/response types are DERIVED from
-// `types/python-generated/api-types.ts`, never hand-mirrored — a hand mirror
+// `@ai-matrx/agents/generated/api-types`, never hand-mirrored — a hand mirror
 // drifts silently. These are a hand mirror, deliberately and temporarily.
 //
 // 2026-09-17, later the same day — the note above this line used to say the

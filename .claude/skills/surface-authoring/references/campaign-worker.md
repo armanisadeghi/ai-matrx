@@ -107,7 +107,7 @@ returning name;
      and name the gap in the readiness note.
    - **A docked panel with its own surface (e.g. the side canvas) replaces yours while open**
      (handoff "A docked panel with its own surface replaces the page's surface"). Never declare a value that only exists while such a panel is open.
-   - `sourceFeature` must be a real slug from `types/python-generated/source-attribution.ts`. Map
+   - `sourceFeature` must be a real slug from `@ai-matrx/agents/generated/source-attribution`. Map
      the surface in `packages/chat/src/agents/utils/source-feature-from-surface.ts`; if no slug fits, use
      the closest honest product and say so.
    - A page with nothing a person can create, change or author gets no write targets and says so,

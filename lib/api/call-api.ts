@@ -23,7 +23,7 @@
  * TYPE SAFETY
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * Request bodies are inferred directly from types/python-generated/api-types.ts.
+ * Request bodies are inferred directly from @ai-matrx/agents/generated/api-types.ts.
  * If you pass the wrong body shape TypeScript will error at the call site,
  * not at runtime.
  *
@@ -111,8 +111,8 @@ export {
 
 // ─── Auto-generated types (source of truth for all request/response shapes) ──
 
-import type { paths, components } from "@/types/python-generated/api-types";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { paths, components } from "@ai-matrx/agents/generated/api-types";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 
 // ============================================================================
 // SECTION 1 — UTILITY TYPE HELPERS
@@ -1355,7 +1355,7 @@ async function executeStreamingRequest(
  *   6. Executes the request — JSON or NDJSON streaming
  *
  * TypeScript enforces the correct body shape for every path/method combination
- * using the auto-generated types/python-generated/api-types.ts.
+ * using the auto-generated @ai-matrx/agents/generated/api-types.ts.
  *
  * Usage — from a component:
  * ```typescript

@@ -20,7 +20,7 @@ import { LiveVoiceDoor } from "../components/LiveVoiceDoor";
 import { AudioLines } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { useMandate } from "../../mandates/useMandate";
-import type { SourceFeature } from "@host/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { VoiceRelayPanel } from "./VoiceRelayPanel";
 import {
   useVoiceRelaySession,

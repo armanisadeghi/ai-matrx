@@ -20,7 +20,7 @@ import { streamPdfExtractTextRemote } from "@/features/pdf-extractor/service/str
 import type {
   PdfExtractCompleteData,
   PdfPageExtractedData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 export default function ExtractTextDemo() {
   const api = usePdfClient();

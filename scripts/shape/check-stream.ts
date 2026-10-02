@@ -29,7 +29,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
-import type { RenderBlockPayload } from "../../types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { applyIrKindRoute } from "../../features/content-ir/react/kind-route";
 import { kindRegistry } from "../../features/content-ir/registry/kind-registry";

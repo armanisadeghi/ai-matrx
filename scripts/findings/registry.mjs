@@ -89,7 +89,7 @@ export const FINDINGS_CHECKS = [
   {
     id: "cx-source-attribution-is-registered",
     watch: /\.tsx?$/,
-    fix: "Register the value once in aidream's source-attribution registry and regenerate types/python-generated/source-attribution.ts (pnpm sync-types) — or stamp an already-registered value.",
+    fix: "Register the value once in aidream's source-attribution registry and regenerate @ai-matrx/agents/generated/source-attribution (aidream: uv run python scripts/generate_types.py source-attribution; then pnpm sync-types here) — or stamp an already-registered value.",
     ...fromRules("cx-source-attribution-is-registered"),
   },
   {

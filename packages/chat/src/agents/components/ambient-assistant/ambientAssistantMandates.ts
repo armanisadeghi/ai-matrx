@@ -9,7 +9,7 @@
  * arriving at `GET /mandates/{key}/resolution` as a 404 the user never sees.
  */
 import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
-import type { AmbientPageGuidanceOffer } from "@host/types/python-generated/provision-offers";
+import type { AmbientPageGuidanceOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 const SYSTEM_AMBIENT_MANDATE = MANDATE_KEYS.ambient__page_guidance;
 

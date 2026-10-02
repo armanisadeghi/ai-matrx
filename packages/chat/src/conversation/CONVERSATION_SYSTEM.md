@@ -193,7 +193,7 @@ These are all non-generic dependencies the unified system relies on. They live o
 | `extractPersistableToolBlocks` | `lib/chat-protocol/index.ts` | `sendMessage` thunk | Extracts completed tool blocks for DB persistence |
 | `ToolCallBlock` type | `lib/chat-protocol/index.ts` | `StreamingContentBlocks` | Type definition — mapped to `ToolLifecycleEntry` before being handed to `ToolCallVisualization` |
 | `ToolCallVisualization`, `ToolRendererProps` | `@/features/tool-call-visualization` | `StreamingContentBlocks`, `AssistantMessage` | Tool rendering shell and renderer contract |
-| `StreamEvent` / `ToolEventPayload` types | `types/python-generated/stream-events.ts` | Everywhere streaming is handled | NDJSON wire event shape |
+| `StreamEvent` / `ToolEventPayload` types | `@ai-matrx/agents/generated/stream-events` | Everywhere streaming is handled | NDJSON wire event shape |
 
 ### 4d. Hooks (used but not owned by this feature)
 

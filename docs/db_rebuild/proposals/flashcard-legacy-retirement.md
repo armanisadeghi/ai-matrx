@@ -189,7 +189,7 @@ a different table — see Open Q2).
 
 ### matrx-extend / matrx-local — nothing
 
-Only generated OpenAPI/type dumps (`types/python-generated/*`, `types/tool-db-dump.md`). No query,
+Only generated OpenAPI/type dumps (`@ai-matrx/agents/generated/*`, `types/tool-db-dump.md`). No query,
 no import, no model. Both regenerate from aidream's OpenAPI; no coordination required.
 
 ---

@@ -79,7 +79,7 @@ import type { UnknownAction } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../store/root-state";
 
 type ToolResultsDispatch = ThunkDispatch<ChatRootState, unknown, UnknownAction>;
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { setInstanceStatus } from "../redux/execution-system/conversations/conversations.slice";
 import { settleClientToolCall } from "./settle-client-tool-call";
 import { nonErrorOutputReadsAsFailure } from "./person-declined-tool-output";

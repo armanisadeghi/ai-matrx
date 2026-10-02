@@ -88,7 +88,7 @@ Hosts outside this folder:
 ## Both landing TODOs are closed
 
 `platform.egress_device` is in `types/database.types.ts` and the `/egress/*`
-routes are in `types/python-generated/api-types.ts`. `service.ts` now reads
+routes are in `@ai-matrx/agents/generated/api-types`. `service.ts` now reads
 `platform.egress_device` through the generated `Database` type
 (`egressDb()`, same pattern as `features/files/filesDb.ts`) and calls every
 `/egress/*` endpoint through `lib/api/typed-client.ts` (`apiGet`/`apiPost`/

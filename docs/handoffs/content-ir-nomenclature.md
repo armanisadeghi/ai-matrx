@@ -70,7 +70,7 @@ call, fixtures for the 5 test modules; the loud raise stays).
 
 - **Generator input already exists:** `block-dispatch.tsx` exports
   `BLOCK_DISPATCH_CLASSIFICATION` (per-classification membership) — pair its primitive entries
-  with the generated `*BlockData` payload types in `types/python-generated/stream-events.ts`
+  with the generated `*BlockData` payload types in `@ai-matrx/agents/generated/stream-events`
   (L2402+; today NOTHING links a dispatch entry to its payload type — the registry closes that).
   Fence-language sub-dispatch `CODE_LANGUAGE_DISPATCH` (~L498, unexported) is a second axis
   worth enumerating. Copy the crosswalk generator's `--check`/refresh + committed-JSON pattern

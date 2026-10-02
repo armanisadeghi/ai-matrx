@@ -7,7 +7,7 @@
  * component, exactly as the Library of Sources contract requires.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export interface ConnectedConnectionSummary {
   connection_id: string;

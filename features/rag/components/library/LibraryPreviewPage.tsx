@@ -52,7 +52,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { computeMatches } from "@/features/notes/utils/findMatches";
 import { HighlightedText } from "@/components/text/HighlightedText";

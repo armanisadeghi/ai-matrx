@@ -20,7 +20,7 @@
 import { callApi } from "@/lib/api/call-api";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { AppStore } from "@/lib/redux/store";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { parseDeck, type Triad, type TriadDeck, type TriadIngestSummary, type TriadMode } from "./types";
 
 export const TRIAD_DEAL_PATH = "/masterworks/triads" satisfies keyof paths;

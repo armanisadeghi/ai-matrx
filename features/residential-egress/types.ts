@@ -13,7 +13,7 @@
  * narrows the select to what this surface is allowed to read.
  *
  * The `/egress/*` request/response shapes below stay hand-typed too:
- * `types/python-generated/api-types.ts` now carries the `/egress` paths, but
+ * `@ai-matrx/agents/generated/api-types` now carries the `/egress` paths, but
  * every one of these operations' 200 responses is generated as an untyped
  * `{ [key: string]: unknown }` dict (the backend returns a plain dict, not a
  * Pydantic response model) — there is no real contract shape to derive from

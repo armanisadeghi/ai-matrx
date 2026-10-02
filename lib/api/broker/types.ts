@@ -5,14 +5,14 @@
  * credentials minted by aidream (`POST /broker/tokens`).
  *
  * Every type here is DERIVED from the generated OpenAPI contract
- * (`types/python-generated/api-types.ts`) — never hand-mirrored. When the
+ * (`@ai-matrx/agents/generated/api-types`) — never hand-mirrored. When the
  * server contract changes, `pnpm sync-types` makes drift a compile error.
  *
  * Cross-repo system of record:
  *   /Users/armanisadeghi/code/common-docs/systems/platform/token-broker/FEATURE.md
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** The one envelope for every brokered credential, regardless of mode. */
 export type BrokeredCredential = components["schemas"]["BrokeredCredential"];

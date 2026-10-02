@@ -56,7 +56,7 @@
  *      (`zzz.scratch_job`, `should.not.be.sent`); binding them to the vocabulary
  *      would make the fixture a second authority. Per the 0.10.0 CHANGELOG,
  *      fixtures are left as-is.
- *   3. generated files (`types/python-generated/**`, `*.generated.ts`) — those
+ *   3. generated files (`@ai-matrx/agents/generated/**`, `*.generated.ts`) — those
  *      mirror a server contract and have their own generator.
  *   4. an entry in the reason-required allowlist (ALLOWLIST_FILE). This is where
  *      a key that is LIVE in `mandate.definition` but absent from the generated

@@ -11,7 +11,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useQuery } from "@tanstack/react-query";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { isJsonObject } from "@/types/json";
 
 const SPEND_SUMMARY_PATH = "/seo/spend/summary";

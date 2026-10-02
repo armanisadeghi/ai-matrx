@@ -16,7 +16,7 @@
  * seam and was invisible to tests that built blocks by hand.
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import type { RenderBlock } from "./block-registry/BlockRenderer";
 
 export function renderBlockToContentBlock(rb: RenderBlockPayload): RenderBlock {

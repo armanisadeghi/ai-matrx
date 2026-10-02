@@ -2,7 +2,7 @@ import { z } from "zod";
 import { callApi } from "@/lib/api/call-api";
 import { rejoinOperationThunk } from "@/lib/api/resume-or-rejoin";
 import type { AppDispatch } from "@/lib/redux/store";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { readDecisionResult, type DecisionResultView } from "./decision-result";
 import type { DecisionRunInput } from "./decision-form";
 

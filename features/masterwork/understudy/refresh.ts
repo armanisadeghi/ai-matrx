@@ -13,7 +13,7 @@ import { callApi } from "@/lib/api/call-api";
 import { serverRefusal } from "@/lib/progress/failureSentence";
 import { operationFailed } from "@/utils/errors";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 
 /**
  * The refresh endpoint. Ships with this change in aidream; the cast becomes a

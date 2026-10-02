@@ -2,9 +2,9 @@ import type { ManagedResource } from "../../../../types/instance.types";
 import type {
   MessagePart,
   PreFetchedUrl,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { UserInputPart } from "../../../../types/request.types";
-import { isMessagePart } from "@host/types/python-generated/stream-events";
+import { isMessagePart } from "@ai-matrx/agents/generated/stream-events";
 import {
   messagePartToUserInputPart,
   selectResourceContextPayload,

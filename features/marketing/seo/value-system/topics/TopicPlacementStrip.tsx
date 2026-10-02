@@ -51,7 +51,7 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 // 🚨 THIS PATH SHIPS AHEAD OF THE DEPLOYED BACKEND, ON PURPOSE.
 // `POST /seo/keywords/topics/backfill` lives on aidream main (service
 // `topic_placement_backfill.py`, endpoint added 2026-08-22) and reaches
-// production on aidream's next release. `types/python-generated/*` is therefore
+// production on aidream's next release. `@ai-matrx/agents/generated/*` is therefore
 // generated from aidream main — a strict superset of production's contract
 // today. If you regenerate it from the deployed backend and this path
 // disappears, the fix is to regenerate from aidream main (or wait for its

@@ -4,7 +4,7 @@ import {
   type GoogleWorkspaceResourceType,
 } from "@/features/google-workspace/resource-types";
 import { GOOGLE_SEARCH_CONSOLE_SCOPES } from "@/lib/googleScopes";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** @deprecated Import the capability bundle from `@/lib/googleScopes`. */
 export const GOOGLE_CONNECTION_SCOPES = GOOGLE_SEARCH_CONSOLE_SCOPES;

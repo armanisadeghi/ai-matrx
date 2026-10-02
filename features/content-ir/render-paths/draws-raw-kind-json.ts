@@ -17,7 +17,7 @@
  *    splitter share).
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 import { decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import {

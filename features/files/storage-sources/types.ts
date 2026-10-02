@@ -1,4 +1,4 @@
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { CloudFile } from "@/features/files/types";
 
 export type StorageBrowseProvider =

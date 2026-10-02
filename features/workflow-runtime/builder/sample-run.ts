@@ -19,7 +19,7 @@
 import type {
   NodeStreamEvent,
   WorkflowRunEvent,
-} from "@/types/python-generated/workflow-events";
+} from "@ai-matrx/agents/generated/workflow-events";
 
 import type { WorkflowDefinitionLike } from "../trigger-points";
 import { describeSteps, type StepInfo } from "./vocabulary";

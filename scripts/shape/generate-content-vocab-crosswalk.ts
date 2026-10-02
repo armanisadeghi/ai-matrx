@@ -5,7 +5,7 @@
  *
  * Enumerates EVERY named content vocabulary item across the platform —
  *   · aidream BlockType enum (matrx_ai processing blocks)
- *   · generated TypedRenderBlock union (types/python-generated/stream-events.ts)
+ *   · generated TypedRenderBlock union (@ai-matrx/agents/generated/stream-events)
  *   · ClientOnly render blocks (components/mardown-display/markdown-classification/
  *     processors/utils/client-blocks.ts) + generated ServerOnly unions
  *     (stream-events.ts, from aidream data_render_blocks.py)
@@ -54,7 +54,7 @@ const BLOCKTYPE_PY = resolve(
   AIDREAM_ROOT,
   "packages/matrx-ai/matrx_ai/processing/blocks/models/base.py",
 );
-const STREAM_EVENTS_PATH = resolve(ROOT, "types/python-generated/stream-events.ts");
+const STREAM_EVENTS_PATH = resolve(ROOT, "node_modules/@ai-matrx/agents/generated/stream-events.ts");
 const CLIENT_BLOCKS_PATH = resolve(
   ROOT,
   "components/mardown-display/markdown-classification/processors/utils/client-blocks.ts",

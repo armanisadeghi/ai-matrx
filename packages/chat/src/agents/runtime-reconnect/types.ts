@@ -2,7 +2,7 @@
  * Runtime reconnect wire types — mirrors aidream's canonical reconnect surface
  * (`aidream/services/runtime/reconnect.py`, mounted at `/runtime`, public
  * `/api/runtime`). Hand-mirrored like the chat stream-event types because the
- * generated `types/python-generated/api-types.ts` predates the server ship;
+ * generated `@ai-matrx/agents/generated/api-types` predates the server ship;
  * when the OpenAPI types are next regenerated these can be swapped for the
  * generated shapes.
  *

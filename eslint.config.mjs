@@ -2357,9 +2357,8 @@ export default [
     // files.files table still HAS a storage_uri column (server-only), so
     // the generated Database type legitimately declares it. The
     // storage_uri eradication ban applies to hand-written code only;
-    // never edit these files by hand (regenerate via pnpm db-types /
-    // sync-types).
-    files: ["types/database.types.ts", "types/python-generated/**/*"],
+    // never edit these files by hand (regenerate via pnpm db-types).
+    files: ["types/database.types.ts"],
     rules: {
       "no-restricted-syntax": "off",
     },

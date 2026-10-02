@@ -27,7 +27,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { callApi } from "@/lib/api/call-api";
 import { useAppStore } from "@/lib/redux/hooks";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { createSittingStore, type SittingBase } from "../../sitting/sitting";

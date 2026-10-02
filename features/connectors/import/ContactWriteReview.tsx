@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { getJson, postJson } from "@/lib/python-client";
 import { getUserMessage } from "@/lib/api/errors";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import type { ContactSearchResultPending } from "./types";

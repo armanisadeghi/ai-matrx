@@ -6,7 +6,7 @@
 // frontend-only types (auth, scope, error) that have no Python counterpart.
 //
 // NEVER define API types manually here. If the type comes from Python, it
-// MUST be imported from @/types/python-generated/. Run `pnpm update-api-types`
+// MUST be imported from @/@ai-matrx/agents/generated/. Run `pnpm update-api-types`
 // to regenerate after backend changes.
 
 // ============================================================================
@@ -68,7 +68,7 @@ export type {
   TimingStatsResult,
   ToolCallStatsResult,
   ToolCallByTool,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 export {
   EventType as EventTypeEnum,
@@ -92,7 +92,7 @@ export {
   isCompactChunkEvent,
   isCompactReasoningChunkEvent,
   expandCompactEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 // ============================================================================
 // RE-EXPORTS — Auto-generated from Python (OpenAPI request/response schemas)
@@ -102,9 +102,9 @@ export type {
   components,
   operations,
   paths,
-} from "@/types/python-generated/api-types";
+} from "@ai-matrx/agents/generated/api-types";
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 // Named aliases — every one of these resolves to a generated schema.
 // If a schema is renamed/removed in Python, TypeScript will error here immediately.

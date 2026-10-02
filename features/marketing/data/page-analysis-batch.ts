@@ -19,7 +19,7 @@ import { callApi, type ApiCallError } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import { BackendApiError } from "@/lib/api/errors";
 import { createClient } from "@/utils/supabase/client";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** Generated from aidream's OpenAPI — never mirror it locally. */
 export type PageAnalysisBatchSummary =

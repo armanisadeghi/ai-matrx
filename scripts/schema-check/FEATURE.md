@@ -62,7 +62,7 @@ legs, were removed on 2026-09-15.
 | check | severity | catches |
 |---|---|---|
 | `types-freshness` | error/warn | `types/database.types.ts` (the FE's whole schema assumption) drifted from live: a live table missing from the types (stale), a generated type with no live table (orphan), a live+exposed schema the FE never generates. The biggest one. |
-| `api-types-freshness` | error/warn | `types/python-generated/*` missing, or a `.ts` artifact that lost its AUTO-GENERATED header (hand-edited → will be wiped by `pnpm sync-types`). |
+| `api-types-freshness` | error/warn | `@ai-matrx/agents/generated/*` missing, or a `.ts` artifact that lost its AUTO-GENERATED header (hand-edited → will be wiped by `pnpm sync-types`). |
 | `schema-exposure` | error | a `.schema("S")` whose `S` is not live, not PostgREST-exposed (`pgrst.db_schemas` → 404), or not in the `pnpm db-types --schema` list (no generated types). |
 | `dead-relations-registry` | error | a `scripts/dead-relations.json` entry whose declared **new home** isn't live — it guides every agent to a wrong schema (it caught `reg.*` when the tables were in `rag`). |
 | `entity-registry-drift` | error | a `platform.entity_types` row (via the installed `@ai-matrx/associations` `ENTITY_TYPE_METADATA`; metadata is injectable — `checks/entity-registry-drift.test.ts` plants a bad token) pointing at a relation that isn't live. The **quietest** class we guard: `iam.has_access_for_base` → `platform.entity_row_access_attrs` swallows every exception (`WHEN others THEN NULL`) and returns `found=false`, so a stale row silently DENIES access to every user with no log line, no type error, no failing test. Caught 18 live rows on 2026-08-04 (`reg.*`→`rag.*`, `user.*`→`users.*`, 3 buried in `graveyard`). |
@@ -79,7 +79,7 @@ artifacts (path → label, true source, regen command, why) is
 [`generated-files.ts`](./generated-files.ts):
 
 - `types/database.types.ts` → source: the live DB → `pnpm db-types`.
-- `types/python-generated/*` → source: aidream's OpenAPI / Pydantic models → `pnpm sync-types`.
+- `@ai-matrx/agents/generated/*` → source: aidream's OpenAPI / Pydantic models → `pnpm sync-types`.
 - `scripts/dead-relations.json` → source: `platform.deprecated_relations` → re-sync.
 - `scripts/schema-check/current-schema.json` → source: `schema_truth_snapshot()` → `pnpm check:schema:refresh`.
 

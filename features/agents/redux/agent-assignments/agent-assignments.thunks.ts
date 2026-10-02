@@ -1,5 +1,5 @@
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
-import type { AssignmentProgressData } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
+import type { AssignmentProgressData } from "@ai-matrx/agents/generated/stream-events";
 import {
   callAgentAssignmentSession,
   callAgentAssignments,

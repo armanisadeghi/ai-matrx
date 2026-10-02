@@ -28,7 +28,7 @@ import type {
   WarningPayload,
   InfoPayload,
   CompletionPayload,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { Json } from "../../../../host/db-types";
 
 // =============================================================================

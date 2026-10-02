@@ -21,7 +21,7 @@ Non-agent-runner surfaces that already speak in `CanonicalBlock` (`StreamAwareCh
 
 ## Stream contract
 
-`buildCanonicalBlocks` consumes `TypedStreamEvent[]` from `types/python-generated/stream-events.ts` and folds:
+`buildCanonicalBlocks` consumes `TypedStreamEvent[]` from `@ai-matrx/agents/generated/stream-events` and folds:
 
 - `chunk` / `reasoning_chunk` → merged into trailing `TextBlock` / `ThinkingBlock`
 - `tool_event` (`tool_started`, `tool_progress`, `tool_step`, `tool_result_preview`, `tool_completed`, `tool_error`) → a single `ToolCallBlock` per `call_id`, anchored at first-appearance position

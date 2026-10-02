@@ -55,7 +55,7 @@ import {
   type KeywordReportMetricRow,
   type KeywordReportRow,
 } from "@/features/marketing/seo/keyword-research/data/report";
-import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
+import type { KeywordResearchArtifact } from "@ai-matrx/agents/generated/stream-events";
 
 export interface KeywordResearchReportProps {
   artifact: KeywordResearchArtifact;

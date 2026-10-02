@@ -28,7 +28,7 @@ import type {
   ResourceBlockType,
   ResourceOptions,
 } from "../../../types/instance.types";
-import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import {
   setUserInputMessageParts,
   setUserInputText,

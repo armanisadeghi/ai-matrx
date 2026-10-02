@@ -7,7 +7,7 @@
  * prompts feature can be deleted without breaking live agent/chat code.
  */
 
-import type { PreFetchedUrl } from "@host/types/python-generated/stream-events";
+import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
 import type { Note } from "@host/features/notes/types";
 import type { DatabaseTask, ProjectWithTasks } from "@host/features/tasks/types";
 import type { ComponentType } from "react";

@@ -10,7 +10,7 @@
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
+import type { ContextReceiptData } from "@ai-matrx/agents/generated/stream-events";
 import { MessageContextReceiptTable } from "../MessageContextReceipt";
 import type { ContextViewTarget, ContextViewedText } from "@ai-matrx/agents/context";
 

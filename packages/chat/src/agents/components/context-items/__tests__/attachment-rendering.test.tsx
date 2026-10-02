@@ -1,7 +1,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ContextDrawerItem } from "../types";
-import type { PreFetchedUrl } from "@host/types/python-generated/stream-events";
+import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }

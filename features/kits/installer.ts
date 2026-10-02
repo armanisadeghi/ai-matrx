@@ -43,7 +43,7 @@ import type { Json } from "@/types/database.types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { duplicateAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { callApi } from "@/lib/api/call-api";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { setWorkflowFlag } from "@/features/workflow-runtime/browse/service";
 import { saveAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { KIT_INSTALLS_TABLE, KIT_ROUTES, KIT_WORD } from "./constants";

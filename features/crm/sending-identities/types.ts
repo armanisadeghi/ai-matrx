@@ -8,7 +8,7 @@
 //   aidream/aidream/services/sending_identity/FEATURE.md
 //   docs/handoffs/outreach-system.md §5
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** Sending-identity shapes come directly from the generated backend contract. */
 export type SendingIdentityView = components["schemas"]["SendingIdentityView"];

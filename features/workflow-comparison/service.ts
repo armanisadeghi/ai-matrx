@@ -10,7 +10,7 @@
 
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { runScope } from "@/features/workflow-runtime/runOrganization";

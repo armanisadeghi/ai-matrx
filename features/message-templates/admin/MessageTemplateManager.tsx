@@ -79,7 +79,7 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type {
   TypedStreamEvent,
   RenderBlockEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { isJsonObject } from "@/types/json";
 import {
   ensureOrganizationContext,

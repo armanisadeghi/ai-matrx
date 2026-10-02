@@ -11,7 +11,7 @@
  * sent as "" or null.
  */
 
-import type { ResearchClientReportOutputOffer } from "@/types/python-generated/provision-offers";
+import type { ResearchClientReportOutputOffer } from "@ai-matrx/agents/generated/provision-offers";
 import type { ResearchTopic } from "../../types";
 
 export type ReportOutputFacts = Partial<

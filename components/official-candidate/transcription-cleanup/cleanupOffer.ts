@@ -14,7 +14,7 @@ import type {
   TranscriptsCleanupContextSlotOffer,
   TranscriptsCleanupContextVariableOffer,
   TranscriptsCleanupPlainOffer,
-} from "@/types/python-generated/provision-offers";
+} from "@ai-matrx/agents/generated/provision-offers";
 import type { AiPostProcessAgent } from "./ai-agents";
 
 export interface CleanupSessionFacts {

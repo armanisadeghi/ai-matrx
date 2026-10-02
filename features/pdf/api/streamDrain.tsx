@@ -24,7 +24,7 @@ import { postNdjson } from "@/lib/python-client";
 import type {
   TypedDataPayload,
   UntypedDataPayload,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 /** Any `event: "data"` payload from the stream (typed or fallback). */
 export type PdfStreamData = TypedDataPayload | UntypedDataPayload;

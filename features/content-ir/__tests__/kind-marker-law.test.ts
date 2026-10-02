@@ -10,7 +10,7 @@
  * legacy render bridge — plus the one lawful egress that still drops it.
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import {
   IR_ENVELOPE_KEY,

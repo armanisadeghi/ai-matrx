@@ -7,7 +7,7 @@
 // on the default pin — current Holders receive exactly what they did before.
 // Absent facts are omitted, never sent as "" or null.
 
-import type { MasterworkRuleImproveOffer } from "@/types/python-generated/provision-offers";
+import type { MasterworkRuleImproveOffer } from "@ai-matrx/agents/generated/provision-offers";
 import { ruleState, type Rulebook, type RulebookRule } from "../types";
 
 /** The offered names only — the three by-name variables are never touched here. */

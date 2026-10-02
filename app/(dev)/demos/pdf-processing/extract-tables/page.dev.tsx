@@ -12,7 +12,7 @@ import type {
   PdfTableExtractedData,
   PdfTablesPageData,
   PdfTablesStartedData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 const FORMATS = ["csv", "json"] as const;
 

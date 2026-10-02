@@ -28,7 +28,7 @@ import {
   type DocumentMediaPart,
   type YouTubeMediaPart,
   type RenderBlockPayload,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { normalizeContentBlocks } from "../utils/normalize-content-blocks";
 import { isAttachmentMessagePart } from "../../../components/context-items/normalize";
 import {

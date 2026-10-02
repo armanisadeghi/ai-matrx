@@ -75,7 +75,7 @@ Complete flow of markdown and block processing from stream input to rendered out
 | Step | Description | File |
 |------|-------------|------|
 | Top-level wrapper | Receives `content` or `events`; wraps in error boundary | `components/MarkdownStream.tsx` |
-| Stream event types | TypeScript types for chunk, tool_event, etc. | `types/python-generated/stream-events.ts` |
+| Stream event types | TypeScript types for chunk, tool_event, etc. | `@ai-matrx/agents/generated/stream-events` |
 | NDJSON stream parser | Parses NDJSON from fetch response | `lib/api/stream-parser.ts` |
 
 ---
@@ -246,4 +246,4 @@ Complete flow of markdown and block processing from stream input to rendered out
 | `lib/api/stream-parser.ts` | NDJSON stream parser |
 | `lib/chat-protocol/from-stream.ts` | Canonical blocks builder |
 | `lib/chat-protocol/index.ts` | Chat protocol exports |
-| `types/python-generated/stream-events.ts` | Stream event types |
+| `@ai-matrx/agents/generated/stream-events` | Stream event types |

@@ -3,7 +3,7 @@
  *
  * DELIBERATELY LOCAL AND NARROW: this is the surface's VIEW model, not the
  * wire contract. The wire contract is the generated one —
- * `types/python-generated/api-types.ts` (`PrintCatalog`,
+ * `@ai-matrx/agents/generated/api-types` (`PrintCatalog`,
  * `CostCalculationResult`, `ShippingOptionsResult`) — and every call is bound
  * to it through the typed client in `lulu-api.ts` / `catalog.ts`, which map
  * contract types into these with direct field access (no tolerant readers).

@@ -27,7 +27,7 @@ import { resolveModelControls } from "../../../../hooks/useModelControls";
 import { ComposerMenuDivider, ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
 import { composerPillClass } from "./ComposerAgentPill";
 import type { ComposerSize } from "./composer-types";
-import { REASONING_EFFORT_OPTIONS } from "@host/types/python-generated/llm-enums";
+import { REASONING_EFFORT_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
 
 type ReasoningEffort = (typeof REASONING_EFFORT_OPTIONS)[number];
 

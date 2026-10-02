@@ -21,11 +21,11 @@
 // HTTP failures (400/404/422) throw from postNdjson itself.
 
 import { postNdjson } from "@/lib/python-client";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type {
   PodcastAssetResultEvent,
   TypedStreamEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { RunAsset } from "./run-types";
 
 /** Optional live-progress tap — every stream event is forwarded as-is. */

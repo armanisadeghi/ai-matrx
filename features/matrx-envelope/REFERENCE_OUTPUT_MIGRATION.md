@@ -20,7 +20,7 @@ await navigator.clipboard.writeText(fence);
 
 `buildBookmarkReferenceFence` accepts **canonical** bookmarks only (it maps bookmark `type` → reference `type` via `BOOKMARK_TYPE_TO_REFERENCE`). If the producer builds a legacy-shaped object, **fix the object first** (canonical type + field names) so the mapper recognizes it, then fence it.
 
-### Canonical bookmark shapes (source: `@/types/python-generated/stream-events`)
+### Canonical bookmark shapes (source: `@/@ai-matrx/agents/generated/stream-events`)
 
 | `type` | required identity fields | optional hints |
 |---|---|---|

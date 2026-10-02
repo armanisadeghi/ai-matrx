@@ -21,7 +21,7 @@ import { doorCas } from "@/lib/db/door-cas";
 import { callApi } from "@/lib/api/call-api";
 import type { AppStore } from "@/lib/redux/store";
 import { operationFailed } from "@/utils/errors";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { parseRulebook, type Rulebook, type RulebookRow } from "../types";
 import { plannableMethod } from "./methods";
 import {

@@ -65,7 +65,7 @@ import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
 import type {
   ToolEventPayload,
   TypedStreamEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 // No live event (podcast_tick fires ~every 3s) for this long ⇒ the stream is
 // silently dead. Mark stalled + settle "queued" assets. 5+ missed ticks.

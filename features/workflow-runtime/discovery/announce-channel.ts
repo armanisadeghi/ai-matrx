@@ -28,8 +28,8 @@
  */
 
 import { streamSse } from "../transport/sse";
-import { isRunAnnounceEvent } from "@/types/python-generated/workflow-events";
-import type { RunAnnounceEvent } from "@/types/python-generated/workflow-events";
+import { isRunAnnounceEvent } from "@ai-matrx/agents/generated/workflow-events";
+import type { RunAnnounceEvent } from "@ai-matrx/agents/generated/workflow-events";
 
 export type AnnounceChannelStatus = "open" | "closed";
 

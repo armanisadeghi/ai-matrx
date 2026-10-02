@@ -17,7 +17,7 @@
  * Do NOT duplicate or re-declare any type from here in feature subfolders.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { Database } from "@/types/database.types";
 import type { FieldFlags } from "@ai-matrx/agents/field-flags";
 import type { readFileRowById } from "@/features/files/filesDb";
@@ -1332,7 +1332,7 @@ export function isCloudTreeFolderRow(
 //
 // These types are hand-authored as the canonical TS surface and will
 // be replaced by the auto-generated python-derived types when that
-// regen pipeline runs. DO NOT modify `types/python-generated/api-types.ts`
+// regen pipeline runs. DO NOT modify `@ai-matrx/agents/generated/api-types`
 // by hand to keep them in sync — these are the source of truth until
 // the regen ships.
 

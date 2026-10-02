@@ -17,7 +17,7 @@ import {
   parseMessageContent,
   type MessagePart,
   type PreFetchedUrl,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { UserInputPart } from "../../../types/request.types";
 import { isPreFetchedUrl } from "@host/features/resource-manager/webpage/webpage-snapshot";
 import {

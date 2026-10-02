@@ -23,7 +23,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 // Wire shapes DERIVED from the generated OpenAPI contract, never hand-mirrored.
 export type DocSearchHit = components["schemas"]["LibraryTestSearchHit"];

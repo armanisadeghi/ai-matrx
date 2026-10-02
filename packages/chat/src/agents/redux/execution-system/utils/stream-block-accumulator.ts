@@ -36,7 +36,7 @@ import {
   FenceReader,
   trimFenceLine,
 } from "@ai-matrx/content-ir/source";
-import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import {
   DIRECTIVE_CONTAINER_OPEN,
   DirectiveContainerTracker,

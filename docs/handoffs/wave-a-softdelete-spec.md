@@ -57,7 +57,7 @@ Known traps for whoever picks this up: (a) never clear `valid_to` on restore —
 - Phase 6 — reprocess re-activates chunks; archive/replace retire chunks; bulk delete top-level only — `ingestion.py`, `dedup_service.py`.
 - Capstone — BEFORE DELETE guard live + purge pre-stamping; FE hard-delete RPCs converted (adversarial catch: Python conversion alone left the FE RPCs hard-deleting).
 - Two full adversarial passes — all findings fixed or recorded as V10.
-- Shipped to prod — both repos pushed and deployed (aidream `/health/version` serves the wave-a commits); FE API types regenerated (`LibraryDeleteResponse.skipped_canonical` is in `types/python-generated/api-types.ts`).
+- Shipped to prod — both repos pushed and deployed (aidream `/health/version` serves the wave-a commits); FE API types regenerated (`LibraryDeleteResponse.skipped_canonical` is in `@ai-matrx/agents/generated/api-types`).
 - Multi-sibling canonical repoint E2E-verified (2026-08-08, rollback-only fixture: insert→D1, soft-delete canonical→D2 newest-live, restore→stays newest-live, delete both→NULL).
 - Family purge built + tested — `rag.fn_purge_library_file` (owner gate, belt-stamp, live; `migrations/wave_a_purge_library_file.sql`) + `/files/trash` made functional (it rendered "empty" forever — deleted rows never reached Redux): `loadTrash`/`restoreFile`/`restoreFolder`/`purgeFile`/`purgeFolder` thunks, trash-mode row menus, honest empty-state copy — browser-verified E2E on branch `claude/wave-a-finish`.
 - Rollback crash class killed — `toCloudFilePartial` strips immer-frozen runtime fields before re-upsert (features/files/redux/thunks.ts).

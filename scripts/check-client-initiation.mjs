@@ -124,7 +124,7 @@ const CONVERSATION_DOOR_ENDPOINTS = [
  * keep telling.
  *
  * Evidence read live on 2026-09-20 against aidream's models and this repo's
- * `types/python-generated/api-types.ts`.
+ * `@ai-matrx/agents/generated/api-types`.
  */
 const STAMP_BLOCKED_DOORS = [
   [

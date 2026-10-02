@@ -19,7 +19,7 @@
  * repo's known parallel-walker bug class).
  *
  * TYPE SOURCE OF TRUTH: `NormalizedCitation` is aliased FROM the generated
- * wire type (`types/python-generated/stream-events.ts`, regenerated from
+ * wire type (`@ai-matrx/agents/generated/stream-events`, regenerated from
  * aidream Pydantic 2026-07-17) — never hand-mirrored. The runtime guard
  * stays: DB rows predate the contract and the wire fields are optional;
  * `parseNormalizedCitation` normalizes to the fully-populated shape.
@@ -33,7 +33,7 @@
  * index-shape-agnostic.
  */
 
-import type { NormalizedCitation as WireNormalizedCitation } from "@host/types/python-generated/stream-events";
+import type { NormalizedCitation as WireNormalizedCitation } from "@ai-matrx/agents/generated/stream-events";
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
 
 /**

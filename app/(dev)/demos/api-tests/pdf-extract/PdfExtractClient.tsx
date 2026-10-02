@@ -23,7 +23,7 @@ import { formatFileSize } from "@ai-matrx/kit/format";
 import type {
   PdfExtractCompleteData,
   PdfPageExtractedData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function PdfExtractClient() {

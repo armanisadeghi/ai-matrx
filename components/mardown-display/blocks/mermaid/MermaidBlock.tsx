@@ -80,7 +80,7 @@ import {
   type MermaidOptionPreferences,
   type MermaidThemePreference,
 } from "@/components/mermaid/types";
-import type { MermaidBlockData } from "@/types/python-generated/stream-events";
+import type { MermaidBlockData } from "@ai-matrx/agents/generated/stream-events";
 
 const CodeBlock = lazy(
   () => import("@/features/code-editor/components/code-block/CodeBlock"),

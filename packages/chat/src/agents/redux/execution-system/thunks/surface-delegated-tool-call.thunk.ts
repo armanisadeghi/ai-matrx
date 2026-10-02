@@ -39,7 +39,7 @@
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../../store/root-state";
-import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
+import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
 import { toast } from "../../../../host/notify";
 
 import {

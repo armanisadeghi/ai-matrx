@@ -40,17 +40,6 @@ const RULES: Rule[] = [
     },
   },
   {
-    // Everything under types/python-generated/ comes from aidream's OpenAPI + models.
-    test: underDir("types/python-generated"),
-    info: {
-      label: "Python backend API types",
-      source:
-        "the aidream Python backend's OpenAPI schema + stream-event/LLM-param models",
-      regen: "pnpm sync-types",
-      why: "these are generated from the Python backend's live OpenAPI — to change them you change the backend (aidream) and re-sync, never this file",
-    },
-  },
-  {
     // Mirror of platform.deprecated_relations.
     test: exact("scripts/dead-relations.json"),
     info: {

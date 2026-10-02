@@ -9,7 +9,7 @@
 //                        block with the ONE renderer; a brand's voice_tone becomes that line)
 //   fixVoice           → aidream POST /brand-voice/fix (the enforce loop on one draft)
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { supabase } from "@/utils/supabase/client";
 

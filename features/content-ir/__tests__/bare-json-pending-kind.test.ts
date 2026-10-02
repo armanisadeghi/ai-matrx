@@ -12,7 +12,7 @@
  * `flashcard_set` by completion (so the block then routes to its component).
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { isCanonicalBlockIR } from "@ai-matrx/content-ir";

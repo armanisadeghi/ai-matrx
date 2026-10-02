@@ -50,7 +50,7 @@ all degrade to `GenericEmitRenderer`. Nothing here can take a run surface down.
 | Cache + invalidation | `emitRendererCache.ts` | Positive / negative / in-flight, session-scoped. Registers on `INVALIDATION_KEYS.dbToolRenderers` and bumps a monotonic per-ref version. |
 | Repaint hook | `useEmitRendererVersion.ts` | `useSyncExternalStore` over that version — a mounted emission re-resolves when an agent edits the row. |
 | Surface constant | `surface.ts` | `matrx-user/workflow`. |
-| Types | `types.ts` | `NodeEmittedEvent` **RE-EXPORTED** from `types/python-generated/workflow-events.ts` (never mirrored — see invariant 6) + `EmitMode`/`EmitPresentation` derived from it + `EmitRendererProps` (payload-shaped, deliberately NOT `ToolRendererProps`). |
+| Types | `types.ts` | `NodeEmittedEvent` **RE-EXPORTED** from `@ai-matrx/agents/generated/workflow-events` (never mirrored — see invariant 6) + `EmitMode`/`EmitPresentation` derived from it + `EmitRendererProps` (payload-shaped, deliberately NOT `ToolRendererProps`). |
 | **The consumer** | `../workflow-runtime/kind-emissions/EmissionRender.tsx` | THE one importer of `DbEmitRenderer`. `RunEmissions` (mounted in `RunStage` and `WorkflowRunBoard`), `DeliveredStream`/`ShowcaseSlot` and the seven bake-off run pages all render an emission through it: a kind (wire `kind`, else the payload's root `__kind`) goes to its kind component, a kindless payload with a nested kind and no `component_ref` to `AnswerValueView`, everything else to `DbEmitRenderer`. |
 
 ## Invariants (violating any of these is a defect)
@@ -81,7 +81,7 @@ all degrade to `GenericEmitRenderer`. Nothing here can take a run surface down.
 5. **No second surface.** A renderer row is resolved against
    `matrx-user/workflow` and nothing else.
 6. 🚨 **The wire shape is NEVER hand-mirrored here.** `types.ts` re-exports
-   `NodeEmittedEvent` from `types/python-generated/workflow-events.ts` (the
+   `NodeEmittedEvent` from `@ai-matrx/agents/generated/workflow-events` (the
    artifact `pnpm sync-types` regenerates from the Python source of truth), and
    `EmitMode` / `EmitPresentation` are index-accesses off it. A local copy —
    even one captioned "FROZEN — matches the backend contract byte-for-byte" —

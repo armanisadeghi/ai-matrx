@@ -4,7 +4,7 @@
  * The `/google-import/*` contracts, as STAND-IN types.
  *
  * 🚨 These are `*Pending` stand-ins, not hand-mirrored truth. The generated
- * contract (`types/python-generated/api-types.ts`) does not carry
+ * contract (`@ai-matrx/agents/generated/api-types`) does not carry
  * `/google-import/*` yet: regenerating it needs a live aidream checkout with DB
  * env, which this container does not have (register
  * `common-docs/projects/google-native/REGISTER.md` § Facts, 2026-09-17).
@@ -74,7 +74,7 @@ export interface ContactSearchResultPending {
   provider_key: string;
   google_account: string | null;
   /** Exact connection that supplied these rows; absent in older test fixtures. */
-  connection_id?: import("@/types/python-generated/api-types").components["schemas"]["ContactSearchResult"]["connection_id"];
+  connection_id?: import("@ai-matrx/agents/generated/api-types").components["schemas"]["ContactSearchResult"]["connection_id"];
   contacts: ContactCandidatePending[];
   count: number;
   total_read: number;

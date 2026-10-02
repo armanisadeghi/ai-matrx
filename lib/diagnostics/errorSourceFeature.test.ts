@@ -2,7 +2,7 @@ import {
   sourceFeatureForRoute,
   UNMAPPED_CLIENT_SOURCE_FEATURE,
 } from "@/lib/diagnostics/errorSourceFeature";
-import { isSourceFeature } from "@/types/python-generated/source-attribution";
+import { isSourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 
 describe("sourceFeatureForRoute", () => {
   it("names the feature for a mapped surface", () => {

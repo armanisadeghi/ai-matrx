@@ -32,7 +32,7 @@ import {
   toJsonRecord,
   type JsonValue,
 } from "@/types/json";
-import type { components, paths } from "@/types/python-generated/api-types";
+import type { components, paths } from "@ai-matrx/agents/generated/api-types";
 
 /**
  * The one body `POST /seo/sites/{site_id}/map/pages` takes — every field

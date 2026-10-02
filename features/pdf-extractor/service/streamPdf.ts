@@ -64,7 +64,7 @@ import type {
   PdfExtractCompleteData,
   PdfExtractStartedData,
   PdfPageExtractedData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────

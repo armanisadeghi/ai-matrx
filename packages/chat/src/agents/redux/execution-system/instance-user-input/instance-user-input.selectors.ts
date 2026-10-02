@@ -1,5 +1,5 @@
 import type { ChatRootState } from "../../../../store/root-state";
-import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import type {
   InputSubmissionPhase,
   PreSendState,

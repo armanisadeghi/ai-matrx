@@ -18,7 +18,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { callApi } from "../../../../host/server/call-api";
 import { toast } from "../../../../host/notify";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import {
   addInboxItem,
   confirmInboxItem,

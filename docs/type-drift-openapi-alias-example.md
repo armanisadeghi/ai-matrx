@@ -1,6 +1,6 @@
 # Type drift example: CustomTool (OpenAPI alias required)
 
-Reference case for fixing duplicate hand-written API types. Pattern applies everywhere `features/**/types/*.ts` re-declares schemas that already exist in `types/python-generated/api-types.ts`.
+Reference case for fixing duplicate hand-written API types. Pattern applies everywhere `features/**/types/*.ts` re-declares schemas that already exist in `@ai-matrx/agents/generated/api-types`.
 
 **Fix doctrine** — Reality Check (what a real fix involves), forbidden "fixes", and the required sequence (make the error count go UP before it goes down) — is defined in the **`type-safety`** skill (`.claude/skills/type-safety/SKILL.md`). This document is that skill's worked example.
 
@@ -21,9 +21,9 @@ OpenAPI source of truth (never re-declare):
 
 | Schema | File | Line |
 |---|---|---|
-| `CustomTool` | `types/python-generated/api-types.ts` | ~18144 |
-| `CustomToolInputSchema` | `types/python-generated/api-types.ts` | ~18160 |
-| `InlineToolSpec` | `types/python-generated/api-types.ts` | ~21692 |
+| `CustomTool` | `@ai-matrx/agents/generated/api-types` | ~18144 |
+| `CustomToolInputSchema` | `@ai-matrx/agents/generated/api-types` | ~18160 |
+| `InlineToolSpec` | `@ai-matrx/agents/generated/api-types` | ~21692 |
 
 Correct pattern (see `packages/chat/src/agents/types/tool-injection.types.ts:38`):
 

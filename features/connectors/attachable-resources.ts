@@ -28,7 +28,7 @@
  * product's vocabulary in the client, where a new provider means a deploy.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { McpAvailability } from "./connection-state";
 
 /**

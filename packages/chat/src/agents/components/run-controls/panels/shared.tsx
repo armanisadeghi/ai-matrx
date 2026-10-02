@@ -25,7 +25,7 @@ import type { ActiveRequest } from "../../../types/request.types";
 import type {
   UserRequestResult,
   UsageTotals,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { cn } from "@ai-matrx/design-system";
 import { currentCostUnit } from "@host/components/cost/costUnit";
 

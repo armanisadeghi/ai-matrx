@@ -26,7 +26,7 @@ import {
   type ContextReceiptMismatch,
   type ContextViewLoader,
 } from "@ai-matrx/agents/context";
-import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
+import type { ContextReceiptData } from "@ai-matrx/agents/generated/stream-events";
 import { receiptRowToResolved } from "../../redux/execution-system/messages/message-context-receipt";
 import { ValueCountPill } from "./ValueCountPill";
 import { loadContextView } from "../../redux/execution-system/context-rules/context-viewer";

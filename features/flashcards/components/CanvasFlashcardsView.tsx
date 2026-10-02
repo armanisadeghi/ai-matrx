@@ -18,7 +18,7 @@ import {
   studyFaces,
 } from "../utils/cardVariants";
 import type { ReviewResult } from "../types";
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { InlineArtifactDebugStrip } from "@/features/canvas/components/CanvasArtifactDebugPanel";

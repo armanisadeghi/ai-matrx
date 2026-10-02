@@ -3,7 +3,7 @@
 // CENSUS — THE REVIEWED-SEND WIRE CONTRACT IS THE SERVER'S, MEASURED.
 //
 // `./reviewed-send-contract.ts` exists because the generated contract
-// (`types/python-generated/api-types.ts`) is stale for this endpoint and a
+// (`@ai-matrx/agents/generated/api-types`) is stale for this endpoint and a
 // generated file is never hand-edited (the module header carries the two exact
 // failures that blocked `pnpm sync-types` in this container). A hand-written
 // contract with nothing diffing it against the server is the failure that

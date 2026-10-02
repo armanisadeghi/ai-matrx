@@ -294,7 +294,7 @@ and both losers' fixture files.
 - 2026-08-22 — Source-request ingestion UI: `IngestRequestsDialog` (paste a digest, platform picker,
   score-now toggle, streamed milestones, loud screened-out report), `SourceRequestRail` header
   `action` slot + honest empty-state copy, `api.ts::ingestSourceRequests` consuming the durable
-  streamed command. Regenerated `types/python-generated/api-types.ts` from the FastAPI schema.
+  streamed command. Regenerated `@ai-matrx/agents/generated/api-types` from the FastAPI schema.
 
 - 2026-08-21 — "Find my stories" consumes the durable streamed command: `api.ts` moved from
   `postJson` to `callApi` (`stream: true`) with milestone narration and a running banner in

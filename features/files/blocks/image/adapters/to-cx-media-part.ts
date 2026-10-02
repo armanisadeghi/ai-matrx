@@ -20,7 +20,7 @@
  * natively (Phase 3).
  */
 
-import type { ImageMediaPart } from "@/types/python-generated/stream-events";
+import type { ImageMediaPart } from "@ai-matrx/agents/generated/stream-events";
 import type { UnifiedImageBlock } from "../types";
 
 export function toCxMediaPart(block: UnifiedImageBlock): ImageMediaPart {

@@ -43,7 +43,7 @@ import type {
   DurableRunWire,
 } from "@/lib/durable-run/useDurableRun";
 import { useDurableRun } from "@/lib/durable-run/useDurableRun";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 
 const SEO_WIRE: DurableRunWire = {
   pointerPrefix: "matrx.seo-command-run.",

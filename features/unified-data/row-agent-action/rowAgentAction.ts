@@ -25,7 +25,7 @@
 import type { Field, PermissionLevel, RecordDocument, RecordsActor, RecordsDataSource } from "@ai-matrx/records";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { ManagedAgentOptions } from "@ai-matrx/chat/agents/types/instance.types";
-import type { DataTableRowActionOffer } from "@/types/python-generated/provision-offers";
+import type { DataTableRowActionOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 /**
  * What the package hands the host when an agent button is pressed.

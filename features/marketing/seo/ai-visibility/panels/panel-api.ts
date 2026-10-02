@@ -13,7 +13,7 @@
 import { callApi } from "@/lib/api/call-api";
 import { describeBackendFailure, parseCallApiError } from "@/lib/api/errors";
 import type { AppDispatch } from "@/lib/redux/store";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 
 import type {
   DesignArtifactContent,

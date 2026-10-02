@@ -24,7 +24,7 @@ import type {
   DocSearchHit,
   DocSearchSummary,
 } from "@/features/rag/hooks/useDocumentSearch";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 type FullPage = components["schemas"]["LibraryFullPage"];
 

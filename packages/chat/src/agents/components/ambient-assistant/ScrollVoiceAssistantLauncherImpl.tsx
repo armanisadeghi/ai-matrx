@@ -28,7 +28,7 @@ import { VoiceOrb } from "../../../voice-agent/components/VoiceOrb";
 import { useAppSelector } from "../../../store/hooks";
 import { CHAT_WINDOWS } from "../../../host/windows";
 import { useIsChatWindowOpen } from "../../../host/windows-react";
-import type { SourceFeature } from "@host/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { cn } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { selectIsAuthenticated } from "../../../host/identity";

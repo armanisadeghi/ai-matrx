@@ -20,7 +20,7 @@ import type {
   FullListBookmark,
   ListGroupBookmark,
   ListItemBookmark,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import {
   type DecodedDirective,
   buildDirectiveSlug,

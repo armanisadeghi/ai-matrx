@@ -27,7 +27,7 @@ import type {
 } from "@ai-matrx/alchemy/declare";
 import type { ApplicationScope } from "../agents/types/scope.types";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 // ---------------------------------------------------------------------------
 // SurfaceValue — schema for one named value a surface declares.

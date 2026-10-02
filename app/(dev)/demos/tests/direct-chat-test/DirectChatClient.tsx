@@ -17,7 +17,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { isChunkEvent } from "@/types/python-generated/stream-events";
+import { isChunkEvent } from "@ai-matrx/agents/generated/stream-events";
 
 type ServerType = "local" | "production";
 

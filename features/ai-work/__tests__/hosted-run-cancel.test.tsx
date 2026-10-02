@@ -17,7 +17,7 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }

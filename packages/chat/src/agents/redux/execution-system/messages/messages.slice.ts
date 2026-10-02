@@ -32,7 +32,7 @@ import type { MessageRole } from "../../../types/agent-message-types";
 import type {
   ContextReceiptData,
   MessagePart,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { setContextReceipt } from "../instance-context/instance-context.slice";
 import type { ApiEndpointMode } from "../../../types/instance.types";
 import { recordTranscriptEvent, shortId } from "./transcript-journal";

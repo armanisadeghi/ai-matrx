@@ -13,7 +13,7 @@ import type {
   ImageMediaPart,
   VideoMediaPart,
   YouTubeMediaPart,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { PermissionLevel } from "@host/utils/permissions/levels";
 
 type ChatSchema = Database["chat"];

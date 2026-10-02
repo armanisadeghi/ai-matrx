@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import { artifactDedupKey } from "../artifact-renderers";
 import {
   isMaterializedArtifactId,

@@ -79,7 +79,7 @@ import {
   type MasterworkAttachment,
 } from "./service";
 import { conductorOfferVariables } from "./offerVariables";
-import type { MasterworkConductOffer } from "@/types/python-generated/provision-offers";
+import type { MasterworkConductOffer } from "@ai-matrx/agents/generated/provision-offers";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";

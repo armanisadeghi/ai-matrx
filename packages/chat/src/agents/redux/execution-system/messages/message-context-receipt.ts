@@ -24,7 +24,7 @@ import {
 import type {
   ContextReceiptData,
   ContextReceiptRow,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { Json } from "../../../../host/db-types";
 import { contextEntryLabel } from "../../../components/context-policies-display/contextEntryLabel";
 import { toContextReceiptRow } from "../context-rules/receipt-check";

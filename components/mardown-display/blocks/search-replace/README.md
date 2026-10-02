@@ -278,7 +278,7 @@ These are not required but improve the UX (e.g. showing the file path in the dif
 **Registered in:**
 - `BlockComponentRegistry.tsx` as `BlockComponents.SearchReplaceBlock`
 - `BlockRenderer.tsx` under `case "search_replace"`
-- `types/python-generated/content-blocks.ts` as `BlockType.SEARCH_REPLACE` and `SearchReplaceBlockData`
+- `@ai-matrx/agents/generated/content-blocks` as `BlockType.SEARCH_REPLACE` and `SearchReplaceBlockData`
 
 **Props:**
 

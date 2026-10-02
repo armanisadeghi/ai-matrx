@@ -4,7 +4,7 @@
  * The event vocabulary is GENERATED from the Python source of truth
  * (`matrx-graph`'s `types/events.py` + aidream's
  * `services/runtime/workflow_events.py`) and delivered here by
- * `pnpm sync-types` as `types/python-generated/workflow-events.ts`. It is the
+ * `pnpm sync-types` as `@ai-matrx/agents/generated/workflow-events`. It is the
  * same artifact workflow-studio consumes — do NOT hand-maintain event shapes.
  * This file used to be a manual mirror alongside the studio's, and drift
  * between the two (and the Python models) was the risk that pipeline removes.
@@ -46,7 +46,7 @@ export type {
   RunAnnounceEvent,
   // Status vocabulary
   WorkflowRunStatus,
-} from "@/types/python-generated/workflow-events";
+} from "@ai-matrx/agents/generated/workflow-events";
 
 export {
   TERMINAL_RUN_STATUSES,
@@ -54,11 +54,11 @@ export {
   isWorkflowRunEvent,
   isNodeStreamEvent,
   isRunAnnounceEvent,
-} from "@/types/python-generated/workflow-events";
+} from "@ai-matrx/agents/generated/workflow-events";
 
-import type { WorkflowRunStatus } from "@/types/python-generated/workflow-events";
+import type { WorkflowRunStatus } from "@ai-matrx/agents/generated/workflow-events";
 
-import { TERMINAL_RUN_STATUSES as GENERATED_TERMINAL_RUN_STATUSES } from "@/types/python-generated/workflow-events";
+import { TERMINAL_RUN_STATUSES as GENERATED_TERMINAL_RUN_STATUSES } from "@ai-matrx/agents/generated/workflow-events";
 
 /**
  * IS THIS RUN OVER, as far as anything WATCHING it is concerned?

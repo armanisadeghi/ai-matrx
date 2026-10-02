@@ -19,7 +19,7 @@
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { applyIrKindRoute, readIrRouteMarker } from "@/features/content-ir/react/kind-route";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 // 🚨 A PARTIAL MOCK OF A REAL MODULE IS A SUITE THAT DIES ON THE NEXT EXPORT
 // (DD-239). This used to replace the whole capture store with `{ captureError }`.

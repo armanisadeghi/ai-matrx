@@ -1,4 +1,4 @@
-import { isMessagePart } from "@/types/python-generated/stream-events";
+import { isMessagePart } from "@ai-matrx/agents/generated/stream-events";
 import type { UnifiedImageBlock } from "../../types";
 import { toCxMediaPart } from "../to-cx-media-part";
 

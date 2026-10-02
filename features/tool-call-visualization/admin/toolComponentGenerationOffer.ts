@@ -8,7 +8,7 @@
  * are omitted.
  */
 
-import type { ToolVizComponentGenerationOffer } from "@/types/python-generated/provision-offers";
+import type { ToolVizComponentGenerationOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 export type ToolComponentGenerationOfferValues = Pick<
   Partial<ToolVizComponentGenerationOffer>,

@@ -7,7 +7,7 @@ import type {
   VideoMediaPart,
   DocumentMediaPart,
   YouTubeMediaPart,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { fromCxMediaPart } from "@host/features/files/blocks/image/adapters/from-cx-media-part";
 import {
   fromCxAudioPart,

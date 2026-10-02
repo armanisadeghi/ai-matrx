@@ -5,7 +5,7 @@
  * `api/routers/source_sets.py`): the package's ONE client
  * (`@ai-matrx/agents/sources/runtime` `createSourcesClient`) over the
  * contract-bound `apiPost`, so path, body and answer are checked against the
- * generated `types/python-generated/api-types.ts`, and auth + base URL are the
+ * generated `@ai-matrx/agents/generated/api-types`, and auth + base URL are the
  * app's own. The client marks every call `bodyCarriedRead` (the server admits
  * these reads without a selected organization — V1-A).
  */

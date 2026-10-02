@@ -16,7 +16,7 @@ import type { Database } from "@/types/database.types";
 import { attachUniversalFacets } from "@/features/marketing/seo/keyword/universal-facets";
 
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/normalize";
-import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
+import type { KeywordResearchArtifact } from "@ai-matrx/agents/generated/stream-events";
 
 import { keywordResearchPhrases, readKeywordResearchArtifact } from "./artifact";
 import type { KeywordReportRow } from "./report";

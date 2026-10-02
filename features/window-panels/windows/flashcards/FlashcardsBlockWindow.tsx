@@ -19,7 +19,7 @@ import { PrintOptionsDialog } from "@ai-matrx/print/react";
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowUpRight } from "lucide-react";
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import {
   toFlashcardMobileCards,
   useFlashcardMobileViewState,

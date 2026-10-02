@@ -23,7 +23,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 import { planKeys } from "../data/hooks";
 

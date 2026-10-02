@@ -7,7 +7,7 @@
  * the conversation row the host page already loaded; absent facts are omitted.
  */
 
-import type { ConversationAnalysisOffer } from "@/types/python-generated/provision-offers";
+import type { ConversationAnalysisOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 /** The loaded conversation-row facts this offer reads (all optional). */
 export interface ConversationAnalysisFacts {

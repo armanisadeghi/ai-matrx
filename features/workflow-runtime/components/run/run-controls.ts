@@ -16,8 +16,8 @@
  * No React, no Redux, no fetch — a total function over the status union.
  */
 
-import type { WorkflowRunStatus } from "@/types/python-generated/workflow-events";
-import { TERMINAL_RUN_STATUSES } from "@/types/python-generated/workflow-events";
+import type { WorkflowRunStatus } from "@ai-matrx/agents/generated/workflow-events";
+import { TERMINAL_RUN_STATUSES } from "@ai-matrx/agents/generated/workflow-events";
 
 /** The verbs a person can aim at a whole run from the run page. */
 export type RunControlVerb = "pause" | "resume" | "stop" | "cancel";

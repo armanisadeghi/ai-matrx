@@ -29,7 +29,7 @@ import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import { guardedUpdate } from "@ai-matrx/data/db";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { isJsonObject } from "@/types/json";
 import {
   coerceEffortTier,

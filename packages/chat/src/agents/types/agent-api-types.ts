@@ -26,7 +26,7 @@ import type {
   DataInputBlock,
   ContentBlock,
 } from "./message-types";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 // StructuredInputBase is defined in message-types.ts — not re-declared here.
 
@@ -46,7 +46,7 @@ type NonNullableFields<T> = {
  * LLM parameter overrides.
  *
  * Single source of truth: auto-generated from components['schemas']['LLMParams']
- * in types/python-generated/api-types.ts.
+ * in @ai-matrx/agents/generated/api-types.ts.
  *
  * Run `pnpm update-api-types` after backend changes — TypeScript will
  * immediately flag any field drift here.
@@ -379,7 +379,7 @@ export type CtxGetResult =
 // Stream events — re-exported from auto-generated source
 // =============================================================================
 //
-// Single source of truth: types/python-generated/stream-events.ts
+// Single source of truth: @ai-matrx/agents/generated/stream-events
 // Run `pnpm update-api-types` after backend event schema changes.
 //
 // NOTE: "tool_delegated" is a sub-event value within ToolEventPayload.event,
@@ -456,4 +456,4 @@ export type {
   StructuredInputWarningData,
   VideoOutputData,
   WorkflowStepData,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";

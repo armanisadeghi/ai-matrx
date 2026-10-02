@@ -13,7 +13,7 @@
 // compute goes to Python — not a DB read wearing an HTTP hat.
 //
 // ⚠️ WHY `useBackendApi().fetch` AND NOT `callApi`. `callApi` is compile-time
-// bound to `keyof paths` from `types/python-generated/api-types.ts`, and the HR
+// bound to `keyof paths` from `@ai-matrx/agents/generated/api-types`, and the HR
 // endpoints are not in that generated contract yet (checked 2026-08-26 — there
 // is no `/api/hr/*` path in the file). Reaching it through `callApi` today
 // would need a cast, and silencing a type error is the opposite of fixing one.

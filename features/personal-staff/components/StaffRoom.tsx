@@ -44,7 +44,7 @@ import {
   type StaffThread,
 } from "../staff-door";
 import { STAFF_SURFACE_NAME } from "@/features/surfaces/manifests/staff.manifest";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import {
   clearResolvedStaffHolder,
   publishResolvedStaffHolder,

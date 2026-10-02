@@ -23,7 +23,7 @@ import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import { stampRunStreamOrganizationContext } from "../transport/organization-context";
-import type { RunAnnounceEvent } from "@/types/python-generated/workflow-events";
+import type { RunAnnounceEvent } from "@ai-matrx/agents/generated/workflow-events";
 
 import {
   startAnnounceChannel,

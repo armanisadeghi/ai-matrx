@@ -4,7 +4,7 @@
  */
 
 import { VARIABLE_COMPONENT_TYPES } from "@ai-matrx/chat/agents/types/agent-definition.types";
-import { REASONING_EFFORT_OPTIONS } from "@/types/python-generated/llm-enums";
+import { REASONING_EFFORT_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
 import type { ToolIndex } from "./import-types";
 import { parsePasted } from "./agent-import-parse";
 import { isUuidShape } from "@ai-matrx/kit/uuid";

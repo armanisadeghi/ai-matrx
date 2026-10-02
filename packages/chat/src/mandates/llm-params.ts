@@ -13,7 +13,7 @@ import {
   REASONING_SUMMARY_OPTIONS,
   THINKING_LEVEL_OPTIONS,
   VERBOSITY_OPTIONS,
-} from "@host/types/python-generated/llm-enums";
+} from "@ai-matrx/agents/generated/llm-enums";
 
 export function toLlmParams(obj: JsonObject): Partial<FeLlmParams> {
   const out: Partial<FeLlmParams> = {};

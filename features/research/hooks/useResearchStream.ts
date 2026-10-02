@@ -7,7 +7,7 @@ import type {
   ToolEventPayload,
   InfoPayload,
 } from "@/lib/api/types";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import {
   isChunkEvent,
   isCompletionEvent,
@@ -17,7 +17,7 @@ import {
   isPhaseEvent,
   isToolEventEvent,
   isTypedDataEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import type {

@@ -67,7 +67,7 @@ import {
   waitForOrganizationAdmission,
   type OrganizationAdmission,
 } from "../host/server/organization-admission";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { toLlmParams } from "./llm-params";
 import { invalidateMandateCatalogueCache } from "@host/features/mandates/catalogue";
 import {
@@ -260,7 +260,7 @@ export function parseOutputWarnings(verdict: unknown): OutputWarning[] {
  * Read `dropped_rungs` off the verdict WITHOUT trusting the generated types.
  *
  * The field is additive on `MandateResolutionResponse` and the committed
- * `types/python-generated/api-types.ts` is regenerated against a running server
+ * `@ai-matrx/agents/generated/api-types` is regenerated against a running server
  * — a heavier, whole-surface operation than this one field deserves — so this
  * narrows the shape itself. Anything it cannot recognise is dropped rather than
  * rendered half-parsed: a garbled sentence beside a resolution is worse than

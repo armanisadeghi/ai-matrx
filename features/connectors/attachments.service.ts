@@ -27,7 +27,7 @@ import { createClient } from "@/utils/supabase/client";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import type {
   ConversationAttachment,
   PendingAttachment,

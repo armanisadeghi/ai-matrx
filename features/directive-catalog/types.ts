@@ -1,14 +1,14 @@
 /**
  * Matrx Directive Catalog — OpenAPI aliases + derived UI helpers.
  *
- * Wire contract: `types/python-generated/api-types.ts` (aidream directive_catalog).
+ * Wire contract: `@ai-matrx/agents/generated/api-types` (aidream directive_catalog).
  * Aliases only — never re-declare schemas here.
  *
  * The grid is the noun × verb matrix; the builder turns a chosen (verb, noun)
  * into a canonical Matrx envelope (`features/matrx-envelope/`).
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** OpenAPI schemas — source of truth */
 export type NounDirectives = components["schemas"]["NounDirectives"];

@@ -10,7 +10,7 @@
 |---|---|---|
 | NDJSON stream parser (async generator) | `lib/api/stream-parser.ts` → `parseNdjsonStream()` | ✅ Production-ready |
 | NDJSON callback consumer | `lib/api/stream-parser.ts` → `consumeStream()` | ✅ Production-ready |
-| Stream event types | `types/python-generated/stream-events.ts` | ✅ Auto-generated from Python |
+| Stream event types | `@ai-matrx/agents/generated/stream-events` | ✅ Auto-generated from Python |
 | Endpoint constants | `lib/api/endpoints.ts` → `ENDPOINTS` | ✅ All endpoints defined |
 | Backend URL resolution | `lib/api/endpoints.ts` → `BACKEND_URLS` | ✅ Production + localhost |
 | Auth headers hook | `hooks/useApiAuth.ts` → `useApiAuth()` | ✅ JWT + fingerprint |
@@ -243,7 +243,7 @@ This is the canonical pattern for consuming a FastAPI NDJSON stream. Copy it ver
 
 ```typescript
 import { parseNdjsonStream } from '@/lib/api/stream-parser';
-import type { StreamEvent, ChunkPayload, ErrorPayload } from '@/types/python-generated/stream-events';
+import type { StreamEvent, ChunkPayload, ErrorPayload } from '@/@ai-matrx/agents/generated/stream-events';
 
 // Make the request
 const response = await fetch(url, {

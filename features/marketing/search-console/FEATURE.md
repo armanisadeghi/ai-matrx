@@ -673,7 +673,7 @@ we do not have is worse than one more click.
   `value-system/reason-links.ts`. A new receipt step gains its editor there,
   never in a component.
 - `types/database.types.ts` (seo Functions) and
-  `types/python-generated/api-types.ts` (the gsc sync path) were
+  `@ai-matrx/agents/generated/api-types` (the gsc sync path) were
   hand-patched to match the live DB / next-deploy OpenAPI because this
   environment lacks the generator tokens — the next `pnpm db-types` /
   API-type sync must produce identical entries (if it diffs, the generated

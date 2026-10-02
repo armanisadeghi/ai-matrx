@@ -320,7 +320,7 @@ describe("the wire vocabulary is the server's own", () => {
 //
 // CONTRACTS §8 requires each body to be `components["schemas"][…]` — the
 // GENERATED contract — not an interface transcribed by hand. The three bodies
-// above are transcribed, because `types/python-generated/` cannot be
+// above are transcribed, because `@ai-matrx/agents/generated/` cannot be
 // regenerated where this suite was written: `pnpm sync-types` emits the schema
 // by BOOTING aidream, and that needs the five `SUPABASE_MATRIX_*` database
 // credentials, which this container does not hold.
@@ -339,19 +339,18 @@ describe("the wire vocabulary is the server's own", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("the generated contract carries these three paths", () => {
-  const openApiPath = join(
+  // The generated contract ships in @ai-matrx/agents (P15); its `paths` keys are
+  // the server's routes, quoted exactly as openapi-typescript writes them.
+  const apiTypesPath = join(
     __dirname,
-    "../../../../types/python-generated/openapi.json",
+    "../../../../node_modules/@ai-matrx/agents/generated/api-types.ts",
   );
 
   it.each([MAP_PAGES_PATH, MAP_REGIONS_PATH, PROPOSE_INTENTS_PATH])(
-    "%s is in types/python-generated/openapi.json",
+    "%s is in @ai-matrx/agents/generated/api-types",
     (path) => {
-      expect(existsSync(openApiPath)).toBe(true);
-      const document = JSON.parse(readFileSync(openApiPath, "utf-8")) as {
-        paths?: Record<string, unknown>;
-      };
-      expect(Object.keys(document.paths ?? {})).toContain(path);
+      expect(existsSync(apiTypesPath)).toBe(true);
+      expect(readFileSync(apiTypesPath, "utf-8")).toContain(`    "${path}": {`);
     },
   );
 });

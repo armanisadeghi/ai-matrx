@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { isSourceFeature } from "@/types/python-generated/source-attribution";
+import { isSourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { UNMAPPED_CLIENT_SOURCE_FEATURE } from "@/lib/diagnostics/errorSourceFeature";
 
 const PayloadSchema = z.object({

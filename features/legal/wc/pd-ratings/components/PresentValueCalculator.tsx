@@ -8,7 +8,7 @@ import { createLegalCaWcScope } from "@/features/surfaces/manifests/legal-ca-wc.
 import { legalCaWcManifest } from "@/features/surfaces/manifests/legal-ca-wc.manifest";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { CalculatorShell } from "./CalculatorShell";
 import { ResultDisplay } from "./ResultDisplay";
 import { EmptyResult } from "./EmptyResult";

@@ -34,7 +34,7 @@ export function humanizeToolName(raw: string): string {
  * something, never vanish from the feed.
  */
 const PHASE_COPY: Record<string, string> = {
-  // THE CLOSED LIVENESS VOCABULARY (`AgentStepPhase`, types/python-generated/
+  // THE CLOSED LIVENESS VOCABULARY (`AgentStepPhase`, @ai-matrx/agents/generated/
   // workflow-events.ts). The server folds every agent-step label onto these
   // seven before they reach the wire, so these are the phases a reader
   // actually meets on a modern run; the looser labels below are older/other

@@ -20,7 +20,7 @@ import { isJsonObject } from "@/types/json";
 import {
   parseMessageContent,
   type MessagePart,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 const INPUT_CONTENT_KEY = "input_content";
 const apply = process.argv.includes("--apply");

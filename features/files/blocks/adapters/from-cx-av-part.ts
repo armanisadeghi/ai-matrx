@@ -22,7 +22,7 @@ import type {
   AudioOutputData,
   VideoMediaPart,
   VideoOutputData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 function str(v: unknown): string | null {
   return typeof v === "string" && v.length > 0 ? v : null;

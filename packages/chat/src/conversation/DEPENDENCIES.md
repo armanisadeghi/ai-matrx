@@ -41,7 +41,7 @@ Project-wide utilities with stable interfaces. No action needed.
 | `ToolCallVisualization`, renderer registry, `ToolRendererProps` | StreamingContentBlocks, AssistantMessage | `@/features/tool-call-visualization` |
 | `ToolLifecycleEntry` type | StreamingContentBlocks (mapping from `ToolCallBlock`) | `@ai-matrx/chat/agents/types/request.types` |
 | `cn` | shared UI | `@/lib/utils` |
-| `StreamEvent` / `ToolEventPayload` types | StreamingContentBlocks, sendMessage thunk | `@/types/python-generated/stream-events` |
+| `StreamEvent` / `ToolEventPayload` types | StreamingContentBlocks, sendMessage thunk | `@/@ai-matrx/agents/generated/stream-events` |
 | `Button`, `Textarea`, etc. | Multiple | `@/components/ui/*` |
 | `lucide-react` icons | Multiple | npm |
 | `uuid` | useConversationSession | npm |

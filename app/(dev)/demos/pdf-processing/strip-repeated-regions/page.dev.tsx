@@ -9,7 +9,7 @@ import {
 } from "@/features/pdf-demo/components/PdfSourcePicker";
 import { drainPdfStream, PdfStreamProgress } from "@/features/pdf/api/streamDrain";
 import type { StripRepeatedRegionsResultSchema } from "@/features/pdf-extractor/types";
-import type { PdfRepeatedRegionsProgressData } from "@/types/python-generated/stream-events";
+import type { PdfRepeatedRegionsProgressData } from "@ai-matrx/agents/generated/stream-events";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 const STAGE_LABELS: Record<PdfRepeatedRegionsProgressData["stage"], string> = {

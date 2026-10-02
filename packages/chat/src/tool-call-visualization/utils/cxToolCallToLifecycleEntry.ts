@@ -15,7 +15,7 @@ import type {
   ToolCallParkedOn,
   ToolLifecycleEntry,
 } from "../../agents/types/request.types";
-import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
+import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
 import { humanizeKind } from "@host/features/content-ir/kinds/kind-markdown-utils";
 import {
   firstKindSlug,

@@ -8,7 +8,7 @@
  *      or that is quoted source (```ts) is not a raw kind.
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { drawsKindAsRawJson, drawsRawJsonCard } from "../draws-raw-kind-json";
 import { decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";

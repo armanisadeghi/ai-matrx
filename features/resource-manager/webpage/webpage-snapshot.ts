@@ -1,4 +1,4 @@
-import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
+import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
 
 /** Runtime proof for the generated persisted webpage snapshot contract. */
 export function isPreFetchedUrl(value: unknown): value is PreFetchedUrl {

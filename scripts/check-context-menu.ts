@@ -479,10 +479,10 @@ function densityViolations(src: string): string[] {
  */
 function attributionFindings(files: Map<string, string>): Finding[] {
   const out: Finding[] = [];
-  const gen = files.get("types/python-generated/source-attribution.ts") ??
+  const gen = files.get("node_modules/@ai-matrx/agents/generated/source-attribution.ts") ??
     (() => {
       try {
-        return readFileSync(join(ROOT, "types/python-generated/source-attribution.ts"), "utf8");
+        return readFileSync(join(ROOT, "node_modules/@ai-matrx/agents/generated/source-attribution.ts"), "utf8");
       } catch {
         return "";
       }

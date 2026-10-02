@@ -55,7 +55,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { knobBool, knobInt, knobString } from "@/lib/knobs/featureKnobs";
 import type { AppStore } from "@/lib/redux/store";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialogClose";
 import { MasterworkDictationOrigin } from "../MasterworkDictationOrigin";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";

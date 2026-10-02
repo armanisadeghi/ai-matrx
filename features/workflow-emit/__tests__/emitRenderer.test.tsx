@@ -37,7 +37,7 @@ jest.mock("../fetchEmitRendererRow", () => ({
 
 /**
  * A fixture of the FULL backend `node_emitted` contract. `NodeEmittedEvent` is
- * the generated type now (re-exported from `types/python-generated/`), so an
+ * the generated type now (re-exported from `@ai-matrx/agents/generated/`), so an
  * object literal here cannot go stale silently: when the Python event grows a
  * field, this fixture stops compiling. That is deliberate — the four fields
  * below (`presentation` / `kind` / `kind_ok` / `metadata`) were on the wire and

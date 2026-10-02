@@ -55,7 +55,7 @@ import type {
   ToolEventPayload,
   ErrorPayload,
   ProviderRetryPayload,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { LiveCitationEntry } from "../messages/message-citations";
 import { generateRequestId } from "../utils/ids";
 import { destroyInstance } from "../conversations/conversations.slice";

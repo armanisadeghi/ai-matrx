@@ -2,7 +2,7 @@ import type { ManagedResource } from "../../../types/instance.types";
 import type {
   MessagePart,
   PreFetchedUrl,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { ContextDrawerItem } from "../types";
 import { readWebpageInputs } from "@host/features/resource-manager/webpage/webpage-snapshot";
 import { DEMO_WEBPAGE_SNAPSHOT } from "../../messages-display/user/userMessageChipsDemoData";

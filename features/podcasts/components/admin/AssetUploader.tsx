@@ -22,7 +22,7 @@ import {
     type ImageUploaderResult,
 } from '@/components/official/ImageAssetUploader';
 import { folderForPodcast } from "@/features/files/utils/folder-conventions";
-import type { components } from '@/types/python-generated/api-types';
+import type { components } from '@ai-matrx/agents/generated/api-types';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**

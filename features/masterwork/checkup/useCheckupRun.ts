@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import type { DurableRunStatus } from "@/lib/durable-run/useDurableRun";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
 import {

@@ -18,7 +18,7 @@
 import { callApi } from "@/lib/api/call-api";
 import { serverRefusal } from "@/lib/progress/failureSentence";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 
 /**
  * Becomes a plain `satisfies keyof paths` once `pnpm sync-types` picks the

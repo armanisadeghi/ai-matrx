@@ -18,7 +18,7 @@ import { fromMediaBlock, type WireMediaBlock } from "@host/features/files/blocks
 import { normalizeContentBlocks } from "../../redux/execution-system/utils/normalize-content-blocks";
 import { withPerformedScript } from "../types";
 import { readPerformedScript } from "@host/components/mardown-display/blocks/audio/SpeechScriptPanel";
-import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 
 /** Exactly the data process-stream.ts dispatches for a live audio media_block. */
 function liveBlockData(): Record<string, unknown> {

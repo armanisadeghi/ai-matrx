@@ -6,7 +6,7 @@
  * keep a blank line the stream accumulator drops, plus an empty trailing block).
  */
 import { diffBlocks } from "./diff-blocks";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 const rb = (blockIndex: number, type: string, content: string) =>
   ({ blockId: `b${blockIndex}`, blockIndex, type, status: "complete", content }) as unknown as RenderBlockPayload;

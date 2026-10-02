@@ -21,7 +21,7 @@
  *
  * Every Python call below goes through `lib/api/typed-client.ts`, so the
  * PATH and REQUEST BODY are contract-checked against
- * `types/python-generated/api-types.ts`. The 200 response for each of these
+ * `@ai-matrx/agents/generated/api-types`. The 200 response for each of these
  * operations is generated as an untyped `{ [key: string]: unknown }` dict
  * (the backend hands back a plain dict, not a Pydantic response model), so
  * the response is still asserted against the hand types in `./types.ts` —

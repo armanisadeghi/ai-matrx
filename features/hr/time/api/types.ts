@@ -41,7 +41,7 @@
  * described by naming a React component is a defect in the build, exactly as it is in the spec.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 // ---------------------------------------------------------------------------------------------
 // Vocabularies — text + CHECK in Postgres, never enums. Verified live 2026-08-26.

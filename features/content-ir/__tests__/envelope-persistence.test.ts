@@ -19,7 +19,7 @@
 import type {
   MessagePart,
   RenderBlockPayload,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { assembleMessageParts } from "@ai-matrx/chat/agents/redux/execution-system/utils/assemble-cx-content-blocks";
 import { normalizeContentBlocks } from "@ai-matrx/chat/agents/redux/execution-system/utils/normalize-content-blocks";

@@ -29,7 +29,7 @@
 import type {
   AggregatedUsageResult,
   ModelUsageSummary,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 /** One model's contribution to a single persisted call. */
 export interface NormalizedUsageModel {

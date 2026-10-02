@@ -12,7 +12,7 @@ Generated types are **always correct**. Code, local types, and stored data confo
 | Boundary | Generated source | Regen |
 |---|---|---|
 | Database (Supabase) | `types/database.types.ts` | `pnpm db-types` |
-| Python API (aidream Pydantic → OpenAPI) | `types/python-generated/api-types.ts` — alias via `components["schemas"]["..."]` | `pnpm sync-types` (live) · local-ahead case below |
+| Python API (aidream Pydantic → OpenAPI) | `@ai-matrx/agents/generated/api-types` — alias via `components["schemas"]["..."]` | `pnpm sync-types` (live) · local-ahead case below |
 
 Never hand-mirror, re-declare, or widen a generated type. A hand-written "compatible" copy is a violation even if it currently matches — it drifts silently and shields call sites from schema changes. Full standards: [`TYPESCRIPT_STANDARDS.md`](../../../TYPESCRIPT_STANDARDS.md). Duplicate-type doctrine: [`PRINCIPLES.md`](../../../PRINCIPLES.md) §1.
 
@@ -139,7 +139,7 @@ An escalation without "Consumed by" is incomplete — trace the destination firs
 | File | Role |
 |------|------|
 | `types/database.types.ts` | Supabase-generated types — source of truth |
-| `types/python-generated/api-types.ts` | OpenAPI-generated Python API types — source of truth |
+| `@ai-matrx/agents/generated/api-types` | OpenAPI-generated Python API types — source of truth |
 | `types/supabase-rpc.ts` | `DbRpcRow<F>`, `JsonToUnknown<T>` |
 | `types/json.ts` | `JsonObject`/`JsonValue` + `isJsonObject` guards |
 | `TYPESCRIPT_STANDARDS.md` | The constitution — banned constructs, validation points |

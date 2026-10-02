@@ -9,7 +9,7 @@
  * (validation offers, never blocks).
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export type BasisKind =
   | "user"

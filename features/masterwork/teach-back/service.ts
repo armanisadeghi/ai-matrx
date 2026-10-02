@@ -16,7 +16,7 @@
 // rejoin — instead of needing a bespoke session row nothing else in Masterwork
 // has. Same shape as the Bad Example probe, for the same reason.
 
-import type { components, paths } from "@/types/python-generated/api-types";
+import type { components, paths } from "@ai-matrx/agents/generated/api-types";
 
 /**
  * Served by `aidream/aidream/services/distillation/teach_back.py`.

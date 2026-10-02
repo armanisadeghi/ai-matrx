@@ -21,7 +21,7 @@ import { operationFailed } from "@/utils/errors";
 import { callApi } from "@/lib/api/call-api";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { AppStore } from "@/lib/redux/store";
-import type { components, paths } from "@/types/python-generated/api-types";
+import type { components, paths } from "@ai-matrx/agents/generated/api-types";
 import { setNotificationPreference } from "@/features/settings/notification-preferences";
 import { parseRulebook, type Rulebook, type RulebookRow } from "../types";
 import {

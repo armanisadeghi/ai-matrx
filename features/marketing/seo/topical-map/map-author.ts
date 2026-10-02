@@ -23,7 +23,7 @@
 // sends exactly the fields the chosen source owns and never a stale leftover
 // from a tile the person switched away from.
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { isJsonObject } from "@/types/json";
 
 import type { MapTopicTreeNode } from "./types";

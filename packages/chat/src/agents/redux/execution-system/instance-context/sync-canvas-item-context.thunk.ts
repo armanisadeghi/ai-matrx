@@ -12,7 +12,7 @@ import {
   isCanvasItemContextValue,
 } from "../../../utils/canvasItemContext";
 import { applyContextDeltaToContent } from "../instance-working-document/contextDelta";
-import type { ContextDeltaData } from "@host/types/python-generated/stream-events";
+import type { ContextDeltaData } from "@ai-matrx/agents/generated/stream-events";
 import {
   CANVAS_ITEM_UPDATED_EVENT,
   invalidateCanvasItemCache,

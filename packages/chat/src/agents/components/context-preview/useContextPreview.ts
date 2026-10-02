@@ -35,7 +35,7 @@ import {
   selectResolvedContextRows,
 } from "../../redux/execution-system/context-rules/request-context";
 import { extractErrorMessage } from "@ai-matrx/data/net";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { ContextViewLoader } from "@ai-matrx/agents/context";
 
 export type ContextSelection = components["schemas"]["ContextSelection"];

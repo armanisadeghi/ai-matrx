@@ -23,7 +23,7 @@
  *   error               → creates ErrorBlock
  */
 
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 
 import type {
   CanonicalBlock,

@@ -63,7 +63,7 @@ import {
 import { countWords, summariseExpertTurns } from "./format";
 import { callApi } from "@/lib/api/call-api";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import type { RulebookRule } from "../types";
 
 /**

@@ -13,7 +13,7 @@ import {
   useFlashcardsSet,
 } from "./flashcards-set-parts";
 import { InlineArtifactDebugStrip } from "@/features/canvas/components/CanvasArtifactDebugPanel";
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { PrintOptionsDialog } from "@ai-matrx/print/react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";

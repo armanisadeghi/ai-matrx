@@ -2,7 +2,7 @@
 
 import { Suspense, type ComponentType } from "react";
 import { Loader2 } from "lucide-react";
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import {
   KIND_KEY,
   type FieldSchema,

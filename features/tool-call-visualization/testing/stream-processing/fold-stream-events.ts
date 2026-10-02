@@ -19,7 +19,7 @@ import type {
   RenderBlockEvent,
   ContextAnalysisPayload,
   StructuredOutputPayload,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import {
   isChunkEvent,
   isReasoningChunkEvent,
@@ -39,7 +39,7 @@ import {
   isEndEvent,
   isContextAnalysisEvent,
   isStructuredOutputEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { FinalPayload, ToolStreamEvent } from "../types";
 import { toolEventPayloadToToolStreamEvent } from "./normalize-tool-event";
 

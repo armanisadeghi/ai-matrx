@@ -6,7 +6,7 @@ import { artifactDedupKey } from "../artifact-renderers";
 import MermaidWorkbench from "@/components/mermaid/workbench/MermaidWorkbench";
 import MermaidBlock from "@/components/mardown-display/blocks/mermaid/MermaidBlock";
 import type { ArtifactRendererProps } from "../types";
-import type { MermaidBlockData } from "@/types/python-generated/stream-events";
+import type { MermaidBlockData } from "@ai-matrx/agents/generated/stream-events";
 // Canvas mode: the full editable workbench — default export, props: source, metadata?
 // Path confirmed from CanvasBody's `mermaid` case:
 //   `import("@/components/mermaid/workbench/MermaidWorkbench")`

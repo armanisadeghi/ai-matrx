@@ -1,6 +1,6 @@
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import type { RequestOptions, ResponseMeta } from "@/lib/python-client";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 // Types DERIVED from the OpenAPI contract — never hand-mirrored. A backend
 // rename lights up every callsite in the same `pnpm sync-types` PR.

@@ -11,7 +11,7 @@
 // matrx_seo.ai_visibility_design) and 305bae704e (DesignRunView, GateCard and
 // the gate payloads built in services/seo/ai_visibility_design_service.py).
 // Agent-written payload fields are nullable there, so they are nullable here.
-// The routes are not in `types/python-generated/api-types.ts` yet. When `pnpm sync-types` picks
+// The routes are not in `@ai-matrx/agents/generated/api-types` yet. When `pnpm sync-types` picks
 // them up, replace these hand-written shapes with the generated
 // `components["schemas"][...]` types in THIS file only — every consumer
 // imports from here.

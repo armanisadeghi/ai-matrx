@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
-import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
+import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
 
 import type {
   ToolAccent,

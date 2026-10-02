@@ -31,7 +31,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectCurrentPhase } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
-import type { Phase } from "@/types/python-generated/stream-events";
+import type { Phase } from "@ai-matrx/agents/generated/stream-events";
 import type { useKitGeneration } from "../useKitGeneration";
 import type { KitTargetState } from "../types";
 import { KitAudioRunner } from "./KitAudioRunner";

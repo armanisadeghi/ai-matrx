@@ -3857,7 +3857,7 @@ export default function OverlayController() {
           data.serverData !== null &&
           "cards" in data.serverData &&
           Array.isArray((data.serverData as { cards: unknown }).cards)
-            ? (data.serverData as import("@/types/python-generated/stream-events").FlashcardsBlockData)
+            ? (data.serverData as import("@ai-matrx/agents/generated/stream-events").FlashcardsBlockData)
             : undefined;
         return (
           <FlashcardsBlockWindow

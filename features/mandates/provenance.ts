@@ -34,7 +34,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { callApi } from "@/lib/api/call-api";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type MandateProvenanceReport =

@@ -45,7 +45,7 @@ owner's "what the agent saw, what the agent responded".
 `GET /review/descend?unit_kind=&unit_id=` and
 `POST /review/findings/from-walk`, mounted at prefix `/review` on aidream,
 **user-scoped auth** (the conversation owner). All wire shapes are DERIVED
-from `types/python-generated/api-types.ts` in `types.ts` — never
+from `@ai-matrx/agents/generated/api-types` in `types.ts` — never
 hand-mirrored; `pnpm sync-types` + type-check catches drift. The python-side
 truth is `aidream/services/review_descend/types.py`.
 

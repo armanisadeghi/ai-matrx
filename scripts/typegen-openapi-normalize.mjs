@@ -1,6 +1,6 @@
 /**
  * ONE normalization of the emitted OpenAPI document, shared by every road that
- * produces `types/python-generated/api-types.ts`.
+ * produces `@ai-matrx/agents/generated/api-types`.
  *
  * FastAPI emits one operationId when a single route accepts several HTTP
  * methods. OpenAPI requires operationIds to be unique, and the generated

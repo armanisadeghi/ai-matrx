@@ -1,7 +1,7 @@
 import { StreamBlockAccumulator } from "../stream-block-accumulator";
 import { splitContentIntoBlocksV2 } from "@host/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { captureError } from "../../../../../host/diagnostics";
-import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 jest.mock("../../../../../host/diagnostics", () => ({
   ...jest.requireActual("../../../../../host/diagnostics"),

@@ -14,7 +14,7 @@
 // resumable in the ordinary way — a durable run pointer and a rejoin — instead
 // of needing a bespoke session row nothing else in Masterwork has.
 
-import type { components, paths } from "@/types/python-generated/api-types";
+import type { components, paths } from "@ai-matrx/agents/generated/api-types";
 
 /**
  * Served by `aidream/aidream/services/distillation/probe.py`.

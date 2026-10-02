@@ -4,7 +4,7 @@ import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import { createClient } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 import type { VaultExpectedActor } from "./vault-service";
 

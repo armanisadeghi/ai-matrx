@@ -17,7 +17,7 @@ import { readAllRows } from "@ai-matrx/data/db";
 import { callApi } from "@/lib/api/call-api";
 import { isJsonObject } from "@/types/json";
 import type { AppDispatch } from "@/lib/redux/store";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { getUserOrganizations } from "@/features/organizations/service";
 import {
   DECISION_SUBJECT_KIND,

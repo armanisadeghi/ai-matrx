@@ -19,7 +19,7 @@ import {
 } from "@/features/content-ir/kinds/keyword-research";
 import { normalizeMonthlySearches } from "@/features/marketing/seo/keyword-research/types";
 import type { MonthlySearchPoint } from "@/features/marketing/seo/keyword-research/types";
-import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
+import type { KeywordResearchArtifact } from "@ai-matrx/agents/generated/stream-events";
 
 export interface KeywordReportMarket {
   search_volume: number | null;

@@ -21,8 +21,8 @@ import {
   type VariableResourceContextConfig,
   type VariableResourcePromotion,
 } from "../../types/agent-definition.types";
-import type { components } from "@host/types/python-generated/api-types";
-import { isMessagePart } from "@host/types/python-generated/stream-events";
+import type { components } from "@ai-matrx/agents/generated/api-types";
+import { isMessagePart } from "@ai-matrx/agents/generated/stream-events";
 import { isReferenceRole } from "@ai-matrx/agents";
 import { isSpeechScriptPart } from "../../speech-script/types";
 import {

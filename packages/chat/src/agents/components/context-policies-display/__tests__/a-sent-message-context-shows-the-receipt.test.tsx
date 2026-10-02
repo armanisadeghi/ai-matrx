@@ -11,7 +11,7 @@
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
+import type { ContextReceiptData } from "@ai-matrx/agents/generated/stream-events";
 import { MessageContextReceipt } from "../MessageContextReceipt";
 import captured from "../../../redux/execution-system/messages/__tests__/fixtures/notes-context-receipts.json";
 

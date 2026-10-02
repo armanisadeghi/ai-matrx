@@ -19,7 +19,7 @@
  *
  * WHY `getJson` AND NOT `apiGet`. `lib/api/typed-client`'s `apiGet` is bound
  * to the generated OpenAPI contract, and this path is not in
- * `types/python-generated/api-types.ts` yet (the aidream half landed after
+ * `@ai-matrx/agents/generated/api-types` yet (the aidream half landed after
  * this file). A generated file is NEVER hand-edited, so the honest thing is
  * the raw typed helper plus the declared response shape below. MOVE THIS TO
  * `apiGet("/admin/system-errors/open-outages")` the moment `pnpm sync-types`

@@ -6,7 +6,6 @@
  * Order here = tier order in the report (loudest classes first).
  */
 import "./types-freshness";
-import "./api-types-freshness";
 import "./schema-exposure";
 import "./dead-relations-registry";
 import "./entity-registry-drift";

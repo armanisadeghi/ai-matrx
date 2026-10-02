@@ -1,5 +1,5 @@
 import { consumeStream, type StreamCallbacks } from "@/lib/api/stream-parser";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 
 /**
  * Handlers for the Python NDJSON stream — same contract as `StreamCallbacks`

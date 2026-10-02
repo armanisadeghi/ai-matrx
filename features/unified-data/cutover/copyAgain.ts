@@ -20,7 +20,7 @@ import type {
   CutoverCopyAgainProgressData,
   CutoverCopyAgainReportData,
   TypedStreamEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 /**

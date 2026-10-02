@@ -106,7 +106,7 @@ export function googleAccountsNamedIn(sentence: string): string[] {
  *
  * Narrowed from `unknown` at the boundary (the F-25 pattern): the 409 body is a
  * plain dict on the server, not a declared response model, so nothing about
- * `candidate_accounts` reaches `types/python-generated/api-types.ts` and this
+ * `candidate_accounts` reaches `@ai-matrx/agents/generated/api-types` and this
  * file is where its shape is asserted — once, here, never at a call site.
  */
 export function googleCandidateAccountsIn(details: unknown): string[] {

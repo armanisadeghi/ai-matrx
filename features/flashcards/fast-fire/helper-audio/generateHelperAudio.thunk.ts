@@ -37,7 +37,7 @@ import { coerceDetails } from "@/features/flashcards/data/enhanceCard";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import { readAudioFileId } from "../spoken-front/generateSpokenFront.thunk";
 import { ttsRenderFacts } from "../ttsRenderFacts";
-import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
+import type { FlashcardsTtsRenderOffer } from "@ai-matrx/agents/generated/provision-offers";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Mandate key for the helper-audio TTS lane — resolves live to the DB-bound

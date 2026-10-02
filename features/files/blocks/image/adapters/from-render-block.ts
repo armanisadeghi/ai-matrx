@@ -17,7 +17,7 @@
  * (Phase 2).
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { fromImageOutputData } from "./from-image-output-data";
 import type { UnifiedImageBlock } from "../types";
 

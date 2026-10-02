@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export type SitePerformanceResponse =
   components["schemas"]["SitePerformanceResponse"];

@@ -214,7 +214,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 // (page weight vs build cost) — never a drive-by "optimization".
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
 import { sourceFeatureFromSurfaceName } from "@ai-matrx/chat/agents/utils/source-feature-from-surface";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import {
   ProTextFieldStatsBar,
   ProTextFieldStatsMenuItems,

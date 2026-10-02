@@ -20,7 +20,7 @@ import {
 import {
   isSourceFeature,
   type SourceFeature,
-} from "@/types/python-generated/source-attribution";
+} from "@ai-matrx/agents/generated/source-attribution";
 import {
   AUTONOMY_MODES,
   type AutonomyMode as ApprovalAutonomyMode,

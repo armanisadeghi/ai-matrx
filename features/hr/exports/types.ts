@@ -1,7 +1,7 @@
 /**
  * features/hr/exports/types.ts — the payroll-export lane's contract types (lane L13).
  *
- * 🚨 EVERY HTTP SHAPE HERE IS *DERIVED* FROM `types/python-generated/hr-contracts.api-types.ts`,
+ * 🚨 EVERY HTTP SHAPE HERE IS *DERIVED* FROM `@ai-matrx/agents/generated/hr-contracts`,
  * NEVER HAND-COPIED. That generated file is produced from `aidream/hr-contracts.openapi.json` —
  * the hand-written stub of SPEC-CONTRACTS §6.3 — and the whole point of the stub is step 4: when
  * the real handlers land, the stub entries are deleted, `/schema/all` takes over, and a shape that
@@ -21,7 +21,7 @@
 import type {
   components,
   operations,
-} from "@/types/python-generated/hr-contracts.api-types";
+} from "@ai-matrx/agents/generated/hr-contracts";
 
 // ---------------------------------------------------------------------------------------------
 // Derivation helpers — one place that knows how openapi-typescript spells things.

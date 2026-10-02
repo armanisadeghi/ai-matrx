@@ -128,7 +128,7 @@ accepts `back: string | null` and renders a loading spinner for the Loader Excep
 ### GAP-3: `generate_ts_types.py` must be re-run after Python model changes (TASK-007)
 
 The script `ai/processing/blocks/generate_ts_types.py` generates
-`types/python-generated/content-blocks.ts`. It is NOT run automatically. When Python models change
+`@ai-matrx/agents/generated/content-blocks`. It is NOT run automatically. When Python models change
 (e.g., field added/removed, type changed), the TypeScript types drift silently.
 
 **Action:** Add to the deployment checklist: run `python ai/processing/blocks/generate_ts_types.py`
@@ -193,8 +193,8 @@ environments so existing flows using legacy `content`-based parsing still work.
 
 | File | Change |
 |---|---|
-| `types/python-generated/stream-events.ts` | Added `CONTENT_BLOCK`, `ContentBlockPayload`, `ContentBlockEvent`, `isContentBlockEvent`, `isNewProtocol` |
-| `types/python-generated/content-blocks.ts` | Removed `partialCard` from `FlashcardsBlockData`; `FlashcardItem.back` now `string \| null` |
+| `@ai-matrx/agents/generated/stream-events` | Added `CONTENT_BLOCK`, `ContentBlockPayload`, `ContentBlockEvent`, `isContentBlockEvent`, `isNewProtocol` |
+| `@ai-matrx/agents/generated/content-blocks` | Removed `partialCard` from `FlashcardsBlockData`; `FlashcardItem.back` now `string \| null` |
 | `lib/api/types.ts` | Added `ContentBlockPayload`, `ContentBlockEvent`, `isContentBlockEvent` re-exports |
 | `components/mardown-display/chat-markdown/types.ts` | Now re-exports `isNewProtocol` (was missing, caused TS error) |
 | `components/mardown-display/blocks/flashcards/FlashcardItem.tsx` | `back` prop now `string \| null`; renders loader spinner when `null` |

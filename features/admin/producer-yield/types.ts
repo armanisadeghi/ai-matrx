@@ -12,7 +12,7 @@
  * worthless" — opposite problems, opposite fixes. Read `measurement_state`
  * first; `formatRate` below is the only sanctioned way to render one.
  */
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export type ProducerYieldRow = components["schemas"]["ProducerYieldRow"];
 export type ProducerYieldTotals = components["schemas"]["ProducerYieldTotals"];

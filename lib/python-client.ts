@@ -58,7 +58,7 @@ import {
   expandCompactEvent,
   isCompactEvent,
   type TypedStreamEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ---------------------------------------------------------------------------

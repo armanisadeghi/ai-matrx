@@ -22,7 +22,7 @@ import type {
   DocumentMediaPart,
   YouTubeMediaPart,
   MessagePart,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import {
   preferDisplayUrl,
   preferFetchableUrl,

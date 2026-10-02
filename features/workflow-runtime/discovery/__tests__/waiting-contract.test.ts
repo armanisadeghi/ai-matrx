@@ -21,7 +21,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const API_TYPES = join(process.cwd(), "types/python-generated/api-types.ts");
+const API_TYPES = join(process.cwd(), "node_modules/@ai-matrx/agents/generated/api-types.ts");
 const WAITING_HOOK = join(
   process.cwd(),
   "features/workflow-runtime/discovery/useWaitingRuns.ts",

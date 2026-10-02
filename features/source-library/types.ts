@@ -8,7 +8,7 @@
  * Canonical nouns only: Library, Source, Action. Nothing here coins a noun.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /**
  * Every adapter the running server declares (aidream `media_catalog/models.py`,

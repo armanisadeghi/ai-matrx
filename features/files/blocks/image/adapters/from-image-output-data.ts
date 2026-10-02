@@ -20,7 +20,7 @@
  * Delete when Python emits UnifiedImageBlock directly (Phase 2).
  */
 
-import type { ImageOutputData } from "@/types/python-generated/stream-events";
+import type { ImageOutputData } from "@ai-matrx/agents/generated/stream-events";
 import type {
   UnifiedImageBlock,
   MatrxImageBlock,

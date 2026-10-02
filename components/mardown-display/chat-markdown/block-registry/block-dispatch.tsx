@@ -59,7 +59,7 @@ import type {
   ServerScalarGenericRenderBlock,
   ServerShapeRenderBlock,
   ServerOpaqueRenderBlock,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { ClientOnlyBlockType } from "@/components/mardown-display/markdown-classification/processors/utils/client-blocks";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 import { parseYouTubeUrl } from "@/lib/media/youtube";

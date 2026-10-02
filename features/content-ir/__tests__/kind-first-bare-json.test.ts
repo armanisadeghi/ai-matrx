@@ -21,7 +21,7 @@
  * Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md §6.
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { IR_ENVELOPE_KEY, isCanonicalBlockIR, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";

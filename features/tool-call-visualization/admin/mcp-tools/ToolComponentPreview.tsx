@@ -43,7 +43,7 @@ import type {
   ToolLifecycleEntry,
   ToolLifecycleStatus,
 } from "@ai-matrx/chat/agents/types/request.types";
-import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
 import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

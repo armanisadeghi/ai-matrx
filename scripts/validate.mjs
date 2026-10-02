@@ -97,25 +97,6 @@ step({
         ? "--no-sync"
         : false,
 });
-step({
-  id: "api-types",
-  title: `Python API types (${useLocal ? "local backend" : "live backend"})`,
-  command: [
-    "node",
-    resolve(PROJECT_ROOT, "scripts/sync-types.mjs"),
-    "--fast",
-    ...(useLocal ? ["--local"] : []),
-  ],
-  // sync-types.mjs --fast = step 2 only (Python api types, no db-types, no
-  // type-check). We orchestrate db-types and type-check separately so they
-  // can be skipped independently.
-  skip: () =>
-    fastMode
-      ? "--fast"
-      : noSync
-        ? "--no-sync"
-        : false,
-});
 
 // Schema truth-check: diff the (freshly regenerated) types + every direct
 // `.from()/.schema()` against the LIVE DB. Advisory — loud, never fails the run

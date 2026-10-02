@@ -29,7 +29,7 @@ import { readAllRows } from "@ai-matrx/data/db";
 import {
   parseMessageContent,
   type MessagePart,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 /** Server twin: USER_INPUT_VARIABLE_KEY in matrx_ai/agents/variable_kinds.py. */
 const USER_INPUT_KEY = "__agent_user_input__";

@@ -3,7 +3,7 @@ import type {
   ContextPolicy,
 } from "../../../types/agent-api-types";
 import type { InstanceContextEntry } from "../../../types/instance.types";
-import type { PreFetchedUrl } from "@host/types/python-generated/stream-events";
+import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
 
 export const DEMO_WEBPAGE_TEXT = `# TikTok Algorithm in 2026: The 7 Signals That Decide If You Go Viral
 Completion rate under 70% is why your TikTok views cratered in 2026. Here are the 7 signals TikTok checks first, and the exact fix to try this week.

@@ -21,7 +21,7 @@ import type {
   HandToOwnBrowserRequest,
 } from "@/lib/extension-bridge/handToOwnBrowser";
 import type { OpenAgentRunWindowOptions } from "@/features/overlays/openers/agentRunWindow";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import type { Assist } from "../types";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 

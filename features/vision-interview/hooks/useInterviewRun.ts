@@ -42,7 +42,7 @@ import {
   followWorkflowRunStream,
   type WorkflowRunWireEvent,
 } from "@ai-matrx/chat/agents/redux/execution-system/thunks/follow-workflow-run-stream";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import { isTransportFailure } from "@ai-matrx/data/net";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { roleFromNodeId, type InterviewStage, type RoleKey } from "../types";

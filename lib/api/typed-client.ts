@@ -24,7 +24,7 @@
  *   - Wrong response field     → compile error (response is the real type).
  *
  * When the backend changes and `pnpm sync-types` regenerates
- * `types/python-generated/api-types.ts`, every drifted callsite lights up
+ * `@ai-matrx/agents/generated/api-types`, every drifted callsite lights up
  * red in the same PR. That is the whole point.
  *
  * Regenerate the contract: `pnpm sync-types` (Supabase + Python OpenAPI).
@@ -35,7 +35,7 @@
  * path literal directly.
  */
 
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import {
   del,
   getJson,

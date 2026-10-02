@@ -3,7 +3,7 @@
 // 🚨 THE WIRE CONTRACT OF `POST /google-workspace/gmail/send-reviewed`, AND THE
 // REASON THIS FILE EXISTS INSTEAD OF A GENERATED TYPE.
 //
-// The generated contract (`types/python-generated/api-types.ts`) still carries
+// The generated contract (`@ai-matrx/agents/generated/api-types`) still carries
 // the PRE-SPINE shape of this endpoint — a request of five fields and a response
 // of `message_id` alone. The server it is generated from moved the whole sent
 // record onto the outbound spine (aidream `4dbffdffb`): `organization_id` is now

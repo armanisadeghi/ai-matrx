@@ -178,7 +178,7 @@ BlockRenderer
 
 ## 6. Current Stream Contract (Python → Client)
 
-**File:** `types/python-generated/stream-events.ts`
+**File:** `@ai-matrx/agents/generated/stream-events`
 
 | Event | Payload | Current Use |
 |-------|---------|-------------|

@@ -31,7 +31,7 @@
  * through the one `requireOrganizationContext` kernel.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 import { BackendClient } from "@/lib/api/backend-client";
 import { BackendApiError } from "@/lib/api/errors";

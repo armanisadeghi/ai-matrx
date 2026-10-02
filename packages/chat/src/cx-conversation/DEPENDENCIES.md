@@ -28,7 +28,7 @@ These are stable, project-wide utilities. No action needed.
 | `@/features/tool-call-visualization` (ToolCallVisualization shell, renderer registry, ToolRendererProps) | AssistantMessage, StreamingContentBlocks | OWNED |
 | `@ai-matrx/chat/agents/types/request.types` (ToolLifecycleEntry) | StreamingContentBlocks (maps ToolCallBlock → ToolLifecycleEntry) | OWNED |
 | `@/lib/utils` (cn) | Shared UI | SHARED |
-| `@/types/python-generated/stream-events` (TypedStreamEvent, ToolEventPayload) | Multiple | OWNED |
+| `@/@ai-matrx/agents/generated/stream-events` (TypedStreamEvent, ToolEventPayload) | Multiple | OWNED |
 | `@/components/ui/*` (Button, etc.) | Multiple | SHARED |
 | `lucide-react` | Multiple | EXTERNAL |
 | `uuid` | Multiple | EXTERNAL |

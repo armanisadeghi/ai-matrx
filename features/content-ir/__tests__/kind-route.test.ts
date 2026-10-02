@@ -10,7 +10,7 @@ import { normalizeJsonRegion } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import { flashcardsServerDataFromEnvelope } from "../kinds/flashcard-set";
 
 const FLASHCARDS = JSON.stringify({

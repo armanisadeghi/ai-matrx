@@ -121,7 +121,7 @@ names the page and lists its live values. His review inbox gets one row per fini
    - No outside-helper binding test yet (non-matching names plus the Matrx-vs-matrix check).
 
 10. **Attribution slug.** No `artifacts` product slug exists in
-    `types/python-generated/source-attribution.ts` (generated from aidream), so the surface is
+    `@ai-matrx/agents/generated/source-attribution` (generated from aidream), so the surface is
     attributed to `canvas`. If the Content Library should report as its own product, add the slug in
     aidream, regenerate, and update `packages/chat/src/agents/utils/source-feature-from-surface.ts`.
 

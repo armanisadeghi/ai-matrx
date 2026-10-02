@@ -4,7 +4,7 @@ import type {
   FullListBookmark as WireFullListBookmark,
   ListGroupBookmark as WireListGroupBookmark,
   ListItemBookmark as WireListItemBookmark,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 export interface UserList {
   id: string;

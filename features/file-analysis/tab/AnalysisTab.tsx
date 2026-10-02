@@ -49,7 +49,7 @@ import type {
   FileAnalysisCompleteData,
   FileAnalysisStartedData,
   FileDetectorCompletedData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { TextContent } from "@/features/file-analysis/content/TextContent";
 import { TablesContent } from "@/features/file-analysis/content/TablesContent";
 import { ImagesContent } from "@/features/file-analysis/content/ImagesContent";

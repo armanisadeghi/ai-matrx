@@ -154,7 +154,7 @@ editor gate, org from the SITE):
 🚨 **These prefixes are BARE — there is no `/api` segment.** This doc said `/api/...`
 until 2026-08-15 and it was wrong; aidream router prefixes are bare, so an `/api/...`
 path is unreachable at runtime while still appearing in `/openapi.json`. Verified
-against `types/python-generated/api-types.ts` and live. Call them through
+against `@ai-matrx/agents/generated/api-types` and live. Call them through
 `@/lib/api/typed-client` so a wrong path is a compile error rather than a 404 nobody
 notices.
 Every folded org carries a provenance edge (`link_prospect` / `outreach_target`) whose payload

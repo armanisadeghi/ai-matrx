@@ -10,7 +10,7 @@ import {
   SOURCE_FEATURES,
   isSourceApp,
   isSourceFeature,
-} from "../types/python-generated/source-attribution";
+} from "@ai-matrx/agents/generated/source-attribution";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 const ROOTS = [

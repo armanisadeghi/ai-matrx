@@ -140,7 +140,7 @@ interface ToolRendererProps {
 
 `ToolLifecycleEntry` lives in `packages/chat/src/agents/types/request.types.ts` and exposes `callId`, `toolName`, `status` (`started | progress | step | result_preview | completed | error`), `arguments`, `result`, `errorMessage`, `latestMessage`, and `events`.
 
-`ToolEventPayload` is the exact wire format from `types/python-generated/stream-events.ts`.
+`ToolEventPayload` is the exact wire format from `@ai-matrx/agents/generated/stream-events`.
 
 ---
 
@@ -284,7 +284,7 @@ See `.claude/skills/create-tool-renderer/SKILL.md` for the full workflow and `EX
 
 | Path                                                                                                                                     | Why it stays outside                                                                                                                                                                         |
 | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `types/python-generated/stream-events.ts`                                                                                                | Auto-generated wire format shared across backends                                                                                                                                            |
+| `@ai-matrx/agents/generated/stream-events`                                                                                                | Auto-generated wire format shared across backends                                                                                                                                            |
 | `packages/chat/src/agents/types/request.types.ts`                                                                                                 | `ToolLifecycleEntry` — shared execution type                                                                                                                                                 |
 | `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts`                                                                        | Builds the lifecycle entries (execution concern)                                                                                                                                             |
 | `packages/chat/src/agents/redux/execution-system/active-requests/active-requests.slice.ts`                                                        | Owns the `toolLifecycle` map (execution concern)                                                                                                                                             |

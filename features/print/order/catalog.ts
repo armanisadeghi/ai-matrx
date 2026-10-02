@@ -15,7 +15,7 @@
  * base configuration of each five-dimension combination.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type {
   LuluBindingGroup,
   LuluBindingOption,

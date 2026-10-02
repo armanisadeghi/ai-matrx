@@ -83,7 +83,7 @@ import {
   selectMessageInterleavedContent,
   selectMessagesInterleavedRuns,
 } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ToolCard, ToolBatch } from "./internal-handlers/ToolHandlers";
 import { InlineAssistantError } from "./internal-handlers/InlineAssistantError";

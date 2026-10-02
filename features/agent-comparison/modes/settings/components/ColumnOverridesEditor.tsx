@@ -42,7 +42,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { REASONING_EFFORT_OPTIONS } from "@/types/python-generated/llm-enums";
+import { REASONING_EFFORT_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 
 interface Props {

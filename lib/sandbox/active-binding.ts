@@ -72,7 +72,7 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { isJsonObject } from "@/types/json";
 import {
   selectActiveSandboxId,

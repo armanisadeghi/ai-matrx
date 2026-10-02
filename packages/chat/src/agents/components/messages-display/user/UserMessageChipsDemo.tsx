@@ -29,7 +29,7 @@ import { ContextPolicyChip } from "../../context-policies-display/ContextPolicyC
 import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
 import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
-import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import {
   DEMO_CONV_MULTI,
   DEMO_CONV_SINGLE,

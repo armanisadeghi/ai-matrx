@@ -16,7 +16,7 @@ import { resolve } from "node:path";
 import ts from "typescript";
 
 const ROOT = process.cwd();
-const GENERATED_API_PATH = resolve(ROOT, "types/python-generated/api-types.ts");
+const GENERATED_API_PATH = resolve(ROOT, "node_modules/@ai-matrx/agents/generated/api-types.ts");
 const BASELINE_PATH = resolve(ROOT, "scripts/generated-type-contracts-baseline.json");
 const MIN_SHARED_FIELDS = 8;
 const MIN_LOCAL_COVERAGE = 0.65;

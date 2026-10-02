@@ -41,7 +41,7 @@ import type {
 } from "@/features/files/types";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { apiMultipart } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 // ---------------------------------------------------------------------------
 // Upload

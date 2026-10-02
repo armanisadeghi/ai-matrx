@@ -28,7 +28,7 @@ import {
 import { useShare } from "@/features/sharing/hooks/useShare";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import { cn } from "@/lib/utils";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type RobotsCheckResult = components["schemas"]["RobotsCheckResult"];

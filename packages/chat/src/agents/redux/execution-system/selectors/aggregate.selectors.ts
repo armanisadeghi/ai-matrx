@@ -34,7 +34,7 @@ import type {
   RenderBlockPayload,
   CompletionPayload,
   ErrorPayload,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { ShortcutContext } from "../../agent-shortcuts/types";
 import { selectHasMessages } from "../messages/messages.selectors";
 import { selectHasUnsentResources } from "../instance-resources/instance-resources.selectors";

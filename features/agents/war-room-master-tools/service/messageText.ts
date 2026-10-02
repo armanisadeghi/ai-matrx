@@ -14,7 +14,7 @@
 import {
   parseMessageContent,
   type MessagePart,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { MessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 
 /** A single MessagePart → a short readable fragment (or "" to skip). */

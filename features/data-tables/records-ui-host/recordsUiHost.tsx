@@ -53,7 +53,7 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
-import type { DataBuildOrAskOffer } from "@/types/python-generated/provision-offers";
+import type { DataBuildOrAskOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 import { useMergedGridKnob } from "./mergedGridKnob";
 

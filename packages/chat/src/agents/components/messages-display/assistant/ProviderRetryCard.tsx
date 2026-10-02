@@ -14,7 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import type { ProviderRetryPayload } from "@host/types/python-generated/stream-events";
+import type { ProviderRetryPayload } from "@ai-matrx/agents/generated/stream-events";
 import { cn } from "@ai-matrx/design-system";
 
 interface ProviderRetryCardProps {

@@ -11,7 +11,7 @@
  * is consolidated here and consumed by the slice's reducers/thunks.
  */
 
-import { LLM_PARAMS_KEYS } from "@/types/python-generated/llm-enums";
+import { LLM_PARAMS_KEYS } from "@ai-matrx/agents/generated/llm-enums";
 import { outputFormatControlKey } from "@ai-matrx/agents/models";
 import type {
   AgentSettings,

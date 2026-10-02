@@ -9,7 +9,7 @@
  * (`skillsConverters.ts`) so consumer components never touch snake_case.
  *
  * When the backend OpenAPI regenerates and `/api/skills/{id}/projects/...`
- * is in `types/python-generated/api-types.ts`, swap the hand-mirrored
+ * is in `@ai-matrx/agents/generated/api-types`, swap the hand-mirrored
  * `SkillRowWire` for the generated `components["schemas"]["SkillRow"]`
  * and drop the `as never` casts in the thunks.
  */

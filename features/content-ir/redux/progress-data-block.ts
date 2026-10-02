@@ -1,4 +1,4 @@
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { isJsonObject } from "@/types/json";
 
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";

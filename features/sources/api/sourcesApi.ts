@@ -11,7 +11,7 @@
  * (metered) AI processing. READS never come through here: Sources are read
  * directly from Supabase under RLS.
  *
- * Wire types are the generated contract (`types/python-generated/api-types.ts`),
+ * Wire types are the generated contract (`@ai-matrx/agents/generated/api-types`),
  * never a hand-written mirror. `postJson` attaches the JWT and the
  * `X-Organization-Id` header and turns a refusal into a `BackendApiError`
  * carrying the server's own sentence.
@@ -19,7 +19,7 @@
 
 import { postJson } from "@/lib/python-client";
 import { BackendApiError } from "@/lib/api/errors";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { sourceStudioPath } from "@/features/source-studio/sourceStudioModel";
 
 export type LandedSource = components["schemas"]["LandedSource"];

@@ -30,7 +30,7 @@ import type {
   ImageMediaPart,
   MessagePart,
   VideoMediaPart,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 const DECISION_QUESTIONS = {
   type: "decision_questions",

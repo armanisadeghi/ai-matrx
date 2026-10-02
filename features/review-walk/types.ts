@@ -2,11 +2,11 @@
  * features/review-walk/types.ts
  *
  * Every wire shape is DERIVED from the generated OpenAPI contract
- * (`types/python-generated/api-types.ts`) — never hand-mirrored. When the
+ * (`@ai-matrx/agents/generated/api-types`) — never hand-mirrored. When the
  * backend's `aidream/services/review_descend/types.py` changes and
  * `pnpm sync-types` regenerates, every drifted consumer here lights up red.
  */
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export type DescendOut = components["schemas"]["DescendOut"];
 export type DescendUnit = components["schemas"]["DescendUnit"];

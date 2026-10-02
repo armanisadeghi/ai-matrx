@@ -47,7 +47,7 @@ import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { MessageAttachmentStrip } from "@ai-matrx/chat/agents/components/messages-display/MessageAttachmentStrip";
 import { isAttachmentMessagePart } from "@ai-matrx/chat/agents/components/context-items/normalize";
 import type { AgentVariableDeclaration } from "@/features/agents/samples/service";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 
 /**
  * Longer than this (or carrying a newline) and the row collapses.

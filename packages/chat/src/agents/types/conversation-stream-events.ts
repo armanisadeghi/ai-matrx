@@ -1,6 +1,6 @@
 /**
  * Conversation-level stream-event payloads that are NOT in the
- * auto-generated `types/python-generated/stream-events.ts` because they ride
+ * auto-generated `@ai-matrx/agents/generated/stream-events` because they ride
  * on the conversation pipeline rather than the agent-run event union.
  *
  * Source of truth: `docs/FE_CONVERSATION_API_CHANGES.md` §1. Keep this file

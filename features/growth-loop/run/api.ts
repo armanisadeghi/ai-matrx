@@ -5,7 +5,7 @@
  * aidream's `/growth-loop/*` routes because they are orchestration work, not
  * database CRUD. There is one path per operation and no fallback ladder.
  *
- * Public shapes are derived from `types/python-generated/api-types.ts`; raw
+ * Public shapes are derived from `@ai-matrx/agents/generated/api-types`; raw
  * rows are derived from `types/database.types.ts`. Nothing hand-mirrors either
  * boundary.
  */
@@ -14,7 +14,7 @@ import { callApi } from "@/lib/api/call-api";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import type { Database } from "@/types/database.types";
-import type { components, paths } from "@/types/python-generated/api-types";
+import type { components, paths } from "@ai-matrx/agents/generated/api-types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { STAGES } from "../map/loop-map";
 

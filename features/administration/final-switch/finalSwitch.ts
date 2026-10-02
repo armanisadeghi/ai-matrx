@@ -24,7 +24,7 @@ import type {
   CutoverFinalSwitchResultData,
   CutoverFinalSwitchStageData,
   TypedStreamEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 export type FinalSwitchCheck = {
   key: string;

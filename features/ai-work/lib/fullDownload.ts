@@ -20,7 +20,7 @@
 
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { downloadFile } from "@/features/files/api/files";
 import { callMatrxLocal } from "./matrxLocalRuntime";
 

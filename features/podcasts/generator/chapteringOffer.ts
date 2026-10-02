@@ -7,7 +7,7 @@
 // values are dropped on the default pin — the current Holder's payload is
 // unchanged. Absent facts are omitted.
 
-import type { PodcastChapteringOffer } from "@/types/python-generated/provision-offers";
+import type { PodcastChapteringOffer } from "@ai-matrx/agents/generated/provision-offers";
 import type { PcEpisode, PcShow } from "@/features/podcasts/types";
 
 export type ChapteringEpisodeFacts = Partial<

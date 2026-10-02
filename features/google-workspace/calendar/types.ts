@@ -4,7 +4,7 @@
  * 2026-09-17), so nothing here re-declares a column.
  *
  * The one hand-written shape is the server's refresh RESPONSE, named
- * `*Pending`: `types/python-generated/api-types.ts` does not carry the
+ * `*Pending`: `@ai-matrx/agents/generated/api-types` does not carry the
  * `/google-sync/*` contracts yet because the OpenAPI emitter needs a live DB
  * this container cannot reach (google-native REGISTER, 2026-09-17 ruling).
  * Remedy: `pnpm sync-types`, then delete this and import the generated one.

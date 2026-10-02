@@ -26,7 +26,7 @@ import { createClient } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { formatFileSize, formatCost, type CostUnit } from "@ai-matrx/kit/format";
 import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
@@ -46,7 +46,7 @@ export type MandateReferenceConversionRow =
  * THE PATROL SECTION — the scheduled task's state and what each run cost.
  * Now generated: `aidream/services/mandates/references.py` models
  * `MandatePatrolSection` and `PatrolRunRow` are both in
- * `types/python-generated/api-types.ts`.
+ * `@ai-matrx/agents/generated/api-types`.
  */
 export type MandatePatrolRun = components["schemas"]["PatrolRunRow"];
 export type MandatePatrolSection =

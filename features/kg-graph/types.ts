@@ -1,7 +1,7 @@
 // features/kg-graph/types.ts
 //
 // Wire shapes for the aidream /kg router (Phase G). Every response type is
-// DERIVED from the OpenAPI-generated contract (`types/python-generated/
+// DERIVED from the OpenAPI-generated contract (`@ai-matrx/agents/generated/
 // api-types.ts`), never hand-mirrored — a backend rename lights up every
 // drifted callsite as a compile error after `pnpm sync-types`. The backend is
 // USER-scoped (not admin): the graph payload only contains entities the caller
@@ -10,7 +10,7 @@
 // cytoscape wants edges keyed `source` / `target` — the backend already emits
 // those names, so these flow straight into <CytoscapeComponent> elements.
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** One entity node. `mention_count` / `source_count` / `confidence_avg` come
  *  from NER mentions (0 until the NER backfill runs on a user's org). */

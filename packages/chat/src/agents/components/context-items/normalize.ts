@@ -11,7 +11,7 @@ import type { DataRef } from "../../types/message-types";
 import {
   isMessagePart,
   type MessagePart,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import {
   isPreFetchedUrl,
   readWebpageInputs,

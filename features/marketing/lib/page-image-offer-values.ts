@@ -8,7 +8,7 @@ import type {
   MarketingImagePromptOffer,
   MarketingPageImageAllInOneOffer,
   MarketingPageImageOffer,
-} from "@/types/python-generated/provision-offers";
+} from "@ai-matrx/agents/generated/provision-offers";
 
 /**
  * The REAL facts a caller holds about the image being ordered, named exactly

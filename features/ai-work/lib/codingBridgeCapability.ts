@@ -35,7 +35,7 @@
 
 import { apiPost } from "@/lib/api/typed-client";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** The eleven operations a `BridgeCapabilityReport` grades, from the contract. */
 export type BridgeOperation = components["schemas"]["BridgeOperation"];

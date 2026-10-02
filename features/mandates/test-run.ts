@@ -28,7 +28,7 @@
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import { isJsonObject, toJsonRecord, type JsonObject } from "@/types/json";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { usableServerNotes } from "@/components/official/ServerNotes";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
@@ -49,7 +49,7 @@ export type MandateTestRequest = components["schemas"]["MandateTestRequest"];
  *   run_id       the CHILD WORKFLOW run id, or null
  *   workflow_id  the workflow definition id, or null
  *
- * `types/python-generated/api-types.ts` is GENERATED and does not carry these
+ * `@ai-matrx/agents/generated/api-types` is GENERATED and does not carry these
  * fields yet (the aidream half ships in parallel), and hand-editing a generated
  * file is banned. So the three fields are narrowed HERE at ingress with runtime
  * validation — never a cast on the response, never `any` — exactly the seam

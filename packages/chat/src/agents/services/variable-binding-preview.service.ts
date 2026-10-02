@@ -9,7 +9,7 @@
  * principal, so the editor shows the real text — never a client-side imitation.
  *
  * CONTRACT NOTE: the route is on aidream main but not yet in this repo's
- * `types/python-generated/api-types.ts`, so `apiPost` cannot name it. Until the
+ * `@ai-matrx/agents/generated/api-types`, so `apiPost` cannot name it. Until the
  * next `pnpm sync-types` carries it, this calls the canonical raw transport and
  * VALIDATES the response at ingress (no asserted type). When the route lands in
  * the contract, switch to `apiPost("/agents/variable-bindings/preview", …)`.

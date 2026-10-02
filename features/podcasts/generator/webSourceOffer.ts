@@ -4,7 +4,7 @@
 // (`podcast_client.web_source`, mapped-only). Read from the scrape result the
 // resolver already holds — no extra read. Absent → omitted.
 
-import type { PodcastClientWebSourceOffer } from "@/types/python-generated/provision-offers";
+import type { PodcastClientWebSourceOffer } from "@ai-matrx/agents/generated/provision-offers";
 import type { ScraperResult } from "@/features/scraper/hooks/useScraperApi";
 
 export type WebSourceOfferVariables = Omit<

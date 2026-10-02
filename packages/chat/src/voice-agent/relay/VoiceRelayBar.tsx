@@ -18,7 +18,7 @@ import { Mic, Square, AudioLines } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { useMandate } from "../../mandates/useMandate";
 import { VoiceMuteButton } from "../components/VoiceMuteButton";
-import type { SourceFeature } from "@host/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import type { QuestionPacing } from "./types";
 import {
   useVoiceRelaySession,

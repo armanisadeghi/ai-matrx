@@ -18,7 +18,7 @@
  * map grows, and the reason it does not have to be complete today.
  *
  * Slugs come from the closed registry mirrored in
- * `types/python-generated/source-attribution.ts` (source of truth:
+ * `@ai-matrx/agents/generated/source-attribution` (source of truth:
  * aidream `services/conversation_context/source_attribution.py`). The
  * `SourceFeature` return type means a slug that is not registered will not
  * compile.
@@ -27,7 +27,7 @@
 import {
   isSourceFeature,
   type SourceFeature,
-} from "@/types/python-generated/source-attribution";
+} from "@ai-matrx/agents/generated/source-attribution";
 
 /** The registered sentinel for "this client could not name the feature". */
 export const UNMAPPED_CLIENT_SOURCE_FEATURE: SourceFeature = "client-unmapped";

@@ -54,7 +54,7 @@ import { callApi } from "../../../host/server/call-api";
 import { resolveRunWait } from "../../../host/server/run-wait";
 import { peekSelectedOrganizationId } from "../../../host/server/organization-admission";
 import { extractErrorMessage } from "@ai-matrx/data/net";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { usePageCaptureContribution } from "@host/components/agent-copy/page-capture/usePageCapture";
 import { useContextPreview, type ContextSelection } from "./useContextPreview";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";

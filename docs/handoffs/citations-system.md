@@ -18,7 +18,7 @@ Ratified additions (Arman, 2026-07-17):
 
 ## Canonical citation schema — the cross-repo contract
 
-Normalized per-text-block shape. Storage: top-level `citations` on each text part (`TextPart.citations`); in-memory (aidream): `TextContent.metadata["citations"]`. Source of truth: `aidream/packages/matrx-ai/matrx_ai/config/citations.py` (`NormalizedCitation`), surfaced to the FE via generated `types/python-generated/stream-events.ts` (NEVER hand-edit; regen: `uv run python scripts/generate_types.py stream` from aidream root).
+Normalized per-text-block shape. Storage: top-level `citations` on each text part (`TextPart.citations`); in-memory (aidream): `TextContent.metadata["citations"]`. Source of truth: `aidream/packages/matrx-ai/matrx_ai/config/citations.py` (`NormalizedCitation`), surfaced to the FE via generated `@ai-matrx/agents/generated/stream-events` (NEVER hand-edit; regen: `uv run python scripts/generate_types.py stream` from aidream root).
 
 ```jsonc
 {
@@ -70,7 +70,7 @@ Normalization MUST be idempotent — `is_normalized_citation` keys on `kind`+`pr
 - **matrx-frontend:** `packages/chat/src/agents/redux/execution-system/messages/message-citations.ts` (the ONE core — extend, never fork), `components/mardown-display/chat-markdown/citations/`, `packages/chat/src/agents/components/messages-display/citations/MessageSourcesRow.tsx`, `thunks/process-stream.ts` (`isCitationEvent`), chat FEATURE: `packages/chat/src/agents/components/chat/FEATURE.md`.
 - **Test assets:** seeded conversation `c17a7100-0000-4000-8000-c17a71000001` (settle-time UI, real citation payloads, owned by `admin@admin.com`). Login: `/login` `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 - **Commands:** aidream `uv run pytest packages/matrx-ai/tests/test_citations_normalization.py packages/matrx-connect/tests/test_citation_event.py packages/matrx-ai/tests/test_content_deserializer_parity.py`; FE `pnpm type-check` + jest on `message-citations`/`extract-flat-text`/`remarkMatrxCite`/`citation-live-stream` suites. Direct-API probes: `uv run python` from aidream root with `.env` sourced.
-- **Traps:** markers (`<matrxcite>`) are RENDER-ONLY — any path that persists, copies, TTS-reads, or resends text must use the plain flatten (default). `extractFlatText` has a `withCitationMarkers` option; only the render path passes it. Never hand-edit `types/python-generated/stream-events.ts`. aidream citation history is interleaved with unrelated "wave-a" commits — trust file contents, not commit messages. Dev-server text vanishing after HMR = known Turbopack corruption; restart the dev server, a reload won't fix it.
+- **Traps:** markers (`<matrxcite>`) are RENDER-ONLY — any path that persists, copies, TTS-reads, or resends text must use the plain flatten (default). `extractFlatText` has a `withCitationMarkers` option; only the render path passes it. Never hand-edit `@ai-matrx/agents/generated/stream-events`. aidream citation history is interleaved with unrelated "wave-a" commits — trust file contents, not commit messages. Dev-server text vanishing after HMR = known Turbopack corruption; restart the dev server, a reload won't fix it.
 
 ## Decisions ruled
 

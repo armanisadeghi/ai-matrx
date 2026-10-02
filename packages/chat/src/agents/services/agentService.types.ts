@@ -1,8 +1,8 @@
 // Types for the AI Dream Agent Service REST surface (`/agent-service/*`).
-// OpenAPI (`types/python-generated/api-types.ts`) is the sole source of truth —
+// OpenAPI (`@ai-matrx/agents/generated/api-types`) is the sole source of truth —
 // never hand-mirror these schemas. Regen: `pnpm sync-types`.
 
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export type ResponseFormat = "text" | "json" | "json_schema";
 

@@ -13,7 +13,7 @@
  * consumes the event (conversation working doc, Scribe studio document).
  */
 
-import type { ContextDeltaData } from "@host/types/python-generated/stream-events";
+import type { ContextDeltaData } from "@ai-matrx/agents/generated/stream-events";
 
 /**
  * Apply a `context_delta` payload to the current content. Returns the new

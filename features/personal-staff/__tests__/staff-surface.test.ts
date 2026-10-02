@@ -15,7 +15,7 @@
  * generated allow-list rather than a hopeful literal.
  */
 
-import { SOURCE_FEATURES } from "@/types/python-generated/source-attribution";
+import { SOURCE_FEATURES } from "@ai-matrx/agents/generated/source-attribution";
 import {
   SURFACE_ROUTE_MAPPINGS,
   surfaceFromPathname,

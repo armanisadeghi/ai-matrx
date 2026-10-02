@@ -15,7 +15,7 @@
  * 1772395cd0). A door that refuses is shown to the person in its own words.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 export type SourceLandingBody = components["schemas"]["SourceLanding"];
 

@@ -29,7 +29,7 @@ import {
   type FlagCompatibilityMode,
   type MessageFlagKey,
   type MessageFlags,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 export {
   DEFAULT_FLAG_COMPATIBILITY_MODE,

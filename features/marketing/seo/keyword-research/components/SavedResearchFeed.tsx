@@ -19,7 +19,7 @@ import Link from "next/link";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { listKeywordsWithMarketByPhrases } from "@/features/marketing/seo/keyword-research/data/queries";
 import { keywordResearchPhrases } from "@/features/marketing/seo/keyword-research/data/artifact";
-import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
+import type { KeywordResearchArtifact } from "@ai-matrx/agents/generated/stream-events";
 
 import KeywordResearchReport from "./KeywordResearchReport";
 import type { KeywordResearchReportSection } from "./KeywordResearchReport";

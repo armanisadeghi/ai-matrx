@@ -1,4 +1,4 @@
-import { LLM_PARAMS_KEYS } from "@/types/python-generated/llm-enums";
+import { LLM_PARAMS_KEYS } from "@ai-matrx/agents/generated/llm-enums";
 import type { ResolvedConfig } from "./types";
 import {
   ControlDefinition,

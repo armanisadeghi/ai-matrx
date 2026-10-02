@@ -1865,13 +1865,6 @@
       "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },
-    "generated-api-types-are-fresh-not-hand-edited": {
-      "label": "Generated API types are fresh, not hand-edited",
-      "class": "repo-only",
-      "cmd": "pnpm check:api-types-fresh",
-      "reason": "no database access in 2 file(s) reached",
-      "evidence": []
-    },
     "unbounded-reads-the-detector-can-still-fail-self-test": {
       "label": "Unbounded reads: the detector can still fail (self-test)",
       "class": "repo-only",

@@ -19,7 +19,7 @@ import {
   type CxToolCallRow,
 } from "@ai-matrx/chat/agents/redux/execution-system/thunks/conversation-bundle";
 import { parsePersistedMessageContent } from "@ai-matrx/chat/agents/redux/execution-system/messages/persisted-content-boundary";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 
 // ── shapes ──────────────────────────────────────────────────────────────────
 

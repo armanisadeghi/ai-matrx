@@ -33,7 +33,7 @@ import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/
 import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callConversationContinue } from "@/lib/api/call-api";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import { readServerRefusal } from "@/features/access-gate/service/serverRefusal";
 import { useCodingReplyResponder } from "./useCodingReplyResponder";
 import { streamErrorText } from "@ai-matrx/agents/matrx";

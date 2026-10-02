@@ -19,7 +19,7 @@ import type {
   KeywordWithMarket,
   KeywordWithMarketBeforeFacets,
 } from "../types";
-import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
+import type { KeywordResearchArtifact } from "@ai-matrx/agents/generated/stream-events";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import { attachUniversalFacets } from "@/features/marketing/seo/keyword/universal-facets";
 import { parseKeywordResearchArtifact } from "./artifact";

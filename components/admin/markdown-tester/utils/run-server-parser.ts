@@ -5,7 +5,7 @@
 // so byte-equality comparisons against the local parsers are valid.
 
 import { ENDPOINTS } from "@/lib/api/endpoints";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 export interface RunServerParserOptions {
   baseUrl: string;

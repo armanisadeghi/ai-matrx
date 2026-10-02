@@ -39,7 +39,7 @@ import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import {
   parseMessageContent,
   type MessagePart,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { removeMessage } from "../messages/messages.slice";
 import {
   setUserInputText,

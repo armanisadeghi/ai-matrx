@@ -24,7 +24,7 @@ import { CostBadge } from "@/components/cost/CostBadge";
 import { InfoHint } from "@/components/official/InfoHint";
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { supabase } from "@/utils/supabase/client";
 import { myRunsCreatedBy } from "./encore/service";
 

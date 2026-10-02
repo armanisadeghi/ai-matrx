@@ -19,7 +19,7 @@ import type {
   ListInputPart,
   PreFetchedUrl,
   TableInputPart,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 export type ContextBookmark =
   | NonNullable<TableInputPart["bookmarks"]>[number]

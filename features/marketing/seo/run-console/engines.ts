@@ -15,7 +15,7 @@
  * that can author a schedule nothing will ever fire.
  */
 
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 
 /**

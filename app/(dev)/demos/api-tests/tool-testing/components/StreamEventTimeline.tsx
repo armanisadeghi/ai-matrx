@@ -24,7 +24,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import type { ToolStreamEvent } from "@/features/tool-call-visualization/testing/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 

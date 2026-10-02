@@ -8,7 +8,7 @@
  */
 
 import { isRecord } from "@/features/content-ir/kinds/legacy-bridge-utils";
-import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
+import type { KeywordResearchArtifact } from "@ai-matrx/agents/generated/stream-events";
 
 function keywordLists(value: unknown): KeywordResearchArtifact["keyword_lists"] {
   if (!Array.isArray(value)) return [];

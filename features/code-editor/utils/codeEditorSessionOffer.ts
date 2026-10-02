@@ -8,7 +8,7 @@
  * fact omits its key (never "" or null).
  */
 
-import type { CodeEditorSessionOffer } from "@/types/python-generated/provision-offers";
+import type { CodeEditorSessionOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 export type CodeEditorSessionOfferValues = Pick<
   Partial<CodeEditorSessionOffer>,

@@ -38,7 +38,7 @@ import {
 
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
-import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
+import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
 import { useAppDispatch } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { setContextEntry } from "../../../agents/redux/execution-system/instance-context/instance-context.slice";

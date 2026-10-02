@@ -7,7 +7,7 @@ import { useContextItemDrawer } from "../context-items/useContextItemDrawer";
 import { normalizeMessagePart } from "../context-items/normalize";
 import { BlockHoverPreview } from "@host/features/agents/components/previews/BlockHoverPreview";
 import { ResourceAttachmentTile } from "./user/ResourceAttachmentTile";
-import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import type { ContextDrawerItem } from "../context-items/types";
 
 interface MessageAttachmentStripProps {

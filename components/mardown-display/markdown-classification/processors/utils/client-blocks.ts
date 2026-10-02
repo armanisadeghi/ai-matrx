@@ -16,9 +16,9 @@
  * classification rule fails `pnpm check:shapes:crosswalk`.
  *
  * The server-synthesized twin vocabulary (audio_output, function_result, …)
- * is GENERATED into types/python-generated/stream-events.ts
+ * is GENERATED into @ai-matrx/agents/generated/stream-events
  * (ServerOnlyRenderBlock / ServerOnlyBlockType) — both replaced the retired
- * hand-maintained types/python-generated/missing-types.ts drift patch.
+ * hand-maintained @ai-matrx/agents/generated/missing-types drift patch.
  */
 
 /** A directory/file tree rendered from box-drawing or ASCII connectors. */

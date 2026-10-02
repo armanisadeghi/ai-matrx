@@ -27,7 +27,7 @@ import {
 import { fetchMemoryCost } from "../../../redux/execution-system/observational-memory/fetch-memory-cost.thunk";
 import { formatCostUsd, formatTokens } from "./format";
 import { useCostDisplay } from "@host/components/cost/useCostDisplay";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import {
   MOBILE_TABLE,
   MOBILE_TABLE_CELL,

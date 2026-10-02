@@ -62,7 +62,7 @@ interface ToolRendererProps {
 
 ---
 
-## Wire format (`types/python-generated/stream-events.ts`)
+## Wire format (`@ai-matrx/agents/generated/stream-events`)
 
 ```ts
 interface ToolEventPayload {

@@ -21,7 +21,7 @@
 
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
 

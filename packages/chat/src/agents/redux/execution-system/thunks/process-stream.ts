@@ -65,7 +65,7 @@ import {
   type MemoryObserverCompletedData,
   type MemoryReflectorCompletedData,
   type UntypedDataPayload,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import {
   appendChunk,
   appendReasoningChunk,
@@ -207,7 +207,7 @@ import type {
   ContextReceiptData,
   ImageOutputData,
   PartialImageData,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type { UnifiedImageBlock } from "@host/features/files/blocks/image/types";
 import type { UnifiedMediaBlock } from "@host/features/files/blocks/types";
 import {

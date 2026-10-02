@@ -34,7 +34,7 @@ import type {
   VideoBlock,
   YouTubeVideoBlock,
 } from "@ai-matrx/chat/agents/types/message-types";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 
 // ===========================================================================
 // FileSource — every shape we accept on the way IN

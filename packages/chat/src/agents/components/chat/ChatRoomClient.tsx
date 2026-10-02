@@ -64,7 +64,7 @@ import { useAttachResource } from "../inputs/resources/attach-resource";
 import { useRegisterChatAttachTarget } from "@host/features/knowledge/command-bar/useKnowledgeAttachTarget";
 import { toast } from "../../../host/notify";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
-import type { SourceFeature } from "@host/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { selectUserId } from "../../../host/identity";
 import { selectOrganizationId } from "../../../host/org";

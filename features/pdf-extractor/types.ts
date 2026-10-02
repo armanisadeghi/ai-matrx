@@ -2,7 +2,7 @@
  * PDF Extractor — frontend type surface.
  *
  * Re-exports the OpenAPI-generated schemas the backend team ships at
- * `types/python-generated/api-types.ts`. Always import PDF request/response
+ * `@ai-matrx/agents/generated/api-types`. Always import PDF request/response
  * shapes from this file rather than reaching directly into the generated
  * file — that keeps the import path stable when the generated layout changes.
  *
@@ -10,10 +10,10 @@
  *   `pnpm update-api-types` (against the staging backend)
  *   `pnpm update-api-types:local` (against http://localhost:8000)
  *
- * Do not edit `types/python-generated/api-types.ts` by hand.
+ * Do not edit `@ai-matrx/agents/generated/api-types` by hand.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type {
   PdfClassifyCompleteData,
   PdfExtractedTableItem,
@@ -26,7 +26,7 @@ import type {
   PdfRepeatedRegionsCompleteData,
   PdfRepeatedRegionsStripCompleteData,
   PdfTablesCompleteData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 type Schemas = components["schemas"];
 
@@ -70,7 +70,7 @@ export type PdfPipelineOptions = Schemas["PdfPipelineOptions"];
  * `PdfTextWord` / `PdfTextChunk` / `PdfPageSpan` satellites) no longer appear
  * in the OpenAPI schema. Per-page shapes arrive as typed stream events
  * (`PdfExtractStartedData` / `PdfPageExtractedData` / `PdfExtractCompleteData`
- * from `@/types/python-generated/stream-events`), consumed via
+ * from `@/@ai-matrx/agents/generated/stream-events`), consumed via
  * `streamPdfExtractText(Remote)` in `features/pdf-extractor/service/streamPdf.ts`.
  */
 

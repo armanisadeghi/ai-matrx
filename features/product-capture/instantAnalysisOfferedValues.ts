@@ -10,7 +10,7 @@
  * payload changes. Absent facts are omitted, never sent blank.
  */
 
-import type { ProductCaptureInstantItemOffer } from "@/types/python-generated/provision-offers";
+import type { ProductCaptureInstantItemOffer } from "@ai-matrx/agents/generated/provision-offers";
 import type { CaptureFile, CaptureItem } from "./types";
 
 type MappedKeys = Exclude<keyof ProductCaptureInstantItemOffer, "__kind" | "dock_notes">;

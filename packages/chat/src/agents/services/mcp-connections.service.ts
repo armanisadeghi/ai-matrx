@@ -14,7 +14,7 @@ import { createClient } from "../../host/db";
 import type { McpToolSchema } from "./mcp-client/tool-discovery";
 import { productionUrl } from "../../host/server/endpoints";
 import { applyOrganizationContextHeader } from "../../host/server/organization-context";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { AttachableAvailability } from "@host/features/connectors/attachable-resources";
 import { ensureOrganizationForRequest } from "../../host/org";
 

@@ -4,7 +4,7 @@
  * 🚨 THE ONE ADAPTER BETWEEN THE `/google-import/*` PAYLOADS AND THE PANELS,
  * WITH A RUNTIME CHECK AT THE SEAM.
  *
- * The generated contract (`types/python-generated/api-types.ts`) does not carry
+ * The generated contract (`@ai-matrx/agents/generated/api-types`) does not carry
  * these paths yet — `pnpm sync-types` needs a session with DB env — so the
  * panels run on the `*Pending` stand-ins in `./types.ts`. That is survivable;
  * what is NOT survivable is a panel that renders a BLANK where the server sent a

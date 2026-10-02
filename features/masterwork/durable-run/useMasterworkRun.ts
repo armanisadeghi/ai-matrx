@@ -42,7 +42,7 @@ import type {
 import { useDurableRun } from "@/lib/durable-run/useDurableRun";
 import type { MeasuredRate, WorkSize } from "@/lib/progress/sizedEstimate";
 import { isEmptyWorkSize, sizedEstimateMs } from "@/lib/progress/sizedEstimate";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 
 import {
   CHAT_INGEST_RATE,

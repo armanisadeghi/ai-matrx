@@ -33,7 +33,7 @@ import {
   type ApiCallError,
   type ConversationForkAndRunBody,
 } from "../../../../../host/server/call-api";
-import type { TypedStreamEvent } from "@host/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import {
   isConversationForkedEvent,
   type ConversationForkedEvent,

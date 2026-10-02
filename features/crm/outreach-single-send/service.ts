@@ -1,4 +1,4 @@
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { BackendApiError } from "@/lib/api/errors";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { postJson } from "@/lib/python-client";

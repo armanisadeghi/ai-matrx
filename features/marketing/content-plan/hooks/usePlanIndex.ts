@@ -29,7 +29,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiGet, buildPath } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 import { planKeys } from "../data/hooks";
 

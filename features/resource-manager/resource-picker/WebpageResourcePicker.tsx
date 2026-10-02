@@ -28,7 +28,7 @@ import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotic
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
 import { SaveSourceButton } from "@/features/sources/SaveSourceButton";
 import { formatCount } from "@ai-matrx/kit/format";
-import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
+import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { isYouTubeChannelUrl, parseYouTubeUrl } from "@/lib/media/youtube";
 

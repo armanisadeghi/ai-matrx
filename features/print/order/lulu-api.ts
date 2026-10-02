@@ -5,7 +5,7 @@
  * `/lulu/*` is in the generated OpenAPI contract, so every call here is bound
  * through the typed client (`lib/api/typed-client.ts`): paths, request bodies,
  * query params, and responses are all DERIVED from
- * `types/python-generated/api-types.ts` — when the backend contract moves,
+ * `@ai-matrx/agents/generated/api-types` — when the backend contract moves,
  * this file lights up red on `pnpm sync-types`. There is NO base URL in this
  * folder and no tolerant multi-key readers: the mappers below do direct field
  * access on the contract types and only reshape to this surface's view model.
@@ -18,7 +18,7 @@
 import { apiGet, apiPost } from "@/lib/api/typed-client";
 import { BackendApiError, describeBackendFailure } from "@/lib/api/errors";
 import { OrganizationContextError } from "@/lib/api/organization-context";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type {
   LuluCatalog,
   LuluFetchState,

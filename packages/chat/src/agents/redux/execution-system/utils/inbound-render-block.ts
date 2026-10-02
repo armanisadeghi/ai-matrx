@@ -26,7 +26,7 @@
  * Contract: `common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md`.
  */
 
-import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { captureError } from "../../../../host/diagnostics";
 import { sanitizeInboundEnvelopeMetadata } from "@host/features/content-ir/redux/render-block-envelope";
 import { sanitizeInboundPartialKindMetadata } from "@ai-matrx/content-ir/wire";

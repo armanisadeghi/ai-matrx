@@ -13,7 +13,7 @@
  * facts, which no current Holder declares.
  */
 
-import type { ContentIrComponentAuthoringOffer } from "@/types/python-generated/provision-offers";
+import type { ContentIrComponentAuthoringOffer } from "@ai-matrx/agents/generated/provision-offers";
 import { composeKindAgentIntent, type KindAgentSeed } from "./kind-agent-intents";
 import type { Json } from "@/types/database.types";
 

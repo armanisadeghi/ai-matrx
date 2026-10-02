@@ -107,7 +107,7 @@ links to — is already declared in the admin navigation registry.
 
 - `open-outages.ts` reads through `getJson` with a locally declared response
   interface because the path is not yet in
-  `types/python-generated/api-types.ts` (the aidream half landed after this
+  `@ai-matrx/agents/generated/api-types` (the aidream half landed after this
   file, and a generated file is never hand-edited). **Move it to
   `apiGet("/admin/system-errors/open-outages")` as soon as `pnpm sync-types`
   carries the path** — until then this is a hand-mirrored contract, the exact

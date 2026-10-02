@@ -8,7 +8,7 @@ import {
 } from "@/features/pdf-demo/components/PdfSourcePicker";
 import { drainPdfStream, PdfStreamProgress } from "@/features/pdf/api/streamDrain";
 import type { LayoutClassificationReport } from "@/features/pdf-extractor/types";
-import type { PdfPageClassifiedData } from "@/types/python-generated/stream-events";
+import type { PdfPageClassifiedData } from "@ai-matrx/agents/generated/stream-events";
 
 export default function ClassifyPagesDemo() {
   const [source, setSource] = useState<PdfSourceState>(EMPTY_PDF_SOURCE);

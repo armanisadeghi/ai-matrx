@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import {
   DurableRunStopButton,

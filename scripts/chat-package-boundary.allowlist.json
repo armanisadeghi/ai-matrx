@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand \u2014 route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 1954,
+  "total": 1841,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -592,11 +592,6 @@
     "@host/test-utils/sandbox-store": 3,
     "@host/test-utils/supabase-auth": 1,
     "@host/types/json": 11,
-    "@host/types/python-generated/api-types": 21,
-    "@host/types/python-generated/llm-enums": 3,
-    "@host/types/python-generated/provision-offers": 1,
-    "@host/types/python-generated/source-attribution": 7,
-    "@host/types/python-generated/stream-events": 81,
     "@host/types/sandbox": 2,
     "@host/types/supabase-rpc": 2,
     "@host/utils/auth/getUserId": 9,

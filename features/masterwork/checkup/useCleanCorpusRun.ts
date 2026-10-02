@@ -18,7 +18,7 @@
 
 import { useCallback } from "react";
 
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
 
 export const CLEAN_CORPUS_PATH = "/masterworks/clean-corpus" satisfies keyof paths;

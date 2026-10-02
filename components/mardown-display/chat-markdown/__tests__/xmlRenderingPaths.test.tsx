@@ -134,7 +134,7 @@ import { EnhancedChatMarkdownInternal } from "../EnhancedChatMarkdown";
 import { StreamAwareChatMarkdown } from "../StreamAwareChatMarkdown";
 import type { TypedStreamEvent } from "../types";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 // Controlled guard fixture: generic wrappers must retain author Markdown
 // semantics instead of downgrading the XML body to literal/XML-token text.

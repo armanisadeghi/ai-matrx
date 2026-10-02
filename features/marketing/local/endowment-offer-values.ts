@@ -14,7 +14,7 @@ import type {
   BusinessLocation,
   ListingMatrixRow,
 } from "@/features/marketing/types";
-import type { MarketingLocalEndowmentOffer } from "@/types/python-generated/provision-offers";
+import type { MarketingLocalEndowmentOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 export type EndowmentLocationFacts = Partial<
   Pick<

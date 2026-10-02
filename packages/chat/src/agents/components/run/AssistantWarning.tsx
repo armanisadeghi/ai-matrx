@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import type { WarningPayload } from "@host/types/python-generated/stream-events";
+import type { WarningPayload } from "@ai-matrx/agents/generated/stream-events";
 
 interface AssistantWarningProps {
   warning: WarningPayload;

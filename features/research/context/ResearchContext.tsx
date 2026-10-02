@@ -15,7 +15,7 @@ import {
   type TopicStoreInitialData,
 } from "../state/topicStore";
 import type { ResearchTopic, ResearchProgress } from "../types";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 
 type TopicStoreInstance = ReturnType<typeof createTopicStore>;
 

@@ -11,7 +11,7 @@
  * source missing it holds "" at its index so the alignment survives.
  */
 
-import type { ResearchTopicDeepResearchOffer } from "@/types/python-generated/provision-offers";
+import type { ResearchTopicDeepResearchOffer } from "@ai-matrx/agents/generated/provision-offers";
 import type { ResearchSource, ResearchTopic } from "../../types";
 
 export type DeepResearchFacts = Partial<

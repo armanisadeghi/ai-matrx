@@ -13,7 +13,7 @@
 
 import { configureStore } from "@reduxjs/toolkit";
 import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
-import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import {
   createRequest,
   upsertRenderBlock,

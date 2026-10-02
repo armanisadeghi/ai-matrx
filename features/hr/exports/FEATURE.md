@@ -115,7 +115,7 @@ recorded here so the next reader does not "fix" one.
   and projections because generated types cannot encode function privileges.
 
 **Key types** (`features/hr/exports/types.ts`)
-- Every HTTP shape is **derived** from `types/python-generated/hr-contracts.api-types.ts`. A
+- Every HTTP shape is **derived** from `@ai-matrx/agents/generated/hr-contracts`. A
   hand-typed interface here would absorb contract drift and destroy the §6.3 step-4 drift detector.
 - `PayrollExportHistoryRow` is the ONE hand-written shape, because the RPC's generated signature
   returns bare `Json`. Marked and dated; replace it when the RPC gains a typed return.
@@ -195,7 +195,7 @@ Row → `getExportArtifact` (E-23) returns the URL envelope → bytes are stream
 ## Doctrine compliance
 
 **Primitives reused**
-- Types: everything derived from `types/python-generated/hr-contracts.api-types.ts`; `PayPeriodRow`
+- Types: everything derived from `@ai-matrx/agents/generated/hr-contracts`; `PayPeriodRow`
   and `PayPeriodState` from `features/hr/time/api/types.ts`.
 - Components: `MatrxDataTable`, `ItemMenu`, `Alert`, `Badge`, `Button`, `Dialog`,
   `TextInputDialog`, `AssistStrip`, `CopyButton`, L3's `PayPeriodsTable` / `StateBadge`.

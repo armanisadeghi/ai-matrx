@@ -77,9 +77,9 @@ import type {
   ContentBlock,
 } from "./message-types";
 import type { Enums } from "../../host/db-types";
-import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import type { DecisionQuestionsPart } from "@host/features/agents/decision-questions/types";
-import type { MessageFlags } from "@host/types/python-generated/stream-events";
+import type { MessageFlags } from "@ai-matrx/agents/generated/stream-events";
 
 // The canonical role union, sourced from the generated DB enum so it can never
 // drift from `public.cx_message.role`. Aliased here so `MessageRole` below

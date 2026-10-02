@@ -23,7 +23,7 @@
 //     the next one — so this NEVER blocks the UI and never raises a toast.
 //
 // Paths are cast `as never` until `pnpm sync-types` regenerates
-// `types/python-generated/api-types.ts` (same precedent as the `/start` call
+// `@ai-matrx/agents/generated/api-types` (same precedent as the `/start` call
 // in hooks/useInterviewRun.ts).
 
 import { callApi } from "@/lib/api/call-api";

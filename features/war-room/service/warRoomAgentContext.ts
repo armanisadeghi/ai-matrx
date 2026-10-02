@@ -25,7 +25,7 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
-import type { WarRoomThreadContextOffer } from "@/types/python-generated/provision-offers";
+import type { WarRoomThreadContextOffer } from "@ai-matrx/agents/generated/provision-offers";
 import type { AssistantContextEntry } from "@/features/transcript-studio/service/assistantContextBuilder";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { selectProjectById } from "@/features/agent-context/redux/projectsSlice";

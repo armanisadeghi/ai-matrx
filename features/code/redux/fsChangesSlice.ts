@@ -28,7 +28,7 @@
  */
 
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { ResourceChangedPayload } from "@/types/python-generated/stream-events";
+import type { ResourceChangedPayload } from "@ai-matrx/agents/generated/stream-events";
 
 type ResourceChangedKind = ResourceChangedPayload["kind"];
 type ResourceChangedAction = ResourceChangedPayload["action"];

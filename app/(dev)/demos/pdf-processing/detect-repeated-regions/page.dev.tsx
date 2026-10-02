@@ -15,7 +15,7 @@ import { PdfJsonResult } from "@/features/pdf-demo/components/PdfJsonResult";
 import { RegionOverlayPreview } from "@/features/pdf-demo/components/RegionOverlayPreview";
 import { drainPdfStream, PdfStreamProgress } from "@/features/pdf/api/streamDrain";
 import type { RepeatedRegionsReport } from "@/features/pdf-extractor/types";
-import type { PdfRepeatedRegionsProgressData } from "@/types/python-generated/stream-events";
+import type { PdfRepeatedRegionsProgressData } from "@ai-matrx/agents/generated/stream-events";
 
 export default function DetectRepeatedRegionsDemo() {
   const [source, setSource] = useState<PdfSourceState>(EMPTY_PDF_SOURCE);

@@ -9,7 +9,7 @@
  * (Excluded from the bundle — type-only, no runtime imports of it exist.)
  */
 import { apiGet, apiPost, apiMultipart, buildPath } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 async function _proofs() {
   // --- Wrong PATH is a compile error -------------------------------------

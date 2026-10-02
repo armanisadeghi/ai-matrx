@@ -16,7 +16,7 @@
 // painted.
 //
 // 🚨 WHY A TYPE ALONE CANNOT FIX IT. `lib/api/FEATURE.md` rule 1 says response
-// types are DERIVED from `types/python-generated/api-types.ts`. These routes
+// types are DERIVED from `@ai-matrx/agents/generated/api-types`. These routes
 // are now IN the server's `openapi.json` (they were 404 when `types.ts` was
 // written — that note is stale), but every one of them is declared
 // `-> dict[str, Any]` on the server, so the published schema is

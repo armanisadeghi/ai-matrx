@@ -24,7 +24,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import type {
   TypedStreamEvent,
   RenderBlockEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import {
   Loader2,
   Cpu,

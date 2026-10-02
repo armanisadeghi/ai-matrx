@@ -17,7 +17,7 @@
 import type {
   AgentAppsAutoCreateRequestOffer,
   AgentAppsMetadataRequestOffer,
-} from "@/types/python-generated/provision-offers";
+} from "@ai-matrx/agents/generated/provision-offers";
 import type { DisplayMode, FormatType, ResponseMode } from "./config-instructions";
 import type { AppMetadata } from "./types";
 

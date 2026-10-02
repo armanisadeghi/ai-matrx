@@ -5,7 +5,7 @@
  * Everything goes through `callApi`, the ONE door to the Python server, so auth,
  * base-URL resolution, organization scope, error capture and the NDJSON reader
  * are the platform's and not this feature's. Paths and bodies are typed by the
- * GENERATED contract (`types/python-generated/api-types.ts`): the `/media/*`
+ * GENERATED contract (`@ai-matrx/agents/generated/api-types`): the `/media/*`
  * operations landed there on 2026-09-18 and the contract-ahead augmentation
  * that stood in for them deleted itself, exactly as its header promised. What
  * that generated contract does NOT carry, this file no longer calls — see the
@@ -26,7 +26,7 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import type { ApiCallError } from "@/lib/api/call-api";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import {
     MediaApiError,
     parseActionList,

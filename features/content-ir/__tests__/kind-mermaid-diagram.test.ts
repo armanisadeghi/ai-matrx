@@ -17,7 +17,7 @@
  * central integration pass.
  */
 
-import type { MermaidBlockData } from "@/types/python-generated/stream-events";
+import type { MermaidBlockData } from "@ai-matrx/agents/generated/stream-events";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
 import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";

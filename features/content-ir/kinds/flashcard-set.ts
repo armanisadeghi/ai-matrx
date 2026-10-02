@@ -13,7 +13,7 @@
  * components bail out.
  */
 
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import type { CanonicalBlockIR, IrResidue } from "@ai-matrx/content-ir";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import {

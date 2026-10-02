@@ -481,7 +481,7 @@ export interface ApprovalKind {
 /**
  * STAND-IN for a generated type. REMEDY: run `pnpm sync-types`, then delete
  * this interface and read `ApprovalDecisionResponse` from
- * `types/python-generated/api-types.ts` instead.
+ * `@ai-matrx/agents/generated/api-types` instead.
  *
  * This is the RESPONSE contract of aidream's two approval doors — the exact
  * fields of `ApprovalDecisionResponse` in

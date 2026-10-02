@@ -13,7 +13,7 @@
 // still says they exist. An EMPTY block (whitespace only) is not a block and
 // is dropped before alignment. Every other character difference is drift.
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 export type ParserSource = "v2" | "redux" | "server";

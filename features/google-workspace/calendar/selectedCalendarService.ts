@@ -3,7 +3,7 @@
  * calendar. Reconcile performs a fresh read before updating the AI Matrx mirror.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { postGoogleBackend } from "@/features/marketing/google/service";
 
 export type SelectedCalendar = components["schemas"]["SelectedCalendar"];

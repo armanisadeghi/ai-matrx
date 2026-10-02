@@ -35,8 +35,8 @@ import type {
   ResourceChangedPayload,
   StructuredOutputPayload,
   ProviderRetryPayload,
-} from "@host/types/python-generated/stream-events";
-import type { components } from "@host/types/python-generated/api-types";
+} from "@ai-matrx/agents/generated/stream-events";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { BackendChannel } from "../redux/execution-system/thunks/resolve-base-url";
 import type { ResolvedSandboxRef } from "@host/lib/sandbox/active-binding";
 import type { LiveCitationEntry } from "../redux/execution-system/messages/message-citations";
@@ -574,7 +574,7 @@ export interface CompletedOperationEntry extends OperationEntry {
 // stream event MUST embed that event's payload verbatim under `data`. We do
 // NOT cherry-pick fields, rename them to camelCase, or fabricate fields
 // that aren't on the wire. The backend's generated payload types
-// (`@/types/python-generated/stream-events`) are imported and used directly,
+// (`@/@ai-matrx/agents/generated/stream-events`) are imported and used directly,
 // so any backend rename / addition / removal surfaces as a TypeScript error
 // the next time `pnpm sync-types` runs.
 //

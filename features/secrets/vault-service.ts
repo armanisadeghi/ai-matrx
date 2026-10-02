@@ -82,7 +82,7 @@ import {
   type Holdings,
   type HoldingRow,
 } from "./empty-read";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 const assertVaultData = makeAssertData("load your vault");
 

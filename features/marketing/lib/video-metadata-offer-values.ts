@@ -4,7 +4,7 @@
  */
 
 import { compactOfferValues } from "@/features/marketing/lib/offer-values";
-import type { MarketingVideoMetadataOffer } from "@/types/python-generated/provision-offers";
+import type { MarketingVideoMetadataOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 /**
  * The REAL facts a caller holds about the video, named exactly as the

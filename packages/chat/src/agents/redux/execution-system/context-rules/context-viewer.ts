@@ -17,8 +17,8 @@ import { callApi } from "../../../../host/server/call-api";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { buildPreviewRequestContext } from "./request-context";
 import { sentWithRequest } from "../messages/messages.slice";
-import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
-import type { components } from "@host/types/python-generated/api-types";
+import type { ContextReceiptData } from "@ai-matrx/agents/generated/stream-events";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type {
   ContextViewLoader,
   ContextViewTarget,

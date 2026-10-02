@@ -58,7 +58,7 @@ import { useMicField } from "@/features/audio/hooks/useMicField";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { fileUrls } from "@/features/files/handler/utils/python-base";
 import { RichDocument } from "@/features/rich-document/RichDocument";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import type { ContentSource } from "@/features/rich-document/types";
 import { planSave, type IslandDelta, type SavePlan } from "./core/save-plan";
 import { reconcileHostValue } from "./core/host-value";

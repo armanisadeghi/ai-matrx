@@ -9,7 +9,7 @@
  */
 
 import type { OrchestrasState } from "@/features/agents/redux/orchestras/slice";
-import type { OrchestrasMemberRosterOffer } from "@/types/python-generated/provision-offers";
+import type { OrchestrasMemberRosterOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 export type MemberRosterOfferValues = Omit<
   Partial<OrchestrasMemberRosterOffer>,

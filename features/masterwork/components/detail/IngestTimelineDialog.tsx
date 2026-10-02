@@ -51,7 +51,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { SERIAL_OBSERVATION_TIMELINE_KIND } from "@/features/content-ir/kinds/serial-observation-timeline";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";

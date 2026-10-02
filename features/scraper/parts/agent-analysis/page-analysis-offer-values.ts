@@ -13,7 +13,7 @@
 
 import { isoInstantWithOffset } from "@ai-matrx/kit/dates";
 import { SCRAPER_ANALYSIS_CONTENT_VARIABLE } from "@/features/scraper/constants/analysis-agents";
-import type { ScraperPageAnalysisOffer } from "@/types/python-generated/provision-offers";
+import type { ScraperPageAnalysisOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 export type PageAnalysisFacts = Partial<
   Pick<

@@ -9,7 +9,7 @@
  * The final pass makes the live screen, once the stream completes, the reload
  * screen — and changes nothing while the stream is still arriving.
  */
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { renderSettledFromRecord, settledOneShotBlocks } from "../settle-stream-blocks";

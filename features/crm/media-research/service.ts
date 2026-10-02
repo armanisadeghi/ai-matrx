@@ -13,13 +13,13 @@
 // the run still goes ahead as asked when the person confirms
 // (common-docs/policies/validation-offers-never-blocks.md).
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type {
   MediaResearchProgressData,
   MediaResearchResultData,
   MediaResearchRow,
   TypedStreamEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";

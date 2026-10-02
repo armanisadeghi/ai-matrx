@@ -21,7 +21,7 @@
  *     renderer and its door to the Canvas (see kind-route.ts).
  */
 import { StreamBlockAccumulator } from "../stream-block-accumulator";
-import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 const OPENING =
   '<artifact type="flashcards" id="b8137b6e-8afa-4b30-bba9-07c6f373a126" version="1" title="Mitochondria Structure and Function">\n';

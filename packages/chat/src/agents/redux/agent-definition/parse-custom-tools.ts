@@ -3,7 +3,7 @@
  * agent.definition_version JSONB).
  *
  * The wire contract is the generated OpenAPI `CustomTool` schema
- * (types/python-generated/api-types.ts) — Python rejects anything else with a
+ * (@ai-matrx/agents/generated/api-types) — Python rejects anything else with a
  * 422 at execution time. Json → typed happens HERE, through validation, never
  * through assertion (type-safety skill). Non-conforming entries are excluded
  * and reported loudly via the Error Inspector (`data-shape` source): an

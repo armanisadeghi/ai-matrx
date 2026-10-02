@@ -38,7 +38,7 @@ import { ConversationSelector } from "./components/ConversationSelector";
 import { ContextScopeModal } from "./components/ContextScopeModal";
 import { fetchToolsFromDatabase, executeToolTest } from "./streaming-client";
 import { useToolTestContext } from "./hooks/useToolTestContext";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import type {
   ToolDefinition,
   ToolStreamEvent,

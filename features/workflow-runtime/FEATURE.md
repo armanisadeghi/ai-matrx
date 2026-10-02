@@ -31,7 +31,7 @@ that is the exit-test surface.
 
 | Part | File | Contract |
 |---|---|---|
-| Event vocabulary | `types.ts` → `@/types/python-generated/workflow-events` | GENERATED from `matrx_graph/types/events.py` (the durable events) + aidream's `services/runtime/workflow_events.py` (ephemeral `node_stream`, router handshake, `run_announce`). `types.ts` re-exports them and adds the FE-only pieces: the REST projections (`RunEventRecord`, `RunRow`) and the helpers. **Never hand-edit an event shape** — this file and workflow-studio's were two hand mirrors that drifted; both now consume ONE artifact, refreshed by `pnpm sync-types` (bundle `workflow-events-ts`) and guarded by aidream's `generate_types.py --check` in `release.sh`. `invocationKeyOf(nodeId, dispatchId, itemIndex)` is THE lane identity — `node_id` alone is never a completion key. |
+| Event vocabulary | `types.ts` → `@/@ai-matrx/agents/generated/workflow-events` | GENERATED from `matrx_graph/types/events.py` (the durable events) + aidream's `services/runtime/workflow_events.py` (ephemeral `node_stream`, router handshake, `run_announce`). `types.ts` re-exports them and adds the FE-only pieces: the REST projections (`RunEventRecord`, `RunRow`) and the helpers. **Never hand-edit an event shape** — this file and workflow-studio's were two hand mirrors that drifted; both now consume ONE artifact, refreshed by `pnpm sync-types` (bundle `workflow-events-ts`) and guarded by aidream's `generate_types.py --check` in `release.sh`. `invocationKeyOf(nodeId, dispatchId, itemIndex)` is THE lane identity — `node_id` alone is never a completion key. |
 | SSE client | `transport/sse.ts` | Fetch-based (EventSource can't set Authorization). Handles CRLF, partial frames, comment heartbeats. |
 | Render-block frames | `transport/render-block-frames.ts` | Reassembles the SLICED `render_block` frames of the ephemeral channel: a server render block is a full snapshot that routinely exceeds the wire's 8000-byte pg_notify cap, so it arrives as ordered slices sharing a `frame_id`. A set that never completes, or one that does not parse, is DROPPED — half a JSON document never reaches a renderer. Contract: `../../../common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md` §7b. |
 | Run event source | `transport/run-event-source.ts` | SSE preferred + poller fallback on ONE `after_seq` cursor; claim-on-first-frame; 20s stall detector; ported from workflow-studio's proven pair. `node_stream` frames carry no seq and never advance the cursor. |
@@ -82,7 +82,7 @@ that is the exit-test surface.
 | Builder: the sample run | `builder/sample-run.ts`, `builder/useSamplePreviewRun.ts` | A workflow that has never run still gets a REAL preview: genuine `WorkflowRunEvent` objects folded by the real reducer into the real slice, at any moment on a scrubber (`adopt={false}`, so zero network). The only invented text is the explicit label "Sample output", never plausible-looking output. |
 | Builder: the preview | `builder/PreviewPane.tsx` | Binds to the newest **completed** run when one exists (a failed run teaches an author nothing), else the sample. LOUD RECOVERY: if a past run's history never arrives within 5s it says so and falls back, rather than leaving a page reading "Not started" forever. Picking a screen winds the sample to the moment that screen is live AND its own steps are busy. |
 | Surface renderer | `components/RunSurfaceView.tsx` | Renders a config over a run: trigger-resolved visibility (`appearOn`/`hideOn`, empty states), pages with auto-advance (manual tab choice wins until a LATER page's trigger fires), mobile single column by `mobileOrder ?? (y,x)`. **Layout is a FLOW, not the literal Grafana grid** (2026-08-18): `w` picks a span in a 12-column flow, `(y,x)` is the order, `h` is a MINIMUM height. The fixed 30px rows forced every readout into a ~240px porthole with its own scrollbar — live writing had nowhere to be read. `hideRunStatusCards` / `hideProgressRails` let a host that renders those better (RunStage) suppress the built-in copies. The flow only ever grows — zero page shift. |
-| Lifecycle verbs | `hooks/useWorkflowRunControls.ts` | THE ONE start/step/execute/pause/resume/cancel/answer/retry/skip path. Every verb is a `callApi` config typed against the GENERATED OpenAPI paths — path, `{param}` set and body all come from `types/python-generated/api-types.ts`, so a route or field that moves on the server is a compile error here. Never reintroduce a stringly-typed `post(path, …)` helper: the casts it needed hid a real defect (a free-text interrupt answer was sent as a bare string where the engine takes an object). |
+| Lifecycle verbs | `hooks/useWorkflowRunControls.ts` | THE ONE start/step/execute/pause/resume/cancel/answer/retry/skip path. Every verb is a `callApi` config typed against the GENERATED OpenAPI paths — path, `{param}` set and body all come from `@ai-matrx/agents/generated/api-types`, so a route or field that moves on the server is a compile error here. Never reintroduce a stringly-typed `post(path, …)` helper: the casts it needed hid a real defect (a free-text interrupt answer was sent as a bare string where the engine takes an object). |
 
 ## Invariants (violating any of these is a defect)
 
@@ -365,7 +365,7 @@ that is the exit-test surface.
   `DbEmitRenderer`. **Nothing renders differently yet** — routing a kinded emission to its kind
   component is a later phase; this is the plumbing that stops the data being thrown away. The
   root cause was the hand mirror itself, now deleted (`workflow-emit/FEATURE.md` invariant 6:
-  the wire type is re-exported from `types/python-generated/workflow-events.ts`). Two new slice
+  the wire type is re-exported from `@ai-matrx/agents/generated/workflow-events`). Two new slice
   tests pin the fold and the older-server floor; the fold-through test was falsified against a
   stubbed reducer before being kept. Separately, `pnpm test:workflow-runtime` now runs
   `features/workflow-runtime features/workflow-emit`, so `emit-bundle-boundary.test.ts` — the
@@ -534,7 +534,7 @@ that is the exit-test surface.
 - 2026-08-19 — **`useWorkflowRunControls` is fully typed against the generated OpenAPI paths.**
   The Phase-1 generic `post(path, …)` helper and its six `as never` casts are gone; each verb now
   passes a literal `ApiCallConfig<path, "POST">` to `callApi`, so the path, its `{param}` set, the
-  request body and `?mode=` are all checked against `types/python-generated/api-types.ts`.
+  request body and `?mode=` are all checked against `@ai-matrx/agents/generated/api-types`.
   **The casts were hiding a real bug:** `answerInterrupt` typed `resumeValue` as `unknown` and cast
   it, and the free-text branch of the Pause & Ask form sent a bare STRING — the engine's
   `ResumeRunRequest.resume_value` is `dict[str, Any] | None`, so every free-text answer would have

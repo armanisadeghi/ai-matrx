@@ -58,7 +58,7 @@ import { TTS_DEFAULT_SPEED } from "@/lib/cartesia/config";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SettingDoor } from "@/features/settings/doors/SettingDoor";
 import { VOICE_SETTING_DOORS } from "@/features/settings/tabs/voices/voiceSettingDoors";
-import type { AmbientListenSummaryWindowOffer } from "@/types/python-generated/provision-offers";
+import type { AmbientListenSummaryWindowOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 const SUMMARY_STYLE_DEFAULT = "Extremely Concise Summary";
 

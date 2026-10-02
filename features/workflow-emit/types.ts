@@ -13,7 +13,7 @@
  * carries the verified Content-IR envelope under `__ir`). A hand mirror cannot
  * be frozen against a contract it does not import, so it no longer is one:
  * `NodeEmittedEvent` and `EmitMode` both derive from
- * `types/python-generated/workflow-events.ts`, the artifact `pnpm sync-types`
+ * `@ai-matrx/agents/generated/workflow-events`, the artifact `pnpm sync-types`
  * regenerates from the Python source of truth. Adding a field there now reaches
  * this feature for free, and removing one becomes a type error instead of a
  * silent drop.
@@ -27,7 +27,7 @@
  * (one canonical props contract, no shape fabrication), different surface.
  */
 
-import type { NodeEmittedEvent } from "@/types/python-generated/workflow-events";
+import type { NodeEmittedEvent } from "@ai-matrx/agents/generated/workflow-events";
 
 /**
  * The `data` field of a `node_emitted` stream event — the GENERATED type, not a

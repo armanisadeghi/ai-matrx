@@ -18,13 +18,13 @@
 import { postJson, postNdjson } from "@/lib/python-client";
 import { apiGet } from "@/lib/api/typed-client";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { ImageGenerateSize } from "@/features/image-studio/constants/generation-options";
 import type {
   GeneratedImageFileItem,
   ImageEditCompleteData,
   ImageGenerateCompleteData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 // ---------------------------------------------------------------------------
@@ -86,7 +86,7 @@ export type EditResponse = AssetEnvelope;
  * Ingress validation for the streamed `image_edit_complete` asset.
  *
  * The generated event types `asset` as an OPTIONAL `Record<string, unknown>`
- * (types/python-generated/stream-events.ts) while every consumer treats it as a
+ * (@ai-matrx/agents/generated/stream-events) while every consumer treats it as a
  * full AssetEnvelope — `Object.values(asset.variants)` in ImageStudioShell and
  * useImageStudio both throw on `undefined`. Asserting the shape moved that
  * failure to a render crash with no explanation; validating it here fails at

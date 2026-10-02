@@ -9,7 +9,7 @@
  */
 
 import { apiGet, apiPost, buildPath } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** Markdown view of an existing Office file (whole doc + per-portion). */
 export type OfficeExtraction =

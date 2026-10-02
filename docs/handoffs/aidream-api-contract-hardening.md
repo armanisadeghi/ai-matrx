@@ -23,7 +23,7 @@ the FE hand-mirrored a request type with `key` while the backend model used `pre
 
 - FE contract layer: `lib/api/typed-client.ts`, `lib/api/FEATURE.md`, ratchet
   `scripts/check-api-contracts.ts` + `scripts/api-contracts-baseline.json`.
-- Generated schema (FE): `types/python-generated/openapi.json`, `types/python-generated/api-types.ts`.
+- Generated schema (FE): `@ai-matrx/agents/generated/openapi.json`, `@ai-matrx/agents/generated/api-types`.
 - Type regen: `pnpm sync-types && pnpm type-check` after every backend model change — drift lights up red.
 - aidream generator: `scripts/sync-types.mjs`.
 - Asset models: `aidream/packages/matrx-files/matrx_files/asset_envelope.py` (`AssetPreviewRequest`),

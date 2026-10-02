@@ -7,7 +7,7 @@
 // (checked live 2026-09-28), so its payload is unchanged. They become mappable
 // only after the site moves to the mandate door (owner's call).
 
-import type { MasterworkConductOffer } from "@/types/python-generated/provision-offers";
+import type { MasterworkConductOffer } from "@ai-matrx/agents/generated/provision-offers";
 import type { RulebookOfferFacts } from "../agent-context/rulebookDocument";
 import type { MasterworkAttachment } from "./service";
 

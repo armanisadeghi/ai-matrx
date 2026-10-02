@@ -16,7 +16,7 @@
  * zero cards while `content` held a perfect JSON payload.
  */
 
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import type { FlashcardSubcard } from "./flashcard-subcards";
 import { parseFlashcards } from "./flashcard-parser";
 import { EXPERIMENTAL_normalizePreParsedFlashcards } from "./EXPERIMENTAL-parse-addon";

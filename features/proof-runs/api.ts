@@ -19,7 +19,7 @@ import type {
   ProofRunSkippedData,
   ProofRunStartedData,
   ProofRunStepData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import type {
   MandateCatalogResponse,
   ProofChecksResponse,
@@ -36,7 +36,7 @@ import {
   type ProofMandateCatalogResponse,
   type ProofScenariosResponse,
 } from "@/features/proof-runs/types";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 const BASE = "/proof-runs";
 

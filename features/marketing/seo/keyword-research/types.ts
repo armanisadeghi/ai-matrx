@@ -6,7 +6,7 @@ import type {
 import type {
   KeywordResearchResult,
   KeywordVolumeRefreshResult,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 export type KeywordRow = Database["seo"]["Tables"]["keyword"]["Row"];
 export type KeywordMarketRow =

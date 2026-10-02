@@ -1,5 +1,5 @@
 import { toLlmParams } from "@ai-matrx/chat/mandates/llm-params";
-import { REASONING_SUMMARY_OPTIONS } from "@/types/python-generated/llm-enums";
+import { REASONING_SUMMARY_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
 
 describe("mandate config projection", () => {
   afterEach(() => jest.restoreAllMocks());

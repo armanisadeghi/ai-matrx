@@ -6,7 +6,7 @@
 // to. Mirrors aidream `api/routers/podcast_generator.py` event models.
 
 import type { DictEntryDraft } from "@/features/dictionary/types";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { FeatureImageStyleValue } from "./featureImageStyles";
 
 // ── Request ────────────────────────────────────────────────────────────────

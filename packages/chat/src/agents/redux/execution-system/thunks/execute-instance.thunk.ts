@@ -37,7 +37,7 @@ import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import { buildContinuationBody } from "../utils/continuation-body";
-import type { MessagePart } from "@host/types/python-generated/stream-events";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import type { Json } from "../../../../host/db-types";
 import { generateRequestId } from "../utils/ids";
 import {

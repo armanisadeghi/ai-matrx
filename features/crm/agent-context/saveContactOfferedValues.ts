@@ -14,7 +14,7 @@
  * arrives without its surroundings) and are never invented.
  */
 
-import type { CrmSaveContactSelectionOffer } from "@/types/python-generated/provision-offers";
+import type { CrmSaveContactSelectionOffer } from "@ai-matrx/agents/generated/provision-offers";
 import type { ParsedContactSelection } from "./parseContactSelection";
 
 /** Where the dialog was opened — read once from the page it opened on. */

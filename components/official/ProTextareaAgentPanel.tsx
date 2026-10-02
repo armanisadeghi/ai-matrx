@@ -50,7 +50,7 @@ import {
   type ProTextareaAgentActionId,
   agentRunResult,
 } from "./proTextareaAgentActions";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ProTextareaAgentPanelProps {

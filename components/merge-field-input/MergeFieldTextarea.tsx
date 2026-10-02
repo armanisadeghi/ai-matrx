@@ -10,7 +10,7 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
-import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { MergeFieldInput, type MergeFieldInputHandle } from "./MergeFieldInput";
 
 export interface MergeFieldTextareaProps {

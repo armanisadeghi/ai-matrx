@@ -1,4 +1,4 @@
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import {
   parseSubcardsFromDetails,
   type FlashcardSubcard,

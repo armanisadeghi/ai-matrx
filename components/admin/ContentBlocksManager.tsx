@@ -103,7 +103,7 @@ import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import type {
   TypedStreamEvent,
   RenderBlockEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
 import { isJsonObject } from "@/types/json";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

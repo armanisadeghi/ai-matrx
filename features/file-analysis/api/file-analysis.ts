@@ -58,8 +58,8 @@ import { apiGet, apiPost, apiPut, buildPath } from "@/lib/api/typed-client";
 // Every request about one file carries THAT file's organization (read from the file, never
 // the picker) — the same rule as features/files/api/files.ts (VERIFIER-23 #4 sibling census).
 import { withFileOrganization } from "@/features/files/api/fileOrganization";
-import type { components } from "@/types/python-generated/api-types";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { components } from "@ai-matrx/agents/generated/api-types";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 
 // ─── Type re-exports (named locally for callers) ────────────────────────────
 
@@ -73,7 +73,7 @@ export type AnalyzeRefreshBody = Schemas["AnalyzeRefreshBody"];
 // Typed data events for the analysis-refresh NDJSON stream (2026-07
 // stream-everything conversion; the old 202 AnalyzeRefreshResponse is gone):
 // import FileAnalysisStartedData / FileDetectorCompletedData /
-// FileAnalysisCompleteData from "@/types/python-generated/stream-events".
+// FileAnalysisCompleteData from "@ai-matrx/agents/generated/stream-events".
 
 export type AnnotationOut = Schemas["AnnotationOut"];
 export type AnnotationCreateBody = Schemas["AnnotationCreateBody"];
@@ -103,7 +103,7 @@ export type SearchRequest =
 // N × `file_search_page` → `file_search_complete`); the old blocking
 // SearchResponse/SearchHitOut schemas are gone from the OpenAPI spec.
 // Import FileSearchPageData / FileSearchCompleteData / FileSearchHitItem
-// from "@/types/python-generated/stream-events".
+// from "@ai-matrx/agents/generated/stream-events".
 
 export type RegionExtractRequest = Schemas["RegionExtractRequest"];
 export type RegionExtractResponse = Schemas["RegionExtractResponse"];

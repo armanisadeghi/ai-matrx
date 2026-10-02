@@ -15,7 +15,7 @@
  * omits its key.
  */
 
-import type { ContentIrKindAuthoringOffer } from "@/types/python-generated/provision-offers";
+import type { ContentIrKindAuthoringOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 export type KindAuthoringPart =
   | "component"

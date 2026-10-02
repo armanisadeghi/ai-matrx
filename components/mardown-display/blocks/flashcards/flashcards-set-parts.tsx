@@ -22,7 +22,7 @@ import {
 } from "./flashcards-set-derive";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
-import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import type { FlashcardsBlockData } from "@ai-matrx/agents/generated/stream-events";
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { usePrintOptions } from "@ai-matrx/print/react";
 import { useLinkedFlashcardSet } from "@/features/flashcards/data/useLinkedFlashcardSet";

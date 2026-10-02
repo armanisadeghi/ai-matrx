@@ -46,7 +46,7 @@ import type {
   ErrorPayload,
   EndPayload,
   PhasePayload,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 export type {
   TypedStreamEvent,

@@ -9,7 +9,7 @@
  * routed envelope (the accumulator-shadow harness).
  */
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { applyIrKindRoute } from "../react/kind-route";
 import { normalizeJsonRegion, isCanonicalBlockIR } from "@ai-matrx/content-ir";

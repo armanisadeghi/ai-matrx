@@ -52,7 +52,7 @@ import {
   type PartialKindGate,
 } from "@ai-matrx/chat/agents/redux/execution-system/utils/inbound-render-block";
 import { makePartialKindStalenessGate } from "@ai-matrx/content-ir/wire";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import {
   generateConversationId,
   generateRequestId,

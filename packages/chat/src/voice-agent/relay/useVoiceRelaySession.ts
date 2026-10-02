@@ -20,7 +20,7 @@
 // unresolvable mandate refuses; there is no fallback persona.
 
 import { useEffect, useRef, useState } from "react";
-import type { SourceFeature } from "@host/types/python-generated/source-attribution";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
 import { useAgentLauncher } from "../../agents/hooks/useAgentLauncher";
 import { setUserInputText } from "../../agents/redux/execution-system/instance-user-input/instance-user-input.slice";

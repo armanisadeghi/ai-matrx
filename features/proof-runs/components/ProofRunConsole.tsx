@@ -27,7 +27,7 @@ import type {
   ProofEvaluatedData,
   ProofRunCompletedData,
   ProofRunStartedData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import {
   PROOF_ATTESTATION_KIND,
   type ProofAttestation,

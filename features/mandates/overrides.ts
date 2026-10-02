@@ -30,7 +30,7 @@ import { parseCallApiError } from "@/lib/api/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -593,7 +593,7 @@ export async function putMandateBinding(
 /**
  * 🚨 LOCAL PATH LITERAL — delete the cast on the next api-types regeneration.
  *
- * `types/python-generated/api-types.ts` is regenerated against a RUNNING server
+ * `@ai-matrx/agents/generated/api-types` is regenerated against a RUNNING server
  * and does not carry this route yet (the aidream half ships in parallel). The
  * `as keyof paths` cast is the repo's own precedent for exactly this window
  * (`UNDERSTUDY_REFRESH_PATH`, `EXPERT_CORPUS_PATH`); it becomes a plain

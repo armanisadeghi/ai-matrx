@@ -17,7 +17,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { isJsonObject } from "@/types/json";
 import { extractErrorMessage } from "@/utils/errors";
 import type {

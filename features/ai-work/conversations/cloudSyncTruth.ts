@@ -132,7 +132,7 @@ export interface CloudProjectionErrorGroup {
 /**
  * `BridgeDiagnosis` (contract §4), validated at run time.
  *
- * It is NOT derived from `types/python-generated/api-types.ts` because the
+ * It is NOT derived from `@ai-matrx/agents/generated/api-types` because the
  * aidream half of the contract is landing in parallel and the generated file is
  * never hand-edited. So nothing here is asserted: every field is read with a
  * type check and a missing one makes the whole diagnosis unreadable rather than

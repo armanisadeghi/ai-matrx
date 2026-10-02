@@ -12,7 +12,7 @@
  * JSON), this fails with the real traffic shape, not a synthetic one.
  */
 import { StreamBlockAccumulator } from "../stream-block-accumulator";
-import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 const PROD_CHUNKS: string[] = [
   "{\"",

@@ -10,7 +10,7 @@
  * remove the guard.
  *
  * Type-drift hitlist generator — finds hand-written types that duplicate names
- * already defined in types/python-generated/.
+ * already defined in @ai-matrx/agents/generated/.
  *
  * Usage:
  *   pnpm generate:type-drift-hitlists
@@ -60,10 +60,10 @@ process.exit(1);
 
 const ROOT = process.cwd();
 const OUT_DIR = join(ROOT, "docs/type-drift/generated");
-const API_TYPES_PATH = join(ROOT, "types/python-generated/api-types.ts");
+const API_TYPES_PATH = join(ROOT, "node_modules/@ai-matrx/agents/generated/api-types.ts");
 const STREAM_EVENTS_PATH = join(
   ROOT,
-  "types/python-generated/stream-events.ts",
+  "node_modules/@ai-matrx/agents/generated/stream-events.ts",
 );
 
 type GeneratedSource = "api-types" | "stream-events";

@@ -12,7 +12,7 @@ Pick the **flavor** that matches the new block, then follow that section.
 
 Python emits a `render_block` event. No raw markdown pattern is parsed on the client; `block.serverData` (Python's `data` field) carries everything.
 
-**Python team owns the type contract.** After they ship, `types/python-generated/stream-events.ts` regenerates and the new case lights up client-side.
+**Python team owns the type contract.** After they ship, `@ai-matrx/agents/generated/stream-events` regenerates and the new case lights up client-side.
 
 Client changes (you):
 
@@ -145,7 +145,7 @@ Do not touch these — they're either generic passthroughs or unrelated:
 
 ## Python contract reminder
 
-- `types/python-generated/stream-events.ts` is **auto-generated**. Never hand-edit. For any server-emitted block, the Python team owns the source — notify them, they regen.
+- `@ai-matrx/agents/generated/stream-events` is **auto-generated**. Never hand-edit. For any server-emitted block, the Python team owns the source — notify them, they regen.
 - Server-driven wrappers: add the row to aidream `data_render_blocks.py` and regen (never a hand-declared temp interface). Client-only: add the interface to `processors/utils/client-blocks.ts`.
 - Python sends `snake_case`. Components want `camelCase`. The `block-dispatch.tsx` entry is where the remap happens (see the `// TODO(python): rename x → y` comments on existing entries). Leave the TODO and move on — a later sweep renames on the Python side.
 

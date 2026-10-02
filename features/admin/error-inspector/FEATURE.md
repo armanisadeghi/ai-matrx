@@ -280,7 +280,7 @@ failure were the same row across the whole platform.
 - **a malformed slug is refused with `22023`**, the same way an unknown app is.
   The registry itself lives in Python
   (`aidream/services/conversation_context/source_attribution.py`, mirrored to
-  `types/python-generated/source-attribution.ts`), so the function validates the
+  `@ai-matrx/agents/generated/source-attribution`), so the function validates the
   SHAPE of a slug and the TypeScript `SourceFeature` type keeps an unregistered
   value from compiling;
 - **this repo derives the feature from the route that failed** —

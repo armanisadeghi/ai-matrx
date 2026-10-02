@@ -17,7 +17,7 @@
  * next part lands; this file only produces the realistic event timing.
  */
 
-import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
 
 /**
  * A single timed event in a recording.

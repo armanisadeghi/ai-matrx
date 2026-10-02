@@ -41,7 +41,7 @@ const C = {
 
 // Tiering: which checks belong to which loud band (loudest first).
 const TIER_SCHEMA = new Set(["schema-exposure"]);
-const TIER_GENERATED = new Set(["types-freshness", "api-types-freshness"]);
+const TIER_GENERATED = new Set(["types-freshness"]);
 // everything else = source references
 
 export interface RunOptions {

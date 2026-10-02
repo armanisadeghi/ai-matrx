@@ -371,7 +371,7 @@ body:
 
 When the agent runs in sandbox mode, the in-container Python server modifies the real filesystem inside the container directly (no client-side patches involved). Without a server-pushed signal, the FE would have to poll for those writes — too slow for a code-editor UX.
 
-**Generic resource-changed event — live now in `types/python-generated/stream-events.ts`:**
+**Generic resource-changed event — live now in `@ai-matrx/agents/generated/stream-events`:**
 
 ```jsonc
 // NDJSON event in the same stream the FE already consumes
@@ -400,7 +400,7 @@ When the agent runs in sandbox mode, the in-container Python server modifies the
 
 | Layer | File | Role |
 |---|---|---|
-| Wire types | `types/python-generated/stream-events.ts` | Auto-generated. Includes `EventType.RESOURCE_CHANGED`, `ResourceChangedPayload`, `isResourceChangedEvent`. |
+| Wire types | `@ai-matrx/agents/generated/stream-events` | Auto-generated. Includes `EventType.RESOURCE_CHANGED`, `ResourceChangedPayload`, `isResourceChangedEvent`. |
 | Slice | `features/code/redux/fsChangesSlice.ts` | Per-bucket ring buffer (cap `FS_CHANGES_RING_SIZE = 200`) + `lastByResourceId` lookup. Bucket key = `sandboxId` (or `GLOBAL_BUCKET_KEY`). Selectors: `selectFsChangesBucket`, `selectLastChangeForResource`, `makeSelectChangesByResourceId`, `makeSelectRecentChanges`, `selectLastFsChangeAt`. |
 | Stream branch | `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts` | `else if (isResourceChangedEvent(event))` dispatches `receivedFsChange` + `appendTimeline({ kind: "resource_changed", … })` and increments `clientMetrics.resourceChangedEvents`. |
 | Timeline type | `packages/chat/src/agents/types/request.types.ts` | `TimelineResourceChanged` entry + `ClientMetrics.resourceChangedEvents` counter. |

@@ -15,7 +15,7 @@
  * A value absent from its source contract does not exist. Do not widen locally.
  */
 
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { PermissionLevel } from "@/utils/permissions/types";
 
 // ── S1 §2 enums ──────────────────────────────────────────────────────────────
@@ -123,7 +123,7 @@ export interface CloudBrowserProfile {
  * (`common-docs/systems/platform/residential-egress/FEATURE.md` § When we are
  * blocked). The server writes `metadata.egress` on `browser.run` and
  * `egress` / `egress_unavailable` on a navigate command result; neither is in
- * `types/python-generated/api-types.ts` yet. Every render of these is guarded
+ * `@ai-matrx/agents/generated/api-types` yet. Every render of these is guarded
  * on presence, so a run started before the server half deploys looks exactly
  * as it does today.
  */

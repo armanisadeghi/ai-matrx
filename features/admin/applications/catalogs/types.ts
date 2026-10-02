@@ -19,7 +19,7 @@ export type CatalogUpsertArgs =
 
 // ── Link resolver (aidream POST /api/catalog-resolver/resolve) ──────────────
 // Ratified contract in common-docs/systems/clients/remote-catalogs/FEATURE.md. The endpoint
-// is not yet in types/python-generated/api-types.ts (built in a parallel
+// is not yet in @ai-matrx/agents/generated/api-types (built in a parallel
 // aidream session) — these mirror the ratified contract until the OpenAPI
 // types include it, at which point they must be replaced by the generated
 // shapes.

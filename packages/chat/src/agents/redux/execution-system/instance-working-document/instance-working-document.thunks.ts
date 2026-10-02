@@ -27,7 +27,7 @@
 
 import { toast } from "../../../../host/notify";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { ContextDeltaData } from "@host/types/python-generated/stream-events";
+import type { ContextDeltaData } from "@ai-matrx/agents/generated/stream-events";
 import { applyContextDeltaToContent } from "./contextDelta";
 import { studioDocumentContentChanged } from "@host/features/transcript-studio/redux/slice";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";

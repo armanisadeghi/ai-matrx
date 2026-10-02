@@ -20,7 +20,7 @@ import {
   type ResumeOrRejoinOutcome,
 } from "@ai-matrx/agents/matrx";
 import type { RootState } from "@/lib/redux/store";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import { waitForAuthReady } from "@/lib/api/call-api";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 

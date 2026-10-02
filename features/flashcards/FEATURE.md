@@ -453,7 +453,7 @@ flashcards/FlashcardMobileView.tsx`); `CanvasFlashcardsView.tsx` and `FlashcardS
   (`source_content, document_id, count, difficulty, title, focus`). Parser tests added for every
   reader against the new agents' real `__kind` payloads. TTS: `flashcards.helper_tts` /
   `flashcards.spoken_front_tts` have NO generated offer entry — both thunks type their variables
-  against `FlashcardsTtsRenderOffer` (`flashcards.tts_render`); `types/python-generated/
+  against `FlashcardsTtsRenderOffer` (`flashcards.tts_render`); `@ai-matrx/agents/generated/
 provision-offers.ts` is generated from aidream (`pnpm db-types`), never hand-edited. Plan:
   `common-docs/projects/agent-manifest-campaign/PLAN.md`.
 - 2026-08-22 — Generated-set title reads the `flashcard_set` kind's `title` only: the mandate

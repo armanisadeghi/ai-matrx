@@ -26,7 +26,7 @@
 // crashes.
 
 import { apiPost } from "../../host/server/typed-client";
-import type { components } from "@host/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** Optional org/project/task/scope envelope (contract §4 `ToolContextEnvelope`). */
 export interface RealtimeToolContextEnvelope {

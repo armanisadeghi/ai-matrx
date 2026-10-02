@@ -66,7 +66,7 @@ so you do NOT pass it by hand — **add a line to the map in that file when you 
 a new top-level surface.** A route the map does not cover records the registered
 sentinel `client-unmapped`, which is a visible to-do in the error dashboard, not a
 silent default. Slugs are a closed registry (`SourceFeature` in
-`types/python-generated/source-attribution.ts`); a new one is registered in
+`@ai-matrx/agents/generated/source-attribution`); a new one is registered in
 aidream's `source_attribution.py` and the mirror regenerated, never invented here.
 
 ## React boundaries

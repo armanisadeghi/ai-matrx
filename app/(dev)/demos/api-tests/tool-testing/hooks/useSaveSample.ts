@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { operationFailed } from "@/utils/errors";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import type { FinalPayload } from "@/features/tool-call-visualization/testing/types";
 
 export interface SaveSampleParams {

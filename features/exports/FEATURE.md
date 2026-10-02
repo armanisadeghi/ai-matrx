@@ -79,7 +79,7 @@ compute, and its label changes to match.
 ## 🚨 The wire types are a hand-mirror, and that is a debt with an expiry
 
 `lib/api/FEATURE.md` rule 1 says request/response types are derived from
-`types/python-generated/api-types.ts`, never hand-written. `types.ts` breaks
+`@ai-matrx/agents/generated/api-types`, never hand-written. `types.ts` breaks
 that deliberately: on 2026-09-17 the deployed server (sha `47afca2b13`) answers
 `GET /media/export-adapters` with 404 and its `openapi.json` contains none of
 the seven routes, so there was nothing to derive from. The moment the server

@@ -27,7 +27,7 @@ import { ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   PdfReadingOrderCompleteData,
   PdfReadingOrderPageData,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {

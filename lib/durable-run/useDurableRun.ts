@@ -63,7 +63,7 @@ import type { TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 /**

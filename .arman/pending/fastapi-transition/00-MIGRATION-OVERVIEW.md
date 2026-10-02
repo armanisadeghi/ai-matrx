@@ -63,7 +63,7 @@ These pieces are battle-tested and production-ready. All new migration work shou
 | `lib/api/endpoints.ts` | All endpoint paths as constants | **YES — never hardcode paths** |
 | `lib/api/types.ts` | Re-exports auto-generated request/response types | **YES** |
 | `lib/api/errors.ts` | `BackendApiError` class, HTTP + stream error parsing | **YES** |
-| `types/python-generated/stream-events.ts` | Auto-generated `StreamEvent` types with type guards | **YES** |
+| `@ai-matrx/agents/generated/stream-events` | Auto-generated `StreamEvent` types with type guards | **YES** |
 | `hooks/useApiAuth.ts` | Auth headers (JWT or fingerprint) | **YES** |
 | `hooks/useBackendApi.ts` | Backend URL + auth + fetch helpers | **YES** |
 

@@ -12,7 +12,7 @@ import { parseHttpError } from "@/lib/api/errors";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { buildHeaders, postNdjson, resolveBaseUrl } from "@/lib/python-client";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import type { ImageDocumentDetectedData } from "@/types/python-generated/stream-events";
+import type { ImageDocumentDetectedData } from "@ai-matrx/agents/generated/stream-events";
 
 import type {
   DetectDocumentResponse,

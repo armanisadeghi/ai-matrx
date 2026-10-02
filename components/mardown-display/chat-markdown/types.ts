@@ -2,7 +2,7 @@
  * Stream Event Types for Chat Markdown Components
  *
  * Re-exports from the auto-generated Python types. All stream event
- * types are defined once in `types/python-generated/stream-events.ts`
+ * types are defined once in `@ai-matrx/agents/generated/stream-events`
  * and consumed everywhere via this re-export or `@/lib/api`.
  */
 
@@ -27,7 +27,7 @@ export type {
   HeartbeatEvent,
   EndEvent,
   RenderBlockEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 export {
   isChunkEvent,
@@ -39,9 +39,9 @@ export {
   isHeartbeatEvent,
   isEndEvent,
   isRenderBlockEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 
 export function isNewProtocol(events: TypedStreamEvent[]): boolean {
   return events.some((e) => e.event === "render_block");

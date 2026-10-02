@@ -8,7 +8,7 @@ import {
 } from "@/features/pdf-demo/components/PdfSourcePicker";
 import { drainPdfStream, PdfStreamProgress } from "@/features/pdf/api/streamDrain";
 import type { ReadingOrderReport } from "@/features/pdf-extractor/types";
-import type { PdfReadingOrderPageData } from "@/types/python-generated/stream-events";
+import type { PdfReadingOrderPageData } from "@ai-matrx/agents/generated/stream-events";
 
 export default function ExtractReadingOrderDemo() {
   const [source, setSource] = useState<PdfSourceState>(EMPTY_PDF_SOURCE);

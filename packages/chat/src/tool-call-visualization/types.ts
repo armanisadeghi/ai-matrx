@@ -6,7 +6,7 @@
  * ─── Philosophy ──────────────────────────────────────────────────────────
  *
  * The Python backend emits exactly one tool shape on the wire:
- * `ToolEventPayload` from types/python-generated/stream-events.ts.
+ * `ToolEventPayload` from @ai-matrx/agents/generated/stream-events.ts.
  *
  * The agent execution system folds those wire events into
  * `ToolLifecycleEntry` (features/agents/types/request.types.ts) — a clean,
@@ -23,7 +23,7 @@
 import type React from "react";
 import type { LucideIcon } from "lucide-react";
 import type { ToolLifecycleEntry } from "../agents/types/request.types";
-import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
+import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
 
 /** Accent palette for a tool's glossy glyph (see `ToolGlyph`). */
 export type ToolAccent =

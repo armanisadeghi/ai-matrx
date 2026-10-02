@@ -16,7 +16,7 @@
  * makes that a STRUCTURAL guarantee rather than a bet on model behaviour.
  */
 import { fileIdFromUserFilesUrl } from "@host/lib/media/durability";
-import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 /**
  * Only media-bearing blocks participate. A `text` block that happens to contain

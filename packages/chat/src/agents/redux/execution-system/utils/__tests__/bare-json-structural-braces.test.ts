@@ -1,6 +1,6 @@
 import { StreamBlockAccumulator } from "../stream-block-accumulator";
 import { captureError } from "../../../../../host/diagnostics";
-import type { RenderBlockPayload } from "@host/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 // 🚨 A PARTIAL MOCK OF A REAL MODULE IS A SUITE THAT DIES ON THE NEXT EXPORT
 // (DD-239). Replacing the whole capture store with `{ captureError }` killed

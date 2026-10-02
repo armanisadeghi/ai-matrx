@@ -35,7 +35,7 @@ import {
   selectMessageContextReceipt,
   selectMessageContextReceiptSource,
 } from "../message-context-receipt";
-import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
+import type { ContextReceiptData } from "@ai-matrx/agents/generated/stream-events";
 import captured from "./fixtures/notes-context-receipts.json";
 
 const FIRST = captured.first as ContextReceiptData;

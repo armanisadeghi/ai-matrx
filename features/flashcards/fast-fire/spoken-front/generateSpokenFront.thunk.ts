@@ -24,7 +24,7 @@ import { selectLatestRequestId } from "@ai-matrx/chat/agents/redux/execution-sys
 import { fcService } from "@/features/flashcards/data/fcService";
 import { pickSpokenFrontCues, pickSpokenFrontVariables } from "./variations";
 import { ttsRenderFacts } from "../ttsRenderFacts";
-import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
+import type { FlashcardsTtsRenderOffer } from "@ai-matrx/agents/generated/provision-offers";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Mandate key for the spoken-front TTS lane — resolves live to the DB-bound

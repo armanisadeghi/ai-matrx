@@ -546,7 +546,7 @@ says someone meant to write it.
 `Interface 'AttachableAvailability' incorrectly extends` the generated
 availability shape it widens (`McpAvailability` in
 `features/connectors/connection-state.ts`, aliased from
-`types/python-generated/api-types.ts`). Found while type-checking lane F-7's own
+`@ai-matrx/agents/generated/api-types`). Found while type-checking lane F-7's own
 files — this one is UNRELATED to that work and the file is untouched by it. It
 did not report on a run earlier in the same session, so the most likely cause is
 the generated-contract sync in `00d99946` moving the server shape underneath the
@@ -1148,7 +1148,7 @@ that the rule's direction, not just its reach, has to change (DB-T02).
 
 Found 2026-09-09 building campaign lane L7 (`../common-docs/systems/mandates/STATE.md`).
 
-`pnpm sync-types` pulls `/schema/all` from the LIVE backend, so `types/python-generated/`
+`pnpm sync-types` pulls `/schema/all` from the LIVE backend, so `@ai-matrx/agents/generated/`
 loses every route and schema that exists in aidream `main` but has not reached
 `server.app.matrxserver.com` yet. The deploy train runs every ~20–30 min, so there is a
 routine window in which a merged endpoint's types vanish from this repo.
@@ -1160,7 +1160,7 @@ the whole frontend lane — the third time hours before a release, so `v0.4.1806
 without it. See the parking-reflex table below for the three reverts and their restores.
 
 **Where:** `scripts/sync-types.mjs` (step 2 delegates to `../aidream/scripts/sync-types.mjs
---url <live>`), which OVERWRITES `types/python-generated/openapi.json` wholesale.
+--url <live>`), which OVERWRITES `@ai-matrx/agents/generated/openapi.json` wholesale.
 
 **The fix:** the sync should MERGE rather than replace — or at minimum refuse to remove a
 path/schema that this repo still imports, and say so loudly. aidream already writes the
@@ -1229,7 +1229,7 @@ the next sync erases it.
 **Still open — the guard that would have stopped all three.** `scripts/sync-types.mjs` should
 WARN LOUDLY when it is about to DROP a path or schema that committed code in this repo still
 imports, instead of silently replacing the file. Sketch: before overwriting
-`types/python-generated/`, diff the old vs new `openapi.json` for removed
+`@ai-matrx/agents/generated/`, diff the old vs new `openapi.json` for removed
 `components.schemas.*` keys and removed paths; for each removal, `grep` the tracked source
 (`git grep -l 'schemas"\]\["<Name>"\]'` / the route literal) and, if anything still
 references it, print a banner naming the type, the files that import it, and the one-line
@@ -3060,9 +3060,9 @@ client gets a scoped short-lived credential instead of a hand-rolled mint route.
 
 ### D205 — the committed `openapi.json` is AHEAD of the committed `api-types.ts`; regenerating breaks 48 files (2026-08-16)
 
-`pnpm sync-types` writes both `types/python-generated/openapi.json` and
+`pnpm sync-types` writes both `@ai-matrx/agents/generated/openapi.json` and
 `api-types.ts` from the same backend spec, so they should always agree. They do
-not: running `openapi-typescript types/python-generated/openapi.json` today
+not: running `openapi-typescript @ai-matrx/agents/generated/openapi.json` today
 produces a file that differs from the committed `api-types.ts` by ~6,280 lines,
 and type-checking against it yields **94 errors across 48 files** (fields that
 became REQUIRED server-side — `clear_notes` in `features/secrets/*`, `store` in
@@ -4294,7 +4294,7 @@ including the unpriced job that produced the live `generic_structured` render.
 `features/media-capture/components/CaptureStudio.tsx:252` **defaults**
 `sourceFeature` to `"camera"`, and `CameraPage.tsx:62` passes it explicitly.
 `"camera"` is not in the generated allow-list
-(`types/python-generated/source-attribution.ts`, sourced from the Python
+(`@ai-matrx/agents/generated/source-attribution`, sourced from the Python
 server's provenance list), so every agent run launched from the capture studio
 — including from every caller that simply omits the prop — is stamped with a
 source_feature the server does not recognise.
@@ -4304,7 +4304,7 @@ source_feature the server does not recognise.
 --population=attribution`.
 
 Two-part fix, the second part is a product call:
-1. Type the prop as `SourceFeature` (from `types/python-generated/source-attribution.ts`)
+1. Type the prop as `SourceFeature` (from `@ai-matrx/agents/generated/source-attribution`)
    so this class can never recur silently in that component.
 2. Replace the value + the default with a real allow-list entry. Nearest
    candidates are `"files"` (it is a file-capture flow) or `"image-studio"` —

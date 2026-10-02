@@ -8,7 +8,7 @@ import { useStreamDebug } from "../../context/ResearchContext";
 import {
   EventType,
   type TypedStreamEvent,
-} from "@/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 /**
  * Floating debug panel that receives every raw NDJSON stream event emitted

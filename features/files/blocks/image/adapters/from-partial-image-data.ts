@@ -17,7 +17,7 @@
  * (Phase 2).
  */
 
-import type { PartialImageData } from "@/types/python-generated/stream-events";
+import type { PartialImageData } from "@ai-matrx/agents/generated/stream-events";
 import type { UnifiedImageBlock } from "../types";
 
 export function fromPartialImageData(

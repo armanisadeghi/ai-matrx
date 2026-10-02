@@ -81,7 +81,7 @@ import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
 import type { EntityTypeToken } from "@ai-matrx/associations";
-import type { paths } from "@/types/python-generated/api-types";
+import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { cn } from "@/lib/utils";
 import { humanFailureSentence } from "@/lib/progress/failureSentence";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";

@@ -6,7 +6,7 @@
  */
 
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
-import type { ToolEventPayload } from "@host/types/python-generated/stream-events";
+import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
 
 /** All non-empty `message` strings from the event log, in server order. */
 export function collectMessages(events: ToolEventPayload[] | undefined): string[] {

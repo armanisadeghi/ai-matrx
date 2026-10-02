@@ -22,7 +22,7 @@ import { resolveProvisionalKindRender } from "@/features/content-ir/react/partia
 import { RunLaneManager } from "../redux/lane-manager";
 import { RenderBlockFrameAssembler } from "../transport/render-block-frames";
 import type { NodeStreamEvent } from "../types";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { drawsKindAsRawJson } from "@/features/content-ir/render-paths/draws-raw-kind-json";
 
 import recorded from "./fixtures/real-run-node-stream.json";

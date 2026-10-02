@@ -23,8 +23,8 @@ import type { ApplicationScope } from "./scope.types";
 import type { ValueMappingMap } from "../../surfaces/types";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { UserInputPart } from "./request.types";
-import type { MessagePart } from "@host/types/python-generated/stream-events";
-import type { components } from "@host/types/python-generated/api-types";
+import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { ResultDisplayMode } from "../utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
 import type { ServerOperationState } from "../runtime-reconnect/types";
@@ -37,7 +37,7 @@ import {
   isSourceFeature,
   type SourceApp,
   type SourceFeature,
-} from "@host/types/python-generated/source-attribution";
+} from "@ai-matrx/agents/generated/source-attribution";
 
 // =============================================================================
 // Completion Stats — re-exported from auto-generated stream-events.ts
@@ -47,7 +47,7 @@ import {
 // are the single source of truth.
 // =============================================================================
 
-export type { UserRequestResult as CompletionStats } from "@host/types/python-generated/stream-events";
+export type { UserRequestResult as CompletionStats } from "@ai-matrx/agents/generated/stream-events";
 export type {
   AggregatedUsageResult,
   ModelUsageSummary,
@@ -55,7 +55,7 @@ export type {
   TimingStatsResult,
   ToolCallStatsResult,
   ToolCallByTool,
-} from "@host/types/python-generated/stream-events";
+} from "@ai-matrx/agents/generated/stream-events";
 
 /**
  * Durable resource identity carried on a run — the generated API contract's
@@ -87,7 +87,7 @@ export type InstanceOrigin =
 /**
  * Conversation provenance — `cx_conversation.source_app` / `source_feature`.
  *
- * **Single source of truth:** `types/python-generated/source-attribution.ts`,
+ * **Single source of truth:** `@ai-matrx/agents/generated/source-attribution`,
  * generated from aidream `source_attribution.py` via `pnpm sync-types`.
  * Do not hand-add feature slugs here. Stamp the product feature that hosts the
  * run (not chrome like context menus / ProTextarea). FE always stamps

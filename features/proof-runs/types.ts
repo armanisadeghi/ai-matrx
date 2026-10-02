@@ -15,7 +15,7 @@ import type {
   ProofCheckStatus,
   ProofResultKind,
 } from "@/features/content-ir/kinds/generated/kinds.generated";
-import type { components } from "@/types/python-generated/api-types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { isJsonObject, toJsonRecord } from "@/types/json";
 
 export type { ProofAttestation, ProofCheckStatus, ProofResultKind };

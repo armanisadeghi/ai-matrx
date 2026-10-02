@@ -6,7 +6,7 @@
  * All three answer `202` with the §1.5 runtime reference rather than with the export, so the
  * surface follows the RUNTIME SPINE, not a second HR-specific status endpoint:
  * `GET /runtime/operations/{request_id}` — which is a LIVE path in
- * `types/python-generated/api-types.ts`, so it is reached through `apiGet`/`buildPath` from the
+ * `@ai-matrx/agents/generated/api-types`, so it is reached through `apiGet`/`buildPath` from the
  * generic typed client, never through the HR stub client.
  *
  * 🚨 WHAT THE POLL DOES *NOT* CARRY, AND WHAT THAT MEANS FOR THE SURFACE.
