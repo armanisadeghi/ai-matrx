@@ -7,11 +7,11 @@ import { ArrowUpRight } from "lucide-react";
 import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
 import {
   declaredKeysForRoute,
-} from "@host/features/mandates/feature-intelligence/IntelligenceIndicator";
-import { usePageIntelligenceDoors } from "@host/features/mandates/feature-intelligence/page-intelligence-doors";
-import { declaredPlacesFor } from "@host/features/mandates/feature-intelligence/registry";
-import { featureIntelligenceHref } from "@host/features/mandates/feature-intelligence/hrefs";
-import { targetForKey } from "@host/features/mandates/feature-intelligence/placement";
+  declaredPlacesFor,
+  featureIntelligenceHref,
+  targetForKey,
+  usePageIntelligenceDoors,
+} from "../../runtime/intelligence";
 import { useLiveSurfaceMandates } from "../../runtime/surface-mandates";
 import { fetchMandateIdentities, type MandateIdentity } from "../../../mandates/service";
 import { mandateDisplayName } from "@host/features/mandates/mandate-words";
@@ -116,18 +116,21 @@ export function PageIntelligenceSection({
             >
               <span className="min-w-0 flex-1 truncate">{mandateDisplayName(key, identities[key]?.label)}</span>
             </button>
-            <Link
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              prefetch={false}
-              onClick={onOpened}
-              title="Open the full page in a new tab"
-              aria-label={`Open ${mandateDisplayName(key, identities[key]?.label)} full page in a new tab`}
-              className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              <ArrowUpRight className="h-3 w-3" aria-hidden />
-            </Link>
+            {/* No intelligence page in this host (no port registered): no secondary door. */}
+            {href ? (
+              <Link
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                prefetch={false}
+                onClick={onOpened}
+                title="Open the full page in a new tab"
+                aria-label={`Open ${mandateDisplayName(key, identities[key]?.label)} full page in a new tab`}
+                className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <ArrowUpRight className="h-3 w-3" aria-hidden />
+              </Link>
+            ) : null}
           </li>
         ))}
       </ul>

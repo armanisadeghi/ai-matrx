@@ -7,75 +7,11 @@
 import type { MandateMemberRow } from "../member-list/types";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
-/**
- * Values a place's link may need (`topicId`, `setId`, `brandId`, …). A place
- * whose link needs a value the host did not supply renders as a named stop
- * with no link — never a guessed URL.
- */
-export type IntelligenceContext = Readonly<Record<string, string | undefined>>;
-
-/**
- * ONE PLACE in a feature where intelligence runs — a screen, and the control
- * on it that starts the job. Declared by the feature that owns the screen, next
- * to the code that runs the job, and proved against that code by a test (see
- * `features/flashcards/data/intelligence-places.ts`).
- */
-export interface MandatePlace {
-  /** Stable id inside the feature. */
-  id: string;
-  /** The screen, as a person names it ("Deck page"). */
-  label: string;
-  /** The control or moment that runs the job there ("Generate button"). */
-  trigger: string;
-  /**
-   * The route, with `[param]` segments filled from the host's context
-   * (`/research/topics/[topicId]/sources`). Absent for places with no page.
-   */
-  urlPattern?: string;
-  /** The jobs this place runs. */
-  mandateKeys: readonly AnyMandateKey[];
-  /**
-   * Files whose code runs these jobs — what the guard test reads. Paths are in
-   * this repo, or (with `app: "workflow-studio"`) in aidream's
-   * `apps/workflow-studio`.
-   */
-  sources: readonly string[];
-  /**
-   * The place is in the Workflow Studio app (aidream `apps/workflow-studio`),
-   * not this repo. Its sources are read from the sibling aidream checkout.
-   */
-  app?: "workflow-studio";
-  /**
-   * Studio places whose code asks the server rather than naming the job: the
-   * endpoint fragment every source calls (`/conductor-context`)…
-   */
-  calls?: string;
-  /** …and the aidream files that route that call and name the job it runs. */
-  server?: readonly string[];
-}
-
-export interface FeaturePlaces {
-  /** The mandate-key prefix this feature owns (`flashcards`) — also its URL slug. */
-  feature: string;
-  label: string;
-  /**
-   * More key prefixes the same feature owns (`podcast_client` for `podcast`).
-   * Their jobs appear on this feature's page.
-   */
-  extraPrefixes?: readonly string[];
-  /**
-   * Names the feature's code reads jobs through — a key map (`{ FC_MANDATES }`,
-   * so `FC_MANDATES.generateCards` resolves) or one named key constant
-   * (`{ DEFAULT_NEW_CHAT_MANDATE_KEY }`). The places guard follows them.
-   */
-  aliases?: Readonly<Record<string, string | Readonly<Record<string, string>>>>;
-  /**
-   * Folders the places guard scans: every component (`.tsx`) inside that runs
-   * one of this feature's jobs must be named by a place.
-   */
-  roots?: readonly string[];
-  places: readonly MandatePlace[];
-}
+export type {
+  IntelligenceContext,
+  MandatePlace,
+  FeaturePlaces,
+} from "@ai-matrx/chat/surfaces/runtime/intelligence-types";
 
 /**
  * A place as the page shows it: a declared place, or a place recorded on a

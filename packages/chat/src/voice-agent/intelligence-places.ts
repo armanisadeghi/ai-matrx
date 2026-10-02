@@ -5,7 +5,7 @@
 // features/mandates/feature-intelligence/__tests__/declared-places.test.ts.
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import type { FeaturePlaces } from "@host/features/mandates/feature-intelligence/types";
+import type { FeaturePlaces } from "../surfaces/runtime/intelligence-types";
 import { VOICE_INTRO_MANDATE_KEY } from "./constants";
 
 export const VOICE_PLACES: FeaturePlaces = {

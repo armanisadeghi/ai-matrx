@@ -1,14 +1,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { IntelligenceContext } from "./types";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { PageIntelligenceDoor } from "@ai-matrx/chat/surfaces/runtime/intelligence-types";
 
-export interface PageIntelligenceDoor {
-  feature: string;
-  context?: IntelligenceContext;
-  mandateKeys?: readonly AnyMandateKey[];
-}
+export type { PageIntelligenceDoor };
 
 const doors = new Map<symbol, PageIntelligenceDoor>();
 const listeners = new Set<() => void>();

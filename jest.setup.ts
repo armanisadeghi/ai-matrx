@@ -311,3 +311,35 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     getSurfaceChildren: (surfaceName) => app().getSurfaceChildren(surfaceName),
   });
 }
+
+/**
+ * FEATURE INTELLIGENCE, REGISTERED WITH `@ai-matrx/chat` AS THE APP DOES AT
+ * STARTUP (P19, `providers/ChatSurfaceRegistrations.tsx`). Lazy and through the
+ * test's module registry, like the manifests above, so a test mocking an app
+ * feature-intelligence module still hands the package its mock.
+ */
+{
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const seam = require("@ai-matrx/chat/surfaces/runtime/intelligence") as typeof import("@ai-matrx/chat/surfaces/runtime/intelligence");
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const indicator = () =>
+    require("@/features/mandates/feature-intelligence/IntelligenceIndicator") as typeof import("@/features/mandates/feature-intelligence/IntelligenceIndicator");
+  const doors = () =>
+    require("@/features/mandates/feature-intelligence/page-intelligence-doors") as typeof import("@/features/mandates/feature-intelligence/page-intelligence-doors");
+  const places = () =>
+    require("@/features/mandates/feature-intelligence/registry") as typeof import("@/features/mandates/feature-intelligence/registry");
+  const hrefs = () =>
+    require("@/features/mandates/feature-intelligence/hrefs") as typeof import("@/features/mandates/feature-intelligence/hrefs");
+  const placement = () =>
+    require("@/features/mandates/feature-intelligence/placement") as typeof import("@/features/mandates/feature-intelligence/placement");
+  const react = require("react") as typeof import("react");
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  seam.registerSurfaceIntelligence({
+    Indicator: (props) => react.createElement(indicator().IntelligenceIndicator, props),
+    declaredKeysForRoute: (pathname) => indicator().declaredKeysForRoute(pathname),
+    usePageIntelligenceDoors: () => doors().usePageIntelligenceDoors(),
+    declaredPlacesFor: (feature) => places().declaredPlacesFor(feature),
+    featureIntelligenceHref: (feature, options) => hrefs().featureIntelligenceHref(feature, options),
+    targetForKey: (mandateKey) => placement().targetForKey(mandateKey),
+  });
+}

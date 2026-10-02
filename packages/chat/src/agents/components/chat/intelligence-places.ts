@@ -6,7 +6,7 @@
 // component under `roots` that names a job mapped here).
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import type { FeaturePlaces } from "@host/features/mandates/feature-intelligence/types";
+import type { FeaturePlaces } from "../../../surfaces/runtime/intelligence-types";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 
 const K = MANDATE_KEYS;

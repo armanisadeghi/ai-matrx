@@ -11,7 +11,7 @@ import {
   ComposerQuickActions,
 } from "../inputs/smart-input/composer/ComposerSplash";
 import type { ComposerPresentation } from "../inputs/smart-input/composer/composer-types";
-import { IntelligenceIndicator } from "@host/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { IntelligenceIndicator } from "../../../surfaces/runtime/intelligence";
 
 interface NewChatGreetingProps {
   /** Default-agent conversation bound to the splash composer — same Redux

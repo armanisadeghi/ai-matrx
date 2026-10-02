@@ -23,7 +23,7 @@ import { selectOrganizationId } from "@host/lib/redux/slices/appContextSlice";
 import { CHAT_WINDOWS } from "../../../host/windows";
 import { useIsChatWindowOpen } from "../../../host/windows-react";
 import { cn } from "@ai-matrx/design-system";
-import { IntelligenceIndicator } from "@host/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { IntelligenceIndicator } from "../../../surfaces/runtime/intelligence";
 import { OrganizationContextNotice } from "@host/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@host/features/organizations/useOrganizationRequired";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
