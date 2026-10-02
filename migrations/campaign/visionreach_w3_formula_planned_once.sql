@@ -1,4 +1,3 @@
--- draft: VISION-REACH clone proof pending
 -- target: branch,production
 -- additive: yes
 --   It ADDS one helper, `custom.formula_compile_sql(uuid, jsonb, text)` (EXECUTE to postgres only,
