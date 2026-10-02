@@ -34,8 +34,8 @@
 import type { Json } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import type { ValueMapping } from "@ai-matrx/chat/surfaces/types";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
 // ── Kind vocabulary (mirrors aidream provisions.py — the one law) ────────────
 
@@ -111,7 +111,7 @@ export function kindPhrase(kind: string): string {
     case "file_list":
       return "a list of files";
     default: {
-      const human = displayLabelForKey(kind);
+      const human = (humanizeIdentifier(kind) || kind);
       return human && human !== kind ? `a ${human}` : "a structured shape";
     }
   }
@@ -255,7 +255,7 @@ export function describeSource(entry: ConsumptionEntry): string {
       // R5-1: the offered rail prints "Task Overview"; this sentence used to
       // print `"task_overview"` beside it. One thing, one name.
       return entry.target
-        ? `the offered value “${displayLabelForKey(entry.target)}”`
+        ? `the offered value “${humanizeIdentifier(entry.target) || entry.target}”`
         : "an offered value you have not picked yet";
     case "direct_value":
       return typeof entry.target === "string"
@@ -380,7 +380,7 @@ export function parseConsumptionMapWithDrops(raw: Json | unknown): {
       if (!isJsonObject(entry)) {
         console.error("[provisions] dropping malformed consumption entry", name);
         dropped.push(
-          `“${displayLabelForKey(name)}”: one stored source is malformed and was ignored — open this input and pick its source again.`,
+          `“${humanizeIdentifier(name) || name}”: one stored source is malformed and was ignored — open this input and pick its source again.`,
         );
         continue;
       }
@@ -394,7 +394,7 @@ export function parseConsumptionMapWithDrops(raw: Json | unknown): {
             `[provisions] consumption_map entry ${name} is a fixed value with nothing in it — dropping`,
           );
           dropped.push(
-            `“${displayLabelForKey(name)}”: a fixed value with nothing in it was ignored — type the value it should hold, or pick another source.`,
+            `“${humanizeIdentifier(name) || name}”: a fixed value with nothing in it was ignored — type the value it should hold, or pick another source.`,
           );
           continue;
         }
@@ -409,7 +409,7 @@ export function parseConsumptionMapWithDrops(raw: Json | unknown): {
             `[provisions] consumption_map entry ${name} asks the person with no question — dropping`,
           );
           dropped.push(
-            `“${displayLabelForKey(name)}”: a question with no words was ignored — nobody could have answered it. Write what the run form should ask.`,
+            `“${humanizeIdentifier(name) || name}”: a question with no words was ignored — nobody could have answered it. Write what the run form should ask.`,
           );
           continue;
         }
@@ -433,7 +433,7 @@ export function parseConsumptionMapWithDrops(raw: Json | unknown): {
           `[provisions] consumption_map entry ${name} has mapType ${String(mapType)} — not consumable, dropping`,
         );
         dropped.push(
-          `“${displayLabelForKey(name)}”: one stored source is of a kind this screen cannot feed an input from, so it was ignored — pick a source for this input again. (The browser console names the stored kind for a developer.)`,
+          `“${humanizeIdentifier(name) || name}”: one stored source is of a kind this screen cannot feed an input from, so it was ignored — pick a source for this input again. (The browser console names the stored kind for a developer.)`,
         );
         continue;
       }
@@ -665,7 +665,7 @@ export interface PreflightContext {
  * (`"task_overview" asks the person for this input…`) directly under the row
  * that renders the same thing correctly as **Task Overview**, and two spoke the
  * raw kind slug as well. Nothing here says a key or a slug any more: an input
- * and an offered value are named by `displayLabelForKey`, a kind by
+ * and an offered value are named by `displayLabel`, a kind by
  * `kindPhrase`. The keys keep their honest home — the mono sub-line the offered
  * rail and the row header already print them on.
  *
@@ -694,14 +694,14 @@ export function consumptionMapProblems(
     "variable-only";
   const holderKind = context.holderKind ?? "agent";
   const targetLabels = new Map(
-    (context.targets ?? []).map((t) => [t.name, displayLabelForKey(t.name, t.label)]),
+    (context.targets ?? []).map((t) => [t.name, displayLabel(t.label, t.name)]),
   );
   /** The holder input, said the way the row above the refusal says it. */
   const inputName = (key: string): string =>
-    targetLabels.get(key) ?? displayLabelForKey(key);
+    targetLabels.get(key) ?? (humanizeIdentifier(key) || key);
   /** An offered value, said the way the offered rail says it (`offered-adapter`
    * derives the picker's label from the same name by the same rule). */
-  const valueName = (key: string): string => displayLabelForKey(key);
+  const valueName = (key: string): string => (humanizeIdentifier(key) || key);
   const problems: string[] = [];
   for (const [name, sources] of Object.entries(map)) {
     const multi = sources.length > 1;

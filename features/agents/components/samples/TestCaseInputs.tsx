@@ -43,11 +43,11 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { buildVariableDisplayLines } from "@ai-matrx/chat/agents/utils/variable-display-lines";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { MessageAttachmentStrip } from "@ai-matrx/chat/agents/components/messages-display/MessageAttachmentStrip";
 import { isAttachmentMessagePart } from "@ai-matrx/chat/agents/components/context-items/normalize";
 import type { AgentVariableDeclaration } from "@/features/agents/samples/service";
 import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 /**
  * Longer than this (or carrying a newline) and the row collapses.
@@ -139,7 +139,7 @@ export function buildTestCaseParts(input: {
     const declaration = byName.get(name) ?? null;
     const label =
       line.label ||
-      (declaration ? displayLabelForKey(name, declaration.label) : "");
+      (declaration ? displayLabel(declaration.label, name) : "");
     parts.push({
       key: line.key,
       group: "variable",

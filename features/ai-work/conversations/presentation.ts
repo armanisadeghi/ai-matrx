@@ -9,7 +9,7 @@ import {
   CODING_SESSION_PROVIDER_META,
   type CodingSessionProvider,
 } from "@/features/agent-connections/coding-sessions/catalog";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import {
   INTERNAL_CONVERSATION_TYPES,
   type ConversationAudienceId,
@@ -37,7 +37,7 @@ export function conversationTypeLabel(value: string | null): string {
     case "system":
       return "System run";
     default:
-      return value ? formatText(value) : "Unknown";
+      return value ? humanizeIdentifier(value) : "Unknown";
   }
 }
 
@@ -60,7 +60,7 @@ export function audienceLabel(value: ConversationAudienceId | string): string {
     case "internal":
       return "Internal Matrx runs";
     default:
-      return value ? formatText(value) : "Unknown";
+      return value ? humanizeIdentifier(value) : "Unknown";
   }
 }
 
@@ -82,7 +82,7 @@ export function originClassLabel(value: string | null): string {
     case "unknown":
       return "Origin not recorded";
     default:
-      return value ? formatText(value) : "Origin not recorded";
+      return value ? humanizeIdentifier(value) : "Origin not recorded";
   }
 }
 
@@ -90,7 +90,7 @@ export function providerLabel(provider: string | null): string | null {
   if (!provider) return null;
   return (
     CODING_SESSION_PROVIDER_META[provider as CodingSessionProvider]?.label ??
-    formatText(provider)
+    humanizeIdentifier(provider)
   );
 }
 

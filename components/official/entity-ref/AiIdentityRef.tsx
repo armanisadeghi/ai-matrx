@@ -30,7 +30,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { cn } from "@/lib/utils";
 
 interface AiIdentityRefCommonProps {
@@ -72,7 +72,7 @@ function IdentityLabel({ id, name, showId }: IdentityLabelProps) {
 }
 
 function fallbackName(kind: "AI model" | "tool", id: string): string {
-  return isUuidValue(id) ? `Unknown ${kind}` : formatText(id);
+  return isUuidValue(id) ? `Unknown ${kind}` : humanizeIdentifier(id);
 }
 
 export interface AiModelRefProps extends AiIdentityRefCommonProps {

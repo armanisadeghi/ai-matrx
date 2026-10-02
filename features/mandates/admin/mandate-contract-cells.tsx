@@ -15,13 +15,13 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import type { MandateRow } from "./mandate-health";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** A machine name as a person reads it (`prompt_config` → "Prompt Config").
  * Described inputs are already words and pass through. UX punch list
  * 2026-09-26: the peek and list showed raw snake_case in monospace. */
 const plain = (name: string) =>
-  /^[a-z0-9_.]+$/.test(name) ? displayLabelForKey(name) : name;
+  /^[a-z0-9_.]+$/.test(name) ? (humanizeIdentifier(name) || name) : name;
 
 const KIND_REGISTRY_BASE = "/administration/utilities/kind-registry";
 const CONTRACT_BADGE_CLASS =
@@ -188,7 +188,7 @@ export function MandateOutputCell({
           variant="secondary"
           className={`${compact ? "max-w-full truncate whitespace-nowrap px-1.5 py-0.5 text-[10px]" : CONTRACT_BADGE_CLASS} hover:bg-secondary/80 hover:text-secondary-foreground`}
         >
-          {displayLabelForKey(kind)}
+          {humanizeIdentifier(kind) || kind}
         </Badge>
       </a>
     );

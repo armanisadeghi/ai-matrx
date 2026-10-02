@@ -39,7 +39,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { providerLabel } from "../presentation";
 import {
   EMPTY_SYNC_STATE,
@@ -162,7 +162,7 @@ function AccountCard({ account }: { account: SyncAccountState }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h3 className="text-sm font-medium text-foreground">
-            {providerLabel(account.provider) ?? formatText(account.provider)}
+            {providerLabel(account.provider) ?? humanizeIdentifier(account.provider)}
           </h3>
           <span
             className={cn(
@@ -189,12 +189,12 @@ function AccountCard({ account }: { account: SyncAccountState }) {
         </Fact>
         <Fact label="Fidelity">
           {account.fidelity
-            .map((f) => `${formatText(f.value)} (${f.count})`)
+            .map((f) => `${humanizeIdentifier(f.value)} (${f.count})`)
             .join(", ") || "None recorded"}
         </Fact>
         <Fact label="Arrived by">
           {account.origin
-            .map((o) => `${formatText(o.value)} (${o.count})`)
+            .map((o) => `${humanizeIdentifier(o.value)} (${o.count})`)
             .join(", ") || "None recorded"}
         </Fact>
         <Fact label="Bindings not active">

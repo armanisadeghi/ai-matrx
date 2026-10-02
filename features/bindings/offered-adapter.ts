@@ -20,7 +20,7 @@ import {
   kindPhrase,
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * Kind slug → the row picker's logical type. Anything that is not a known
@@ -95,7 +95,7 @@ export function offeredKindIsRegistered(kind: string): boolean {
 export function offeredValueToSurfaceValue(value: OfferedValue): SurfaceValue {
   return {
     name: value.name,
-    label: formatVariableDisplayName(value.name),
+    label: (humanizeIdentifier(value.name) || value.name),
     description: value.description,
     valueType: offeredKindToValueType(value.kind),
     alwaysAvailable: value.guaranteed,

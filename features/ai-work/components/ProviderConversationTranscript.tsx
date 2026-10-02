@@ -26,7 +26,7 @@ import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { cn } from "@/lib/utils";
 import { formatAbsoluteDate } from "@/utils/datetime";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import {
   appLabel,
   featureLabel,
@@ -398,7 +398,7 @@ export function ProviderConversationTranscript({
                   : `${familyLabel} · ${featureLabel(conversation.source_feature)}`}
               </span>
               <span aria-hidden>·</span>
-              <span>{formatText(conversation.status)}</span>
+              <span>{humanizeIdentifier(conversation.status)}</span>
             </div>
             {conversation.description ? (
               <p className="mt-2 max-w-3xl text-sm text-muted-foreground">

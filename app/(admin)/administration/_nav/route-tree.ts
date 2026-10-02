@@ -11,6 +11,7 @@ import { isConcreteRoute } from "@/utils/route-discovery/shared";
 import type { ModulePageIcon } from "@/components/matrx/navigation/types";
 import { MODULE_HOME, MODULE_NAME, filteredPages } from "../config";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface AdminTreeNode {
   /** Single URL segment, e.g. "system-agents". */
@@ -52,15 +53,7 @@ export function identifierCrumbLabel(segment: string, parentLabel: string | unde
 }
 
 function titleCase(segment: string): string {
-  const base = segment
-    .replace(/[_-]/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(
-      /\w\S*/g,
-      (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
-    );
+  const base = humanizeIdentifier(segment) || segment;
 
   return base
     .split(" ")

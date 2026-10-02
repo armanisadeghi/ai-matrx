@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatTitleCase } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { ChevronRight } from "lucide-react";
 import type { RouteDisplayProps } from "./types";
 
@@ -27,7 +27,7 @@ export default function FlatListDisplay({ data }: RouteDisplayProps) {
                     </span>
                   )}
                   <span className="text-sm font-medium group-hover:text-primary transition-colors truncate">
-                    {formatTitleCase(leaf ?? route)}
+                    {humanizeIdentifier(leaf ?? route)}
                   </span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 ml-3" />

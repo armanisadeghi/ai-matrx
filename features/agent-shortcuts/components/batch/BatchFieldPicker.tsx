@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import type { AgentShortcut } from "@/features/agent-shortcuts/types";
 import { BASELINE_VALUES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { SurfaceValue, ValueMapping } from "@ai-matrx/chat/surfaces/types";
 import { ScalarValueControl } from "./BatchFieldControls";
 import { InlineBindingEditor } from "./BatchBindingCell";
@@ -19,6 +18,7 @@ import {
   type FieldStateMap,
   STANDARD_DEFAULTS,
 } from "./batchModel";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 const BASELINE_ONLY: SurfaceValue[] = Object.values(BASELINE_VALUES).sort(
   (a, b) => (a.sortOrder ?? 1000) - (b.sortOrder ?? 1000),
@@ -97,7 +97,7 @@ export function BatchFieldPicker({
             return (
               <Row
                 key={t.name}
-                label={t.label ?? formatVariableDisplayName(t.name)}
+                label={displayLabel(t.label, t.name)}
                 required={t.required}
                 mode={mode}
                 onModeChange={(m) => onBindingModeChange(t.name, m)}

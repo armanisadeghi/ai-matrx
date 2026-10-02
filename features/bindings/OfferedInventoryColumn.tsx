@@ -15,7 +15,6 @@
 import { Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import {
   OFFERED_LAZY_WORDS,
   OFFERED_SOMETIMES_WORDS,
@@ -23,6 +22,7 @@ import {
 } from "@/features/mandates/provision-shapes";
 import { RAIL_MAX_HEIGHT, scrollHint } from "./rail-height";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface OfferedInventoryColumnProps {
   values: readonly OfferedValue[];
@@ -152,7 +152,7 @@ export function OfferedInventoryColumn({
               >
                 <div className="flex flex-wrap items-baseline gap-1.5">
                   <span className="text-[12px] font-medium text-foreground">
-                    {formatVariableDisplayName(value.name)}
+                    {humanizeIdentifier(value.name) || value.name}
                   </span>
                   <span className="rounded border border-border px-1 font-mono text-[9px] text-muted-foreground">
                     {value.kind}

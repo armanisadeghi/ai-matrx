@@ -163,7 +163,6 @@ import {
 } from "./offer-column-state";
 import { coverageLine, isFed, JOB_OVERRIDE_WORDS } from "./words";
 import { writeReportStillDescribesDraft } from "./write-report-life";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { BatchMode } from "./batch/BatchMode";
 import { unfedRequiredTargets } from "./batch/batch-model";
 import { ModeToggle, type BindingMode } from "./batch/ModeToggle";
@@ -174,6 +173,7 @@ import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
 import { bindingAccessTarget } from "./access-target";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
+import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
 /**
  * THE MAPPER'S NOUNS ON A MANDATE SCREEN. The mechanic is the surface bind
@@ -1762,7 +1762,7 @@ function BindingDraft({
         // is resolved here where the declarations are.
         const target = holderInputs.targets.find((t) => t.name === targetName);
         list.push(
-          target?.label ?? formatVariableDisplayName(targetName) ?? targetName,
+          displayLabel(target?.label, targetName),
         );
         out.set(entry.target, list);
       }
@@ -2393,7 +2393,7 @@ function BindingDraft({
                     result:
                       offeredValues
                         .filter((value) => !consumedBy.has(value.name))
-                        .map((value) => formatVariableDisplayName(value.name))
+                        .map((value) => (humanizeIdentifier(value.name) || value.name))
                         .join(", ") || "None",
                     reference: "Draft mapping",
                   }}

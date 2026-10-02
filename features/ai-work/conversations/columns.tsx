@@ -23,7 +23,7 @@ import {
 } from "@/lib/entity-list/columns";
 import { appLabel } from "@ai-matrx/chat/agents/redux/conversation-history/source-registry";
 import { fidelityVerdict } from "@/features/agent-connections/coding-sessions/verdict";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import {
   conversationTypeLabel,
   originClassLabel,
@@ -361,7 +361,7 @@ export const CONVERSATION_COLUMNS: EntityColumnSpec<ConversationBrowseRow>[] = [
       cell: (row) =>
         row.binding_status ? (
           <span className="truncate text-muted-foreground">
-            {formatText(row.binding_status)}
+            {humanizeIdentifier(row.binding_status)}
           </span>
         ) : (
           <Muted>—</Muted>

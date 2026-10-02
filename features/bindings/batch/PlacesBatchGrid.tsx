@@ -19,7 +19,6 @@ import { Fragment } from "react";
 import { AlertTriangle, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import {
   FillDownButton,
   RowKindBadge,
@@ -38,6 +37,7 @@ import { PlaceBindingCell } from "./PlaceBindingCell";
 import { offeredValuesToSurfaceValues } from "../offered-adapter";
 import { sourceLabelsFor, FILL_DOWN_LIMITS } from "../words";
 import type { PlaceHealth, PlaceOfferState, PlaceRow } from "./batch-model";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 const STATUS_WORDS = {
   red: (n: number) =>
@@ -121,7 +121,7 @@ export function PlacesBatchGrid({
                   <div className="flex items-start gap-1.5">
                     <div className="min-w-0">
                       <div className="truncate text-[12px] font-semibold text-foreground">
-                        {target.label ?? formatVariableDisplayName(target.name)}
+                        {displayLabel(target.label, target.name)}
                       </div>
                       <div className="flex flex-wrap items-center gap-1 text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
                         {target.required ? (

@@ -30,13 +30,13 @@ import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMand
 import type { OfferedValue } from "@/features/mandates/provision-shapes";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { buildHolderDraftBrief } from "./holder-draft-brief";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { HolderDraft } from "./ScopeHolderBar";
 import {
   RequestAccess,
   type RequestAccessTarget,
 } from "@/features/access-gate/components/RequestAccess";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface HolderDraftPanelProps {
   data: MandateWorkspaceData;
@@ -132,7 +132,7 @@ export function HolderDraftPanel({
                   // Plain names, never the machine keys (UX punch list
                   // 2026-09-26: "prompt_object, sample_response…" in mono).
                   offeredValues.length > 0
-                    ? offeredValues.map((v) => displayLabelForKey(v.name)).join(", ")
+                    ? offeredValues.map((v) => (humanizeIdentifier(v.name) || v.name)).join(", ")
                     : "None — this job offers no values."
                 }
               />
@@ -141,11 +141,11 @@ export function HolderDraftPanel({
                 value={
                   [
                     data.mandate.output_kind
-                      ? displayLabelForKey(data.mandate.output_kind)
+                      ? (humanizeIdentifier(data.mandate.output_kind) || data.mandate.output_kind)
                       : null,
                     data.contract.requiredOutputKeys.length > 0
                       ? `with ${data.contract.requiredOutputKeys
-                          .map((k) => displayLabelForKey(k))
+                          .map((k) => (humanizeIdentifier(k) || k))
                           .join(", ")}`
                       : null,
                   ]

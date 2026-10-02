@@ -30,7 +30,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatTitleCase } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import {
   generateBuiltinVariables,
   FormatType,
@@ -893,7 +893,7 @@ function AutoCreateAgentAppFormWithAgent({
                             </div>
                             <div className="flex-1">
                               <h4 className="font-semibold text-sm">
-                                {formatTitleCase(variable.name)}
+                                {humanizeIdentifier(variable.name)}
                               </h4>
                               <p className="text-xs text-muted-foreground mt-0.5">
                                 {isIncluded

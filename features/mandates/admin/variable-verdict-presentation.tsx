@@ -2,9 +2,9 @@ import {
   PropertyRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { RebindVariableImpact } from "./rebind-impact";
 import type { MandateVariableVerdict } from "./service";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 type PresentedVerdict = RebindVariableImpact | MandateVariableVerdict;
 
@@ -76,14 +76,14 @@ export function VariableVerdictList({
           >
             <PropertyRow
               label="Input"
-              value={displayLabelForKey(fact.codeName)}
+              value={humanizeIdentifier(fact.codeName) || fact.codeName}
             />
             <PropertyRow
               label="Target"
               value={
                 fact.suggestedMapping
-                  ? displayLabelForKey(fact.suggestedMapping)
-                  : displayLabelForKey(fact.name)
+                  ? (humanizeIdentifier(fact.suggestedMapping) || fact.suggestedMapping)
+                  : (humanizeIdentifier(fact.name) || fact.name)
               }
             />
             <PropertyRow

@@ -48,7 +48,7 @@ import {
     readThemeTokens,
 } from "@/features/content-ir/sandbox/theme-tokens";
 import type { SandboxBodyPayload } from "@/features/content-ir/sandbox/transform/transform-kind-body";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import type { ComponentResolution } from "@ai-matrx/content-ir-react";
 import type { RunKindAction } from "../actions/useKindActionRunner";
 import type {
@@ -80,7 +80,7 @@ export function sandboxFrameTitle(
     const label =
         typeof declared === "string" && declared.trim()
             ? declared.trim()
-            : formatText(kind);
+            : humanizeIdentifier(kind);
     return `${label} — component`;
 }
 

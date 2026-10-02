@@ -20,8 +20,8 @@ import { InlineBindingEditor } from "@/features/agent-shortcuts/components/batch
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import type { SurfaceValue, ValueMapping } from "@ai-matrx/chat/surfaces/types";
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { sourceLabelsFor } from "../words";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 export type InputMode = "inherit" | "all" | "row";
 
@@ -66,7 +66,7 @@ export function InputCascade({
           >
             <div className="flex min-w-0 items-center gap-1.5">
               <span className="truncate text-sm text-foreground">
-                {target.label ?? formatVariableDisplayName(target.name)}
+                {displayLabel(target.label, target.name)}
               </span>
               {target.required ? (
                 <span className="shrink-0 text-[10px] text-rose-600 dark:text-rose-400">

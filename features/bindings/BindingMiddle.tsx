@@ -50,7 +50,6 @@ import {
 } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import {
   SurfaceVariableBinding,
   offeredAvailabilityLabel,
@@ -81,6 +80,7 @@ import {
 } from "./consumption-writer";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
 export interface BindingMiddleProps {
   /** Agent or workflow — only the wording of the "own default" source differs. */
@@ -332,7 +332,7 @@ export function BindingMiddleRow({
 
           <AddAnotherSource
             targetName={target.name}
-            targetLabel={target.label ?? formatVariableDisplayName(target.name)}
+            targetLabel={displayLabel(target.label, target.name)}
             remaining={remaining}
             hasSources={sources.length > 0}
             disabled={disabled}
@@ -403,7 +403,7 @@ function ExtraSources({
               <span className="min-w-0 text-[12px] leading-snug text-foreground">
                 {isOfferedSource(entry)
                   ? entry.target
-                    ? formatVariableDisplayName(entry.target)
+                    ? (humanizeIdentifier(entry.target) || entry.target)
                     : "nothing chosen"
                   : describeSource(entry)}
               </span>
@@ -523,7 +523,7 @@ function AbsenceControl({
       </div>
       <div
         role="group"
-        aria-label={`Missing ${formatVariableDisplayName(entry.target)}`}
+        aria-label={`Missing ${humanizeIdentifier(entry.target) || entry.target}`}
         className="flex flex-wrap gap-1"
       >
         {choices.map((choice) => (
@@ -616,7 +616,7 @@ function AddAnotherSource({
             <SelectItem key={v.name} value={v.name}>
               <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
                 <span className="break-words text-sm font-medium">
-                  {formatVariableDisplayName(v.name)}
+                  {humanizeIdentifier(v.name) || v.name}
                 </span>
                 <span className="text-xs text-foreground">
                   {offeredAvailabilityLabel(v.guaranteed)}

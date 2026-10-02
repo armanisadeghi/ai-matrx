@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatTitleCase } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { ChevronRight, ArrowRight, FolderClosed, FolderOpen } from "lucide-react";
 import { getRouteLabel } from "@/utils/route-discovery/shared";
 import type { RouteDisplayProps } from "./types";
@@ -51,7 +51,7 @@ export default function ExpandableSectionsDisplay({ data }: RouteDisplayProps) {
       {sortedGroupKeys.map((groupKey) => {
         const items = groups[groupKey];
         const isRoot = groupKey === "__root__";
-        const label = isRoot ? "General" : formatTitleCase(groupKey);
+        const label = isRoot ? "General" : humanizeIdentifier(groupKey);
         const isExpanded = expanded.has(groupKey);
         const hasChildren = items.length > 0;
 

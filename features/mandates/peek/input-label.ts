@@ -1,4 +1,4 @@
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 /**
  * An input as a person reads it: the provision's own label, else the name
@@ -7,7 +7,7 @@ import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
  */
 export function inputDisplayLabel(input: { name: string; label?: string | null }): string {
   const explicit = input.label && input.label !== input.name ? input.label : null;
-  if (explicit) return displayLabelForKey(input.name, explicit);
+  if (explicit) return displayLabel(explicit, input.name);
   const base = input.name.replace(/_ids?$/, "");
-  return displayLabelForKey(base || input.name);
+  return displayLabel(undefined, base || input.name);
 }

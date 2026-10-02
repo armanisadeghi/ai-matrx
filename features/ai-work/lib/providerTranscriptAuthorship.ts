@@ -1,4 +1,4 @@
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { providerLabel } from "../conversations/presentation";
 import type { ProviderConversationMessage } from "./providerConversationMessage";
 
@@ -40,7 +40,7 @@ export function transcriptAuthorship(
   // IS the conversation's provider, so nothing else in this function changes.
   const carried = message.carriedFrom;
   const author = carried
-    ? (providerLabel(carried.provider) ?? formatText(carried.provider))
+    ? (providerLabel(carried.provider) ?? humanizeIdentifier(carried.provider))
     : provider;
   const carriedNote = carried ? "carried in by a handoff" : null;
 
@@ -69,7 +69,7 @@ export function transcriptAuthorship(
     };
   }
   return {
-    label: message.role === "assistant" ? author : formatText(message.role),
+    label: message.role === "assistant" ? author : humanizeIdentifier(message.role),
     note: carriedNote,
     fromMatrx: false,
   };

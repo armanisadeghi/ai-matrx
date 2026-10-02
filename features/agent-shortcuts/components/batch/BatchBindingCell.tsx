@@ -36,8 +36,8 @@ import {
   type BindingTarget,
   type SourceLabels,
 } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { SurfaceValue, ValueMapping } from "@ai-matrx/chat/surfaces/types";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Four-way mode plumbing (mirrors SurfaceVariableBinding so inline + advanced
@@ -418,7 +418,7 @@ function SurfaceValueInline({
         {availableSurfaceValues.map((sv) => (
           <SelectItem key={sv.name} value={sv.name}>
             <span className="text-xs">
-              {sv.label || formatVariableDisplayName(sv.name)}
+              {displayLabel(sv.label, sv.name)}
             </span>
           </SelectItem>
         ))}

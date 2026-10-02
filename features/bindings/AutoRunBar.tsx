@@ -12,10 +12,10 @@ import {
   evaluateBindingAutoRun,
   type BindingAutoRunEligibility,
 } from "@ai-matrx/chat/surfaces/utils/binding-auto-run";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 import type { ConsumptionMap } from "@/features/mandates/provision-shapes";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * A job binding's map → the shape the shared eligibility fact reads.
@@ -62,7 +62,7 @@ export function autoRunSentence(
   on: boolean,
 ): string {
   const named = eligibility.blockers
-    .map((name) => formatVariableDisplayName(name))
+    .map((name) => (humanizeIdentifier(name) || name))
     .join(", ");
   if (eligibility.eligible) {
     return on

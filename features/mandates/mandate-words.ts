@@ -13,8 +13,8 @@
 // The key is not hidden by this: every one of these screens already renders it
 // on its own mono sub-line, which is its honest home.
 
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * A job's name as a person reads it.
@@ -32,5 +32,5 @@ export function mandateDisplayName(
   const explicit = typeof label === "string" ? label.trim() : "";
   if (explicit) return explicit;
   const lastSegment = mandateKey.split(".").filter(Boolean).pop() ?? mandateKey;
-  return formatVariableDisplayName(lastSegment) || mandateKey;
+  return humanizeIdentifier(lastSegment) || mandateKey;
 }

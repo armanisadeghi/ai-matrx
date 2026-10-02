@@ -27,11 +27,11 @@
 import { useState } from "react";
 import { StatusToken } from "@/components/official/ConfigurationFields";
 import { ShortcutFieldRow } from "@/features/agent-shortcuts/components/next/SettingsSection";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { updateMandateDefinition } from "./service";
 import type { MandateRow } from "./mandate-health";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function MandateContextGate({
   row,
@@ -118,7 +118,7 @@ export function MandateContextGate({
         <span className="text-sm">
           {row.requiredContextPolicyKeys.length
             ? row.requiredContextPolicyKeys
-                .map((key) => displayLabelForKey(key))
+                .map((key) => (humanizeIdentifier(key) || key))
                 .join(", ")
             : "None"}
         </span>

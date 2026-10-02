@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import {
   fetchCodingSessionBindings,
   type CodingSessionBinding,
@@ -366,8 +366,8 @@ function BindingCard({
           )}
         </Fact>
         <Fact label="Workspace">{workspace ?? <Absent />}</Fact>
-        <Fact label="Arrived by">{formatText(binding.origin)}</Fact>
-        <Fact label="Binding state">{formatText(binding.status)}</Fact>
+        <Fact label="Arrived by">{humanizeIdentifier(binding.origin)}</Fact>
+        <Fact label="Binding state">{humanizeIdentifier(binding.status)}</Fact>
         <Fact label="Last delivery">
           <DeliveryValue binding={binding} />
         </Fact>
@@ -662,8 +662,8 @@ export function ConversationProvenancePanel({
             >
               {fidelityVerdict(current.fidelity).detail}
             </Fact>
-            <Fact label="Binding state">{formatText(current.status)}</Fact>
-            <Fact label="Arrived by">{formatText(current.origin)}</Fact>
+            <Fact label="Binding state">{humanizeIdentifier(current.status)}</Fact>
+            <Fact label="Arrived by">{humanizeIdentifier(current.origin)}</Fact>
             <Fact label="Last delivery">
               <DeliveryValue binding={current} />
             </Fact>
@@ -676,7 +676,7 @@ export function ConversationProvenancePanel({
             </Fact>
             <Fact label="Managed runtime">
               {current.runtime_kind ? (
-                formatText(current.runtime_kind)
+                humanizeIdentifier(current.runtime_kind)
               ) : (
                 <Absent>None recorded</Absent>
               )}

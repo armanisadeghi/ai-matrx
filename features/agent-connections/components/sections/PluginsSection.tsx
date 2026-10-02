@@ -24,7 +24,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
 import {
@@ -469,7 +469,7 @@ function CodingSessionRow({
           fill
         />
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-          <span>{meta?.label ?? formatText(session.provider)}</span>
+          <span>{meta?.label ?? humanizeIdentifier(session.provider)}</span>
           {workspace ? (
             <>
               <span aria-hidden>·</span>
@@ -585,7 +585,7 @@ function CodingSessionDetail({
             alwaysShowActions
           />
           <div className="text-xs text-muted-foreground">
-            {meta?.label ?? formatText(session.provider)} · {verdict.label}
+            {meta?.label ?? humanizeIdentifier(session.provider)} · {verdict.label}
           </div>
         </div>
         {showTaskAssociation ? (
@@ -656,12 +656,12 @@ function CodingSessionDetail({
         <dl className="mt-4 grid grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm">
           <DetailTerm>Platform</DetailTerm>
           <DetailValue>
-            {meta?.label ?? formatText(session.provider)}
+            {meta?.label ?? humanizeIdentifier(session.provider)}
           </DetailValue>
           <DetailTerm>Origin</DetailTerm>
-          <DetailValue>{formatText(session.origin)}</DetailValue>
+          <DetailValue>{humanizeIdentifier(session.origin)}</DetailValue>
           <DetailTerm>Status</DetailTerm>
-          <DetailValue>{formatText(session.status)}</DetailValue>
+          <DetailValue>{humanizeIdentifier(session.status)}</DetailValue>
           <DetailTerm>Last activity</DetailTerm>
           <DetailValue>
             {formatSessionTimestamp(session.last_seen_at)}
@@ -669,7 +669,7 @@ function CodingSessionDetail({
           <DetailTerm>Runtime</DetailTerm>
           <DetailValue>
             {session.runtime_kind
-              ? formatText(session.runtime_kind)
+              ? humanizeIdentifier(session.runtime_kind)
               : "No managed runtime recorded"}
           </DetailValue>
           <DetailTerm>Conversation</DetailTerm>

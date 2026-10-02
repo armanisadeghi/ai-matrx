@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatTitleCase } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { ChevronRight, FolderOpen } from "lucide-react";
 import { getRouteLabel } from "@/utils/route-discovery/shared";
 import type { RouteDisplayProps } from "./types";
@@ -23,7 +23,7 @@ export default function GroupedCardsDisplay({ data }: RouteDisplayProps) {
         {sortedGroupKeys.map((groupKey) => {
           const groupItems = groups[groupKey];
           const isRoot = groupKey === "__root__";
-          const groupLabel = isRoot ? "General" : formatTitleCase(groupKey);
+          const groupLabel = isRoot ? "General" : humanizeIdentifier(groupKey);
 
           return (
             <div
@@ -98,7 +98,7 @@ export default function GroupedCardsDisplay({ data }: RouteDisplayProps) {
                 <div className="h-2 w-2 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
               )}
               <span className="text-sm font-medium group-hover:text-primary transition-colors">
-                {formatTitleCase(route)}
+                {humanizeIdentifier(route)}
               </span>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />

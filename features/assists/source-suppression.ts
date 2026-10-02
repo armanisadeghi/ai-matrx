@@ -13,7 +13,7 @@
  */
 
 import { isJsonObject, type JsonObject } from "@/types/json";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export const SOURCE_SUPPRESSED_UNTIL = "infinity";
 export const SOURCE_SUPPRESSION_METADATA_KEY = "source_suppression";
@@ -51,7 +51,7 @@ const SOURCE_LABELS: Readonly<Record<string, string>> = {
 export function formatAssistSourceLabel(sourceKey: string): string {
   const named = SOURCE_LABELS[sourceKey];
   if (named) return named;
-  return formatText(sourceKey.replaceAll(".", " ")).replace(/\bSeo\b/g, "SEO");
+  return humanizeIdentifier(sourceKey);
 }
 
 export function sourceSuppressionMetadata(

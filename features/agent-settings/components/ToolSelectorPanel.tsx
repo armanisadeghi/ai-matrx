@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { mapIcon } from "@/utils/icons/icon-mapper";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
@@ -116,7 +116,7 @@ export function ToolSelectorPanel({
                     {mapIcon(tool.icon, tool.category, 14)}
                     <div className="min-w-0">
                       <div className="font-medium truncate">
-                        {formatText(tool.name)}
+                        {humanizeIdentifier(tool.name)}
                       </div>
                       {tool.description && (
                         <div className="text-muted-foreground truncate text-[10px]">
@@ -172,7 +172,7 @@ export function ToolSelectorPanel({
                   ? mapIcon(toolMeta.icon, toolMeta.category, 12)
                   : null}
                 <span className="max-w-24 truncate">
-                  {formatText(toolName)}
+                  {humanizeIdentifier(toolName)}
                 </span>
                 {isUnknown && (
                   <Tooltip>

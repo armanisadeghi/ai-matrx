@@ -45,7 +45,6 @@ import { ServerNotes } from "@/components/official/ServerNotes";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
 import {
@@ -64,6 +63,7 @@ import { runMandateTry, type MandateTryCandidate } from "./owner-service";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 type CandidateMode = "current" | "candidate";
 
@@ -121,10 +121,7 @@ function componentForKind(kind: string): VariableCustomComponent | undefined {
 }
 
 function fieldLabel(field: ServedInput): string {
-  return displayLabelForKey(
-    field.name,
-    field.label === field.name ? undefined : field.label,
-  );
+  return displayLabel(field.label === field.name ? undefined : field.label, field.name);
 }
 
 function isStructured(field: ServedInput): boolean {

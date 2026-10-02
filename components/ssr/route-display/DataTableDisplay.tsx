@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { formatTitleCase } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { ArrowRight } from "lucide-react";
 import type { RouteDisplayProps } from "./types";
 
@@ -14,11 +14,11 @@ export default function DataTableDisplay({ data }: RouteDisplayProps) {
   const rows = routes.map((route) => {
     const parts = route.split("/");
     const segment = parts[parts.length - 1];
-    const category = parts.length > 1 ? formatTitleCase(parts[0]) : "Root";
+    const category = parts.length > 1 ? humanizeIdentifier(parts[0]) : "Root";
     const depth = parts.length;
     return {
       route,
-      label: formatTitleCase(segment),
+      label: humanizeIdentifier(segment),
       category,
       depth,
       path: `${basePath}/${route}`,

@@ -19,10 +19,6 @@
 
 import { cn } from "@/lib/utils";
 import {
-  displayLabelForKey,
-  formatVariableDisplayName,
-} from "@ai-matrx/chat/agents/utils/variable-utils";
-import {
   FieldHelp,
   PropertyRow,
   ConfigurationTable,
@@ -35,6 +31,7 @@ import {
   OFFERED_SOMETIMES_WORDS,
   type OfferedValue,
 } from "../provision-shapes";
+import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
 export interface ProvisionOfferListProps {
   /** Presentation accepts incomplete declarations without inventing runtime facts. */
@@ -87,20 +84,14 @@ export function ProvisionOfferList({
             cells={{
               name: (
                 <span className="inline-flex items-center gap-1 font-semibold">
-                  {displayLabelForKey(
-                    value.name || "",
-                    value.label?.trim() === value.name
+                  {displayLabel(value.label?.trim() === value.name
                       ? undefined
-                      : value.label,
-                  ) || "Display name missing"}
+                      : value.label, value.name || "") || "Display name missing"}
                   <FieldHelp
                     label={
-                      displayLabelForKey(
-                        value.name || "",
-                        value.label?.trim() === value.name
+                      displayLabel(value.label?.trim() === value.name
                           ? undefined
-                          : value.label,
-                      ) || "Input"
+                          : value.label, value.name || "") || "Input"
                     }
                   >
                     {value.description || "No description provided."}
@@ -108,7 +99,7 @@ export function ProvisionOfferList({
                 </span>
               ),
               format: value.kind
-                ? formatVariableDisplayName(value.kind) || "Unknown"
+                ? humanizeIdentifier(value.kind) || "Unknown"
                 : "Not specified",
               required:
                 typeof value.required === "boolean"

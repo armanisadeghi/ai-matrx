@@ -1,7 +1,6 @@
 "use client";
 
 import { CheckCircle2, X } from "lucide-react";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { BASELINE_VALUES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import {
   SurfaceVariableBinding,
@@ -20,6 +19,7 @@ import {
   type BatchRow,
   type BatchScalarFieldKey,
 } from "./batchModel";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 const BASELINE_ONLY: SurfaceValue[] = Object.values(BASELINE_VALUES).sort(
   (a, b) => (a.sortOrder ?? 1000) - (b.sortOrder ?? 1000),
@@ -136,7 +136,7 @@ export function BatchGrid({
                 >
                   <div className="flex items-center gap-1.5">
                     <span className="truncate" title={t.name}>
-                      {t.label ?? formatVariableDisplayName(t.name)}
+                      {displayLabel(t.label, t.name)}
                     </span>
                     {t.required && (
                       <span className="text-rose-500" title="Required">

@@ -16,7 +16,6 @@
 import { AlertTriangle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
 import type { ConsumptionEntry } from "@/features/mandates/provision-shapes";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import { feedSentence, isFed } from "./words";
@@ -24,6 +23,7 @@ import { hasHolderDefault } from "./consumption-writer";
 import { RAIL_MAX_HEIGHT } from "./rail-height";
 import type { HolderInputs } from "./useHolderInputs";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 export interface HolderInputsColumnProps {
   inputs: HolderInputs;
@@ -143,7 +143,7 @@ function InputGroup({
             >
               <div className="flex flex-wrap items-baseline gap-1.5">
                 <span className="text-[12px] font-medium text-foreground">
-                  {item.label ?? formatVariableDisplayName(item.name)}
+                  {displayLabel(item.label, item.name)}
                 </span>
                 {item.required ? (
                   <span className="rounded bg-amber-500/10 px-1 text-[9px] font-medium text-amber-600 dark:text-amber-400">

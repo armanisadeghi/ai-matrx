@@ -105,7 +105,6 @@ import {
   FieldHelp,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -113,6 +112,7 @@ import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { TryAsCandidateButton } from "@/features/mandates/candidate-dialog/TryAsCandidateButton";
 import { targetOfBenchResult } from "@/features/mandates/candidate-dialog/target";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a
@@ -1082,7 +1082,7 @@ export function MandateTestBench({
                     key={name}
                     type="button"
                     className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] hover:bg-accent"
-                    title={`Add ${displayLabelForKey(name)}`}
+                    title={`Add ${humanizeIdentifier(name) || name}`}
                     onClick={() =>
                       setNewVariables((current) => {
                         try {
@@ -1100,7 +1100,7 @@ export function MandateTestBench({
                       })
                     }
                   >
-                    {displayLabelForKey(name)}
+                    {humanizeIdentifier(name) || name}
                   </button>
                 ))}
               </div>
@@ -1256,7 +1256,7 @@ export function MandateTestBench({
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="font-semibold">{exemplar.label}</span>
                   <span className="text-muted-foreground">
-                    Source: {displayLabelForKey(exemplar.source)}
+                    Source: {humanizeIdentifier(exemplar.source) || exemplar.source}
                   </span>
                   <Button
                     size="icon"
@@ -1275,7 +1275,7 @@ export function MandateTestBench({
                     ...Object.entries(exemplar.variables ?? {}).map(
                       ([name, value]) => ({
                         key: `variable:${name}`,
-                        label: displayLabelForKey(name),
+                        label: (humanizeIdentifier(name) || name),
                         value:
                             value !== null &&
                             (typeof value === "object" ||

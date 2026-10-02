@@ -68,7 +68,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentDiffViewer } from "@ai-matrx/chat/agents/components/diff/AgentDiffViewer";
 import { compareAgentDefinitions } from "@ai-matrx/chat/agents/components/diff/compare-agent-definitions";
 import { getAgentModeHref } from "@ai-matrx/chat/agents/components/shared/AgentModeController";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { fetchSavedAgentDefinition } from "@ai-matrx/chat/agents/services/agent-definition-snapshot.service";
 import type { DiffTemporalMetadata } from "@ai-matrx/diff/structural";
 import {
@@ -891,11 +891,11 @@ export function AgentSyncBody({
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {comparison.behaviorMatches
                         ? comparison.localStateFields.length > 0
-                          ? `Synced behavior matches, but local record state differs: ${comparison.localStateFields.map((field) => formatText(field.key)).join(", ")}${comparison.profileFields.length > 0 ? `; profile details also differ: ${comparison.profileFields.map((field) => formatText(field.key)).join(", ")}` : ""}.`
+                          ? `Synced behavior matches, but local record state differs: ${comparison.localStateFields.map((field) => humanizeIdentifier(field.key)).join(", ")}${comparison.profileFields.length > 0 ? `; profile details also differ: ${comparison.profileFields.map((field) => humanizeIdentifier(field.key)).join(", ")}` : ""}.`
                           : comparison.profileFields.length > 0
-                            ? `Only personal profile details differ: ${comparison.profileFields.map((field) => formatText(field.key)).join(", ")}.`
+                            ? `Only personal profile details differ: ${comparison.profileFields.map((field) => humanizeIdentifier(field.key)).join(", ")}.`
                             : "The current runtime configuration matches the system baseline."
-                        : `Changed behavior: ${comparison.behaviorFields.map((field) => formatText(field.key)).join(", ")}.`}
+                        : `Changed behavior: ${comparison.behaviorFields.map((field) => humanizeIdentifier(field.key)).join(", ")}.`}
                     </p>
                   </div>
                   {comparison.changedFields.length > 0 && (

@@ -90,7 +90,6 @@ import {
   FieldHelp,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
 import { VariableVerdictList } from "./variable-verdict-presentation";
 import {
   CreateSystemTwinButton,
@@ -131,6 +130,7 @@ import {
 import { VerdictDetail } from "./impact-cells";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -982,7 +982,7 @@ function StatusBanner({
                   label="Code only"
                   value={
                     row.codeTruth?.code_only_variables
-                      .map((name) => displayLabelForKey(name))
+                      .map((name) => (humanizeIdentifier(name) || name))
                       .join(", ") || "None"
                   }
                 />
@@ -990,7 +990,7 @@ function StatusBanner({
                   label="Contract only"
                   value={
                     row.codeTruth?.db_only_variables
-                      .map((name) => displayLabelForKey(name))
+                      .map((name) => (humanizeIdentifier(name) || name))
                       .join(", ") || "None"
                   }
                 />
@@ -1282,7 +1282,7 @@ function FactsPanel({
         fact: "Code inputs",
         value: declarationFound
           ? truth.code_variables
-              .map((name) => displayLabelForKey(name))
+              .map((name) => (humanizeIdentifier(name) || name))
               .join(", ") || "None"
           : unknown,
       },
@@ -1290,7 +1290,7 @@ function FactsPanel({
         fact: "Agent variables",
         value: truth?.bound_agent
           ? truth.bound_agent.declared_variables
-              .map((name) => displayLabelForKey(name))
+              .map((name) => (humanizeIdentifier(name) || name))
               .join(", ") || "None"
           : unknown,
       },
@@ -1556,7 +1556,7 @@ function FactsPanel({
                     key={name}
                     className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
                   >
-                    {displayLabelForKey(name)}
+                    {humanizeIdentifier(name) || name}
                   </code>
                 ))}
               </div>
@@ -1572,7 +1572,7 @@ function FactsPanel({
                     key={name}
                     className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
                   >
-                    {displayLabelForKey(name)}
+                    {humanizeIdentifier(name) || name}
                   </code>
                 ))}
               </div>

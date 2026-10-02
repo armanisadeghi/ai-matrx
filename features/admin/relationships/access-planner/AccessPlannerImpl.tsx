@@ -90,6 +90,7 @@ import {
   type PlannerTable,
 } from "./types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
 type AccessMode = "root" | "nested" | "component" | "infrastructure";
 
@@ -111,12 +112,6 @@ const MODE_TITLES: Record<AccessMode, string> = {
   component: "Part of parent",
   infrastructure: "Infrastructure",
 };
-
-function titleCase(value: string) {
-  return value
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
 
 function dispositionClass(disposition: PlannerNodeData["disposition"]) {
   if (disposition === "unplanned")
@@ -326,7 +321,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
   const [label, setLabel] = useState(
     () =>
       selectedTable?.label ??
-      titleCase(selectedTable?.table_name ?? "Resource"),
+      humanizeIdentifier(selectedTable?.table_name ?? "Resource"),
   );
   const [parentChoice, setParentChoice] = useState(() => {
     const relationship = snapshot.access_relationships.find(
@@ -345,7 +340,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
       selectedTable.token ??
         `${selectedTable.schema_name}_${selectedTable.table_name}`,
     );
-    setLabel(selectedTable.label ?? titleCase(selectedTable.table_name));
+    setLabel(displayLabel(selectedTable.label, selectedTable.table_name));
     const existingParent = snapshot.access_relationships.find(
       (relationship) => relationship.child_type === selectedTable.token,
     );
@@ -409,7 +404,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
     type: "plannerTable",
     position: { x: 0, y: 0 },
     data: {
-      label: table.label ?? titleCase(table.table_name),
+      label: displayLabel(table.label, table.table_name),
       subtitle: `${table.schema_name}.${table.table_name}`,
       disposition: table.disposition,
       issues: table.issue_codes.length,
@@ -454,7 +449,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
           type: "plannerTable",
           position: { x: 0, y: 0 },
           data: {
-            label: candidate.label ?? titleCase(candidate.table),
+            label: displayLabel(candidate.label, candidate.table),
             subtitle: `${candidate.schema}.${candidate.table}`,
             disposition: "external",
             issues: 0,
@@ -600,7 +595,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
     setSelectedTableName(table.table_name);
     setMode(modeFor(table));
     setToken(table.token ?? `${table.schema_name}_${table.table_name}`);
-    setLabel(table.label ?? titleCase(table.table_name));
+    setLabel(displayLabel(table.label, table.table_name));
     const existingParent = snapshot.access_relationships.find(
       (relationship) => relationship.child_type === table.token,
     );
@@ -709,7 +704,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
       unsavedChanges.push(
         `entity token edited (saved: ${table.token}, now: ${token})`,
       );
-    const savedLabel = table.label ?? titleCase(table.table_name);
+    const savedLabel = displayLabel(table.label, table.table_name);
     if (label !== savedLabel)
       unsavedChanges.push(`label edited (saved: ${savedLabel}, now: ${label})`);
     const savedRelationship = snapshot.access_relationships.find(
@@ -1027,7 +1022,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                   >
                     <span className="min-w-0">
                       <span className="block whitespace-normal break-words text-sm font-medium leading-tight [overflow-wrap:anywhere]">
-                        {table.label ?? titleCase(table.table_name)}
+                        {displayLabel(table.label, table.table_name)}
                       </span>
                       <span className="mt-0.5 block whitespace-normal break-all font-mono text-[10px] leading-tight text-muted-foreground">
                         {table.table_name}
@@ -1119,7 +1114,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                     <div>
                       <h2 className="text-base font-semibold">
                         {selectedTable.label ??
-                          titleCase(selectedTable.table_name)}
+                          (humanizeIdentifier(selectedTable.table_name) || selectedTable.table_name)}
                       </h2>
                       <p className="font-mono text-xs text-muted-foreground">
                         {selectedTable.schema_name}.{selectedTable.table_name}

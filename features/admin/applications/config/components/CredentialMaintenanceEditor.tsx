@@ -20,7 +20,7 @@ import {
   recordCredentialRotation,
   type CredentialMaintenanceEntry,
 } from "@/features/admin/applications/config/credential-maintenance";
-import { formatText } from "@ai-matrx/kit/text-case";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -52,7 +52,7 @@ function newCredential(id: string): CredentialMaintenanceEntry {
   expiresAt.setUTCDate(expiresAt.getUTCDate() + 180);
 
   return {
-    label: formatText(id),
+    label: humanizeIdentifier(id),
     generated_at: generatedAt.toISOString(),
     expires_at: expiresAt.toISOString(),
     warning_days: 14,

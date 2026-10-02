@@ -58,10 +58,6 @@ import {
   kindPhrase,
 } from "@/features/mandates/provision-shapes";
 import type { ServedInput } from "@/features/workflow-runtime/served-form/served-input";
-import {
-  displayLabelForKey,
-  formatVariableDisplayName,
-} from "@ai-matrx/chat/agents/utils/variable-utils";
 import { RunFailureCard } from "@ai-matrx/chat/mandates/RunFailureCard";
 import { ServerNotes } from "@/components/official/ServerNotes";
 import {
@@ -83,6 +79,7 @@ import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 
 interface CompletedRun {
   result: MandateTestResponse;
@@ -247,7 +244,7 @@ export function TryItNowPanel({
       if (isBlank(value)) {
         if (field.sourcing !== "optional")
           throw new Error(
-            `${displayLabelForKey(field.name, field.label === field.name ? undefined : field.label)} is required.`,
+            `${displayLabel(field.label === field.name ? undefined : field.label, field.name)} is required.`,
           );
         continue;
       }
@@ -261,7 +258,7 @@ export function TryItNowPanel({
             : (JSON.parse(JSON.stringify(value)) as JsonValue);
       } catch {
         throw new Error(
-          `${displayLabelForKey(field.name, field.label === field.name ? undefined : field.label)} requires a valid ${structured ? "JSON value" : "value"}.`,
+          `${displayLabel(field.label === field.name ? undefined : field.label, field.name)} requires a valid ${structured ? "JSON value" : "value"}.`,
         );
       }
     }
@@ -323,7 +320,7 @@ export function TryItNowPanel({
       setSampleError(null);
       if (skipped.length)
         toast.info(
-          `Filled ${Object.keys(next).length} inputs. Not used: ${skipped.map((name) => displayLabelForKey(name)).join(", ")}. Review before running.`,
+          `Filled ${Object.keys(next).length} inputs. Not used: ${skipped.map((name) => (humanizeIdentifier(name) || name)).join(", ")}. Review before running.`,
         );
       else toast.success("Sample filled. Review inputs before running.");
     } catch (error) {
@@ -601,10 +598,7 @@ export function TryItNowPanel({
           const structured =
             !SCALAR_VALUE_KINDS.has(field.kind) &&
             !MEDIA_VALUE_KINDS.has(field.kind);
-          const label = displayLabelForKey(
-            field.name,
-            field.label === field.name ? undefined : field.label,
-          );
+          const label = displayLabel(field.label === field.name ? undefined : field.label, field.name);
           return (
             <div
               key={field.name}
@@ -623,7 +617,7 @@ export function TryItNowPanel({
                 <ConfigurationTableRow
                   columns={inputColumns}
                   cells={{
-                    format: formatVariableDisplayName(field.kind),
+                    format: (humanizeIdentifier(field.kind) || field.kind),
                     required: field.sourcing !== "optional" ? "Yes" : "No",
                     delivery: field.pinned ? "Automatic" : "Manual",
                     source: ORIGIN_LABEL[field.origin],
@@ -828,7 +822,7 @@ export function TryItNowPanel({
                     key={key}
                     columns={APPLIED_OVERRIDE_COLUMNS}
                     cells={{
-                      setting: formatVariableDisplayName(key),
+                      setting: (humanizeIdentifier(key) || key),
                       value:
                         key === "model" && typeof value === "string" ? (
                           <EntityRef token="ai_model" id={value} />
@@ -864,7 +858,7 @@ export function TryItNowPanel({
             label="Resolution source"
             value={
               result.provenance
-                ? displayLabelForKey(result.provenance)
+                ? (humanizeIdentifier(result.provenance) || result.provenance)
                 : "Unknown"
             }
           />
