@@ -7,7 +7,6 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
-import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
 import type { VariableDefinition as PromptVariable } from "../../agents/types/agent-definition.types";
 import { enterSendsHere } from "@host/components/official/composer/composerSubmit";
@@ -461,7 +460,7 @@ function GuidedVariableContent({
       <GuidedTextarea
         value={value}
         onChange={onChange}
-        variableName={variable.name}
+        variableName={variableRunLabel(variable)}
       />
     );
   }
@@ -474,7 +473,7 @@ function GuidedVariableContent({
           <GuidedTextarea
             value={value}
             onChange={onChange}
-            variableName={variable.name}
+            variableName={variableRunLabel(variable)}
           />
         );
       }
@@ -493,7 +492,7 @@ function GuidedVariableContent({
           <GuidedTextarea
             value={value}
             onChange={onChange}
-            variableName={variable.name}
+            variableName={variableRunLabel(variable)}
           />
         );
       }
@@ -529,7 +528,7 @@ function GuidedVariableContent({
         <GuidedTextarea
           value={value}
           onChange={onChange}
-          variableName={variable.name}
+          variableName={variableRunLabel(variable)}
         />
       );
   }
@@ -582,7 +581,7 @@ function GuidedVariableInputsBody({
 
   const variable = variableDefaults[activeIndex];
   const value = String(values[variable.name] ?? variable.defaultValue ?? "");
-  const formattedName = variableRunLabel(variable, formatText);
+  const formattedName = variableRunLabel(variable);
   const helpText = variable.helpText;
 
   const answeredCount = variableDefaults.filter((v) => {
@@ -682,7 +681,7 @@ function GuidedVariableInputsBody({
                   ? "w-2 h-2 bg-primary/40"
                   : "w-2 h-2 bg-muted-foreground/20"
             }`}
-            title={formatText(v.name)}
+            title={variableRunLabel(v)}
           />
         );
       })}

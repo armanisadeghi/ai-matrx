@@ -34,6 +34,7 @@ import { applyMasterFieldsToColumns } from "../redux/thunks";
 import { selectBattleColumns, selectMasterFields } from "../redux/selectors";
 import { MASTER_INPUT_TARGET } from "../types";
 import type { BattleColumn, MasterField } from "../types";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 interface Props {
   id: string;
@@ -322,7 +323,7 @@ function ColumnMappingPicker({
         <option value={MASTER_INPUT_TARGET}>User message</option>
         {definitions.map((v) => (
           <option key={v.name} value={v.name}>
-            {v.name}
+            {variableRunLabel(v)}
           </option>
         ))}
         <option value="">— skip</option>

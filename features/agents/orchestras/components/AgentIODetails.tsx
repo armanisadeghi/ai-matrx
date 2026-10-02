@@ -20,6 +20,7 @@ import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thu
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { accentClasses } from "./accents";
 import type { OrchestraAccent } from "../constants";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 /** Render one JSON-schema property's type as a short label. */
 function propType(def: unknown): string {
@@ -95,9 +96,9 @@ export function AgentIODetails({
                 className="rounded-md border border-border bg-muted/30 px-2 py-1.5"
               >
                 <div className="flex items-center gap-1.5">
-                  <code className="text-[11px] font-semibold text-foreground">
-                    {v.name}
-                  </code>
+                  <span className="text-[11px] font-semibold text-foreground">
+                    {variableRunLabel(v)}
+                  </span>
                   {v.required && (
                     <span
                       className={cn(

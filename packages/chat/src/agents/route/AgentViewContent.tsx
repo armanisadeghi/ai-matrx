@@ -79,6 +79,7 @@ import { buildSystemAgentAiPayload } from "./buildSystemAgentAiPayload";
 import { useAgentAddressViewer } from "../addressing/useAgentHref";
 import { asClause } from "@ai-matrx/kit/text";
 import { selectIsSuperAdmin } from "../../host/identity";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";
@@ -807,6 +808,9 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                           {`{{${v.name}}}`}
                         </code>
                         <div className="flex-1 min-w-0 text-sm space-y-0.5">
+                          <div className="font-medium text-foreground">
+                            {variableRunLabel(v)}
+                          </div>
                           {v.helpText && (
                             <div className="text-foreground/90">
                               {v.helpText}

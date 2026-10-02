@@ -36,7 +36,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { setAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
-import { displayLabelForKey } from "@ai-matrx/chat/agents/utils/variable-utils";
+import { displayLabel } from "@ai-matrx/kit/text-case";
+import { variableRunLabel } from "@ai-matrx/agents";
 import { AgentVariableEditor } from "./AgentVariableEditor";
 import { variableEditorInstanceId } from "./variableEditorAddress";
 
@@ -94,7 +95,7 @@ export default function AgentVariableEditorWindow({
 
   const current = variables.find((v) => v.name === variableName);
   const exists = !!current;
-  const shown = displayLabelForKey(variableName, current?.label);
+  const shown = current ? variableRunLabel(current) : displayLabel(null, variableName);
   const existingNames = variables
     .filter((v) => v.name !== variableName)
     .map((v) => v.name);

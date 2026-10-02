@@ -15,6 +15,7 @@
 import { Label } from "@ai-matrx/design-system";
 import type { VariableDefinition } from "../../types/agent-definition.types";
 import { ProTextarea } from "@host/components/official/ProTextarea";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 interface WidgetVariableInputsProps {
   definitions: VariableDefinition[];
@@ -64,7 +65,7 @@ export function WidgetVariableInputs({
                 htmlFor={id}
                 className="text-xs font-medium text-foreground cursor-pointer"
               >
-                {def.name}
+                {variableRunLabel(def)}
                 {def.required && (
                   <span className="text-destructive ml-0.5">*</span>
                 )}

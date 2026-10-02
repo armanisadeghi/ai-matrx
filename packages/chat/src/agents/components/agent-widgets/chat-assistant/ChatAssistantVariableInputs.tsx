@@ -19,6 +19,7 @@ import type { VariableDefinition } from "../../../types/agent-definition.types";
 import { ChevronDown, ChevronRight, Minus, Plus, Play } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import type { ChatDispatch } from "../../../../store/root-state";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 interface ChatAssistantVariableInputsProps {
   conversationId: string;
@@ -109,9 +110,9 @@ function MicroVariableRow({
     <div className="flex items-center gap-2 min-w-0">
       <label
         className="text-[10px] font-medium text-muted-foreground shrink-0 w-16 truncate"
-        title={variable.name}
+        title={variableRunLabel(variable)}
       >
-        {variable.name}
+        {variableRunLabel(variable)}
         {variable.required && <span className="text-destructive">*</span>}
       </label>
       <div className="flex-1 min-w-0">

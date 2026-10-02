@@ -69,6 +69,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { formatNumber } from "@/features/agent-apps/format";
 import { formatPercentFromFraction, isKnownNumber } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 interface AgentAppOverviewContentProps {
   appId: string;
@@ -542,6 +543,9 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                         {`{{${v.name}}}`}
                       </code>
                       <div className="flex-1 min-w-0 text-sm space-y-0.5">
+                        <div className="font-medium text-foreground">
+                          {variableRunLabel(v)}
+                        </div>
                         {v.helpText && (
                           <div className="text-foreground/90 break-words">
                             {v.helpText}

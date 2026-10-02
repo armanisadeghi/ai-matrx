@@ -67,6 +67,8 @@ import {
   PEEK_CONTENT_PROPS,
   useTransientPeek,
 } from "@/features/organizations/peek/useTransientPeek";
+import { variableRunLabel } from "@ai-matrx/agents";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const OVERVIEW_MESSAGE_PREVIEW_CHARS = 200;
 
@@ -610,11 +612,14 @@ export function AgentSneakPeekContent({
                   className="rounded-md border border-border bg-muted/30 p-2.5"
                 >
                   <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-medium text-foreground">
+                      {variableRunLabel(v)}
+                    </span>
                     <code className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
                       {`{{${v.name}}}`}
                     </code>
                     <span className="rounded bg-background px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {inputType}
+                      {humanizeIdentifier(inputType)}
                     </span>
                     {v.required && (
                       <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">

@@ -8,7 +8,6 @@ import { Checkbox } from "@host/components/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { Minus, Plus } from "lucide-react";
-import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
 import { cn } from "@ai-matrx/design-system";
 import type { VariableDefinition } from "../../../types/agent-definition.types";
@@ -496,7 +495,7 @@ function GuidedVariableContent({
       <GuidedTextarea
         value={variableValueToInputText(value)}
         onChange={(v) => onChange(v)}
-        variableName={variable.name}
+        variableName={variableRunLabel(variable)}
       />
     );
   }
@@ -534,7 +533,7 @@ function GuidedVariableContent({
           <GuidedTextarea
             value={strValue}
             onChange={strOnChange}
-            variableName={variable.name}
+            variableName={variableRunLabel(variable)}
           />
         );
       }
@@ -553,7 +552,7 @@ function GuidedVariableContent({
           <GuidedTextarea
             value={strValue}
             onChange={strOnChange}
-            variableName={variable.name}
+            variableName={variableRunLabel(variable)}
           />
         );
       }
@@ -591,7 +590,7 @@ function GuidedVariableContent({
         <GuidedTextarea
           value={strValue}
           onChange={strOnChange}
-          variableName={variable.name}
+          variableName={variableRunLabel(variable)}
         />
       );
   }
@@ -719,7 +718,7 @@ export function AgentVariablesGuided({
   }
 
   const value: unknown = values[variable.name] ?? variable.defaultValue ?? "";
-  const formattedName = variableRunLabel(variable, formatText);
+  const formattedName = variableRunLabel(variable);
   const helpText = variable.helpText;
 
   const answeredCount = variableDefaults.filter((v) => {
@@ -764,7 +763,7 @@ export function AgentVariablesGuided({
                   ? "w-2 h-2 bg-primary/40"
                   : "w-2 h-2 bg-muted-foreground/20"
             }`}
-            title={formatText(v.name)}
+            title={variableRunLabel(v)}
           />
         );
       })}

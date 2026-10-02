@@ -26,6 +26,7 @@ import {
   removeVariable,
 } from "@/lib/redux/slices/agent-settings/agentSettingsSlice";
 import type { AgentVariable } from "@/lib/redux/slices/agent-settings/types";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 interface VariableFormState {
   name: string;
@@ -174,7 +175,10 @@ export function VariableDefaultsEditor({
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
-                    <code className="text-xs font-mono text-foreground">
+                    <span className="truncate text-xs font-medium text-foreground">
+                      {variableRunLabel(variable)}
+                    </span>
+                    <code className="text-[10px] font-mono text-muted-foreground">
                       {`{{${variable.name}}}`}
                     </code>
                     {isUnused && (

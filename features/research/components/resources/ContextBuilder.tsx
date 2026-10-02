@@ -77,6 +77,7 @@ import { BundleBar } from "./BundleBar";
 import { VariablePreview } from "./VariablePreview";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 /** What the agent is asked to do when the user does not say otherwise. */
 /** The research surface, for agent-surface binding value mappings. */
@@ -778,7 +779,7 @@ function AgentRunnerBody({
                     filled ? "bg-emerald-500/70" : "bg-muted-foreground/40",
                   )}
                 />
-                <code className="text-foreground/85">{v.name}</code>
+                <span className="text-foreground/85">{variableRunLabel(v)}</span>
                 <span className="text-muted-foreground">
                   {filled ? "filled by this selection" : "not filled"}
                 </span>

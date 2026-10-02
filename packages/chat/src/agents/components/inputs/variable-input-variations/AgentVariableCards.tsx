@@ -22,6 +22,7 @@ import { DocumentVariableInput } from "../input-components/DocumentVariableInput
 import { YoutubeVariableInput } from "../input-components/YoutubeVariableInput";
 import { Button } from "@ai-matrx/design-system";
 import { ArrowRight, Minus, Plus } from "lucide-react";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 interface AgentVariableInputCardProps {
   conversationId: string;
@@ -50,7 +51,7 @@ function AgentVariableInputCard({
     <div className="w-full bg-card border border-border rounded-xl shadow-sm animate-in slide-in-from-bottom-2 duration-200 overflow-hidden">
       <div className="px-3 py-2">
         <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">
-          {variable.name}
+          {variableRunLabel(variable)}
           {variable.required && (
             <span className="text-destructive ml-0.5">*</span>
           )}
