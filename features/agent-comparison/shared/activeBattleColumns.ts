@@ -198,3 +198,25 @@ export const selectMountedBattleSetId = createSelector(
     }
   },
 );
+
+/**
+ * Every conversation the battle page runs ITSELF: each column of the mode on
+ * screen, and every locked-axis mode's shared composer (its request is copied
+ * into each column on Submit All). These are the page's OWN conversations
+ * (common-docs context-delivery RULES.md §0): they never receive the battle as
+ * context, nor their route or their own id. A chat opened in a window over the
+ * battle is not one of them and keeps the page.
+ */
+export function isBattleOwnConversation(state: RootState, conversationId: string): boolean {
+  if (selectActiveBattleColumns(state).some((col) => col.conversationId === conversationId)) {
+    return true;
+  }
+  return [
+    state.agentComparisonSettings.inputConversationId,
+    state.agentComparisonModel.inputConversationId,
+    state.agentComparisonTuning.inputConversationId,
+    state.agentComparisonSystemPrompt.inputConversationId,
+    state.agentComparisonTools.inputConversationId,
+    state.agentComparisonVariations.inputConversationId,
+  ].includes(conversationId);
+}

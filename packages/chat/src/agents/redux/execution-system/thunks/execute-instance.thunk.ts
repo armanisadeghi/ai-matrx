@@ -314,6 +314,7 @@ export function assembleRequest(
     rows: contextRows,
     context,
     context_withheld,
+    page_context,
   } = buildRequestContext(state, conversationId, {
     mandateKillSwitch: opts?.mandateKillSwitch,
   });
@@ -396,6 +397,7 @@ export function assembleRequest(
   if (config_overrides) request.config_overrides = config_overrides;
   if (context) request.context = context;
   request.context_withheld = context_withheld;
+  if (page_context) request.page_context = page_context;
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
   if (scope_ids.length > 0) request.scope_ids = scope_ids;

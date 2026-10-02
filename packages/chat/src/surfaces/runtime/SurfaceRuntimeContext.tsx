@@ -611,13 +611,26 @@ export function isPageOwnConversation(
   conversationId: string | null | undefined,
 ): boolean {
   if (!conversationId) return false;
+  const owner = pageOwningConversation(conversationId);
+  if (owner) rememberOwnConversation(conversationId, owner);
+  return Boolean(owner);
+}
+
+/**
+ * The surface whose page OWNS `conversationId` (declared it via
+ * `ownConversationId` / `isOwnConversation`), or null — the page whose
+ * `ownConversationWithholds` decides what that conversation never receives.
+ */
+export function pageOwningConversation(
+  conversationId: string | null | undefined,
+): string | null {
+  if (!conversationId) return null;
   const owner = getSurfaceRuntimeStack().find(
     (runtime) =>
       (runtime.getOwnConversationId?.() ?? runtime.ownConversationId) ===
         conversationId || runtime.isOwnConversation?.(conversationId) === true,
   );
-  if (owner) rememberOwnConversation(conversationId, owner.surfaceName);
-  return Boolean(owner);
+  return owner?.surfaceName ?? null;
 }
 
 // ---------------------------------------------------------------------------

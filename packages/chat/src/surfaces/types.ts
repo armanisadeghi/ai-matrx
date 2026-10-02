@@ -554,6 +554,17 @@ export interface SurfaceManifest extends SurfaceDeclaration {
    */
   agentRosterMode?: "bound" | "universal";
   /**
+   * What this page's OWN conversation (the main chat, a builder's test run, a
+   * battle column…) never receives about itself — context keys withheld at the
+   * page layer, on top of the page's own values and the screens around it
+   * (common-docs context-delivery RULES.md §0). Default: the shared baseline
+   * `OWN_CONVERSATION_WITHHELD` (`_baseline.manifest.ts`), so every new
+   * conversation-host page inherits it. Person values (user, client,
+   * organization…) are never withheld, whatever is listed. A chat in a window
+   * or panel over the page is not its own conversation and keeps the page.
+   */
+  ownConversationWithholds?: readonly string[];
+  /**
    * Every turn requires a mounted live provider to prepare request-specific
    * evidence. Missing providers and send-while-running inbox delivery fail
    * closed because neither can attach a fresh context snapshot.

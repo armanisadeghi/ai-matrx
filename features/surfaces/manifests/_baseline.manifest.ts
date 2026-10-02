@@ -177,6 +177,32 @@ export const PLATFORM_RESERVED_NAMES = {
   writeTargets: ["window_form_fields", "surface_feedback", "custom_fields_add", "custom_fields_set"] as ReadonlyArray<string>,
 };
 
+/**
+ * THE PAGE'S OWN CONVERSATION never receives itself (Arman, 2026-10-01: the
+ * agent in a battle "cannot and should not know its own conversation id, route
+ * and things that identify itself. User, Client and Organization are ok").
+ * Withheld at the page layer, beside the page's own values and the screens
+ * around it. The default of every manifest's `ownConversationWithholds` knob;
+ * the same list as the parity corpus's `page_context_defaults.own`
+ * (`@ai-matrx/agents` `OWN_CONVERSATION_WITHHELD`, aidream `page_context.py`).
+ */
+export const PAGE_OFF_WITHHELD: readonly string[] = [
+  "route_brief",
+  "surface_chain",
+  "window_forms",
+  "surface_closed",
+];
+export const OWN_CONVERSATION_WITHHELD: readonly string[] = [...PAGE_OFF_WITHHELD, "conversation"];
+/** About the PERSON, never the page — never withheld, whatever a page lists. */
+export const PERSON_CONTEXT_VALUES: ReadonlySet<string> = new Set([
+  "user",
+  "client",
+  "organization",
+  "project",
+  "task",
+  "active_scopes",
+]);
+
 export type BaselineKey = keyof typeof BASELINE_VALUES;
 
 /** Pick a subset of baseline values by key. */

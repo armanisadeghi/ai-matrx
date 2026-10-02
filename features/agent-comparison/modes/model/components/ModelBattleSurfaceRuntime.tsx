@@ -24,6 +24,7 @@ import {
   MODEL_SURFACE_NAME,
   useModelBattleSurfaceScope,
 } from "../model-surface-scope";
+import { isBattleOwnConversation } from "@/features/agent-comparison/shared/activeBattleColumns";
 
 export function createModelBattleWriteHandlers({
   getState,
@@ -120,6 +121,11 @@ export function ModelBattleSurfaceRuntime({
       surfaceName={MODEL_SURFACE_NAME}
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
+      // Every model column and the shared request ARE this page (RULES.md §0):
+      // none receives the battle, its route or its own id. A window chat over
+      // the battle still does. Before 2026-10-01 nothing was declared, so the
+      // columns were told the page's route and introduction.
+      isOwnConversation={(id) => isBattleOwnConversation(store.getState(), id)}
     >
       <NonEditableContextMenu
         sourceFeature="agent-comparison"

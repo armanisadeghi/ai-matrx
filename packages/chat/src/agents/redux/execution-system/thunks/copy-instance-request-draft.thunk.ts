@@ -38,7 +38,9 @@ import {
 } from "../instance-context/instance-context.slice";
 import { setClientTools } from "../instance-client-tools/instance-client-tools.slice";
 import {
+  clearPageContextOff,
   setBuilderAdvancedSettings,
+  setPageContextOff,
   setServerOverrideAuthToken,
   setServerOverrideAuthTokenError,
   setServerOverrideUrl,
@@ -322,6 +324,30 @@ export function copyInstanceRequestDraft({
         tools: [...sourceClientTools],
       }),
     );
+
+    // THE PAGE SWITCH travels with the request (common-docs context-delivery
+    // RULES.md §0). The person switched the page off on the SOURCE composer's
+    // chip; every copy (each battle column on Submit All, a chat handoff) is
+    // sent the way that chip said — never with the page re-read under it.
+    const sourceOff =
+      state.instanceUIState.pageContextOffByConversationId?.[sourceConversationId];
+    const targetOff =
+      state.instanceUIState.pageContextOffByConversationId?.[targetConversationId];
+    if (sourceOff && !targetOff) {
+      const targetSurface =
+        state.conversations.byConversationId[targetConversationId]?.surfaceName ?? null;
+      dispatch(
+        setPageContextOff({
+          conversationId: targetConversationId,
+          previousSurfaceName: targetSurface ?? sourceOff.previousSurfaceName,
+        }),
+      );
+      if (targetSurface) {
+        dispatch(patchConversation({ conversationId: targetConversationId, surfaceName: null }));
+      }
+    } else if (!sourceOff && targetOff) {
+      dispatch(clearPageContextOff({ conversationId: targetConversationId }));
+    }
 
     if (sourceUi) {
       dispatch(

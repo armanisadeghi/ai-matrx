@@ -19,7 +19,11 @@
 //      for the table and every send path — resume included);
 //   6. a request builder that sends the door's `context` WITHOUT its `context_withheld` (the
 //      keys the person's rules withheld, from the same rows) — the server would then list every
-//      saved off-rule instead of the ones withheld on this page.
+//      saved off-rule instead of the ones withheld on this page;
+//   8. a request builder that does not send the door's `page_context` (RULES.md §0: the page's
+//      own conversation and a switched-off page) — the chip would say "off" while the server,
+//      never told, delivered the route, the page's introduction and the screens around it
+//      (Model Battle, 2026-10-01); and a door that stops deciding the page rule for its rows.
 //
 // `--self-test` plants each violation in memory and proves it is caught, then proves a clean file
 // passes and that a stale allow-list entry fails.
@@ -43,12 +47,12 @@ const ALLOWED = {
     "assembleManualRequest sets request.context from the door",
   "packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts":
     "resume spreads the door's context into its body",
+  "packages/chat/src/agents/redux/execution-system/utils/continuation-body.ts":
+    "lists the door-built request fields a continuation copies (context_withheld included)",
 };
 
 /** The request builders: each sends the door's `context` AND its `context_withheld`. */
 const REQUEST_BUILDERS = [
-  "packages/chat/src/agents/redux/execution-system/utils/continuation-body.ts":
-    "lists the door-built request fields a continuation copies (context_withheld included)",
   "packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
   "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
   "packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts",
@@ -61,9 +65,25 @@ export function builderFindings(relPath, text) {
   }
   const destructures = /\bcontext_withheld\b[\s\S]{0,200}?\}\s*=\s*build(Resume)?RequestContext\s*\(/.test(text);
   const sends = /(\.\s*context_withheld\s*=|^\s*context_withheld\s*[,:])/m.test(text);
-  return destructures && sends
+  const out = destructures && sends
     ? []
     : [{ file: relPath, line: 1, rule: "withheld-missing", text: "sends the door's context without its context_withheld" }];
+  // Rule 8: the page rule rides every builder's body, from the same door call.
+  const pageFromDoor = /\bpage_context\b[\s\S]{0,200}?\}\s*=\s*build(Resume)?RequestContext\s*\(/.test(text);
+  const pageSent = /(\.\s*page_context\s*=|\.\.\.\(\s*page_context\s*&&\s*\{\s*page_context\s*\}\s*\))/.test(text);
+  if (!(pageFromDoor && pageSent)) {
+    out.push({ file: relPath, line: 1, rule: "page-rule-missing", text: "sends the door's context without its page_context (the page switch / own conversation)" });
+  }
+  return out;
+}
+
+/** Rule 8, the door's half: its rows and its request both decide the page rule. */
+export function doorFindings(relPath, text) {
+  const collects = /pageContextFor\(state, conversationId\);[\s\S]{0,400}?pageWithholds\(/.test(text);
+  const returns = /page_context:\s*pageContextFor\(state, conversationId\)/.test(text);
+  return collects && returns
+    ? []
+    : [{ file: relPath, line: 1, rule: "door-page-rule", text: "the door no longer applies the page rule to its rows and its request" }];
 }
 
 const RULES = [
@@ -127,6 +147,7 @@ function run() {
     ...REQUEST_BUILDERS.filter((p) => existsSync(join(ROOT, p))).flatMap((p) =>
       builderFindings(p, readFileSync(join(ROOT, p), "utf8")),
     ),
+    ...(existsSync(join(ROOT, DOOR)) ? doorFindings(DOOR, readFileSync(join(ROOT, DOOR), "utf8")) : []),
   ];
   const stale = staleAllowList();
   for (const f of all) console.error(`✗ ${f.file}:${f.line} [${f.rule}] ${f.text}`);
@@ -182,9 +203,29 @@ function selfTest() {
     console.error("✗ self-test: a builder that drops context_withheld was NOT caught");
     ok = false;
   }
-  const kept = "const {\n  rows,\n  context,\n  context_withheld,\n} = buildRequestContext(state, id);\nrequest.context_withheld = context_withheld;";
+  const kept = "const {\n  rows,\n  context,\n  context_withheld,\n  page_context,\n} = buildRequestContext(state, id);\nrequest.context_withheld = context_withheld;\nif (page_context) request.page_context = page_context;";
   if (builderFindings("features/x/builder.ts", kept).length) {
-    console.error("✗ self-test: a builder that sends context_withheld was flagged");
+    console.error("✗ self-test: a builder that sends context_withheld and page_context was flagged");
+    ok = false;
+  }
+  // Rule 8: a builder that drops the page rule (the Model Battle switch, 2026-10-01).
+  const noPage = "const {\n  rows,\n  context,\n  context_withheld,\n} = buildRequestContext(state, id);\nrequest.context_withheld = context_withheld;";
+  if (!builderFindings("features/x/builder.ts", noPage).some((f) => f.rule === "page-rule-missing")) {
+    console.error("✗ self-test: a builder that drops page_context was NOT caught");
+    ok = false;
+  }
+  const resumeKept = "const {\n  context,\n  context_withheld,\n  page_context,\n} = buildResumeRequestContext(s, id, k);\nconst body = {\n  ...(context && { context }),\n  context_withheld,\n  ...(page_context && { page_context }),\n};";
+  if (builderFindings("features/x/resume.ts", resumeKept).length) {
+    console.error("✗ self-test: a resume body that spreads page_context was flagged", builderFindings("features/x/resume.ts", resumeKept));
+    ok = false;
+  }
+  const doorOk = "  const page = pageContextFor(state, conversationId);\n  return x.map((s) => pageWithholds(page, s.key, s.surfaceKey));\n  page_context: pageContextFor(state, conversationId),";
+  if (doorFindings(DOOR, doorOk).length) {
+    console.error("✗ self-test: a door that applies the page rule was flagged");
+    ok = false;
+  }
+  if (!doorFindings(DOOR, "  page_context: null,").some((f) => f.rule === "door-page-rule")) {
+    console.error("✗ self-test: a door that ignores the page rule was NOT caught");
     ok = false;
   }
   // Rule 7 holds inside an allowed request builder too (the resume path forced it until 2026-10-01).
