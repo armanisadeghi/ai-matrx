@@ -35,7 +35,8 @@ import themeReducer from "@/styles/themes/themeSlice";
 import overlaySlice from "./slices/overlaySlice";
 import overlayDataReducer from "./slices/overlayDataSlice";
 import voicePadReducer from "./slices/voicePadSlice";
-import voiceAgentReducer from "@ai-matrx/chat/voice-agent/state/voiceAgentSlice";
+// The chat package owns its slices and mounts them under the same keys (P2).
+import { chatReducers } from "@ai-matrx/chat/store/slices";
 import windowManagerReducer from "./slices/windowManagerSlice";
 import canvasReducer from "@/features/canvas/redux/canvasSlice";
 import textDiffReducer from "./slices/textDiffSlice";
@@ -77,7 +78,6 @@ import adminPreferencesReducer from "./preferences/adminPreferencesSlice";
 import apiConfigReducer from "./slices/apiConfigSlice";
 import urlSyncReducer from "./slices/urlSyncSlice";
 
-import agentDefinitionReducer from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { agentAssignmentsReducer } from "@/features/agents/redux/agent-assignments/agent-assignments.slice";
 import agentComparisonReducer from "@/features/agent-comparison/redux/battleSlice";
 import agentComparisonSettingsReducer from "@/features/agent-comparison/modes/settings/redux/slice";
@@ -88,27 +88,20 @@ import agentComparisonModelReducer from "@/features/agent-comparison/modes/model
 import agentComparisonTuningReducer from "@/features/agent-comparison/modes/tuning/redux/slice";
 import agentComparisonVariationsReducer from "@/features/agent-comparison/modes/variations/redux/slice";
 import agentComparisonConversationReducer from "@/features/agent-comparison/modes/conversation/redux/slice";
-import { conversationListReducer } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.slice";
-import { conversationHistoryReducer } from "@ai-matrx/chat/agents/redux/conversation-history/slice";
-import agentShortcutReducer from "@ai-matrx/chat/agents/redux/agent-shortcuts/slice";
-import agentShortcutCategoryReducer from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/slice";
 import agentUsagesReducer from "@/features/agents/redux/usages/usages.slice";
 import orchestrasReducer from "@/features/agents/redux/orchestras/slice";
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import { skillsReducer } from "@/features/skills/redux/skillsSlice";
 import { dictionaryReducer } from "@/features/dictionary/redux/dictionarySlice";
-import { surfaceUserStateReducer } from "@ai-matrx/chat/surfaces/redux/userStateSlice";
 import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui/slice";
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
-import toolsReducer from "@ai-matrx/chat/agents/redux/tools/tools.slice";
 import modelRegistryReducer from "../../features/ai-models/redux/modelRegistrySlice";
 import agentSettingsReducer from "./slices/agent-settings/agentSettingsSlice";
 
 import artifactsReducer from "./slices/artifactsSlice";
 import htmlPagesReducer from "./slices/htmlPagesSlice";
 
-import mcpReducer from "@ai-matrx/chat/agents/redux/mcp/mcp.slice";
 import conversationAttachmentsReducer from "@/features/connectors/redux/attachments.slice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import wizardDraftReducer from "@/lib/redux/slices/wizardDraftSlice";
@@ -131,38 +124,9 @@ import taskUiReducer from "@/features/tasks/redux/taskUiSlice";
 import quickTasksWindowReducer from "@/features/tasks/redux/quickTasksWindowSlice";
 import taskAssociationsReducer from "@/features/tasks/redux/taskAssociationsSlice";
 
-import { default as instanceUIStateReducer } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { default as instanceClientToolsReducer } from "@ai-matrx/chat/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
-import { default as instanceContextReducer } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
-import { default as instanceWorkingDocumentReducer } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import { default as pendingAsksReducer } from "@ai-matrx/chat/agents/ui-first-tools/redux/pending-asks.slice";
-import { default as conversationInboxReducer } from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.slice";
 import { default as proposedDirectivesReducer } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
-import { default as agentListsReducer } from "@ai-matrx/chat/agents/ui-first-tools/redux/agent-lists.slice";
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
-import { activeToolsReducer } from "@ai-matrx/chat/agents/redux/execution-system/active-tools/active-tools.slice";
-import { default as instanceModelOverridesReducer } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { default as instanceInputCapabilitiesReducer } from "@ai-matrx/chat/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.slice";
-import { default as instanceVariableValuesReducer } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { default as instanceResourcesReducer } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { default as instanceUserInputReducer } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { default as conversationsReducer } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
-import chatIncognitoReducer from "@ai-matrx/chat/agents/redux/chat/chat-incognito.slice";
-import chatRouteReducer from "@ai-matrx/chat/agents/redux/chat/chat-route.slice";
-import { default as activeRequestsReducer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
-import { default as runSetsReducer } from "@ai-matrx/chat/agents/redux/execution-system/run-sets/run-sets.slice";
 import { default as workflowRunsReducer } from "@/features/workflow-runtime/redux/workflow-runs.slice";
-import { default as observabilityReducer } from "@ai-matrx/chat/agents/redux/execution-system/observability/observability.slice";
-import { default as contextStateReducer } from "@ai-matrx/chat/agents/redux/execution-system/context-state/context-state.slice";
-import { default as observationalMemoryReducer } from "@ai-matrx/chat/agents/redux/execution-system/observational-memory/observational-memory.slice";
-import { cacheBypassReducer } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/cache-bypass.slice";
-import { default as messagesReducer } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
-import { default as conversationFocusReducer } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import { surfacesReducer } from "@ai-matrx/chat/agents/redux/surfaces/surfaces.slice";
-import { surfacesCatalogReducer } from "@ai-matrx/chat/surfaces/redux/surfacesCatalogSlice";
-import { agentSurfaceBindingsReducer } from "@ai-matrx/chat/surfaces/redux/agentSurfaceBindingsSlice";
-import { surfaceConfigReducer } from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
-import agentAssistantMarkdownDraftReducer from "@ai-matrx/chat/agents/redux/agent-assistant-markdown-draft.slice";
 import { default as netRequestsReducer } from "@/lib/redux/net/netRequestsSlice";
 import { default as netHealthReducer } from "@/lib/redux/net/netHealthSlice";
 import markdownSamplesReducer from "@/lib/redux/slices/markdownSamples/slice";
@@ -199,7 +163,6 @@ export const slimReducerMap = {
   overlays: overlaySlice,
   overlayData: overlayDataReducer,
   voicePad: voicePadReducer,
-  voiceAgent: voiceAgentReducer,
   windowManager: windowManagerReducer,
   urlSync: urlSyncReducer,
 
@@ -270,12 +233,9 @@ export const slimReducerMap = {
   apiConfig: apiConfigReducer,
 
   // NEW AGENTS SYSTEM =======================================================
-  agentDefinition: agentDefinitionReducer,
+  // Every slice @ai-matrx/chat owns, under today's top-level keys (P2).
+  ...chatReducers,
   agentAssignments: agentAssignmentsReducer,
-  conversationList: conversationListReducer,
-  conversationHistory: conversationHistoryReducer,
-  agentShortcut: agentShortcutReducer,
-  agentShortcutCategory: agentShortcutCategoryReducer,
   agentUsages: agentUsagesReducer,
   // Orchestras — Orchestra list + per-Orchestra member/config cache.
   // Membership truth lives in platform.associations; see features/agents/orchestras.
@@ -288,11 +248,9 @@ export const slimReducerMap = {
   // Custom Dictionary (terminology + pronunciation) + the generic per-surface
   // user-state store it rides on.
   dictionary: dictionaryReducer,
-  surfaceUserState: surfaceUserStateReducer,
   agentConnectionsUi: agentConnectionsUiReducer,
   agentApp: agentAppReducer,
   agentAppConsumers: agentAppConsumersReducer,
-  tools: toolsReducer,
 
   appContext: appContextReducer,
 
@@ -316,48 +274,16 @@ export const slimReducerMap = {
   quickTasksWindow: quickTasksWindowReducer,
   taskAssociations: taskAssociationsReducer,
 
-  conversations: conversationsReducer,
-  chatIncognito: chatIncognitoReducer,
-  chatRoute: chatRouteReducer,
-  instanceModelOverrides: instanceModelOverridesReducer,
-  instanceInputCapabilities: instanceInputCapabilitiesReducer,
-  instanceVariableValues: instanceVariableValuesReducer,
-  instanceResources: instanceResourcesReducer,
-  instanceContext: instanceContextReducer,
-  instanceWorkingDocument: instanceWorkingDocumentReducer,
-  instanceUserInput: instanceUserInputReducer,
-  instanceClientTools: instanceClientToolsReducer,
-  pendingAsks: pendingAsksReducer,
-  conversationInbox: conversationInboxReducer,
   proposedDirectives: proposedDirectivesReducer,
-  agentLists: agentListsReducer,
-  instanceUIState: instanceUIStateReducer,
   editorState: editorStateReducer,
-  activeTools: activeToolsReducer,
 
-  activeRequests: activeRequestsReducer,
-  runSets: runSetsReducer,
   workflowRuns: workflowRunsReducer,
   netRequests: netRequestsReducer,
   netHealth: netHealthReducer,
-  messages: messagesReducer,
-  observability: observabilityReducer,
-  contextState: contextStateReducer,
 
-  observationalMemory: observationalMemoryReducer,
 
-  cacheBypass: cacheBypassReducer,
 
-  conversationFocus: conversationFocusReducer,
-  surfaces: surfacesReducer,
-  // features/surfaces module — catalog + bindings (unrelated to the
-  // navigation registry above, which is misnamed; we'll rename it later).
-  surfacesCatalog: surfacesCatalogReducer,
-  agentSurfaceBindings: agentSurfaceBindingsReducer,
-  surfaceConfig: surfaceConfigReducer,
-  agentAssistantMarkdownDraft: agentAssistantMarkdownDraftReducer,
 
-  mcp: mcpReducer,
   // What a person picked OUT of a connection — the repositories, files and
   // sheets attached to one conversation. A connection is account-wide; these
   // are not, which is why they are keyed by conversation and never by slug.

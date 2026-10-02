@@ -30,12 +30,8 @@ import { cloudFilesMutationToastMiddleware } from "@/features/files/redux/mutati
 import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio/redux/realtimeMiddleware";
 import { tasksRealtimeMiddleware } from "@/features/tasks/redux/tasksRealtimeMiddleware";
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
-import { agentCacheBustMiddleware } from "@ai-matrx/chat/agents/redux/agent-definition/cache-bust-middleware";
-import { composerDraftMiddleware } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/composer-draft.middleware";
-import { unsentLaunchMiddleware } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/unsent-launch.middleware";
-import { inboxTurnEndMiddleware } from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox-turn-end.middleware";
-import { launchHandleReleaseMiddleware } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/launch-handle-release.middleware";
-import { runConfigurationPersistMiddleware } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/run-configuration-persist";
+// The chat package's middlewares, in their required order (P2).
+import { chatMiddlewares } from "@ai-matrx/chat/store/middlewares";
 import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
 import { activeOrgCookieMiddleware } from "@/lib/organizations/activeOrgCookieMiddleware";
 import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
@@ -276,12 +272,9 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         transcriptStudioRealtimeMiddleware,
         tasksRealtimeMiddleware,
         pdfStudioPersistenceMiddleware,
-        agentCacheBustMiddleware,
-        composerDraftMiddleware,
-        unsentLaunchMiddleware,
-        inboxTurnEndMiddleware,
-        launchHandleReleaseMiddleware,
-        runConfigurationPersistMiddleware,
+        // agentCacheBust, composerDraft, unsentLaunch, inboxTurnEnd,
+        // launchHandleRelease, runConfigurationPersist — one contiguous run.
+        ...chatMiddlewares(),
         mandateOrgSwitchCacheMiddleware,
         activeOrgCookieMiddleware,
         scopeTreeInvalidationMiddleware,
