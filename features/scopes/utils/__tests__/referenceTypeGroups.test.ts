@@ -60,7 +60,7 @@ describe("reference type groups", () => {
 describe("the types a person is offered", () => {
   const seed = readFileSync(
     // The knob's CURRENT starting value (the newest seed of the row).
-    join(process.cwd(), "migrations/reference_picker_hidden_types_people_words.sql"),
+    join(process.cwd(), "migrations/reference_picker_hidden_types_taxonomy.sql"),
     "utf8",
   );
   const hidden = JSON.parse(/'(\[[^']*\])'::jsonb/.exec(seed)![1]!) as string[];
@@ -102,7 +102,7 @@ describe("the types a person is offered", () => {
  */
 describe("the words a person reads in All types", () => {
   const seed = readFileSync(
-    join(process.cwd(), "migrations/reference_picker_hidden_types_people_words.sql"),
+    join(process.cwd(), "migrations/reference_picker_hidden_types_taxonomy.sql"),
     "utf8",
   );
   const hidden = JSON.parse(/'(\[[^']*\])'::jsonb/.exec(seed)![1]!) as string[];
@@ -116,7 +116,8 @@ describe("the words a person reads in All types", () => {
       "Entity",
       "Processed Document",
       "Saved Result",
-      "Scope",
+      "Record",
+      "Category",
       "Canvas Comment",
       "Shared Canvas Item",
       "Workflow Trigger",
@@ -125,7 +126,9 @@ describe("the words a person reads in All types", () => {
     for (const word of storageWords) expect(labels).not.toContain(word);
     // The things a person references keep a product name.
     expect(referenceTypeDisplayLabel("party")).toBe("Contact");
-    expect(referenceTypeDisplayLabel("scope")).toBe("Record");
+    // Vocabulary, "The word Context" (Arman, 2026-10-02): on screen a scope is
+    // a Scope. "Record" is every row's name, so it named nothing.
+    expect(referenceTypeDisplayLabel("scope")).toBe("Scope");
   });
 
   it("every visible type name is Title Case", () => {
@@ -148,5 +151,38 @@ describe("the words a person reads in All types", () => {
   it("the All types count never shows a number that will change", () => {
     expect(allTypesToggleLabel(114, false)).toBe("All types");
     expect(allTypesToggleLabel(88, true)).toBe("All types (88)");
+  });
+});
+
+/**
+ * G6B review (2026-10-02, nightly clone): "Context › Record" and
+ * "Platform › Category / Rulebook" — a group named after storage. A scope is
+ * not context (vocabulary, "The word Context"); Rulebook is Masterwork's noun
+ * (vocabulary § Masterwork); a platform taxonomy row is machinery.
+ */
+describe("no visible group is a storage word", () => {
+  const seed = readFileSync(
+    join(process.cwd(), "migrations/reference_picker_hidden_types_taxonomy.sql"),
+    "utf8",
+  );
+  const hidden = JSON.parse(/'(\[[^']*\])'::jsonb/.exec(seed)![1]!) as string[];
+  const isComponent = (t: string) =>
+    t in ENTITY_TYPE_METADATA &&
+    ENTITY_TYPE_METADATA[t as keyof typeof ENTITY_TYPE_METADATA].isComponent;
+  const visible = visibleReferenceTypeTokens(tokens, hidden, isComponent);
+
+  it("no group a person sees is named for machinery", () => {
+    const groups = new Set(visible.map(referenceTypeGroup));
+    for (const word of ["Context", "Platform", "Registry", "Runtime", "General", "Graveyard"]) {
+      expect(groups).not.toContain(word);
+    }
+  });
+
+  it("scopes and rulebooks sit under the product's own words; taxonomy rows are hidden", () => {
+    expect(referenceTypeGroup("scope")).toBe("Scopes");
+    expect(referenceTypeGroup("rulebook")).toBe("Masterwork");
+    expect(visible).toContain("scope");
+    expect(visible).toContain("rulebook");
+    expect(visible).not.toContain("category");
   });
 });

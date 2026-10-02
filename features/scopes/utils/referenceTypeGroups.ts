@@ -5,6 +5,8 @@
  *
  *   1. an admin-assigned chooser bucket (`platform.entity_types.reference_category`,
  *      shown by `platform.reference_categories`) wins when it is active;
+ *   1b. else a vocabulary word for a type whose schema is machinery
+ *      (`PERSON_GROUP_TYPE` below);
  *   2. else the type's schema, by the schema's display name
  *      (`platform.schemas`, generated as `SCHEMA_DISPLAY`);
  *   3. else the schema name itself, Title Cased (a short one is an acronym:
@@ -16,6 +18,11 @@
  * `family` (null for ~90 of 116 types → one "Other" bucket) while the config
  * editor grouped by schema with the raw slug as a fallback label: two
  * groupings of one set. Guard: `__tests__/referenceTypeGroups.test.ts`.
+ *
+ * This is ALSO the group an action card names (G6B, 2026-10-02: a Note card
+ * said "Sources & Outputs" while the picker filed Note under "Workspace"):
+ * `scripts/gen-directive-nouns.mjs` imports this file to write every entity
+ * noun's `family`. Keep it free of `@/` imports — plain Node runs it.
  */
 
 import {
@@ -43,6 +50,21 @@ const ACRONYM_MAX = 3;
 const PERSON_GROUP_SCHEMA: Readonly<Record<string, string>> = {
   workbench: "workspace",
   marketing: "web",
+};
+
+/**
+ * Types whose STORAGE schema is not a group a person knows, placed under the
+ * product's own word. Every word here is a vocabulary ruling, never taste
+ * (common-docs/systems/platform/vocabulary/FEATURE.md; G6B review, 2026-10-02):
+ *   - `scope` → "Scopes": its schema prints "Context", and a scope is not
+ *     context (§ "The word Context", Arman, 2026-10-02 — on screen: Scopes);
+ *   - `rulebook` → "Masterwork": its schema prints "Platform"; a Rulebook is
+ *     Masterwork's noun (§ Settled — Masterwork).
+ * An admin-assigned chooser bucket (`reference_category`) still wins over this.
+ */
+const PERSON_GROUP_TYPE: Readonly<Record<string, string>> = {
+  scope: "Scopes",
+  rulebook: "Masterwork",
 };
 
 /** The five entities a registry label can carry; a label is text, never HTML. */
@@ -84,12 +106,15 @@ export function referenceTypeGroupKey(token: string): string {
   if (category && REFERENCE_CATEGORY_DISPLAY[category]?.isActive) {
     return `cat:${category}`;
   }
+  const personGroup = PERSON_GROUP_TYPE[token];
+  if (personGroup) return `word:${personGroup}`;
   return `schema:${PERSON_GROUP_SCHEMA[meta.schema] ?? meta.schema}`;
 }
 
 /** The human label of a group key, always Title Case. */
 export function referenceTypeGroupLabel(key: string): string {
   if (key === BASICS_GROUP) return "Links";
+  if (key.startsWith("word:")) return key.slice("word:".length);
   if (key.startsWith("cat:")) {
     const slug = key.slice("cat:".length);
     return titleCaseGroupLabel(REFERENCE_CATEGORY_DISPLAY[slug]?.label ?? slug);

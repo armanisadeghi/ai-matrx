@@ -42,8 +42,10 @@ export interface ReferencePick {
  * name here already ships elsewhere — nothing is coined:
  *   - `party` → the CRM's generic word for a person or company record
  *     (`features/crm/party-words.ts`), never the registry's "Entity";
- *   - `scope` → **Record**, the Data Doctrine's canonical word for one row of a
- *     scope type (vocabulary: "Scope → Record", 2026-09-10).
+ * `scope` keeps its registry label, **Scope** — the on-screen word (vocabulary
+ * § "The word Context", Arman, 2026-10-02). It used to read "Record", the
+ * Doctrine's word for ANY row, which named nothing in a list of record types
+ * (G6B review).
  * Everything else falls through to `referenceTypeLabel`.
  */
 export const FRIENDLY_REFERENCE_TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -52,7 +54,6 @@ export const FRIENDLY_REFERENCE_TYPE_LABELS: Readonly<Record<string, string>> = 
   dataset: "Table",
   url: "Web link",
   party: GENERIC_PARTY_WORDS.singular,
-  scope: "Record",
 };
 
 /**

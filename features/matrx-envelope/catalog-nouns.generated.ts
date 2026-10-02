@@ -534,7 +534,11 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
 export interface CatalogNounDisplay {
   /** The catalog's human label ("Agent"). Empty when the server has none. */
   label: string;
-  /** The catalog family ("Agents"). Empty when the server has none. */
+  /**
+   * The group a person reads ("Workspace") — for a record type, THE group rule
+   * the reference picker uses (features/scopes/utils/referenceTypeGroups.ts);
+   * else the catalog's family. Empty when neither has one.
+   */
   family: string;
 }
 
@@ -571,7 +575,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "agent_surface_binding": {
   "label": "Agent Surface Binding",
-  "family": "Agents"
+  "family": "Platform"
  },
  "agent_template": {
   "label": "Agent Template",
@@ -611,155 +615,155 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "cx_agent_memory": {
   "label": "Agent Memory",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_agent_plan": {
   "label": "Agent Plan",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_agent_task": {
   "label": "Agent Task",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_code_edit": {
   "label": "Code Edit",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_code_message_file": {
   "label": "Code Message File",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_media": {
   "label": "Media",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_observational_memory": {
   "label": "Observational Memory",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_observational_memory_event": {
   "label": "Observational Memory Event",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_pending_injection": {
   "label": "Pending Injection",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_request": {
   "label": "Conversation Request",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_request_snapshot": {
   "label": "Request Snapshot",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_tool_trace": {
   "label": "Tool Trace",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_user_request": {
   "label": "User Request",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "cx_user_todo": {
   "label": "User Todo",
-  "family": "Conversations"
+  "family": "Chat"
  },
  "working_document": {
   "label": "Working Document",
-  "family": "Conversations"
+  "family": "Workspace"
  },
  "anon_form": {
   "label": "Public form",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "anon_hit": {
   "label": "Anonymous rate window",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "anon_inbound": {
   "label": "Inbound address",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "anon_replay": {
   "label": "Offline capture ledger",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "anon_submission": {
   "label": "Quarantined submission",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "anon_token": {
   "label": "Embed token",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "doc_render": {
   "label": "Rendered Document",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "doc_signature": {
   "label": "Document Signature",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "external_link": {
   "label": "External Link",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "external_source": {
   "label": "External Source",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "io_comment": {
   "label": "Record comment",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "io_import": {
   "label": "Import run",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "io_outbox": {
   "label": "Record change outbox",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "merge_field_provenance": {
   "label": "Merge Field Provenance",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "record": {
   "label": "Record",
-  "family": "Custom Data"
+  "family": "Custom"
  },
  "document": {
   "label": "Markdown document",
-  "family": "Documents"
+  "family": "Workspace"
  },
  "document_version": {
   "label": "Document Version",
-  "family": "Documents"
+  "family": "Content"
  },
  "message_template_detail": {
   "label": "Message Template Detail",
-  "family": "Documents"
+  "family": "Agents"
  },
  "univer_payload": {
   "label": "Univer Payload",
-  "family": "Documents"
+  "family": "Content"
  },
  "rulebook": {
   "label": "Rulebook",
-  "family": "Knowledge"
+  "family": "Masterwork"
  },
  "masterwork_run": {
   "label": "Masterwork Run",
-  "family": "Masterwork"
+  "family": "Platform"
  },
  "team": {
   "label": "Team",
-  "family": "Organizations"
+  "family": "Access & Identity"
  },
  "conversation": {
   "label": "Conversation",
-  "family": "Outputs"
+  "family": "Chat"
  },
  "skill": {
   "label": "Skill",
@@ -775,27 +779,27 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "file": {
   "label": "File",
-  "family": "Sources"
+  "family": "Files"
  },
  "file_version": {
   "label": "File Version",
-  "family": "Sources"
+  "family": "Files"
  },
  "folder": {
   "label": "Folder",
-  "family": "Sources"
+  "family": "Files"
  },
  "transcript": {
   "label": "Transcript",
-  "family": "Sources"
+  "family": "Transcripts"
  },
  "note": {
   "label": "Note",
-  "family": "Sources & Outputs"
+  "family": "Workspace"
  },
  "access_request": {
   "label": "Access Request",
-  "family": "System"
+  "family": "Access & Identity"
  },
  "tool": {
   "label": "Tool",
@@ -827,3931 +831,3931 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "project": {
   "label": "Project",
-  "family": "Workspaces"
+  "family": "Workspace"
  },
  "task": {
   "label": "Task",
-  "family": "Workspaces"
+  "family": "Workspace"
  },
  "feature_doc": {
   "label": "Feature Doc",
-  "family": "documentation"
+  "family": "Admin"
  },
  "growth_loop_event": {
   "label": "Growth Loop Event",
-  "family": "marketing"
+  "family": "Growth"
  },
  "growth_loop_stage_run": {
   "label": "Growth Loop Stage Run",
-  "family": "marketing"
+  "family": "Growth"
  },
  "plan_cms_fill_item": {
   "label": "CMS Fill Item",
-  "family": "marketing"
+  "family": "Content Planning"
  },
  "plan_cms_fill_job": {
   "label": "CMS Fill Job",
-  "family": "marketing"
+  "family": "Content Planning"
  },
  "seo_ai_visibility_citation": {
   "label": "AI Visibility Citation",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_ai_visibility_claim": {
   "label": "AI Visibility Claim",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_ai_visibility_response": {
   "label": "AI Visibility Response",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_ai_visibility_signal": {
   "label": "AI Visibility Signal",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_backlink": {
   "label": "SEO Backlink",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_backlink_dimension_snapshot": {
   "label": "Backlink Dimension Snapshot",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_backlink_observation": {
   "label": "Backlink Observation",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_backlink_snapshot": {
   "label": "Backlink Snapshot",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_change_assessment": {
   "label": "SEO Change Assessment",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_change_event": {
   "label": "SEO Change Event",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_change_item": {
   "label": "SEO Change Item",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_change_metric": {
   "label": "SEO Change Metric",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_change_theory": {
   "label": "SEO Change Theory",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_competitor": {
   "label": "SEO Competitor",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_competitor_observation": {
   "label": "Competitor Observation",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_competitor_opportunity": {
   "label": "Competitor Opportunity",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_gsc_dig_rule": {
   "label": "GSC Dig Rule",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_keyword_class_rule": {
   "label": "Keyword Class Rule",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_keyword_market_observation": {
   "label": "Keyword Market Observation",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_landscape_brief": {
   "label": "Competitive Landscape Brief",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_link_gap_domain": {
   "label": "Link Gap Domain",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_link_gap_match": {
   "label": "Link Gap Match",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_page_performance": {
   "label": "Page Performance",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_provider_call": {
   "label": "SEO Provider Call",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_provider_task": {
   "label": "SEO Provider Task",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_rank_observation": {
   "label": "Rank Observation",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_raw_payload": {
   "label": "SEO Raw Payload",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_referring_domain_profile": {
   "label": "Referring Domain Profile",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_reputation_case": {
   "label": "Reputation Case",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_search_performance_daily": {
   "label": "Search Performance Daily",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_serp_result": {
   "label": "SERP Result",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_serp_snapshot": {
   "label": "SERP Snapshot",
-  "family": "marketing"
+  "family": "SEO"
  },
  "seo_web_analytics_daily": {
   "label": "Web Analytics Daily",
-  "family": "marketing"
+  "family": "SEO"
  },
  "assist": {
   "label": "Assist",
-  "family": "platform"
+  "family": "Platform"
  },
  "research_context_bundle": {
   "label": "Research Context Bundle",
-  "family": "research"
+  "family": "Research"
  },
  "seo_change_set": {
   "label": "SEO Change",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_collection_run": {
   "label": "SEO Collection Run",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_keyword": {
   "label": "SEO Keyword",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_keyword_edge": {
   "label": "Keyword Edge",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_keyword_market": {
   "label": "Keyword Market Data",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_keyword_topic": {
   "label": "Keyword Topic Assignment",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_map_facet": {
   "label": "Topical map facet",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_map_facet_value": {
   "label": "Topical map facet value",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_map_topic": {
   "label": "Topical map topic",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_rank_target": {
   "label": "SEO Rank Target",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_site_keyword_value": {
   "label": "Site Keyword Value",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_site_topic_value": {
   "label": "Site Topic Value",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_topic": {
   "label": "SEO Topic",
-  "family": "seo"
+  "family": "SEO"
  },
  "seo_topical_map": {
   "label": "Topical map",
-  "family": "seo"
+  "family": "SEO"
  },
  "access_delta_probe": {
   "label": "Access Delta Probe",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "access_delta_run": {
   "label": "Access Delta Run",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "account_addon": {
   "label": "Account Addon",
-  "family": "Other"
+  "family": "Billing"
  },
  "acquisition_block": {
   "label": "Acquisition Block",
-  "family": "Other"
+  "family": "Platform"
  },
  "activity": {
   "label": "Activity Log Entry",
-  "family": "Other"
+  "family": "Platform"
  },
  "admin_audit_log": {
   "label": "Admin audit log",
-  "family": "Other"
+  "family": "Admin"
  },
  "admin_email_log": {
   "label": "Admin email log",
-  "family": "Other"
+  "family": "Admin"
  },
  "admin_markdown_sample": {
   "label": "Admin markdown sample",
-  "family": "Other"
+  "family": "Admin"
  },
  "admin_user": {
   "label": "Platform admin",
-  "family": "Other"
+  "family": "Admin"
  },
  "admission_config": {
   "label": "Admission Config",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "agent_card": {
   "label": "Agent Card",
-  "family": "Other"
+  "family": "Agents"
  },
  "agent_exemplar": {
   "label": "Agent Test Case",
-  "family": "Other"
+  "family": "Agents"
  },
  "agent_mandate_note": {
   "label": "Mandate Note",
-  "family": "Other"
+  "family": "Agents"
  },
  "agent_prompt_remediation": {
   "label": "Agent Prompt Remediation",
-  "family": "Other"
+  "family": "Agents"
  },
  "agent_run": {
   "label": "Agent Run",
-  "family": "Other"
+  "family": "Chat"
  },
  "agent_run_stage": {
   "label": "Agent Run Stage",
-  "family": "Other"
+  "family": "Chat"
  },
  "agent_schedule": {
   "label": "Agent Schedule",
-  "family": "Other"
+  "family": "Scheduling"
  },
  "agent_schedule_claim": {
   "label": "Agent Schedule Claim",
-  "family": "Other"
+  "family": "Scheduling"
  },
  "ai_api": {
   "label": "AI API",
-  "family": "Other"
+  "family": "AI Models"
  },
  "ai_calls": {
   "label": "AI model calls",
-  "family": "Other"
+  "family": "Runtime"
  },
  "ai_endpoint": {
   "label": "AI Endpoint",
-  "family": "Other"
+  "family": "AI Models"
  },
  "ai_model": {
   "label": "AI Model",
-  "family": "Other"
+  "family": "AI Models"
  },
  "ai_model_alias": {
   "label": "AI Model Alias",
-  "family": "Other"
+  "family": "AI Models"
  },
  "ai_offering": {
   "label": "AI Offering",
-  "family": "Other"
+  "family": "AI Models"
  },
  "ai_provider": {
   "label": "AI Provider",
-  "family": "Other"
+  "family": "AI Models"
  },
  "ai_setting": {
   "label": "AI Setting",
-  "family": "Other"
+  "family": "AI Models"
  },
  "ai_usage_executions": {
   "label": "AI usage by execution",
-  "family": "Other"
+  "family": "Runtime"
  },
  "ai_usage_hourly": {
   "label": "AI usage by hour",
-  "family": "Other"
+  "family": "Runtime"
  },
  "ai_usage_hourly_watermark": {
   "label": "AI usage counted through",
-  "family": "Other"
+  "family": "Runtime"
  },
  "analysis_result": {
   "label": "Analysis Result",
-  "family": "Other"
+  "family": "Files"
  },
  "anon_function_birth_grandfather": {
   "label": "Anon Function Birth Grandfather",
-  "family": "Other"
+  "family": "Platform"
  },
  "api_field_warning": {
   "label": "API field warning",
-  "family": "Other"
+  "family": "OPS"
  },
  "api_request_log": {
   "label": "API request log",
-  "family": "Other"
+  "family": "OPS"
  },
  "app_config": {
   "label": "App config",
-  "family": "Other"
+  "family": "General"
  },
  "app_config_history": {
   "label": "App Config History",
-  "family": "Other"
+  "family": "General"
  },
  "app_instance": {
   "label": "App Instance",
-  "family": "Other"
+  "family": "General"
  },
  "app_log": {
   "label": "App Log",
-  "family": "Other"
+  "family": "OPS"
  },
  "app_log_muted_pattern": {
   "label": "Muted log pattern",
-  "family": "Other"
+  "family": "OPS"
  },
  "app_log_norm_exception": {
   "label": "Log normalisation exception",
-  "family": "Other"
+  "family": "OPS"
  },
  "app_setting": {
   "label": "App Setting",
-  "family": "Other"
+  "family": "General"
  },
  "app_sync_status": {
   "label": "App Sync Status",
-  "family": "Other"
+  "family": "General"
  },
  "approach": {
   "label": "Approach",
-  "family": "Other"
+  "family": "Platform"
  },
  "artifact": {
   "label": "Artifact",
-  "family": "Other"
+  "family": "Chat"
  },
  "assessment": {
   "label": "Assessment",
-  "family": "Other"
+  "family": "Education"
  },
  "assessment_item": {
   "label": "Assessment Item",
-  "family": "Other"
+  "family": "Education"
  },
  "assessment_result": {
   "label": "Assessment Result",
-  "family": "Other"
+  "family": "Education"
  },
  "assignment_session": {
   "label": "Assignment session",
-  "family": "Other"
+  "family": "Assignment"
  },
  "assist_producer_policy": {
   "label": "Assist producer policy",
-  "family": "Other"
+  "family": "Platform"
  },
  "assist_producer_policy_history": {
   "label": "Assist Producer Policy History",
-  "family": "Other"
+  "family": "Platform"
  },
  "association_type": {
   "label": "Association type",
-  "family": "Other"
+  "family": "Platform"
  },
  "assurance_level": {
   "label": "Assurance level",
-  "family": "Other"
+  "family": "Platform"
  },
  "attempt": {
   "label": "Attempt",
-  "family": "Other"
+  "family": "Assignment"
  },
  "audit_broken_functions": {
   "label": "Broken functions",
-  "family": "Other"
+  "family": "Audit"
  },
  "audit_canonical_findings": {
   "label": "Canonical findings",
-  "family": "Other"
+  "family": "Audit"
  },
  "audit_exemption": {
   "label": "Audit exemption",
-  "family": "Other"
+  "family": "Meta"
  },
  "audit_function_deps": {
   "label": "Function dependencies",
-  "family": "Other"
+  "family": "Audit"
  },
  "audit_function_runtime_probe": {
   "label": "Function runtime probe",
-  "family": "Other"
+  "family": "Audit"
  },
  "audit_m2m_candidates": {
   "label": "M2M candidates",
-  "family": "Other"
+  "family": "Audit"
  },
  "audit_refresh_log": {
   "label": "Audit refresh log",
-  "family": "Other"
+  "family": "Audit"
  },
  "audit_stale_registry": {
   "label": "Stale registry",
-  "family": "Other"
+  "family": "Audit"
  },
  "audit_unregistered_candidates": {
   "label": "Unregistered candidates",
-  "family": "Other"
+  "family": "Audit"
  },
  "base_entity_template": {
   "label": "Base entity template",
-  "family": "Other"
+  "family": "Platform"
  },
  "batch_cost_event": {
   "label": "Batch Cost Event",
-  "family": "Other"
+  "family": "Batch"
  },
  "batch_provider_batch": {
   "label": "Provider Batch",
-  "family": "Other"
+  "family": "Batch"
  },
  "batch_work_item": {
   "label": "Batch Work Item",
-  "family": "Other"
+  "family": "Batch"
  },
  "billing_capability": {
   "label": "Billing capability",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_capability_limit": {
   "label": "Billing capability limit",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_connect_account": {
   "label": "Billing connect account",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_customer": {
   "label": "Billing customer",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_plan": {
   "label": "Billing plan",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_plan_limit": {
   "label": "Billing plan limit",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_price": {
   "label": "Billing price",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_product": {
   "label": "Billing product",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_spend_approval": {
   "label": "Spend Approval",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_spend_guardrail": {
   "label": "Spend Guardrail",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_stripe_event": {
   "label": "Stripe webhook event",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_subscription": {
   "label": "Billing subscription",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_usage_ledger": {
   "label": "Usage ledger",
-  "family": "Other"
+  "family": "Billing"
  },
  "billing_user_plan": {
   "label": "User plan",
-  "family": "Other"
+  "family": "Billing"
  },
  "browser_account_binding": {
   "label": "Browser Account Binding",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_action_event": {
   "label": "Browser Action Event",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_authenticator_window": {
   "label": "Browser Authenticator Window",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_capture": {
   "label": "Browser Capture",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_control_request": {
   "label": "Browser Control Request",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_handoff": {
   "label": "Browser Handoff",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_login_attempt": {
   "label": "Browser Login Attempt",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_login_recipe": {
   "label": "Browser Login Recipe",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_profile": {
   "label": "Cloud Browser Profile",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_profile_checkpoint": {
   "label": "Browser Profile Checkpoint",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_run": {
   "label": "Cloud Browser Run",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_site_observation": {
   "label": "Browser Site Observation",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_site_policy": {
   "label": "Browser Site Policy",
-  "family": "Other"
+  "family": "Browser"
  },
  "browser_stream_ticket": {
   "label": "Browser Stream Ticket",
-  "family": "Other"
+  "family": "Browser"
  },
  "build_lock": {
   "label": "Build Lock",
-  "family": "Other"
+  "family": "Campaign Watch"
  },
  "calendar_event": {
   "label": "Calendar event",
-  "family": "Other"
+  "family": "Communication"
  },
  "campaign_watch_ramp_gate_run": {
   "label": "Ramp gate run",
-  "family": "Other"
+  "family": "Campaign Watch"
  },
  "campaign_watch_switch_outbox": {
   "label": "Switch outbox",
-  "family": "Other"
+  "family": "Campaign Watch"
  },
  "campaign_watch_switch_window": {
   "label": "Switch window",
-  "family": "Other"
+  "family": "Campaign Watch"
  },
  "canvas_comment": {
   "label": "Canvas Comment",
-  "family": "Other"
+  "family": "Canvas"
  },
  "canvas_comment_like": {
   "label": "Canvas Comment Like",
-  "family": "Other"
+  "family": "Canvas"
  },
  "canvas_item": {
   "label": "Canvas Item",
-  "family": "Other"
+  "family": "Canvas"
  },
  "canvas_item_state": {
   "label": "Canvas Item State",
-  "family": "Other"
+  "family": "Canvas"
  },
  "canvas_like": {
   "label": "Canvas Like",
-  "family": "Other"
+  "family": "Canvas"
  },
  "canvas_score": {
   "label": "Canvas Score",
-  "family": "Other"
+  "family": "Canvas"
  },
  "canvas_view": {
   "label": "Canvas View",
-  "family": "Other"
+  "family": "Canvas"
  },
  "capture_window": {
   "label": "Capture Window",
-  "family": "Other"
+  "family": "History"
  },
  "carrying_rule": {
   "label": "Carrying Rule",
-  "family": "Other"
+  "family": "Custom"
  },
  "catalog_entries_history": {
   "label": "Catalog Entries History",
-  "family": "Other"
+  "family": "General"
  },
  "catalog_entry": {
   "label": "Catalog entry",
-  "family": "Other"
+  "family": "General"
  },
  "category": {
   "label": "Category",
-  "family": "Other"
+  "family": "Platform"
  },
  "change_type_default": {
   "label": "Change type default",
-  "family": "Other"
+  "family": "Platform"
  },
  "chat_user_usage_summary": {
   "label": "Chat usage summary",
-  "family": "Other"
+  "family": "Chat"
  },
  "citations": {
   "label": "Citations",
-  "family": "Other"
+  "family": "Legal"
  },
  "class_purchase": {
   "label": "Class Purchase",
-  "family": "Other"
+  "family": "Billing"
  },
  "classifier_revision_ledger": {
   "label": "Classifier Revision Ledger",
-  "family": "Other"
+  "family": "SEO"
  },
  "client_callable_door": {
   "label": "Client Callable Door",
-  "family": "Other"
+  "family": "Platform"
  },
  "client_callable_door_retirement": {
   "label": "Client Callable Door Retirement",
-  "family": "Other"
+  "family": "Platform"
  },
  "client_excluded_column_unregistered": {
   "label": "Client Excluded Column Unregistered",
-  "family": "Other"
+  "family": "Platform"
  },
  "cmp_entry": {
   "label": "Comparison Entry",
-  "family": "Other"
+  "family": "Agents"
  },
  "cmp_feedback": {
   "label": "Comparison Response Feedback",
-  "family": "Other"
+  "family": "Agents"
  },
  "code_file": {
   "label": "Code File",
-  "family": "Other"
+  "family": "Code"
  },
  "code_folder": {
   "label": "Code Folder",
-  "family": "Other"
+  "family": "Code"
  },
  "code_repository": {
   "label": "Code Repository",
-  "family": "Other"
+  "family": "Code"
  },
  "coding_session": {
   "label": "Coding Session",
-  "family": "Other"
+  "family": "Chat"
  },
  "coding_session_entry": {
   "label": "Coding Session Entry",
-  "family": "Other"
+  "family": "Chat"
  },
  "comment": {
   "label": "Comment",
-  "family": "Other"
+  "family": "Platform"
  },
  "commerce_asset_allocation": {
   "label": "Asset Allocation",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_asset_grading": {
   "label": "Asset Grading",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_asset_identifier": {
   "label": "Asset Identifier",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_asset_lot_event": {
   "label": "Asset Lot Event",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_asset_mandate_result": {
   "label": "Asset Mandate Result",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_asset_price_factor": {
   "label": "Asset Price Factor",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_asset_reshoot_request": {
   "label": "Asset Reshoot Request",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_asset_review": {
   "label": "Asset Review",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_asset_unknown": {
   "label": "Asset Unknown",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_certified_printer": {
   "label": "Certified Printer",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_cloud_sync_connection": {
   "label": "Cloud Sync Connection",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_business_policy": {
   "label": "eBay Business Policy",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_category": {
   "label": "eBay Category",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_category_aspect": {
   "label": "eBay Category Aspect",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_category_tree": {
   "label": "eBay Category Tree",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_custom_policy": {
   "label": "eBay Custom Policy",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_inventory_item": {
   "label": "eBay Inventory Item",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_inventory_item_group": {
   "label": "eBay Inventory Item Group",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_inventory_item_group_member": {
   "label": "eBay Inventory Item Group Member",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_inventory_location": {
   "label": "eBay Inventory Location",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_listing": {
   "label": "eBay Listing",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_marketplace_policy": {
   "label": "eBay Marketplace Policy",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_media_asset": {
   "label": "eBay Media Asset",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_notification_destination": {
   "label": "eBay Notification Destination",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_notification_event": {
   "label": "eBay Notification Event",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_notification_subscription": {
   "label": "eBay Notification Subscription",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_notification_topic": {
   "label": "eBay Notification Topic",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_offer": {
   "label": "eBay Offer",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_order": {
   "label": "eBay Order",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_order_line_item": {
   "label": "eBay Order Line Item",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_shipping_fulfillment": {
   "label": "eBay Shipping Fulfillment",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_ebay_store_category": {
   "label": "eBay Store Category",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_human_correction": {
   "label": "Human Correction",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_intake_artifact": {
   "label": "Intake Artifact",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_intake_asset": {
   "label": "Intake Asset",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_intake_batch": {
   "label": "Intake Batch",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_label_batch": {
   "label": "Label Batch",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_label_code": {
   "label": "Label Code",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_marketplace_account": {
   "label": "Marketplace Account",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_marketplace_account_deletion_audit": {
   "label": "Marketplace Account Deletion Audit",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_marketplace_api_call": {
   "label": "Marketplace API Call",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_marketplace_rate_budget": {
   "label": "Marketplace Rate Budget",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_marketplace_site": {
   "label": "Marketplace Site",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_marketplace_sync_run": {
   "label": "Marketplace Sync Run",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_prediction_outcome": {
   "label": "Prediction Outcome",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_print_order": {
   "label": "Print Order",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_product": {
   "label": "Product",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_product_channel_ref": {
   "label": "Product Channel Reference",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_product_media": {
   "label": "Product Media",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_product_variant": {
   "label": "Product Variant",
-  "family": "Other"
+  "family": "Commerce"
  },
  "commerce_recall_audit": {
   "label": "Recall Audit",
-  "family": "Other"
+  "family": "Commerce"
  },
  "communication_calendar_selected_snapshot_state": {
   "label": "Calendar snapshot state",
-  "family": "Other"
+  "family": "Communication"
  },
  "communication_channel_readiness": {
   "label": "Channel readiness",
-  "family": "Other"
+  "family": "Communication"
  },
  "comparison_set": {
   "label": "Comparison Set",
-  "family": "Other"
+  "family": "Agents"
  },
  "contact_medium": {
   "label": "Contact Medium",
-  "family": "Other"
+  "family": "CRM"
  },
  "contact_submission": {
   "label": "Contact Submission",
-  "family": "Other"
+  "family": "Communication"
  },
  "content_certification": {
   "label": "Content certification",
-  "family": "Other"
+  "family": "Education"
  },
  "content_ir_kind": {
   "label": "Content-IR Kind",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "content_ir_kind_component": {
   "label": "Kind Component",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "content_ir_kind_component_incident": {
   "label": "Kind Component Incident",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "content_ir_kind_conformance": {
   "label": "Shape Conformance",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "content_ir_kind_edge": {
   "label": "Content-IR Kind Edge",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "content_ir_kind_example": {
   "label": "Kind Example",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "content_ir_kind_instance": {
   "label": "Saved Result",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "content_ir_kind_surface": {
   "label": "Kind Surface",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "content_lane": {
   "label": "Content Lane",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "context_access_log": {
   "label": "Context access log",
-  "family": "Other"
+  "family": "Context"
  },
  "context_item": {
   "label": "Context Item",
-  "family": "Other"
+  "family": "Context"
  },
  "context_item_suggestion": {
   "label": "Context Item Suggestion",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "context_item_value": {
   "label": "Record Value",
-  "family": "Other"
+  "family": "Context"
  },
  "context_value_refs": {
   "label": "Context Value Refs",
-  "family": "Other"
+  "family": "Context"
  },
  "conversation_value": {
   "label": "Conversation Value",
-  "family": "Other"
+  "family": "Chat"
  },
  "courts": {
   "label": "Courts",
-  "family": "Other"
+  "family": "Legal"
  },
  "credential_attachment": {
   "label": "Credential attachment",
-  "family": "Other"
+  "family": "Users"
  },
  "credential_item": {
   "label": "Credential item",
-  "family": "Other"
+  "family": "Users"
  },
  "credential_mutation_receipt": {
   "label": "Credential Mutation Receipt",
-  "family": "Other"
+  "family": "Users"
  },
  "crm_address": {
   "label": "Address",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_affiliation": {
   "label": "Affiliation",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_blocklist_entry": {
   "label": "Blocklist Entry",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_contact_candidate": {
   "label": "Contact Candidate",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_deal": {
   "label": "Deal",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_deal_stage_event": {
   "label": "Deal Stage Event",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_enrichment_call": {
   "label": "Enrichment Call",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_interaction": {
   "label": "Interaction",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_merge_candidate": {
   "label": "Merge Candidate",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_outreach_list": {
   "label": "Outreach List",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_outreach_list_member": {
   "label": "Outreach List Member",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_party_merge": {
   "label": "Party Merge",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_registry_ingest_run": {
   "label": "Registry Ingest Run",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_registry_source": {
   "label": "Registry Source",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_sending_event": {
   "label": "Sending Event",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_sending_identity": {
   "label": "Sending Identity",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_sending_identity_check": {
   "label": "Sending Check",
-  "family": "Other"
+  "family": "CRM"
  },
  "crm_sending_policy": {
   "label": "Sending Policy",
-  "family": "Other"
+  "family": "CRM"
  },
  "custom_agg_digest_checked": {
   "label": "Aggregate digest checked",
-  "family": "Other"
+  "family": "Custom"
  },
  "custom_entity_definition": {
   "label": "Custom Object",
-  "family": "Other"
+  "family": "Platform"
  },
  "custom_field_definition": {
   "label": "Custom Field",
-  "family": "Other"
+  "family": "Platform"
  },
  "custom_field_target": {
   "label": "Custom Field Target",
-  "family": "Other"
+  "family": "Platform"
  },
  "custom_record": {
   "label": "Custom Record",
-  "family": "Other"
+  "family": "Platform"
  },
  "custom_share_tails_mine_repair": {
   "label": "Share tails repair",
-  "family": "Other"
+  "family": "Custom"
  },
  "data_rights_event": {
   "label": "Data rights event",
-  "family": "Other"
+  "family": "Education"
  },
  "data_store": {
   "label": "Data Store",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "data_store_members": {
   "label": "Data Store Members",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "ddl_guard_log": {
   "label": "DDL guard log",
-  "family": "Other"
+  "family": "Platform"
  },
  "deck_suggestion": {
   "label": "Deck Suggestion",
-  "family": "Other"
+  "family": "Education"
  },
  "definer_class_exemption": {
   "label": "Definer Class Exemption",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "definer_client_grant_grandfather": {
   "label": "Definer Client Grant Grandfather",
-  "family": "Other"
+  "family": "Platform"
  },
  "definer_grant_baseline": {
   "label": "Definer Grant Baseline",
-  "family": "Other"
+  "family": "HR"
  },
  "deprecated_relation": {
   "label": "Deprecated relation",
-  "family": "Other"
+  "family": "Platform"
  },
  "derive_run": {
   "label": "Derive Run",
-  "family": "Other"
+  "family": "Document Processing"
  },
  "dev_login_audit": {
   "label": "Dev login audit",
-  "family": "Other"
+  "family": "Admin"
  },
  "dict_entry": {
   "label": "Dictionary entry",
-  "family": "Other"
+  "family": "Dictionary"
  },
  "dict_provider_publication": {
   "label": "Dict Provider Publication",
-  "family": "Other"
+  "family": "Dictionary"
  },
  "dict_setting": {
   "label": "Dict Setting",
-  "family": "Other"
+  "family": "Dictionary"
  },
  "dm_conversation": {
   "label": "Direct Conversation",
-  "family": "Other"
+  "family": "Communication"
  },
  "dm_message": {
   "label": "Direct Message",
-  "family": "Other"
+  "family": "Communication"
  },
  "dm_participant": {
   "label": "DM Conversation Participant",
-  "family": "Other"
+  "family": "Communication"
  },
  "dockets": {
   "label": "Dockets",
-  "family": "Other"
+  "family": "Legal"
  },
  "domain_classification": {
   "label": "Domain Classification",
-  "family": "Other"
+  "family": "Platform"
  },
  "edge_payload_kind": {
   "label": "Edge payload kind",
-  "family": "Other"
+  "family": "Platform"
  },
  "egress_device": {
   "label": "Home connection computer",
-  "family": "Other"
+  "family": "Platform"
  },
  "egress_pairing": {
   "label": "Home connection pairing",
-  "family": "Other"
+  "family": "Platform"
  },
  "egress_ticket": {
   "label": "Home connection ticket",
-  "family": "Other"
+  "family": "Platform"
  },
  "emails": {
   "label": "Emails",
-  "family": "Other"
+  "family": "Communication"
  },
  "embedding_cache": {
   "label": "Embedding Cache",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "embeddings_google_gemini_2_1536": {
   "label": "Embeddings Google Gemini 2 1536",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "embeddings_oai_3_small_1536": {
   "label": "Embeddings Oai 3 Small 1536",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "embeddings_voyage_4_large_1024": {
   "label": "Embeddings Voyage 4 Large 1024",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "embeddings_voyage_code_3_1024": {
   "label": "Embeddings Voyage Code 3 1024",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "endpoint_family_sweep_state": {
   "label": "Endpoint Family Sweep State",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "engine_owner_task": {
   "label": "Engine Owner Task",
-  "family": "Other"
+  "family": "SEO"
  },
  "entity_grant": {
   "label": "Entity grant",
-  "family": "Other"
+  "family": "Platform"
  },
  "entity_relationship": {
   "label": "Entity relationship",
-  "family": "Other"
+  "family": "Platform"
  },
  "entity_type": {
   "label": "Entity type",
-  "family": "Other"
+  "family": "Platform"
  },
  "esign_campaign": {
   "label": "Signature campaign",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_campaign_member": {
   "label": "Campaign member",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_consent_disclosure": {
   "label": "E-sign consent disclosure",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_envelope": {
   "label": "Signature envelope",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_envelope_certificate": {
   "label": "Completion certificate",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_envelope_document": {
   "label": "Envelope document",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_envelope_event": {
   "label": "Envelope event",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_envelope_external_ref": {
   "label": "Envelope external reference",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_envelope_signer": {
   "label": "Envelope signer",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_provider": {
   "label": "E-sign provider",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_provider_binding": {
   "label": "E-sign provider binding",
-  "family": "Other"
+  "family": "Esign"
  },
  "esign_signing_key": {
   "label": "E-sign certificate signing key",
-  "family": "Other"
+  "family": "Esign"
  },
  "execution_event_cursor": {
   "label": "Execution event cursor",
-  "family": "Other"
+  "family": "Runtime"
  },
  "extension_auth_code": {
   "label": "Extension auth code",
-  "family": "Other"
+  "family": "Browser Extension"
  },
  "extract_sweep_state": {
   "label": "Extract sweep state",
-  "family": "Other"
+  "family": "Workflows"
  },
  "fc_card": {
   "label": "Flashcard",
-  "family": "Other"
+  "family": "Education"
  },
  "fc_detail": {
   "label": "Flashcard Detail",
-  "family": "Other"
+  "family": "Education"
  },
  "fc_set": {
   "label": "Flashcard Deck",
-  "family": "Other"
+  "family": "Education"
  },
  "feature_knob": {
   "label": "Feature Knob",
-  "family": "Other"
+  "family": "Platform"
  },
  "feedback_comments": {
   "label": "Feedback Comments",
-  "family": "Other"
+  "family": "Users"
  },
  "feedback_user_messages": {
   "label": "Feedback User Messages",
-  "family": "Other"
+  "family": "Users"
  },
  "file_analysis": {
   "label": "File Analysis",
-  "family": "Other"
+  "family": "Files"
  },
  "file_entities": {
   "label": "Extracted Term",
-  "family": "Other"
+  "family": "Files"
  },
  "file_overrides": {
   "label": "File Override",
-  "family": "Other"
+  "family": "Files"
  },
  "file_page_annotations": {
   "label": "Page Annotation",
-  "family": "Other"
+  "family": "Files"
  },
  "file_pages": {
   "label": "File Page",
-  "family": "Other"
+  "family": "Files"
  },
  "file_rag_job": {
   "label": "File RAG job",
-  "family": "Other"
+  "family": "Files"
  },
  "files_account_tier": {
   "label": "File account tier",
-  "family": "Other"
+  "family": "Files"
  },
  "files_machine_written_prefix": {
   "label": "Machine-Written Prefix",
-  "family": "Other"
+  "family": "Files"
  },
  "files_sync_mapping": {
   "label": "Sync Mapping",
-  "family": "Other"
+  "family": "Files"
  },
  "files_user_account": {
   "label": "File account",
-  "family": "Other"
+  "family": "Files"
  },
  "flexible_data": {
   "label": "Flexible Data",
-  "family": "Other"
+  "family": "Platform"
  },
  "function_contract": {
   "label": "Function Contract",
-  "family": "Other"
+  "family": "HR"
  },
  "game_badge": {
   "label": "Game Badge",
-  "family": "Other"
+  "family": "Education"
  },
  "game_result": {
   "label": "Game Result",
-  "family": "Other"
+  "family": "Education"
  },
  "game_room": {
   "label": "Game Room",
-  "family": "Other"
+  "family": "Education"
  },
  "global_execution": {
   "label": "Runtime Execution",
-  "family": "Other"
+  "family": "Runtime"
  },
  "global_execution_checkpoint": {
   "label": "Runtime Checkpoint",
-  "family": "Other"
+  "family": "Runtime"
  },
  "global_execution_control": {
   "label": "Global execution control",
-  "family": "Other"
+  "family": "Runtime"
  },
  "global_execution_event": {
   "label": "Runtime Event",
-  "family": "Other"
+  "family": "Runtime"
  },
  "global_meter_entry": {
   "label": "Runtime Meter Entry",
-  "family": "Other"
+  "family": "Runtime"
  },
  "global_origin": {
   "label": "Runtime Origin",
-  "family": "Other"
+  "family": "Runtime"
  },
  "global_request": {
   "label": "Runtime Request",
-  "family": "Other"
+  "family": "Runtime"
  },
  "google_document": {
   "label": "Google document",
-  "family": "Other"
+  "family": "Workspace"
  },
  "growth_loop_run": {
   "label": "Growth Loop Run",
-  "family": "Other"
+  "family": "Growth"
  },
  "guardian_link": {
   "label": "Guardian link",
-  "family": "Other"
+  "family": "Education"
  },
  "guest_conversion_audit": {
   "label": "Guest conversion audit",
-  "family": "Other"
+  "family": "Users"
  },
  "guest_execution_log": {
   "label": "Guest Execution Log",
-  "family": "Other"
+  "family": "Users"
  },
  "guest_executions": {
   "label": "Guest Executions",
-  "family": "Other"
+  "family": "Users"
  },
  "guided_checklist_run": {
   "label": "Guided Checklist Run",
-  "family": "Other"
+  "family": "Platform"
  },
  "heatmap_save": {
   "label": "Heatmap Save",
-  "family": "Other"
+  "family": "Workspace"
  },
  "hindsight_enrollment": {
   "label": "Hindsight Enrollment",
-  "family": "Other"
+  "family": "Hindsight"
  },
  "hindsight_finding": {
   "label": "Hindsight Finding",
-  "family": "Other"
+  "family": "Hindsight"
  },
  "hindsight_regression_case": {
   "label": "Regression Case",
-  "family": "Other"
+  "family": "Hindsight"
  },
  "hindsight_replay": {
   "label": "Hindsight Replay",
-  "family": "Other"
+  "family": "Hindsight"
  },
  "hindsight_replay_step": {
   "label": "Wire Replay Step",
-  "family": "Other"
+  "family": "Hindsight"
  },
  "hindsight_review": {
   "label": "Hindsight Review",
-  "family": "Other"
+  "family": "Hindsight"
  },
  "hr_access_audit": {
   "label": "Access audit",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_access_role": {
   "label": "HR access role",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_accommodation_request": {
   "label": "Accommodation request",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_ai_evidence": {
   "label": "AI evidence",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_alert_routing_rule": {
   "label": "Alert routing rule",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_application": {
   "label": "Application",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_approval_authority": {
   "label": "Approval authority",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_approval_delegation": {
   "label": "Approval delegation",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_asset": {
   "label": "Asset",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_asset_assignment": {
   "label": "Asset assignment",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_attendance_exception": {
   "label": "Attendance exception",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_auto_close_rule": {
   "label": "Auto-close rule",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_availability": {
   "label": "Availability",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_background_check": {
   "label": "Background check",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_benefits_event": {
   "label": "Benefits event",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_calculation_snapshot": {
   "label": "Calculation snapshot",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_candidate": {
   "label": "Candidate",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_candidate_conversion": {
   "label": "Candidate conversion",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_candidate_message": {
   "label": "Candidate message",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_careers_portal": {
   "label": "Careers portal",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_checklist_item": {
   "label": "Checklist item",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_checklist_run": {
   "label": "Checklist run",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_checklist_template": {
   "label": "Checklist template",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_checklist_template_item": {
   "label": "Checklist template item",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_compensation": {
   "label": "Compensation record",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_corrective_action": {
   "label": "Corrective action",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_course": {
   "label": "Course",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_course_version": {
   "label": "Course version",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_credential": {
   "label": "Credential",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_crew": {
   "label": "Crew",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_deduction_code": {
   "label": "Deduction code",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_department": {
   "label": "Department",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_derived_grant": {
   "label": "Derived grant",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_disposition_event": {
   "label": "Disposition event",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_earning_code": {
   "label": "Earning code",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_eeo_response": {
   "label": "EEO self-identification response",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_emergency_contact": {
   "label": "Emergency contact",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_employee": {
   "label": "Employee",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_employee_private": {
   "label": "Employee private record",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_employer_profile": {
   "label": "Employer profile",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_employment": {
   "label": "Employment spell",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_employment_pin": {
   "label": "Employment PIN",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_engagement": {
   "label": "Engagement",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_establishment": {
   "label": "Establishment",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_external_identity": {
   "label": "External identity",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_field_policy": {
   "label": "Self-service field policy",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_holiday": {
   "label": "Holiday",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_holiday_calendar": {
   "label": "Holiday calendar",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_i9": {
   "label": "Form I-9",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_i9_document": {
   "label": "I-9 document",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_incident": {
   "label": "Incident",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_incident_party": {
   "label": "Incident party",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_interview": {
   "label": "Interview",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_interview_kit": {
   "label": "Interview kit",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_job_title": {
   "label": "Job title",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_jurisdiction": {
   "label": "Jurisdiction",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_jurisdiction_rule": {
   "label": "Jurisdiction rule",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_jurisdiction_rule_class": {
   "label": "Jurisdiction rule class",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_jurisdiction_rule_org_decision": {
   "label": "Jurisdiction rule org decision",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_jurisdiction_rule_test": {
   "label": "Jurisdiction rule fixture",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_kiosk_device": {
   "label": "Kiosk device",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_kiosk_session": {
   "label": "Kiosk session",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_labor_target": {
   "label": "Labor target",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_leave_case": {
   "label": "Leave case",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_leave_enrollment": {
   "label": "Leave enrollment",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_leave_ledger": {
   "label": "Leave ledger entry",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_leave_policy": {
   "label": "Leave policy",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_leave_request": {
   "label": "Leave request",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_legal_hold": {
   "label": "Legal hold",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_legal_hold_item": {
   "label": "Legal hold item",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_location": {
   "label": "Location",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_new_hire_report": {
   "label": "New hire report",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_offer": {
   "label": "Offer",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_opening": {
   "label": "Opening",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_overtime_alert": {
   "label": "Overtime alert",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_overtime_alert_rule": {
   "label": "Overtime alert rule",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_overtime_preapproval": {
   "label": "Overtime pre-approval",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_pay_group": {
   "label": "Pay group",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_pay_period": {
   "label": "Pay period",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_pay_period_employment": {
   "label": "Pay period timesheet",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_payroll_export": {
   "label": "Payroll export",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_payroll_export_line": {
   "label": "Payroll export line",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_position_assignment": {
   "label": "Position assignment",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_posting": {
   "label": "Job posting",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_posting_publication": {
   "label": "Posting publication",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_provider_binding": {
   "label": "Provider binding",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_provider_event": {
   "label": "Provider seam event",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_provisioning_result": {
   "label": "Provisioning result",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_punch": {
   "label": "Punch",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_recalculation_batch": {
   "label": "Recalculation batch",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_record_class": {
   "label": "Record class",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_records_request": {
   "label": "Records request",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_reference_check": {
   "label": "Reference check",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_reporting_line": {
   "label": "Reporting line",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_requisition": {
   "label": "Requisition",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_restricted_note": {
   "label": "Restricted note",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_retention_rule": {
   "label": "Retention rule",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_role_assignment": {
   "label": "HR role assignment",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_schedule": {
   "label": "Schedule",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_schedule_change": {
   "label": "Schedule change",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_schedule_guidance": {
   "label": "Schedule guidance",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_schedule_template": {
   "label": "Schedule template",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_schedule_template_shift": {
   "label": "Schedule template shift",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_scorecard": {
   "label": "Scorecard",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_separation": {
   "label": "Separation",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_shift": {
   "label": "Shift",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_shift_claim": {
   "label": "Shift claim",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_staffing_requirement": {
   "label": "Staffing requirement",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_survey": {
   "label": "Survey",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_survey_invitation": {
   "label": "Survey invitation",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_survey_question": {
   "label": "Survey question",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_survey_response": {
   "label": "Survey response",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_tax_registration": {
   "label": "Tax registration",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_tax_withholding": {
   "label": "Tax withholding certificate",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_time_adjustment": {
   "label": "Time adjustment",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_training_assignment": {
   "label": "Training assignment",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_training_attempt": {
   "label": "Training attempt",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_transcript_entry": {
   "label": "Transcript entry",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_verification_letter_request": {
   "label": "Verification letter request",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_work_interval": {
   "label": "Work interval",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workflow_binding": {
   "label": "HR Workflow Binding",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workflow_decision": {
   "label": "HR Workflow Decision",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workflow_definition": {
   "label": "HR Workflow Definition",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workflow_event": {
   "label": "HR Workflow Event",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workflow_failure": {
   "label": "HR Workflow Failure",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workflow_flow_type": {
   "label": "HR Workflow Flow Type",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workflow_instance": {
   "label": "HR Workflow Instance",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workflow_step": {
   "label": "HR Workflow Step",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workflow_step_definition": {
   "label": "HR Workflow Step Definition",
-  "family": "Other"
+  "family": "HR"
  },
  "hr_workweek": {
   "label": "Workweek",
-  "family": "Other"
+  "family": "HR"
  },
  "html_extraction": {
   "label": "HTML extraction",
-  "family": "Other"
+  "family": "API"
  },
  "iam_access_audit": {
   "label": "Access audit",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "iam_api_key": {
   "label": "API Key",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "iam_emergency_door_request": {
   "label": "Emergency access request",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "iam_org_availability_key": {
   "label": "Organization availability key",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "iam_read_lane_v2_rollout": {
   "label": "Read lane v2 rollout",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "idempotency": {
   "label": "Idempotency",
-  "family": "Other"
+  "family": "Files"
  },
  "industry": {
   "label": "Industry",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "industry_curator": {
   "label": "Industry Curator",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "infra_status": {
   "label": "Infra status",
-  "family": "Other"
+  "family": "General"
  },
  "ingest_runs": {
   "label": "Ingest Runs",
-  "family": "Other"
+  "family": "Legal"
  },
  "integration_connection": {
   "label": "Integration connection",
-  "family": "Other"
+  "family": "Users"
  },
  "integration_connection_resource": {
   "label": "Integration connection resource",
-  "family": "Other"
+  "family": "Users"
  },
  "interview_decision_interview": {
   "label": "Decision Interview",
-  "family": "Other"
+  "family": "Interview"
  },
  "interview_decision_question": {
   "label": "Decision Question",
-  "family": "Other"
+  "family": "Interview"
  },
  "interview_document_revision": {
   "label": "Interview Document Revision",
-  "family": "Other"
+  "family": "Interview"
  },
  "interview_hole": {
   "label": "Interview Adversary Hole",
-  "family": "Other"
+  "family": "Interview"
  },
  "interview_question": {
   "label": "Interview Open Question",
-  "family": "Other"
+  "family": "Interview"
  },
  "interview_session": {
   "label": "Vision Interview Session",
-  "family": "Other"
+  "family": "Interview"
  },
  "interview_turn": {
   "label": "Interview Turn",
-  "family": "Other"
+  "family": "Interview"
  },
  "invitation": {
   "label": "Invitation",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "invitation_code": {
   "label": "Invitation Code",
-  "family": "Other"
+  "family": "Users"
  },
  "invitation_request": {
   "label": "Invitation Request",
-  "family": "Other"
+  "family": "Users"
  },
  "io_contract": {
   "label": "Io Contract",
-  "family": "Other"
+  "family": "Structured Content"
  },
  "item": {
   "label": "Item",
-  "family": "Other"
+  "family": "Assignment"
  },
  "item_mastery": {
   "label": "Item Mastery",
-  "family": "Other"
+  "family": "Education"
  },
  "judge_verdict": {
   "label": "Judge Verdict",
-  "family": "Other"
+  "family": "Platform"
  },
  "jurisdiction_policy": {
   "label": "Jurisdiction policy",
-  "family": "Other"
+  "family": "CRM"
  },
  "keyword_classification_queue": {
   "label": "Keyword Classification Queue",
-  "family": "Other"
+  "family": "SEO"
  },
  "kg_alert": {
   "label": "KG Alert",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_chunk_entities": {
   "label": "Kg Chunk Entities",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_chunks": {
   "label": "Kg Chunks",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_clusters": {
   "label": "Kg Clusters",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_edges": {
   "label": "Kg Edges",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_entities": {
   "label": "Kg Entities",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_entity_aliases": {
   "label": "Kg Entity Aliases",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_suggestion_ack": {
   "label": "KG Suggestion Ack",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_sweep_queue": {
   "label": "KG Sweep Queue",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_sweep_run": {
   "label": "KG Sweep Run",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_sweep_state": {
   "label": "KG Sweep State",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "kg_value_match": {
   "label": "KG Value Match",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "knob_override": {
   "label": "Knob Override",
-  "family": "Other"
+  "family": "Platform"
  },
  "knob_override_audit": {
   "label": "Knob override audit",
-  "family": "Other"
+  "family": "Platform"
  },
  "knob_rung_lock": {
   "label": "Knob Rung Lock",
-  "family": "Other"
+  "family": "Platform"
  },
  "knob_scope_kind": {
   "label": "Knob scope kind",
-  "family": "Other"
+  "family": "Platform"
  },
  "knob_write_door": {
   "label": "Knob write door",
-  "family": "Other"
+  "family": "Platform"
  },
  "league_membership": {
   "label": "League Membership",
-  "family": "Other"
+  "family": "Education"
  },
  "learn_doc": {
   "label": "Study Guide",
-  "family": "Other"
+  "family": "Education"
  },
  "library_doc": {
   "label": "Library Document",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "lifecycle_archive": {
   "label": "Lifecycle archive",
-  "family": "Other"
+  "family": "Platform"
  },
  "lifecycle_archive_row": {
   "label": "Lifecycle archive row",
-  "family": "Other"
+  "family": "Platform"
  },
  "lifecycle_audit": {
   "label": "Lifecycle audit",
-  "family": "Other"
+  "family": "Platform"
  },
  "lifecycle_entity_plan": {
   "label": "Lifecycle entity plan",
-  "family": "Other"
+  "family": "Platform"
  },
  "lifecycle_map_build": {
   "label": "Lifecycle map build",
-  "family": "Other"
+  "family": "Platform"
  },
  "lifecycle_reference_map": {
   "label": "Lifecycle reference map",
-  "family": "Other"
+  "family": "Platform"
  },
  "lifecycle_run": {
   "label": "Lifecycle run",
-  "family": "Other"
+  "family": "Platform"
  },
  "lifecycle_tier_ledger": {
   "label": "Lifecycle tier ledger",
-  "family": "Other"
+  "family": "Platform"
  },
  "location": {
   "label": "Location",
-  "family": "Other"
+  "family": "SEO"
  },
  "mandate": {
   "label": "Mandate",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_advance_batch_row": {
   "label": "Pin advance batch row",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_binding": {
   "label": "Mandate Binding (new)",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_candidate": {
   "label": "Mandate Candidate",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_candidate_run": {
   "label": "Mandate Candidate Run",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_candidate_run_payload": {
   "label": "Mandate Candidate Run Payload",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_goal_clauses": {
   "label": "Mandate Goal Clauses",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_observation": {
   "label": "Mandate Observation",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_reference": {
   "label": "Mandate Reference",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_scan": {
   "label": "Mandate Scan",
-  "family": "Other"
+  "family": "Mandate"
  },
  "mandate_treatment": {
   "label": "Mandate Treatment (new)",
-  "family": "Other"
+  "family": "Mandate"
  },
  "marketing_initiative": {
   "label": "Initiative",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "masterwork_corpus_item": {
   "label": "Masterwork Corpus Piece",
-  "family": "Other"
+  "family": "Platform"
  },
  "masterwork_run_kind": {
   "label": "Masterwork Run Kind",
-  "family": "Other"
+  "family": "Platform"
  },
  "masterwork_source": {
   "label": "Masterwork Source",
-  "family": "Other"
+  "family": "Platform"
  },
  "math_course_structure": {
   "label": "Math Course Structure",
-  "family": "Other"
+  "family": "Education"
  },
  "math_problem": {
   "label": "Math problem",
-  "family": "Other"
+  "family": "Education"
  },
  "matrx_action_ledger": {
   "label": "Action ledger",
-  "family": "Other"
+  "family": "Platform"
  },
  "mcp_config": {
   "label": "MCP config",
-  "family": "Other"
+  "family": "Tools"
  },
  "mcp_server": {
   "label": "MCP server",
-  "family": "Other"
+  "family": "Tools"
  },
  "mcp_user_conn": {
   "label": "MCP user connection",
-  "family": "Other"
+  "family": "Tools"
  },
  "media_capture_handoff": {
   "label": "Capture Handoff",
-  "family": "Other"
+  "family": "Media"
  },
  "media_catalog_setting": {
   "label": "Media Catalog Setting",
-  "family": "Other"
+  "family": "Media"
  },
  "media_library_item": {
   "label": "Library Item",
-  "family": "Other"
+  "family": "Media"
  },
  "media_selection_item": {
   "label": "Selection Item",
-  "family": "Other"
+  "family": "Media"
  },
  "media_selection_job": {
   "label": "Selection Job",
-  "family": "Other"
+  "family": "Media"
  },
  "media_source_library": {
   "label": "Source Library",
-  "family": "Other"
+  "family": "Media"
  },
  "meet_call_invite": {
   "label": "Call Invite",
-  "family": "Other"
+  "family": "Communication"
  },
  "meet_chat_message": {
   "label": "Meeting Chat Message",
-  "family": "Other"
+  "family": "Communication"
  },
  "meet_invitee": {
   "label": "Meeting Invitee",
-  "family": "Other"
+  "family": "Communication"
  },
  "meet_meeting": {
   "label": "Meeting",
-  "family": "Other"
+  "family": "Communication"
  },
  "meet_note": {
   "label": "Meeting Note",
-  "family": "Other"
+  "family": "Communication"
  },
  "meet_occurrence_override": {
   "label": "Meeting Occurrence Override",
-  "family": "Other"
+  "family": "Communication"
  },
  "meet_participant": {
   "label": "Meeting Participant",
-  "family": "Other"
+  "family": "Communication"
  },
  "meet_recording": {
   "label": "Meeting Recording",
-  "family": "Other"
+  "family": "Communication"
  },
  "meet_transcript_segment": {
   "label": "Meeting Transcript Segment",
-  "family": "Other"
+  "family": "Communication"
  },
  "membership": {
   "label": "Membership",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "membership_grant": {
   "label": "Membership Grant",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "message": {
   "label": "Message",
-  "family": "Other"
+  "family": "Chat"
  },
  "message_template": {
   "label": "Message Template",
-  "family": "Other"
+  "family": "Agents"
  },
  "meta_excluded_schema": {
   "label": "Excluded schema",
-  "family": "Other"
+  "family": "Meta"
  },
  "meta_table_stats_history": {
   "label": "Table stats history",
-  "family": "Other"
+  "family": "Meta"
  },
  "metadata_reserved_keys": {
   "label": "Metadata Reserved Keys",
-  "family": "Other"
+  "family": "Platform"
  },
  "migration_log": {
   "label": "Migration Log",
-  "family": "Other"
+  "family": "History"
  },
  "mtx_media_heal_queue": {
   "label": "Mtx Media Heal Queue",
-  "family": "Other"
+  "family": "Platform"
  },
  "mtx_public_url_guard": {
   "label": "Public URL guard",
-  "family": "Other"
+  "family": "Platform"
  },
  "ner_shadow": {
   "label": "NER Shadow",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "note_folder": {
   "label": "Note Folder",
-  "family": "Other"
+  "family": "Workspace"
  },
  "notification": {
   "label": "Notification",
-  "family": "Other"
+  "family": "Communication"
  },
  "notification_channel_preference": {
   "label": "Notification Channel Preference",
-  "family": "Other"
+  "family": "Communication"
  },
  "notification_event_override": {
   "label": "Notification Event Override",
-  "family": "Other"
+  "family": "Communication"
  },
  "notification_event_type": {
   "label": "Notification Event Type",
-  "family": "Other"
+  "family": "Communication"
  },
  "notification_preference": {
   "label": "Notification Preference",
-  "family": "Other"
+  "family": "Communication"
  },
  "notification_submission": {
   "label": "Self notification submission",
-  "family": "Other"
+  "family": "Communication"
  },
  "notify_outsider_door_baseline": {
   "label": "Notify Outsider Door Baseline",
-  "family": "Other"
+  "family": "HR"
  },
  "oauth_handoff_claim": {
   "label": "Oauth Handoff Claim",
-  "family": "Other"
+  "family": "Platform"
  },
  "opinion_clusters": {
   "label": "Opinion Clusters",
-  "family": "Other"
+  "family": "Legal"
  },
  "opinions": {
   "label": "Opinions",
-  "family": "Other"
+  "family": "Legal"
  },
  "ops_check_item": {
   "label": "Check Item",
-  "family": "Other"
+  "family": "OPS"
  },
  "ops_check_run": {
   "label": "Check Run",
-  "family": "Other"
+  "family": "OPS"
  },
  "ops_db_host_sample": {
   "label": "Database host sample",
-  "family": "Other"
+  "family": "OPS"
  },
  "ops_issue_class": {
   "label": "Ops Issue Class",
-  "family": "Other"
+  "family": "OPS"
  },
  "ops_issue_event": {
   "label": "Ops Issue Event",
-  "family": "Other"
+  "family": "OPS"
  },
  "ops_proof_check": {
   "label": "Proof Check",
-  "family": "Other"
+  "family": "OPS"
  },
  "ops_proof_run": {
   "label": "Proof Run",
-  "family": "Other"
+  "family": "OPS"
  },
  "ops_proof_scenario": {
   "label": "Proof Scenario",
-  "family": "Other"
+  "family": "OPS"
  },
  "org_admin_audit": {
   "label": "Org admin audit",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "org_change_policy": {
   "label": "Org Change Policy",
-  "family": "Other"
+  "family": "Platform"
  },
  "org_context_ledger": {
   "label": "Org Context Ledger",
-  "family": "Other"
+  "family": "Platform"
  },
  "org_industries": {
   "label": "Org Industries",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "org_member_control": {
   "label": "Org member control",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "org_module_config": {
   "label": "Organization module configuration",
-  "family": "Other"
+  "family": "Platform"
  },
  "org_plan": {
   "label": "Org Plan",
-  "family": "Other"
+  "family": "Billing"
  },
  "organization": {
   "label": "Organization",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "organization_preferences": {
   "label": "Organization Preferences",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "organization_visibility_version": {
   "label": "Organization Visibility Version",
-  "family": "Other"
+  "family": "Custom"
  },
  "output_feedback": {
   "label": "Output Feedback",
-  "family": "Other"
+  "family": "Platform"
  },
  "outreach_acceptance": {
   "label": "Outreach Acceptance",
-  "family": "Other"
+  "family": "CRM"
  },
  "page_extraction_job": {
   "label": "Extraction Dataset",
-  "family": "Other"
+  "family": "Document Processing"
  },
  "page_extraction_page_run": {
   "label": "Page Extraction Page Run",
-  "family": "Other"
+  "family": "Document Processing"
  },
  "page_extraction_results": {
   "label": "Page Extraction Results",
-  "family": "Other"
+  "family": "Document Processing"
  },
  "page_extraction_runs": {
   "label": "Page Extraction Runs",
-  "family": "Other"
+  "family": "Document Processing"
  },
  "page_intent_queue": {
   "label": "Page Intent Queue",
-  "family": "Other"
+  "family": "SEO"
  },
  "page_mapping_queue": {
   "label": "Page Mapping Queue",
-  "family": "Other"
+  "family": "SEO"
  },
  "part_config": {
   "label": "Part Config",
-  "family": "Other"
+  "family": "Partman"
  },
  "part_config_sub": {
   "label": "Part Config Sub",
-  "family": "Other"
+  "family": "Partman"
  },
  "party": {
   "label": "Entity",
-  "family": "Other"
+  "family": "CRM"
  },
  "party_contact_point": {
   "label": "Contact Point",
-  "family": "Other"
+  "family": "CRM"
  },
  "passkey_credential": {
   "label": "Passkey credential",
-  "family": "Other"
+  "family": "Users"
  },
  "pc_article": {
   "label": "Podcast Article",
-  "family": "Other"
+  "family": "Podcasts"
  },
  "pc_episode": {
   "label": "Podcast Episode",
-  "family": "Other"
+  "family": "Podcasts"
  },
  "pc_show": {
   "label": "Podcast Show",
-  "family": "Other"
+  "family": "Podcasts"
  },
  "pc_studio_run": {
   "label": "Podcast Studio Run",
-  "family": "Other"
+  "family": "Podcasts"
  },
  "pc_studio_run_asset": {
   "label": "Podcast Studio Run Asset",
-  "family": "Other"
+  "family": "Podcasts"
  },
  "pdf_consolidation_log": {
   "label": "Pdf Consolidation Log",
-  "family": "Other"
+  "family": "PDF"
  },
  "pdf_redaction_audit": {
   "label": "PDF Redaction Audit",
-  "family": "Other"
+  "family": "PDF"
  },
  "pdf_redaction_key_escrow": {
   "label": "Pdf Redaction Key Escrow",
-  "family": "Other"
+  "family": "PDF"
  },
  "permission_grant": {
   "label": "Permission grant",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "plan_entity": {
   "label": "Plan Entity",
-  "family": "Other"
+  "family": "Content Planning"
  },
  "plan_node": {
   "label": "Plan Node",
-  "family": "Other"
+  "family": "Content Planning"
  },
  "plan_node_artifact": {
   "label": "Plan Node Artifact",
-  "family": "Other"
+  "family": "Content Planning"
  },
  "plan_node_step": {
   "label": "Plan Node Step",
-  "family": "Other"
+  "family": "Content Planning"
  },
  "plan_profile": {
   "label": "Plan Vertical Profile",
-  "family": "Other"
+  "family": "Content Planning"
  },
  "platform_action_request": {
   "label": "Action Request",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_actor_session": {
   "label": "Actor session",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_actor_token": {
   "label": "Actor token",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_actor_token_event": {
   "label": "Actor token event",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_class_approval_by_arman": {
   "label": "Class approval by Arman",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_continued_access": {
   "label": "Continued Access",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_cutover_census_run": {
   "label": "Cutover census run",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_cutover_evaluation_replaced": {
   "label": "Cutover evaluation replaced",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_cutover_evaluation_write": {
   "label": "Cutover evaluation write",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_cutover_seam": {
   "label": "Cutover seam",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_cutover_seam_measure": {
   "label": "Cutover seam measure",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_cutover_seam_press": {
   "label": "Cutover seam press",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_dated_change": {
   "label": "Dated Change",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_doors_only_pending_cutover": {
   "label": "Doors-only pending cutover",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_google_calendar_event_create_intent": {
   "label": "Google calendar event create intent",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_google_task_create_intent": {
   "label": "Google task create intent",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_kernel_fingerprint_record": {
   "label": "Kernel fingerprint record",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_outcome_event": {
   "label": "Outcome Event",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_outsider_consumer": {
   "label": "Outsider consumer",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_provision_base_contract_pending": {
   "label": "Provision base contract pending",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_reachability": {
   "label": "Reachability",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_reachability_rebuild_pending": {
   "label": "Reachability rebuild pending",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_realtime_topic_prefix": {
   "label": "Realtime topic prefix",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_reference_category": {
   "label": "Reference category",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_reference_declaration": {
   "label": "Reference declaration",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_repo": {
   "label": "Repository",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_saved_view": {
   "label": "Saved view",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_schema": {
   "label": "Schema",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_secure_delivery": {
   "label": "Secure Delivery",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_share_link": {
   "label": "Share link",
-  "family": "Other"
+  "family": "Platform"
  },
  "platform_strict_class_probe": {
   "label": "Strict class probe",
-  "family": "Other"
+  "family": "Platform"
  },
  "podcast_race": {
   "label": "Podcast Race Episode",
-  "family": "Other"
+  "family": "Podcasts"
  },
  "processed_document": {
   "label": "Processed document",
-  "family": "Other"
+  "family": "Document Processing"
  },
  "processed_document_page": {
   "label": "Processed document page",
-  "family": "Other"
+  "family": "Document Processing"
  },
  "product_capture_file": {
   "label": "Product Capture File",
-  "family": "Other"
+  "family": "Workspace"
  },
  "product_capture_item": {
   "label": "Product Capture Item",
-  "family": "Other"
+  "family": "Workspace"
  },
  "product_capture_payload": {
   "label": "Product Capture Payload",
-  "family": "Other"
+  "family": "Workspace"
  },
  "product_capture_product": {
   "label": "Product Capture Product",
-  "family": "Other"
+  "family": "Workspace"
  },
  "product_capture_question": {
   "label": "Product Capture Question",
-  "family": "Other"
+  "family": "Workspace"
  },
  "provider_account": {
   "label": "Provider operating account",
-  "family": "Other"
+  "family": "Provider"
  },
  "provider_account_credential": {
   "label": "Provider account credential association",
-  "family": "Other"
+  "family": "Provider"
  },
  "provision": {
   "label": "Mandate Provision (new)",
-  "family": "Other"
+  "family": "Mandate"
  },
  "provision_generate_target": {
   "label": "Provision Generate Target",
-  "family": "Other"
+  "family": "Platform"
  },
  "provision_grant": {
   "label": "Provision Grant",
-  "family": "Other"
+  "family": "Platform"
  },
  "provision_marker": {
   "label": "Provision Marker",
-  "family": "Other"
+  "family": "Platform"
  },
  "provision_rule_message": {
   "label": "Provision Rule Message",
-  "family": "Other"
+  "family": "Platform"
  },
  "provision_schema": {
   "label": "Provision Schema",
-  "family": "Other"
+  "family": "Platform"
  },
  "provision_shape_debt": {
   "label": "Provision Shape Debt",
-  "family": "Other"
+  "family": "Platform"
  },
  "provision_spec": {
   "label": "Provision Spec",
-  "family": "Other"
+  "family": "Platform"
  },
  "provision_spec_grandfather": {
   "label": "Provision Spec Grandfather",
-  "family": "Other"
+  "family": "Platform"
  },
  "provision_vocabulary": {
   "label": "Provision Vocabulary",
-  "family": "Other"
+  "family": "Platform"
  },
  "purpose": {
   "label": "Purpose",
-  "family": "Other"
+  "family": "Platform"
  },
  "quiz_session": {
   "label": "Quiz Session",
-  "family": "Other"
+  "family": "Education"
  },
  "rag_ingest_run": {
   "label": "Ingest Run",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "rag_library_audit_log": {
   "label": "Library audit log",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "rate_limit_buckets": {
   "label": "Rate Limit Buckets",
-  "family": "Other"
+  "family": "Files"
  },
  "reachability_pending": {
   "label": "Reachability pending",
-  "family": "Other"
+  "family": "Platform"
  },
  "recompute_queue": {
   "label": "Recompute Queue",
-  "family": "Other"
+  "family": "HR"
  },
  "record_alias": {
   "label": "Record Alias",
-  "family": "Other"
+  "family": "Custom"
  },
  "redaction_mapping": {
   "label": "Redaction Mapping",
-  "family": "Other"
+  "family": "PDF"
  },
  "research_analysis": {
   "label": "Research Analysis",
-  "family": "Other"
+  "family": "Research"
  },
  "research_content": {
   "label": "Research Content",
-  "family": "Other"
+  "family": "Research"
  },
  "research_document": {
   "label": "Research Document",
-  "family": "Other"
+  "family": "Research"
  },
  "research_intent": {
   "label": "Research Intent",
-  "family": "Other"
+  "family": "Research"
  },
  "research_keyword": {
   "label": "Research Keyword",
-  "family": "Other"
+  "family": "Research"
  },
  "research_media": {
   "label": "Research Media",
-  "family": "Other"
+  "family": "Research"
  },
  "research_source": {
   "label": "Research Source",
-  "family": "Other"
+  "family": "Research"
  },
  "research_synthesis": {
   "label": "Research Synthesis",
-  "family": "Other"
+  "family": "Research"
  },
  "research_tag": {
   "label": "Research Tag",
-  "family": "Other"
+  "family": "Research"
  },
  "research_template": {
   "label": "Research Template",
-  "family": "Other"
+  "family": "Research"
  },
  "research_topic": {
   "label": "Research Topic",
-  "family": "Other"
+  "family": "Research"
  },
  "retention_policy": {
   "label": "Retention policy",
-  "family": "Other"
+  "family": "Platform"
  },
  "retrieval_audit": {
   "label": "Retrieval audit",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "review_queue": {
   "label": "Review Queue",
-  "family": "Other"
+  "family": "Agents"
  },
  "route_manifest_entry": {
   "label": "Route Manifest Entry",
-  "family": "Other"
+  "family": "Platform"
  },
  "row_version": {
   "label": "Row version",
-  "family": "Other"
+  "family": "History"
  },
  "runtime_operation_stream": {
   "label": "Operation stream",
-  "family": "Other"
+  "family": "Runtime"
  },
  "runtime_operation_stream_batch": {
   "label": "Operation stream batch",
-  "family": "Other"
+  "family": "Runtime"
  },
  "sandbox_instance": {
   "label": "Sandbox Instance",
-  "family": "Other"
+  "family": "General"
  },
  "sch_agent_task": {
   "label": "Agent Task Config",
-  "family": "Other"
+  "family": "Scheduling"
  },
  "sch_run": {
   "label": "Task Run",
-  "family": "Other"
+  "family": "Scheduling"
  },
  "sch_task": {
   "label": "Scheduled Task",
-  "family": "Other"
+  "family": "Scheduling"
  },
  "sch_trigger": {
   "label": "Task Trigger",
-  "family": "Other"
+  "family": "Scheduling"
  },
  "schema_client_exposure": {
   "label": "Schema Client Exposure",
-  "family": "Other"
+  "family": "Platform"
  },
  "schema_migration_ledger": {
   "label": "Migration ledger",
-  "family": "Other"
+  "family": "General"
  },
  "schema_migration_legacy": {
   "label": "Legacy migration ledger",
-  "family": "Other"
+  "family": "General"
  },
  "schema_migration_slot_grandfather": {
   "label": "Schema Migration Slot Grandfather",
-  "family": "Other"
+  "family": "General"
  },
  "schema_templates": {
   "label": "Schema Templates",
-  "family": "Other"
+  "family": "Workspace"
  },
  "scope": {
   "label": "Scope",
-  "family": "Other"
+  "family": "Scopes"
  },
  "scope_association_suggestion": {
   "label": "Scope Association Suggestion",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "scope_dataset_instance": {
   "label": "Scope dataset instance",
-  "family": "Other"
+  "family": "Context"
  },
  "scope_door_registry": {
   "label": "Scope Door Registry",
-  "family": "Other"
+  "family": "Context"
  },
  "scope_item_value_suggestion": {
   "label": "Scope Item Value Suggestion",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "scope_suggestion": {
   "label": "Scope Suggestion",
-  "family": "Other"
+  "family": "Knowledge"
  },
  "scope_type": {
   "label": "Scope Type",
-  "family": "Other"
+  "family": "Context"
  },
  "scrape_domain": {
   "label": "Scrape Domain",
-  "family": "Other"
+  "family": "Web Scraper"
  },
  "scrape_domain_settings": {
   "label": "Scrape Domain Settings",
-  "family": "Other"
+  "family": "Web Scraper"
  },
  "scrape_failure_log": {
   "label": "Scrape Failure Log",
-  "family": "Other"
+  "family": "Web Scraper"
  },
  "scrape_parsed_page": {
   "label": "Parsed page",
-  "family": "Other"
+  "family": "Web Scraper"
  },
  "scrape_path_override": {
   "label": "Scrape Path Override",
-  "family": "Other"
+  "family": "Web Scraper"
  },
  "scrape_path_pattern": {
   "label": "Scrape Path Pattern",
-  "family": "Other"
+  "family": "Web Scraper"
  },
  "scrape_retry_queue": {
   "label": "Scrape Retry Queue",
-  "family": "Other"
+  "family": "Web Scraper"
  },
  "search_item": {
   "label": "Search item",
-  "family": "Other"
+  "family": "Platform"
  },
  "seo_ai_capability": {
   "label": "SEO AI capability",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_ai_visibility_panel": {
   "label": "AI Visibility Panel",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_backlink_change_event": {
   "label": "Backlink Change Event",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_coverage_mention": {
   "label": "Coverage Mention",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_coverage_tracker": {
   "label": "Coverage Tracker",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_dimension_value_matcher": {
   "label": "Dimension Value Matcher",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_engine_schedule": {
   "label": "SEO Engine Schedule",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_geo_place": {
   "label": "Geo Place",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_keyword_facet": {
   "label": "Keyword Facet",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_keyword_place": {
   "label": "Keyword Place",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_keyword_saved_view": {
   "label": "Keyword Saved View",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_page_measurement_health": {
   "label": "Page Measurement Health",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_pr_moment": {
   "label": "PR Moment",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_serp_mention": {
   "label": "SERP Prospect Mention",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_serp_opportunity": {
   "label": "SERP Prospect Opportunity",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_site_geo_area": {
   "label": "Site Geo Area",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_site_keyword_offering": {
   "label": "Site Keyword Offering",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_site_offering_value": {
   "label": "Site Offering Value",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_site_value_combo": {
   "label": "Site Value Combination",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_site_value_worth": {
   "label": "Site Value Worth",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_site_vocabulary": {
   "label": "Site Vocabulary",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_source_request": {
   "label": "SEO Source Request",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_starter_pack": {
   "label": "SEO Industry Starter Pack",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_starter_pack_item": {
   "label": "SEO Starter Pack Item",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_story_angle": {
   "label": "SEO Story Angle",
-  "family": "Other"
+  "family": "SEO"
  },
  "seo_tracker_story": {
   "label": "Monitor Story",
-  "family": "Other"
+  "family": "SEO"
  },
  "shareable_resource_registry": {
   "label": "Shareable resource registry",
-  "family": "Other"
+  "family": "Platform"
  },
  "shared_canvas_item": {
   "label": "Shared Canvas Item",
-  "family": "Other"
+  "family": "Canvas"
  },
  "short_link": {
   "label": "Short Link",
-  "family": "Other"
+  "family": "Platform"
  },
  "sign_in_fk_legacy": {
   "label": "Sign-in reference baseline",
-  "family": "Other"
+  "family": "Platform"
  },
  "sms_consent": {
   "label": "SMS Consent",
-  "family": "Other"
+  "family": "Communication"
  },
  "sms_conversation": {
   "label": "SMS Conversation",
-  "family": "Other"
+  "family": "Communication"
  },
  "sms_message": {
   "label": "SMS Message",
-  "family": "Other"
+  "family": "Communication"
  },
  "sms_message_media": {
   "label": "SMS Media",
-  "family": "Other"
+  "family": "Communication"
  },
  "sms_notification": {
   "label": "SMS Notification",
-  "family": "Other"
+  "family": "Communication"
  },
  "sms_notification_preference": {
   "label": "SMS Notification Preference",
-  "family": "Other"
+  "family": "Communication"
  },
  "sms_phone_number": {
   "label": "SMS Phone Number",
-  "family": "Other"
+  "family": "Communication"
  },
  "sms_rate_limits": {
   "label": "Sms Rate Limits",
-  "family": "Other"
+  "family": "Communication"
  },
  "sms_webhook_logs": {
   "label": "Sms Webhook Logs",
-  "family": "Other"
+  "family": "Communication"
  },
  "soft_delete_cascade_job": {
   "label": "Soft-delete cascade job",
-  "family": "Other"
+  "family": "Platform"
  },
  "soft_delete_edge": {
   "label": "Soft Delete Edge",
-  "family": "Other"
+  "family": "Platform"
  },
  "source_authority": {
   "label": "Source authority",
-  "family": "Other"
+  "family": "Platform"
  },
  "spatial_board": {
   "label": "Spatial Board",
-  "family": "Other"
+  "family": "Workspace"
  },
  "stage_ref_kind": {
   "label": "Stage reference kind",
-  "family": "Other"
+  "family": "Growth"
  },
  "stamped_write_table": {
   "label": "Stamped Write Table",
-  "family": "Other"
+  "family": "Platform"
  },
  "structure": {
   "label": "Structure",
-  "family": "Other"
+  "family": "Files"
  },
  "studio_cleaned_segments": {
   "label": "Studio Cleaned Segments",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "studio_concept_items": {
   "label": "Studio Concept Items",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "studio_documents": {
   "label": "Studio Document",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "studio_module_segments": {
   "label": "Studio Module Segments",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "studio_raw_segments": {
   "label": "Studio Raw Segments",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "studio_recording_chunks": {
   "label": "Studio Recording Chunk",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "studio_recording_segments": {
   "label": "Studio Recording Segment",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "studio_run": {
   "label": "Studio Run",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "studio_session": {
   "label": "Audio Session",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "studio_session_settings": {
   "label": "Studio Session Settings",
-  "family": "Other"
+  "family": "Transcripts"
  },
  "study_attempt": {
   "label": "Study Attempt",
-  "family": "Other"
+  "family": "Education"
  },
  "study_goal": {
   "label": "Study Goal",
-  "family": "Other"
+  "family": "Education"
  },
  "study_media": {
   "label": "Study Media",
-  "family": "Other"
+  "family": "Education"
  },
  "study_plan": {
   "label": "Study Plan",
-  "family": "Other"
+  "family": "Education"
  },
  "study_plan_block": {
   "label": "Study Plan Block",
-  "family": "Other"
+  "family": "Education"
  },
  "study_plan_day": {
   "label": "Study Plan Day",
-  "family": "Other"
+  "family": "Education"
  },
  "study_reminder_context": {
   "label": "Study Reminder Context",
-  "family": "Other"
+  "family": "Education"
  },
  "study_reminder_delivery": {
   "label": "Study Reminder Delivery",
-  "family": "Other"
+  "family": "Education"
  },
  "study_session": {
   "label": "Study Session",
-  "family": "Other"
+  "family": "Education"
  },
  "study_source_chunk": {
   "label": "Study Source Chunk",
-  "family": "Other"
+  "family": "Education"
  },
  "study_streak": {
   "label": "Study streak",
-  "family": "Other"
+  "family": "Education"
  },
  "study_structured_section": {
   "label": "Study Structured Section",
-  "family": "Other"
+  "family": "Education"
  },
  "superseded_policy": {
   "label": "Superseded Policy",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "surface": {
   "label": "UI Surface",
-  "family": "Other"
+  "family": "UI"
  },
  "system_announcement": {
   "label": "System announcement",
-  "family": "Other"
+  "family": "Users"
  },
  "system_context_item": {
   "label": "System Context Item",
-  "family": "Other"
+  "family": "Context"
  },
  "system_error": {
   "label": "System Error",
-  "family": "Other"
+  "family": "OPS"
  },
  "system_orgs": {
   "label": "System Orgs",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "system_write_failure": {
   "label": "System Write Failure",
-  "family": "Other"
+  "family": "OPS"
  },
  "t13_backfill_ledger": {
   "label": "T-13 backfill ledger",
-  "family": "Other"
+  "family": "OPS"
  },
  "t13_default_ledger": {
   "label": "T-13 default ledger",
-  "family": "Other"
+  "family": "OPS"
  },
  "t13_row_column_events": {
   "label": "T-13 row column events",
-  "family": "Other"
+  "family": "OPS"
  },
  "task_user_state": {
   "label": "Task user state",
-  "family": "Other"
+  "family": "Workspace"
  },
  "taxonomy_node": {
   "label": "Taxonomy node",
-  "family": "Other"
+  "family": "Platform"
  },
  "template_context_items": {
   "label": "Template Context Items",
-  "family": "Other"
+  "family": "Context"
  },
  "template_scope_types": {
   "label": "Template Scope Types",
-  "family": "Other"
+  "family": "Context"
  },
  "templates": {
   "label": "Templates",
-  "family": "Other"
+  "family": "Context"
  },
  "test_handset_inbox": {
   "label": "Test Handset Inbox",
-  "family": "Other"
+  "family": "Communication"
  },
  "test_handset_verification": {
   "label": "Test Handset Verification",
-  "family": "Other"
+  "family": "Communication"
  },
  "thread": {
   "label": "Thread",
-  "family": "Other"
+  "family": "Workspace"
  },
  "tool_binding": {
   "label": "Tool binding",
-  "family": "Other"
+  "family": "Tools"
  },
  "tool_call": {
   "label": "Tool Call",
-  "family": "Other"
+  "family": "Chat"
  },
  "tool_executor": {
   "label": "Tool executor",
-  "family": "Other"
+  "family": "Tools"
  },
  "tool_surface_defaults": {
   "label": "Tool surface defaults",
-  "family": "Other"
+  "family": "Tools"
  },
  "topic_placement_queue": {
   "label": "Topic Placement Queue",
-  "family": "Other"
+  "family": "SEO"
  },
  "trigger_event": {
   "label": "Trigger Event",
-  "family": "Other"
+  "family": "Workflows"
  },
  "udt_dataset_template": {
   "label": "Dataset template",
-  "family": "Other"
+  "family": "Workspace"
  },
  "udt_dataset_template_fields": {
   "label": "Udt Dataset Template Fields",
-  "family": "Other"
+  "family": "Workspace"
  },
  "udt_document": {
   "label": "Cloud document",
-  "family": "Other"
+  "family": "Workspace"
  },
  "udt_document_snapshot": {
   "label": "Document snapshot",
-  "family": "Other"
+  "family": "Workspace"
  },
  "udt_workbook_snapshot": {
   "label": "Workbook snapshot",
-  "family": "Other"
+  "family": "Workspace"
  },
  "ui_client": {
   "label": "UI client",
-  "family": "Other"
+  "family": "UI"
  },
  "ui_surface_agent_pref": {
   "label": "UI Surface Agent Pref",
-  "family": "Other"
+  "family": "UI"
  },
  "ui_surface_agent_role": {
   "label": "UI surface agent role",
-  "family": "Other"
+  "family": "UI"
  },
  "ui_surface_client_tool": {
   "label": "UI surface client tool",
-  "family": "Other"
+  "family": "UI"
  },
  "ui_surface_config": {
   "label": "UI Surface Config",
-  "family": "Other"
+  "family": "UI"
  },
  "ui_surface_item_type": {
   "label": "UI surface item type",
-  "family": "Other"
+  "family": "UI"
  },
  "ui_surface_value": {
   "label": "UI surface value",
-  "family": "Other"
+  "family": "UI"
  },
  "ui_surface_write_target": {
   "label": "UI surface write target",
-  "family": "Other"
+  "family": "UI"
  },
  "unsubscribe_token": {
   "label": "Unsubscribe Token",
-  "family": "Other"
+  "family": "CRM"
  },
  "uploads_inflight": {
   "label": "Uploads Inflight",
-  "family": "Other"
+  "family": "Files"
  },
  "user": {
   "label": "User",
-  "family": "Other"
+  "family": "Access & Identity"
  },
  "user_achievement": {
   "label": "User Achievement",
-  "family": "Other"
+  "family": "Users"
  },
  "user_active_context": {
   "label": "Active context",
-  "family": "Other"
+  "family": "Context"
  },
  "user_analysis_preference": {
   "label": "User Analysis Preference",
-  "family": "Other"
+  "family": "Users"
  },
  "user_email_preference": {
   "label": "User Email Preference",
-  "family": "Other"
+  "family": "Users"
  },
  "user_entity_state": {
   "label": "User entity state",
-  "family": "Other"
+  "family": "Platform"
  },
  "user_feedback": {
   "label": "User Feedback",
-  "family": "Other"
+  "family": "Users"
  },
  "user_follows": {
   "label": "User Follows",
-  "family": "Other"
+  "family": "Users"
  },
  "user_form_profile": {
   "label": "User Form Profile",
-  "family": "Other"
+  "family": "Users"
  },
  "user_markdown_sample": {
   "label": "User Markdown Sample",
-  "family": "Other"
+  "family": "Users"
  },
  "user_memory": {
   "label": "User Memory",
-  "family": "Other"
+  "family": "Users"
  },
  "user_preference": {
   "label": "User Preference",
-  "family": "Other"
+  "family": "Users"
  },
  "user_profile": {
   "label": "User Profile",
-  "family": "Other"
+  "family": "Users"
  },
  "user_secret": {
   "label": "User secret",
-  "family": "Other"
+  "family": "Users"
  },
  "user_secret_audit": {
   "label": "Secret audit",
-  "family": "Other"
+  "family": "Users"
  },
  "user_secret_grant": {
   "label": "Secret grant",
-  "family": "Other"
+  "family": "Users"
  },
  "user_stat": {
   "label": "User Stats",
-  "family": "Other"
+  "family": "Users"
  },
  "user_storage_usage": {
   "label": "Storage usage",
-  "family": "Other"
+  "family": "Files"
  },
  "user_surface_state": {
   "label": "User Surface State",
-  "family": "Other"
+  "family": "Users"
  },
  "vault_fill_approvals": {
   "label": "Vault fill approvals",
-  "family": "Other"
+  "family": "Users"
  },
  "vault_fill_devices": {
   "label": "Vault fill devices",
-  "family": "Other"
+  "family": "Users"
  },
  "vault_fill_nonces": {
   "label": "Vault fill nonces",
-  "family": "Other"
+  "family": "Users"
  },
  "visibility_cache": {
   "label": "Visibility Cache",
-  "family": "Other"
+  "family": "Custom"
  },
  "visibility_epoch": {
   "label": "Visibility Epoch",
-  "family": "Other"
+  "family": "Custom"
  },
  "voice": {
   "label": "Voice",
-  "family": "Other"
+  "family": "AI Models"
  },
  "war_room": {
   "label": "War Room",
-  "family": "Other"
+  "family": "Workspace"
  },
  "wbx_demo": {
   "label": "Extension demo record",
-  "family": "Other"
+  "family": "Browser Extension"
  },
  "wbx_guidance": {
   "label": "Extension Guidance",
-  "family": "Other"
+  "family": "Browser Extension"
  },
  "wbx_highlight": {
   "label": "Extension Highlight",
-  "family": "Other"
+  "family": "Browser Extension"
  },
  "wbx_pattern": {
   "label": "Extension Scrape Pattern",
-  "family": "Other"
+  "family": "Browser Extension"
  },
  "wbx_recipe": {
   "label": "Extension recipe",
-  "family": "Other"
+  "family": "Browser Extension"
  },
  "wbx_screenshot": {
   "label": "Extension Screenshot",
-  "family": "Other"
+  "family": "Browser Extension"
  },
  "wbx_seo_audit": {
   "label": "Extension SEO Audit",
-  "family": "Other"
+  "family": "Browser Extension"
  },
  "wc_claim": {
   "label": "WC Claim",
-  "family": "Other"
+  "family": "Legal"
  },
  "wc_impairment_definition": {
   "label": "WC Impairment Definition",
-  "family": "Other"
+  "family": "Legal"
  },
  "wc_injury": {
   "label": "WC Injury",
-  "family": "Other"
+  "family": "Legal"
  },
  "wc_report": {
   "label": "WC Report",
-  "family": "Other"
+  "family": "Legal"
  },
  "web_analysis_item": {
   "label": "Analysis Item",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_brand": {
   "label": "Brand",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_brand_asset": {
   "label": "Brand Asset",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_brand_offering": {
   "label": "Brand Offering",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_business_fact": {
   "label": "Business Fact",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_business_location": {
   "label": "Business Location",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_channel_analytics_daily": {
   "label": "Channel analytics (daily)",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_crawl_event": {
   "label": "Web Crawl Event",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_crawl_preset": {
   "label": "Web Crawl Preset",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_crawl_schedule": {
   "label": "Web Crawl Schedule",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_crawl_session": {
   "label": "Crawl Session",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_crawl_url": {
   "label": "Web Crawl URL",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_discovered_item": {
   "label": "Discovered Item",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_finding": {
   "label": "Finding",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_gsc_page_stat": {
   "label": "GSC Page Stat",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_link_edge": {
   "label": "Link Edge",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_listing_publisher": {
   "label": "Listing Publisher",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_location_listing": {
   "label": "Location Listing",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_news_item": {
   "label": "News Item",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_offering_template": {
   "label": "Offering Template",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_page": {
   "label": "Canonical Page",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_page_content": {
   "label": "Page Draft Content",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_page_evidence": {
   "label": "Web Page Evidence",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_page_sitemap": {
   "label": "Page Sitemap Membership",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_property": {
   "label": "Brand Property",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_provider": {
   "label": "Provider",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_result": {
   "label": "Analysis Result",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_screenshot": {
   "label": "Screenshot",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_site": {
   "label": "Site",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_site_endpoint_rule": {
   "label": "Site Endpoint Rule",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_site_item_config": {
   "label": "Site Item Config",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_site_offering": {
   "label": "Site Offering",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_sitemap": {
   "label": "Sitemap",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_snapshot": {
   "label": "Snapshot",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_tag_manager_snapshot": {
   "label": "Tag Manager snapshot",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_voice_fingerprint": {
   "label": "Voice Fingerprint",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "web_youtube_video": {
   "label": "YouTube video",
-  "family": "Other"
+  "family": "Marketing & Web"
  },
  "webhook_deliveries": {
   "label": "Webhook Deliveries",
-  "family": "Other"
+  "family": "Files"
  },
  "webhook_dispatch_state": {
   "label": "Webhook Dispatch State",
-  "family": "Other"
+  "family": "Files"
  },
  "webhooks": {
   "label": "Webhooks",
-  "family": "Other"
+  "family": "Files"
  },
  "wf_node_data_slot": {
   "label": "Workflow Node Data Slot",
-  "family": "Other"
+  "family": "Workflows"
  },
  "work_claim": {
   "label": "Work Claim",
-  "family": "Other"
+  "family": "Platform"
  },
  "work_item": {
   "label": "Runtime Work Item",
-  "family": "Other"
+  "family": "Runtime"
  },
  "workbook": {
   "label": "Workbook",
-  "family": "Other"
+  "family": "Workspace"
  },
  "worker_heartbeat": {
   "label": "Worker Heartbeat",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow": {
   "label": "Workflow",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_card": {
   "label": "Workflow Card",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_checkpoint": {
   "label": "Workflow Checkpoint",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_comparison": {
   "label": "Workflow Comparison",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_definition_version": {
   "label": "Workflow Definition Version",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_idempotency": {
   "label": "Workflow Idempotency",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_job": {
   "label": "Workflow Job",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_node_events": {
   "label": "Workflow Node Events",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_node_outcome": {
   "label": "Workflow Node Outcome",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_plan": {
   "label": "Workflow Plan",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_plan_event": {
   "label": "Workflow Plan Event",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_plan_sample": {
   "label": "Workflow Plan Sample",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_recovery_audit": {
   "label": "Workflow Recovery Audit",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_run": {
   "label": "Workflow Run",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_run_cost": {
   "label": "Workflow run cost",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_run_facts": {
   "label": "Workflow run facts",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_run_log": {
   "label": "Workflow Run Log",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_runtime_surface": {
   "label": "Run Surface",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_template": {
   "label": "Workflow Template",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_trigger": {
   "label": "Workflow Trigger",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_trigger_fire": {
   "label": "Workflow Trigger Fire",
-  "family": "Other"
+  "family": "Workflows"
  },
  "workflow_work_item": {
   "label": "Work Item",
-  "family": "Other"
+  "family": "Workflows"
  },
  "write_guard_key": {
   "label": "Write Guard Key",
-  "family": "Other"
+  "family": "HR"
  },
  "youtube_quota_day": {
   "label": "Youtube Quota Day",
-  "family": "Other"
+  "family": "Research"
  },
  "youtube_search": {
   "label": "YouTube Search",
-  "family": "Other"
+  "family": "Research"
  },
  "youtube_video": {
   "label": "YouTube Video",
-  "family": "Other"
+  "family": "Research"
  },
  "structured_list": {
   "label": "Structured List",

@@ -17,6 +17,10 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { isEntityTypeToken } from "@ai-matrx/associations";
+// THE ONE group rule — the same file the "Add a reference" picker groups by.
+// Node strips its types; it carries no `@/` imports for exactly this reason.
+import { referenceTypeGroup } from "../features/scopes/utils/referenceTypeGroups.ts";
 
 const ROOT = process.cwd();
 const MANIFEST = resolve(ROOT, "docs/protocol/kind_directives_catalog.generated.json");
@@ -36,9 +40,24 @@ const nouns = {};
  * heavy enough to matter for build memory) are deliberately NOT carried.
  */
 const display = {};
+const aliases = catalog.aliases ?? {};
+/**
+ * A record type's group is the picker's group, never the catalog's `family`
+ * (`platform.entity_types.category` — a second, older grouping: a Note card
+ * said "Sources & Outputs" while the picker filed Note under "Workspace", G6B
+ * review 2026-10-02). A noun with no entity type (a derived shape) keeps the
+ * catalog's word. Guard: reference-picker/__tests__/a-type-names-its-group-once.
+ */
+function familyOf(n) {
+  // A legacy wire noun is the record type it aliases (`document` → `udt_document`).
+  const alias = aliases[n.noun];
+  const token = alias && isEntityTypeToken(alias) ? alias : n.noun;
+  if (isEntityTypeToken(token)) return referenceTypeGroup(token);
+  return (n.family ?? "").trim();
+}
 for (const n of catalog.nouns) {
   const label = (n.label ?? "").trim();
-  const family = (n.family ?? "").trim();
+  const family = familyOf(n);
   if (label || family) display[n.noun] = { label, family };
   const ids = n.identity_fields ?? [];
   if (!n.table || ids.length !== 1 || ids[0] !== "id") continue;
@@ -64,7 +83,11 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = ${JSON.stringify(
 export interface CatalogNounDisplay {
   /** The catalog's human label ("Agent"). Empty when the server has none. */
   label: string;
-  /** The catalog family ("Agents"). Empty when the server has none. */
+  /**
+   * The group a person reads ("Workspace") — for a record type, THE group rule
+   * the reference picker uses (features/scopes/utils/referenceTypeGroups.ts);
+   * else the catalog's family. Empty when neither has one.
+   */
   family: string;
 }
 
