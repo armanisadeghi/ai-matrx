@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
@@ -89,7 +90,7 @@ function buildEntries(
       const subEvent = data.type;
       if (!subEvent || typeof subEvent !== "string") continue;
       const stage = STAGE_FROM_EVENT[subEvent] ?? null;
-      const label = subEvent.replace(/_/g, " ");
+      const label = (humanizeIdentifier(subEvent) || subEvent);
       const isFailed = subEvent.includes("_failed");
       const isComplete =
         subEvent.includes("_complete") || subEvent.includes("_stored");

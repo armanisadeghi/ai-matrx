@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * recordChangeApproval — READ THE WAIT, and nothing else.
  *
@@ -365,8 +366,7 @@ export const HELD_FOR_APPROVAL = "held_for_approval";
 
 /** `day_rate` → `Day rate`, for a key the declaration gave no label for. */
 function humanKey(key: string): string {
-  const words = key.replace(/[_-]+/g, " ").trim();
-  return words.length ? words[0]!.toUpperCase() + words.slice(1) : key;
+  return humanizeIdentifier(key) || key;
 }
 
 /**

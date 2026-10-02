@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * One Source: a single summary line, expand to tune.
  *
@@ -68,7 +69,7 @@ const KIND_WORDS: Record<string, { label: string; icon: LucideIcon }> = {
 function kindWords(resourceType: string) {
   return (
     KIND_WORDS[resourceType] ?? {
-      label: resourceType.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()),
+      label: (humanizeIdentifier(resourceType) || resourceType),
       icon: FileText,
     }
   );

@@ -1451,7 +1451,7 @@ function AgentToolSectionsBlock({ result }: { result: AgentToolSearchOne & Agent
       {result.relevance_note ? <p className="text-[11px] text-muted-foreground">{result.relevance_note}</p> : null}
       {sections.map((sec) => (
         <div key={sec.section} className="text-xs">
-          <span className="font-medium">{sec.section.replace(/_/g, " ")}</span>{" "}
+          <span className="font-medium">{humanizeIdentifier(sec.section) || sec.section}</span>{" "}
           <span className="text-muted-foreground tabular-nums">
             {sec.withheld
               ? `withheld — ${sec.withheld}`

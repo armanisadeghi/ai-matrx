@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * topicFromIdea — flatten a chosen `topic_idea` value into the topic textarea
  * text. Pure module (no component imports) so TopicIdeaHelper and the parser
@@ -15,8 +16,7 @@ const IDEA_META_FIELDS = new Set(["__kind", "id", "index", "selected"]);
 
 /** Turn a field name into a human label ("why_now" → "Why now"). */
 function labelFor(key: string): string {
-  const words = key.replace(/[_-]+/g, " ").trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return humanizeIdentifier(key) || key;
 }
 
 export function topicFromIdea(value: unknown): string {

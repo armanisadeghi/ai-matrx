@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * ProcessingView — full-screen live status page shown the moment the
  * user hits Save. Replaces the old "everything piled onto the context
@@ -336,7 +337,7 @@ function PageLedgerRow({
         )}
         {row.title && row.kind && (
           <p className="truncate text-[10px] capitalize text-muted-foreground">
-            {row.kind.replace(/_/g, " ")}
+            {humanizeIdentifier(row.kind) || row.kind}
           </p>
         )}
       </div>

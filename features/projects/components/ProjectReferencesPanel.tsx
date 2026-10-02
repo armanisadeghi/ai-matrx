@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useMemo, useState } from "react";
 import {
   Boxes,
@@ -64,10 +65,10 @@ function resolveRef(r: ProjectReference): ResolvedRef {
   return {
     ref: r,
     Icon: Boxes,
-    label: r.tableName
-      .replace(/^(ctx_|agx_|cx_|rs_|udt_|wc_|pc_|kg_|wf_)/, "")
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase()),
+    label:
+      humanizeIdentifier(
+        r.tableName.replace(/^(ctx_|agx_|cx_|rs_|udt_|wc_|pc_|kg_|wf_)/, ""),
+      ) || r.tableName,
     colorClass: "text-muted-foreground",
     group: "other",
   };

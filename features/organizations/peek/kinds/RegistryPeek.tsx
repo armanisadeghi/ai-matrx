@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * RegistryPeek — the peek every registered entity gets for free.
  *
@@ -132,7 +133,7 @@ export function RegistryPeek({
             const raw = asText(row[field]);
             const value = field === "shown_to" && raw ? shownToLabel(raw) : raw;
             return value ? (
-              <PeekField key={field} label={field.replace(/_/g, " ")}>
+              <PeekField key={field} label={humanizeIdentifier(field) || field}>
                 <div className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words text-sm text-muted-foreground">
                   {value}
                 </div>
@@ -142,7 +143,7 @@ export function RegistryPeek({
           {DATE_FIELDS.map((field) => {
             const value = asText(row[field]);
             return value ? (
-              <PeekField key={field} label={field.replace(/_/g, " ")}>
+              <PeekField key={field} label={humanizeIdentifier(field) || field}>
                 <span className="text-sm text-muted-foreground">
                   {new Date(value).toLocaleString()}
                 </span>

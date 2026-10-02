@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/research/browse/types.ts
 //
 // The research TOPICS list (/research/topics) as a canonical entity list.
@@ -42,7 +43,7 @@ export const AUTONOMY_LABELS: Record<string, string> = {
 
 export function labelFor(map: Record<string, string>, value: string | null | undefined): string {
   if (!value) return "Unknown";
-  return map[value] ?? value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
+  return map[value] ?? (humanizeIdentifier(value) || value);
 }
 
 export function topicHref(id: string): string {

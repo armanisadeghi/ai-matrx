@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * PartyPeek — "wait, which Dana is that?" for a Person (or company) in the CRM.
  *
@@ -45,7 +46,7 @@ function employerLine(detail: PartyDetail): string | null {
 function channelWords(code: string | null | undefined): string {
   const raw = (code ?? "").trim();
   if (!raw) return "Activity";
-  return raw.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return humanizeIdentifier(raw) || raw;
 }
 
 export default function PartyPeek({ id, open, onClose }: PeekProps) {
