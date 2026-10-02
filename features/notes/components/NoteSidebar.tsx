@@ -171,6 +171,8 @@ const RECENT_PAGE_SIZE = 10;
 
 interface NoteSidebarProps {
   instanceId: string;
+  /** Called when the person opens a note from the list (a narrow host shows it). */
+  onNoteOpened?: (noteId: string) => void;
 }
 
 /** "admin's Workspace" → "AW"; "Castellano & Reyes, LLP" → "CRL". */
@@ -183,7 +185,7 @@ function orgInitials(name: string): string {
   return letters.slice(0, 3).join("") || name.slice(0, 2);
 }
 
-export function NoteSidebar({ instanceId }: NoteSidebarProps) {
+export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
   const dispatch = useAppDispatch();
   const { id: userId } = useAppSelector(selectUser);
   const openKnowledge = useOpenNoteKnowledgePanel();
@@ -699,8 +701,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
       dispatch(addInstanceTab({ instanceId, noteId }));
       dispatch(setInstanceActiveTab({ instanceId, noteId }));
       dispatch(fetchNoteContent(noteId));
+      onNoteOpened?.(noteId);
     },
-    [dispatch, instanceId],
+    [dispatch, instanceId, onNoteOpened],
   );
 
   const handleNewNote = useCallback(

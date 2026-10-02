@@ -42,6 +42,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import {
+  ChevronLeftTapButton,
   PanelLeftTapButton,
   HistoryTapButton,
   ListTapButton,
@@ -117,6 +118,9 @@ import {
   NAV_ITEM_UNSELECTED,
 } from "@/features/shell/components/header/navItemClasses";
 
+/** Below this width of its own container, the list and the note take turns. */
+const NARROW_NOTES_PX = 520;
+
 export interface NotesViewConfig {
   /** Show the sidebar with folder tree (default: true) */
   showSidebar?: boolean;
@@ -167,6 +171,17 @@ export function NotesView({
   const [showHistory, setShowHistory] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const singleNote = config?.singleNote ?? null;
+
+  // ── Narrow host (a canvas pane, a split) ────────────────────────────
+  // Below NARROW_NOTES_PX of its OWN width the sidebar would squeeze the note
+  // titles to nothing, so the list and the open note take turns at full width
+  // (list → open a note → back), the way the phone view does. Measured, never
+  // the viewport: a 360px canvas pane on a wide screen is narrow.
+  const [paneWidth, setPaneWidth] = useState<number | null>(null);
+  const narrowLayout =
+    !isMobile && paneWidth !== null && paneWidth > 0 && paneWidth < NARROW_NOTES_PX;
+  // The note the person stepped back to the list from; opening any note clears it.
+  const [listShownFrom, setListShownFrom] = useState<{ noteId: string | null } | null>(null);
 
   // ── Resizable + collapsible left sidebar (react-resizable-panels v4) ──
   // The library owns the size; we mirror only the collapsed BOOLEAN for the
@@ -468,6 +483,16 @@ export function NotesView({
   // Answered only for keys pressed in THIS notes view (utils/keyboard-scope):
   // a board or a panel mounts several, and each must not act at once.
   const shortcutRootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const root = shortcutRootRef.current;
+    if (!root || isMobile) return;
+    const measure = () => setPaneWidth(Math.round(root.clientWidth));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [isMobile]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!surfaceOwnsKey(e, shortcutRootRef.current)) return;
@@ -609,6 +634,10 @@ export function NotesView({
         : NAV_ITEM_UNSELECTED,
     );
 
+  const narrowSidebar = narrowLayout && showSidebar && !singleNote;
+  const narrowShowsList =
+    narrowSidebar && (!activeTabId || (listShownFrom !== null && listShownFrom.noteId === activeTabId));
+
   // Main editor column — shared by the sidebar-shown (resizable panel) and the
   // sidebar-hidden (full-width) layouts. h-full/w-full so it fills either one.
   const mainArea = (
@@ -680,8 +709,20 @@ export function NotesView({
   // ── Render ─────────────────────────────────────────────────────────
   const headerChrome = (
     <div className="flex w-full min-w-0 items-center gap-0">
-      {/* Left — sidebar toggle (shell owns far-left hamburger) */}
-      {showSidebar && !singleNote ? (
+      {/* Left — sidebar toggle (shell owns far-left hamburger); in a narrow
+          host, the way back from the open note to the list. */}
+      {narrowSidebar ? (
+        narrowShowsList ? (
+          <div className="w-[calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))] shrink-0" aria-hidden />
+        ) : (
+          <ChevronLeftTapButton
+            variant="transparent"
+            onClick={() => setListShownFrom({ noteId: activeTabId ?? null })}
+            ariaLabel="All notes"
+            tooltip="All notes"
+          />
+        )
+      ) : showSidebar && !singleNote ? (
         <PanelLeftTapButton
           variant="transparent"
           onClick={toggleSidebar}
@@ -694,7 +735,7 @@ export function NotesView({
 
       {/* Center — view / style modes only */}
       <div className="flex min-w-0 flex-1 items-center justify-center">
-        {headerNoteId && (
+        {headerNoteId && !narrowShowsList && (
           // Equal columns: the control's width never depends on which view
           // is selected (a bolder selected label used to nudge it sideways).
           // Desktop only: the server draws this header before the phone view
@@ -713,7 +754,8 @@ export function NotesView({
                 className={cn(modeBtnClass(mode), "justify-center font-medium")}
                 onClick={() => setMode(mode)}
               >
-                <Icon /> {label}
+                <Icon />
+                {narrowLayout ? <span className="sr-only">{label}</span> : label}
               </button>
             ))}
           </div>
@@ -722,7 +764,7 @@ export function NotesView({
 
       {hidePageHeader ? (
         <TapTargetButtonGroup>
-          {activeTabId && (
+          {activeTabId && !narrowShowsList && (
             <>
               <ListTapButton
                 variant="group"
@@ -847,7 +889,15 @@ export function NotesView({
               (read server-side in app/(core)/notes/layout.tsx for a flash-free
               first paint). Sidebar hidden (singleNote / showSidebar=false) →
               just the main area, no group. */}
-          {showSidebar && !singleNote ? (
+          {narrowSidebar ? (
+            narrowShowsList ? (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <NoteSidebar instanceId={instanceId} onNoteOpened={() => setListShownFrom(null)} />
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col">{mainArea}</div>
+            )
+          ) : showSidebar && !singleNote ? (
             <ResizablePanelGroup
               id="notes-shell"
               orientation="horizontal"
