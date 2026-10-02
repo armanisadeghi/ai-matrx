@@ -402,7 +402,7 @@ end
 $function$;
 
 delete from platform.client_callable_door
- where schema_name = 'custom' and function_name = 'relation_names_match';
+ where schema_name = 'custom' and function_name in ('relation_names_match', '_relation_names_resolve');
 
 drop function custom.relation_names_match(uuid, uuid, text[]);
 drop function custom._relation_names_resolve(uuid, uuid, text[]);

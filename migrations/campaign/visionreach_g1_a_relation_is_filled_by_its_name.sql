@@ -1,4 +1,3 @@
--- draft: VISION-REACH clone proof pending
 -- additive: yes
 --   It ADDS three functions — custom.relation_name_key(text), custom._relation_names_resolve(uuid,
 --   uuid, text[]) (EXECUTE to postgres only, as the store's event trigger leaves every new custom
@@ -206,16 +205,13 @@ comment on function custom.relation_names_match(uuid, uuid, text[]) is
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, declared_by, reason,
-   signed_in_callers, anonymous_callers, non_client_lane, identity_argtypes)
+   signed_in_callers, anonymous_callers, non_client_lane, identity_argtypes, argument_rules)
 values
   ('custom', 'relation_names_match', 'p_organization_id uuid, p_table_id uuid, p_names text[]',
    'migrations/campaign/visionreach_g1_a_relation_is_filled_by_its_name.sql (lane VISION-REACH)',
    'custom.assert_client_may_reach decides the organization wall and custom.assert_may_know_table decides the caller may know the Table before anything is read. It answers ids and name-column words only for records the caller may see at viewer (the read doors'' own predicate, custom.visible_predicate_sql, inside custom._relation_names_resolve), so a name the caller may not see matches nothing and is indistinguishable from a name that is not there. No other column of any record is read or returned. Capped at 5,000 names a call.',
-   true, false, null, '{2950,2950,1009}')
-on conflict do nothing;
-
-update platform.client_callable_door
-   set argument_rules = jsonb_build_object(
+   true, false, null, '{2950,2950,1009}',
+   jsonb_build_object(
          'version', 1,
          'declared_by', 'visionreach_g1_a_relation_is_filled_by_its_name.sql',
          'declared_at', '2026-10-02 lane VISION-REACH, read from this body',
@@ -233,8 +229,9 @@ update platform.client_callable_door
            'p_names', jsonb_build_object('type', 'text[]', 'position', 3,
              'check', 'A FILTER, AND NOT A LEAK. The names only narrow the records of a Table the caller may already know to those whose name column matches, and each match is kept only when the read doors'' own predicate (custom.visible_predicate_sql) admits it for the caller at viewer; a name the caller may not see matches nothing.',
              'foreign', jsonb_build_object('not_a_leak', true, 'same_as_invented', true),
-             'verified', '2026-10-02 lane VISION-REACH — read from this body')))
- where schema_name = 'custom' and function_name = 'relation_names_match';
+             'verified', '2026-10-02 lane VISION-REACH — read from this body'))))
+on conflict do nothing;
+
 
 grant execute on function custom.relation_names_match(uuid, uuid, text[]) to authenticated;
 
