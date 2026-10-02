@@ -90,6 +90,7 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- **2026-10-01** — **Signed out, `/education/progress` is a sign-in gate, not a dashboard of refused reads.** `progress/layout.tsx` server-branches guests to `ModuleSignInGate` (progress is personal). `requireUserId`/`requireUser` throw a typed `NotAuthenticatedError`; the study `fail()` returns it as a state ("Sign in to see your study history.") instead of `console.error`, and `learningGain.getReport` sends no read without a session (anon has no grant on `education.assessment_result`). Guard: `study/__tests__/signedOutIsAState.test.ts`.
 - `2026-09-28` — page-pass wave 7 continued: root-caused and fixed a platform-wide
   access-ladder bug found while opening the remaining education tool homes as
   test@test.com (`--as member --fresh`). `/education/quizzes`, `/education/practice-tests`,
