@@ -1,7 +1,7 @@
 /**
  * Surface manifest — Marketing brand cockpit (`matrx-user/marketing-brand`).
  *
- * Drives `/marketing/brands/[brandId]` — the brand cockpit of the Marketing
+ * Drives `/marketing/[brandId]` — the brand cockpit of the Marketing
  * system (`features/marketing`, `BrandWorkspace`): one client company's
  * identity, its managed websites (with connection chips), social properties,
  * confirmed business facts, brand asset library, and the pending
