@@ -16,6 +16,7 @@
 //   * Declared-editable columns edit in place; edits stay local until the
 //     floating Save pill commits them.
 
+import { withArchivedRowsReadOnly } from "@/lib/entity-list/archivedRow";
 import { useEffect, useSyncExternalStore } from "react";
 import { usePhoneWidth } from "../usePhoneWidth";
 import { MoreVertical, Star } from "lucide-react";
@@ -516,12 +517,14 @@ export function EntityListTable<TRow>({
   );
   const remembered =
     isLoading && hydrated ? readFittedWidths(widthKey) : undefined;
-  const columns = remembered
-    ? fitted.map((c) => {
-        const width = remembered.get(String(c.id ?? c.accessorKey ?? ""));
-        return width === undefined ? c : { ...c, width };
-      })
-    : fitted;
+  const columns = (
+    remembered
+      ? fitted.map((c) => {
+          const width = remembered.get(String(c.id ?? c.accessorKey ?? ""));
+          return width === undefined ? c : { ...c, width };
+        })
+      : fitted
+  ).map((c) => withArchivedRowsReadOnly<typeof c, TRow>(c)); // an archived row takes no edit
 
   const emptyWithoutColumnFilter =
     !isLoading && rows.length === 0 && Object.keys(filters).length === 0;
