@@ -868,11 +868,6 @@ const ListManagerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ListManagerWindow"),
   { ssr: false },
 );
-const StructuredListManagerV1Window = lazyOverlay(
-  () =>
-    import("@/features/window-panels/windows/StructuredListManagerV1Window"),
-  { ssr: false },
-);
 const StructuredListManagerV2Window = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/StructuredListManagerV2Window"),
@@ -1543,9 +1538,6 @@ export default function OverlayController() {
     pdfBatchExtractDebugWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "pdfBatchExtractDebugWindow"),
     ),
-    structuredListManagerV1Window: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "structuredListManagerV1Window"),
-    ),
     structuredListManagerV2Window: useAppSelector((s) =>
       selectIsOverlayOpen(s, "structuredListManagerV2Window"),
     ),
@@ -1992,9 +1984,6 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     pdfBatchExtractDebugWindow: useAppSelector((s) =>
       selectOverlayData(s, "pdfBatchExtractDebugWindow"),
-    ) as Record<string, unknown> | null,
-    structuredListManagerV1Window: useAppSelector((s) =>
-      selectOverlayData(s, "structuredListManagerV1Window"),
     ) as Record<string, unknown> | null,
     structuredListManagerV2Window: useAppSelector((s) =>
       selectOverlayData(s, "structuredListManagerV2Window"),
@@ -6426,22 +6415,6 @@ export default function OverlayController() {
               typeof data?.initialSessionId === "string"
                 ? data.initialSessionId
                 : null
-            }
-          />
-        );
-      })()}
-
-      {/* structuredListManagerV1Window */}
-      {(() => {
-        const isOpen = isOpenById.structuredListManagerV1Window;
-        const data = dataById.structuredListManagerV1Window as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <StructuredListManagerV1Window
-            title={typeof data?.title === "string" ? data.title : undefined}
-            forcedListId={
-              typeof data?.forcedListId === "string" ? data.forcedListId : null
             }
           />
         );

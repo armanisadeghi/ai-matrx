@@ -1,8 +1,8 @@
 "use client";
 
 // features/user-lists/components/PicklistWindowBody.tsx — WHAT A PICKLIST WINDOW SHOWS (lane
-// OLD-READERS-REMOVAL, 2026-10-01). The picklist windows (`structuredListManagerV1Window` /
-// `V2Window`) used to mount the two older list managers. Every list lives in the record store now:
+// OLD-READERS-REMOVAL, 2026-10-01). The picklist window (`structuredListManagerV2Window`; its v1
+// twin retired 2026-10-02) used to mount the two older list managers. Every list lives in the record store now:
 // with a list named, the window is that list's table page (the screen /lists/<id> is); without one,
 // it is the Picklists index (the screen /lists is), each row opening the list's page.
 

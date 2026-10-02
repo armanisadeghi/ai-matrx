@@ -12,8 +12,7 @@ import { join } from "node:path";
 
 const ROOT = join(__dirname, "..", "..", "..");
 
-// Each page that renders <WhereItLives> (directly, or through the hub's OrganizationScope, which
-// the /data-v2 page mounts) and the RecordsMount it renders under.
+// Each page that renders <WhereItLives> and the RecordsMount it renders under.
 const CHIP_MOUNTS = [
   "app/(core)/data-v2/[tableId]/page.tsx",
   "app/(core)/data-v2/page.tsx",

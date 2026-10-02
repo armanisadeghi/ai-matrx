@@ -287,15 +287,6 @@ jest.mock("@/features/organizations/hooks", () => ({
 jest.mock("@/features/organizations/components/OrganizationPickerPopover", () => ({
   OrganizationPickerPopover: () => null,
 }));
-// The hub before this lane mounted these; mocked so the RED run reaches its assertions.
-jest.mock("../OrganizationScope", () => ({
-  OrganizationScopeStrip: ({ onShowAll }: { onShowAll: () => void }) => (
-    <button type="button" data-old-show-all onClick={onShowAll}>
-      All my organizations
-    </button>
-  ),
-  AllOrganizationsTables: () => null,
-}));
 jest.mock("../doors", () => ({
   tableKernelId: async () => ({ ok: true, data: "kernel" }),
   tableFacts: async () => ({ ok: true, data: [] }),

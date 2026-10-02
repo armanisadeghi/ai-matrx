@@ -759,11 +759,6 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
-  structuredListManagerV1Window: {
-    label: "Picklists — v1",
-    instanceMode: "singleton",
-    isWindow: true,
-  },
   structuredListManagerV2Window: {
     label: "Picklists — v2",
     instanceMode: "singleton",

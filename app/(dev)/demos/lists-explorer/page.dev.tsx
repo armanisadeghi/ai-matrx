@@ -5,7 +5,6 @@ import {
   GitBranch,
   Table2,
   ArrowRight,
-  List,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -21,15 +20,6 @@ const ROUTES = [
     icon: Columns2,
     badge: "Recommended",
     badgeClass: "bg-primary/10 text-primary border-primary/20",
-  },
-  {
-    href: "/lists/v1",
-    label: "Sidebar View (v1)",
-    description:
-      "Classic sidebar + detail layout. Original implementation — kept for comparison.",
-    icon: List,
-    badge: "Legacy",
-    badgeClass: "bg-muted text-muted-foreground border-border",
   },
 ] as const;
 

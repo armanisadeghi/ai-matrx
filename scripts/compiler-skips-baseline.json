@@ -1041,7 +1041,6 @@
   "features/overlays/openers/imageUploaderWindow.tsx": 1,
   "features/overlays/openers/multiFileSmartCodeEditorWindow.tsx": 1,
   "features/overlays/openers/smartCodeEditorWindow.tsx": 1,
-  "features/overlays/openers/structuredListManagerV1Window.tsx": 1,
   "features/overlays/openers/structuredListManagerV2Window.tsx": 1,
   "features/overlays/openers/surfaceAgentBindWindow.tsx": 1,
   "features/page-extraction/components/ChunkingConfigForm.tsx": 2,

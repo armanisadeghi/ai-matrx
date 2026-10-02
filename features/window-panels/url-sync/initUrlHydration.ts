@@ -590,15 +590,16 @@ export function initUrlHydration() {
     );
   });
 
-  // Picklists v1 — `?panels=structuredListManagerV1` (optionally `:<listId>`).
+  // Picklists v1 — a saved `?panels=structuredListManagerV1` address opens the one picklist window.
   registerPanelHydrator("structuredListManagerV1", (dispatch, id) => {
     const forcedListId = getRestorableResourceId(
       id,
       "structuredListManagerV1Window",
+      "structuredListManagerV2Window",
     );
     dispatch(
       openOverlay({
-        overlayId: "structuredListManagerV1Window",
+        overlayId: "structuredListManagerV2Window",
         data: forcedListId ? { forcedListId } : null,
       }),
     );
