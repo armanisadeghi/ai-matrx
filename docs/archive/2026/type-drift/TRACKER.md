@@ -21,8 +21,8 @@ Outputs:
 
 | File | Purpose |
 |---|---|
-| [`generated/summary.md`](./generated/summary.md) | Counts + links to per-feature lists |
-| [`generated/all-offenders.md`](./generated/all-offenders.md) | Flat list of all 296 actionable duplicates |
+| `generated/summary.md` (deleted 2026-10-02) | Counts + links to per-feature lists |
+| `generated/all-offenders.md` (deleted 2026-10-02) | Flat list of all 296 actionable duplicates |
 | [`generated/wave-1-priority.md`](./generated/wave-1-priority.md) | Top 40 by blast radius |
 | [`generated/by-feature/*.md`](./generated/by-feature/) | One hitlist per feature directory |
 

@@ -1,5 +1,7 @@
 # FEATURE.md — `data-tables` (user tables, the Sheet, workbooks, documents)
 
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/custom-data/STATE.md — read it before touching this feature in ANY repo.
+
 **Status:** `live`
 **Tier:** `1`
 **Last updated:** `2026-10-01`

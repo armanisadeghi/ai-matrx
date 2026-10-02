@@ -1,5 +1,7 @@
 # FEATURE.md — `drill-explorer` (one explorer screen for every declared drill definition)
 
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/drill-down/STATE.md — read it before touching this feature in ANY repo.
+
 **Status:** `active`
 **Tier:** `2`
 **Last updated:** `2026-09-30`
@@ -13,7 +15,6 @@ trail, the window, the Measures, Group by, the grouped answer, the records behin
 personal Saved views, and findings. Every number is one question of the definition asked through the one
 read door (`platform.drill_describe` / `drill_ask` / `drill_rows`, `@ai-matrx/records`) in the host's
 lane; the question lives in the address, so every drill is one Back step and every answer is a link.
-State: `../common-docs/systems/platform/drill-down/STATE.md` (live truth, 2026-10-02).
 Usage, CX usage, KG cost and workflow runs are mounts of this screen — never a second explorer.
 
 **Which primitive:** a whole page answering a declared definition → this. A grouped answer inside a table

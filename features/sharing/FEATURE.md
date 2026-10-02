@@ -465,7 +465,7 @@ NULL`. 181 of the 192 `internal` rows sit in personal or single-member orgs wher
     stranger and anon reach exactly the 9 public rows. Legacy columns remain behind the declared
     `workbench._bridge_legacy_owner` bridge until the ~30 RPCs, aidream's picklists router and ~15
     frontend files are converted — tracked in
-    [`docs/handoffs/workbench-udt-canonicalization.md`](../../docs/handoffs/workbench-udt-canonicalization.md).
+    a workbench-udt handoff (closed by the 2026-10-01 switch; deleted 2026-10-02).
 - 2026-08-15 — Claude: **`context_item` finally has a single-id door — `/context-items?item={id}`.**
   Closes the gap spun off from the D193 entry below.
   - **No route was invented, and none may be.** The only id-addressable route needs THREE ids

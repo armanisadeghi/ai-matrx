@@ -8,7 +8,7 @@
 
 ## Purpose
 
-A kit installs a working example in one click — tables with example rows, a copy of an existing platform agent whose variables read those tables, and a workflow — into the organization the person SET, then shows how it works. Contract and first kits: `common-docs/projects/data-kits/PLAN.md` (P2 = the kit, P1 = the custom-data binding).
+A kit installs a working example in one click — tables with example rows, a copy of an existing platform agent whose variables read those tables, and a workflow — into the organization the person SET, then shows how it works. Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/platform/custom-data/STATE.md — read it before touching this feature in ANY repo.
 
 The product word lives ONLY in `constants.ts` (`KIT_WORD`) — "Kits" is a working name; a rename is one edit.
 

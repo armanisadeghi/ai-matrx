@@ -230,7 +230,7 @@ export interface ContextItemBinding {
  * Resolved server-side, once per turn, under the operating person's own
  * principal. There is no client write-back. `override_policy: "shown_locked"`
  * means the run form shows the bound value read-only — the variable input never
- * overwrites it. Contract: `common-docs/projects/data-kits/PLAN.md` § P1.
+ * overwrites it. Contract: `features/kits/FEATURE.md` § Data model.
  */
 export interface CustomDataBinding {
   kind: "merge_field";

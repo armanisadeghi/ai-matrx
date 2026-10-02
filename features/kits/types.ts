@@ -2,7 +2,7 @@
 //
 // A kit is DATA, not code: one `public.catalog_entries` row (app 'matrx', kind 'kit')
 // whose `payload` is a `KitManifest`. Contract:
-// common-docs/projects/data-kits/PLAN.md § P2 (+ the owner's binding contract change,
+// features/kits/FEATURE.md § Data model (+ the owner's binding contract change,
 // 2026-09-25: the binding written onto a forked agent is the server's merge-field
 // declaration, snake_case).
 
