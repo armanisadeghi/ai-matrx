@@ -7,14 +7,20 @@
  * (client doors) and `@ai-matrx/records-ui` (UI), source in `aidream/apps/shared/records` and
  * `aidream/apps/shared/records-ui`. This guard fails when an app file touches `custom.*` directly:
  *
- *   - switches the client to the schema: `.schema("custom")`
- *   - passes it as an option, registry entry or constant: `schema: "custom"`, `schemaName: "custom"`,
- *     `STORE_SCHEMA = "custom"`
- *   - names a store relation or door in SQL: `from custom.record`, `select custom.x(…)`
+ *   - `.schema(…)` whose argument names the store: the literal in any form (`"custom"`,
+ *     `"custom" as never`, `(opts?.schema ?? "custom") as never`), or an in-file constant or object
+ *     member holding it (`const STORE = "custom"` → `.schema(STORE)`, `S = { store: "custom" }` →
+ *     `.schema(S.store)`)
+ *   - a `schema:` / `schemaName:` option or registry entry naming it, a `*schema* = "custom"` constant
+ *   - a PostgREST `Accept-Profile` / `Content-Profile` header naming it
+ *   - SQL naming a store relation or door: `from custom.record`, `"custom"."record"`, `select custom.x(…)`
  *
- * A bare "custom.x" string is NOT a touch: door names in error sentences, knob keys
- * (`custom.data_home_default_order`) and generated registries carry that text without reaching
- * the store.
+ * Comments never count — whole-line, block and trailing `// …` — via a lexer that knows strings,
+ * template literals and regex literals. A bare "custom.x" string is NOT a touch either: door names
+ * in error sentences, knob keys (`custom.data_home_default_order`) and generated registries carry
+ * that text without reaching the store. Every app source file is scanned — everything tracked
+ * except `NOT_APP` (scripts, migrations, tests, vendor, dot-dirs, root config) — so a new
+ * top-level root is covered the day it lands.
  *
  * Every file that does so TODAY is in `TOUCHES_THE_STORE` with its one-line reason, mirroring the
  * census (common-docs projects/data-doctrine-adoption/v6/CENSUS-NO-CUSTOM-CODE.md). The list can
@@ -23,12 +29,13 @@
  * stub the store to prove a caller, they do not reach it.
  *
  *   pnpm check:no-custom-store-code              the tree
+ *   pnpm check:no-custom-store-code --tracked-only   the tree without untracked (in-progress) files
  *   pnpm check:no-custom-store-code --list       every file that touches the store, with its shapes
  *   pnpm check:no-custom-store-code --self-test  proves the rule fails on a planted in-memory file
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -203,6 +210,8 @@ export const TOUCHES_THE_STORE: Record<string, string> = {
     "move: public booking lane (booking_public/hold/confirm/manage/cancel/reschedule) → new records booking doors (server-only data source)",
   "features/data-tables/data-source/record-store-grid.ts":
     "move: migrate_retype → RecordsClient.migrateRetype (exists); view_keys → new door viewKeys",
+  "features/data-tables/data-source/record-store.ts":
+    "ready to move: field_restore → RecordsClient.fieldRestore",
   "features/data-tables/service.ts":
     "ready to move: table_list_everywhere → RecordsClient.tableListEverywhere",
   "features/esign/service.ts":
@@ -213,28 +222,32 @@ export const TOUCHES_THE_STORE: Record<string, string> = {
     "move: public form lane (form_public/_asks/_submit/_draft_read/_draft_save) → new records form doors (server-only data source)",
   "features/matrx-envelope/referenceResolvers.ts":
     "move: where_id_opens → new records door whereIdOpens",
+  "features/notifications/service.ts":
+    "ready to move: inbox_counts → RecordsClient.inboxCounts",
   "features/organizations/service/organizationStoreContents.ts":
     "move: organization_contents/organization_clear → new records doors organizationContents/organizationClear",
   "features/portals/portalInviteService.ts":
     "move: portal_invite_accept/portal_share_peek → new records doors portalInviteAccept/portalSharePeek",
   "features/portals/service.ts":
     "move: portal lanes → RecordsClient readRecord(s)/recordUpdate/recordHistory/applicableFields/portalForm(Submit) (exist) + new portalPublic/portalInvitation/portalPrincipalBind/portalMe/ioComments/ioCommentWrite",
+  "features/record-change-approvals/HeldWritesOnTable.tsx":
+    "ready to move: work_inbox/work_approval_read → RecordsClient.workInbox/workApprovalRead",
   "features/record-change-approvals/applyRecordChange.ts":
     "ready to move: work_approval_decide/read_record → RecordsClient.workApprovalDecide/readRecord",
   "features/record-change-approvals/approvalDecision.ts":
     "ready to move: work_approval_read → RecordsClient.workApprovalRead",
-  "features/record-change-approvals/HeldWritesOnTable.tsx":
-    "ready to move: work_inbox/work_approval_read → RecordsClient.workInbox/workApprovalRead",
   "features/scheduling/hooks/useArchivedWatchTriggers.ts":
     "ready to move: table_list_everywhere → RecordsClient.tableListEverywhere",
-  "features/scopes/service/scopesService.ts":
-    "ready to move: scope_table_provision → RecordsClient.scopeTableProvision",
   "features/scopes/service/scopeStore.ts":
     "move: scope writes (context_type/scope/item/value_write, archive/restore, template_apply) → new records scope doors (lane SCOPES-ON-THE-STORE)",
+  "features/scopes/service/scopesService.ts":
+    "ready to move: scope_table_provision → RecordsClient.scopeTableProvision",
   "features/scopes/service/storeScopeReads.ts":
     "move: context_tree_types/context_tree_type_scopes → new records scope read doors",
   "features/sharing/outside/outsideShareService.ts":
     "move: table_share_outside* / table_share_peek → new records share-outside doors",
+  "features/sharing/service/sharedResourceDetails.ts":
+    "move: where_id_opens → new door whereIdOpens; table_kernel_id/read_records_by_ids → existing tableKernelId/readRecordsByIds doors",
   "features/sharing/service/tableTransfer.ts":
     "move: table_transfer_owner/member_personal_tables → new records doors tableTransferOwner/memberPersonalTables",
   "features/unified-data/hub/doors.ts":
@@ -243,8 +256,16 @@ export const TOUCHES_THE_STORE: Record<string, string> = {
     "move: where_id_opens → new records door whereIdOpens",
   "features/unified-data/record-chat/RecordScopedChat.tsx":
     "ready to move: conversation_scope_bind → RecordsClient.conversationScopeBind",
+  "features/unified-data/tableCopyEvaluation.ts":
+    "move: table_copy_evaluation_state → new records door tableCopyEvaluationState",
   "features/unified-data/test-bench/TryEverythingScreen.tsx":
     "move: work_inbox → RecordsClient.workInbox (exists); the document and cadence doors → new records doors",
+  "features/unified-data/whereThisTableLives.ts":
+    "move: a data-source adapter for where_id_opens → new records door whereIdOpens",
+  "features/user-lists/pick-list-index.ts":
+    "move: pick_list_index/pick_list_index_everywhere → new records pick-list doors",
+  "features/user-lists/service.ts":
+    "move: pick_list_create → new records door pickListCreate",
   "lib/knobs/unifiedDataCampaign.register.ts":
     "justified: a register of campaign entry points; its `why` prose quotes store calls, it calls nothing",
   "lib/organizations/linkOrganizationAdmission.ts":
@@ -279,8 +300,8 @@ export function judge(files: ReadonlyMap<string, string>, allow: Record<string, 
   return out;
 }
 
-function tree(): Map<string, string> {
-  const listed = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard"], {
+function tree(trackedOnly = false): Map<string, string> {
+  const listed = execFileSync("git", ["ls-files", "--cached", ...(trackedOnly ? [] : ["--others", "--exclude-standard"])], {
     cwd: REPO,
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
@@ -298,55 +319,86 @@ function tree(): Map<string, string> {
   return files;
 }
 
+/** Each shape the rule must catch, planted in memory only — never on disk. */
+export const RED_PLANTS: ReadonlyArray<readonly [string, string, string]> = [
+  ["literal switch", "features/planted/a.ts", 'export const r = (c: any) => c.schema("custom").rpc("record_list", {});'],
+  ["literal cast as never", "features/planted/b.ts", 'export const r = (c: any) => c.schema("custom" as never).rpc("x");'],
+  ["literal cast as any", "features/planted/c.ts", "export const r = (c: any) => c.schema('custom' as any);"],
+  ["fallback expression", "features/planted/d.ts", 'export const r = (c: any, o?: { schema?: string }) => c.schema((o?.schema ?? "custom") as never);'],
+  ["constant of any name", "features/planted/e.ts", 'const STORE = "custom";\nexport const r = (c: any) => c.schema(STORE).rpc("x");'],
+  ["object map member", "features/planted/f.ts", 'const S = { store: "custom", files: "files" } as const;\nexport const r = (c: any) => c.schema(S.store);'],
+  ["rpc option literal", "features/planted/g.ts", 'export const r = (d: any) => d.rpc("view_keys", {}, { schema: "custom" });'],
+  ["rpc option via constant", "features/planted/h.ts", 'const where = "custom";\nexport const r = (d: any) => d.rpc("view_keys", {}, { schema: where });'],
+  ["registry entry", "utils/planted/i.ts", 'export const R = { record: { tableName: "record", schemaName: "custom" } };'],
+  ["Accept-Profile header", "lib/planted/j.ts", 'export const h = { "Accept-Profile": "custom", apikey: k };'],
+  ["Content-Profile header via constant", "lib/planted/k.ts", 'const P = "custom";\nexport const h = { "Content-Profile": P };'],
+  ["SQL unquoted", "app/api/planted/l/route.ts", "export const sql = `select id from custom.record where table_id = $1`;"],
+  ["SQL quoted identifiers", "app/api/planted/m/route.ts", 'export const sql = `delete from "custom"."portal_principal" where id = $1`;'],
+  ["SQL escaped quotes in a string", "app/api/planted/n/route.ts", 'export const sql = "update \\"custom\\".\\"record\\" set x = 1";'],
+  ["a URL string before the touch", "features/planted/o.ts", 'const u = "https://db.example.test/rest"; export const r = (c: any) => c.schema("custom");'],
+  ["a regex literal with quotes before the touch", "features/planted/p.ts", "const q = /[\"'`]\\/\\//; export const r = (c: any) => c.schema('custom');"],
+  ["root actions/", "actions/planted.actions.ts", '"use server";\nexport const r = (c: any) => c.schema("custom");'],
+  ["root instrumentation-client.ts", "instrumentation-client.ts", 'export const r = (c: any) => c.schema("custom");'],
+];
+
+/** Text the rule must NOT read as a touch. */
+export const GREEN_PLANTS: ReadonlyArray<readonly [string, string, string]> = [
+  ["whole-line comment", "features/planted/q.ts", '// Schema `custom` is revoked; reads go from custom.record through .schema("custom").\nexport const x = 1;'],
+  ["trailing comment", "features/planted/r.ts", 'export const x = 1; // reads from custom.record via .schema("custom") and { schema: "custom" }'],
+  ["block comment", "features/planted/s.ts", '/* select * from custom.record; c.schema("custom") */\nexport const x = 1;'],
+  ["knob key and door name in a sentence", "features/planted/t.ts", 'export const k = "custom.data_home_default_order"; export const e = new Error("custom.inbox_counts refused");'],
+  ["another schema", "features/planted/u.ts", 'export const r = (c: any) => c.schema("communication" as never).rpc("x", {}, { schema: "public" });'],
+  ["an unrelated custom-valued key", "features/planted/v.ts", 'const v = { state: "custom" }; export const o = { schema: v.state };'],
+  ["a test file", "features/planted/__tests__/w.test.ts", 'c.schema("custom");'],
+  ["a script", "scripts/planted-walk.mjs", 'c.schema("custom");'],
+];
+
 function selfTest(): void {
+  // The plants are judged on top of the real tree, so the proof holds even while someone's new
+  // file has the tree red; each assertion looks only at the planted path.
   const base = tree();
-  const green = judge(base);
-  if (green.length) throw new Error(`self-test needs a green tree first:\n${green.map((f) => `  ${f.file}: ${f.says}`).join("\n")}`);
-  const plants: Array<[string, string]> = [
-    ["features/planted/switch.ts", 'export const read = (c: any) => c.schema("custom").rpc("record_list", {});'],
-    ["features/planted/option.ts", 'export const read = (c: any) => c.rpc("view_keys", {}, { schema: "custom" });'],
-    ["features/planted/constant.ts", 'const STORE_SCHEMA = "custom";\nexport const read = (c: any) => c.schema(STORE_SCHEMA);'],
-    ["app/api/planted/route.ts", "export const sql = `select id from custom.record where table_id = $1`;"],
-  ];
-  for (const [file, text] of plants) {
+  for (const [label, file, text] of RED_PLANTS) {
     const planted = new Map(base);
     planted.set(file, text);
+    if (!isAppSource(file)) throw new Error(`RED plant is outside the scanned app source — ${label}: ${file}`);
     const red = judge(planted).find((f) => f.file === file && f.kind === "new");
-    if (!red) throw new Error(`a planted direct touch did not fail: ${file}`);
-    console.log(`  RED (in memory) [${red.kind}] ${red.file} — ${red.says}`);
+    if (!red) throw new Error(`RED plant did not fail — ${label}: ${file}`);
+    console.log(`  RED   ${label} — [${red.kind}] ${red.file} (${touches(text).join(", ")})`);
   }
-  const commentOnly = new Map(base);
-  commentOnly.set("features/planted/comment.ts", '// Schema `custom` is revoked from anon; reads go from custom.record through a door.\nexport const x = 1;');
-  if (judge(commentOnly).length) throw new Error("a comment alone was read as a touch");
-  const test = new Map(base);
-  test.set("features/planted/__tests__/x.test.ts", 'c.schema("custom");');
-  if (judge(test).length) throw new Error("a test file was judged");
+  for (const [label, file, text] of GREEN_PLANTS) {
+    const planted = new Map(base);
+    if (isAppSource(file)) planted.set(file, text);
+    const hit = judge(planted).find((f) => f.file === file);
+    if (hit) throw new Error(`GREEN plant was flagged — ${label}: ${hit.says}`);
+    console.log(`  GREEN ${label} — not a touch`);
+  }
   const first = Object.keys(TOUCHES_THE_STORE)[0];
-  if (first) {
-    const moved = new Map(base);
-    moved.set(first, 'import { listRecords } from "@ai-matrx/records";\nexport const read = listRecords;');
-    const stale = judge(moved).find((f) => f.file === first && f.kind === "stale");
-    if (!stale) throw new Error("a moved file did not fail as stale");
-    console.log(`  RED (in memory) [${stale.kind}] ${stale.file} — ${stale.says}`);
-  }
-  console.log(`✓ self-test: ${plants.length} planted direct touches fail, a comment and a test do not, a moved file fails as stale; the tree is green`);
+  const moved = new Map(base);
+  moved.set(first, 'import { createRecordsClient } from "@ai-matrx/records";\nexport const c = createRecordsClient;');
+  const stale = judge(moved).find((f) => f.file === first && f.kind === "stale");
+  if (!stale) throw new Error("a moved file did not fail as stale");
+  console.log(`  RED   a moved allowlisted file — [stale] ${stale.file}`);
+  console.log(`✓ self-test: ${RED_PLANTS.length} planted touches fail, ${GREEN_PLANTS.length} non-touches pass, a moved file fails as stale`);
 }
 
-const argv = process.argv.slice(2);
-if (argv.includes("--self-test")) {
-  selfTest();
-} else if (argv.includes("--list")) {
-  for (const [file, text] of tree()) {
-    if (isTest(file)) continue;
-    const shapes = touches(text);
-    if (shapes.length) console.log(`${file}\t${shapes.join(",")}`);
+// Run only as the entry point, so another census script can import `touches` and `isAppSource`.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const argv = process.argv.slice(2);
+  if (argv.includes("--self-test")) {
+    selfTest();
+  } else if (argv.includes("--list")) {
+    for (const [file, text] of tree()) {
+      if (isTest(file)) continue;
+      const shapes = touches(text);
+      if (shapes.length) console.log(`${file}\t${shapes.join(",")}`);
+    }
+  } else {
+    const findings = judge(tree(argv.includes("--tracked-only")));
+    if (findings.length) {
+      console.log(`✗ ${findings.length} file(s) break "apps never write their own custom-data code":`);
+      for (const f of findings) console.log(`    [${f.kind}] ${f.file} — ${f.says}`);
+      process.exit(1);
+    }
+    console.log(`✓ no app file touches custom.* directly beyond the ${Object.keys(TOUCHES_THE_STORE).length} the census lists`);
   }
-} else {
-  const findings = judge(tree());
-  if (findings.length) {
-    console.log(`✗ ${findings.length} file(s) break "apps never write their own custom-data code":`);
-    for (const f of findings) console.log(`    [${f.kind}] ${f.file} — ${f.says}`);
-    process.exit(1);
-  }
-  console.log(`✓ no app file touches custom.* directly beyond the ${Object.keys(TOUCHES_THE_STORE).length} the census lists`);
 }
