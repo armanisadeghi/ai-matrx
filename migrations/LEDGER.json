@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T18:23:28.567Z",
+  "generated_at": "2026-10-02T18:39:54.497Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -421,6 +421,12 @@
       "filename": "carryingedgesperf_the_carrying_edges_have_their_indexes.sql",
       "checksum": "b5fb0c5afc831480603006ce30baa53c27cf079ed66447e29012604411dd9155",
       "applied_at": "2026-09-27 17:55:20.328026+00"
+    },
+    "migrations/campaign/chairrc_a_record_changed_carries_its_change.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairrc_a_record_changed_carries_its_change.sql",
+      "checksum": "1844c6ba121d8268d898aead8b579ddb0244248b09a572ea383e5661eca7558f",
+      "applied_at": "2026-10-02 18:28:08.644472+00"
     },
     "migrations/campaign/chairsec_a_a_door_that_changes_a_row_asks_that_row.sql": {
       "source": "matrx-frontend",
@@ -6523,6 +6529,12 @@
       "filename": "visionreach_w2_formula_columns_are_measured_as_they_are_read.sql",
       "checksum": "b639c92d2f0bb3d38fea8158ec30e7325e174bf120054e93c6ae6bb5d230dcb2",
       "applied_at": "2026-10-02 17:35:43.576453+00"
+    },
+    "migrations/campaign/vk_a_calendar_keeps_where_a_record_ends_and_a_timeline_is_a_view.sql": {
+      "source": "matrx-frontend",
+      "filename": "vk_a_calendar_keeps_where_a_record_ends_and_a_timeline_is_a_view.sql",
+      "checksum": "8b9e7c612e176eca36ec1f072e066a1b07c89daf63ae119ed2f3fdf47b30e113",
+      "applied_at": "2026-10-02 18:39:53.131308+00"
     },
     "migrations/campaign/w1_field_definitions_and_validation.sql": {
       "source": "matrx-frontend",
