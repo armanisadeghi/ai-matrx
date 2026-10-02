@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * ArtifactVersionHistory — the ONE generic version-history viewer for any
  * materialized artifact (vision Q4: every type versioned + viewable + "see what
@@ -191,7 +192,7 @@ export function ArtifactVersionHistory({
                         )}
                       </div>
                       <div className="truncate text-muted-foreground">
-                        {row.source_type.replace(/_/g, " ")} · {relTime(row.created_at)}
+                        {humanizeIdentifier(row.source_type) || row.source_type} · {relTime(row.created_at)}
                       </div>
                     </button>
                     {!isLatest && (

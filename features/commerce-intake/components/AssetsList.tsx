@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * AssetsList — every intake asset of the org, newest first (complete read
  * via `readAllRows`). Mobile-first card list: tap opens the asset detail,
@@ -177,7 +178,7 @@ export function AssetsList() {
                 {qrCode ?? "No code"}
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                {asset.pipelineState.replace(/_/g, " ")} · {artifactCount}{" "}
+                {humanizeIdentifier(asset.pipelineState) || asset.pipelineState} · {artifactCount}{" "}
                 file{artifactCount === 1 ? "" : "s"}
               </p>
               <OrganizationTag organizationId={asset.organizationId} />

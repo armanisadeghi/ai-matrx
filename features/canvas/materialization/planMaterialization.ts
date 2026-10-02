@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * planMaterialization — pure transform from a committed `cx_message.content`
  * array into (a) the artifacts to persist and (b) the rewritten content with
@@ -119,9 +120,7 @@ function titleFor(
 ): string {
   const t = metadata?.artifactTitle;
   if (typeof t === "string" && t.trim()) return t.trim();
-  const label = blockType
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  const label = humanizeIdentifier(blockType) || blockType;
   return `${label} ${index}`;
 }
 

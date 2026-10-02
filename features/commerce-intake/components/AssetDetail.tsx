@@ -263,7 +263,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
           <dt className="text-muted-foreground">QR code</dt>
           <dd>{asset.qrCode ?? "—"}</dd>
           <dt className="text-muted-foreground">State</dt>
-          <dd>{asset.pipelineState.replace(/_/g, " ")}</dd>
+          <dd>{humanizeIdentifier(asset.pipelineState) || asset.pipelineState}</dd>
           <dt className="text-muted-foreground">Tracking</dt>
           <dd>
             {asset.trackingMode}

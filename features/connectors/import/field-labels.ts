@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * features/connectors/import/field-labels.ts
  *
@@ -53,7 +54,7 @@ const FIELD_LABELS: Record<string, string> = {
 export function importFieldLabel(key: string): string {
   const known = FIELD_LABELS[key];
   if (known) return known;
-  return key.replace(/_/g, " ").trim() || key;
+  return (humanizeIdentifier(key) || key).trim() || key;
 }
 
 /**

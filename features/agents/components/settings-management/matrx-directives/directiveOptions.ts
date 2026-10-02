@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Directive options for the Matrx Directives tab's "selected actions" picker.
  *
@@ -25,7 +26,7 @@ export interface DirectiveOption {
 
 /** Verbs that produce a side effect — everything except the read verbs. */
 function functionLabel(name: string): string {
-  return name.replace(/_/g, " ");
+  return humanizeIdentifier(name) || name;
 }
 
 /**

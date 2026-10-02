@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Keyword-research kinds → block bridges (+ compiled definitions).
  *
@@ -469,7 +470,7 @@ export function keywordClassificationMarkdownFromValue(
       const facts = KEYWORD_CLASSIFICATION_FACT_KEYS.map((key) => {
         const fact = nonEmptyString(result[key]);
         return fact && fact !== "none"
-          ? `- **${key.replace(/_/g, " ")}:** ${fact.replace(/_/g, " ")}`
+          ? `- **${humanizeIdentifier(key) || key}:** ${fact.replace(/_/g, " ")}`
           : null;
       }).filter(Boolean);
       const confidence =

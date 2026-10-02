@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * features/connectors/import/GoogleTasksImportPanel.tsx
  *
@@ -291,7 +292,7 @@ export function GoogleTasksImportPanel({
                 )}
                 <Badge variant="secondary" className="text-[11px]">
                   {TASK_ACTION_COPY[outcome.action] ??
-                    outcome.action.replace(/_/g, " ")}
+                    (humanizeIdentifier(outcome.action) || outcome.action)}
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{outcome.note}</p>

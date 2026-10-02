@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * IntakeAnswerQueue — the mobile-first answer queue over
  * `commerce.asset_unknown` (the prototype's sharpest piece,
@@ -270,7 +271,7 @@ export function IntakeAnswerQueue() {
               {qrCode ?? "No code"}
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              {asset.pipelineState.replace(/_/g, " ")}
+              {humanizeIdentifier(asset.pipelineState) || asset.pipelineState}
               {asset.notes ? ` · ${asset.notes}` : ""}
             </p>
           </div>

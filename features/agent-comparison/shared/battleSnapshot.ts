@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * battleSnapshot — the whole battle on screen, as data.
  *
@@ -458,7 +459,7 @@ function fmtVariant(v: Record<string, unknown> | undefined): string {
     .map(([k, value]) => {
       const text =
         typeof value === "string" ? value : JSON.stringify(value, null, 0);
-      return `- **${k.replace(/_/g, " ")}:** ${text}`;
+      return `- **${humanizeIdentifier(k) || k}:** ${text}`;
     })
     .join("\n");
 }
