@@ -55,7 +55,14 @@ function useEnsureActiveScratchpad() {
   }, [dispatch, store]);
 }
 
-export function ScratchpadQuickPanel({ className }: { className?: string }) {
+export function ScratchpadQuickPanel({
+  className,
+  gateConversationId,
+}: {
+  className?: string;
+  /** The chat this was opened from — unlocks the per-document "Share with this chat" toggle. */
+  gateConversationId?: string;
+}) {
   useEnsureActiveScratchpad();
   const activeId = useAppSelector(selectActiveScratchpadId);
   const activeScope = activeId ? scratchScopeId(activeId) : null;
@@ -69,6 +76,7 @@ export function ScratchpadQuickPanel({ className }: { className?: string }) {
           showHeader
           showHeaderTitle={false}
           showOpenInWindow={false}
+          gateConversationId={gateConversationId}
           className="h-full"
         />
       ) : (

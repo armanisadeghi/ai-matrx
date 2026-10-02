@@ -183,6 +183,10 @@ export interface OpenWorkingDocumentPanelOptions {
 export interface OpenWorkingDocumentWindowOptions {
   conversationId: string;
 }
+export interface OpenScratchpadPanelOptions {
+  /** The chat the scratchpad was opened from — unlocks its "Share with this chat" toggle. */
+  gateConversationId?: string;
+}
 
 // ── The registry a host fills ────────────────────────────────────────────────
 
@@ -214,6 +218,7 @@ export interface ChatWindowOpeners {
   openRunControlsWindow: (opts: OpenRunControlsWindowOptions) => ChatWindowHandle;
   openSaveKitDialog: (opts?: OpenSaveKitDialogOptions) => void;
   openScraperWindow: (opts?: OpenScraperWindowOptions) => ChatWindowHandle;
+  openScratchpadPanel: (opts?: OpenScratchpadPanelOptions) => ChatWindowHandle;
   openStructuredListManagerV2Window: (opts?: OpenStructuredListManagerV2WindowOptions) => ChatWindowHandle;
   openSurfaceContextInspector: (opts: OpenSurfaceContextInspectorOptions) => ChatWindowHandle;
   openSurfaceContextWindow: (opts: OpenSurfaceContextWindowOptions) => void;
@@ -272,6 +277,7 @@ export const UNHOSTED_WINDOW_OPENERS: ChatWindowOpeners = {
   openRunControlsWindow: unhosted("openRunControlsWindow"),
   openSaveKitDialog: unhosted("openSaveKitDialog"),
   openScraperWindow: unhosted("openScraperWindow"),
+  openScratchpadPanel: unhosted("openScratchpadPanel"),
   openStructuredListManagerV2Window: unhosted("openStructuredListManagerV2Window"),
   openSurfaceContextInspector: unhosted("openSurfaceContextInspector"),
   openSurfaceContextWindow: unhosted("openSurfaceContextWindow"),
@@ -383,6 +389,9 @@ export function useOpenTaskEditorWindow() {
 }
 export function useOpenTopicalMapWindow() {
   return useOpener("openTopicalMapWindow");
+}
+export function useOpenScratchpadPanel() {
+  return useOpener("openScratchpadPanel");
 }
 export function useOpenWorkingDocumentPanel() {
   return useOpener("openWorkingDocumentPanel");

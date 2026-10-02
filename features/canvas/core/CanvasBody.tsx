@@ -19,7 +19,6 @@ import dynamic from "next/dynamic";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { TapTargetButton } from "@ai-matrx/tap-target";
-import { isScratchScope } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import type { CanvasContent } from "@/features/canvas/canvasContent";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {
@@ -82,28 +81,6 @@ const LiveCodeEditErrorCanvas = dynamic(
   () =>
     import("@/features/canvas/custom-components/LiveCodeEditCanvases").then(
       (m) => ({ default: m.LiveCodeEditErrorCanvas }),
-    ),
-  { ssr: false },
-);
-// Live working document / scratchpad editor rendered INSIDE the Canvas shell.
-// Heavy (NoteEditorCore + RichDocument + the agent context menu + the doc list),
-// so it stays out of the canvas base chunk until a document item actually opens.
-// CanvasPane supplies the single "Documents" header; the workspace owns its tab
-// strip + list + editor.
-const DocumentsWorkspace = dynamic(
-  () =>
-    import("@ai-matrx/chat/agents/components/working-document/documents-workspace/DocumentsWorkspace").then(
-      (m) => ({ default: m.DocumentsWorkspace }),
-    ),
-  { ssr: false },
-);
-// Single-document editor for GLOBAL scratchpad pointers (sp:<docId> scopes,
-// which have no conversation to anchor a workspace on). Same heavy chunk
-// rationale as the workspace above.
-const WorkingDocumentPanel = dynamic(
-  () =>
-    import("@ai-matrx/chat/agents/components/working-document/WorkingDocumentPanel").then(
-      (m) => ({ default: m.WorkingDocumentPanel }),
     ),
   { ssr: false },
 );
@@ -315,44 +292,6 @@ function renderContent(content: CanvasContent): React.ReactNode {
   // mermaid, code, iframe, html, image → unified renderer via early-branch
   // (cases removed in Wave F; only NON_PERSISTABLE types remain below)
   switch (type) {
-    case "working_document":
-    case "scratchpad": {
-      // `data` is a pointer { conversationId, kind }. A GLOBAL scratchpad
-      // pointer (sp:<docId> scope — no conversation to anchor a workspace on)
-      // renders the single-document panel; conversation pointers get the full
-      // multi-document workspace (document list + Working/Scratch tabs).
-      // CanvasPane owns the container title; inner chrome names each doc.
-      const pointerScope =
-        typeof data.conversationId === "string" ? data.conversationId : "";
-      if (isScratchScope(pointerScope)) {
-        return (
-          <WorkingDocumentPanel
-            conversationId={pointerScope}
-            kind="scratch"
-            showHeader
-            showHeaderTitle={false}
-            showOpenInWindow={false}
-            // The chat this canvas was opened from (when the opener knew it) —
-            // unlocks the per-document "Share with this chat" toggle.
-            gateConversationId={
-              typeof data.gateConversationId === "string"
-                ? data.gateConversationId
-                : undefined
-            }
-            className="h-full"
-          />
-        );
-      }
-      return (
-        <DocumentsWorkspace
-          conversationId={data.conversationId}
-          initialKind={type === "scratchpad" ? "scratch" : "working"}
-          defaultRailOpen
-          className="h-full"
-        />
-      );
-    }
-
     case "code_preview":
       return <LiveCodePreviewCanvas data={data} />;
 

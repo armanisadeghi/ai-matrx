@@ -29,7 +29,6 @@ import {
   ListTree,
   Map as MapIcon,
   Network,
-  NotebookPen,
   Presentation,
   Shapes,
   Table,
@@ -99,8 +98,6 @@ const ICONS: Record<CanvasContentType, LucideIcon> = {
   structured_info: FileText,
   tree: ListTree,
   tasks: ListChecks,
-  working_document: NotebookPen,
-  scratchpad: NotebookPen,
   cloud_browser: Cloud,
   udt_document: FileText,
   sandbox: Terminal,
@@ -110,7 +107,7 @@ const ICONS: Record<CanvasContentType, LucideIcon> = {
 /**
  * Live surfaces whose body is a running session (a pty, a browser run, an
  * editor with callbacks) cannot come back after a reload. Pointer surfaces
- * (documents, topical maps, working documents) can — their truth is a row.
+ * (documents, topical maps) can — their truth is a row.
  */
 const NOT_RESTORABLE: ReadonlySet<CanvasContentType> = new Set([
   "code_preview",
@@ -120,7 +117,7 @@ const NOT_RESTORABLE: ReadonlySet<CanvasContentType> = new Set([
 ]);
 
 /** Live, stateful bodies stay mounted while their tab is in the background. */
-const KEEP_ALIVE: ReadonlySet<CanvasContentType> = new Set(["cloud_browser", "sandbox", "working_document", "scratchpad"]);
+const KEEP_ALIVE: ReadonlySet<CanvasContentType> = new Set(["cloud_browser", "sandbox"]);
 
 const loadView = () => import("./ArtifactCanvasView");
 

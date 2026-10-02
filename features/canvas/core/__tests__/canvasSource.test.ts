@@ -25,8 +25,6 @@ describe("a live pane is never offered a Source view", () => {
   it.each([
     ["sandbox"],
     ["cloud_browser"],
-    ["working_document"],
-    ["scratchpad"],
     ["code_preview"],
     ["code_edit_error"],
   ])("%s has no source of its own", (type) => {
@@ -65,12 +63,12 @@ describe("the canvas envelope never reaches the user", () => {
     expect(resolveCanvasSource(sandboxItem)).toBeNull();
   });
 
-  it("a document pane resolves no source either — its editor owns its text", () => {
+  it("a topical-map pane resolves no source either — its rows own its text", () => {
     expect(
       resolveCanvasSource({
-        type: "working_document",
-        data: { conversationId: "c1", kind: "working" },
-        metadata: { title: "Documents" },
+        type: "topical_map",
+        data: { mapId: "c1", screen: "map", siteId: "s1" },
+        metadata: { title: "Topical map" },
       }),
     ).toBeNull();
   });

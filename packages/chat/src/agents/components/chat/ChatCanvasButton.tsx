@@ -18,6 +18,8 @@ import { Columns2 } from "lucide-react";
 import { useAppDispatch } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 import { useChatCanvasOpeners, useChatCanvasView } from "../../../host/canvas";
+import { conversationDocumentsTabId } from "../../../host/canvas-tabs";
+import { useOpenWorkingDocumentPanel } from "../../../host/window-openers";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
 import { setConversationDocumentEnabledThunk } from "../../redux/execution-system/instance-working-document/instance-working-document.thunks";
 
@@ -30,13 +32,14 @@ interface ChatCanvasButtonProps {
 export function ChatCanvasButton({ conversationId }: ChatCanvasButtonProps) {
   const dispatch = useAppDispatch();
   const canvas = useChatCanvasOpeners();
+  const openDocuments = useOpenWorkingDocumentPanel();
   const { isOpen, sourceIds } = useChatCanvasView();
   const itemCount = sourceIds.length;
-  const workingDocSourceId = conversationId
-    ? `wd:${conversationId}:working`
+  const documentsTabId = conversationId
+    ? conversationDocumentsTabId(conversationId)
     : null;
   const hasWorkingDocTab =
-    !!workingDocSourceId && sourceIds.includes(workingDocSourceId);
+    !!documentsTabId && sourceIds.includes(documentsTabId);
 
   const handleClick = () => {
     // This chat's document is a tab, or anything else is on the canvas →
@@ -63,15 +66,8 @@ export function ChatCanvasButton({ conversationId }: ChatCanvasButtonProps) {
         enabled: true,
       }),
     );
-    canvas.open({
-      type: "working_document",
-      data: { conversationId, kind: "working" },
-      metadata: {
-        title: "Working document",
-        conversationId,
-        sourceMessageId: `wd:${conversationId}:working`,
-      },
-    });
+    // The conversation's ONE Documents tab — the same tab every door opens.
+    openDocuments({ conversationId, initialKind: "working" });
   };
 
   return (

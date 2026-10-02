@@ -6,12 +6,12 @@ import { useEffect } from "react";
 import type { CanvasKindProps } from "@ai-matrx/canvas/react";
 import { ScratchpadQuickPanel } from "@ai-matrx/chat/agents/components/working-document/ScratchpadQuickPanel";
 import { useActiveScratchpadTitle } from "@ai-matrx/chat/agents/components/working-document/ScratchpadSwitcherMenu";
-import { SCRATCHPAD_TITLE } from "./scratchpadKind";
+import { SCRATCHPAD_TITLE, readScratchpadGate } from "./scratchpadKind";
 
-export default function ScratchpadCanvasView({ item, canvas }: CanvasKindProps) {
+export default function ScratchpadCanvasView({ item, canvas, data }: CanvasKindProps) {
   const title = useActiveScratchpadTitle() ?? SCRATCHPAD_TITLE;
   useEffect(() => {
     if (canvas.getState().items[item.id]?.title !== title) canvas.update(item.id, { title });
   }, [canvas, item.id, title]);
-  return <ScratchpadQuickPanel className="bg-background" />;
+  return <ScratchpadQuickPanel className="bg-background" gateConversationId={readScratchpadGate(data)} />;
 }

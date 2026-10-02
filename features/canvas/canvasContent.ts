@@ -43,12 +43,6 @@ export type CanvasContentType =
   | "structured_info"
   | "tree"
   | "tasks"
-  // Live per-conversation editor surfaces (not artifacts) — render the real
-  // WorkingDocumentPanel inside the Canvas shell. `data` is a pointer
-  // `{ conversationId, kind }`; the panel reads live content from Redux and
-  // persists itself (cx_working_documents), so these are NON_PERSISTABLE here.
-  | "working_document"
-  | "scratchpad"
   // Live Cloud Browser surface hosted in the canvas pane. `data` is a pointer
   // `{ initialProfileId?, runId? }`; the body holds live run/screenshot/handoff
   // state (never serializable) — NON_PERSISTABLE, like the editor surfaces.
@@ -76,8 +70,12 @@ export type CanvasContentType =
   // `TopicalMapWorkspaceBody` in `host="canvas"` — the same component the
   // page route and the floating window render — which reads the live map from
   // the store and the `seo.*` functions. The map's truth is its rows, so a
-  // `canvas_items` copy would be a stale second map: NON_PERSISTABLE, like
-  // `working_document`, never an artifact type.
+  // `canvas_items` copy would be a stale second map: NON_PERSISTABLE, never an
+  // artifact type.
+  //
+  // A conversation's documents and the scratchpad are NOT content types: each
+  // is one tool tab (`conversation-documents`, `global-scratchpad` —
+  // `@ai-matrx/chat/host/canvas-tabs`), never an artifact.
   | "topical_map";
 
 /**
@@ -90,10 +88,6 @@ export type CanvasContentType =
 export const NON_PERSISTABLE_CANVAS_TYPES: ReadonlySet<string> = new Set([
   "code_preview",
   "code_edit_error",
-  // Live editor surfaces — they persist themselves to cx_working_documents;
-  // saving a canvas_items row would just freeze a dead pointer.
-  "working_document",
-  "scratchpad",
   // Live Cloud Browser: holds run/screenshot/controller/handoff state — a
   // canvas_items row would freeze a dead pointer with no live session.
   "cloud_browser",
@@ -191,11 +185,6 @@ export function getDefaultTitle(type: string): string {
     mermaid: "Diagram",
     code_preview: "Code Preview",
     code_edit_error: "Code Edit Error",
-    // Both render the multi-document DocumentsWorkspace, whose tab strip names
-    // each doc (Working document / Scratchpad) — so the pane title is the
-    // neutral container label, never a third repeat of the tab.
-    working_document: "Documents",
-    scratchpad: "Documents",
     cloud_browser: "Cloud Browser",
     sandbox: "Sandbox",
     udt_document: "Document",

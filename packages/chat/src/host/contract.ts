@@ -680,9 +680,10 @@ export interface ChatRoutes {
 /**
  * What the package puts on the host's canvas. The host owns the content
  * vocabulary (`type`) and its renderers; the package only names a type it
- * expects the host to know ("working_document", "scratchpad", "sandbox",
- * "code") and a pointer in `data`. A type the host does not know is refused
- * by the host, loudly.
+ * expects the host to know ("sandbox", "code", …) and a pointer in `data`. A
+ * type the host does not know is refused by the host, loudly. A conversation's
+ * documents and the scratchpad are not content: each is one named tab
+ * (`./canvas-tabs.ts`) opened through the windows port.
  */
 export interface ChatCanvasContent {
   type: string;

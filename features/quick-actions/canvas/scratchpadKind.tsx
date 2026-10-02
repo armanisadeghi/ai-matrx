@@ -1,23 +1,33 @@
 "use client";
 
 /**
- * The person's global scratchpad as a canvas tab. The body is the chat
- * package's ScratchpadQuickPanel (the shared working-document editor on the
- * active scratchpad); the pool switcher (pick / new / delete) is the tab's
- * header button, and the tab is named after the active scratchpad.
+ * The person's scratchpad as a canvas tab — the ONE tab every scratchpad door
+ * opens (Quick Access, the composer rail's Scratch pill, an editor's "Open in
+ * Canvas"). The body is the chat package's ScratchpadQuickPanel (the shared
+ * working-document editor on the ACTIVE scratchpad); the pool switcher (pick /
+ * new / delete) is the tab's header button, and the tab is named after the
+ * active scratchpad.
  *
- * Kind id is not "scratchpad": that id is the artifact content type that shows
- * one scratchpad document an agent wrote.
+ * The kind id and key live in the chat package (`host/canvas-tabs.ts`) so the
+ * package recognises this tab on the canvas by the same identity.
  */
 
 import { ChevronsUpDown, NotebookPen } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
+import type { CanvasJson } from "@ai-matrx/canvas";
 import { ScratchpadSwitcherMenu } from "@ai-matrx/chat/agents/components/working-document/ScratchpadSwitcherMenu";
-import { useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { SCRATCHPAD_KIND, SCRATCHPAD_TAB_KEY } from "@ai-matrx/chat/host/canvas-tabs";
+import type { OpenScratchpadPanelOptions } from "@ai-matrx/chat/host/window-openers";
+import { canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
 
-export const SCRATCHPAD_KIND = "global-scratchpad";
+export { SCRATCHPAD_KIND };
 export const SCRATCHPAD_TITLE = "Scratchpad";
+
+/** The chat this tab was opened from, when a chat opened it. */
+export function readScratchpadGate(data: CanvasJson | undefined | null): string | undefined {
+  return canvasText(data, "gateConversationId") ?? undefined;
+}
 
 function ScratchpadHeaderAction() {
   return (
@@ -27,7 +37,7 @@ function ScratchpadHeaderAction() {
   );
 }
 
-export const scratchpadKind = defineCanvasKind<null>({
+export const scratchpadKind = defineCanvasKind<CanvasJson>({
   id: SCRATCHPAD_KIND,
   label: SCRATCHPAD_TITLE,
   icon: NotebookPen,
@@ -35,12 +45,27 @@ export const scratchpadKind = defineCanvasKind<null>({
   restore: true,
   // The editor holds unsaved keystrokes between autosaves.
   keepAlive: true,
-  launcher: { key: "default", data: null, title: SCRATCHPAD_TITLE },
+  launcher: { key: SCRATCHPAD_TAB_KEY, data: null, title: SCRATCHPAD_TITLE },
   HeaderAction: ScratchpadHeaderAction,
 });
 
-/** Opens the scratchpad in the canvas (or focuses its tab). */
+/**
+ * Opens the scratchpad in the canvas (or focuses its tab). A chat that opens
+ * it names itself, so the tab offers "Share with this chat"; a door with no
+ * chat (Quick Access) leaves an open tab's chat as it was.
+ */
+export function useOpenScratchpadPanel() {
+  return useToolOpener((options: OpenScratchpadPanelOptions | undefined) => ({
+    kind: SCRATCHPAD_KIND,
+    key: SCRATCHPAD_TAB_KEY,
+    title: SCRATCHPAD_TITLE,
+    data: options?.gateConversationId ? { gateConversationId: options.gateConversationId } : null,
+    replaceData: Boolean(options?.gateConversationId),
+  }));
+}
+
+/** Opens the scratchpad from a door with no chat behind it. */
 export function useOpenScratchpad() {
-  const open = useToolOpener((_: null) => ({ kind: SCRATCHPAD_KIND, key: "default", title: SCRATCHPAD_TITLE, data: null }));
-  return () => open(null);
+  const open = useOpenScratchpadPanel();
+  return () => open(undefined);
 }

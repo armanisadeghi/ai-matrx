@@ -42,9 +42,11 @@ import {
 } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../store/hooks";
 import { selectWorkingDocTitle } from "../../agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { useCanvas } from "@host/features/canvas/hooks/useCanvas";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
-import { useOpenNotesWindow } from "../../host/window-openers";
+import {
+  useOpenNotesWindow,
+  useOpenWorkingDocumentPanel,
+} from "../../host/window-openers";
 import { useOpenWorkingDocumentWindow } from "../../host/window-openers";
 import { cn } from "@ai-matrx/design-system";
 import type { ToolArtifact, ToolArtifactKind } from "../registry/toolArtifact";
@@ -94,7 +96,7 @@ export function ArtifactResultBar({
 }: ArtifactResultBarProps) {
   // Hooks run unconditionally; the working-doc title is "" for non-doc kinds.
   const liveTitle = useAppSelector(selectWorkingDocTitle(conversationId ?? ""));
-  const canvas = useCanvas();
+  const openDocuments = useOpenWorkingDocumentPanel();
   const openNotes = useOpenNotesWindow();
   const openWorkingDocWindow = useOpenWorkingDocumentWindow();
 
@@ -117,17 +119,8 @@ export function ArtifactResultBar({
       });
       return;
     }
-    // Park the final version in the Canvas — the unified live workspace.
-    // Deduped so reopening reuses the same item.
-    canvas.open({
-      type: "working_document",
-      data: { conversationId, kind: "working" },
-      metadata: {
-        title: "Documents",
-        conversationId,
-        sourceMessageId: `wd:${conversationId}:working`,
-      },
-    });
+    // The conversation's ONE Documents tab — reopening focuses it.
+    openDocuments({ conversationId, initialKind: "working" });
   }
 
   function openEdit() {

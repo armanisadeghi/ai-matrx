@@ -173,6 +173,7 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-10-02` — **One tab per document.** A conversation's documents are ONE kind, `conversation-documents` keyed by the conversation id (body: `DocumentsWorkspace`); the scratchpad is ONE kind, `global-scratchpad` keyed `default` (body: `ScratchpadQuickPanel` on the active scratchpad, data `{ gateConversationId }` when a chat opened it). The artifact content types `working_document` / `scratchpad` (keyed `wd:<scope>:<kind>`) are deleted — they rendered the same bodies, so the header Canvas button and `?attachDoc=` gave two tabs of one thing. Kind ids + tab ids live in the chat package (`packages/chat/src/host/canvas-tabs.ts`); every package door (Canvas button, rail Doc/Scratch pills, `ArtifactResultBar`, `useWorkingDocument().openInCanvas`) opens through the windows port (`openWorkingDocumentPanel`, new `openScratchpadPanel`). Guard: `__tests__/one-tab-per-document.test.tsx`.
 - `2026-10-02` — **Narrow panes take turns.** Quick Notes (`NotesView`) and a conversation's Documents (`DocumentsWorkspace`) measure their own width: below 520px the list and the document take turns at full width instead of squeezing the document to a sliver. The live door to the `conversation-documents` tab is the chat's `?attachDoc=<id>` deep link (a working document's in-app destination); the composer `ContextDocsMenu` that also called it is imported but rendered nowhere.
 
 - `2026-10-02` — **One right-hand region.** The floating `SidePanelSurface` is deleted. Every data

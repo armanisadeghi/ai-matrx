@@ -183,6 +183,7 @@ import {
   type OpenContextPreviewOptions,
 } from "@/features/canvas/host/conversation/contextPreviewKind";
 import { useOpenConversationDocuments } from "@/features/canvas/host/conversation/documentsKind";
+import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
 
 const DEFAULT_SERVER_URL = "https://server.app.matrxserver.com";
 
@@ -409,6 +410,7 @@ function useAppWindowOpeners(): ChatWindowOpeners {
     openRunControlsWindow: useOpenRunControlsWindow(),
     openSaveKitDialog: useOpenSaveKitDialog(),
     openScraperWindow: useOpenScraperWindow(),
+    openScratchpadPanel: useOpenScratchpadPanel(),
     openStructuredListManagerV2Window: useOpenStructuredListManagerV2Window(),
     openSurfaceContextInspector: useOpenSurfaceContextInspector(),
     openSurfaceContextWindow: useOpenSurfaceContextWindow(),

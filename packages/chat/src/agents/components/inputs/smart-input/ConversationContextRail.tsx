@@ -63,6 +63,14 @@ import {
   TooltipTrigger,
 } from "@ai-matrx/design-system";
 import { useChatCanvasOpeners, useChatCanvasView } from "../../../../host/canvas";
+import {
+  conversationDocumentsTabId,
+  scratchpadTabId,
+} from "../../../../host/canvas-tabs";
+import {
+  useOpenScratchpadPanel,
+  useOpenWorkingDocumentPanel,
+} from "../../../../host/window-openers";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
 import { selectCloudBrowserRunLive } from "@host/features/cloud-browser/redux/cloudBrowserSlice";
 import {
@@ -252,6 +260,8 @@ export function ConversationContextRail({
 
   // ── Canvas state for the doc pills' show/hide toggle ─────────────────────
   const canvas = useChatCanvasOpeners();
+  const openDocuments = useOpenWorkingDocumentPanel();
+  const openScratchpad = useOpenScratchpadPanel();
   const {
     isOpen: canvasOpen,
     activeSourceId: currentCanvasSourceId,
@@ -316,11 +326,12 @@ export function ConversationContextRail({
    * Doc pill click = CANVAS VISIBILITY TOGGLE: open the canvas on this doc,
    * or close it if it's already showing this doc. Deliberately not the detail
    * sheet — the pill is the "see it / hide it" affordance; management lives in
-   * the docs menu. The canvas dedups on the stable sourceMessageId shared
-   * with ChatCanvasButton / openInCanvas, so all surfaces reuse one item.
+   * the docs menu. Each pill opens the ONE tab its document has: the Doc pill
+   * this conversation's Documents tab, the Scratch pill the scratchpad tab —
+   * the same tabs the header Canvas button, a tool's result bar and the
+   * editor's "Open in Canvas" open (host/canvas-tabs.ts).
    */
   const toggleDocInCanvas = (kind: "working" | "scratch") => {
-    const scope = kind === "scratch" ? scratchScope : conversationId;
     if (kind === "scratch" && !activeScratchId) {
       // The pill is on screen, so the click must produce something. There is
       // no scratchpad bound to this conversation yet — say so with the fix.
@@ -331,28 +342,21 @@ export function ConversationContextRail({
       });
       return;
     }
-    const stableId = `wd:${scope}:${kind}`;
-    if (canvasOpen && currentCanvasSourceId === stableId) {
+    const tabId =
+      kind === "scratch"
+        ? scratchpadTabId()
+        : conversationDocumentsTabId(conversationId);
+    if (canvasOpen && currentCanvasSourceId === tabId) {
       canvas.hide();
       return;
     }
-    canvas.open({
-      type: kind === "scratch" ? "scratchpad" : "working_document",
-      // gateConversationId: the CHAT this pill lives in — lets the canvas
-      // scratch panel offer its per-document "Share with this chat" toggle.
-      data: {
-        conversationId: scope,
-        kind,
-        gateConversationId: conversationId,
-      },
-      metadata: {
-        title:
-          (kind === "scratch" ? scratchTitle : workingDocTitle)?.trim() ||
-          (kind === "scratch" ? "Scratchpad" : "Working document"),
-        conversationId: scope,
-        sourceMessageId: stableId,
-      },
-    });
+    if (kind === "scratch") {
+      // gateConversationId: the CHAT this pill lives in — lets the scratchpad
+      // tab offer its per-document "Share with this chat" toggle.
+      openScratchpad({ gateConversationId: conversationId });
+    } else {
+      openDocuments({ conversationId, initialKind: "working" });
+    }
   };
 
   const toggleLists = () => {
@@ -412,7 +416,7 @@ export function ConversationContextRail({
         hint: "Click: show / hide in canvas · X: turn off for this chat",
         active:
           canvasOpen &&
-          currentCanvasSourceId === `wd:${conversationId}:working`,
+          currentCanvasSourceId === conversationDocumentsTabId(conversationId),
         onOpen: () => toggleDocInCanvas("working"),
         onRemove: () =>
           void dispatch(
@@ -437,7 +441,7 @@ export function ConversationContextRail({
             : "Read-only to agent",
         hint: "Click: show / hide in canvas · X: turn off for this chat",
         active:
-          canvasOpen && currentCanvasSourceId === `wd:${scratchScope}:scratch`,
+          canvasOpen && currentCanvasSourceId === scratchpadTabId(),
         onOpen: () => toggleDocInCanvas("scratch"),
         onRemove: () =>
           void dispatch(

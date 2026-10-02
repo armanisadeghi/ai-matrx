@@ -59,8 +59,6 @@ const CONTENT_TYPES = {
   structured_info: true,
   tree: true,
   tasks: true,
-  working_document: true,
-  scratchpad: true,
   cloud_browser: true,
   udt_document: true,
   sandbox: true,

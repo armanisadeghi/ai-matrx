@@ -2,16 +2,21 @@
 
 /**
  * A conversation's Documents (its working document + scratchpads) as a canvas
- * tab — the chat package's DocumentsWorkspace. One tab per conversation: what a
- * tool's result bar or the composer's documents menu opens.
+ * tab — the chat package's DocumentsWorkspace. ONE tab per conversation, keyed
+ * by the conversation id: every door (the chat header's Canvas button, the
+ * composer rail's Doc pill, a tool's result bar, the editor's "Open in Canvas",
+ * `/chat/new?attachDoc=`) opens this tab through the chat windows port's
+ * `openWorkingDocumentPanel`. The kind id lives in the chat package
+ * (`host/canvas-tabs.ts`) so the package recognises the tab by the same id.
  */
 
 import { FileText } from "lucide-react";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
+import { CONVERSATION_DOCUMENTS_KIND } from "@ai-matrx/chat/host/canvas-tabs";
 import { canvasRecord, canvasText, useToolOpener } from "@/features/canvas/host/toolCanvas";
 
-export const CONVERSATION_DOCUMENTS_KIND = "conversation-documents";
+export { CONVERSATION_DOCUMENTS_KIND };
 const TITLE = "Documents";
 
 export interface DocumentsTabData {

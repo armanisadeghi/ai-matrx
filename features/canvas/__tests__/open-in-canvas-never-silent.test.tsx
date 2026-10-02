@@ -106,11 +106,11 @@ function mountOpener(store: Store | null) {
 }
 
 const DOCUMENT_REQUEST: CanvasContent = {
-  type: "working_document",
-  data: { conversationId: "bb458c1e-3222-4c16-9d29-77c48b186a02", kind: "working" },
+  type: "udt_document",
+  data: { documentId: "bb458c1e-3222-4c16-9d29-77c48b186a02" },
   metadata: {
     title: "Canvas Hijack Check",
-    sourceMessageId: "wd:bb458c1e:working",
+    sourceMessageId: "udt:bb458c1e",
   },
 };
 
@@ -144,7 +144,7 @@ describe("an open-in-canvas request never silently does nothing", () => {
     const store = createCanvasStore();
     const probe = mountOpener(store);
     const opened = probe.open({
-      type: "working_document",
+      type: "udt_document",
       data: null,
       metadata: { title: "Canvas Hijack Check" },
     } as CanvasContent);
@@ -168,7 +168,7 @@ describe("an open-in-canvas request never silently does nothing", () => {
     expect(state.isOpen).toBe(true);
     const active = selectCanvasActiveItem(state);
     const data = active ? readArtifactItemData(active.data) : null;
-    expect(data ? contentOf(data).type : null).toBe("working_document");
+    expect(data ? contentOf(data).type : null).toBe("udt_document");
 
     probe.unmount();
   });

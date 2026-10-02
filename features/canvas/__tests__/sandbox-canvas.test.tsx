@@ -89,11 +89,11 @@ const sandboxContent = buildSandboxCanvasContent({
 });
 
 const documentContent: CanvasContent = {
-  type: "working_document",
-  data: { conversationId: CONVERSATION_ID, kind: "working" },
+  type: "udt_document",
+  data: { documentId: "5d0c8d2e-3f1a-4b7e-9c61-2a8f0e4b7d13" },
   metadata: {
-    title: "Working document",
-    sourceMessageId: `wd:${CONVERSATION_ID}:working`,
+    title: "Brief",
+    sourceMessageId: "udt:5d0c8d2e",
   },
 };
 
@@ -274,7 +274,7 @@ describe("default hidden", () => {
       (api) => api.offer(sandboxOpts),
     ]);
     expect(itemsOf(state)).toHaveLength(2);
-    expect(sourceOfActive(state)).toBe(`wd:${CONVERSATION_ID}:working`);
+    expect(sourceOfActive(state)).toBe("udt:5d0c8d2e");
   });
 
   it("opening puts the sandbox on screen", () => {

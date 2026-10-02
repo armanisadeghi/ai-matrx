@@ -55,6 +55,7 @@ import {
   applyAgentWorkingDocContent,
   DEFAULT_DOC_KIND,
   isScratchScope,
+  scratchDocIdFromScope,
   scratchScopeId,
   workingDocKey,
   markWorkingDocError,
@@ -93,6 +94,7 @@ import {
 import {
   hydrateActiveScratchpadThunk,
   hydrateAttachedScratchpadsThunk,
+  setActiveScratchpadThunk,
 } from "../redux/execution-system/instance-working-document/scratchpad.thunks";
 import {
   commitWorkingDocumentContent,
@@ -101,7 +103,10 @@ import {
   type CxWorkingDocumentRow,
 } from "../redux/execution-system/instance-working-document/cx-working-document.service";
 import { selectIsCacheOnly } from "../redux/execution-system/conversations/conversations.selectors";
-import { useCanvas } from "@host/features/canvas/hooks/useCanvas";
+import {
+  useOpenScratchpadPanel,
+  useOpenWorkingDocumentPanel,
+} from "../../host/window-openers";
 import {
   defineChannelNamespace,
   subscribeToRealtimeManager,
@@ -604,7 +609,9 @@ export function useWorkingDocument(
   kind: WorkingDocumentKind = DEFAULT_DOC_KIND,
 ): UseWorkingDocumentResult {
   const dispatch = useAppDispatch();
-  const canvas = useCanvas();
+  const openDocuments = useOpenWorkingDocumentPanel();
+  const openScratchpad = useOpenScratchpadPanel();
+  const activeScratchId = useAppSelector(selectActiveScratchpadId);
 
   const enabled = useAppSelector(selectWorkingDocEnabled(conversationId, kind));
   const content = useAppSelector(selectWorkingDocContent(conversationId, kind));
@@ -983,20 +990,27 @@ export function useWorkingDocument(
     [dispatch, conversationId, kind, binding.kind, binding.id],
   );
 
+  // Each document has ONE canvas tab (host/canvas-tabs.ts): a scratchpad is
+  // the scratchpad tab (which follows the ACTIVE scratchpad, so this one is
+  // made active first); a conversation's document is its Documents tab.
   const openInCanvas = useCallback(() => {
-    canvas.open({
-      type: kind === "scratch" ? "scratchpad" : "working_document",
-      data: { conversationId, kind },
-      metadata: {
-        title:
-          title || (kind === "scratch" ? "Scratchpad" : "Working document"),
-        conversationId,
-        // Stable dedup key so reopening reuses the same Canvas item instead of
-        // stacking duplicates (the canvas keys the tab on sourceMessageId).
-        sourceMessageId: `wd:${conversationId}:${kind}`,
-      },
-    });
-  }, [canvas, conversationId, kind, title]);
+    const scratchDocId = scratchDocIdFromScope(conversationId);
+    if (scratchDocId) {
+      if (scratchDocId !== activeScratchId) {
+        void dispatch(setActiveScratchpadThunk({ documentId: scratchDocId }));
+      }
+      openScratchpad();
+      return;
+    }
+    openDocuments({ conversationId, initialKind: kind });
+  }, [
+    activeScratchId,
+    conversationId,
+    dispatch,
+    kind,
+    openDocuments,
+    openScratchpad,
+  ]);
 
   return {
     kind,
