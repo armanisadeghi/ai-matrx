@@ -25,7 +25,7 @@
 \set ON_ERROR_STOP on
 \timing off
 \set suite 'visionreach_w3_query_doors_mask_fields.sql'
-\set requires 'grant:authenticated:custom.query_table_as_of|grant:authenticated:custom.query_rollup_sum'
+\set requires 'grant:authenticated:custom.query_table_as_of|grant:authenticated:custom.query_rollup_sum|grant:authenticated:custom.record_aggregate_as_of'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -182,6 +182,19 @@ begin
     end if;
   end;
 
+  -- 5c. custom.record_aggregate_as_of — the table as it stood, measured in the store: a hidden column
+  --     is refused by its name, never added up.
+  begin
+    select string_agg(coalesce(x.result::text,'null'), ',') into v_txt
+      from custom.record_aggregate_as_of(v_org, v_pat, clock_timestamp(), 'sum', 'outstanding_balance', null, '{}'::jsonb) x;
+    v_fail := v_fail || ('5c record_aggregate_as_of ADDED UP the confidential column for the member: ' || coalesce(v_txt,'nothing'));
+  exception when others then
+    get stacked diagnostics v_state = returned_sqlstate;
+    if v_state <> '42501' or sqlerrm not like '%Outstanding balance%' then
+      v_fail := v_fail || format('5c record_aggregate_as_of refused for the wrong reason (%s): %s', v_state, sqlerrm);
+    end if;
+  end;
+
   -- 6. custom.record_aggregate — a measure, a group and a filter on the hidden column. This door
   -- MASKS in place (the measure answers null and `_withheld` names the column), so the check is
   -- that the number never comes back and the withholding is said.
@@ -218,6 +231,12 @@ begin
   v_sum := custom.query_rollup_sum(v_org, array[v_rec, v_rec2], 'outstanding_balance', null, null, 33, 'viewer');
   if v_sum is distinct from c_balance + 240 then
     v_fail := v_fail || format('7 query_rollup_sum for the OWNER answered %s, not %s', v_sum, c_balance + 240);
+  end if;
+
+  select x.result into v_sum
+    from custom.record_aggregate_as_of(v_org, v_pat, clock_timestamp(), 'sum', 'outstanding_balance', null, '{}'::jsonb) x;
+  if v_sum is distinct from c_balance + 240 then
+    v_fail := v_fail || format('7 record_aggregate_as_of for the OWNER answered %s, not %s', v_sum, c_balance + 240);
   end if;
 
   if cardinality(v_fail) > 0 then
