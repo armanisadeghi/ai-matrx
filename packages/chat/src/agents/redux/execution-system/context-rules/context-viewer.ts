@@ -18,30 +18,11 @@ import { extractErrorMessage } from "@ai-matrx/data/net";
 import { buildPreviewRequestContext } from "./request-context";
 import { sentWithRequest } from "../messages/messages.slice";
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
-
-/**
- * `fetchable` — what the agent gets if it asks a tool now (the Organization:
- * its selected scopes' values via `scope_system`). Rendered when opened, never
- * on the receipt; `source: "fetched_now"`.
- */
-export type ContextViewKind = "delivered" | "on_request" | "block" | "fetchable";
-
-export interface ContextViewTarget {
-  kind: ContextViewKind;
-  /** The value's key, or the block's id. */
-  key: string;
-}
-
-export interface ContextViewedText {
-  kind: ContextViewKind;
-  key: string;
-  text: string;
-  chars: number;
-  sha256: string;
-  source: "preview" | "wire" | "conversation_prompt" | "turn_record" | "fetched_now";
-}
-
-export type ContextViewLoader = (target: ContextViewTarget) => Promise<ContextViewedText>;
+import type {
+  ContextViewLoader,
+  ContextViewTarget,
+  ContextViewedText,
+} from "@ai-matrx/agents/context";
 
 /** Which turn a view reads: a sent person message, or the next turn (`messageId: null`). */
 export interface ContextViewTurn {

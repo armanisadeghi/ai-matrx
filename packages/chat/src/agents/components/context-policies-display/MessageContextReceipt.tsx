@@ -13,20 +13,23 @@
  */
 
 import { useMemo, useState } from "react";
-import * as contextReact from "@ai-matrx/agents/context/react";
 import { Boxes, TriangleAlert } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { ContextRulesTable } from "@ai-matrx/agents/context/react";
-import type { ContextReceiptMismatch } from "@ai-matrx/agents/context";
+import {
+  ContextDeliveredValue,
+  ContextReceiptBlockDetail,
+  ContextReceiptBlocks,
+  ContextRulesTable,
+} from "@ai-matrx/agents/context/react";
+import {
+  unclaimedBlocks,
+  type ContextReceiptMismatch,
+  type ContextViewLoader,
+} from "@ai-matrx/agents/context";
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 import { receiptRowToResolved } from "../../redux/execution-system/messages/message-context-receipt";
 import { ValueCountPill } from "./ValueCountPill";
-import { ContextDeliveredBlock, DeliveredText } from "./ContextDeliveredBlock";
-import { deliveredFieldsFor } from "../../redux/execution-system/context-rules/receipt-check";
-import {
-  loadContextView,
-  type ContextViewLoader,
-} from "../../redux/execution-system/context-rules/context-viewer";
+import { loadContextView } from "../../redux/execution-system/context-rules/context-viewer";
 import { useAppDispatch } from "../../../store/hooks";
 
 /** The viewer door for a SENT turn (`GET /ai/context/delivered`), called only on open. */
@@ -34,12 +37,6 @@ export function useSentTurnContextView(conversationId: string, messageId: string
   const dispatch = useAppDispatch();
   return (target) => dispatch(loadContextView({ conversationId, messageId }, target));
 }
-import { formatChars } from "@ai-matrx/agents/context";
-
-/** Blocks the model read as part of a value (the package's `CONTEXT_ROW_BLOCKS` ≥ 0.29.0). */
-const ROW_BLOCKS: Readonly<Record<string, readonly string[]>> = {
-  organization: ["organization_catalog"],
-};
 
 const NO_CHANGE = () => {};
 
@@ -60,34 +57,24 @@ export function MessageContextReceiptTable({
   /** The viewer door for this turn (RULES.md §5b); without one, sizes show and text reads "—". */
   load?: ContextViewLoader;
 }) {
-  const rows = useMemo(() => (receipt.rows ?? []).map(receiptRowToResolved), [receipt]);
+  const blocks = receipt.blocks ?? [];
+  // Each row carries what the model read for it, the blocks it rode with included.
+  const rows = useMemo(
+    () => (receipt.rows ?? []).map((row) => receiptRowToResolved(row, receipt.blocks)),
+    [receipt],
+  );
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [openBlock, setOpenBlock] = useState<string | null>(null);
-  const blocks = receipt.blocks ?? [];
   // A block the model read as part of a value shows under that value, not twice.
-  const claimed = new Set(
-    rows.filter((r) => deliveredFieldsFor(receipt, r.key, r.surfaceKey).delivered).flatMap((r) => ROW_BLOCKS[r.key] ?? []),
+  const alsoSent = unclaimedBlocks(
+    blocks,
+    rows.filter((r) => r.delivered).map((r) => r.key),
   );
-  const alsoSent = blocks.filter((b) => !claimed.has(b.id));
-  // What the model read for the opened value (RULES.md §5 `delivered`) — sizes
-  // here, the text fetched on open.
-  const opened = useMemo(() => {
-    const row = rows.find((r) => r.key === openKey);
-    if (!row) return null;
-    const fields = deliveredFieldsFor(receipt, row.key, row.surfaceKey);
-    const attached = fields.delivered
-      ? blocks.filter((b) => (ROW_BLOCKS[row.key] ?? []).includes(b.id))
-      : [];
-    return { key: row.key, fields, attached };
-  }, [rows, openKey, receipt, blocks]);
+  const opened = rows.find((r) => r.key === openKey) ?? null;
+  const hasText = Boolean(
+    opened && (opened.delivered || opened.onRequest || opened.deliveredBlocks?.length),
+  );
   const block = alsoSent.find((b) => b.id === openBlock) ?? null;
-  const BlockList = (contextReact as {
-    ContextReceiptBlocks?: (props: {
-      blocks: readonly typeof alsoSent[number][];
-      selectedId?: string | null;
-      onOpenBlock?: (id: string) => void;
-    }) => React.ReactNode;
-  }).ContextReceiptBlocks;
   return (
     <div className="flex min-w-0 flex-col">
       {receipt.model_reads_context === false ? (
@@ -110,59 +97,20 @@ export function MessageContextReceiptTable({
         }}
         selectedKey={openKey}
       />
-      {opened ? (
-        <ContextDeliveredBlock
-          rowKey={opened.key}
-          delivered={opened.fields.delivered}
-          onRequest={opened.fields.onRequest}
-          blocks={opened.attached}
-          load={load}
-          className="px-2 py-2"
-        />
+      {opened && hasText ? (
+        <ContextDeliveredValue row={opened} load={load} className="px-2 py-2" />
       ) : null}
       {alsoSent.length > 0 ? (
-        BlockList ? (
-          <BlockList
-            blocks={alsoSent}
-            selectedId={openBlock}
-            onOpenBlock={(id) => {
-              setOpenKey(null);
-              setOpenBlock((current) => (current === id ? null : id));
-            }}
-          />
-        ) : (
-          <div role="table" aria-label="Also sent" className="text-xs">
-            <div className="flex h-6 items-center bg-muted/40 px-2 font-medium text-muted-foreground">
-              Also sent
-            </div>
-            {alsoSent.map((b) => (
-              <div key={b.id} role="row" className="flex h-7 items-center gap-2 border-b border-border/50 px-2">
-                <button
-                  type="button"
-                  className="min-w-0 flex-1 truncate text-left hover:underline"
-                  onClick={() => {
-                    setOpenKey(null);
-                    setOpenBlock((current) => (current === b.id ? null : b.id));
-                  }}
-                >
-                  {b.label}
-                </button>
-                <span className="tabular-nums">{formatChars(b.delivered.chars)}</span>
-              </div>
-            ))}
-          </div>
-        )
+        <ContextReceiptBlocks
+          blocks={alsoSent}
+          selectedId={openBlock}
+          onOpenBlock={(id) => {
+            setOpenKey(null);
+            setOpenBlock((current) => (current === id ? null : id));
+          }}
+        />
       ) : null}
-      {block ? (
-        <div className="px-2 py-2">
-          <DeliveredText
-            title={block.label}
-            target={{ kind: "block", key: block.id }}
-            size={block.delivered}
-            load={load}
-          />
-        </div>
-      ) : null}
+      {block ? <ContextReceiptBlockDetail block={block} load={load} className="px-2 py-2" /> : null}
     </div>
   );
 }

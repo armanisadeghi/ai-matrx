@@ -19,9 +19,12 @@
  */
 
 import { useConversationDisplayRows } from "../inputs/smart-input/useConversationDisplayRows";
-import type { ComponentProps } from "react";
 import { ContextRulesPanelBody } from "@ai-matrx/agents/context/react";
-import { isServerAuthoritativeKey, type ResolvedContextRow } from "@ai-matrx/agents/context";
+import {
+  isServerAuthoritativeKey,
+  type ContextViewLoader,
+  type ResolvedContextRow,
+} from "@ai-matrx/agents/context";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -42,16 +45,15 @@ import {
   loadContextView,
   selectDisplayReceiptBlocks,
   selectDisplayReceiptMessageId,
-  type ContextViewLoader,
 } from "../../redux/execution-system/context-rules/context-viewer";
+import { resolveClientSurface } from "../../redux/execution-system/utils/build-tool-injection";
+import { getSurfaceDisplayLabel } from "../../../surfaces/utils/surface-display";
 
 /**
  * RULES.md §5a: the server states these values itself and drops the page's
  * copy, so before any receipt the detail never shows the page's guess as what
  * will be sent (the package's panel detail says "Filled in by the server").
  */
-type PanelViewLoader = NonNullable<ComponentProps<typeof ContextRulesPanelBody>["loadView"]>;
-
 export const isServerOwnedContextKey: (key: string) => boolean = isServerAuthoritativeKey;
 
 import {
@@ -83,6 +85,12 @@ export function ContextRulesPanel({
     selectDisplayReceiptMessageId(state, conversationId),
   );
   const blocks = useAppSelector((state) => selectDisplayReceiptBlocks(state, conversationId));
+  // The title names the page the values come from — never the word "context"
+  // (Arman, 2026-10-01); a conversation with no page has no title text.
+  const pageName = useAppSelector((state) => {
+    const surface = resolveClientSurface(state, conversationId);
+    return surface ? getSurfaceDisplayLabel(surface) : "";
+  });
   const loadView: ContextViewLoader = (target) =>
     dispatch(loadContextView({ conversationId, messageId: receiptMessageId, agentId }, target));
   const mandateKey = useAppSelector(
@@ -149,8 +157,8 @@ export function ContextRulesPanel({
     <MatrxDynamicPanelHost
       open={open}
       onOpenChange={onOpenChange}
-      title="Context"
-      expandButtonLabel="Context"
+      title={pageName}
+      expandButtonLabel={pageName || "Values"}
       position="right"
       defaultSize={44}
       contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
@@ -161,9 +169,7 @@ export function ContextRulesPanel({
         mismatches={mismatches}
         onChange={save}
         blocks={blocks}
-        // @ai-matrx/agents 0.29 types the viewer without `fetchable` / `fetched_now` (0.30.0
-        // adds them); the package never reads either field. Drop the cast on 0.30 adoption.
-        loadView={loadView as PanelViewLoader}
+        loadView={loadView}
         renderDetail={renderDetail}
         isMobile={isMobile}
         selectedKey={selectedKey}

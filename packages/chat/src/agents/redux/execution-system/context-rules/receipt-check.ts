@@ -70,14 +70,9 @@ export function toContextReceiptRow(row: WireReceiptRow): ContextReceiptRow {
   return out;
 }
 
-/**
- * The wire's ref as the package's. Cast through the package's own field type:
- * @ai-matrx/agents < 0.29.0 still names it `ContextDeliveredText` (with text) —
- * retire the cast with the 0.29.0 adoption.
- */
+/** The wire's ref as the package's: size and hash only (RULES.md §5b). */
 function toDeliveredRef(ref: WireDeliveredRef | null | undefined): ContextReceiptRow["delivered"] {
-  if (!ref) return null;
-  return { chars: ref.chars, sha256: ref.sha256 } as unknown as ContextReceiptRow["delivered"];
+  return ref ? { chars: ref.chars, sha256: ref.sha256 } : null;
 }
 
 /** Normalize the generated wire type (optional fields) to the package's receipt. */
@@ -89,8 +84,7 @@ export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
     model_reads_context: data.model_reads_context !== false,
     rules_error: data.rules_error ?? null,
     rows: (data.rows ?? []).map(toContextReceiptRow),
-    // Spread, not a literal key: @ai-matrx/agents < 0.29.0 has no `blocks` on its receipt.
-    ...({ blocks: data.blocks ?? [] } as object),
+    blocks: data.blocks ?? [],
   };
 }
 

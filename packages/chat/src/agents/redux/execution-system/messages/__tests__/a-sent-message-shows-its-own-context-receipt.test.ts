@@ -179,7 +179,7 @@ describe("selectMessageContextReceipt", () => {
 
 describe("receiptRowToResolved", () => {
   it("groups by who supplied the value and keeps the server's applied limit", () => {
-    const rows = FIRST.rows!.map(receiptRowToResolved);
+    const rows = FIRST.rows!.map((r) => receiptRowToResolved(r));
     const byKey = Object.fromEntries(rows.map((r) => [r.key, r]));
     expect(byKey.client.origin).toBe("attached");
     expect(byKey.note_bundle.origin).toBe("page");
@@ -191,7 +191,7 @@ describe("receiptRowToResolved", () => {
   });
 
   it("names a rule row whose label is its key in words, with the person's rule", () => {
-    const off = SECOND.rows!.map(receiptRowToResolved).find((r) => r.key === "open_notes_summary")!;
+    const off = SECOND.rows!.map((r) => receiptRowToResolved(r)).find((r) => r.key === "open_notes_summary")!;
     expect(off.label).toBe("Open Notes Summary");
     expect(off.include).toBe(false);
     expect(off.userRule).toEqual({ include: false });

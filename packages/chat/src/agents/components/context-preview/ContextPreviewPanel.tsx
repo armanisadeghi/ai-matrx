@@ -56,7 +56,7 @@ import {
   receiptSummary,
 } from "../context-policies-display/MessageContextReceipt";
 import { isContextReceiptData } from "../../redux/execution-system/messages/message-context-receipt";
-import type { ContextViewLoader } from "../../redux/execution-system/context-rules/context-viewer";
+import type { ContextViewLoader } from "@ai-matrx/agents/context";
 
 type View = "resolved" | "compare" | "attached";
 
@@ -421,7 +421,7 @@ function ResolvedBody({
         <section className="px-4 pt-3">
           <div className="flex items-baseline gap-2">
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-              Context delivery
+              Next turn
             </h3>
             <span className="text-[10px] tabular-nums text-muted-foreground">
               {receiptSummary(receipt)}
@@ -437,7 +437,7 @@ function ResolvedBody({
         <div className="flex items-baseline gap-2">
           <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
             <FileCode2 className="h-3 w-3" />
-            Injected context block
+            Injected block
           </h3>
           {typeof data.block_byte_length === "number" &&
             data.block_byte_length > 0 && (

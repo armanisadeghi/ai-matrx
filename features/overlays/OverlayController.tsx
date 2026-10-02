@@ -7084,7 +7084,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="What the agent receives"
-            description="The exact context the server resolves for your current settings."
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "contextPreviewPanel" }))
             }

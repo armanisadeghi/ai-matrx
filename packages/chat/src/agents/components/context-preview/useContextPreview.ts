@@ -39,7 +39,7 @@ import type { components } from "@host/types/python-generated/api-types";
 import type {
   ContextViewLoader,
   ContextViewedText,
-} from "../../redux/execution-system/context-rules/context-viewer";
+} from "@ai-matrx/agents/context";
 
 export type ContextSelection = components["schemas"]["ContextSelection"];
 

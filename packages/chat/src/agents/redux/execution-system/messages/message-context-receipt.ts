@@ -112,8 +112,11 @@ export const selectMessageContextMismatches =
  * receipts persisted before 2026-10-01 named `origin: "rule"` rows by their raw
  * key; those are named in words, the way every other surface names them.
  */
-export function receiptRowToResolved(row: ContextReceiptRow): ResolvedContextRow {
-  const base = packageReceiptRowToResolved(toContextReceiptRow(row));
+export function receiptRowToResolved(
+  row: ContextReceiptRow,
+  blocks?: ContextReceiptData["blocks"],
+): ResolvedContextRow {
+  const base = packageReceiptRowToResolved(toContextReceiptRow(row), blocks);
   return {
     ...base,
     label: contextEntryLabel({ key: row.key, label: row.label }),

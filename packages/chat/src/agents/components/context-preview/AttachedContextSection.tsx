@@ -217,7 +217,7 @@ export function AttachedContextSection({
       title,
       kindLine: e.slotMatched
         ? "Fills one of this agent's declared context policies."
-        : "Extra context you or the agent attached to this chat.",
+        : "Attached to this chat by you or the agent.",
       onRemove: () =>
         dispatch(removeContextEntry({ conversationId, key: e.key })),
     };
@@ -344,7 +344,7 @@ export function AttachedContextSection({
         {/* ── Active context layers — resolved server-side ── */}
         {layers.count > 0 && (
           <>
-            <SectionHead>Your active context</SectionHead>
+            <SectionHead>Selected</SectionHead>
             <ul className="divide-y divide-border/60">
               {layers.items.map((layer) => {
                 const Icon = layer.icon;
