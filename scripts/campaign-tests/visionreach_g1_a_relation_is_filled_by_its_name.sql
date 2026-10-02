@@ -13,7 +13,8 @@
 --   3  a name matching nobody is REFUSED by name (23514)
 --   4  a several-records column takes a list of names, each resolved
 --   5  custom.record_update resolves a name the same way
---   6  custom.io_cell (the import cell) matches case-insensitively and splits a several-records cell
+--   6  the import doors (custom.io_import_rows -> custom.io_cell) match case-insensitively, split a
+--      several-records cell, and refuse an ambiguous name for its row alone
 --   7  custom.relation_names_match answers 2 / 1 / 0 matches for an ambiguous / matching / unknown name
 --   8  a member who may see none of the physicians matches NOTHING through the door (no leak)
 --   9  an id still passes through untouched (the control: the fix resolves names, it does not
@@ -52,7 +53,6 @@ declare
   v_doc  jsonb; v_ans jsonb; v_cell jsonb;
   v_fail text[] := '{}';
   v_state text; v_msg text;
-  v_field jsonb; v_multi jsonb;
 begin
   perform set_config('app.actor_system', 'campaign-test/visionreach_g1', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -91,10 +91,6 @@ begin
     'key','referring_physician','label','Referring physician','type','relation','relation_target', v_phys));
   perform custom.field_declare(v_org, v_pat, jsonb_build_object(
     'key','care_team','label','Care team','type','relation','relation_target', v_phys, 'multi', true));
-  v_field := jsonb_build_object('key','referring_physician','label','Referring physician','type','relation',
-                                'relation_target', v_phys::text);
-  v_multi := jsonb_build_object('key','care_team','label','Care team','type','relation',
-                                'relation_target', v_phys::text, 'multi', true);
 
   v_gut  := custom.record_write(v_org, v_phys, jsonb_build_object('name','Dr. Marisol Gutierrez','parent_id',v_home::text));
   v_lee1 := custom.record_write(v_org, v_phys, jsonb_build_object('name','Dr. Alan Lee','parent_id',v_home::text));
@@ -172,20 +168,36 @@ begin
     v_fail := v_fail || ('5 record_update refused a name that names exactly one physician: ' || sqlerrm);
   end;
 
-  -- 6. The import cell: case and spacing ignored; a several-records cell is split.
-  v_cell := custom.io_cell(v_org, v_field, 'DR.  SAMUEL OKAFOR', 'mdy');
-  if not coalesce((v_cell ->> 'ok')::boolean, false) or v_cell ->> 'value' is distinct from v_oka::text then
-    v_fail := v_fail || ('6a io_cell did not match "DR.  SAMUEL OKAFOR": ' || v_cell::text);
-  end if;
-  v_cell := custom.io_cell(v_org, v_multi, 'Dr. Samuel Okafor; Dr. Marisol Gutierrez', 'mdy');
-  if not coalesce((v_cell ->> 'ok')::boolean, false)
-     or v_cell -> 'value' is distinct from jsonb_build_array(v_oka::text, v_gut::text) then
-    v_fail := v_fail || ('6b io_cell did not split a several-records cell: ' || v_cell::text);
-  end if;
-  v_cell := custom.io_cell(v_org, v_field, 'Dr. Alan Lee', 'mdy');
-  if coalesce((v_cell ->> 'ok')::boolean, true) or v_cell ->> 'reason' not like '%2 records called "Dr. Alan Lee"%' then
-    v_fail := v_fail || ('6c io_cell did not refuse the ambiguous name by name: ' || v_cell::text);
-  end if;
+  -- 6. The import doors (custom.io_import_rows -> custom.io_cell): case and spacing ignored, a
+  --    several-records cell split, an ambiguous name refused by name for its row alone.
+  begin
+    v_ans := custom.io_import_begin(v_org, v_pat, 'csv', 'referrals.csv', '["Patient","Referring physician","Care team"]'::jsonb,
+                                    md5(v_org::text), '{"on_duplicate":"skip","unmapped":"ignore"}'::jsonb);
+    v_ans := custom.io_import_rows(v_org, (v_ans ->> 'import_id')::uuid, jsonb_build_array(
+               jsonb_build_object('Patient','Liam Brooks','Referring physician','DR.  SAMUEL OKAFOR',
+                                  'Care team','Dr. Samuel Okafor; dr. marisol gutierrez'),
+               jsonb_build_object('Patient','Nora Patel','Referring physician','Dr. Alan Lee')),
+             '{"Patient":"name","Referring physician":"referring_physician","Care team":"care_team"}'::jsonb);
+    if (v_ans ->> 'rows_written')::int <> 1 or (v_ans ->> 'rows_refused')::int <> 1 then
+      v_fail := v_fail || ('6a the import wrote ' || coalesce(v_ans ->> 'rows_written','?') || ' and refused '
+                           || coalesce(v_ans ->> 'rows_refused','?') || ', not 1 and 1: ' || coalesce((v_ans -> 'outcomes')::text,'null'));
+    end if;
+    select o ->> 'record_id' into v_msg from jsonb_array_elements(v_ans -> 'outcomes') o where o ->> 'outcome' = 'landed';
+    if v_msg is not null then
+      v_doc := custom.read_record(v_org, v_msg::uuid);
+      if v_doc ->> 'referring_physician' is distinct from v_oka::text
+         or v_doc -> 'care_team' is distinct from jsonb_build_array(v_oka::text, v_gut::text) then
+        v_fail := v_fail || ('6b the imported row holds ' || coalesce(v_doc ->> 'referring_physician','null') || ' / '
+                             || coalesce((v_doc -> 'care_team')::text,'null'));
+      end if;
+    end if;
+    select o ->> 'reason' into v_msg from jsonb_array_elements(v_ans -> 'outcomes') o where o ->> 'outcome' = 'refused';
+    if coalesce(v_msg,'') not like '%2 records called "Dr. Alan Lee"%' then
+      v_fail := v_fail || ('6c the ambiguous imported name was not refused by name: ' || coalesce(v_msg,'null'));
+    end if;
+  exception when others then
+    v_fail := v_fail || ('6 the import doors failed: ' || sqlerrm);
+  end;
 
   -- 7. The client door a screen asks before it writes.
   begin

@@ -57,6 +57,8 @@ as $function$
   select nullif(lower(regexp_replace(btrim(coalesce(p_text, '')), '\s+', ' ', 'g')), '')
 $function$;
 
+revoke execute on function custom.relation_name_key(text) from public;
+
 comment on function custom.relation_name_key(text) is
   'VISION-REACH G1: the key two spellings of one record name share — lower case, spacing collapsed and trimmed; null for an empty name. Used by custom._relation_names_resolve and nothing else should invent a second one.';
 
@@ -78,6 +80,8 @@ declare
   v_title text;
   v_me    uuid;
   v_keys  text[];
+  v_pred  text;
+  v_memo  text;
   v_out   jsonb;
 begin
   if p_organization_id is null or p_target is null then
@@ -95,30 +99,43 @@ begin
   if cardinality(v_keys) = 0 then
     return '{}'::jsonb;
   end if;
-  v_me := custom.query_principal();
 
-  with named as materialized (
-    select r.id, r.created_at, r.data ->> v_title as words,
-           custom.relation_name_key(r.data ->> v_title) as k
-      from custom.record r
-     where r.organization_id = p_organization_id
-       and r.table_id = p_target
-       and r.data_class = 'record'
-       and r.deleted_at is null
-       and custom.relation_name_key(r.data ->> v_title) = any (v_keys)
-  )
-  select coalesce(jsonb_object_agg(g.k, g.matches), '{}'::jsonb) into v_out
-    from (select n.k,
-                 jsonb_agg(jsonb_build_object('id', n.id, 'words', n.words) order by n.created_at, n.id) as matches
-            from named n
-           where v_me is null or custom.has_visibility(v_me, 'record', n.id, 'viewer'::public.permission_level)
-           group by n.k) g;
-  return v_out;
+  -- WHO IS ASKING DECIDES WHAT CAN BE MATCHED: the read doors' own predicate for this person on
+  -- this Table (custom.visible_predicate_sql), built once per transaction and seat — an import of
+  -- 250 rows asks it once, not 250 times. The store's own lanes (no person) match every record.
+  v_me := custom.query_principal();
+  if v_me is null then
+    v_pred := 'true';
+  else
+    v_memo := 'rnm:' || v_me::text || ':' || p_organization_id::text || ':' || p_target::text;
+    v_pred := platform.memo_s_get(v_memo);
+    if v_pred is null then
+      v_pred := custom.visible_predicate_sql(v_me, p_organization_id, p_target, 'viewer'::public.permission_level, 'r');
+      perform platform.memo_s_put(v_memo, v_pred);
+    end if;
+  end if;
+
+  execute format($q$
+    select coalesce(jsonb_object_agg(g.k, g.matches), '{}'::jsonb)
+      from (select custom.relation_name_key(r.data ->> $3) as k,
+                   jsonb_agg(jsonb_build_object('id', r.id, 'words', r.data ->> $3) order by r.created_at, r.id) as matches
+              from custom.record r
+             where r.organization_id = $1
+               and r.table_id = $2
+               and r.data_class = 'record'
+               and r.deleted_at is null
+               and custom.relation_name_key(r.data ->> $3) = any ($4)
+               and (%s)
+             group by 1) g
+  $q$, v_pred)
+    into v_out
+    using p_organization_id, p_target, v_title, v_keys;
+  return coalesce(v_out, '{}'::jsonb);
 end
 $function$;
 
 comment on function custom._relation_names_resolve(uuid, uuid, text[]) is
-  'VISION-REACH G1: the ONE matcher from a record''s name to the record. {name key: [{id, words}…]} for the records of p_target whose name column matches each name (custom.relation_name_key), only those the caller may see at viewer when there is a caller; null when the Table has no name column. Server lane.';
+  'VISION-REACH G1: the ONE matcher from a record''s name to the record. {name key: [{id, words}…]} for the records of p_target whose name column matches each name (custom.relation_name_key), only those the caller''s read predicate admits at viewer when there is a caller; null when the Table has no name column. Server lane.';
 
 -- ──────────────────────────────────────────────────────────────────────────────────────────
 -- 3. THE CLIENT DOOR. What a screen asks before it writes names into a relation column — the
@@ -133,6 +150,7 @@ create function custom.relation_names_match(p_organization_id uuid, p_table_id u
 as $function$
 declare
   v_tname text;
+  v_title text;
   v_hits  jsonb;
   v_n     integer := coalesce(cardinality(p_names), 0);
 begin
@@ -143,7 +161,8 @@ begin
       using errcode = '54000',
             hint = 'Send the names in groups of 5,000 or fewer.';
   end if;
-  select coalesce(nullif(t.data ->> 'name', ''), 'That table') into v_tname
+  select coalesce(nullif(t.data ->> 'name', ''), 'That table'), nullif(t.data ->> 'title_field', '')
+    into v_tname, v_title
     from custom.record t
    where t.organization_id = p_organization_id and t.id = p_table_id;
   v_hits := custom._relation_names_resolve(p_organization_id, p_table_id, p_names);
@@ -155,6 +174,7 @@ begin
   return jsonb_build_object(
     'table_id',   p_table_id,
     'table_name', v_tname,
+    'title_field', v_title,
     'names', coalesce((
       select jsonb_agg(jsonb_build_object(
                'name', u.n,
@@ -165,7 +185,7 @@ end
 $function$;
 
 comment on function custom.relation_names_match(uuid, uuid, text[]) is
-  'VISION-REACH G1: which records of a Table each of these names names (its name column; case and spacing ignored) — {table_id, table_name, names:[{name, matches:[{id, words}]}]}. Zero matches and two or more are the screen''s to show before it writes; only records the caller may see are ever matched. Up to 5,000 names a call.';
+  'VISION-REACH G1: which records of a Table each of these names names (its name column; case and spacing ignored) — {table_id, table_name, title_field, names:[{name, matches:[{id, words}]}]}. Zero matches and two or more are the screen''s to show before it writes; only records the caller may see are ever matched. Up to 5,000 names a call.';
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, declared_by, reason,
@@ -173,7 +193,7 @@ insert into platform.client_callable_door
 values
   ('custom', 'relation_names_match', 'p_organization_id uuid, p_table_id uuid, p_names text[]',
    'migrations/campaign/visionreach_g1_a_relation_is_filled_by_its_name.sql (lane VISION-REACH)',
-   'custom.assert_client_may_reach decides the organization wall and custom.assert_may_know_table decides the caller may know the Table before anything is read. It answers ids and name-column words only for records the caller may see at viewer (custom.has_visibility per matching record inside custom._relation_names_resolve), so a name the caller may not see matches nothing and is indistinguishable from a name that is not there. No other column of any record is read or returned. Capped at 5,000 names a call.',
+   'custom.assert_client_may_reach decides the organization wall and custom.assert_may_know_table decides the caller may know the Table before anything is read. It answers ids and name-column words only for records the caller may see at viewer (the read doors'' own predicate, custom.visible_predicate_sql, inside custom._relation_names_resolve), so a name the caller may not see matches nothing and is indistinguishable from a name that is not there. No other column of any record is read or returned. Capped at 5,000 names a call.',
    true, false, null, '{2950,2950,1009}')
 on conflict do nothing;
 
@@ -192,9 +212,9 @@ update platform.client_callable_door
              'foreign', jsonb_build_object('sqlstate', '42501', 'same_as_invented', true),
              'verified', '2026-10-02 lane VISION-REACH — read from this body'),
            'p_names', jsonb_build_object('type', 'text[]', 'position', 3,
-             'check', 'A FILTER, AND NOT A LEAK. The names only narrow the records of a Table the caller may already know to those whose name column matches, and each match is kept only when custom.has_visibility says the caller may see it at viewer; a name the caller may not see matches nothing.',
+             'check', 'A FILTER, AND NOT A LEAK. The names only narrow the records of a Table the caller may already know to those whose name column matches, and each match is kept only when the read doors'' own predicate (custom.visible_predicate_sql) admits it for the caller at viewer; a name the caller may not see matches nothing.',
              'foreign', jsonb_build_object('not_a_leak', true, 'same_as_invented', true),
-             'verified', '2026-10-02 lane VISION-REACH — read from this body'))))
+             'verified', '2026-10-02 lane VISION-REACH — read from this body')))
  where schema_name = 'custom' and function_name = 'relation_names_match';
 
 grant execute on function custom.relation_names_match(uuid, uuid, text[]) to authenticated;
