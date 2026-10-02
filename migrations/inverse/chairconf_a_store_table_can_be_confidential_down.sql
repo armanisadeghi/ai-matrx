@@ -2,7 +2,15 @@
 -- lane: CHAIR-CONFIDENTIAL-STORE
 -- lock: custom
 -- window-class: function bodies and their kernel re-record; no DDL on any table.
--- INVERSE-BASED-ON-PLACEHOLDER
+-- based-on: iam.has_access_for_base(uuid, text, uuid, permission_level, boolean, text[]) 6605124f07e8fbb326edd1cdd07c1ef67a93b8479160b798ed537db05375ab25
+-- based-on: custom.reaches_directly(uuid, text, uuid, permission_level) 113978e8db997a71d322c632528ca6eb836a4c59ce1163f1b5ea5dc25e102507
+-- based-on: custom.visible_set(uuid, uuid, uuid, permission_level) c08b6978c23920f0334f091eefc10a98ab24aa3431f49431eea834295a4c3b7e
+-- based-on: custom._table_shape_guard() a55ee77cdb5ee5e683732dc42675f7b4c3476c7b05c665249c29cd11283793f0
+-- based-on: platform._set_table_strict_class(text, platform.data_class, text, date, text, boolean) 5c30c2b1040d2e7aad1a4117ad85e82f518132a8b01392bca08a3555a18dc7fa
+-- based-on: iam.entity_read_kernel_expected() 5daa6d683989b6672dcd975dade1d8885594ad642b5ee1f0d626cad644b38564
+-- based-on: iam.entity_read_kernel_members_expected() 7ee25c402682a5ef73cb60ca1557cae538169ed07ceedcee6c6585093a45d23f
+--   (the two kernel-expected hashes hold a recorded fingerprint, so they are re-derived with
+--    `pnpm db:based-on` against whichever database this inverse is run on)
 
 set local lock_timeout = '2s';
 
@@ -1277,6 +1285,7 @@ $f$$ddl$, jsonb_build_object('fingerprint', v_to, 'members', v_live)::text);
 end
 $chairconf$;
 
+delete from platform.client_callable_door where schema_name = 'custom' and function_name in ('confidential_anchor', 'confidential_names', 'confidential_answer', 'set_table_confidential_arman_explicitly_approved');
 drop function custom.set_table_confidential_arman_explicitly_approved(uuid, jsonb, text, date);
 drop function custom.confidential_answer(uuid, uuid, public.permission_level);
 drop function custom.confidential_names(uuid, jsonb, uuid);

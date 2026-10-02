@@ -1,4 +1,3 @@
--- draft: CHAIR-CONFIDENTIAL-STORE proving on the clone
 -- chair-step: lane CHAIR-CONFIDENTIAL-STORE — a store (custom) Table can be Confidential. Five BODY replacements (iam.has_access_for_base, custom.reaches_directly, custom.visible_set, custom._table_shape_guard, platform._set_table_strict_class: same signatures, same SECURITY/search_path, CREATE OR REPLACE keeps their grants), four NEW functions (custom.confidential_anchor, custom.confidential_names, custom.confidential_answer, custom.set_table_confidential_arman_explicitly_approved — EXECUTE revoked from every client role; postgres only), and the D249 kernel re-record after a zero-moved-answers proof. No table, column, index, trigger, policy or grant to a client is added. Inverse: migrations/inverse/chairconf_a_store_table_can_be_confidential_down.sql.
 -- lane: CHAIR-CONFIDENTIAL-STORE
 -- lock: custom
@@ -232,6 +231,30 @@ begin
                             'readers', coalesce(v_readers, '[]'::jsonb));
 end;
 $function$;
+
+-- The access decision for each new definer, IN DATA (provision_shape_guard / §6d-4): none is a client door.
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+values
+ ('custom', 'confidential_anchor', pg_get_function_identity_arguments('custom.confidential_anchor(uuid)'::regprocedure),
+  ARRAY['uuid'::regtype]::oid[],
+  'p_id is a record id; the function returns which Confidential row it answers to and reads nothing a caller does not already name. NULL p_id answers NULL.',
+  'campaign chairconf_a_store_table_can_be_confidential.sql',
+  'server_only: called only inside custom.confidential_answer and custom.visible_set, both running as their owner; no client ever calls it.', false, false),
+ ('custom', 'confidential_names', pg_get_function_identity_arguments('custom.confidential_names(uuid,jsonb,uuid)'::regprocedure),
+  ARRAY['uuid'::regtype, 'jsonb'::regtype, 'uuid'::regtype]::oid[],
+  'p_organization_id scopes the Person lookup; p_user is the person being asked about, supplied by the access kernel, never by a client. NULLs answer false.',
+  'campaign chairconf_a_store_table_can_be_confidential.sql',
+  'server_only: called only inside custom.confidential_answer; answering it for an arbitrary person would be a probe, so no client lane may ever exist.', false, false),
+ ('custom', 'confidential_answer', pg_get_function_identity_arguments('custom.confidential_answer(uuid,uuid,permission_level)'::regprocedure),
+  ARRAY['uuid'::regtype, 'uuid'::regtype, 'public.permission_level'::regtype]::oid[],
+  'p_user is the principal the access kernel is answering for; p_id the record. It is a rung of iam.has_access_for_base and custom.reaches_directly. NULL p_id answers NULL; NULL p_user on a Confidential row answers false.',
+  'campaign chairconf_a_store_table_can_be_confidential.sql',
+  'server_only: a rung of the access kernel (iam.has_access_for_base) and the store ladder (custom.reaches_directly); clients ask iam.has_access, never this, because asking about another person is a probe.', false, false),
+ ('custom', 'set_table_confidential_arman_explicitly_approved', pg_get_function_identity_arguments('custom.set_table_confidential_arman_explicitly_approved(uuid,jsonb,text,date)'::regprocedure),
+  ARRAY['uuid'::regtype, 'jsonb'::regtype, 'text'::regtype, 'date'::regtype]::oid[],
+  'p_table_id must be a live store Table; p_arman_words and p_approved_on are judged by platform._record_arman_class_approval exactly as for a standard table. NULL p_table_id is refused.',
+  'campaign chairconf_a_store_table_can_be_confidential.sql',
+  'server_only: Arman approves a Confidential table in his own words and the chair records them as the database owner; platform.set_table_confidential_arman_explicitly_approved (service_role) routes custom.table:<id> here.', false, false);
 
 revoke all on function custom.confidential_anchor(uuid) from public, anon, authenticated, service_role;
 revoke all on function custom.confidential_names(uuid, jsonb, uuid) from public, anon, authenticated, service_role;
