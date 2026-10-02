@@ -4,7 +4,7 @@ import UiUnificationPage from "./page.dev";
 import { DECISIONS } from "./_components/decisions";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const STORAGE_KEY = "ui-unification-decisions-v1";
+const STORAGE_KEY = "ui-unification-decisions-round2";
 
 beforeAll(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -40,7 +40,7 @@ describe("UiUnificationPage", () => {
 
   it("renders one section per decision with live specimens", () => {
     mount();
-    expect(container.querySelectorAll("section")).toHaveLength(DECISIONS.length);
+    expect(container.querySelectorAll("section[id^=D]")).toHaveLength(DECISIONS.length);
     expect(container.textContent).toContain(`0 of ${DECISIONS.length} decided`);
     unmount();
   });
@@ -73,7 +73,7 @@ describe("UiUnificationPage", () => {
         throw new Error("blocked");
       });
     mount();
-    expect(container.querySelectorAll("section")).toHaveLength(DECISIONS.length);
+    expect(container.querySelectorAll("section[id^=D]")).toHaveLength(DECISIONS.length);
     unmount();
     spy.mockRestore();
   });

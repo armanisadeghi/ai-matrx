@@ -99,20 +99,20 @@ function OneControlStyles() {
 /* sanctioned density scope at a 34px control size.                     */
 /* ------------------------------------------------------------------ */
 
-interface ScaleProps {
+export interface ScaleProps {
   scale: 28 | 32;
-  icon?: 14 | 16;
+  icon?: 12 | 14 | 16;
   label?: 12 | 13;
   fieldRadius?: "capsule" | "rounded";
   children: ReactNode;
 }
 
-function Scale({ scale, icon = 16, label = 13, fieldRadius = "capsule", children }: ScaleProps) {
+export function Scale({ scale, icon = 16, label = 13, fieldRadius = "capsule", children }: ScaleProps) {
   const vars = {
     "--uc-label": label === 13 ? "0.8125rem" : "0.75rem",
     "--uc-field-radius": fieldRadius === "capsule" ? "9999px" : "0.5rem",
     ...(scale === 28
-      ? { "--matrx-table-control-size": "2.125rem", "--matrx-table-action-icon-size": icon === 14 ? "0.875rem" : "1rem" }
+      ? { "--matrx-table-control-size": "2.125rem", "--matrx-table-action-icon-size": icon === 12 ? "0.75rem" : icon === 14 ? "0.875rem" : "1rem" }
       : {}),
   } as CSSProperties;
   const scoped = scale === 28 ? { "data-matrx-table": "", "data-matrx-table-density": "" } : {};
@@ -126,7 +126,7 @@ function Scale({ scale, icon = 16, label = 13, fieldRadius = "capsule", children
 
 /* Measures each direct child's VISIBLE height (a tap button's pill or a  */
 /* group's capsule, never its invisible box) and the gaps between them.  */
-function MeasuredBare({ children, className = "uc-row" }: { children: ReactNode; className?: string }) {
+export function MeasuredBare({ children, className = "uc-row" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [read, setRead] = useState("");
   useEffect(() => {
@@ -134,7 +134,7 @@ function MeasuredBare({ children, className = "uc-row" }: { children: ReactNode;
     if (!row) return;
     const measure = () => {
       const kids = Array.from(row.children).filter(
-        (c) => c.tagName !== "STYLE" && c.getAttribute("aria-hidden") !== "true" && c.getBoundingClientRect().width > 2,
+        (c) => c.tagName !== "STYLE" && c.getAttribute("aria-hidden") !== "true" && c.getBoundingClientRect().width > 2 && c.getBoundingClientRect().height > 2,
       );
       const visible = kids.map(
         (c) => (c.querySelector(".matrx-tap-group-capsule, .matrx-tap-pill") as HTMLElement | null) ?? (c as HTMLElement),
@@ -175,7 +175,7 @@ function MeasuredBare({ children, className = "uc-row" }: { children: ReactNode;
 /* segmented, NO container gap — every piece spaces itself.             */
 /* ------------------------------------------------------------------ */
 
-function UnifiedToolbar() {
+export function UnifiedToolbar() {
   const [scope, setScope] = useState("all");
   return (
     <MeasuredBare>
@@ -206,7 +206,7 @@ function UnifiedToolbar() {
   );
 }
 
-function PlusGlyph() {
+export function PlusGlyph() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
       <path d="M12 5v14M5 12h14" />

@@ -21,9 +21,9 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { DECISIONS, type Decision } from "./decisions";
+import { AGREED, DECISIONS, type Decision, type DecisionStatus } from "./decisions";
 
-const STORAGE_KEY = "ui-unification-decisions-v1";
+const STORAGE_KEY = "ui-unification-decisions-round2";
 
 interface DecisionState {
   winner?: string;
@@ -52,15 +52,20 @@ function writePicks(picks: Picks) {
 
 function toMarkdown(picks: Picks): string {
   const lines: string[] = [
-    "# UI unification decisions",
+    "# UI unification decisions — round 2",
     "",
     `Exported ${new Date().toISOString().slice(0, 10)}`,
+    "",
+    "## Agreed in round 1",
+    ...AGREED.map((a) => `- ${a.id}: ${a.text}`),
     "",
   ];
   for (const d of DECISIONS) {
     const state = picks[d.id] ?? {};
     const winner = d.options.find((o) => o.id === state.winner);
-    lines.push(`## ${d.id} · ${d.title}`);
+    lines.push(`## ${d.id} · ${d.title} (${STATUS_LABEL[d.status]})`);
+    if (d.round1) lines.push(`- Round 1 (you): ${d.round1}`);
+    if (d.mine) lines.push(`- Recommendation: ${d.mine}`);
     lines.push(
       `- Winner: ${winner ? `${winner.id}) ${winner.label}${winner.stat ? ` (${winner.stat})` : ""}` : "undecided"}`,
     );
@@ -73,6 +78,20 @@ function toMarkdown(picks: Picks): string {
   }
   return lines.join("\n");
 }
+
+const STATUS_LABEL: Record<DecisionStatus, string> = {
+  open: "Open",
+  combined: "Combine",
+  rule: "Rule",
+  new: "New",
+};
+
+const STATUS_CLASS: Record<DecisionStatus, string> = {
+  open: "border-warning/60 bg-warning/15 text-foreground",
+  combined: "border-primary/40 bg-primary/10 text-primary",
+  rule: "border-success/40 bg-success/10 text-success",
+  new: "border-border bg-muted text-muted-foreground",
+};
 
 function DecisionSection({
   decision,
@@ -98,10 +117,33 @@ function DecisionSection({
           {decision.id}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             {decision.title}
+            <span
+              className={cn(
+                "inline-flex h-[1.125rem] items-center rounded-md border px-1.5 text-[0.6875rem] font-medium",
+                STATUS_CLASS[decision.status],
+              )}
+            >
+              {STATUS_LABEL[decision.status]}
+            </span>
           </h2>
           <p className="text-xs text-muted-foreground">{decision.question}</p>
+          {(decision.round1 || decision.mine) && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {decision.round1 && (
+                <>
+                  You: <span className="text-foreground">{decision.round1}</span>
+                </>
+              )}
+              {decision.round1 && decision.mine && " · "}
+              {decision.mine && (
+                <>
+                  Me: <span className="text-foreground">{decision.mine}</span>
+                </>
+              )}
+            </p>
+          )}
         </div>
         {state.winner ? (
           <Button size="sm" variant="ghost" onClick={() => onPick(undefined)}>
@@ -264,6 +306,22 @@ export function DecisionBoard() {
       </div>
 
       <main className="mx-auto max-w-5xl">
+        <section
+          id="agreed"
+          className="border-b border-border px-3 py-4 sm:px-6"
+        >
+          <h2 className="mb-2 text-sm font-semibold text-foreground">
+            Agreed in round 1
+          </h2>
+          <ul className="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
+            {AGREED.map((a) => (
+              <li key={a.id} className="flex gap-2">
+                <span className="w-8 shrink-0 font-mono text-muted-foreground">{a.id}</span>
+                <span className="text-foreground">{a.text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
         {DECISIONS.map((d) => (
           <DecisionSection
             key={d.id}
