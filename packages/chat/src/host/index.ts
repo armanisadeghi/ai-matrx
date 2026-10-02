@@ -40,3 +40,6 @@ export {
   type ChatWindowId,
 } from "./windows";
 export { createDbCatalogGetter } from "./defaults/catalog";
+export { createDefaultChrome, DEFAULT_CHROME_STYLES } from "./defaults/chrome";
+export { createDbFeedback } from "./defaults/feedback";
+export { DEFAULT_CHAT_ROUTES } from "./configure";

@@ -18,6 +18,7 @@ import type {
   ChatHost,
   ChatPortName,
   ChatRegistrations,
+  ChatRoutes,
   ResolvedChatHost,
 } from "./contract";
 import {
@@ -37,6 +38,13 @@ import { createWebPrefs } from "./defaults/prefs";
 import { createWindowNavigation } from "./defaults/navigation";
 import { createUnhostedWindows } from "./defaults/windows";
 import { createDbCatalogGetter } from "./defaults/catalog";
+import { createDefaultChrome } from "./defaults/chrome";
+import { createDbFeedback } from "./defaults/feedback";
+
+/** The platform's production addresses — the default `routes`. */
+export const DEFAULT_CHAT_ROUTES: ChatRoutes = Object.freeze({
+  workflowStudio: "https://workflows.aimatrx.com",
+});
 
 const PORTS: readonly ChatPortName[] = [
   "identity",
@@ -49,6 +57,9 @@ const PORTS: readonly ChatPortName[] = [
   "windows",
   "catalog",
   "registry",
+  "chrome",
+  "feedback",
+  "routes",
 ];
 
 const EMPTY_REGISTRATIONS: ChatRegistrations = Object.freeze({});
@@ -122,6 +133,9 @@ export function resolveChatHost(host: ChatHost): ResolvedChatHost {
     windows,
     catalog,
     registry: host.registry ?? EMPTY_REGISTRATIONS,
+    chrome: { ...createDefaultChrome(), ...host.chrome },
+    feedback: host.feedback ?? createDbFeedback(db, () => ref.identity),
+    routes: { ...DEFAULT_CHAT_ROUTES, ...host.routes },
     overridden,
   } satisfies ResolvedChatHost);
   return ref;

@@ -96,7 +96,7 @@ function NavTooltipProvider({ children }: { children?: ChatHeaderSlotProps["chil
 }
 
 function NavItemTooltip({ label, disabled, children }: ChatNavItemTooltipProps) {
-  if (disabled || typeof label !== "string") {
+  if (disabled) {
     return createElement(Fragment, null, children);
   }
   return createElement("span", { title: label, className: "inline-flex" }, children);

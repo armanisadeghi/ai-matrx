@@ -206,6 +206,136 @@ export interface ChatRegistrations {
   builderDoors?: Readonly<Record<string, unknown>>;
 }
 
+// ── Chrome (P22): the app shell around the package ─────────────────────────
+
+export interface ChatHeaderPortalProps {
+  desktop?: ReactNode;
+  mobile?: ReactNode;
+  children?: ReactNode;
+  /** Yield to any page-specific header mounted deeper in the route tree. */
+  fallback?: boolean;
+}
+
+export interface ChatHeaderSlotProps {
+  children?: ReactNode;
+  className?: string;
+}
+
+export interface ChatRouteHeaderProps {
+  left?: ReactNode;
+  center?: ReactNode;
+  /** Contextual actions, lowest priority first. */
+  right?: ReactNode;
+  fallback?: boolean;
+}
+
+export interface ChatIconButtonProps {
+  icon: ReactNode;
+  onClick?: () => void;
+  label: string;
+  asLabel?: boolean;
+  htmlFor?: string;
+  active?: boolean;
+  className?: string;
+  glassClassName?: string;
+  disabled?: boolean;
+}
+
+export interface ChatNavItemTooltipProps {
+  label: string;
+  description?: string;
+  contentClassName?: string;
+  disabled?: boolean;
+  children: ReactNode;
+}
+
+/** Where a header's actions go on a phone (the shell's ⋮ sheet), if anywhere. */
+export interface ChatPhonePageActions {
+  host: HTMLElement | null;
+  count: number;
+}
+
+/** The shell's visual tokens for header mode navs and route menus. */
+export interface ChatChromeStyles {
+  navItemSelected: string;
+  navItemUnselected: string;
+  routeMenuNavItem: string;
+  routeMenuIconSize: number;
+  routeMenuIconStrokeWidth: number;
+}
+
+/**
+ * Host chrome (P22): header slots, the phone ⋮ sheet, the navigation drawer,
+ * canvas chrome, full-screen layers. Default: header pieces render in place,
+ * shell-only pieces render nothing (`defaults/chrome.ts`).
+ */
+export interface ChatChromePort {
+  HeaderCenter: ComponentType<ChatHeaderPortalProps>;
+  HeaderRight: ComponentType<{ children?: ReactNode }>;
+  HeaderActionsSlot: ComponentType<ChatHeaderSlotProps>;
+  RouteHeader: ComponentType<ChatRouteHeaderProps>;
+  /** The host's permanent header icons, for a page that draws its own header. */
+  HeaderControlSet: ComponentType<{ isAuthenticated: boolean }>;
+  /** Mounted by a page that draws its own chrome; the shell steps aside. */
+  CanvasChromeMode: ComponentType<{ mode: "canvas" }>;
+  IconButton: ComponentType<ChatIconButtonProps>;
+  NavTooltipProvider: ComponentType<{ children?: ReactNode }>;
+  NavItemTooltip: ComponentType<ChatNavItemTooltipProps>;
+  usePhonePageActions(): ChatPhonePageActions;
+  useCanvasFullScreen(fullScreen: boolean): void;
+  openMobileMenu(): void;
+  closeMobileMenu(): void;
+  /** One Escape leaves only the top layer. Returns the pop. */
+  pushFullScreenLayer(exit: () => void): () => void;
+  styles: ChatChromeStyles;
+}
+
+// ── Feedback (P22): the platform's triage table ────────────────────────────
+
+/** `users.user_feedback.feedback_type`. */
+export type ChatFeedbackType =
+  | "bug"
+  | "feature"
+  | "suggestion"
+  | "other"
+  | "request";
+
+/** A JSON value (the Supabase `Json` shape). */
+export type ChatJson =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: ChatJson | undefined }
+  | ChatJson[];
+
+export interface ChatFeedbackInput {
+  feedback_type: ChatFeedbackType;
+  route: string;
+  description: string;
+  /** The organization the person is acting in — carried, never re-resolved. */
+  organization_id: string;
+  image_file_ids?: string[];
+  metadata?: Record<string, ChatJson> | null;
+}
+
+export interface ChatFeedbackResult {
+  success: boolean;
+  error?: string;
+  data?: { id: string };
+}
+
+export interface ChatFeedbackPort {
+  submit(input: ChatFeedbackInput): Promise<ChatFeedbackResult>;
+}
+
+// ── Routes (P22): other platform apps the package links to ─────────────────
+
+export interface ChatRoutes {
+  /** Workflow Studio, the workflow authoring app. */
+  workflowStudio: string;
+}
+
 export interface ChatHost {
   /** R10 connection contract — the ONLY required value. Authenticated, RLS applies. */
   db: ChatDb;
@@ -241,6 +371,12 @@ export interface ChatHost {
   catalog?: AgentCatalog | (() => AgentCatalog);
   /** Host registrations (R5). */
   registry?: ChatRegistrations;
+  /** Default: header pieces render in place; shell-only pieces render nothing. Members override singly. */
+  chrome?: Partial<ChatChromePort>;
+  /** Default: an RLS-bound insert into `users.user_feedback` over db. */
+  feedback?: ChatFeedbackPort;
+  /** Default: the platform's production addresses (`DEFAULT_CHAT_ROUTES`). */
+  routes?: Partial<ChatRoutes>;
 }
 
 export type ChatPortName =
@@ -253,7 +389,10 @@ export type ChatPortName =
   | "navigation"
   | "windows"
   | "catalog"
-  | "registry";
+  | "registry"
+  | "chrome"
+  | "feedback"
+  | "routes";
 
 /** Every port present. `overridden` names the ports the host supplied itself. */
 export interface ResolvedChatHost {
@@ -269,5 +408,8 @@ export interface ResolvedChatHost {
   windows: ChatWindowsPort;
   catalog(): AgentCatalog;
   registry: ChatRegistrations;
+  chrome: ChatChromePort;
+  feedback: ChatFeedbackPort;
+  routes: ChatRoutes;
   overridden: ReadonlySet<ChatPortName>;
 }
