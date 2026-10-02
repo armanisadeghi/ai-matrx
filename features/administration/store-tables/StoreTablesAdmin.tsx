@@ -6,12 +6,13 @@
 // admin lane reaches — the admin's memberships plus the system organizations the store's wall admits a
 // super admin to ON THE ADMIN LANE ONLY (iam.has_org_access_for) — with one bulk action, Archive.
 //
-// READS, through the store's own doors as the signed-in person (the browser client stamps
+// READS, through @ai-matrx/records as the signed-in person (the browser client stamps
 // `x-matrx-admin-lane: 1` on /administration/**; no service role):
-//   · member organizations → `custom.data_home_tables(org | null)` — one call for all of them;
-//   · system organizations → `custom.read_records(org, <Table kernel>)`, since data_home_tables walks
-//     memberships only and a system organization has no members.
-// WRITES: `archiveTables` → `custom.table_archive`, per table (see archiveTables.ts).
+//   · member organizations → `dataHomeTables(org | null)` (`custom.data_home_tables`) — one call;
+//   · system organizations → `tableList()` in that organization (the Table kernel, every page),
+//     since data_home_tables walks memberships only and a system organization has no members.
+// WRITES: `archiveTables` → the package's `tableArchive`, per table (see archiveTables.ts).
+// This file never calls a store door itself (Guard 7, `pnpm check:no-custom-store-code`).
 //
 // Filters live in the address: `?org_filter=` (the platform organization filter, default All — never
 // the active organization) and `?name=` (name contains). "Select all" takes every selectable row the
@@ -22,6 +23,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { Archive, ListChecks, X } from "lucide-react";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
+import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
+import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -43,78 +46,58 @@ import {
   type TableArchiveDoor,
 } from "./archiveTables";
 
-const READ_PAGE = 1000;
-
 const PROTECTION_LABEL: Record<Exclude<ProtectionReason, null>, string> = {
   kept: "Kept by the app",
   "named-in-code": "Named in code",
   "platform-example": "Platform example",
 };
 
-function customSchema() {
-  return (createClient() as unknown as SupabaseClient).schema("custom");
-}
-
-interface HomeRow {
-  table_id: string;
-  table_name: string;
-  organization_id: string;
-  organization_name: string;
-  updated_at: string | null;
-  kept_by_the_app: boolean;
-  system: boolean;
+/** The records client for one organization, or for every organization the person reaches (null). */
+function recordsIn(organizationId: string | null): RecordsClient {
+  return createRecordsClient({
+    dataSource: recordsDataSource(createClient()),
+    actor: personActor(null),
+    organizationId,
+  });
 }
 
 async function readMemberTables(orgId: string | null): Promise<StoreTableRow[]> {
-  const { data, error } = await customSchema().rpc(
-    "data_home_tables",
-    // An admin list sees every table, the app's own for agents' outputs included (CHAIR-DOORS-2).
-    { p_organization_id: orgId, p_include_app_tables: true },
-  );
-  if (error) throw new Error(error.message);
-  return ((data ?? []) as HomeRow[]).map((r) => ({
+  // An admin list sees every table, the app's own for agents' outputs included (CHAIR-DOORS-2).
+  const answer = await recordsIn(null).dataHomeTables({ organization_id: orgId, include_app_tables: true });
+  if (!answer.ok) throw new Error(answer.error.message);
+  return answer.data.map((r) => ({
     id: r.table_id,
     name: r.table_name,
     organizationId: r.organization_id,
     organizationName: r.organization_name,
     updatedAt: r.updated_at,
-    system: r.system,
+    system: r.system === true,
     keptByTheApp: r.kept_by_the_app,
   }));
 }
 
-async function readSystemTables(org: { id: string; name: string }, kernelId: string): Promise<StoreTableRow[]> {
-  const rows: StoreTableRow[] = [];
-  for (let offset = 0; ; offset += READ_PAGE) {
-    const { data, error } = await customSchema().rpc("read_records", {
-      p_organization_id: org.id,
-      p_table_id: kernelId,
-      p_by_id: false,
-      p_limit: READ_PAGE,
-      p_offset: offset,
-    });
-    if (error) throw new Error(`${org.name}: ${error.message}`);
-    const page = (data ?? []) as { id: string; document: Record<string, unknown> | null }[];
-    for (const r of page) {
-      const doc = r.document ?? {};
-      rows.push({
-        id: r.id,
-        name: typeof doc.name === "string" && doc.name.trim() ? doc.name : "Untitled table",
-        organizationId: org.id,
-        organizationName: org.name,
-        updatedAt: null,
-        system: true,
-        keptByTheApp: documentIsKept(doc),
-      });
-    }
-    if (page.length < READ_PAGE) return rows;
-  }
+async function readSystemTables(org: { id: string; name: string }): Promise<StoreTableRow[]> {
+  const answer = await recordsIn(org.id).tableList();
+  if (!answer.ok) throw new Error(`${org.name}: ${answer.error.message}`);
+  return answer.data.map((table) => ({
+    id: table.id,
+    name: typeof table.name === "string" && table.name.trim() ? table.name : "Untitled table",
+    organizationId: org.id,
+    organizationName: org.name,
+    updatedAt: null,
+    system: true,
+    keptByTheApp: documentIsKept(table as unknown as Record<string, unknown>),
+  }));
 }
 
 const tableArchiveDoor: TableArchiveDoor = async (args) => {
-  const { data, error } = await customSchema().rpc("table_archive", args);
-  if (error) return { ok: false, error: { message: error.message, code: error.code } };
-  return { ok: true, data } as DoorAnswer;
+  const answer = await recordsIn(args.p_organization_id).tableArchive({
+    table_id: args.p_table_id,
+    chunk: args.p_chunk,
+    includeTable: args.p_include_table,
+  });
+  if (!answer.ok) return { ok: false, error: { message: answer.error.message, code: answer.error.code } };
+  return { ok: true, data: answer.data } as DoorAnswer;
 };
 
 export function StoreTablesAdmin() {
@@ -166,13 +149,9 @@ export function StoreTablesAdmin() {
         const memberIds = new Set(memberships.map((m) => m.id));
         const systemTargets = systemOrgs.filter((o) => !memberIds.has(o.id) && (!orgId || o.id === orgId));
         const wantMembers = !orgId || memberIds.has(orgId);
-        const kernel = systemTargets.length
-          ? await customSchema().rpc("table_kernel_id")
-          : { data: null, error: null };
-        if (kernel.error) throw new Error(kernel.error.message);
         const parts = await Promise.all([
           wantMembers ? readMemberTables(orgId) : Promise.resolve([]),
-          ...systemTargets.map((o) => readSystemTables(o, kernel.data as string)),
+          ...systemTargets.map((o) => readSystemTables(o)),
         ]);
         if (live) setRows(parts.flat().sort((a, b) => a.organizationName.localeCompare(b.organizationName) || a.name.localeCompare(b.name)));
       } catch (e) {
