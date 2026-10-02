@@ -2,10 +2,11 @@
  * THE DEFAULT TOOL SET HAS ONE AUTHOR.
  *
  * THE DEFECT THIS PINS. "Which tools does an organization's agent carry without anybody
- * attaching them, and which switches decide it" is now written down in THREE places that
- * must agree: the picker's eligibility (`TOOL_ORG_KNOBS`, this repo), the turn's ambient
- * injection (`ORG_KNOB_DEFAULT_TOOLS`, aidream), and the INSERT-time seed that puts the
- * tool into the agent's own saved list (`agent.org_default_tool`, the database).
+ * attaching them, and which switches decide it" is now written down in TWO places that
+ * must agree: the picker's eligibility (`TOOL_ORG_KNOBS`, this repo) and the INSERT-time
+ * seed that puts the tool into the agent's own saved list (`agent.org_default_tool`, the
+ * database). (aidream's turn-time copy was removed 2026-10-02: the server never adds a
+ * tool to a run on its own.)
  *
  * That is exactly the shape that produced the 2026-09-19 findings: the tool row and the
  * executing code were kept in step BY HAND, drifted, and the platform advertised an

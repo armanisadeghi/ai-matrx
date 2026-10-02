@@ -4,11 +4,11 @@
 //
 // WHY THIS EXISTS. On 2026-09-19 the independent verifier found that **no agent on the
 // platform carried the `records` tool** — it was registered and active, and a person could
-// not ask any agent to touch their own records. The server half of the fix makes the tool
-// an ambient default for an organization whose record store is on
-// (`aidream/services/tooling/tool_merge.py::ORG_KNOB_DEFAULT_TOOLS`). This is the other
-// half: the agent builder's tool picker must show it in exactly the organizations that
-// have it, and never anywhere else.
+// not ask any agent to touch their own records. The database seeds the tool into a new
+// agent's own saved list when the organization's knobs are on (`agent.org_default_tool`,
+// read on every agent INSERT); the server no longer adds it to a turn on its own (owner,
+// 2026-10-02). This is the other half: the agent builder's tool picker must show it in
+// exactly the organizations that have it, and never anywhere else.
 //
 // THE PICKER HAD NO ELIGIBILITY AT ALL. `fetchAvailableTools` reads every
 // `tool.definition` row with `is_active = true` and shows the lot. For most tools that is
@@ -18,14 +18,13 @@
 // is the dead-control shape the platform forbids. Absent is honest; present-and-refusing
 // is not.
 //
-// ONE DECLARATION, READ BY BOTH SIDES. The pairs below are the SAME pairs the server's
-// default-set injection reads. A tool listed here is offered only where every one of its
+// ONE DECLARATION, READ BY BOTH SIDES. The pairs below are the SAME pairs the database's
+// INSERT seed reads (`agent.org_default_tool`). A tool listed here is offered only where every one of its
 // knobs resolves true for the signed-in person's organization, so the screen and the turn
 // can never disagree about what an organization has.
 //
 // HOW TO ADD ONE. Put the tool's name and the knob pair(s) it needs in `TOOL_ORG_KNOBS`,
-// and add the same row to `ORG_KNOB_DEFAULT_TOOLS` in aidream if the tool should also be
-// an ambient default. Nothing else changes: every other tool keeps flowing through
+// and the same rows in `agent.org_default_tool` (the guard test compares the two). Nothing else changes: every other tool keeps flowing through
 // unfiltered.
 
 import {
