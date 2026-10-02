@@ -2,8 +2,9 @@
 
 /**
  * The app's ONE binding to @ai-matrx/canvas: canvas state lives in the Redux
- * store under `canvasHost`, every artifact content type is registered as a
- * kind, and refused opens are announced through the canvas open-drop reporter.
+ * store under `canvasHost`, every artifact content type and every tool (Quick
+ * Chat, Quick Notes, a conversation's Documents…) is registered as a kind, and
+ * refused opens are announced through the canvas open-drop reporter.
  */
 
 import { useState, type ReactNode } from "react";
@@ -13,10 +14,14 @@ import { CanvasProvider } from "@ai-matrx/canvas/react";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { registerArtifactCanvasKinds } from "./artifactKinds";
+import { registerFeatureCanvasKinds } from "./featureCanvasKinds";
+import { registerToolCanvasKinds } from "./toolKinds";
 
 // Kinds register at module load so a persisted layout renders its tabs on the
 // first paint after hydration, not one tick later.
 registerArtifactCanvasKinds();
+registerFeatureCanvasKinds();
+registerToolCanvasKinds();
 
 function onCanvasError(report: CanvasErrorReport) {
   if (report.code === "non-json-data" || report.code === "unknown-kind") {

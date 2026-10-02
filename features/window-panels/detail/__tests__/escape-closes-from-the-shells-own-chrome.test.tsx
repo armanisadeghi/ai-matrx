@@ -6,8 +6,8 @@
 // `WindowPanel`'s close / minimize / pop-out buttons, `SidePanelSurface`'s close
 // button and drag handle and the page's `RouteHeader` render OUTSIDE those slots,
 // in a portal, and neither component contains any keystroke handling — while
-// `DetailDockedShell`'s own header comment told the next agent that the docked
-// panel closes on Escape. A comment that lies about the code beneath it is the
+// the docked shell's own header comment told the next agent that the docked
+// panel closed on Escape. A comment that lies about the code beneath it is the
 // sentence a future agent trusts.
 //
 // The behaviour chosen is the one `@ai-matrx/detail`'s keyboard model specifies:
@@ -158,14 +158,14 @@ describe("Escape from the shell's own chrome", () => {
   });
 
   // 🚨 THE CLASS, NOT THE INSTANCE. Round 4 fixed the slots and left the chrome;
-  // this is the census that all THREE shells answer, so a fourth shell cannot be
-  // added without it — and so the docked shell's comment cannot drift back into a
-  // claim nothing implements.
-  it("is called by all three shells, each with its own exit", () => {
+  // this is the census that every shell with chrome of its own answers, so a new
+  // shell cannot be added without it. The docked presentation has no shell
+  // chrome: it is a canvas tab (`canvas/RecordPeekCanvasView.tsx`) whose record
+  // controls are portaled from inside the presentation's own keyboard slot.
+  it("is called by the window and page shells, each with its own exit", () => {
     const shells = path.resolve(__dirname, "../shells");
     const expectations: [string, string][] = [
       ["DetailWindowShell.tsx", "useShellChromeEscape(onClose)"],
-      ["DetailDockedShell.tsx", "useShellChromeEscape(onClose)"],
       // The page's exit is the ONE guarded exit (D1), never a raw close.
       ["DetailPageShell.tsx", "useShellChromeEscape(onBack)"],
     ];

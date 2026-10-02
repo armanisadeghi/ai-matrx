@@ -494,12 +494,12 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
 
   // ── Record Detail (the Detail primitive, lib/detail) ──────────────────────
   // ONE core per record type, three presentations. `detailWindow` is the
-  // default (Arman, 2026-09-17); `detailDocked` is the resizable side panel;
-  // the page presentation is the `/detail/[type]/[id]` route. Both overlays
-  // share the `detail` deep-link key: `?panels=detail:<type>.<id>:as-window`
-  // / `:as-docked` (hydrator in url-sync/initUrlHydration.ts). Tied to the
-  // clicked record, so ephemeral — nothing to restore across reloads beyond
-  // the URL itself.
+  // default (Arman, 2026-09-17); the docked presentation is a `record-peek`
+  // canvas tab; the page presentation is the `/detail/[type]/[id]` route. The
+  // window and the tab share the `detail` deep-link key:
+  // `?panels=detail:<type>.<id>:as-window` / `:as-docked` (hydrator in
+  // url-sync/initUrlHydration.ts). Tied to the clicked record, so ephemeral —
+  // nothing to restore across reloads beyond the URL itself.
   {
     slug: "detail-window",
     overlayId: "detailWindow",
@@ -628,22 +628,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
     mobilePresentation: "fullscreen",
     instanceMode: "singleton",
-  },
-  {
-    slug: "detail-docked",
-    overlayId: "detailDocked",
-    kind: "sheet",
-    label: "Record detail (docked)",
-    defaultData: {
-      type: null,
-      id: null,
-      seedName: null,
-      seedAbout: null,
-      listItems: null,
-      listIndex: null,
-    },
-    ephemeral: true,
-    urlSync: { key: "detail" },
   },
 
   // ── Web Scraper ───────────────────────────────────────────────────────────

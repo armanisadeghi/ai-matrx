@@ -3,7 +3,7 @@
  *
  * The generic record dossier — the Detail primitive (`lib/detail`) showing an
  * item-presentation record in its window (`detailWindow` overlay, the
- * default), docked panel (`detailDocked`) or page (`/detail/[type]/[id]`) —
+ * default), a `record-peek` canvas tab (docked) or page (`/detail/[type]/[id]`) —
  * THE DOOR LAW's peek target for every entity that has no bespoke window yet.
  * Given a `{ type, id }` it seeds from the agent-provided name/about, fetches
  * the row via the item registry's `detailSource`, and renders every populated

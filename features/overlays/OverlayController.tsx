@@ -657,10 +657,6 @@ const GoogleAgendaWindow = lazyOverlay(
     ),
   { ssr: false },
 );
-const DetailDocked = lazyOverlay(
-  () => import("@/features/window-panels/windows/detail/DetailDocked"),
-  { ssr: false },
-);
 const NoteInfoWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/notes/NoteInfoWindow"),
   { ssr: false },
@@ -1563,9 +1559,6 @@ export default function OverlayController() {
     googleAgendaWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "googleAgendaWindow"),
     ),
-    detailDocked: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "detailDocked"),
-    ),
     researchContextPreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "researchContextPreviewWindow"),
     ),
@@ -2036,9 +2029,6 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     googleTasksImportWindow: useAppSelector((s) =>
       selectOverlayData(s, "googleTasksImportWindow"),
-    ) as Record<string, unknown> | null,
-    detailDocked: useAppSelector((s) =>
-      selectOverlayData(s, "detailDocked"),
     ) as Record<string, unknown> | null,
     researchContextPreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "researchContextPreviewWindow"),
@@ -5001,26 +4991,6 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* detailDocked — the Detail primitive's docked presentation (lib/detail) */}
-      {(() => {
-        const isOpen = isOpenById.detailDocked;
-        if (!isOpen) return null;
-        const data = readDetailOverlayData(dataById.detailDocked);
-        if (!data) return null;
-        return (
-          <DetailDocked
-            isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "detailDocked" }))}
-            type={data.type}
-            id={data.id}
-            seedName={data.seedName}
-            seedAbout={data.seedAbout}
-            listItems={data.listItems}
-            listIndex={data.listIndex}
-            listTrimmedFrom={data.listTrimmedFrom}
-          />
-        );
-      })()}
 
       {/* researchContextPreviewWindow */}
       {(() => {

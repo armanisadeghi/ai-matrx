@@ -104,17 +104,17 @@ The rule, and why it is not a style preference:
 window panel. The default is the window."* The primitive is `lib/detail` (package-shaped; read
 [`lib/detail/README.md`](../../lib/detail/README.md) and [`lib/detail/FEATURE.md`](../../lib/detail/FEATURE.md)).
 A record type registers ONE `DetailRecordType`; the wrapper yields the `detailWindow` overlay
-(a `WindowPanel`, the default), the `detailDocked` overlay (`SidePanelSurface`, a resizable
-side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
+(a `WindowPanel`, the default), a `record-peek` canvas tab (docked) and the
+`/detail/[type]/[id]` route. Presentation is the person's
 `ui.detail.default_presentation` knob; `useOpenDetail()` from `lib/detail` is the one opener.
 
 - **Do not build another `*DetailPanel.tsx` / `*DetailWindow.tsx`.** Register the type (today:
   an entry in `features/item-presentation/registry.tsx`, THE type map) and every presentation
   exists. The seven bespoke panels still in the tree are the follow-up census in the README.
 - **Host binding lives here:** `detail/DetailHost.tsx` (boot-light ports, mounted in
-  `app/Providers.tsx`), `detail/shells/` (window / docked / page chrome), `detail/detailTypeBinding.ts`,
-  `windows/detail/DetailWindow.tsx` + `DetailDocked.tsx` (overlay entries), openers
-  `features/overlays/openers/detailWindow.tsx` / `detailDocked.tsx`, hydrator `detail` in
+  `app/Providers.tsx`), `detail/shells/` (window / page chrome), `detail/canvas/` (the docked `record-peek` canvas
+  kind), `detail/detailTypeBinding.ts`, `windows/detail/DetailWindow.tsx` (overlay entry), opener
+  `features/overlays/openers/detailWindow.tsx`, hydrator `detail` in
   `url-sync/initUrlHydration.ts` (`?panels=detail:<type>.<id>:as-window|docked`).
 - **`docked` is not `drawer`.** `drawer` here is the vaul bottom sheet (`mobilePresentation`).
 

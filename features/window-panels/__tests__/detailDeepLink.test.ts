@@ -10,6 +10,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import overlays, { selectOverlay } from "@/lib/redux/slices/overlaySlice";
+import { canvasItemId, canvasReducer } from "@ai-matrx/canvas";
 import {
   detailInstanceKey,
   parseDetailInstanceKey,
@@ -51,7 +52,7 @@ describe("detail deep link", () => {
   // the STATE it leaves behind, not the action it dispatched — a stronger claim
   // than the old one, which matched a literal payload and would have passed with
   // the announcement missing.
-  it("hydrates the window by default and the docked panel on as-docked", () => {
+  it("hydrates the window by default and a record-peek canvas tab on as-docked", () => {
     const hydrator = getHydrator("detail");
     expect(hydrator).toBeDefined();
 
@@ -70,9 +71,14 @@ describe("detail deep link", () => {
       listTrimmedFrom: null,
     });
 
-    const docked = configureStore({ reducer: { overlays } });
+    const docked = configureStore({ reducer: { overlays, canvasHost: canvasReducer } });
     hydrator?.(docked.dispatch as never, detailInstanceKey(REF), { as: "docked" });
-    expect(selectOverlay(docked.getState(), "detailDocked").isOpen).toBe(true);
+    const canvas = docked.getState().canvasHost;
+    expect(canvas.isOpen).toBe(true);
+    expect(canvas.items[canvasItemId("record-peek", detailInstanceKey(REF))]).toMatchObject({
+      kind: "record-peek",
+      data: { type: REF.type, id: REF.id },
+    });
     expect(selectOverlay(docked.getState(), "detailWindow").isOpen).toBe(false);
   });
 

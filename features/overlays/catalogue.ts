@@ -91,11 +91,6 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
-  detailDocked: {
-    label: "Record detail (docked)",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
   detailWindow: {
     label: "Record detail",
     instanceMode: "singleton",

@@ -37,7 +37,7 @@ export function useOpenDetailWindow() {
     (opts: OpenDetailWindowOptions, announce = true): DetailWindowHandle => {
       dispatchThunk(
         dispatch,
-        openDetailSingleton({ presentation: "window", data: opts, announce }),
+        openDetailSingleton({ data: opts, announce }),
       );
       return {
         close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID })),

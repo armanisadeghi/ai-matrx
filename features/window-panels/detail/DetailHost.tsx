@@ -9,8 +9,8 @@
 //                         `ui.detail.default_presentation`, and the per-record
 //                         -type map `ui.detail.presentation_by_type`).
 //   save the setting    → lib/scoped-config/service (the platform write door).
-//   open / close        → the typed overlay openers (`detailWindow`,
-//                         `detailDocked`).
+//   open / close        → the `detailWindow` overlay opener, and the canvas
+//                         (`record-peek` kind) for the docked presentation.
 //   navigate            → next/navigation; `page` is the only presentation
 //                         that changes the URL — and the only one that can be
 //                         LEFT, which is why `canGoBack` / `toRecordHome` live
@@ -70,7 +70,9 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
-import { useCloseDetailDocked, useOpenDetailDocked } from "@/features/overlays/openers/detailDocked";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
+import { recordPeekOpenInput } from "./canvas/recordPeek";
 import { useCloseDetailWindow, useOpenDetailWindow } from "@/features/overlays/openers/detailWindow";
 import { encodeListQuery } from "@ai-matrx/detail";
 import { resolvedListContextMax } from "./listContextCap";
@@ -293,9 +295,8 @@ function RefCell({
 export function DetailHost({ children }: { children: ReactNode }) {
   const router = useRouter();
   const openWindow = useOpenDetailWindow();
-  const openDocked = useOpenDetailDocked();
   const closeWindow = useCloseDetailWindow();
-  const closeDocked = useCloseDetailDocked();
+  const canvas = useOptionalCanvas();
   const openGoogleConnect = useOpenGoogleConnectWindow();
 
   const ports: Omit<DetailHostPorts, "shells" | "resolveType"> = {
@@ -304,13 +305,22 @@ export function DetailHost({ children }: { children: ReactNode }) {
     warmPresentation,
     reReadPresentation,
     savePresentation,
+    // DOCKED IS A CANVAS TAB (`record-peek`, keyed by the record). A tab's own
+    // body re-binds `open` / `close` for "docked" to mean THAT tab, so the only
+    // docked request that reaches here is a fresh open from anywhere else.
     open: ({ presentation, data }) => {
-      if (presentation === "docked") openDocked(data);
+      if (presentation === "docked") openCanvasItem(canvas, recordPeekOpenInput(data));
       else openWindow(data);
     },
     close: (presentation) => {
-      if (presentation === "docked") closeDocked();
-      else closeWindow();
+      if (presentation === "window") {
+        closeWindow();
+        return;
+      }
+      console.error(
+        "[detail] close(\"docked\") reached the app host: a record-peek tab binds its own close. " +
+          "Remedy: render the docked presentation through the record-peek canvas kind.",
+      );
     },
     navigate: {
       pageHref: detailPageHref,

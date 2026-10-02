@@ -26,6 +26,8 @@ import {
   detailListFromUrlArgs,
 } from "@ai-matrx/detail";
 import { openDetailSingleton } from "@/features/window-panels/detail/openDetailSingleton";
+import { recordPeekOpenInput } from "@/features/window-panels/detail/canvas/recordPeek";
+import { canvasActions } from "@ai-matrx/canvas";
 import { parseVariableEditorInstanceId } from "@/features/agents/components/variables-management/variableEditorAddress";
 import { dispatchThunk } from "@/lib/redux/hooks";
 import {
@@ -325,25 +327,22 @@ export function initUrlHydration() {
       return;
     }
     const presentation = presentationFromUrlArg(args[DETAIL_URL_AS_ARG]);
+    // 🚨 NEW-15 — the list the record was opened from, when the token carries
+    // it. `null` only when the link genuinely has none.
+    const data = { type: ref.type, id: ref.id, seed: null, list: detailListFromUrlArgs(args) };
+    if (presentation === "docked") {
+      // The docked presentation is a canvas tab per record. The canvas state is
+      // in this store, and an open that lands before the canvas has read its
+      // memory survives the read, so the plain action is the whole open.
+      dispatch(canvasActions.open(recordPeekOpenInput(data)));
+      return;
+    }
     // 🚨 D8 — THROUGH THE ONE PRIMITIVE, NEVER `openOverlay` DIRECTLY. A link
     // may name two records (`detail:file.B,detail:file.C`): this hydrator runs
     // once per token, the second call retargets the same singleton, and when it
     // dispatched the open itself the first record was closed in silence — the
     // exact defect the openers' announcement was written for (VERIFY-U-P1-R2).
-    dispatchThunk(
-      dispatch,
-      openDetailSingleton({
-        presentation,
-        // 🚨 NEW-15 — the list the window was opened from, when the token
-        // carries it. `null` only when the link genuinely has none.
-        data: {
-          type: ref.type,
-          id: ref.id,
-          seed: null,
-          list: detailListFromUrlArgs(args),
-        },
-      }),
-    );
+    dispatchThunk(dispatch, openDetailSingleton({ data }));
   });
 
   // Feedback Window

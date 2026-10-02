@@ -11,7 +11,7 @@ the arrows move between records — `[` / `]` are aliases — and Cmd/Ctrl+Enter
 | Presentation | What it is | Host shell (matrx-frontend) |
 |---|---|---|
 | `window` (**default**) | Floating, draggable, minimizable to the tray, pop-out; a bottom sheet on phones | `WindowPanel` via the `detailWindow` overlay |
-| `docked` | A resizable side panel docked to the right edge, no backdrop; a bottom sheet on phones | `SidePanelSurface` (react-resizable-panels v4) via the `detailDocked` overlay |
+| `docked` | A tab in the canvas column on the right edge, one per record; full screen on phones | the `record-peek` canvas kind (`features/window-panels/detail/canvas/`) |
 | `page` | A full route body under the shell header — the only presentation that changes the URL; offers the window back | `/detail/[type]/[id]` with `RouteHeader` |
 
 Champions: Notion (side peek / center peek / full page, per-database "open pages in") and Linear
@@ -96,8 +96,8 @@ its title (`EntityDoorControls`). A bare uuid never prints as text when it can o
 `features/window-panels/detail/` — `DetailHost.tsx` (ports, boot-light) · `shells/` (window /
 docked / page) · `detailTypeBinding.ts` (`resolveType` = the item-presentation registry, THE
 type map) · `detailOverlayData.ts` (overlay payload + page query) · `DetailPageRoute.tsx`.
-Overlay entries: `features/window-panels/windows/detail/DetailWindow.tsx` / `DetailDocked.tsx`;
-openers `features/overlays/openers/detailWindow.tsx` / `detailDocked.tsx`; metadata in
+Overlay entry: `features/window-panels/windows/detail/DetailWindow.tsx`; opener
+`features/overlays/openers/detailWindow.tsx`; docked = `detail/canvas/` (`record-peek` kind); metadata in
 `registry/windowRegistryMetadata.ts`; hydrator `detail` in `url-sync/initUrlHydration.ts`.
 
 ## Follow-up census — bespoke detail panels to converge onto this primitive

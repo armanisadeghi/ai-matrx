@@ -15,6 +15,7 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import { recordToast } from "@/lib/toast";
 import overlays, { selectOverlay } from "@/lib/redux/slices/overlaySlice";
+import { canvasReducer } from "@ai-matrx/canvas";
 import { getHydrator } from "@/features/window-panels/url-sync/UrlPanelRegistry";
 import { initUrlHydration } from "@/features/window-panels/url-sync/initUrlHydration";
 
@@ -29,7 +30,7 @@ const B = "bbbbbbbb-0000-0000-0000-000000000000";
 const C = "cccccccc-0000-0000-0000-000000000000";
 
 function seat() {
-  const store = configureStore({ reducer: { overlays } });
+  const store = configureStore({ reducer: { overlays, canvasHost: canvasReducer } });
   initUrlHydration();
   const hydrate = getHydrator("detail");
   if (!hydrate) throw new Error("the `detail` hydrator is not registered");
@@ -38,7 +39,7 @@ function seat() {
     open: (id: string, args: Record<string, string> = {}) =>
       hydrate(store.dispatch as never, id, args),
     windowState: () => selectOverlay(store.getState(), "detailWindow"),
-    dockedState: () => selectOverlay(store.getState(), "detailDocked"),
+    dockedTabs: () => Object.values(store.getState().canvasHost.items),
   };
 }
 
@@ -69,28 +70,29 @@ describe("a `?panels=` deep link naming two records", () => {
     expect(info).not.toHaveBeenCalled();
   });
 
-  it("announces a replacement in the docked panel too", () => {
+  // Docked is a canvas tab per record: the second record replaces nothing, so
+  // there is nothing to announce — both stay open, side by side.
+  it("opens one docked tab per record and closes none", () => {
     const s = seat();
     s.open(`file.${B}`, { as: "docked" });
     s.open(`file.${C}`, { as: "docked" });
-    expect(info).toHaveBeenCalledTimes(1);
-    expect(info.mock.calls[0][1]).toContain("docked panel");
-    expect((s.dockedState().data as { id: string }).id).toBe(C);
+    expect(info).not.toHaveBeenCalled();
+    expect(s.dockedTabs().map((item) => item.key)).toEqual([`file.${B}`, `file.${C}`]);
   });
 });
 
 // 🚨 THE CLASS, NOT THE INSTANCE. Two openers and one hydrator each reached
-// `openOverlay("detailWindow" | "detailDocked")`, and the one that was written
-// last (the hydrator) is the one that forgot the announcement. This census is
-// why a fourth opener cannot repeat it: the two detail overlays are opened
-// through `openDetailSingleton` and nowhere else.
-describe("the detail singletons have exactly one opener", () => {
+// `openOverlay` for a detail singleton, and the one that was written last (the
+// hydrator) is the one that forgot the announcement. This census is why another
+// opener cannot repeat it: the detail window is opened through
+// `openDetailSingleton` and nowhere else.
+describe("the detail window has exactly one opener", () => {
   it("names no other file that dispatches openOverlay for them", () => {
     const { execFileSync } = require("node:child_process") as typeof import("node:child_process");
     const { readFileSync } = require("node:fs") as typeof import("node:fs");
     const candidates = execFileSync(
       "git",
-      ["grep", "--untracked", "-l", "-E", "detailWindow|detailDocked", "--", "*.ts", "*.tsx"],
+      ["grep", "--untracked", "-l", "-E", "detailWindow", "--", "*.ts", "*.tsx"],
       { cwd: process.cwd(), encoding: "utf8" },
     )
       .split("\n")
@@ -99,7 +101,7 @@ describe("the detail singletons have exactly one opener", () => {
     // Line-based grep cannot see this: the call and the overlay id sit on
     // different lines in every real offender.
     const offenders = candidates.filter((file) =>
-      /openOverlay\(\s*\{[^)]*?detail(Window|Docked)/s.test(readFileSync(file, "utf8")),
+      /openOverlay\(\s*\{[^)]*?detailWindow/s.test(readFileSync(file, "utf8")),
     );
     // Empty: `openDetailSingleton` itself names the overlay through a variable,
     // so a literal `openOverlay({ overlayId: "detailWindow" … })` anywhere is a

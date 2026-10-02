@@ -9,10 +9,10 @@
 // close / minimize / pop-out buttons, `SidePanelSurface`'s close button and drag
 // handle, and the page's route header render outside the slots, in a PORTAL, and
 // neither component handles a keystroke. So with focus on the window's own close
-// button — a place a person's focus lands constantly — Escape did nothing, while
-// `DetailDockedShell`'s header comment told the next agent the docked panel closes
-// on Escape (VERIFY-U-P1-R5, NEW-22: "the shell's OWN chrome"). Code and comment
-// now agree, in all three shells, on the behaviour the package specifies.
+// button — a place a person's focus lands constantly — Escape did nothing, while a
+// shell's header comment claimed Escape closed it (VERIFY-U-P1-R5, NEW-22: "the
+// shell's OWN chrome"). Code and comment now agree, in every shell with chrome of
+// its own, on the behaviour the package specifies.
 //
 // WHY A DOCUMENT LISTENER AND NOT A WRAPPER: both surfaces portal out of the
 // shell's React subtree (`MatrxDynamicPanelHost` and `WindowPanel` both

@@ -1033,7 +1033,6 @@
   "features/overlays/openers/contextItemsWindow.tsx": 1,
   "features/overlays/openers/createProjectWindow.tsx": 1,
   "features/overlays/openers/curatedIconPickerWindow.tsx": 1,
-  "features/overlays/openers/detailDocked.tsx": 1,
   "features/overlays/openers/detailWindow.tsx": 1,
   "features/overlays/openers/diffViewerWindow.tsx": 1,
   "features/overlays/openers/extractionCellEditorWindow.tsx": 1,
