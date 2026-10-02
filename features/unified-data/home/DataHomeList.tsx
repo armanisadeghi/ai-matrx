@@ -25,6 +25,8 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import { isTestOrganization } from "@/features/make/recent";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 
@@ -96,7 +98,12 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       live = false;
     };
   }, [corpus]);
-  const recent = recentRows(marks.recent, rowsById);
+  const { organizations } = useUserOrganizations();
+  const testOrganizationIds = useMemo(
+    () => new Set(organizations.filter((o) => isTestOrganization(o)).map((o) => o.id)),
+    [organizations],
+  );
+  const recent = recentRows(marks.recent, rowsById, testOrganizationIds);
 
   const service = useMemo(
     () =>

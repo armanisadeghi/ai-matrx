@@ -19,11 +19,16 @@ import { KindIcon } from "./dataHomeColumns";
 /** The most recent links one line ever offers. */
 export const DATA_HOME_RECENT_SHOWN = 6;
 
-export function recentRows(recent: readonly string[], byId: ReadonlyMap<string, DataHomeRow>): DataHomeRow[] {
+export function recentRows(
+  recent: readonly string[],
+  byId: ReadonlyMap<string, DataHomeRow>,
+  /** Organizations marked `settings.test_fixture`: their rows are never offered here. */
+  testOrganizationIds: ReadonlySet<string> = new Set(),
+): DataHomeRow[] {
   const out: DataHomeRow[] = [];
   for (const id of recent) {
     const row = byId.get(id);
-    if (row) out.push(row);
+    if (row && !(row.organizationId && testOrganizationIds.has(row.organizationId))) out.push(row);
     if (out.length === DATA_HOME_RECENT_SHOWN) break;
   }
   return out;

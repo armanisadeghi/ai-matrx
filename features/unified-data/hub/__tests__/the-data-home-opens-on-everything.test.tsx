@@ -487,11 +487,11 @@ describe("the data home · Back returns", () => {
 });
 
 describe("the data home · hides nothing, and a Kind filter narrows it", () => {
-  it("offers All kinds and every kind a row carries, the person's own tables first", async () => {
+  it("offers All kinds, every kind a row carries (the own tables first), and Forms, Dashboards and Portals", async () => {
     await mount();
     const kind = container.querySelector("[data-hub-kind]") as HTMLSelectElement | null;
     expect(kind?.value).toBe("all");
-    expect([...(kind?.options ?? [])].map((o) => o.textContent)).toEqual(["All kinds", "Tables", "Lists"]);
+    expect([...(kind?.options ?? [])].map((o) => o.textContent)).toEqual(["All kinds", "Tables", "Lists", "Dashboards", "Forms", "Portals"]);
   });
 
   it("?kind=list lists only the lists, and the five filters still apply", async () => {

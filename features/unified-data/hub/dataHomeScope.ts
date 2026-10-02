@@ -225,6 +225,7 @@ const KIND_TITLE: Record<string, string> = {
   view: "Saved views",
   comment: "Comments",
   dashboard: "Dashboards",
+  portal: "Portals",
   action: "Actions",
   checklist: "Checklists",
   booking: "Bookings",
@@ -244,6 +245,7 @@ const KIND_ONE: Record<string, string> = {
   view: "Saved view",
   comment: "Comments",
   dashboard: "Dashboard",
+  portal: "Portal",
   action: "Actions",
   checklist: "Checklist",
   booking: "Booking",
@@ -280,6 +282,7 @@ export function kindsOnOffer(kinds: readonly string[], chosen: DataHomeKind): st
   const counts = new Map<string, number>();
   for (const k of kinds) counts.set(k, (counts.get(k) ?? 0) + 1);
   if (chosen !== ALL_KINDS && !counts.has(chosen)) counts.set(chosen, 0);
+  for (const k of ITEM_KINDS_ALWAYS_OFFERED) if (!counts.has(k)) counts.set(k, 0);
   const ordered = [...counts.entries()]
     .sort(([a, na], [b, nb]) => (a === "table" ? -1 : b === "table" ? 1 : nb - na || a.localeCompare(b)))
     .map(([k]) => k);
@@ -296,7 +299,11 @@ const KIND_LISTING: Record<string, readonly string[]> = {
   booking: ["bookings"],
   checklist: ["checklists"],
   dashboard: ["dashboards"],
+  portal: ["portals"],
 };
+
+/** Kinds that are items of the home, not table kinds: always on offer, even when none exist yet. */
+const ITEM_KINDS_ALWAYS_OFFERED = ["form", "dashboard", "portal"] as const;
 
 export function listingShownUnderKind(capabilityId: string, kind: DataHomeKind): boolean {
   if (kind === ALL_KINDS || capabilityId === "tables") return true;
