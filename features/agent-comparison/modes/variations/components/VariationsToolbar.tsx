@@ -196,7 +196,7 @@ export function VariationsToolbar({
     ...(columns.length > 0
       ? [
           {
-            icon: "Pencil",
+            icon: "PencilLine",
             label: editorOpen ? "Close variation editor" : "Edit variations",
             onPress: onToggleEditor,
           },
@@ -247,7 +247,7 @@ export function VariationsToolbar({
               ]
             : []),
           {
-            icon: "RotateCcw",
+            icon: "Eraser",
             label: "Clear responses only",
             onPress: () => setResetKeepInputsConfirm(true),
           },
@@ -285,7 +285,6 @@ export function VariationsToolbar({
         battleName={activeSetName}
         fallbackTitle="Variations battle"
         actions={actions}
-        inlineCount={columns.length > 0 ? 2 : 1}
         onSubmit={() => {
           void handleSubmitAll();
         }}

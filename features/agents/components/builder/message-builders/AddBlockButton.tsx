@@ -220,6 +220,8 @@ export interface DecisionPartContext {
   model: AIModelRecord | null | undefined;
   /** The agent's chosen model id — set even while `model` is still loading. */
   modelId?: string | null;
+  /** The agent's CLASS pin (offering) — limits follow the class it runs on. */
+  offeringId?: string | null;
   stateText: string;
   /** The message this block list lives in. Reference-image roles apply to
    *  images the PERSON sends, so they are offered on user messages only. */
@@ -931,6 +933,7 @@ export function BlockList({
   const roleLimits = useImageRoleLimits(
     decisionContext?.modelId ?? model?.id ?? null,
     roleOutput !== null,
+    decisionContext?.offeringId ?? null,
   );
   const modelLabel =
     model?.common_name?.trim() || model?.name?.trim() || "This model";
@@ -1015,6 +1018,7 @@ export function BlockList({
             key={i}
             turns={readTurns(block)}
             model={model}
+            offeringId={decisionContext?.offeringId ?? null}
             validVariables={validVariables}
             compatibility={speechScriptCompatibility(
               model,

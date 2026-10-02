@@ -20,6 +20,8 @@ export interface ModelColumn {
   columnId: string;
   conversationId: string;
   label: string;
+  /** True once the person named the column; otherwise it is named after its model. */
+  labelCustom?: boolean;
   collapsed: boolean;
 }
 

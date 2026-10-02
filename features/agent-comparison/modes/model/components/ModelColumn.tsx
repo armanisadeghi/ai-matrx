@@ -9,6 +9,7 @@
  * lives in the column header's canonical ModelListDropdown.
  */
 
+import { selectModelColumnTitle } from "../columnTitle";
 import { ChevronsLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -75,9 +76,12 @@ function CollapsedView({
 }) {
   const blindActive = useAppSelector(selectBlindActive);
   const blindOrder = useAppSelector(selectBlindOrder);
+  const modelTitle = useAppSelector((state) =>
+    selectModelColumnTitle(state, column),
+  );
   const label = blindActive
     ? blindAnonLabel(column.columnId, blindOrder)
-    : column.label;
+    : modelTitle;
   return (
     <button
       type="button"

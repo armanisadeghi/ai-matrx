@@ -248,7 +248,7 @@ export function SystemPromptToolbar({
               ]
             : []),
           {
-            icon: "RotateCcw",
+            icon: "Eraser",
             label: "Clear responses only",
             onPress: () => setResetKeepInputsConfirm(true),
           },

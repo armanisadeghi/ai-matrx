@@ -23,7 +23,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { selectModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
+import { selectModelColumnTitle } from "../columnTitle";
 import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   resetOverride,
@@ -52,7 +52,7 @@ export function ModelColumnHeader({
 }: Props) {
   const dispatch = useAppDispatch();
   const [editingLabel, setEditingLabel] = useState(false);
-  const [labelDraft, setLabelDraft] = useState(column.label);
+  const [labelDraft, setLabelDraft] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const {
@@ -73,7 +73,10 @@ export function ModelColumnHeader({
   const overrideState = useAppSelector(
     selectInstanceOverrideState(column.conversationId),
   );
-  const options = useAppSelector(selectModelOptions);
+  // Named after its model, read live (columnTitle.ts), unless the person named it.
+  const title = useAppSelector((state) =>
+    selectModelColumnTitle(state, column),
+  );
   const overrides = (overrideState?.overrides ?? {}) as Record<string, unknown>;
   const baseModel =
     typeof overrideState?.baseSettings?.model === "string"
@@ -91,12 +94,12 @@ export function ModelColumnHeader({
 
   const commitLabel = () => {
     const trimmed = labelDraft.trim();
-    if (trimmed && trimmed !== column.label) {
+    if (trimmed && trimmed !== title) {
       dispatch(
         renameModelColumn({ columnId: column.columnId, label: trimmed }),
       );
     } else {
-      setLabelDraft(column.label);
+      setLabelDraft(title);
     }
     setEditingLabel(false);
   };
@@ -118,16 +121,6 @@ export function ModelColumnHeader({
           changes: { model: modelId },
         }),
       );
-    }
-    // Auto-rename the column to the model's display name on first pick,
-    // unless the user has already given it a custom label.
-    if (column.label.startsWith("Model ")) {
-      const friendly = options.find((o) => o.value === modelId)?.label;
-      if (friendly) {
-        dispatch(
-          renameModelColumn({ columnId: column.columnId, label: friendly }),
-        );
-      }
     }
   };
 
@@ -165,7 +158,7 @@ export function ModelColumnHeader({
                   e.preventDefault();
                   commitLabel();
                 } else if (e.key === "Escape") {
-                  setLabelDraft(column.label);
+                  setLabelDraft(title);
                   setEditingLabel(false);
                 }
               }}
@@ -176,13 +169,13 @@ export function ModelColumnHeader({
             <button
               type="button"
               onClick={() => {
-                setLabelDraft(column.label);
+                setLabelDraft(title);
                 setEditingLabel(true);
               }}
               className="flex-1 min-w-0 text-left text-xs font-semibold text-foreground hover:text-primary truncate"
-              title="Click to rename"
+              title={`${title} · click to rename`}
             >
-              {column.label}
+              {title}
             </button>
           )}
           {editingLabel ? (
@@ -198,7 +191,7 @@ export function ModelColumnHeader({
             <button
               type="button"
               onClick={() => {
-                setLabelDraft(column.label);
+                setLabelDraft(title);
                 setEditingLabel(true);
               }}
               className="p-0.5 text-muted-foreground/40 hover:text-foreground opacity-100 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"

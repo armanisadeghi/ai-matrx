@@ -1,5 +1,6 @@
 "use client";
 
+import { selectModelColumnTitle } from "./columnTitle";
 import { useAppStore } from "@/lib/redux/hooks";
 import { createAgentComparisonModelScope } from "@/features/surfaces/manifests/agent-comparison-model.manifest";
 import { blindAnonLabel } from "@/features/agent-comparison/shared/blind";
@@ -129,7 +130,9 @@ export function buildModelBattleScope(state: RootState): SurfaceScopePayload {
         }
       : undefined;
     const common = {
-      column_label: identitiesAvailable ? column.label : anonymizedLabel,
+      column_label: identitiesAvailable
+        ? selectModelColumnTitle(state, column)
+        : anonymizedLabel,
       status: instance?.status ?? "draft",
       request_status:
         selectLatestRequestStatus(column.conversationId)(state) ?? undefined,

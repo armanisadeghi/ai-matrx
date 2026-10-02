@@ -80,6 +80,8 @@ export interface SpeechScriptEditorProps {
   turns: SpeechTurnSpec[];
   onChange: (next: SpeechTurnSpec[]) => void;
   model: AIModelRecord | null | undefined;
+  /** The agent's CLASS pin (offering) — voice samples play in that class. */
+  offeringId?: string | null;
   validVariables?: string[];
   compatibility?: ScriptCompatibility;
   onRemovePart?: () => void;
@@ -97,12 +99,15 @@ function VoiceCell({
   onChange,
   index,
   modelName,
+  offeringId,
 }: {
   value: string;
   options: VoiceOption[];
   onChange: (voice: string | null) => void;
   index: number;
   modelName: string | null;
+  /** The agent's CLASS pin — the sample plays in that class's voice. */
+  offeringId?: string | null;
 }) {
   const isVariable = value.includes("{{");
   const known = options.some((o) => o.value === value);
@@ -116,7 +121,11 @@ function VoiceCell({
     speak({
       text: `Voice sample: ${label}`,
       label: `Voice sample: ${label}`,
-      sample: { model: modelName, voice: value },
+      sample: {
+        model: modelName,
+        voice: value,
+        ...(offeringId ? { offeringId } : {}),
+      },
     });
   };
   const selectValue = !value
@@ -238,6 +247,7 @@ export function SpeechScriptEditor({
   turns,
   onChange,
   model,
+  offeringId,
   validVariables = [],
   compatibility,
   onRemovePart,
@@ -390,6 +400,7 @@ export function SpeechScriptEditor({
                             onChange={(voice) => setVoice(index, voice)}
                             index={index}
                             modelName={model?.name ?? null}
+                            offeringId={offeringId}
                           />
                         </div>
                         <button

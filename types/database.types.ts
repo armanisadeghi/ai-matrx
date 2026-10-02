@@ -3675,10 +3675,9 @@ export type Database = {
         }[]
       }
       jsonb_num: { Args: { n: number }; Returns: Json }
-      model_message_flag_profile: {
-        Args: { p_model_id: string }
-        Returns: Json
-      }
+      model_message_flag_profile:
+        | { Args: { p_model_id: string }; Returns: Json }
+        | { Args: { p_model_id: string; p_offering_id: string }; Returns: Json }
       offering_admin_columns: {
         Args: never
         Returns: {
@@ -3686,17 +3685,29 @@ export type Database = {
           pricing: Json
         }[]
       }
-      offering_capabilities: {
-        Args: { p_model_ids?: string[] }
-        Returns: {
-          is_decision_model: boolean
-          model_id: string
-          multi_speaker: Json
-          offering_id: string
-          reference_roles: Json
-          supports_prefill: boolean
-        }[]
-      }
+      offering_capabilities:
+        | {
+            Args: { p_model_ids?: string[] }
+            Returns: {
+              is_decision_model: boolean
+              model_id: string
+              multi_speaker: Json
+              offering_id: string
+              reference_roles: Json
+              supports_prefill: boolean
+            }[]
+          }
+        | {
+            Args: { p_model_ids: string[]; p_offering_ids: string[] }
+            Returns: {
+              is_decision_model: boolean
+              model_id: string
+              multi_speaker: Json
+              offering_id: string
+              reference_roles: Json
+              supports_prefill: boolean
+            }[]
+          }
       resolve_model_config:
         | { Args: { p_model_id: string }; Returns: Json }
         | { Args: { p_model_id: string; p_offering_id: string }; Returns: Json }

@@ -793,6 +793,10 @@ if $STRICT; then
         # THE WORD CONTEXT — on screen it names only what an agent receives (Arman,
         # 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "On-screen \"context\" that is not context (scopes, rules, settings)|pnpm check:context-word --strict"
+        # RAW IDENTIFIERS — a key, variable name, slug, kind or tool name never renders as words
+        # (Arman, 2026-10-02): the label, else the one humanizer. Baseline ratchet; advisory here.
+        "Rendered raw identifier (snake_case key on screen)|pnpm check:raw-identifiers --strict"
+        "Raw identifier guard self-test|pnpm check:raw-identifiers:self-test"
         # ZERO-WIDTH LAYERS — a fixed-width child in a width-less absolute
         # (pan/zoom) layer is squeezed to 0px by the phone max-width default
         # (2026-09-28: org charts, React Flow). Zero findings; advisory here.
@@ -1399,6 +1403,10 @@ else
         # THE WORD CONTEXT — on screen it names only what an agent receives (Arman,
         # 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "On-screen \"context\" that is not context (scopes, rules, settings)|pnpm check:context-word --strict"
+        # RAW IDENTIFIERS — a key, variable name, slug, kind or tool name never renders as words
+        # (Arman, 2026-10-02): the label, else the one humanizer. Baseline ratchet; advisory here.
+        "Rendered raw identifier (snake_case key on screen)|pnpm check:raw-identifiers --strict"
+        "Raw identifier guard self-test|pnpm check:raw-identifiers:self-test"
         # ZERO-WIDTH LAYERS — a fixed-width child in a width-less absolute
         # (pan/zoom) layer is squeezed to 0px by the phone max-width default
         # (2026-09-28: org charts, React Flow). Zero findings; advisory here.

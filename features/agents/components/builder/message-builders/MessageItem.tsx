@@ -22,6 +22,7 @@ import {
   selectAgentMessageAtIndex,
   selectAgentMessages,
   selectAgentModelId,
+  selectAgentOfferingPin,
   selectAgentVariableDefinitions,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useModelFull } from "@/features/ai-models/hooks/useModels";
@@ -155,6 +156,7 @@ export function MessageItem({
   // The decision budget meter reads the model the agent will actually run on
   // and the state it will read — every OTHER part of this same message.
   const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
+  const offeringPin = useAppSelector((state) => selectAgentOfferingPin(state, agentId));
   // The FULL record — `context_window` and `capabilities` are what the meter
   // and the compatibility sentence are made of, and an options-only row has
   // neither. The hook triggers the one fetch and is a no-op afterwards.
@@ -882,6 +884,7 @@ export function MessageItem({
               decisionContext={{
                 model: selectedModel ?? null,
                 modelId,
+                offeringId: offeringPin,
                 stateText: decisionStateText,
                 messageRole: message.role,
               }}

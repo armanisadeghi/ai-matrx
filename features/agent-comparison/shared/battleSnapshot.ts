@@ -13,6 +13,7 @@
  * columns are labelled anonymously, exactly as the page shows them.
  */
 
+import { selectModelColumnTitle } from "../modes/model/columnTitle";
 import { formatCost } from "@ai-matrx/kit/format";
 import { currentPointsRate } from "@/components/cost/pointsRate";
 import type { RootState } from "@/lib/redux/store";
@@ -376,8 +377,16 @@ export function buildBattleSnapshot(state: RootState): BattleSnapshot | null {
       "";
     const error = selectLatestError(col.conversationId)(state);
     const fb = state.agentComparison.feedbackByConversation[col.conversationId];
+    const modelCol =
+      mode === "model"
+        ? state.agentComparisonModel.columns.find(
+            (c) => c.columnId === col.columnId,
+          )
+        : undefined;
     const label = identity
-      ? (col.label?.trim() || agentName(state, col.agentId))
+      ? modelCol
+        ? selectModelColumnTitle(state, modelCol)
+        : (col.label?.trim() || agentName(state, col.agentId))
       : blindAnonLabel(col.columnId, blind.order);
 
     let own_request: BattleColumnSnapshot["own_request"];

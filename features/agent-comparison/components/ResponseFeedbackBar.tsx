@@ -724,47 +724,79 @@ function ResponseUsageStrip({ requestId }: { requestId: string }) {
         label="Tokens"
         primary={fmtTokens(stats.tokensTotal)}
         secondary={tokenBreakdown(stats)}
+        tooltip={tokenTooltip(stats)}
         accent="text-primary"
       />
       <UsageTile
         icon={<Gauge className="w-3 h-3" />}
         label="Cost"
-        primary={fmtCost(stats.cost, costUnit)}
+        {...costParts(fmtCost(stats.cost, costUnit))}
         accent="text-emerald-500"
       />
       <UsageTile
         icon={<Zap className="w-3 h-3" />}
         label="TTFT"
         primary={fmtMs(stats.ttftMs)}
-        secondary={stats.totalClientMs != null ? `total ${fmtMs(stats.totalClientMs)}` : undefined}
+        secondary={
+          stats.totalClientMs != null
+            ? [`total ${fmtMs(stats.totalClientMs)}`]
+            : undefined
+        }
+        tooltip={`Time to first token${stats.totalClientMs != null ? `; whole run ${fmtMs(stats.totalClientMs)} in the browser` : ""}`}
         accent="text-amber-500"
       />
       <UsageTile
         icon={<Timer className="w-3 h-3" />}
         label="Server"
         primary={fmtMs(stats.serverDurationMs)}
+        tooltip="Time the server spent on this run"
         accent="text-sky-500"
       />
     </div>
   );
 }
 
-function tokenBreakdown(stats: {
+/** "73K in", "1.4K out": short enough to sit side by side in a narrow tile. */
+const compactNumber = new Intl.NumberFormat(undefined, {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+type TokenStats = {
   tokensInput: number | null;
   tokensCached: number | null;
   tokensOutput: number | null;
-}): string | undefined {
+};
+
+function tokenBreakdown(stats: TokenStats): string[] | undefined {
   const parts: string[] = [];
-  if (stats.tokensInput != null && stats.tokensInput > 0) {
-    parts.push(`in ${fmtTokens(stats.tokensInput)}`);
-  }
-  if (stats.tokensCached != null && stats.tokensCached > 0) {
-    parts.push(`cached ${fmtTokens(stats.tokensCached)}`);
-  }
-  if (stats.tokensOutput != null && stats.tokensOutput > 0) {
-    parts.push(`out ${fmtTokens(stats.tokensOutput)}`);
-  }
-  return parts.length > 0 ? parts.join(" · ") : undefined;
+  if (stats.tokensInput) parts.push(`${compactNumber.format(stats.tokensInput)} in`);
+  if (stats.tokensCached) parts.push(`${compactNumber.format(stats.tokensCached)} cached`);
+  if (stats.tokensOutput) parts.push(`${compactNumber.format(stats.tokensOutput)} out`);
+  return parts.length > 0 ? parts : undefined;
+}
+
+function tokenTooltip(stats: TokenStats): string {
+  const parts: string[] = [];
+  if (stats.tokensInput) parts.push(`${fmtTokens(stats.tokensInput)} in`);
+  if (stats.tokensCached) parts.push(`${fmtTokens(stats.tokensCached)} cached`);
+  if (stats.tokensOutput) parts.push(`${fmtTokens(stats.tokensOutput)} out`);
+  return parts.length > 0 ? `Tokens: ${parts.join(", ")}` : "Tokens";
+}
+
+/** "14,378 points" → number on the big line, unit beneath, so the number never truncates. */
+function costParts(formatted: string): {
+  primary: string;
+  secondary?: string[];
+  tooltip: string;
+} {
+  const space = formatted.indexOf(" ");
+  if (space < 0) return { primary: formatted, tooltip: `Cost: ${formatted}` };
+  return {
+    primary: formatted.slice(0, space),
+    secondary: [formatted.slice(space + 1)],
+    tooltip: `Cost: ${formatted}`,
+  };
 }
 
 function UsageTile({
@@ -772,16 +804,22 @@ function UsageTile({
   label,
   primary,
   secondary,
+  tooltip,
   accent,
 }: {
   icon: React.ReactNode;
   label: string;
   primary: string;
-  secondary?: string;
+  /** Short items; they wrap onto a second line rather than truncate. */
+  secondary?: string[];
+  tooltip?: string;
   accent: string;
 }) {
   return (
-    <div className="rounded-md border border-border/60 bg-card/60 px-2 py-1.5 min-w-0">
+    <div
+      className="rounded-md border border-border/60 bg-card/60 px-2 py-1.5 min-w-0"
+      title={tooltip ?? `${label}: ${primary}`}
+    >
       <div className={cn("flex items-center gap-1 text-[9px] uppercase tracking-wider font-semibold", accent)}>
         {icon}
         {label}
@@ -790,8 +828,12 @@ function UsageTile({
         {primary}
       </div>
       {secondary && (
-        <div className="text-[9px] text-muted-foreground/70 truncate font-mono mt-0.5">
-          {secondary}
+        <div className="flex flex-wrap gap-x-1.5 text-[9px] text-muted-foreground/70 font-mono mt-0.5 leading-tight">
+          {secondary.map((part) => (
+            <span key={part} className="whitespace-nowrap">
+              {part}
+            </span>
+          ))}
         </div>
       )}
     </div>

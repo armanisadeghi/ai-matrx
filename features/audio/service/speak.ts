@@ -51,7 +51,7 @@ export interface SpeakRequest {
    * instead of speaking `text`. Always the catalog engine; `text` is the queue
    * row's caption.
    */
-  sample?: { model: string; voice: string };
+  sample?: { model: string; voice: string; offeringId?: string };
 }
 
 export interface SpeakResult {

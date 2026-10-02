@@ -240,7 +240,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
               ]
             : []),
           {
-            icon: "RotateCcw",
+            icon: "Eraser",
             label: "Clear responses only",
             onPress: () => setResetKeepInputsConfirm(true),
           },

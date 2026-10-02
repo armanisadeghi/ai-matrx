@@ -11,6 +11,7 @@ import {
   selectAgentConversationMessageIndices,
   selectAgentMessages,
   selectAgentModelId,
+  selectAgentOfferingPin,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { MessageItem } from "@/features/agents/components/builder/message-builders/MessageItem";
 import { exampleRuns, flagPreview } from "@ai-matrx/chat/agents/message-flags/flags";
@@ -35,7 +36,8 @@ export function Messages({
   );
   const messages = useAppSelector((state) => selectAgentMessages(state, agentId));
   const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
-  const profile = useMessageFlagProfile(modelId);
+  const offeringPin = useAppSelector((state) => selectAgentOfferingPin(state, agentId));
+  const profile = useMessageFlagProfile(modelId, offeringPin);
   const agentReadError = useAppSelector((state) => selectAgentError(state, agentId));
   const dispatch = useAppDispatch();
   // Example runs start collapsed; the key is the run's first message index.

@@ -15,7 +15,11 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { selectInstanceOverrideState } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
@@ -24,7 +28,11 @@ import {
 } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { useModelFull } from "@host/features/ai-models/hooks/useModels";
 import { resolveModelControls } from "../../../../hooks/useModelControls";
-import { ComposerMenuDivider, ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
+import {
+  ComposerMenuDivider,
+  ComposerMenuLabel,
+  ComposerMenuRow,
+} from "./ComposerMenu";
 import { composerPillClass } from "./ComposerAgentPill";
 import type { ComposerSize } from "./composer-types";
 import { REASONING_EFFORT_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
@@ -40,7 +48,6 @@ function effortWord(value: string): string {
   if (value === "xhigh") return "Extra high";
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
-
 
 export function ComposerEffortPill({
   conversationId,
@@ -58,19 +65,28 @@ export function ComposerEffortPill({
   // The FULL record carries the model's `controls`; asking for it here means the
   // pill never depends on some other screen having loaded the model first.
   const model = useModelFull(modelId);
-  const overrideState = useAppSelector(selectInstanceOverrideState(conversationId));
+  const overrideState = useAppSelector(
+    selectInstanceOverrideState(conversationId),
+  );
 
   if (!model || !modelId) return null;
-  const control = resolveModelControls([model], modelId).normalizedControls?.reasoning_effort;
+  const control = resolveModelControls([model], modelId).normalizedControls
+    ?.reasoning_effort;
   // "auto" is never offered as a value to SEND — Auto is the absence of an override.
-  const values = (control?.enum ?? []).filter(isReasoningEffort).filter((value) => value !== "auto");
+  const values = (control?.enum ?? [])
+    .filter(isReasoningEffort)
+    .filter((value) => value !== "auto");
   if (values.length === 0) return null;
 
   const overriddenRaw = overrideState?.overrides?.reasoning_effort;
-  const overridden = typeof overriddenRaw === "string" && overriddenRaw !== "auto" ? overriddenRaw : null;
-  const base = overrideState?.baseSettings?.reasoning_effort ?? control?.default;
+  const overridden =
+    typeof overriddenRaw === "string" && overriddenRaw !== "auto"
+      ? overriddenRaw
+      : null;
+  const base =
+    overrideState?.baseSettings?.reasoning_effort ?? control?.default;
   const agentOwn = typeof base === "string" ? base : null;
-  const pillWord = overridden ? `${effortWord(overridden)} effort` : "Auto effort";
+  const pillWord = overridden ? `${effortWord(overridden)}` : "Auto";
 
   const choose = (value: ReasoningEffort | null) => {
     setOpen(false);
@@ -78,14 +94,27 @@ export function ComposerEffortPill({
       dispatch(resetOverride({ conversationId, key: "reasoning_effort" }));
       return;
     }
-    dispatch(setOverrides({ conversationId, changes: { reasoning_effort: value } }));
+    dispatch(
+      setOverrides({ conversationId, changes: { reasoning_effort: value } }),
+    );
   };
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
-        <button type="button" className={composerPillClass(size, open)} aria-label="Effort" title="How hard the model thinks">
-          <span className={overridden ? "truncate font-medium text-foreground" : "truncate"}>{pillWord}</span>
+        <button
+          type="button"
+          className={composerPillClass(size, open)}
+          aria-label="Effort"
+          title="How hard the model thinks"
+        >
+          <span
+            className={
+              overridden ? "truncate font-medium text-foreground" : "truncate"
+            }
+          >
+            {pillWord}
+          </span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0" />
         </button>
       </PopoverTrigger>
@@ -99,7 +128,11 @@ export function ComposerEffortPill({
         <ComposerMenuLabel>Effort</ComposerMenuLabel>
         <ComposerMenuRow
           label="Auto"
-          description={agentOwn ? `The agent's own setting — ${effortWord(agentOwn)}` : "The agent's own setting"}
+          description={
+            agentOwn
+              ? `Agent Default: ${effortWord(agentOwn)}`
+              : "The agent's default"
+          }
           checked={!overridden}
           onClick={() => choose(null)}
         />

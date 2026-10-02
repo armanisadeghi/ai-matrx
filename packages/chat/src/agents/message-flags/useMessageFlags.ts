@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectAgentMessages,
   selectAgentModelId,
+  selectAgentOfferingPin,
 } from "../redux/agent-definition/selectors";
 import { setAgentMessages } from "../redux/agent-definition/slice";
 import { useModelFull } from "@host/features/ai-models/hooks/useModels";
@@ -39,7 +40,8 @@ export function useMessageFlags(agentId: string, messageIndex: number): MessageF
   const messages = useAppSelector((state) => selectAgentMessages(state, agentId));
   const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
   const model = useModelFull(modelId);
-  const profile = useMessageFlagProfile(modelId);
+  const offeringPin = useAppSelector((state) => selectAgentOfferingPin(state, agentId));
+  const profile = useMessageFlagProfile(modelId, offeringPin);
   const mode = resolveFlagCompatibilityMode(useSessionKnob(FLAG_COMPATIBILITY_KNOB));
 
   const list = messages ?? [];

@@ -103,7 +103,12 @@ describe("SpeechScriptEditor", () => {
     host.remove();
   });
 
-  const render = (turns: SpeechTurnSpec[], m: AIModelRecord, onChange = jest.fn()) => {
+  const render = (
+    turns: SpeechTurnSpec[],
+    m: AIModelRecord,
+    onChange = jest.fn(),
+    offeringId: string | null = null,
+  ) => {
     act(() => {
       root.render(
         <SandboxStoreProvider
@@ -116,6 +121,7 @@ describe("SpeechScriptEditor", () => {
           <SpeechScriptEditor
             turns={turns}
             model={m}
+            offeringId={offeringId}
             onChange={onChange}
             validVariables={["guest_name"]}
             compatibility={speechScriptCompatibility(m, m.id, turns)}
@@ -163,6 +169,22 @@ describe("SpeechScriptEditor", () => {
     expect(mockSpeak).toHaveBeenCalledWith(
       expect.objectContaining({
         sample: { model: "gemini-2.5-flash-preview-tts", voice: "kore" },
+      }),
+    );
+  });
+
+  it("a pinned class plays its sample in that class", () => {
+    mockSpeak.mockClear();
+    render(THREE_SPEAKERS.slice(0, 2), GEMINI, jest.fn(), "e500ce86-d54d-4e0e-af27-101bdc5cbf1d");
+    const play = host.querySelector<HTMLButtonElement>('[aria-label="Play a sample of Kore · female"]');
+    act(() => play!.click());
+    expect(mockSpeak).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sample: {
+          model: "gemini-2.5-flash-preview-tts",
+          voice: "kore",
+          offeringId: "e500ce86-d54d-4e0e-af27-101bdc5cbf1d",
+        },
       }),
     );
   });

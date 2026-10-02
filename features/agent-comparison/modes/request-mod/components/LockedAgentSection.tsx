@@ -129,7 +129,7 @@ export function LockedAgentSection() {
             <span className="text-[11px] font-semibold text-foreground shrink-0 w-16">
               Agent
             </span>
-            <div className="flex-1 min-w-0">
+            <div className="w-[300px] max-w-full min-w-0">
               <AgentListDropdown
                 onSelect={handleAgentSelect}
                 label={agentName ?? "Select agent..."}

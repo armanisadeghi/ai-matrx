@@ -23,6 +23,7 @@ import { SourceLockedView } from "./nodes/SourceLockedView";
 import { InlineIslandView } from "./nodes/InlineIslandView";
 import { CalloutView } from "./nodes/CalloutView";
 import { RichDecorations } from "./decorations";
+import { ContextMenuCaret } from "./context-menu-caret";
 import { markAutoEdit } from "./auto-edit";
 import { filterSlashItems, type SlashHost } from "./slash-items";
 import { suggestionRenderer, type MenuItem } from "./menus/SuggestionMenu";
@@ -290,5 +291,6 @@ export function createVisualExtensions(options: {
     protectSelectedIslands,
     TrailingNode.configure({ node: "paragraph" }),
     RichDecorations,
+    ContextMenuCaret,
   ];
 }

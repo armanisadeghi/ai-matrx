@@ -1,6 +1,7 @@
 import { apiMultipart, apiPost } from "@/lib/api/typed-client";
 import {
   generateSpeech,
+  previewVoice,
   transcribeAudioFile,
   transcribeAudioUrl,
 } from "../speechApi";
@@ -81,6 +82,47 @@ describe("speechApi", () => {
       voice: undefined,
       quality: "fast",
     });
+  });
+
+  it("text-to-speech sends the chosen class beside its model", async () => {
+    apiPostMock.mockResolvedValueOnce({
+      data: { file_id: "f", url: "u", mime_type: "audio/wav", model: "m" },
+      meta: responseMeta,
+    });
+    await generateSpeech("Hello", {
+      voice: "troy",
+      model: "eleven_v3",
+      offeringId: "e500ce86-d54d-4e0e-af27-101bdc5cbf1d",
+    });
+    expect(apiPostMock).toHaveBeenCalledWith(
+      "/audio/text-to-speech",
+      expect.objectContaining({
+        model: "eleven_v3",
+        offering_id: "e500ce86-d54d-4e0e-af27-101bdc5cbf1d",
+      }),
+    );
+  });
+
+  it("a voice preview of a pinned class sends offering_id and is cached per class", async () => {
+    apiPostMock.mockResolvedValue({
+      data: { url: "u", model: "eleven_v3", voice: "kore", source: "synthesized" },
+      meta: responseMeta,
+    });
+    await previewVoice({ model: "eleven_v3", voice: "kore", offeringId: "class-a" });
+    await previewVoice({ model: "eleven_v3", voice: "kore", offeringId: "class-b" });
+    await previewVoice({ model: "eleven_v3", voice: "kore", offeringId: "class-a" });
+    expect(apiPostMock).toHaveBeenCalledTimes(2);
+    expect(apiPostMock).toHaveBeenNthCalledWith(1, "/audio/voice-preview", {
+      model: "eleven_v3",
+      voice: "kore",
+      organization_id: "org-1",
+      offering_id: "class-a",
+    });
+    expect(apiPostMock).toHaveBeenNthCalledWith(
+      2,
+      "/audio/voice-preview",
+      expect.objectContaining({ offering_id: "class-b" }),
+    );
   });
 
   it("passes a transcription deadline to the canonical multipart client", async () => {

@@ -264,7 +264,7 @@ export function BattleToolbar({
     ...(columns.length > 0
       ? [
           {
-            icon: "RotateCcw",
+            icon: "Eraser",
             label: "Clear responses only",
             onPress: () => setResetKeepInputsConfirm(true),
           },
@@ -304,7 +304,6 @@ export function BattleToolbar({
         battleName={activeSetName}
         fallbackTitle="Open battle"
         actions={actions}
-        inlineCount={2}
         onSubmit={handleSubmitAll}
         submitting={isSubmittingAll}
         canSubmit={submittable.length > 0 && hasRunnableColumn}

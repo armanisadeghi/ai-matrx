@@ -14,6 +14,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { selectModelColumnTitle } from "../columnTitle";
 import {
   createInstance,
   destroyInstance,
@@ -398,7 +399,9 @@ export const resetAllModelConversations = createAsyncThunk<
 // =============================================================================
 
 interface PersistedModelEntryMeta {
+  /** The title the column showed (its model's name unless the person named it). */
   label: string;
+  label_custom?: boolean;
   model: string | null;
 }
 
@@ -412,7 +415,8 @@ function buildModelEntries(state: RootState): UpsertEntryInput[] {
       state.instanceModelOverrides.byConversationId[col.conversationId]
         ?.overrides ?? {};
     const meta: PersistedModelEntryMeta = {
-      label: col.label,
+      label: selectModelColumnTitle(state, col),
+      label_custom: Boolean(col.labelCustom),
       model: typeof overrides.model === "string" ? overrides.model : null,
     };
     out.push({
@@ -616,6 +620,7 @@ export const loadModelBattleSet = createAsyncThunk<
       columnId,
       conversationId: entry.conversation_id,
       label: entryMeta?.label ?? `Model ${nextColumns.length + 1}`,
+      labelCustom: entryMeta?.label_custom === true,
       collapsed: false,
     });
   }

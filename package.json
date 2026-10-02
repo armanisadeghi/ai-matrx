@@ -353,6 +353,8 @@
     "check:owner-words": "node scripts/interface-text/check-owner-words.mjs",
     "check:context-word": "node scripts/interface-text/check-context-word.mjs",
     "check:context-word:self-test": "node scripts/interface-text/check-context-word.mjs --self-test",
+    "check:raw-identifiers": "node scripts/interface-text/check-raw-identifiers.mjs",
+    "check:raw-identifiers:self-test": "node scripts/interface-text/check-raw-identifiers.mjs --self-test",
     "check:tests-asserting-removed-text": "node scripts/interface-text/tests-asserting-removed-text.mjs",
     "check:favicon-letters": "tsx scripts/check-favicon-letters.ts",
     "check:favicon-letters:self-test": "tsx scripts/check-favicon-letters.ts --self-test",

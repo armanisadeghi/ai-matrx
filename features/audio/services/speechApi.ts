@@ -7,6 +7,13 @@ import { CATALOG_VOICES } from "@/features/audio/service/engines";
 type TranscriptionWire = components["schemas"]["aidream__services__audio__speech__TranscriptionResponse"];
 type SpeechWire = components["schemas"]["SpeechResponse"];
 type VoicePreviewWire = components["schemas"]["VoicePreviewResponse"];
+// The server accepts `offering_id` (the chosen CLASS of `model`) on both
+// speech routes; the published contract package predates the field, so the
+// bodies are widened here until it is regenerated.
+type SpeechBody = components["schemas"]["SpeechRequest"] & { offering_id?: string };
+type VoicePreviewBody = components["schemas"]["VoicePreviewRequest"] & {
+  offering_id?: string;
+};
 
 function normalizeTranscription(data: TranscriptionWire): TranscriptionResult {
   return {
@@ -101,18 +108,27 @@ export async function generateSpeech(
     voice?: string;
     quality?: "fast" | "high_quality";
     organizationId?: string;
+    /** A catalog model chosen by the caller; empty = the speech mandate's model. */
+    model?: string;
+    /** The chosen CLASS of `model` (ai.offering id); the server ignores it without `model`. */
+    offeringId?: string;
   } = {},
 ): Promise<SpeechWire> {
   // Preferences persisted before the catalog migration can still contain a
   // retired PlayAI voice. Omit it so the backend's current catalog default wins.
   const voice = options.voice?.toLowerCase();
   const organizationId = await ensureOrgId(options.organizationId);
-  const { data } = await apiPost("/audio/text-to-speech", {
+  const body: SpeechBody = {
     text,
     organization_id: organizationId,
     voice: voice && CATALOG_TTS_VOICES.has(voice) ? voice : undefined,
     quality: options.quality ?? "fast",
-  });
+    ...(options.model ? { model: options.model } : {}),
+    ...(options.model && options.offeringId
+      ? { offering_id: options.offeringId }
+      : {}),
+  };
+  const { data } = await apiPost("/audio/text-to-speech", body);
   return data;
 }
 
@@ -129,18 +145,26 @@ export async function generateSpeech(
 const previewCache = new Map<string, Promise<VoicePreviewWire>>();
 
 export function previewVoice(
-  params: { model: string; voice: string; organizationId?: string },
+  params: {
+    model: string;
+    voice: string;
+    organizationId?: string;
+    /** The pinned CLASS of `model` — each class has its own vendor and voices. */
+    offeringId?: string;
+  },
 ): Promise<VoicePreviewWire> {
-  const key = `${params.model}\u0000${params.voice}`;
+  const key = `${params.model}\u0000${params.voice}\u0000${params.offeringId ?? ""}`;
   const cached = previewCache.get(key);
   if (cached) return cached;
   const request = (async () => {
     const organizationId = await ensureOrgId(params.organizationId);
-    const { data } = await apiPost("/audio/voice-preview", {
+    const body: VoicePreviewBody = {
       model: params.model,
       voice: params.voice,
       organization_id: organizationId,
-    });
+      ...(params.offeringId ? { offering_id: params.offeringId } : {}),
+    };
+    const { data } = await apiPost("/audio/voice-preview", body);
     return data;
   })();
   previewCache.set(key, request);

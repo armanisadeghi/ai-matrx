@@ -66,3 +66,61 @@ describe("fetchImageRoleLimits reads the member-readable capability door", () =>
     await expect(fetchImageRoleLimits("m-err")).rejects.toThrow("permission denied");
   });
 });
+
+describe("fetchImageRoleLimits follows the pinned CLASS", () => {
+  const PIN = "e500ce86-d54d-4e0e-af27-101bdc5cbf1d";
+  let warn: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockRpc.mockReset();
+    mockSchema.mockClear();
+    mockCaptureError.mockReset();
+    warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+  });
+  afterEach(() => warn.mockRestore());
+
+  it("a pin reads the class-aware form with the pin parallel to the model", async () => {
+    mockRpc.mockResolvedValue({ data: [{ ...VEO_ROW, offering_id: PIN }], error: null });
+    const { fetchImageRoleLimits } = load();
+    expect(await fetchImageRoleLimits(VEO_ROW.model_id, PIN)).not.toBeNull();
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledWith("offering_capabilities", {
+      p_model_ids: [VEO_ROW.model_id],
+      p_offering_ids: [PIN],
+    });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("the pinned class and the preferred class are cached apart", async () => {
+    mockRpc.mockResolvedValue({ data: [VEO_ROW], error: null });
+    const { fetchImageRoleLimits } = load();
+    await fetchImageRoleLimits(VEO_ROW.model_id);
+    await fetchImageRoleLimits(VEO_ROW.model_id, PIN);
+    expect(mockRpc).toHaveBeenCalledTimes(2);
+  });
+
+  it("before the SQL lands (PGRST202) it reads the model-level form and warns once", async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: null, error: { code: "PGRST202", message: "not found" } })
+      .mockResolvedValueOnce({ data: [VEO_ROW], error: null })
+      .mockResolvedValueOnce({ data: null, error: { code: "PGRST202", message: "not found" } })
+      .mockResolvedValueOnce({ data: [VEO_ROW], error: null });
+    const { fetchImageRoleLimits } = load();
+    expect(await fetchImageRoleLimits(VEO_ROW.model_id, PIN)).not.toBeNull();
+    expect(mockRpc).toHaveBeenLastCalledWith("offering_capabilities", {
+      p_model_ids: [VEO_ROW.model_id],
+    });
+    await fetchImageRoleLimits("other-model", PIN);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).toContain("class-aware-flags-and-capabilities.sql");
+  });
+
+  it("a pin that is not a class of the model (P0002) is unknown, never the preferred class", async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { code: "P0002", message: "not an offering" } });
+    const { fetchImageRoleLimits } = load();
+    await expect(fetchImageRoleLimits(VEO_ROW.model_id, PIN)).rejects.toMatchObject({
+      code: "P0002",
+    });
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+  });
+});

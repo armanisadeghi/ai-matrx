@@ -61,7 +61,10 @@ const slice = createSlice({
       const col = state.columns.find(
         (c) => c.columnId === action.payload.columnId,
       );
-      if (col) col.label = action.payload.label;
+      if (col) {
+        col.label = action.payload.label;
+        col.labelCustom = true;
+      }
     },
     setModelColumnCollapsed(
       state,

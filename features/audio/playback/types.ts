@@ -56,7 +56,7 @@ export interface PlaybackRequest {
      * vendor's own sample when it publishes one (ElevenLabs), otherwise one
      * short line the server renders once and caches per (model, voice).
      */
-    sample?: { model: string; voice: string };
+    sample?: { model: string; voice: string; offeringId?: string };
   };
 }
 
