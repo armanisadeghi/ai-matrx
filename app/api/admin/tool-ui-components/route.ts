@@ -5,6 +5,7 @@ import { requireAdmin } from "@/utils/auth/adminUtils";
 import { WEB_TOOL_UI_SURFACE } from "@ai-matrx/chat/tool-call-visualization/db-renderer/surface";
 import { extractErrorMessage } from "@/utils/errors";
 import { writeOneRow } from "@/utils/supabase/writeOne";
+import { resolveToolUiParent } from "@/features/tool-call-visualization/admin/resolveToolUiParent";
 
 // Map requireAdmin()/requireSuperAdmin() throws to the right HTTP status.
 function authErrorResponse(error: unknown): NextResponse | null {
@@ -80,22 +81,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Every tool is Matrx System org (verified 2026-08-12); renderer rows inherit
-    // the tool's org, with the system org as the no-tool_id fallback.
-    let organizationId = "39c38960-d30c-4840-b0c1-c9960de95582";
-    if (body.tool_id) {
+    // A renderer is its tool's child: link it (by id, else by name) and stamp
+    // the tool's org — an unlinked renderer is invisible to every user.
+    const findTool = async (column: "id" | "name", value: string) => {
       const { data: toolRow } = await supabase
         .schema("tool")
         .from("definition")
-        .select("organization_id")
-        .eq("id", body.tool_id)
-        .single();
-      if (toolRow) organizationId = toolRow.organization_id;
-    }
+        .select("id, organization_id")
+        .eq(column, value)
+        .is("deleted_at", null)
+        .maybeSingle();
+      return toolRow ?? null;
+    };
+    const parent = await resolveToolUiParent(
+      {
+        byId: (id) => findTool("id", id),
+        byName: (name) => findTool("name", name),
+      },
+      { tool_id: body.tool_id, tool_name: body.tool_name },
+    );
 
     const componentData = {
-      tool_id: body.tool_id || null,
-      organization_id: organizationId,
+      tool_id: parent.tool_id,
+      organization_id: parent.organization_id,
       tool_name: body.tool_name,
       // Author → render must be coherent: default to the SAME surface the
       // runtime fetch reads (`fetchToolRendererRow`). Saving elsewhere means
