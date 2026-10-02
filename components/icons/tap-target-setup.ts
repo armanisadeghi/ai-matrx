@@ -2,6 +2,7 @@
  * components/icons/tap-target-setup.ts — HOST WIRING for @ai-matrx/tap-target.
  *
  * Side-effect module: registers `next/link` as the tap-target link component
+ * and, in development builds, turns on the package's misuse guard
  * (the package's injectable replacement for the original's hard next/link
  * import). Imported for side effect from `app/DeferredSingletonWrapper.tsx`
  * — a CLIENT module, which executes during the SSR pass of client components
@@ -13,8 +14,16 @@
  */
 import Link from "next/link";
 import {
+  enableTapTargetGuard,
   setTapTargetLinkComponent,
   type TapTargetLinkComponent,
 } from "@ai-matrx/tap-target";
 
 setTapTargetLinkComponent(Link as unknown as TapTargetLinkComponent);
+
+// THE MISUSE GUARD, development builds only: a tap button that a caller bends
+// (a parent gap, a padded wrapper, a token override, a non-colour className,
+// no tooltip text) renders as a giant red box naming the fault. Gated HERE,
+// in host code Next compiles, never inside the package (whose build inlines
+// NODE_ENV).
+if (process.env.NODE_ENV !== "production") enableTapTargetGuard();
