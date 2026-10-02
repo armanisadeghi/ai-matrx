@@ -37,6 +37,21 @@ export interface XaiClientError {
   code: XaiClientErrorCode;
   message: string;
   cause?: unknown;
+  /** xAI's own error code/type, when the provider sent an `error` event. */
+  providerCode?: string;
+  /** xAI's own error text, verbatim — reported to the server, never shown. */
+  providerMessage?: string;
+  /** WebSocket close code, when the failure was a close. */
+  closeCode?: number;
+}
+
+/** A socket close: deliberate (client stop) or not, with the provider's code + reason. */
+export interface XaiCloseInfo {
+  intentional: boolean;
+  code: number | null;
+  reason?: string;
+  /** True when the socket had completed the session handshake. */
+  wasOpen?: boolean;
 }
 
 export interface XaiClient {
@@ -54,9 +69,7 @@ export interface XaiClient {
   disconnect: () => void;
   onEvent: (cb: (event: XaiServerEvent) => void) => () => void;
   onError: (cb: (err: XaiClientError) => void) => () => void;
-  onClose: (
-    cb: (info: { intentional: boolean; code: number | null }) => void,
-  ) => () => void;
+  onClose: (cb: (info: XaiCloseInfo) => void) => () => void;
   /** Returns true after the session.updated handshake completes. */
   isStreamingReady: () => boolean;
   isOpen: () => boolean;
@@ -69,9 +82,7 @@ export function createXaiClient(): XaiClient {
 
   const eventCallbacks = new Set<(e: XaiServerEvent) => void>();
   const errorCallbacks = new Set<(e: XaiClientError) => void>();
-  const closeCallbacks = new Set<
-    (info: { intentional: boolean; code: number | null }) => void
-  >();
+  const closeCallbacks = new Set<(info: XaiCloseInfo) => void>();
 
   function emitEvent(e: XaiServerEvent): void {
     for (const cb of eventCallbacks) {
@@ -91,10 +102,7 @@ export function createXaiClient(): XaiClient {
       }
     }
   }
-  function emitClose(info: {
-    intentional: boolean;
-    code: number | null;
-  }): void {
+  function emitClose(info: XaiCloseInfo): void {
     for (const cb of closeCallbacks) {
       try {
         cb(info);
@@ -192,6 +200,8 @@ export function createXaiClient(): XaiClient {
           emitError({
             code: "server-error",
             message: `[${event.code}] ${event.message}`,
+            providerCode: event.code,
+            providerMessage: event.message,
           });
         } else if (
           event.type === "unknown" &&
@@ -229,10 +239,17 @@ export function createXaiClient(): XaiClient {
               code: "auth-failed",
               message:
                 "xAI rejected the client_secret. Refreshing token may help.",
+              closeCode: event.code,
+              ...(event.reason ? { providerMessage: event.reason } : {}),
             });
           }
         }
-        emitClose({ intentional: intentionalClose, code: event.code });
+        emitClose({
+          intentional: intentionalClose,
+          code: event.code,
+          reason: event.reason || undefined,
+          wasOpen,
+        });
         if (!resolved) {
           resolved = true;
           reject({
@@ -292,9 +309,7 @@ export function createXaiClient(): XaiClient {
     errorCallbacks.add(cb);
     return () => errorCallbacks.delete(cb);
   }
-  function onClose(
-    cb: (info: { intentional: boolean; code: number | null }) => void,
-  ): () => void {
+  function onClose(cb: (info: XaiCloseInfo) => void): () => void {
     closeCallbacks.add(cb);
     return () => closeCallbacks.delete(cb);
   }

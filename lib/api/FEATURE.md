@@ -278,6 +278,12 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-10-01 — **`provider-session-failure.ts`: browser-held provider sessions report their
+  failures.** xAI realtime voice and Cartesia TTS talk to the provider directly on broker tokens;
+  their error paths call `reportBrowserProviderFailure` (thunk) / `…FromStore` (React-free) →
+  `POST /broker/provider-failures`, show the verdict's `user_message`, and stop asking again when
+  `retryable` is false (`ProviderSessionError`). Cartesia's one funnel is `lib/cartesia/connection.ts`.
+
 - 2026-08-31 — Kept handled `token_required` 401 responses and the matching
   session-expired toast visible locally but non-durable; unrelated auth failures
   remain red and enter the repair queue.

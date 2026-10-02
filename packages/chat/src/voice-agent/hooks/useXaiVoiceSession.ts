@@ -81,7 +81,12 @@ import { realtimeToolService } from "../services/realtimeToolService";
 import { createAudioCapture, type CaptureError } from "../audio/audioCapture";
 import { createAudioPlayback } from "../audio/audioPlayback";
 import { createTokenManager, type TokenError } from "../transport/tokenManager";
-import { createXaiClient, type XaiClientError } from "../transport/xaiClient";
+import {
+  createXaiClient,
+  type XaiCloseInfo,
+  type XaiClientError,
+} from "../transport/xaiClient";
+import { reportBrowserProviderFailure } from "@host/lib/api/provider-session-failure";
 import type { XaiServerEvent } from "../transport/serverEvents";
 import { transcriptTextFromEvent } from "../transport/serverEvents";
 import type { VoiceRelayBinding } from "../relay/types";
@@ -232,6 +237,13 @@ export function useXaiVoiceSession(
   isVersionRef.current = isVersion ?? false;
   const relayRef = useRef<VoiceRelayBinding | undefined>(relay);
   relayRef.current = relay;
+
+  // Provider-failure reporting (browser-held session: the server never sees an
+  // xAI refusal unless we report it). The attempt counter keeps a late verdict
+  // from overwriting a newer session's state; one handshake failure fires
+  // several socket errors, so only the first is reported per attempt.
+  const sessionAttemptRef = useRef(0);
+  const handshakeReportedRef = useRef(false);
 
   // Buffered tool calls from `response.function_call_arguments.done`, flushed
   // on `response.done` so parallel calls land in one batch with ONE
@@ -865,17 +877,64 @@ export function useXaiVoiceSession(
     ],
   );
 
+  /**
+   * Report an xAI failure to the server and show its sentence instead of the
+   * provider's text. Null verdict (the report failed) → `fallbackMessage`.
+   */
+  const reportProviderFailure = useCallback(
+    (
+      failure: { status_code?: number; error_type?: string; message: string },
+      errorCode: string,
+      fallbackMessage: string,
+    ): void => {
+      const attempt = sessionAttemptRef.current;
+      void dispatch(
+        reportBrowserProviderFailure({
+          provider: "xai",
+          model: realtimeModelRef.current ?? null,
+          ...failure,
+        }),
+      ).then((verdict) => {
+        if (attempt !== sessionAttemptRef.current) return;
+        voiceDebugLog(
+          instanceId,
+          "error",
+          "provider.reported",
+          verdict
+            ? `${verdict.error_type} (retryable=${verdict.retryable})`
+            : "report failed — showing the session's own message",
+        );
+        dispatch(
+          setError({
+            instanceId,
+            error: {
+              code: errorCode,
+              message: verdict?.user_message || fallbackMessage,
+            },
+          }),
+        );
+      });
+    },
+    [dispatch, instanceId],
+  );
+
   const handleClientError = useCallback(
     (err: XaiClientError) => {
       voiceDebugLog(instanceId, "error", `ws.${err.code}`, err.message);
-      dispatch(
-        setError({
-          instanceId,
-          error: { code: `ws-${err.code}`, message: err.message },
-        }),
+      if (err.code !== "server-error") {
+        if (handshakeReportedRef.current) return;
+        handshakeReportedRef.current = true;
+      }
+      reportProviderFailure(
+        {
+          ...(err.providerCode ? { error_type: err.providerCode } : {}),
+          message: err.providerMessage || err.message,
+        },
+        `ws-${err.code}`,
+        err.message,
       );
     },
-    [dispatch, instanceId],
+    [instanceId, reportProviderFailure],
   );
 
   // ─── start / stop ──────────────────────────────────────────────────────
@@ -1043,6 +1102,8 @@ export function useXaiVoiceSession(
 
     // Clear any prior error explicitly on a fresh attempt — the slice no
     // longer auto-clears on status transitions (errors are sticky).
+    sessionAttemptRef.current += 1;
+    handshakeReportedRef.current = false;
     dispatch(setError({ instanceId, error: null }));
     dispatch(setStatus({ instanceId, status: "requesting-mic" }));
 
@@ -1053,7 +1114,7 @@ export function useXaiVoiceSession(
     // Subscribe BEFORE connect so we don't miss session.created.
     const unsubEvent = client.onEvent(handleServerEvent);
     const unsubError = client.onError(handleClientError);
-    const unsubClose = client.onClose((info) => {
+    const unsubClose = client.onClose((info: XaiCloseInfo) => {
       voiceDebugIncr(instanceId, "closeCount");
       voiceDebugSetFlags(instanceId, {
         lastCloseIntentional: info.intentional,
@@ -1080,6 +1141,24 @@ export function useXaiVoiceSession(
           },
         }),
       );
+      // A mid-session close the PROVIDER chose (policy 1008, server error
+      // 1011, or an application 4xxx code — e.g. the account ran out of
+      // credit) is a provider failure: report it and show the server's
+      // sentence. A plain network drop (1006) is not the provider's answer.
+      if (
+        info.wasOpen &&
+        info.code !== null &&
+        (info.code === 1008 || info.code === 1011 || info.code >= 4000)
+      ) {
+        reportProviderFailure(
+          {
+            error_type: `ws_close_${info.code}`,
+            message: info.reason || `xAI closed the session (code ${info.code})`,
+          },
+          "ws-connection-dropped",
+          "Voice connection dropped. Tap the mic to reconnect — a fresh token is ready.",
+        );
+      }
       void stop();
     });
     sessionUnsubsRef.current.push(unsubEvent, unsubError, unsubClose);
@@ -1159,6 +1238,7 @@ export function useXaiVoiceSession(
     handleClientError,
     handleServerEvent,
     instanceId,
+    reportProviderFailure,
     stop,
     mirrorFlags,
   ]);

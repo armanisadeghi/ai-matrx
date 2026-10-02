@@ -18,6 +18,12 @@ import {
   invalidateCartesiaAccessToken,
   isCartesiaAuthError,
 } from "./accessToken";
+import {
+  ProviderSessionError,
+  reportBrowserProviderFailureFromStore,
+  type ProviderSessionFailure,
+} from "@/lib/api/provider-session-failure";
+import { toast } from "@/lib/toast";
 
 export interface CartesiaTtsSocketOptions {
   container?: string;
@@ -41,6 +47,14 @@ export interface CartesiaTtsRequest {
 }
 
 type NativeSocket = Awaited<ReturnType<Cartesia["tts"]["websocket"]>>;
+type CartesiaErrorEvent = {
+  type: "error";
+  message?: string;
+  title?: string;
+  status_code?: number;
+  error_code?: string;
+  context_id?: string;
+};
 type MessageListener = (message: string) => void;
 
 /** The structural source consumed by SinkAwarePlayer. */
@@ -135,6 +149,9 @@ class CartesiaV4Socket implements CartesiaTtsSocket {
   #sources = new Map<string, CartesiaAudioSource>();
   #listeners = new Map<string, Set<MessageListener>>();
 
+  /** Set when the provider refused this account and reconnecting cannot help. */
+  #refused: ProviderSessionError | null = null;
+
   constructor(native: NativeSocket, options: ResolvedSocketOptions) {
     this.#native = native;
     this.#options = options;
@@ -144,32 +161,74 @@ class CartesiaV4Socket implements CartesiaTtsSocket {
     native.on("error", () => {});
     native.on("event", (event) => {
       const contextId = "context_id" in event ? event.context_id : undefined;
-      if (!contextId) {
-        if (event.type === "error") {
+      if (event.type === "error") {
+        // A provider error is terminal for its context (or for every context
+        // when it names none): end the audio now, and hand the error to its
+        // listeners once the server has classified it.
+        const listeners = contextId ? this.#listeners.get(contextId) : undefined;
+        if (contextId) {
+          this.#sources.get(contextId)?.finish();
+          this.#sources.delete(contextId);
+          this.#listeners.delete(contextId);
+        } else {
           for (const source of this.#sources.values()) source.finish();
           this.#sources.clear();
           this.#listeners.clear();
         }
+        void this.#reportProviderError(event, listeners);
         return;
       }
+      if (!contextId) return;
       const source = this.#sources.get(contextId);
       if (event.type === "chunk" && source) {
         source.push(event.audio ?? decodeBase64(event.data));
-      } else if (event.type === "done" || event.type === "error") {
+      } else if (event.type === "done") {
         source?.finish();
       }
       const serialized = JSON.stringify(event);
       for (const listener of this.#listeners.get(contextId) ?? []) {
         listener(serialized);
       }
-      if (event.type === "done" || event.type === "error") {
+      if (event.type === "done") {
         this.#sources.delete(contextId);
         this.#listeners.delete(contextId);
       }
     });
   }
 
+  /**
+   * Browser-held session: the server never sees this provider error unless we
+   * report it. Listeners get the event with `message` replaced by the server's
+   * sentence, and the person sees it as a toast.
+   */
+  async #reportProviderError(
+    event: CartesiaErrorEvent,
+    listeners: Set<MessageListener> | undefined,
+  ): Promise<void> {
+    const failure: ProviderSessionFailure = {
+      provider: "cartesia",
+      status_code: event.status_code ?? null,
+      error_type: event.error_code ?? event.title ?? null,
+      message: event.message || event.title || "Cartesia TTS error",
+    };
+    const verdict = await reportBrowserProviderFailureFromStore(failure);
+    const error = new ProviderSessionError(failure, verdict, failure.message);
+    if (!error.retryable) this.#refused = error;
+    const delivered = JSON.stringify({
+      ...event,
+      message: error.message,
+      retryable: error.retryable,
+    });
+    for (const listener of listeners ?? []) listener(delivered);
+    // Most consumers only play the audio source, which just ends — without
+    // this the refusal would be silent.
+    toast.error("Speech stopped", { description: error.message });
+  }
+
   async send(request: CartesiaTtsRequest): Promise<CartesiaTtsResponse> {
+    // A refusal reconnecting cannot fix (e.g. out of credit) stops this socket:
+    // the SDK would otherwise reconnect transparently and ask again.
+    if (this.#refused) throw this.#refused;
     const contextId = request.contextId ?? crypto.randomUUID();
     let source = this.#sources.get(contextId);
     if (!source) {
@@ -271,13 +330,53 @@ export async function connectCartesiaTts(
   const resolved = requested as ResolvedSocketOptions;
   const token = await getCartesiaAccessToken();
   try {
-    return await buildConnectedSocket(token, resolved);
+    try {
+      return await buildConnectedSocket(token, resolved);
+    } catch (error) {
+      if (!isCartesiaAuthError(error)) throw error;
+      invalidateCartesiaAccessToken(token);
+      const refreshed = await getCartesiaAccessToken({ forceRefresh: true }).catch(
+        (mintError: unknown) => {
+          throw new BrokerMintFailure(mintError);
+        },
+      );
+      return await buildConnectedSocket(refreshed, resolved);
+    }
   } catch (error) {
-    if (!isCartesiaAuthError(error)) throw error;
-    invalidateCartesiaAccessToken(token);
-    return buildConnectedSocket(
-      await getCartesiaAccessToken({ forceRefresh: true }),
-      resolved,
-    );
+    // The broker mint already reports its own failures server-side; only the
+    // browser → Cartesia handshake is reported here.
+    if (error instanceof BrokerMintFailure) throw error.cause;
+    throw await reportCartesiaConnectFailure(error);
   }
+}
+
+/** Marks a mint failure inside the retry so it is not reported as Cartesia's. */
+class BrokerMintFailure extends Error {
+  constructor(override readonly cause: unknown) {
+    super("broker mint failed");
+  }
+}
+
+async function reportCartesiaConnectFailure(
+  error: unknown,
+): Promise<ProviderSessionError> {
+  const raw =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error && "message" in error
+        ? String((error as { message: unknown }).message)
+        : "";
+  const status = /\b([45]\d\d)\b/.exec(raw)?.[1];
+  const failure: ProviderSessionFailure = {
+    provider: "cartesia",
+    status_code: status ? Number(status) : null,
+    message: raw || "Cartesia WebSocket connection failed",
+  };
+  const verdict = await reportBrowserProviderFailureFromStore(failure);
+  return new ProviderSessionError(
+    failure,
+    verdict,
+    raw || "Could not connect to the speech service.",
+    { cause: error },
+  );
 }

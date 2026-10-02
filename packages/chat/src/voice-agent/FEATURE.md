@@ -48,6 +48,10 @@ Below is only what an agent editing THIS directory must not get wrong.
 - **xAI ephemeral secrets are consumed by the WebSocket handshake.** `stop()` must
   `tokenManager.invalidate()` and background-`prime()`, or restart-within-TTL fails with an
   uninformative transport error.
+- **xAI failures are reported to the server, and the person sees its sentence.** The socket is
+  browser-held, so `useXaiVoiceSession` reports every client error (one per handshake attempt)
+  and every provider-chosen mid-session close (1008/1011/4xxx) through
+  `@host/lib/api/provider-session-failure` and shows `user_message`, never xAI's raw text.
 - **Tear down `xaiClient` subscriptions in BOTH `stop()` and the top of `start()`.** A leaked
   stack doubles transcripts, status flips, and persistence writes.
 - **Never translate one provider's messages as the other's.** Gemini Live goes through the
