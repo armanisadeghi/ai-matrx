@@ -8,13 +8,16 @@
 #   ai-matrx        (aimatrx.com)        MATRX_BUILD_TARGET=main
 #   ai-matrx-manage (manage.aimatrx.com) MATRX_BUILD_TARGET=admin
 #   ai-matrx-demos  (demos.aimatrx.com)  MATRX_BUILD_TARGET=demos
+#   ai-matrx-lab    (lab.aimatrx.com)    MATRX_BUILD_TARGET=lab   (the fast
+#                   demo build: ~10 s compile, `pnpm ship:demos --lab`)
 #
 # Only a release commit pushed as HEAD may build, and its subject selects the
 # project(s):
 #   release:        -> main only
 #   release-admin:  -> admin only
 #   release-demos:  -> demos only
-#   release-all:    -> all three
+#   release-lab:    -> lab only
+#   release-all:    -> every project (lab included, so it never goes stale)
 # Every other push is skipped. Never search earlier commits for a release
 # prefix: while a release is still building, the production SHA lags main, so
 # range scanning makes every later ordinary push rediscover the same release
@@ -38,6 +41,7 @@ targets_this_project() {
     release-all:*) return 0 ;;
     release-admin:*) [[ "$target" == "admin" ]] && return 0 ;;
     release-demos:*) [[ "$target" == "demos" ]] && return 0 ;;
+    release-lab:*) [[ "$target" == "lab" ]] && return 0 ;;
     release:*) [[ "$target" == "main" ]] && return 0 ;;
   esac
   return 1
@@ -59,5 +63,5 @@ if targets_this_project "$head_subject"; then
 fi
 
 echo "[vercel-ignore] Skipping (target=${target}) — pushed HEAD is not a release commit for this project. HEAD: ${head_subject:-<empty>}"
-echo "[vercel-ignore] Deploys only via ./ship.sh / ./scripts/release.sh (--target admin|demos|all for the satellites)."
+echo "[vercel-ignore] Deploys only via ./ship.sh / ./scripts/release.sh (--target admin|demos|all for the satellites; pnpm ship:demos [--lab] for demos/lab alone)."
 exit 0

@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
-# ship-demos.sh — rebuild ONLY demos.aimatrx.com, fast, with nothing else attached.
+# ship-demos.sh — rebuild ONLY demos.aimatrx.com (or, with --lab, ONLY lab.aimatrx.com), fast,
+# with nothing else attached.
+#
+#   --lab   ships to lab.aimatrx.com: only app/(lab)/lab/<name>/page.lab.tsx pages, no AppShell,
+#           ~10 s compile and ~1.5 min push-to-live (demos is ~8 min). See app/(lab)/README.md.
 #
 #   pnpm ship:demos                                  # push what is committed, rebuild demos
 #   pnpm ship:demos "tweak foo demo"                 # same, with a note
 #   pnpm ship:demos "tweak foo demo" -- app/(dev)/demos/foo/page.dev.tsx   # commit these paths first
 #   pnpm ship:demos "note" --watch                   # also wait for the Vercel build and print the URL
+#   pnpm ship:demos "note" --lab --watch -- "app/(lab)/lab/foo/page.lab.tsx"   # the fast lab site
 #
-# What it does, and nothing more:
+# What it does, and nothing more (same for --lab, with "release-lab:"):
 #   1. (optional) commits EXACTLY the named paths (`git commit --only`, never the shared index)
 #   2. fetches origin/main and builds a "release-demos: ..." commit on top of it with git
 #      plumbing (local commits merged in when they merge cleanly; files on disk never touched)
@@ -23,6 +28,7 @@ REMOTE=origin
 BRANCH=main
 VERCEL_SCOPE=team_zWxJHqDHuRr1kpl9Hu9oON3g
 VERCEL_PROJECT=ai-matrx-demos
+PREFIX="release-demos:"
 
 NOTE=""
 WATCH=false
@@ -30,8 +36,9 @@ PATHS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --watch) WATCH=true ;;
+        --lab) VERCEL_PROJECT=ai-matrx-lab; PREFIX="release-lab:" ;;
         --) shift; PATHS=("$@"); break ;;
-        -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
+        -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
         *) NOTE="${NOTE:+$NOTE }$1" ;;
     esac
     shift
@@ -52,7 +59,7 @@ if [[ ${#PATHS[@]} -gt 0 ]]; then
 fi
 
 # ── 2 + 3. build the release-demos commit on origin/main and push it ─────────
-MSG="release-demos: ${NOTE:-demos rebuild} ($(date -u +%Y-%m-%dT%H:%MZ))"
+MSG="$PREFIX ${NOTE:-rebuild} ($(date -u +%Y-%m-%dT%H:%MZ))"
 for attempt in 1 2 3 4 5; do
     git fetch --quiet "$REMOTE" "$BRANCH" || { echo "ship-demos: cannot reach $REMOTE"; exit 1; }
     base=$(git rev-parse "$REMOTE/$BRANCH")
@@ -74,7 +81,7 @@ for attempt in 1 2 3 4 5; do
         # Fast-forward the local ref only when the tree is identical to HEAD's, so the
         # working tree and index stay exactly as their owners left them.
         $ff && git update-ref "refs/heads/$BRANCH" "$sha" "$head" 2>/dev/null
-        echo "ship-demos: pushed ${sha:0:9} — demos build started ($(( $(date +%s) - started ))s)"
+        echo "ship-demos: pushed ${sha:0:9} — $VERCEL_PROJECT build started ($(( $(date +%s) - started ))s)"
         break
     fi
     [[ $attempt -eq 5 ]] && { echo "ship-demos: lost the push race 5 times; run again"; exit 1; }

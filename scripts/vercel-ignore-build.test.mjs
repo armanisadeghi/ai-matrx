@@ -168,13 +168,29 @@ test("(e) the per-project prefixes still route: release-demos: builds demos only
     assert.equal(runIgnore(dir, { ...env, MATRX_BUILD_TARGET: "demos" }).build, true);
     assert.equal(runIgnore(dir, { ...env, MATRX_BUILD_TARGET: "main" }).build, false);
     assert.equal(runIgnore(dir, { ...env, MATRX_BUILD_TARGET: "admin" }).build, false);
+    assert.equal(runIgnore(dir, { ...env, MATRX_BUILD_TARGET: "lab" }).build, false);
+});
+
+test("(e2) release-lab: builds the lab only", () => {
+    const dir = track(newRepo());
+    const base = commit(dir, "chore: baseline");
+    const head = commit(dir, "release-lab: a lab page");
+    const env = {
+        VERCEL_GIT_PREVIOUS_SHA: base,
+        VERCEL_GIT_COMMIT_SHA: head,
+        VERCEL_GIT_COMMIT_MESSAGE: "release-lab: a lab page",
+    };
+    assert.equal(runIgnore(dir, { ...env, MATRX_BUILD_TARGET: "lab" }).build, true);
+    for (const t of ["main", "admin", "demos"]) {
+        assert.equal(runIgnore(dir, { ...env, MATRX_BUILD_TARGET: t }).build, false, `target=${t} built a lab release`);
+    }
 });
 
 test("(f) release-all: as HEAD builds every project", () => {
     const dir = track(newRepo());
     const base = commit(dir, "chore: baseline");
     const head = commit(dir, "release-all: everything ships");
-    for (const t of ["main", "admin", "demos"]) {
+    for (const t of ["main", "admin", "demos", "lab"]) {
         const { build, output } = runIgnore(dir, {
             MATRX_BUILD_TARGET: t,
             VERCEL_GIT_PREVIOUS_SHA: base,

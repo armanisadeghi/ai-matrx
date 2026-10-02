@@ -94,6 +94,12 @@ const PROFILES = {
     includeDev: true,
     park: ["core", "admin", "transitional", "public", "popup"],
   },
+  // lab — ai-matrx-lab (lab.aimatrx.com), the fast demo build. Parks nothing:
+  // pageExtensions (below) admit ONLY *.lab.tsx / *.labroot.tsx, so no other
+  // route, layout, proxy or API file is in the graph. The demos site compiles
+  // the whole AppShell (~14k server chunks, ~5 min); a lab page compiles only
+  // what it imports. Ship with `pnpm ship:demos --lab`.
+  lab: { includeDev: false, park: [] },
 };
 const PARKABLE_GROUPS = ["admin", "core", "transitional", "public", "popup"];
 const VALID_PROFILES = new Set(Object.keys(PROFILES));
@@ -222,9 +228,16 @@ console.log(
 // When (dev) is included, `tsx` is listed FIRST so any plain page.tsx wins over
 // a page.dev.tsx in the same directory — guard for stray duplicates from
 // partial renames. No directory currently has both; this is defensive.
-const pageExtensions = INCLUDE_DEV
-  ? ["tsx", "ts", "jsx", "js", "dev.tsx", "dev.ts"]
-  : ["tsx", "ts", "jsx", "js"];
+// THE LAB (app/(lab)): `*.lab.tsx` pages are admitted in every profile that
+// includes (dev), so `/lab/<name>` previews on the local server inside the
+// normal root layout. Only the lab profile admits `*.labroot.tsx` — its own
+// thin root layout — and nothing else.
+const pageExtensions =
+  MATRX_PROFILE === "lab"
+    ? ["lab.tsx", "lab.ts", "labroot.tsx"]
+    : INCLUDE_DEV
+      ? ["tsx", "ts", "jsx", "js", "dev.tsx", "dev.ts", "lab.tsx", "lab.ts"]
+      : ["tsx", "ts", "jsx", "js"];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
