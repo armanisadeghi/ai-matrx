@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * Aspect-ratio option sets — recognising them and ordering them for a picker.
  *
@@ -70,8 +71,7 @@ export function ratioShapeName(value: string): string | null {
 
 /** Words that are not ratios ("auto", "match_input_image") read as words. */
 export function humanizeRatioWord(value: string): string {
-  const spaced = value.replace(/[_-]+/g, " ").trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  return humanizeIdentifier(value) || value;
 }
 
 export interface RatioGroups {

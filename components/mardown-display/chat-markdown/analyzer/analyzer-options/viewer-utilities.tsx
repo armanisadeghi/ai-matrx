@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
 import {
   Copy, Check, FileText, Code, Table, List, Hash, Type, BookOpen,
@@ -243,10 +244,10 @@ export const getSectionTypeLabel = (sectionType: string): string => {
   // Handle dynamic XML patterns
   if (sectionType.startsWith('xml_block_') && sectionType.endsWith('_section')) {
     const xmlType = sectionType.replace('xml_block_', '').replace('_section', '');
-    return `XML ${xmlType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Block`;
+    return `XML ${humanizeIdentifier(xmlType) || xmlType} Block`;
   }
   
-  return (labelMap[baseType] || baseType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())) + number;
+  return (labelMap[baseType] || (humanizeIdentifier(baseType) || baseType)) + number;
 };
 
 export const getSectionTypeIcon = (sectionType: string, size: number = 16) => {

@@ -1,5 +1,6 @@
 'use client';
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@ai-matrx/kit/media-query';
 import DefaultErrorFallback from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback';
@@ -53,7 +54,7 @@ const DynamicDataRenderer = ({ data, depth = 0 }: { data: unknown; depth?: numbe
         <div key={key} className="group">
           <div className="flex flex-col">
             <h3 className={`font-medium text-slate-800 dark:text-slate-200 ${depth === 0 ? 'text-lg capitalize border-b border-slate-200 dark:border-slate-700 pb-1 mb-2' : ''}`}>
-              {key.replace(/_/g, ' ')}
+              {humanizeIdentifier(key) || key}
             </h3>
             <div className="pl-2">
               <DynamicDataRenderer data={value} depth={depth + 1} />

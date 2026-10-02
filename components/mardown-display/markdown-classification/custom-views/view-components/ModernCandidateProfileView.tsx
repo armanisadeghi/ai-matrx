@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState, useEffect } from 'react';
 import { toast } from '@/lib/toast';
 import { Plus, Minus, Briefcase, MapPin, DollarSign, Calendar, Award, MessageSquare } from 'lucide-react';
@@ -158,7 +159,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: CandidateProfileD
                     <span className={expandedSections.has(section) ? 'text-indigo-500' : 'text-slate-500 dark:text-slate-400'}>
                       {sectionIcons[section]}
                     </span>
-                    {section.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {humanizeIdentifier(section) || section}
                   </h2>
                   <span className={expandedSections.has(section) ? 'text-indigo-500' : 'text-slate-500 dark:text-slate-400'}>
                     {expandedSections.has(section) ? (

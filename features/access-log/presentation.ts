@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/access-log/presentation.ts
 //
 // Turning stored door values into the words on the screen — and ONLY the words
@@ -19,7 +20,7 @@ export function recordKindLabel(token: string | null): string {
 /** A purpose slug as words, for a row read long after the picker is gone. */
 export function purposeLabel(purpose: string | null): string {
   if (!purpose) return "No reason recorded";
-  return purpose.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return humanizeIdentifier(purpose) || purpose;
 }
 
 /** An absolute timestamp — the audit is read years later, so never "3d ago". */

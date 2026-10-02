@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState, useEffect } from "react";
 import { toast } from "@/lib/toast";
 import {
@@ -189,9 +190,7 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
                     >
                       {sectionIcons[section]}
                     </span>
-                    {section
-                      .replace(/_/g, " ")
-                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                    {humanizeIdentifier(section) || section}
                   </h2>
                   <span
                     className={

@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/admin/shared-knowledge/packs/PackTopicsSection.tsx
 //
 // The pack's topic-tree slice WITH WORTH: each row is a seo.topic node and the
@@ -199,7 +200,7 @@ function TopicEditor({
               <SelectItem value={NONE}>—</SelectItem>
               {LEAD_QUALITIES.map((v) => (
                 <SelectItem key={v} value={v}>
-                  {v.replace(/_/g, " ")}
+                  {humanizeIdentifier(v) || v}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -215,7 +216,7 @@ function TopicEditor({
               <SelectItem value={NONE}>—</SelectItem>
               {SERVICE_MATCHES.map((v) => (
                 <SelectItem key={v} value={v}>
-                  {v.replace(/_/g, " ")}
+                  {humanizeIdentifier(v) || v}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -312,12 +313,12 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
                       <span className="font-mono text-[10px] text-muted-foreground">{t.slug}</span>
                       {t.lead_quality ? (
                         <Badge variant="outline" className="text-[10px]">
-                          {t.lead_quality.replace(/_/g, " ")}
+                          {humanizeIdentifier(t.lead_quality) || t.lead_quality}
                         </Badge>
                       ) : null}
                       {t.offering_match ? (
                         <Badge variant="outline" className="text-[10px]">
-                          {t.offering_match.replace(/_/g, " ")}
+                          {humanizeIdentifier(t.offering_match) || t.offering_match}
                         </Badge>
                       ) : null}
                     </div>

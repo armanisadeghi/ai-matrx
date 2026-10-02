@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
 import { Copy, Check, FileText, Hash, Type, List, Minus } from 'lucide-react';
 
@@ -133,7 +134,7 @@ const getSectionIcon = (sectionType: string) => {
 };
 
 const getSectionLabel = (sectionType: string) => {
-  return sectionType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return humanizeIdentifier(sectionType) || sectionType;
 };
 
 const renderContentItem = (item: ContentItem, index: number) => {

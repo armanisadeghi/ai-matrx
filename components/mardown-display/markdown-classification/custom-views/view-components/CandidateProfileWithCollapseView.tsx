@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState, useEffect } from "react";
 import FlexibleLoadingComponent from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -165,7 +166,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: { extracted?: Can
                 className="flex justify-between items-center cursor-pointer bg-slate-100 dark:bg-slate-800 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
               >
                 <h2 className="text-xl font-medium text-slate-900 dark:text-white capitalize">
-                  {section.replace(/_/g, " ")}
+                  {humanizeIdentifier(section) || section}
                 </h2>
                 <span className="text-slate-500 dark:text-slate-400">
                   {expandedSection === section ? (

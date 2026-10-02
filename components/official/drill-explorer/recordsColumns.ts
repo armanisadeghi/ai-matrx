@@ -1,3 +1,4 @@
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // components/official/drill-explorer/recordsColumns.ts — THE RECORDS TABLE'S WORDS
 // (lane DRILL-WAVE1-FIXES, VERIFY-DRILL-WAVE1 F4; program DRILL-FINISH decision 14).
 //
@@ -23,7 +24,7 @@ export function recordsColumnHeader(def: Pick<DrillDefinition, "dimensions">, re
   if (declared) return declared;
   const dim = recordsColumnDimension(def, column);
   const label = dim ? def.dimensions.find((d) => d.key === dim)?.label : null;
-  return label ?? column.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  return label ?? (humanizeIdentifier(column) || column);
 }
 
 /** An id cell's name, read through the Dimension the column feeds; null when it has none. */
