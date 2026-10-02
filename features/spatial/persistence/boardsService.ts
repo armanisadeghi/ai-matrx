@@ -22,7 +22,12 @@
 //   - A save selects back only `version`; the saved fingerprint is computed
 //     from what was written (the whole board used to come back on every save).
 //   - Every failure is a `BoardError`: a sentence for a person plus a remedy.
-//   - Soft delete only (`deleted_at`). The table has no archive columns.
+//   - Soft delete only (`deleted_at`). The table has no archive columns, so
+//     the list's Archived filter maps onto `deleted_at` and Restore goes
+//     through Trash's one door (`entity_undelete`, `restoreFromTrash`).
+//   - ONE home board per person: the oldest live row with `settings.home`.
+//     Every reader picks it the same way (`pickHomeId`), and a restore never
+//     brings back a second one (`restoreBoard`).
 
 import type { MaybeSingleResponse } from "@ai-matrx/data";
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
@@ -34,6 +39,8 @@ import { ensureOrganizationContext } from "@/lib/organization/organization-gate"
 import { whenOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import type { Database, Json } from "@/types/database.types";
+import type { ArchiveFilterValue } from "@ai-matrx/design-system";
+import { restoreFromTrash } from "@/features/trash/service";
 import {
   parseBoardDocument,
   serializeBoardDocument,
@@ -54,7 +61,9 @@ export const DEFAULT_BOARD_TITLE = "Untitled board";
 const BOARD_COLUMNS =
   "id, organization_id, title, description, camera, nodes, edges, settings, version, created_by, created_at, updated_at, last_opened_at" as const;
 const LIST_COLUMNS =
-  "id, organization_id, title, nodes, settings, created_at, updated_at, last_opened_at" as const;
+  "id, organization_id, title, nodes, settings, created_at, updated_at, last_opened_at, deleted_at" as const;
+/** The entity token Trash and `entity_undelete` know this table by. */
+export const BOARD_TOKEN = "spatial_board";
 
 // ── Errors ───────────────────────────────────────────────────────────────────
 
@@ -176,12 +185,22 @@ export function isHomeSettings(settings: Json): boolean {
   return isJsonObject(settings) && settings.home === true;
 }
 
-/** Settings for a copy: everything except the home flag. */
+/** `settings.meeting_id`: the meeting this board is the person's board of (`getMeetingBoard`). */
+export const MEETING_BOARD_SETTING = "meeting_id";
+
+export function meetingIdOfSettings(settings: Json): string | null {
+  if (!isJsonObject(settings)) return null;
+  const id = settings[MEETING_BOARD_SETTING];
+  return typeof id === "string" && id ? id : null;
+}
+
+/** Settings for a copy: everything except the home flag and the meeting link
+ * (a copy is an ordinary board — never a second home, never the meeting's board). */
 export function settingsForCopy(settings: Json): JsonObject {
   if (!isJsonObject(settings)) return {};
   const out: JsonObject = {};
   for (const [k, v] of Object.entries(settings)) {
-    if (k === "home" || v === undefined) continue;
+    if (k === "home" || k === MEETING_BOARD_SETTING || v === undefined) continue;
     out[k] = v;
   }
   return out;
@@ -228,6 +247,8 @@ export interface BoardListRow {
   title: string;
   organization_id: string;
   is_home: boolean;
+  /** Deleted (`deleted_at` set): in Trash and the list's Archived filter, restorable. */
+  archived: boolean;
   tile_count: number;
   created_at: string;
   updated_at: string;
@@ -271,6 +292,11 @@ export function boardHref(board: { id: string; is_home?: boolean; isHome?: boole
   return board.is_home === true || board.isHome === true ? "/board" : `/board/${board.id}`;
 }
 
+/** A list row's link: none while the board is deleted (it opens nowhere until restored). */
+export function boardRowHref(row: Pick<BoardListRow, "id" | "is_home" | "archived">): string | undefined {
+  return row.archived ? undefined : boardHref(row);
+}
+
 /**
  * The organization a board write acts in, through the gate. On a cold boot the
  * selection may not have landed yet, so we wait for the boot's own answer
@@ -296,10 +322,33 @@ export async function getBoard(id: string): Promise<LoadedBoard | null> {
   return data ? toLoadedBoard(data) : null;
 }
 
-/** Every board you made (VIEW LAW scope `mine`), newest edit first. Complete, or it throws. */
-export async function listBoards(): Promise<BoardListRow[]> {
+/**
+ * The ONE home among a person's rows: the oldest LIVE row whose settings say home — the same row
+ * `getHomeBoard` opens. A second flagged row (one restored from /trash while a newer home was
+ * made) is an ordinary board everywhere. Exported for tests.
+ */
+export function pickHomeId(
+  rows: readonly { id: string; settings: Json; created_at: string; deleted_at: string | null }[],
+): string | null {
+  let home: { id: string; created_at: string } | null = null;
+  for (const r of rows) {
+    if (r.deleted_at !== null || !isHomeSettings(r.settings)) continue;
+    if (!home || r.created_at < home.created_at || (r.created_at === home.created_at && r.id < home.id)) home = r;
+  }
+  return home?.id ?? null;
+}
+
+/**
+ * Every board you made (VIEW LAW scope `mine`), newest edit first. Complete, or it throws.
+ * `archived` is the list's Archived filter: `active` (default) live boards, `archived` deleted
+ * ones, `all` both. The home flag is decided over ALL your live boards, whatever is listed.
+ */
+export async function listBoards(archived: ArchiveFilterValue = "active"): Promise<BoardListRow[]> {
   const userId = requireUserId();
-  let rows: Pick<BoardRow, "id" | "organization_id" | "title" | "nodes" | "settings" | "created_at" | "updated_at" | "last_opened_at">[];
+  let rows: Pick<
+    BoardRow,
+    "id" | "organization_id" | "title" | "nodes" | "settings" | "created_at" | "updated_at" | "last_opened_at" | "deleted_at"
+  >[];
   try {
     rows = await readAllRows(
       ({ from, to }) =>
@@ -307,7 +356,6 @@ export async function listBoards(): Promise<BoardListRow[]> {
           .from(TABLE)
           .select(LIST_COLUMNS, { count: "exact" })
           .eq("created_by", userId)
-          .is("deleted_at", null)
           .order("updated_at", { ascending: false })
           .order("id", { ascending: true })
           .range(from, to),
@@ -316,16 +364,20 @@ export async function listBoards(): Promise<BoardListRow[]> {
   } catch (error) {
     throw readFailed("your boards", error);
   }
-  return rows.map((r) => ({
-    id: r.id,
-    title: r.title,
-    organization_id: r.organization_id,
-    is_home: isHomeSettings(r.settings),
-    tile_count: countTiles(r.nodes),
-    created_at: r.created_at,
-    updated_at: r.updated_at,
-    last_opened_at: r.last_opened_at,
-  }));
+  const homeId = pickHomeId(rows);
+  return rows
+    .filter((r) => (archived === "all" ? true : archived === "archived" ? r.deleted_at !== null : r.deleted_at === null))
+    .map((r) => ({
+      id: r.id,
+      title: r.title,
+      organization_id: r.organization_id,
+      is_home: r.id === homeId,
+      archived: r.deleted_at !== null,
+      tile_count: countTiles(r.nodes),
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+      last_opened_at: r.last_opened_at,
+    }));
 }
 
 // One home lookup/creation per person at a time: a double-mounted effect or two
@@ -360,6 +412,56 @@ export async function getHomeBoard(organizationId: string | null): Promise<Loade
     return insertBoard({ organizationId: orgId, userId, title: HOME_BOARD_TITLE, settings: { home: true } });
   })().finally(() => homeInFlight.delete(userId));
   homeInFlight.set(userId, work);
+  return work;
+}
+
+// One meeting-board lookup/creation per person per meeting at a time (the
+// board view mounting twice must not make two boards for one meeting).
+const meetingInFlight = new Map<string, Promise<LoadedBoard>>();
+
+/**
+ * Your board for ONE meeting: the row whose `settings.meeting_id` is that
+ * meeting, made by you, not deleted — the oldest one wins. A meeting's board is
+ * the viewer's own (like the home board), in whatever organization it was
+ * made. When there is none it is created with `seed` (the meeting's notes) in
+ * `organizationId` — the organization new work is filed in; null → the
+ * organization gate asks the person.
+ *
+ * The link is a setting, not a column: `workspace.spatial_boards` has no
+ * meeting column and no association is registered for it (yet).
+ */
+export async function getMeetingBoard(input: {
+  meetingId: string;
+  title: string;
+  organizationId: string | null;
+  seed: BoardDocument;
+}): Promise<LoadedBoard> {
+  const userId = requireUserId();
+  const flightKey = `${userId}|${input.meetingId}`;
+  const existing = meetingInFlight.get(flightKey);
+  if (existing) return existing;
+  const work = (async () => {
+    const { data, error } = await db
+      .from(TABLE)
+      .select(BOARD_COLUMNS)
+      .eq("created_by", userId)
+      .is("deleted_at", null)
+      .contains("settings", { [MEETING_BOARD_SETTING]: input.meetingId })
+      .order("created_at", { ascending: true })
+      .limit(1);
+    if (error) throw readFailed("this meeting's board", error);
+    const found = data?.[0];
+    if (found) return toLoadedBoard(found);
+    const orgId = await resolveOrganization(input.organizationId);
+    return insertBoard({
+      organizationId: orgId,
+      userId,
+      title: normalizeTitle(input.title || DEFAULT_BOARD_TITLE),
+      settings: { [MEETING_BOARD_SETTING]: input.meetingId },
+      columns: documentColumns(input.seed),
+    });
+  })().finally(() => meetingInFlight.delete(flightKey));
+  meetingInFlight.set(flightKey, work);
   return work;
 }
 
@@ -473,6 +575,60 @@ export async function deleteBoard(id: string): Promise<void> {
   } catch (error) {
     throw writeFailed("delete the board", error);
   }
+}
+
+/**
+ * Bring a deleted board back, through Trash's one restore door (`entity_undelete`). A deleted
+ * home board that comes back while you already have a live home loses its home flag FIRST, so
+ * there is never a second home board — not even for an instant. Returns the restored row's
+ * home state, for its link.
+ */
+export async function restoreBoard(id: string): Promise<{ id: string; is_home: boolean }> {
+  const userId = requireUserId();
+  const { data: row, error } = await db
+    .from(TABLE)
+    .select("id, settings, deleted_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw readFailed("the board", error);
+  if (!row) {
+    throw new BoardError("not_found", "That board no longer exists.", "Refresh the list to see your boards.");
+  }
+  if (row.deleted_at === null) return { id, is_home: false };
+  let isHome = isHomeSettings(row.settings);
+  if (isHome) {
+    const { data: live, error: homeError } = await db
+      .from(TABLE)
+      .select("id")
+      .eq("created_by", userId)
+      .is("deleted_at", null)
+      .contains("settings", { home: true })
+      .neq("id", id)
+      .limit(1);
+    if (homeError) throw readFailed("your home board", homeError);
+    if (live && live.length > 0) {
+      try {
+        await writeOne(
+          db.from(TABLE).update({ settings: settingsForCopy(row.settings) }).eq("id", id).select("id"),
+          { action: "update", noun: "board" },
+        );
+      } catch (writeError) {
+        throw writeFailed("restore the board", writeError);
+      }
+      isHome = false;
+    }
+  }
+  try {
+    await restoreFromTrash(BOARD_TOKEN, id);
+  } catch (restoreError) {
+    throw new BoardError(
+      "write_failed",
+      restoreError instanceof Error ? restoreError.message : "The board could not be restored.",
+      "Try again.",
+      restoreError,
+    );
+  }
+  return { id, is_home: isHome };
 }
 
 /** Stamp `last_opened_at`. Returns the row's new `version`. */

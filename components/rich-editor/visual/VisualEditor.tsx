@@ -125,9 +125,25 @@ export function VisualEditor({
   };
 
   const [extensions] = useState(() => createVisualExtensions({ placeholder, shell }));
+  // Tiptap destroys its editor when this component's effects pause without an
+  // unmount (a board tile that sleeps under React's Activity) and builds a new
+  // one from `content` when they resume. Built from `load`, the new editor
+  // showed the text given at mount and the next keystroke reported it over
+  // every later edit. A re-created editor loads the text last reported (the
+  // pause delivered any pending keystrokes) with a baseline of its own.
+  const editorsBuilt = useRef(0);
+  const reload = useRef<typeof load | null>(null);
+  const plan = () => (reload.current ?? load).plan;
   const editor = useEditor({
     extensions,
     content: load.json,
+    onBeforeCreate: ({ editor: next }) => {
+      editorsBuilt.current += 1;
+      if (editorsBuilt.current === 1) return;
+      reload.current = buildVisualDocument(lastReported.current, HEADLESS_SCHEMA);
+      baseline.current = null;
+      next.setOptions({ content: reload.current.json });
+    },
     immediatelyRender: false,
     editable: !context.readOnly,
     editorProps: {
@@ -144,13 +160,13 @@ export function VisualEditor({
       // then the baseline was already captured from the doc BEFORE that keystroke
       // (onUpdate below) and must not be replaced by the edited doc, or the edit
       // reads as "unchanged" and is silently dropped on save (verify-RC-B4 R6-4).
-      if (!baseline.current) baseline.current = captureBaseline(created.state.doc, load.plan);
-      onLoadStats?.(load.plan.stats);
+      if (!baseline.current) baseline.current = captureBaseline(created.state.doc, plan());
+      onLoadStats?.(plan().stats);
     },
     onUpdate: ({ editor: updated, transaction }) => {
       // The first edit arrived before "create": the loaded document is the doc
       // this transaction started from.
-      if (!baseline.current) baseline.current = captureBaseline(transaction.before, load.plan);
+      if (!baseline.current) baseline.current = captureBaseline(transaction.before, plan());
       if (timer.current !== null) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {
         timer.current = null;

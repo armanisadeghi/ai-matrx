@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
+import { aiAnswerOpenInput } from "./canvas/aiAnswerKind";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -246,11 +248,7 @@ export function AiVisibilityWorkspace({
   const [countryIso, setCountryIso] = useState("US");
   const [city, setCity] = useState("");
   const [forceRefresh, setForceRefresh] = useState(false);
-  const [openAnswer, setOpenAnswer] = useState<{
-    engine: AiVisibilityEngine;
-    answer: string;
-    model: string;
-  } | null>(null);
+  const canvas = useOptionalCanvas();
   const [engines, setEngines] = useState<AiVisibilityEngine[]>(
     AI_VISIBILITY_ENGINES.map((item) => item.id),
   );
@@ -989,11 +987,18 @@ export function AiVisibilityWorkspace({
               );
               const answer = live?.answerText || saved?.answer_text || "";
               if (!answer) return;
-              setOpenAnswer({
-                engine: engine.id,
-                answer,
-                model: live?.modelName ?? saved?.model_name ?? "Answer engine",
-              });
+              // The tab is the answer's own: the saved response row, or the
+              // live run's response id, or this run's engine slot.
+              const answerId =
+                saved?.id ?? live?.responseId ?? `${run.runId ?? latestCommandId ?? "run"}:${engine.id}`;
+              openCanvasItem(
+                canvas,
+                aiAnswerOpenInput(answerId, {
+                  engine: engineLabel(engine.id),
+                  model: live?.modelName ?? saved?.model_name ?? null,
+                  answer,
+                }),
+              );
             }}
           />
         ))}
@@ -1074,18 +1079,6 @@ export function AiVisibilityWorkspace({
         </section>
       ) : null}
 
-      {openAnswer ? (
-        <SidePanelSurface
-          title={`${engineLabel(openAnswer.engine)} answer`}
-          description={openAnswer.model}
-          onClose={() => setOpenAnswer(null)}
-          defaultWidth={620}
-        >
-          <div className="p-5 text-sm leading-relaxed">
-            <BasicMarkdownContent imagePolicy="ai" content={openAnswer.answer} showCopyButton />
-          </div>
-        </SidePanelSurface>
-      ) : null}
     </main>
   );
 }

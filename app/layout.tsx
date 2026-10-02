@@ -1,6 +1,7 @@
 // app/layout.tsx
 // Package defaults load first; globals.css maps them onto this app's semantic
 // theme tokens, and the structural sheet then consumes that host-owned map.
+import { BoardEmbedBootScript } from "@/features/shell/components/BoardEmbedBootScript";
 import "@ai-matrx/messaging/tokens.css";
 // @ai-matrx/meet, same three-step contract: package defaults, then this app's
 // brand mapping in globals.css, then the structural sheet below.
@@ -79,6 +80,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                     yet, so this is the only hook available. After React boots,
                     global-error.tsx and ErrorBoundaryView take over. */}
         <ChunkRecoveryBootScript />
+        {/* An app page placed on a board as a tile drops the shell chrome before paint. */}
+        <BoardEmbedBootScript />
         {/* Prevent autofill/password manager interference */}
         <meta name="autofill-off" content="true" />
         <meta name="password-manager-off" content="true" />

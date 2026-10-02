@@ -57,7 +57,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import {
-  ExternalLink,
   Folder,
   Layers,
   Inbox,
@@ -88,22 +87,21 @@ import { QuickTasksToolbarGroup } from "./QuickTasksToolbarGroup";
 import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import type { TaskFilterType } from "../types";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOverlayData } from "@/lib/redux/slices/overlaySlice";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
-interface QuickTasksSheetProps {
-  onClose?: () => void;
-  className?: string;
+interface QuickTasksPrefill {
+  title?: string;
+  description?: string;
+  metadataInfo?: string;
 }
 
-interface QuickTasksOverlayData {
-  prePopulate?: {
-    title?: string;
-    description?: string;
-    metadataInfo?: string;
-  };
+interface QuickTasksSheetProps {
   className?: string;
+  /** A task to pre-fill the capture form with — applied once. */
+  prePopulate?: QuickTasksPrefill | null;
+  /** Called after `prePopulate` was applied, so the host can drop it. */
+  onPrePopulated?: () => void;
 }
 
 /** Hollow circle glyph for the "Incomplete" filter (module-scope, stable). */
@@ -121,7 +119,7 @@ const Circle = ({ size, className }: { size: number; className?: string }) => (
   </svg>
 );
 
-function QuickTasksSheetContent({ className }: { className?: string }) {
+function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: QuickTasksSheetProps) {
   // Keep the shared nowMinute clock ticking while this overlay is open — it
   // feeds selectFilteredTasks (snooze expiry, date windows) and only /tasks
   // mounts the tick otherwise (D129).
@@ -160,34 +158,29 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
   // sidebar. The sidebar is one panel-toggle away.
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Access overlay data for pre-population (data payload only — not the wrapper).
-  const overlayData = useAppSelector(
-    (state) =>
-      selectOverlayData(state, "quickTasks") as QuickTasksOverlayData | null,
-  );
-
-  // Pre-populate task fields from overlay data (one-time only). Seeding local
-  // form state from the Redux overlay payload the first time it's available is
+  // Pre-populate task fields from the host's prefill (one-time only). Seeding
+  // local form state from the host payload the first time it's available is
   // a legitimate external-store sync — guarded by `hasPrePopulated` so it runs
   // once — not a render cascade.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (overlayData?.prePopulate && !hasPrePopulated) {
-      const { title, description, metadataInfo } = overlayData.prePopulate;
+    if (prePopulate && !hasPrePopulated) {
+      const { title, description, metadataInfo } = prePopulate;
 
       if (title) {
         dispatch(setNewTaskTitle(title));
       }
 
       if (description || metadataInfo) {
-        const fullDescription = description + (metadataInfo || "");
+        const fullDescription = (description ?? "") + (metadataInfo || "");
         setQuickAddDescription(fullDescription);
         setShowQuickAddDescription(true);
       }
 
       setHasPrePopulated(true);
+      onPrePopulated?.();
     }
-  }, [overlayData, hasPrePopulated, dispatch]);
+  }, [prePopulate, hasPrePopulated, dispatch, onPrePopulated]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // The project a new task lands in: the active project, else the first
@@ -466,23 +459,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
             className="bg-background"
           />
 
-          <div className="ml-auto pl-2 border-l border-border">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 rounded-full"
-                    onClick={() => window.open("/tasks", "_blank")}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Open in New Tab</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
+
         </div>
 
         {/* Main Content Area - Single View: List OR Details */}
@@ -678,9 +655,9 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
  * QuickTasksSheet - Efficient task manager for FloatingSheet
  * Follows the pattern established by features/notes/actions/QuickNotesSheet
  */
-export function QuickTasksSheet({ onClose, className }: QuickTasksSheetProps) {
+export function QuickTasksSheet(props: QuickTasksSheetProps) {
   // Idempotent: fires hierarchy RPC only when status === 'idle'. Shared with
   // every other consumer in the app — no duplicate fetching.
   useNavTree();
-  return <QuickTasksSheetContent className={className} />;
+  return <QuickTasksSheetContent {...props} />;
 }

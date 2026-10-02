@@ -9,8 +9,10 @@
  *   work-items.tsx     chat · note · file
  *   document-items.tsx document (the /documents rich-text editor)
  *   feature-items.tsx  task · War Room · meeting · workflow run · research…
+ *   meeting-items.tsx  meeting notes (one part of a meeting: transcript, decisions…)
  *   data-items.tsx     data table · data record (the record store, /data-v2)
  *   content-items.tsx  web page · image · write-up · label
+ *   page-items.tsx     any page of the app, framed (until its feature is a native item)
  */
 
 import type { NodeSource } from "../board/document";
@@ -20,8 +22,10 @@ import { FEATURE_ITEMS } from "./feature-items";
 import { CONTENT_ITEMS } from "./content-items";
 import { DATA_ITEMS } from "./data-items";
 import { DOCUMENT_ITEMS } from "./document-items";
+import { MEETING_ITEMS } from "./meeting-items";
+import { PAGE_ITEMS } from "./page-items";
 
-export const BOARD_ITEM_TYPES: readonly BoardItemType[] = [...WORK_ITEMS, ...DOCUMENT_ITEMS, ...DATA_ITEMS, ...FEATURE_ITEMS, ...CONTENT_ITEMS];
+export const BOARD_ITEM_TYPES: readonly BoardItemType[] = [...WORK_ITEMS, ...DOCUMENT_ITEMS, ...DATA_ITEMS, ...FEATURE_ITEMS, ...MEETING_ITEMS, ...CONTENT_ITEMS, ...PAGE_ITEMS];
 
 export function itemTypeFor(source: NodeSource): BoardItemType | null {
   return BOARD_ITEM_TYPES.find((t) => t.matches(source)) ?? null;

@@ -5,7 +5,8 @@
 // once indexed — engage with it via the canonical Knowledge document viewer
 // (LibraryPreviewPage embedded: chunks, raw/cleaned text, and in-document
 // search that highlights matches + summarizes which pages they're on). Hosted
-// in a pop-out SidePanelSurface via the `noteKnowledgePanel` overlay.
+// in a canvas tab (features/notes/canvas/noteKnowledgeKind.tsx). Indexing
+// extracts the note's text, splits and embeds it, and runs entity recognition.
 
 import { Database, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -43,11 +44,8 @@ export function NoteKnowledgePanel({ noteId }: { noteId: string }) {
           <Database className="h-4 w-4 text-primary" /> Not in the knowledge base
           yet
         </div>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Indexing extracts this note&apos;s text, splits it into segments,
-          embeds them, and runs entity recognition (NER) — so agents and search
-          can retrieve it. You&apos;ll then be able to test what it returns right
-          here.
+        <p className="text-xs text-muted-foreground">
+          Index it so agents and search can find it.
         </p>
         <ProcessForRagButton
           sourceKind="note"

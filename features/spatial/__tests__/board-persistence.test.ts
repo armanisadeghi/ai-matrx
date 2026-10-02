@@ -239,6 +239,7 @@ describe("board list service", () => {
     title,
     organization_id: "o1",
     is_home: false,
+    archived: false,
     tile_count: tiles,
     created_at: updated,
     updated_at: updated,

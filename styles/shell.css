@@ -2245,6 +2245,38 @@ body:has(.shell-root[data-pathname^="/administration"]) {
 }
 
 /* ---------------------------------------------------------------------------
+   13d. Board embed — `<html data-board-embed>`
+
+   An app page placed on a /board as a tile (features/spatial/items/
+   page-items.tsx) is the page alone: the board around it is the chrome, so the
+   shell's sidebar, header, account rail, phone trigger and dock step aside and
+   the main area fills the frame. Stamped before paint by
+   features/shell/components/BoardEmbedBootScript.tsx, only when the page is
+   framed by the app's own origin.
+   --------------------------------------------------------------------------- */
+html[data-board-embed] .shell-root,
+html[data-board-embed] .shell-root:has(> #shell-sidebar-toggle:checked) {
+  --shell-header-h: 0px;
+  --shell-header-clearance: 0px;
+  grid-template-columns: 1fr;
+  grid-template-rows: 0 1fr;
+  grid-template-areas:
+    "header"
+    "main";
+}
+html[data-board-embed] .shell-header,
+html[data-board-embed] .shell-sidebar,
+html[data-board-embed] .shell-user-block,
+html[data-board-embed] .shell-mobile-trigger,
+html[data-board-embed] .shell-dock {
+  display: none !important;
+}
+html[data-board-embed] .shell-main {
+  margin-top: 0;
+  height: 100dvh;
+}
+
+/* ---------------------------------------------------------------------------
    14. Mobile Dock — iOS-style Bottom Navigation
    --------------------------------------------------------------------------- */
 

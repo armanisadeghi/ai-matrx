@@ -5,7 +5,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { DATE_SORT_WORDS, timeCell, Muted, type EntityColumnSpec } from "@/lib/entity-list/columns";
-import { boardHref, type BoardListRow } from "../persistence/boardsService";
+import { boardRowHref, type BoardListRow } from "../persistence/boardsService";
 
 export const BOARD_COLUMNS: EntityColumnSpec<BoardListRow>[] = [
   {
@@ -18,7 +18,7 @@ export const BOARD_COLUMNS: EntityColumnSpec<BoardListRow>[] = [
       header: "Name",
       filter: "text",
       // THE DOOR LAW: the name is a real link (keyboard, new tab).
-      href: boardHref,
+      href: boardRowHref,
       editable: "string",
       editTrigger: "pencil",
       cell: (row) => (
@@ -27,6 +27,11 @@ export const BOARD_COLUMNS: EntityColumnSpec<BoardListRow>[] = [
           {row.is_home && (
             <Badge variant="outline" className="shrink-0 py-0 text-[10px]">
               Home
+            </Badge>
+          )}
+          {row.archived && (
+            <Badge variant="outline" className="shrink-0 py-0 text-[10px] text-muted-foreground">
+              Archived
             </Badge>
           )}
         </div>

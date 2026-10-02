@@ -5,7 +5,7 @@
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { boardHref, renameBoard, type BoardListRow } from "../persistence/boardsService";
+import { BoardError, boardRowHref, renameBoard, type BoardListRow } from "../persistence/boardsService";
 import { BOARD_COLUMNS } from "./columns";
 import { BOARD_LIST_SCOPES, createBoardListService } from "./listService";
 import { useBoardRowActions } from "./useBoardRowActions";
@@ -25,15 +25,20 @@ export const boardListConfig: EntityListConfig<BoardListRow> = {
   getRowId: (row) => row.id,
   getRowName: (row) => row.title,
   getRowEntity: (row) => ({ type: "spatial_board", id: row.id, title: row.title }),
-  door: { hrefFor: boardHref },
+  door: { hrefFor: boardRowHref },
   useRowActions: useBoardRowActions,
   edit: {
     save: async (row, edit) => {
+      if (row.archived) {
+        throw new BoardError("not_found", "This board is deleted.", "Restore it to rename it.");
+      }
       if (typeof edit.title === "string") await renameBoard(row.id, edit.title);
     },
   },
-  // The table has no archive columns: a board is live or deleted.
-  supportsArchived: false,
+  // THE ARCHIVED-ITEMS LAW: the table has no archive columns, so the Archived
+  // filter is `deleted_at` (listService passes `query.archived` to the read);
+  // a deleted board's row menu offers Restore.
+  supportsArchived: true,
   facetSections: [],
   searchPlaceholder: "Search boards by name…",
   copy: {
@@ -43,7 +48,7 @@ export const boardListConfig: EntityListConfig<BoardListRow> = {
     rowKind: "board",
     listKind: "board-list",
     humanRow: (row) =>
-      `${row.title}${row.is_home ? " (home)" : ""} — ${row.tile_count} tiles, edited ${formatRelativeTime(row.updated_at)}`,
+      `${row.title}${row.is_home ? " (home)" : ""}${row.archived ? " (deleted)" : ""} — ${row.tile_count} tiles, edited ${formatRelativeTime(row.updated_at)}`,
     showRow: false,
     showToolbar: false,
   },

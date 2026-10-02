@@ -27,6 +27,7 @@ import {
   createQuickDataScope,
 } from "@/features/surfaces/manifests/quick-data.manifest";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 interface QuickDataSheetProps {
   onClose?: () => void;
@@ -137,9 +138,7 @@ export function QuickDataSheet({
   if (loading) {
     body = (
       <div className={cn("flex items-center justify-center h-full", className)}>
-        <div className="text-sm text-zinc-500 dark:text-zinc-400">
-          Loading tables...
-        </div>
+        <SuspenseLoader message="Loading your tables…" />
       </div>
     );
   } else if (error) {

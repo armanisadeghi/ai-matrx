@@ -74,7 +74,7 @@ export function PeopleStrip() {
       data-spatial-chrome
       data-meet-people-strip
       className={cn(
-        "absolute z-20 flex max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur",
+        "pointer-events-auto absolute z-20 flex max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur",
         // Phones: below the board toolbar; wider screens: the top-right corner.
         position === null && "right-4 top-20 md:top-4",
       )}

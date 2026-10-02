@@ -1,0 +1,44 @@
+"use client";
+
+/**
+ * Quick Scribe as a canvas tab — voice capture from any page. A live
+ * recording cannot survive a reload, so the tab does not come back after one;
+ * it stays mounted while another tab is in front so a recording keeps running.
+ */
+
+import { Mic } from "lucide-react";
+import { defineCanvasKind } from "@ai-matrx/canvas/react";
+import type { CanvasJson } from "@ai-matrx/canvas";
+import { useToolOpener } from "@/features/canvas/host/toolCanvas";
+
+export const QUICK_SCRIBE_KIND = "quick-scribe";
+const TITLE = "Quick Scribe";
+
+export function readScribeSessionId(data: CanvasJson | undefined | null): string | undefined {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return undefined;
+  return typeof data.sessionId === "string" && data.sessionId ? data.sessionId : undefined;
+}
+
+export const quickScribeKind = defineCanvasKind<CanvasJson>({
+  id: QUICK_SCRIBE_KIND,
+  label: TITLE,
+  icon: Mic,
+  load: () => import("./QuickScribeCanvasView"),
+  restore: false,
+  keepAlive: true,
+});
+
+export interface OpenQuickScribeOptions {
+  /** Resume an existing Scribe session instead of minting one. */
+  sessionId?: string;
+}
+
+/** Opens Quick Scribe in the canvas (or focuses the running capture). */
+export function useOpenQuickScribe() {
+  return useToolOpener((options: OpenQuickScribeOptions = {}) => ({
+    kind: QUICK_SCRIBE_KIND,
+    key: "default",
+    title: TITLE,
+    data: { sessionId: options.sessionId ?? null },
+  }));
+}

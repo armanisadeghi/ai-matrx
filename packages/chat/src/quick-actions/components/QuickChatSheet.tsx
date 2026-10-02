@@ -33,19 +33,52 @@ import type { AnyMandateKey } from "@host/features/mandates/mandate-key";
 import { useComposerMode } from "../../agents/components/inputs/smart-input/composer/useComposerMode";
 import { useCompactInputMaxHeight } from "../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 
+/** The conversation on screen, reported so a host can bring it back after a reload. */
+export interface QuickChatConversationRef {
+  conversationId: string;
+  agentId: string;
+}
+
 interface QuickChatSheetProps {
   className?: string;
-  /** A live conversation handed off by another canonical composer. */
+  /**
+   * A conversation to open: one handed off live by another canonical composer,
+   * or (with `resumeAgentId`) one a host remembered and is bringing back.
+   */
   initialConversationId?: string;
+  /**
+   * The agent of a remembered `initialConversationId` that is not in memory —
+   * the sheet resumes it through the canonical reopen sequence instead of
+   * waiting for a live handoff.
+   */
+  resumeAgentId?: string;
+  /**
+   * Who draws the controls (history toggle, new chat). `"inline"` (default)
+   * draws the sheet's own row; `"host"` draws none and takes `showHistory` /
+   * `newChatSignal` from the host's chrome (a canvas tab header).
+   */
+  chrome?: "inline" | "host";
+  /** `chrome="host"`: whether the conversation history column is open. */
+  showHistory?: boolean;
+  /** `chrome="host"`: each change starts a fresh conversation. */
+  newChatSignal?: number;
+  /** Separates two sheets mounted at once (two canvas tabs) — surface + launcher keys. */
+  instanceKey?: string;
+  /** Called whenever the conversation on screen changes. */
+  onConversationChange?: (ref: QuickChatConversationRef) => void;
 }
 
 const SOURCE_FEATURE = "chat";
 const HISTORY_SCOPE = "quick-chat";
 /** Registry key for fork/retry routing — distinct from per-conversation focus keys. */
-const QUICK_CHAT_PANEL_SURFACE = "quick-chat:panel";
+function panelSurfaceKey(instanceKey: string): string {
+  return instanceKey ? `quick-chat:panel:${instanceKey}` : "quick-chat:panel";
+}
 
-function liveSurfaceKey(agentId: string, session: number): string {
-  return `quick-chat:live:${agentId}:${session}`;
+function liveSurfaceKey(agentId: string, session: number, instanceKey: string): string {
+  return instanceKey
+    ? `quick-chat:live:${instanceKey}:${agentId}:${session}`
+    : `quick-chat:live:${agentId}:${session}`;
 }
 
 function loadedSurfaceKey(conversationId: string): string {
@@ -85,17 +118,18 @@ function loadedSurfaceKey(conversationId: string): string {
  * body mounts. Loud on failure — a skeleton while resolving, an error panel if
  * the mandate can't resolve; never a hardcoded fallback agent.
  */
-export function QuickChatSheet({
-  className,
-  initialConversationId,
-}: QuickChatSheetProps) {
+export function QuickChatSheet(props: QuickChatSheetProps) {
+  const { className, initialConversationId, resumeAgentId } = props;
   const handedOffAgentId = useAppSelector((state) =>
     initialConversationId
       ? state.conversations.byConversationId[initialConversationId]?.agentId
       : undefined,
   );
   const { mandate, loading, error, organizationPending } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
-  if (loading || (initialConversationId && !handedOffAgentId)) {
+  // A remembered conversation is resumed by the body; only a live handoff
+  // waits here for its conversation shell.
+  const waitingForHandoff = Boolean(initialConversationId && !handedOffAgentId && !resumeAgentId);
+  if (loading || waitingForHandoff) {
     return (
       <div className={cn("flex h-full flex-col overflow-hidden", className)}>
         <ChatRoomSkeleton />
@@ -133,9 +167,9 @@ export function QuickChatSheet({
   }
   return (
     <QuickChatSheetBody
-      className={className}
-      initialAgentId={handedOffAgentId || mandate.agentId}
-      initialConversationId={initialConversationId}
+      {...props}
+      initialAgentId={handedOffAgentId || resumeAgentId || mandate.agentId}
+      needsResume={Boolean(initialConversationId && !handedOffAgentId)}
     />
   );
 }
@@ -144,8 +178,15 @@ function QuickChatSheetBody({
   className,
   initialAgentId,
   initialConversationId,
-}: QuickChatSheetProps & { initialAgentId: string }) {
+  needsResume,
+  chrome = "inline",
+  showHistory: hostShowHistory = false,
+  newChatSignal = 0,
+  instanceKey = "",
+  onConversationChange,
+}: QuickChatSheetProps & { initialAgentId: string; needsResume: boolean }) {
   const dispatch = useAppDispatch();
+  const panelSurface = panelSurfaceKey(instanceKey);
 
   // The wrapper waits for a handed conversation's shell and passes its agent;
   // the generic Quick Chat mandate is only the default for a genuinely fresh
@@ -163,7 +204,19 @@ function QuickChatSheetBody({
   const [loadedConversationId, setLoadedConversationId] = useState<
     string | null
   >(initialConversationId ?? null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [inlineShowHistory, setShowHistory] = useState(false);
+  const showHistory = chrome === "host" ? hostShowHistory : inlineShowHistory;
+  // A remembered conversation is being brought back (reload of a canvas tab).
+  const [resuming, setResuming] = useState(needsResume);
+  // The host's "New chat": a changed signal starts a fresh conversation —
+  // adjusted during render (the sanctioned "previous prop" pattern).
+  const [seenNewChatSignal, setSeenNewChatSignal] = useState(newChatSignal);
+  if (newChatSignal !== seenNewChatSignal) {
+    setSeenNewChatSignal(newChatSignal);
+    setLoadedConversationId(null);
+    setResuming(false);
+    setSession((s) => s + 1);
+  }
 
   const loadAbortRef = useRef<AbortController | null>(null);
   const activeSurfaceKeyRef = useRef<string | null>(null);
@@ -178,26 +231,49 @@ function QuickChatSheetBody({
     return () => surface?.requestWidthBoost(0);
   }, [showHistory, surface]);
 
+  // Bring a remembered conversation back through the canonical reopen
+  // sequence (hydrate + pending tool prompts + server-operation reconnect).
+  const resumeStartedRef = useRef(false);
+  useEffect(() => {
+    if (!needsResume || !initialConversationId || resumeStartedRef.current) return;
+    resumeStartedRef.current = true;
+    dispatch(
+      resumeConversation({
+        conversationId: initialConversationId,
+        agentId: initialAgentId,
+        surfaceKey: loadedSurfaceKey(initialConversationId),
+        sourceFeature: SOURCE_FEATURE,
+      }),
+    )
+      .unwrap()
+      .catch((error: unknown) => {
+        console.error("[QuickChatSheet] could not bring the conversation back:", error);
+        // Gone or unreadable: start fresh rather than show a dead column.
+        setLoadedConversationId(null);
+      })
+      .finally(() => setResuming(false));
+  }, [dispatch, needsResume, initialConversationId, initialAgentId]);
+
   // Register as a widget surface so fork/retry/navigation intents stay scoped
   // to Quick Chat and never bleed into the `/chat` page surface.
   useEffect(() => {
     dispatch(
       registerSurface({
-        surfaceKey: QUICK_CHAT_PANEL_SURFACE,
+        surfaceKey: panelSurface,
         kind: "widget",
       }),
     );
     return () => {
-      dispatch(unregisterSurface(QUICK_CHAT_PANEL_SURFACE));
+      dispatch(unregisterSurface(panelSurface));
       const key = activeSurfaceKeyRef.current;
       if (key) dispatch(clearFocus(key));
     };
-  }, [dispatch]);
+  }, [dispatch, panelSurface]);
 
   // Live launcher — gated off while viewing a loaded (history) conversation.
   // The surface key carries `session` so "New chat" / agent-switch always mints
   // a fresh conversation rather than reviving the previous one.
-  const currentLiveSurfaceKey = liveSurfaceKey(agentId, session);
+  const currentLiveSurfaceKey = liveSurfaceKey(agentId, session, instanceKey);
   const { conversationId: liveConversationId } = useAgentLauncher(agentId, {
     surfaceKey: currentLiveSurfaceKey,
     sourceFeature: SOURCE_FEATURE,
@@ -218,6 +294,12 @@ function QuickChatSheetBody({
   // The page underneath is shared automatically — every composer's context
   // rail runs the one page-follow rule (useConversationFollowsPage); the
   // person turns it off per chat from the composer's context chip.
+
+  // Tell the host which conversation is on screen (a canvas tab keeps it, so
+  // a reload brings the same conversation back).
+  useEffect(() => {
+    if (conversationId && !resuming) onConversationChange?.({ conversationId, agentId });
+  }, [conversationId, agentId, resuming, onConversationChange]);
 
   // Track the active surface key for the unmount clearFocus — written in an
   // effect (never during render) so the ref always holds the last committed key.
@@ -311,7 +393,9 @@ function QuickChatSheetBody({
 
   return (
     <div className={cn("flex h-full flex-col overflow-hidden", className)}>
-      {/* Agent-first control row — picker + history toggle + new chat. */}
+      {/* Agent-first control row — history toggle + new chat. A host that
+          draws its own chrome (a canvas tab header) carries these instead. */}
+      {chrome === "inline" ? (
       <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border px-2">
         <TooltipProvider>
           <Tooltip>
@@ -351,6 +435,7 @@ function QuickChatSheetBody({
           </Tooltip>
         </TooltipProvider>
       </div>
+      ) : null}
 
       {/* Body: optional history sidebar + centered conversation column. */}
       <div ref={bodyRef} className="flex min-h-0 flex-1">
@@ -368,7 +453,7 @@ function QuickChatSheetBody({
         )}
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          {conversationId ? (
+          {conversationId && !resuming ? (
             <div ref={measureRef} className="flex min-h-0 flex-1 overflow-hidden justify-center">
               <AgentConversationColumn
                 conversationId={conversationId}

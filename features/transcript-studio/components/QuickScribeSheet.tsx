@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * QuickScribeSheet — the body of the global "Quick Scribe" slide-in panel
- * (rendered inside `SidePanelSurface` by the overlay controller). Lets the user
+ * QuickScribeSheet — the body of the global "Quick Scribe" canvas tab
+ * (`features/transcript-studio/canvas/quickScribeKind.tsx`). Lets the user
  * capture voice from ANY page: it mints a Scribe session stamped with the active
  * project/org from `appContext`, so whatever they record auto-associates with
  * what they're working on — no extra input.
@@ -12,7 +12,7 @@
  *     render the capture pipeline (`ScribeCaptureScreen`: record → live
  *     transcript → per-recording cleaning).
  *   - On close, if WE created the session and nothing was recorded, delete it so
- *     opening the panel never litters empty sessions (file-provenance rule:
+ *     opening the tab never litters empty sessions (file-provenance rule:
  *     system-created empties stay out of the workspace).
  *
  * Task-level association is project-scoped here (studio_sessions carries
@@ -21,7 +21,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { getUserId } from "@/utils/auth/getUserId";
 import {
@@ -94,13 +94,13 @@ export function QuickScribeSheet({
   if (!sessionId) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <SuspenseLoader message="Starting a capture session…" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden bg-background">
       <ScribeCaptureScreen sessionId={sessionId} />
     </div>
   );

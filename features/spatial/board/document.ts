@@ -59,7 +59,11 @@ export function recordKeyOf(source: NodeSource): string | null {
     case "thread":
       return `thread:${source.threadId}`;
     case "entity":
-      return source.id ? `${source.entity}:${source.id}` : null;
+      // A tile that shows one PART of a record (`meta.part`: a meeting's
+      // transcript, its decisions) is its own key — the parts are different
+      // views, never two editors of one thing.
+      if (!source.id) return null;
+      return source.meta?.part ? `${source.entity}:${source.id}#${source.meta.part}` : `${source.entity}:${source.id}`;
     default:
       return null;
   }

@@ -36,6 +36,7 @@ import {
   BoardError,
   getBoard,
   getHomeBoard,
+  getMeetingBoard,
   isBoardError,
   renameBoard,
   saveBoardDocument,
@@ -46,7 +47,17 @@ import { readViewerCamera, writeViewerCamera } from "./viewerCamera";
 
 export const AUTOSAVE_DELAY_MS = 800;
 
-export type SavedBoardTarget = { home: true } | { boardId: string };
+export type SavedBoardTarget =
+  | { home: true }
+  | { boardId: string }
+  /** The person's board for one meeting, created with `seed` the first time. */
+  | { meeting: { id: string; title: string; seed: () => BoardDocument } };
+
+function targetKeyOf(target: SavedBoardTarget): string {
+  if ("home" in target) return "home";
+  if ("boardId" in target) return `board:${target.boardId}`;
+  return `meeting:${target.meeting.id}`;
+}
 
 export type SavedBoardState =
   | { state: "loading" }
@@ -88,6 +99,14 @@ export function describeLoadFailure(error: unknown, target: SavedBoardTarget): s
 
 async function loadTarget(target: SavedBoardTarget, organizationId: string | null): Promise<LoadedBoard> {
   if ("home" in target) return getHomeBoard(organizationId);
+  if ("meeting" in target) {
+    return getMeetingBoard({
+      meetingId: target.meeting.id,
+      title: target.meeting.title,
+      organizationId,
+      seed: target.meeting.seed(),
+    });
+  }
   const board = await getBoard(target.boardId);
   if (!board) {
     throw new BoardError(
@@ -120,10 +139,16 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const targetId = "home" in target ? null : target.boardId;
-  // The home board is the person's own, in any organization: switching the active organization
-  // never swaps it (the active org only says where a NEW home board is filed).
-  const key = `${userId ?? ""}|${targetId ?? "home"}|${attempt}`;
+  // The home (and a meeting's) board is the person's own, in any organization: switching the
+  // active organization never swaps it (the active org only says where a NEW one is filed).
+  const targetKey = targetKeyOf(target);
+  const key = `${userId ?? ""}|${targetKey}|${attempt}`;
+  // The load reads the target the key was made from (a meeting's title and seed are not part
+  // of which board opens).
+  const targetRef = useRef(target);
+  useEffect(() => {
+    targetRef.current = target;
+  });
 
   // The guard for the next write, outside React state: every save reads and
   // advances it, and a rename / open stamp moves the version too.
@@ -143,7 +168,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   useEffect(() => {
     if (!userId) return; // auth not hydrated yet: stay "loading"
     let alive = true;
-    const loadTargetValue: SavedBoardTarget = targetId ? { boardId: targetId } : { home: true };
+    const loadTargetValue = targetRef.current;
     loadTarget(loadTargetValue, selectedOrgId).then( // org-filter: default-for-new the active organization only files a NEW home board; it never picks which board opens
       (board) => {
         if (!alive) return;
@@ -164,7 +189,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
     return () => {
       alive = false;
     };
-  }, [key, userId, targetId]); // selectedOrgId: read at load only, as the write target for a new home board
+  }, [key, userId]); // selectedOrgId: read at load only, as the write target for a new home board
 
   const readyBoardId = phase?.key === key && phase.status === "ready" ? phase.board.id : null;
 

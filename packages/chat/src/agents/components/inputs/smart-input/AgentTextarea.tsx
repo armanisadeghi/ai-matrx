@@ -140,7 +140,12 @@ export function AgentTextarea({
 
   useEffect(() => {
     return () => {
-      if (collapseTimer.current) clearTimeout(collapseTimer.current);
+      if (!collapseTimer.current) return;
+      clearTimeout(collapseTimer.current);
+      collapseTimer.current = null;
+      // Effects can pause without an unmount (a sleeping board tile): the
+      // cleared timer must not leave the slow collapse transition stuck on.
+      setIsCollapsing(false);
     };
   }, []);
 
@@ -384,14 +389,22 @@ export function AgentTextarea({
 
 
   // ── Auto-focus ──────────────────────────────────────────────────────────────
+  // Once per conversation: effects re-run without a remount (a board tile
+  // waking from sleep), and a re-run must not pull the caret out of whatever
+  // field the person is typing in now.
+  const focusedForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!autoFocus) return undefined;
+    if (!autoFocus) {
+      focusedForRef.current = null;
+      return undefined;
+    }
+    if (focusedForRef.current === conversationId) return undefined;
     // preventScroll: the composer re-focuses on every conversation change; a
     // composer below the fold must never pull the page down to itself.
-    const t = setTimeout(
-      () => textareaRef.current?.focus({ preventScroll: true }),
-      100,
-    );
+    const t = setTimeout(() => {
+      focusedForRef.current = conversationId;
+      textareaRef.current?.focus({ preventScroll: true });
+    }, 100);
     return () => clearTimeout(t);
   }, [autoFocus, conversationId]);
 

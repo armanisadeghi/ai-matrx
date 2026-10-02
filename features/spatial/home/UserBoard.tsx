@@ -33,6 +33,8 @@ import { DEFAULT_THROW_ACTIONS } from "../engine/throw";
 import { type BoardStore, useBoardLayout, useBoardStore, useBoardTile, useBoardView } from "../board/useBoard";
 import type { PaceTier } from "../engine/lod";
 import { useBoardKeys } from "../board/useBoardKeys";
+import { BoardNavigationContext } from "../engine/tile-navigation";
+import { appPagePath, pageSource, pageTitleFor } from "../items/page-items";
 import { useWheelModePreference } from "../board/useWheelModePreference";
 import { type BoardDocument, type NodeSource, recordKeyOf } from "../board/document";
 import { SpatialBoardMenu } from "../components/SpatialBoardMenu";
@@ -428,6 +430,16 @@ export function UserBoard({
   };
 
   const onBoard = new Set(layout.tileIds);
+  // A page a tile opens lands on THIS board as a page tile (engine/tile-navigation.tsx);
+  // a record already here is shown instead (place → recordKeyOf).
+  const boardNavigation = {
+    openOnBoard: (path: string) => {
+      const page = appPagePath(path, window.location.origin);
+      if (!page) return false;
+      place([{ title: pageTitleFor(page), source: pageSource(page) }]);
+      return true;
+    },
+  };
   const empty = layout.tileIds.length === 0 && layout.parkedIds.length === 0;
   const parkedTiles = layout.parked;
 
@@ -450,6 +462,7 @@ export function UserBoard({
           }}
           onDrop={onDrop}
         >
+          <BoardNavigationContext.Provider value={boardNavigation}>
           <SpatialViewport
             initialCamera={viewerCamera ?? doc.camera}
             fitOnMount={viewerCamera === null && doc.nodes.length > 0}
@@ -518,6 +531,7 @@ export function UserBoard({
               <BoardItemTile key={id} id={id} board={board} itemSurfaces={itemSurfaces} onThrow={onThrow} />
             ))}
           </SpatialViewport>
+          </BoardNavigationContext.Provider>
         </div>
       </SpatialBoardMenu>
       <Dialog open={picking !== null} onOpenChange={(open) => !open && setPicking(null)}>

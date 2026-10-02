@@ -3,16 +3,18 @@
 // features/spatial/boards/useBoardRowActions.tsx
 //
 // The ONE action list for a board row — the kebab, the phone card and the
-// right-click menu all read this builder.
+// right-click menu all read this builder. Delete is a soft delete: the board
+// goes to Trash and the list's Archived filter, whose row offers Restore.
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, ExternalLink, Eye, Pencil, Trash2 } from "lucide-react";
+import { ArchiveRestore, Copy, ExternalLink, Eye, Pencil, Trash2 } from "lucide-react";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
+import { trashConfirmSentence } from "@/features/trash/archiveCopy";
 import type { EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
 import {
   boardHref,
@@ -20,6 +22,7 @@ import {
   duplicateBoard,
   isBoardError,
   renameBoard,
+  restoreBoard,
   type BoardListRow,
 } from "../persistence/boardsService";
 
@@ -28,12 +31,8 @@ function failure(error: unknown, fallback: string): string {
 }
 
 /** The sentence a delete confirm must say before anything happens. Exported for tests. */
-export function deleteConsequence(row: Pick<BoardListRow, "title" | "tile_count">): string {
-  const tiles =
-    row.tile_count === 0
-      ? "It has no tiles."
-      : `Its ${row.tile_count} ${row.tile_count === 1 ? "tile goes" : "tiles go"} with it — the notes, chats, files and tasks they show are not deleted and stay where they live.`;
-  return `"${row.title}" leaves your boards. ${tiles} Boards cannot be restored from Trash yet.`;
+export function deleteConsequence(row: Pick<BoardListRow, "title">): string {
+  return trashConfirmSentence(`"${row.title}"`);
 }
 
 export function useBoardRowActions(list: EntityListController<BoardListRow>): EntityRowActionsResult<BoardListRow> {
@@ -42,7 +41,10 @@ export function useBoardRowActions(list: EntityListController<BoardListRow>): En
   const [renaming, setRenaming] = useState<BoardListRow | null>(null);
   const [renameBusy, setRenameBusy] = useState(false);
 
-  const open = (row: BoardListRow) => startTransition(() => router.push(boardHref(row)));
+  const open = (row: BoardListRow) => {
+    if (row.archived) return;
+    startTransition(() => router.push(boardHref(row)));
+  };
 
   const duplicate = async (row: BoardListRow) => {
     try {
@@ -72,7 +74,37 @@ export function useBoardRowActions(list: EntityListController<BoardListRow>): En
     }
   };
 
+  const restore = async (row: BoardListRow) => {
+    try {
+      await restoreBoard(row.id);
+      list.refresh();
+      toast.success(`Restored "${row.title}"`);
+    } catch (error) {
+      toast.error(failure(error, "The board could not be restored. Try again."));
+    }
+  };
+
   const menuFor = (row: BoardListRow) => (): ItemMenuConfig => {
+    if (row.archived) {
+      return {
+        header: { title: row.title },
+        sections: [
+          {
+            id: "manage",
+            items: [
+              {
+                id: "restore",
+                label: "Restore",
+                icon: ArchiveRestore,
+                onSelect: () => {
+                  void restore(row);
+                },
+              },
+            ],
+          },
+        ],
+      };
+    }
     const href = boardHref(row);
     return {
       header: { title: row.title },

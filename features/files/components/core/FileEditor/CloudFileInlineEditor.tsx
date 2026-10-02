@@ -175,15 +175,45 @@ export function CloudFileInlineEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const isDirty = text !== null && original !== null && text !== original;
 
-  // Read the blob → text whenever the file changes / loads.
+  // The latest committed editor state, for the load effect below and the
+  // unmount / pagehide flush. Written after every commit.
+  const pendingRef = useRef<PendingEdit>({
+    file: null,
+    text: null,
+    original: null,
+    saveError: null,
+  });
   useEffect(() => {
-    setText(null);
-    setOriginal(null);
-    setSaveError(null);
+    pendingRef.current = { file, text, original, saveError };
+  });
+
+  // Read the blob → text when the file changes or new bytes arrive. Effects
+  // re-run without a remount (a board tile waking from sleep re-runs every
+  // effect), so a re-run for the bytes already loaded does nothing, and new
+  // bytes for the same file never discard unsaved text — resetting here put
+  // the old bytes back over the person's edits, and the next save wrote them.
+  const loadedRef = useRef<{ fileId: string; blob: Blob } | null>(null);
+  useEffect(() => {
+    const loaded = loadedRef.current;
+    const sameFile = loaded?.fileId === fileId;
+    if (sameFile && loaded.blob === blob) return undefined;
+    if (!sameFile) {
+      loadedRef.current = null;
+      setText(null);
+      setOriginal(null);
+      setSaveError(null);
+    }
     if (!blob) return undefined;
     let cancelled = false;
     blob.text().then((value) => {
       if (cancelled) return;
+      loadedRef.current = { fileId, blob };
+      const current = pendingRef.current;
+      if (sameFile && current.text !== null && current.text !== current.original) {
+        // Unsaved text stays; it is now compared with the newest bytes.
+        setOriginal(value);
+        return;
+      }
       setText(value);
       setOriginal(value);
     });
@@ -220,21 +250,17 @@ export function CloudFileInlineEditor({
     }
   }, [dispatch, file, text]);
 
-  // Flush the LATEST text on unmount, on a switch to another file, and on
-  // pagehide. The ref is written after every commit; a cleanup runs before
-  // the next commit's effects, so it still holds the outgoing file's text.
-  const pendingRef = useRef<PendingEdit>({
-    file: null,
-    text: null,
-    original: null,
-    saveError: null,
-  });
-  useEffect(() => {
-    pendingRef.current = { file, text, original, saveError };
-  });
+  // Flush the LATEST text on unmount, on a switch to another file, on
+  // pagehide, and when the editor's effects pause (a sleeping board tile).
+  // `pendingRef` is written after every commit; a cleanup runs before the
+  // next commit's effects, so it still holds the outgoing file's text.
   useEffect(() => {
     const flush = () => {
-      pendingRef.current = flushPendingEdit(pendingRef.current, dispatch);
+      const before = pendingRef.current;
+      pendingRef.current = flushPendingEdit(before, dispatch);
+      // A paused (not unmounted) editor stays on screen: the flushed text is
+      // no longer unsaved, and must not be saved again on the next pause.
+      if (pendingRef.current !== before) setOriginal(pendingRef.current.original);
     };
     window.addEventListener("pagehide", flush);
     return () => {

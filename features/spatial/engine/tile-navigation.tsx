@@ -8,7 +8,8 @@
  * to the meeting room, a row's "Open" pushed its record page, a link left. On a
  * board each of those REPLACED the board (2026-10-02). Until a thing can run
  * inside its tile, leaving the page from a tile opens a new tab instead, and
- * says so. Two doors, one rule (`leavesBoard`):
+ * says so: onto the board as a page tile when the board can hold pages
+ * (`BoardNavigationContext`), else a new tab. Two doors, one rule (`leavesBoard`):
  *   - `TileNavigationBoundary` — around every tile body: the app router its
  *     content sees (`useRouter`, `<Link>`) opens another page in a new tab;
  *     the board's own address (query, hash) is unchanged behaviour.
@@ -17,7 +18,7 @@
  *     cancelled and opened in a new tab (the Navigation API's `navigate`).
  */
 
-import { type ReactNode, useContext, useEffect } from "react";
+import { type ReactNode, createContext, useContext, useEffect, useRef } from "react";
 import {
   AppRouterContext,
   type AppRouterInstance,
@@ -40,6 +41,26 @@ export function leavesBoard(href: string, current: { href: string; origin: strin
   return url.pathname === current.pathname ? null : url;
 }
 
+/**
+ * What the board does with a page a tile opens. A board that can hold pages
+ * (`/board`, items/page-items.tsx) puts it on the board as a tile; without one
+ * a page opens in a new tab.
+ */
+export interface BoardNavigation {
+  /** Put this app path on the board. Returns false when it cannot (the page stays a new tab). */
+  openOnBoard?: (path: string) => boolean;
+}
+export const BoardNavigationContext = createContext<BoardNavigation>({});
+
+/** Where a page a tile opens goes: onto the board when it can hold it, else a new tab. */
+function leaveTo(url: URL, nav: BoardNavigation): void {
+  if (url.origin === window.location.origin && nav.openOnBoard?.(`${url.pathname}${url.search}${url.hash}`)) {
+    toast("Opened on the board");
+    return;
+  }
+  openOutsideBoard(url.href);
+}
+
 /** Open `url` in a new tab, never this one; tell the person (with a way in if a blocker stopped it). */
 export function openOutsideBoard(url: string): void {
   const opened = window.open(url, "_blank");
@@ -54,12 +75,13 @@ export function openOutsideBoard(url: string): void {
 /** Around a tile body: the router its content sees never replaces the board. */
 export function TileNavigationBoundary({ children }: { children: ReactNode }) {
   const router = useContext(AppRouterContext);
+  const nav = useContext(BoardNavigationContext);
   if (!router) return <>{children}</>;
   const leave =
     (go: (href: string, options?: Parameters<AppRouterInstance["push"]>[1]) => void) =>
     (href: string, options?: Parameters<AppRouterInstance["push"]>[1]) => {
       const out = leavesBoard(href, window.location);
-      if (out) openOutsideBoard(out.href);
+      if (out) leaveTo(out, nav);
       else go(href, options);
     };
   const tileRouter: AppRouterInstance = {
@@ -83,6 +105,11 @@ interface NavigateEventLike extends Event {
  * API keep only the router door.
  */
 export function useTileNavigationGuard(): void {
+  const nav = useContext(BoardNavigationContext);
+  const navRef = useRef(nav);
+  useEffect(() => {
+    navRef.current = nav;
+  });
   useEffect(() => {
     const nav = (window as unknown as { navigation?: EventTarget }).navigation;
     if (!nav) return;
@@ -101,7 +128,7 @@ export function useTileNavigationGuard(): void {
       if (!out) return;
       e.preventDefault();
       lastTilePress = -Infinity;
-      openOutsideBoard(out.href);
+      leaveTo(out, navRef.current);
     };
     window.addEventListener("pointerdown", onPress, true);
     window.addEventListener("keydown", onPress, true);
