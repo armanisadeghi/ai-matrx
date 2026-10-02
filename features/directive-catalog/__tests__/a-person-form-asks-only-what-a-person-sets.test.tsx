@@ -22,6 +22,7 @@ import {
   payloadFieldEntityInfo,
 } from "@/features/directive-catalog/identityPicker";
 import { SchemaFieldsForm } from "@/features/directive-catalog/components/SchemaFieldsForm";
+import { valueVocabularyFor } from "@/features/directive-catalog/valueVocabulary";
 
 jest.mock("@/features/tasks/components/TaskAssigneePicker", () => ({
   __esModule: true,
@@ -111,6 +112,119 @@ describe("a write form asks only what a person sets", () => {
     expect(container.querySelector('[data-testid="people-search"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="record-search"]')).toBeNull();
     expect(container.querySelector("input")).toBeNull();
+    act(() => root.unmount());
+  });
+});
+
+/**
+ * G6B review (2026-10-02, nightly clone): Note offered "Position" and BOTH
+ * "Folder" and "Folder Name"; Project offered "Slug"; Task offered a free-text
+ * "Recurrence Rule"; status lists printed stored values ("inbox",
+ * "incomplete") while the Task window says "In progress". The schemas are the
+ * ones the clone server published (`GET /directives/catalog`), trimmed.
+ */
+describe("a write form speaks the record's own words", () => {
+  const NOTE_FULL = {
+    type: "object",
+    properties: {
+      label: { ...opt({ type: "string" }, "Label"), default: "New Note" },
+      folder_id: opt({ type: "string" }, "Folder Id"),
+      folder_name: { ...opt({ type: "string" }, "Folder Name"), default: "General" },
+      position: { ...opt({ type: "integer" }, "Position"), default: 0 },
+    },
+  };
+  const PROJECT_CREATE = {
+    type: "object",
+    required: ["name"],
+    properties: {
+      name: { title: "Name", type: "string" },
+      slug: opt({ type: "string" }, "Slug"),
+      status: {
+        ...opt({ type: "string", enum: ["planning", "active", "paused", "completed", "archived"] }, "Status"),
+        default: "active",
+      },
+    },
+  };
+  const TASK_STATUS = {
+    type: "object",
+    required: ["title"],
+    properties: {
+      title: { title: "Title", type: "string" },
+      status: {
+        ...opt(
+          {
+            type: "string",
+            enum: ["inbox", "planned", "active", "incomplete", "completed", "cancelled", "dismissed"],
+          },
+          "Status",
+        ),
+        default: "incomplete",
+      },
+      recurrence_rule: opt({ type: "string" }, "Recurrence Rule"),
+    },
+  };
+
+  const form = (noun: string, title: string, schema: object) =>
+    humanFormFields(
+      deriveSchemaFields(schema, {
+        titleColumn: title,
+        resolveRecordToken: (key) => payloadFieldEntityInfo(key, noun)?.token ?? null,
+        resolveValueVocabulary: (key) => valueVocabularyFor(noun, key),
+      }),
+    );
+
+  it("derived and duplicate fields leave the human form", () => {
+    const note = form("note", "label", NOTE_FULL).map((f) => f.key);
+    expect(note).not.toContain("folder_name");
+    expect(note).not.toContain("position");
+    expect(form("project", "name", PROJECT_CREATE).map((f) => f.key)).not.toContain("slug");
+  });
+
+  it("status values read as the task and project screens say them", () => {
+    const status = form("task", "title", TASK_STATUS).find((f) => f.key === "status")!;
+    expect(status.enumValues).not.toContain("incomplete"); // means Inbox — one choice per meaning
+    expect(status.enumLabels.active).toBe("In progress");
+    expect(status.enumLabels.inbox).toBe("Inbox");
+    expect(status.enumLabels.incomplete).toBe("Inbox");
+    const project = form("project", "name", PROJECT_CREATE).find((f) => f.key === "status")!;
+    expect(project.enumLabels.planning).toBe("Planning");
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <SchemaFieldsForm
+          fields={[status]}
+          values={{}}
+          mode="create"
+          onChange={() => undefined}
+          moreOpenByDefault
+        />,
+      );
+    });
+    expect(container.textContent).toContain("Default (Inbox)");
+    expect(container.textContent).not.toContain("incomplete");
+    act(() => root.unmount());
+  });
+
+  it("repeat is the task editor's repeat picker, never a text box", () => {
+    const rule = form("task", "title", TASK_STATUS).find((f) => f.key === "recurrence_rule")!;
+    expect(rule.kind).toBe("recurrence");
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <SchemaFieldsForm
+          fields={[rule]}
+          values={{}}
+          mode="create"
+          onChange={() => undefined}
+          moreOpenByDefault
+        />,
+      );
+    });
+    expect(container.querySelector("textarea")).toBeNull();
+    expect(container.textContent).toContain("Does not repeat");
     act(() => root.unmount());
   });
 });

@@ -54,6 +54,7 @@ import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
 import { StateBadge } from "@/features/directive-catalog/components/StateCell";
 import { executeDirective } from "@/features/directive-catalog/service";
+import { valueVocabularyFor } from "@/features/directive-catalog/valueVocabulary";
 import {
   buildDirectiveEnvelope,
   isReferenceVerb,
@@ -314,6 +315,7 @@ export function DirectiveBuilderPanel({
       titleColumn: formTitleColumn(noun),
       resolveRecordToken: (key) =>
         payloadFieldEntityInfo(key, noun.noun)?.token ?? null,
+      resolveValueVocabulary: (key) => valueVocabularyFor(noun.noun, key),
     });
   }, [isReference, noun, verb]);
   // No published schema → the JSON view is the only editor, and only offered

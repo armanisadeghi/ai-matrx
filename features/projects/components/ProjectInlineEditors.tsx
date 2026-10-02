@@ -58,8 +58,10 @@ import type {
   ProjectPriority,
   UpdateProjectOptions,
 } from "../types";
+import { PROJECT_STATUS_LABEL } from "../constants/status";
 
 // ─── Shared styling vocab ──────────────────────────────────────────────────
+// Labels come from `constants/status.ts`, the one source forms also read.
 
 export const PROJECT_STATUS_META: Record<
   ProjectStatus,
@@ -70,27 +72,27 @@ export const PROJECT_STATUS_META: Record<
   }
 > = {
   planning: {
-    label: "Planning",
+    label: PROJECT_STATUS_LABEL.planning,
     icon: CircleDashed,
     pill: "text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-800 bg-violet-500/5",
   },
   active: {
-    label: "Active",
+    label: PROJECT_STATUS_LABEL.active,
     icon: CircleDot,
     pill: "text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 bg-emerald-500/5",
   },
   paused: {
-    label: "Paused",
+    label: PROJECT_STATUS_LABEL.paused,
     icon: CirclePause,
     pill: "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 bg-amber-500/5",
   },
   completed: {
-    label: "Completed",
+    label: PROJECT_STATUS_LABEL.completed,
     icon: CircleCheck,
     pill: "text-sky-600 dark:text-sky-400 border-sky-300 dark:border-sky-800 bg-sky-500/5",
   },
   archived: {
-    label: "Archived",
+    label: PROJECT_STATUS_LABEL.archived,
     icon: Archive,
     pill: "text-muted-foreground border-border bg-muted/30",
   },

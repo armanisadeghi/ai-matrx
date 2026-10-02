@@ -62,6 +62,7 @@ import {
   splitWarnings,
   type SchemaFieldValue,
 } from "@/features/directive-catalog/schemaFields";
+import { valueVocabularyFor } from "@/features/directive-catalog/valueVocabulary";
 import { SchemaFieldsForm } from "@/features/directive-catalog/components/SchemaFieldsForm";
 import {
   INLINE_CREATE_REFERENCE_TYPES,
@@ -546,6 +547,7 @@ function WriteStep({
             exclude: formMode === "update" ? ["id"] : [],
             resolveRecordToken: (key) =>
               payloadFieldEntityInfo(key, noun.noun)?.token ?? null,
+            resolveValueVocabulary: (key) => valueVocabularyFor(noun.noun, key),
           }))
         : [],
     [noun, schema, formMode],

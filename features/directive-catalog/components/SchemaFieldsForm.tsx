@@ -39,6 +39,7 @@ import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RecordReferencePicker } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
 import { PERSON_TOKEN } from "@/features/directive-catalog/identityPicker";
 import TaskAssigneePicker from "@/features/tasks/components/TaskAssigneePicker";
+import { TaskRecurrencePicker } from "@/features/tasks/components/TaskRecurrencePicker";
 import {
   splitWarnings,
   type SchemaField,
@@ -246,6 +247,16 @@ function FieldControl({
           onChange={onChange}
         />
       );
+    case "recurrence":
+      // The task editor's own repeat presets — the same words, the same rules.
+      return (
+        <TaskRecurrencePicker
+          value={text || null}
+          onChange={(rule) => onChange(rule ? { raw: rule, touched: true } : null)}
+          emptyLabel={mode === "update" ? "Unchanged" : "Does not repeat"}
+          className="h-9 w-full justify-start px-2.5 text-base lg:text-sm border-border"
+        />
+      );
     case "date":
     case "time":
     case "datetime":
@@ -329,7 +340,7 @@ function ChoiceControl({
     mode === "update"
       ? "Unchanged"
       : field.defaultValue !== undefined && field.defaultValue !== null
-        ? `Default (${isBool ? (field.defaultValue ? "Yes" : "No") : String(field.defaultValue)})`
+        ? `Default (${isBool ? (field.defaultValue ? "Yes" : "No") : (field.enumLabels[String(field.defaultValue)] ?? String(field.defaultValue))})`
         : "Not set";
 
   const options: Array<{ value: string; label: string }> = isBool
@@ -337,7 +348,7 @@ function ChoiceControl({
         { value: "true", label: "Yes" },
         { value: "false", label: "No" },
       ]
-    : field.enumValues.map((v) => ({ value: v, label: v.replace(/_/g, " ") }));
+    : field.enumValues.map((v) => ({ value: v, label: field.enumLabels[v] ?? v }));
 
   return (
     <Select

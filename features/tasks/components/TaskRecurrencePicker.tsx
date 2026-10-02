@@ -31,10 +31,13 @@ export function TaskRecurrencePicker({
   value,
   onChange,
   className,
+  emptyLabel = "—",
 }: {
   value: string | null;
   onChange: (rule: string | null) => void;
   className?: string;
+  /** What the trigger says with no rule set (a form says "Does not repeat"). */
+  emptyLabel?: string;
 }) {
   const [open, setOpen] = React.useState(false);
   const description = describeRecurrenceRule(value);
@@ -52,8 +55,8 @@ export function TaskRecurrencePicker({
           )}
           title="Set repeat"
         >
-          <Repeat className="h-2.5 w-2.5" />
-          {description ?? "—"}
+          <Repeat className="h-2.5 w-2.5 shrink-0" />
+          {description ?? emptyLabel}
         </button>
       </PopoverTrigger>
       <PopoverContent /* sizing: fixed — fixed recurrence preset list */ align="start" className="w-44 p-1">

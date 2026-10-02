@@ -27,6 +27,10 @@
  */
 
 import type { EntityTypeToken } from "@ai-matrx/associations";
+import {
+  sentenceCaseValue,
+  type ValueVocabulary,
+} from "@/features/directive-catalog/valueVocabulary";
 
 export type SchemaFieldKind =
   | "text"
@@ -38,6 +42,7 @@ export type SchemaFieldKind =
   | "datetime"
   | "time"
   | "record"
+  | "recurrence"
   | "json";
 
 export type SchemaFieldTier = "essential" | "more";
@@ -53,8 +58,16 @@ export interface SchemaField {
    * read it as "clearable".
    */
   nullable: boolean;
-  /** Allowed values when `kind === "enum"`. */
+  /**
+   * Allowed values when `kind === "enum"` — one per meaning: a legacy value the
+   * record's vocabulary folds onto another listed value is left out.
+   */
   enumValues: string[];
+  /**
+   * The word a person reads for each stored value (every published value,
+   * legacy ones included, so a legacy DEFAULT still reads in words).
+   */
+  enumLabels: Readonly<Record<string, string>>;
   /** The entity a `kind === "record"` field points at. */
   recordToken: EntityTypeToken | null;
   description: string | null;
@@ -82,6 +95,11 @@ export interface DeriveSchemaFieldsOptions {
   exclude?: readonly string[];
   /** Maps an id-shaped key to the entity it points at; null = plain text. */
   resolveRecordToken?: (key: string) => EntityTypeToken | null;
+  /**
+   * The record's own words for a pick-list's values (`valueVocabularyFor`);
+   * null = sentence case of the stored value.
+   */
+  resolveValueVocabulary?: (key: string) => ValueVocabulary | null;
 }
 
 export interface SchemaFieldWarning {
@@ -209,6 +227,8 @@ function classify(
       const token = resolveRecordToken?.(key) ?? null;
       if (token) return { kind: "record", enumValues: [], recordToken: token };
     }
+    // An RRULE ("FREQ=WEEKLY;BYDAY=MO") is chosen from repeat presets, never typed.
+    if (key === "recurrence_rule") return { kind: "recurrence", ...none };
     return { kind: "text", ...none };
   }
   // object / array / untyped ("Any JSON value") → edited as JSON.
@@ -222,6 +242,7 @@ const KIND_RANK: Record<SchemaFieldKind, number> = {
   date: 2,
   datetime: 2,
   time: 2,
+  recurrence: 2,
   boolean: 3,
   number: 4,
   integer: 4,
@@ -283,6 +304,20 @@ export function deriveSchemaFields(
           ? node.description
           : null;
     const isRequired = required.has(key);
+    const vocabulary =
+      kind === "enum" ? (options.resolveValueVocabulary?.(key) ?? null) : null;
+    const canonical = vocabulary?.canonical ?? ((v: string) => v);
+    const enumLabels = Object.fromEntries(
+      enumValues.map((v) => {
+        const c = canonical(v);
+        return [v, vocabulary?.labels[c] ?? vocabulary?.labels[v] ?? sentenceCaseValue(v)];
+      }),
+    );
+    // A legacy value that means another listed value is not a second choice.
+    const offered = enumValues.filter((v) => {
+      const c = canonical(v);
+      return c === v || !enumValues.includes(c);
+    });
     fields.push({
       key,
       label:
@@ -298,7 +333,8 @@ export function deriveSchemaFields(
       kind,
       required: isRequired,
       nullable,
-      enumValues,
+      enumValues: offered,
+      enumLabels,
       recordToken,
       description,
       defaultValue: "default" in propNode ? propNode.default : undefined,
@@ -509,6 +545,7 @@ export function splitWarnings(
  * narrows CONTROLS on a human form; it never narrows what a type can do.
  */
 export function humanFormFields(fields: readonly SchemaField[]): SchemaField[] {
+  const keys = new Set(fields.map((f) => f.key));
   // A REQUIRED field always stays: dropping one would insert a button that
   // can never succeed.
   return fields.filter(
@@ -516,8 +553,46 @@ export function humanFormFields(fields: readonly SchemaField[]): SchemaField[] {
       f.required ||
       (f.kind !== "json" &&
         !(f.kind === "text" && (f.key === "id" || f.key.endsWith("_id"))) &&
-        !isSetByTheSystem(f)),
+        !isSetByTheSystem(f) &&
+        !isDerived(f, keys)),
   );
+}
+
+/** Integer keys that hold a row's place in a list — set by dragging, never typed. */
+const ORDERING_KEYS: ReadonlySet<string> = new Set([
+  "position",
+  "sort_order",
+  "display_order",
+  "order_index",
+  "sort_index",
+]);
+
+/**
+ * A field whose value comes from ANOTHER field or from where the row sits, so
+ * asking for it twice is asking a person to keep two copies in step (G6B
+ * review, 2026-10-02: Note offered "Folder" AND "Folder Name" AND "Position";
+ * Project offered "Slug"):
+ *   - `X_name` beside `X_id` (or `X`): a stored copy of the chosen record's
+ *     name — the record control already sets it;
+ *   - `slug`: the URL form of the title;
+ *   - an ordering integer (`position`, `sort_order`, …): the row's place in a
+ *     list.
+ * Signals are the schema's own keys and types — no per-table list. The admin
+ * builder still shows all three.
+ */
+function isDerived(field: SchemaField, keys: ReadonlySet<string>): boolean {
+  if (field.key === "slug" && field.kind === "text") return true;
+  if (
+    ORDERING_KEYS.has(field.key) &&
+    (field.kind === "integer" || field.kind === "number")
+  ) {
+    return true;
+  }
+  if (field.kind === "text" && field.key.endsWith("_name")) {
+    const stem = field.key.slice(0, -"_name".length);
+    if (keys.has(`${stem}_id`) || keys.has(stem)) return true;
+  }
+  return false;
 }
 
 /**
