@@ -91,6 +91,12 @@ export function ReferencePickerChip({
           {label}
         </span>
       )}
+      {/* In the trash, said up front; the click is its trash door (Restore). */}
+      {door.trashed ? (
+        <span className="shrink-0 text-muted-foreground" data-reference-trashed="">
+          (in trash)
+        </span>
+      ) : null}
       {door.peek}
       {status === "loading" && (
         <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />

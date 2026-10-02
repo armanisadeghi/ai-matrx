@@ -116,3 +116,21 @@ describe("a reference to a record in the trash", () => {
     host.remove();
   });
 });
+
+describe("the authored reference chip says it too", () => {
+  it("ReferencePickerChip names a trashed record '(in trash)'", async () => {
+    deletedAt = "2026-10-02T12:00:00Z";
+    const { ReferencePickerChip } = await import(
+      "@/features/matrx-envelope/components/ReferencePickerChip"
+    );
+    const { host, root } = await mount(
+      <ReferencePickerChip
+        item={{ id: TASK_ID, label: "G6A trashed task" } as never}
+        type="task"
+      />,
+    );
+    expect(host.querySelector("[data-reference-trashed]")?.textContent).toBe("(in trash)");
+    await act(async () => root.unmount());
+    host.remove();
+  });
+});
