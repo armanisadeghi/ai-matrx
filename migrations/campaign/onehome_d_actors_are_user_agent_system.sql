@@ -8,7 +8,8 @@
 --   3. The tier functions accept both spellings on every channel (app.actor_tier GUC, x-matrx-actor-tier header)
 --      and RETURN the new word: actor_tier, declared_actor_tier, actor_declaration_report, _stamp_actor_tier.
 --      Every body that compares their result is rewritten in the same transaction (custom.* association/edge
---      doors, set_org_change_policy, write_is_a_persons_own, _stamp_task_origin, dated_change_create), and the
+--      doors, set_org_change_policy, write_is_a_persons_own, _stamp_task_origin, dated_change_create, and the
+--      record store's two translators custom.actor_word / custom.history_actor), and the
 --      eight server bodies that SET app.actor_tier = 'code' set 'system'. Each replacement asserts that its old
 --      text was found, so a body that moved since this file was written stops the file by name.
 --   4. Small tables are backfilled with triggers off for this transaction only (SET LOCAL session_replication_role
@@ -229,6 +230,24 @@ begin
   v_def := pg_temp.onehome_sub(v_def, $a$'dated_change_provenance: provenance is ai, human or code.'$a$, $a$'dated_change_provenance: provenance is agent, user or system.'$a$, 'platform.dated_change_create');
   v_def := pg_temp.onehome_sub(v_def, $a$perform set_config('app.actor_tier', p_provenance, true);$a$,
                                       $a$perform set_config('app.actor_tier', platform.canonical_actor_tier(p_provenance), true);$a$, 'platform.dated_change_create');
+  perform pg_temp.onehome_rewrite(v_fn, v_def, 'DD-064');
+
+  -- the record store translates the platform's declaration into its own words through custom.retired_actor_words()
+  -- (ai -> agent, code -> system, human -> user). The declaration now arrives in those words already, so a value the
+  -- map does not know but the store's vocabulary does is taken as it is (actor_word), and a history row stamped in
+  -- the new words is labelled by them instead of falling through to 'system' (history_actor).
+  v_fn := 'custom.actor_word(text)'::regprocedure;
+  v_def := pg_get_functiondef(v_fn);
+  v_def := pg_temp.onehome_sub(v_def, $a$    v_word := v_map ->> v_live;$a$,
+    $a$    v_word := coalesce(v_map ->> v_live, case when v_live = any (custom.actor_vocabulary()) then v_live end);$a$, 'custom.actor_word');
+  perform pg_temp.onehome_rewrite(v_fn, v_def, 'DD-064');
+  v_fn := 'custom.history_actor(text,jsonb,uuid,jsonb)'::regprocedure;
+  v_def := pg_get_functiondef(v_fn);
+  v_def := pg_temp.onehome_sub(v_def, $a$                    custom.retired_actor_words() ->> p_tier,
+                    'system') as kind,$a$,
+    $a$                    custom.retired_actor_words() ->> p_tier,
+                    case when p_tier in ('user', 'agent', 'system') then p_tier end,
+                    'system') as kind,$a$, 'custom.history_actor');
   perform pg_temp.onehome_rewrite(v_fn, v_def, 'DD-064');
 
   -- server bodies that declare themselves the platform's own machinery
