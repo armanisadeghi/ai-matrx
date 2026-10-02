@@ -16,8 +16,12 @@
  * surface on/off, and only exists when a page is in play.
  */
 
-import { useEffect, useState } from "react";
-import { ContextRulesChip } from "@ai-matrx/agents/context/react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ContextRulesChip,
+  type ContextHierarchy,
+  type ContextRuleChange,
+} from "@ai-matrx/agents/context/react";
 import {
   CONTEXT_RULES_FEATURE,
   type SavedContextRule,
@@ -38,7 +42,13 @@ import {
   ensureAgentContextLayer,
   reloadContextRules,
   saveContextRule,
+  saveContextRules,
 } from "../../../redux/execution-system/context-rules/context-rules.thunks";
+import {
+  contextRowPlacer,
+  surfaceLevelPlace,
+} from "../../../redux/execution-system/context-rules/context-hierarchy";
+import { resolveClientSurface } from "../../../redux/execution-system/utils/build-tool-injection";
 import { resolveMandateKillSwitch } from "../../../redux/execution-system/context-rules/mandate-kill-switch";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useMachineFramesVisible } from "../../shared/transcript-audience";
@@ -90,6 +100,44 @@ export function useSaveContextRule() {
       }),
     );
   };
+}
+
+/** A level or group switch → the person's per-value rules, one write per row. */
+export function useSaveContextRules() {
+  const dispatch = useAppDispatch();
+  return (changes: ContextRuleChange[]) => {
+    void dispatch(saveContextRules(changes));
+  };
+}
+
+/**
+ * THE HIERARCHY the chip and the full view render: rows placed by
+ * `contextRowPlacer` (the page by section and name, its declared groups,
+ * Attached, AI Matrx), and the page's own on/off as its level's switch — the
+ * ONE page switch, never a second one beside it.
+ */
+export function useConversationContextHierarchy(conversationId: string): ContextHierarchy {
+  const dispatch = useAppDispatch();
+  const pageSurface = useAppSelector((state) => resolveClientSurface(state, conversationId) ?? null);
+  const switchSurface = useValueGroupSurface(conversationId);
+  const off = useAppSelector(selectPageContextOff(conversationId));
+  const on = !off;
+  return useMemo<ContextHierarchy>(
+    () => ({
+      place: contextRowPlacer(pageSurface),
+      masters: switchSurface
+        ? [
+            {
+              level: surfaceLevelPlace(switchSurface),
+              on,
+              onToggle: (next: boolean) =>
+                void dispatch(setPageContextEnabled({ conversationId, enabled: next })),
+            },
+          ]
+        : [],
+    }),
+    [pageSurface, switchSurface, on, dispatch, conversationId],
+  );
 }
 
 /**
@@ -145,6 +193,8 @@ export function ConversationContextChip({
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const save = useSaveContextRule();
+  const saveMany = useSaveContextRules();
+  const hierarchy = useConversationContextHierarchy(conversationId);
 
   // The person's saved rules — loaded as soon as a composer shows, so the
   // first send never waits on them.
@@ -220,6 +270,8 @@ export function ConversationContextChip({
           ? (next) => void dispatch(setPageContextEnabled({ conversationId, enabled: next }))
           : undefined
       }
+      hierarchy={hierarchy}
+      onSetInclude={saveMany}
       modelReadsContext={receiptEntry?.receipt.model_reads_context !== false}
       onChange={save}
       onResetAll={resetAll}

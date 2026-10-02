@@ -26,6 +26,8 @@ import {
   type ContextReceiptMismatch,
   type ContextViewLoader,
 } from "@ai-matrx/agents/context";
+import type { ContextHierarchy } from "@ai-matrx/agents/context/react";
+import { contextRowPlacer } from "../../redux/execution-system/context-rules/context-hierarchy";
 import type { ContextReceiptData } from "@ai-matrx/agents/generated/stream-events";
 import { receiptRowToResolved } from "../../redux/execution-system/messages/message-context-receipt";
 import { ValueCountPill } from "./ValueCountPill";
@@ -63,6 +65,11 @@ export function MessageContextReceiptTable({
     () => (receipt.rows ?? []).map((row) => receiptRowToResolved(row, receipt.blocks)),
     [receipt],
   );
+  // The same levels and groups the composer showed, from the page this turn named.
+  const hierarchy = useMemo<ContextHierarchy>(
+    () => ({ place: contextRowPlacer(receipt.surface ?? null) }),
+    [receipt.surface],
+  );
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [openBlock, setOpenBlock] = useState<string | null>(null);
   // A block the model read as part of a value shows under that value, not twice.
@@ -89,6 +96,7 @@ export function MessageContextReceiptTable({
         rows={rows}
         cap={receipt.cap}
         readOnly
+        hierarchy={hierarchy}
         mismatches={mismatches}
         onChange={NO_CHANGE}
         onOpenRow={(key) => {

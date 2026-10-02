@@ -33,8 +33,10 @@ import {
   selectContextInlineCap,
 } from "../../redux/execution-system/context-rules/request-context";
 import {
+  useConversationContextHierarchy,
   useMandateKillSwitch,
   useSaveContextRule,
+  useSaveContextRules,
   useValueGroupSurface,
   valueGroupName,
 } from "../inputs/smart-input/ConversationContextChip";
@@ -79,6 +81,9 @@ export function ContextRulesPanel({
   const isMobile = useIsMobile();
   const dispatch = useAppDispatch();
   const save = useSaveContextRule();
+  const saveMany = useSaveContextRules();
+  // The same levels, groups and switches as the composer's chip.
+  const hierarchy = useConversationContextHierarchy(conversationId);
   // THE VIEWER (RULES.md §5b): the turn the full view shows — the receipt's own
   // message, or the next turn before any receipt. Called only when a detail opens.
   const receiptMessageId = useAppSelector((state) =>
@@ -165,6 +170,8 @@ export function ContextRulesPanel({
         cap={cap}
         mismatches={mismatches}
         onChange={save}
+        hierarchy={hierarchy}
+        onSetInclude={saveMany}
         blocks={blocks}
         loadView={loadView}
         renderDetail={renderDetail}
