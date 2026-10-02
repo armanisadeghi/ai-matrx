@@ -24,7 +24,10 @@
 // chat never runs a named agent on this model.
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import {
+  resolvePreferredModelChoice,
+  type PreferredModelChoice,
+} from "@/features/ai-models/preferredModelChoice";
 
 export const CHAT_DEFAULT_MODEL_KNOB = "agents.model_prefs.chat_default_model";
 
@@ -38,14 +41,13 @@ export function isBasicWorkMandate(mandateKey: string | undefined): boolean {
 }
 
 /**
- * The person's preferred model id for basic work, or null when they (and
+ * The person's preferred model (and its class) for basic work, or null when they (and
  * their organization) left it to the platform. A read failure is announced
  * and answers null — a run never blocks on a preference.
  */
-export async function resolvePreferredChatModel(): Promise<string | null> {
+export async function resolvePreferredChatModel(): Promise<PreferredModelChoice | null> {
   try {
-    const value = await resolveSessionKnob(CHAT_DEFAULT_MODEL_KNOB);
-    return typeof value === "string" && value.trim() !== "" ? value : null;
+    return await resolvePreferredModelChoice(CHAT_DEFAULT_MODEL_KNOB, "preferredChatModel");
   } catch (error) {
     console.error(
       `[preferredChatModel] ${CHAT_DEFAULT_MODEL_KNOB} could not be resolved — the Holder's own model answers this run:`,

@@ -46,6 +46,7 @@ import {
   selectModelDetailError,
 } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { useModelControls } from "../../hooks/useModelControls";
+import { useModelClassControls } from "@host/features/ai-models/hooks/useModelClassControls";
 import {
   selectInstanceOverrideState,
   selectSettingsOverridesForApi,
@@ -278,7 +279,12 @@ export function RunConfigOverrides({
   // useModelControls is a pure parser despite the name — safe to call in
   // render with the effective (possibly overridden) model so the rows match
   // what will actually run.
-  const { normalizedControls } = useModelControls(models, effectiveModelId);
+  const classControls = useModelClassControls(effectiveModelId, pinnedOfferingId);
+  const { normalizedControls } = useModelControls(
+    models,
+    effectiveModelId,
+    classControls,
+  );
   // NormalizedControls has no string index signature (typed optional keys +
   // two Record<string, unknown> escape-hatch fields) — buildSettingsRows
   // takes the documented loose bag-of-controls contract (ControlsLike) and

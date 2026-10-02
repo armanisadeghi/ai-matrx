@@ -397,6 +397,7 @@ export async function assembleManualRequest(
     rows: contextRows,
     context,
     context_withheld,
+    page_context,
   } = buildRequestContext(state, conversationId);
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────
@@ -495,6 +496,8 @@ export async function assembleManualRequest(
   }
   if (context) request.context = context;
   request.context_withheld = context_withheld;
+  // The page rule (RULES.md §0) — additive aidream field, not yet in the generated ChatRequest.
+  if (page_context) (request as Record<string, unknown>).page_context = page_context;
   if (injection.tools_replace)
     request.tools_replace =
       injection.tools_replace as ChatRequestPayload["tools_replace"];

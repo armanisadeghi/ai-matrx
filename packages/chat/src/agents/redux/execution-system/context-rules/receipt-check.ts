@@ -19,7 +19,10 @@ import {
   type ContextReceipt,
   type ContextReceiptMismatch,
 } from "@ai-matrx/agents/context";
-import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
+import type {
+  ContextDeliveredText,
+  ContextReceiptData,
+} from "@host/types/python-generated/stream-events";
 import { setContextReceipt } from "../instance-context/instance-context.slice";
 import { captureError } from "@host/lib/diagnostics/errorCaptureStore";
 import { toast } from "../../../../host/notify";
@@ -151,4 +154,35 @@ export function recordContextReceipt(
     console.error("[context-rules] receipt mismatch", { conversationId, requestId, mismatches, receipt });
     toast.warning(`Context mismatch: ${summary}`.slice(0, 140));
   }
+}
+
+/**
+ * What the model READ for one value, from a receipt (RULES.md §5 `delivered` /
+ * `on_request`) — the server's rendering, cut from the block the model got.
+ * A detail view shows this instead of the client's pre-send copy whenever it
+ * is present. Absent fields: the value reached no context block (or an older
+ * server). Matched by key + surface, then by key, like `applyReceiptToRows`.
+ */
+export interface ContextDeliveredFields {
+  delivered?: ContextDeliveredText;
+  onRequest?: ContextDeliveredText;
+  serverRendered?: ContextDeliveredText;
+}
+
+export function deliveredFieldsFor(
+  data: ContextReceiptData | null | undefined,
+  key: string,
+  surfaceKey?: string,
+): ContextDeliveredFields {
+  const rows = data?.rows ?? [];
+  const hit =
+    (surfaceKey !== undefined
+      ? rows.find((r) => r.key === key && r.surface_key === surfaceKey)
+      : undefined) ?? rows.find((r) => r.key === key);
+  if (!hit) return {};
+  return {
+    ...(hit.delivered ? { delivered: hit.delivered } : {}),
+    ...(hit.on_request ? { onRequest: hit.on_request } : {}),
+    ...(hit.server_rendered ? { serverRendered: hit.server_rendered } : {}),
+  };
 }

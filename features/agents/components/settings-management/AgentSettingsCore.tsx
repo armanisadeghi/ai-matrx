@@ -1183,15 +1183,19 @@ export function AgentSettingsCore({
     plan: ModelChangePlan;
     /** The class picked with the model; re-applied on commit. */
     offeringPin?: { offeringId: string | undefined };
+    /** The class held BEFORE this click — restored if the switch is cancelled,
+     *  so the old model never keeps the new model's class. */
+    previousOfferingId?: string;
   } | null>(null);
 
   // The picker reports the class (offering pin) and the model in the SAME
   // click, in either order, so the second handler still sees the render-time
   // settings. The pin is parked here for that one click and read by the model
   // handler; a microtask drops it once the click's handlers have run.
-  const clickOfferingPinRef = useRef<{ offeringId: string | undefined } | null>(
-    null,
-  );
+  const clickOfferingPinRef = useRef<{
+    offeringId: string | undefined;
+    previousOfferingId?: string;
+  } | null>(null);
 
   const handleOfferingPinChange = (offeringId: string | undefined) => {
     // settings === null → the agent record hasn't hydrated; writing over it
@@ -1202,7 +1206,11 @@ export function AgentSettingsCore({
       );
       return;
     }
-    const pin = { offeringId };
+    const previous = currentSettings.offering_id;
+    const pin = {
+      offeringId,
+      previousOfferingId: typeof previous === "string" ? previous : undefined,
+    };
     clickOfferingPinRef.current = pin;
     queueMicrotask(() => {
       if (clickOfferingPinRef.current === pin) clickOfferingPinRef.current = null;
@@ -1274,7 +1282,12 @@ export function AgentSettingsCore({
       newModelName: newModel.common_name ?? newModel.name ?? newModelId,
       oldModelName: oldModel?.common_name ?? oldModel?.name ?? "current model",
       plan,
-      ...(clickPin ? { offeringPin: clickPin } : {}),
+      ...(clickPin
+        ? {
+            offeringPin: clickPin,
+            previousOfferingId: clickPin.previousOfferingId,
+          }
+        : {}),
     });
   };
 
@@ -1302,6 +1315,19 @@ export function AgentSettingsCore({
   };
 
   const handleReconciliationCancel = () => {
+    // The class was written with the click; the model switch was not. Put the
+    // old model's class back so the agent never pairs it with a foreign pin.
+    if (pendingModelChange?.offeringPin) {
+      dispatch(
+        setAgentSettings({
+          id: agentId,
+          settings: withOfferingPin(
+            currentSettings,
+            pendingModelChange.previousOfferingId,
+          ),
+        }),
+      );
+    }
     setPendingModelChange(null);
   };
 

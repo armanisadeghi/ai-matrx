@@ -20,6 +20,8 @@ import type { ContextReceiptMismatch } from "@ai-matrx/agents/context";
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 import { receiptRowToResolved } from "../../redux/execution-system/messages/message-context-receipt";
 import { ContextPolicyTile } from "./ContextPolicyTile";
+import { ContextDeliveredBlock } from "./ContextDeliveredBlock";
+import { deliveredFieldsFor } from "../../redux/execution-system/context-rules/receipt-check";
 
 const NO_CHANGE = () => {};
 
@@ -38,6 +40,12 @@ export function MessageContextReceiptTable({
   mismatches?: readonly ContextReceiptMismatch[];
 }) {
   const rows = useMemo(() => (receipt.rows ?? []).map(receiptRowToResolved), [receipt]);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  // What the model read for the opened value (RULES.md §5 `delivered`), verbatim.
+  const opened = useMemo(() => {
+    const row = rows.find((r) => r.key === openKey);
+    return row ? deliveredFieldsFor(receipt, row.key, row.surfaceKey) : null;
+  }, [rows, openKey, receipt]);
   return (
     <div className="flex min-w-0 flex-col">
       {receipt.model_reads_context === false ? (
@@ -54,7 +62,10 @@ export function MessageContextReceiptTable({
         readOnly
         mismatches={mismatches}
         onChange={NO_CHANGE}
+        onOpenRow={(key) => setOpenKey((current) => (current === key ? null : key))}
+        selectedKey={openKey}
       />
+      {opened ? <ContextDeliveredBlock fields={opened} className="px-2 py-2" /> : null}
     </div>
   );
 }

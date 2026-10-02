@@ -19,20 +19,22 @@
 import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
 import { isDecisionModelCapability } from "@/features/ai-models/capabilities/types";
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
-import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import {
+  resolvePreferredModelChoice,
+  type PreferredModelChoice,
+} from "@/features/ai-models/preferredModelChoice";
 
 export const DECISION_DEFAULT_MODEL_KNOB =
   "agents.model_prefs.decision_default_model";
 
 /**
- * The person's preferred decision model id, or null when they (and their
+ * The person's preferred decision model and its class, or null when they (and their
  * organization) left it to the catalog. A read failure is announced and
  * answers null — the surface never blocks on a preference.
  */
-export async function resolvePreferredDecisionModel(): Promise<string | null> {
+export async function resolvePreferredDecisionModel(): Promise<PreferredModelChoice | null> {
   try {
-    const value = await resolveSessionKnob(DECISION_DEFAULT_MODEL_KNOB);
-    return typeof value === "string" && value.trim() !== "" ? value : null;
+    return await resolvePreferredModelChoice(DECISION_DEFAULT_MODEL_KNOB, "preferredDecisionModel");
   } catch (error) {
     console.error(
       `[preferredDecisionModel] ${DECISION_DEFAULT_MODEL_KNOB} could not be resolved — the catalog's first decision model answers instead:`,

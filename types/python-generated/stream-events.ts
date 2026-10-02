@@ -549,6 +549,7 @@ export interface ContextReceiptRow {
   consumed_into?: string[];
   delivered?: ContextDeliveredText | null;
   on_request?: ContextDeliveredText | null;
+  server_rendered?: ContextDeliveredText | null;
 }
 
 export interface ContextRule {

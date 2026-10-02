@@ -290,6 +290,10 @@ const COMPUTED_REFS: Record<string, string> = {
   "lib/api/run-wait.ts":
     "one read per output kind at `agents.run_wait` / runWaitKnobKey(kind); every kind in " +
     "RUN_OUTPUT_KINDS is proven seeded by the 'run-wait' case below",
+  "features/ai-models/preferredModelChoice.ts":
+    "reads the default-model knob each of its three callers passes as its own declared " +
+    "*_MODEL_KNOB constant, and that knob's class companion from the declared map in " +
+    "lib/scoped-config/modelClassCompanion.ts (rows created live 2026-10-01 via the MCP)",
   "components/rich-content/prose/remote-image-policy.tsx":
     "one read per authorship at `rich_content.remote_images` / `autoload_${authorship}`; every " +
     "authorship in REMOTE_IMAGE_DEFAULTS is proven seeded by the 'remote images' case below",

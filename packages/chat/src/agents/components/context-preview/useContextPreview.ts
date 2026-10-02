@@ -15,6 +15,13 @@
  * overrides the active app org, while an agent-only preview inherits the
  * active app org from callApi. project_id / task_id still inherit active
  * app context; scope_ids are passed explicitly from the active selections.
+ *
+ * THE ONE DOOR: for a conversation, the request carries the context fields a
+ * send of that conversation would carry — `context`, `context_withheld`, the
+ * page rule `page_context` and the surface — from `buildPreviewRequestContext`
+ * (the same `buildRequestContext` call every request builder makes). So the
+ * preview's receipt is the turn's, the page's own conversation (a battle
+ * column) and a switched-off page included (RULES.md §0).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -22,6 +29,11 @@ import { useAppDispatch, useAppSelector } from "@host/lib/redux/hooks";
 import { callApi } from "@host/lib/api/call-api";
 import { selectScopeSelectionsContext } from "@host/lib/redux/slices/appContextSlice";
 import { selectConversationScopeIds } from "../../redux/execution-system/conversations/conversations.selectors";
+import {
+  buildPreviewRequestContext,
+  pageContextFor,
+  selectResolvedContextRows,
+} from "../../redux/execution-system/context-rules/request-context";
 import { extractErrorMessage } from "@host/utils/errors";
 import type { components } from "@host/types/python-generated/api-types";
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
@@ -88,6 +100,14 @@ export function useContextPreview(opts: {
   const scopeIds = useMemo(() => activeKey.split(",").filter(Boolean), [activeKey]);
   // One stable key per selection, so a re-render with an equal object never refetches.
   const selectionKey = chosen ? JSON.stringify(chosen) : null;
+  // The door's inputs: a change to the rows the composer shows, or to the page
+  // rule, re-resolves the preview (the fields themselves are read at send time).
+  const doorRows = useAppSelector((state) =>
+    conversationId ? selectResolvedContextRows(conversationId)(state) : null,
+  );
+  const pageRuleKey = useAppSelector((state) =>
+    conversationId ? JSON.stringify(pageContextFor(state, conversationId)) : "",
+  );
 
   // Starts in "loading": the hook fetches on mount (the panel only mounts
   // while open). Later selection changes silently re-resolve — the previous
@@ -105,6 +125,9 @@ export function useContextPreview(opts: {
     chosen?.organization_id ?? conversationScope.organizationId ?? null;
   const fetchPreview = useCallback(() => {
     const seq = ++requestSeq.current;
+    const doorFields = conversationId
+      ? dispatch((_d, getState) => buildPreviewRequestContext(getState(), conversationId))
+      : {};
     void dispatch(
       callApi({
         path: "/ai/context/preview",
@@ -118,6 +141,7 @@ export function useContextPreview(opts: {
             ? { selection: JSON.parse(selectionKey) as ContextSelection }
             : { scope_ids: scopeIds }),
           ...(path !== "old" ? { path } : {}),
+          ...doorFields,
         },
         scopeOverrides: requestOrganizationId
           ? { organization_id: requestOrganizationId }
@@ -149,6 +173,8 @@ export function useContextPreview(opts: {
     selectionKey,
     path,
     requestOrganizationId,
+    doorRows,
+    pageRuleKey,
     dispatch,
   ]);
 

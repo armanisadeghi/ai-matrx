@@ -36,7 +36,12 @@ export async function applyLaunchModelOverrides(
   // default = no override.
   if (isBasicWorkMandate(mandateKey) && !llmOverrides.model) {
     const preferred = await resolvePreferredChatModel();
-    if (preferred) llmOverrides.model = preferred;
+    if (preferred) {
+      llmOverrides.model = preferred.modelId;
+      // The class chosen with it rides beside it, or the server runs the
+      // model's preferred class and the person's choice is lost.
+      if (preferred.offeringId) llmOverrides.offering_id = preferred.offeringId;
+    }
   }
   if (Object.keys(llmOverrides).length > 0) {
     dispatch(seedOverrides({ conversationId, changes: llmOverrides }));

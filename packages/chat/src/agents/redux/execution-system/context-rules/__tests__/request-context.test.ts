@@ -510,6 +510,27 @@ describe("values the server added are shown and governable", () => {
     return state;
   }
 
+  // RULES.md §5 `delivered` (Arman, 2026-10-01: the full view showed the
+  // page's Organization copy while the model read the server's). A row the
+  // receipt carries delivered text for shows THAT; the send rows never carry it.
+  it("carries what the model read onto the displayed row, never onto the wire", () => {
+    const state = afterTurn(true, true);
+    const ctx = (state as unknown as { instanceContext: { receiptByConversationId: Record<string, { receipt: { rows: Record<string, unknown>[] } }> } }).instanceContext;
+    const element = '    <object key="plain" label="Plain value" format="text">\nStandup notes, as the server rendered them\n    </object>';
+    const stated = '  <organization id="o-1">Harbor Point</organization>';
+    ctx.receiptByConversationId.c1!.receipt.rows[0] = {
+      ...ctx.receiptByConversationId.c1!.receipt.rows[0],
+      delivered: { text: element, chars: element.length, truncated: false, sha256: "a" },
+      server_rendered: { text: stated, chars: stated.length, truncated: false, sha256: "b" },
+    };
+    const shown = selectDisplayContextRows("c1")(state) as unknown as Array<Record<string, unknown>>;
+    const plain = shown.find((r) => r.key === "plain")!;
+    expect((plain.delivered as { text: string }).text).toBe(element);
+    expect((plain.serverRendered as { text: string }).text).toBe(stated);
+    expect(plain.value).toBe("Standup notes");
+    expect(JSON.stringify(build(state).context)).not.toContain("as the server rendered them");
+  });
+
   it("lists each server-added value after the client's own, with its real name and surface key", () => {
     const shown = selectDisplayContextRows("c1")(afterTurn(true, true));
     expect(shown.map((r) => [r.key, r.label, r.surfaceKey, r.origin])).toEqual([

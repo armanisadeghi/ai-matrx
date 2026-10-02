@@ -128,6 +128,7 @@ import {
   toolsWithheldInOrganization,
 } from "@/lib/knobs/toolKnobGating";
 import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
+import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { AgentBundlesPanel } from "./AgentBundlesPanel";
@@ -377,6 +378,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   // disable the add affordances and (below) warn when saved tools will be
   // dropped. Permissive by default — only fires for an explicit
   // tools:{allowed:false} model. See supportsTools() / aidream tool_merge.py.
+  useAgentSettingsClassControls(agentId);
   const normalizedControls = useAppSelector((state) =>
     selectNormalizedControls(state, agentId),
   );

@@ -33,9 +33,14 @@ import {
 import { getManifest } from "@host/features/surfaces/manifests/registry";
 import {
   BASELINE_VALUES,
+  OWN_CONVERSATION_WITHHELD,
+  PAGE_OFF_WITHHELD,
   PAGELESS_CONTENT_INLINE_CEILING,
+  PERSON_CONTEXT_VALUES,
   POINTER_INLINE_CEILINGS,
 } from "@host/features/surfaces/manifests/_baseline.manifest";
+import { pageOwningConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { selectPageContextOff } from "../instance-ui-state/instance-ui-state.selectors";
 import {
   selectAgentAutoContextDisabled,
   selectAgentContextPolicies,
@@ -47,7 +52,7 @@ import {
   isFirstTurn,
 } from "../../../ui-first-tools/redux/build-ambient-context";
 import { selectSavedContextRuleRows } from "./context-rules.thunks";
-import { toContextReceipt } from "./receipt-check";
+import { deliveredFieldsFor, toContextReceipt } from "./receipt-check";
 import { resolveClientSurface } from "../utils/build-tool-injection";
 import { surfaceWritesNoteSource } from "../utils/surface-writes-note";
 
@@ -74,6 +79,52 @@ export interface RequestContextOptions {
   extraSources?: readonly ContextRowSource[];
 }
 
+/**
+ * The request field `page_context` (common-docs context-delivery RULES.md §0):
+ * this conversation is the page's OWN (the main chat, a builder's test run, a
+ * battle column) or the person switched its page off on the chip. The server's
+ * gate withholds the page from it exactly as these rows do.
+ */
+export interface PageContextDirective {
+  mode: "own" | "off";
+  /** The keys withheld at the page layer (beside page values and surroundings). */
+  withheld: string[];
+}
+
+/**
+ * THE PAGE RULE, decided once for the table and every send path: the page's
+ * own conversation never receives the page nor anything that identifies itself
+ * (its manifest's `ownConversationWithholds`, default the shared baseline); a
+ * conversation whose page switch is off receives none of the page. Null = an
+ * ordinary conversation (a window or panel chat over the page) that follows it.
+ */
+export function pageContextFor(
+  state: RootState,
+  conversationId: string,
+): PageContextDirective | null {
+  const owner = pageOwningConversation(conversationId);
+  if (owner) {
+    const listed = getManifest(owner)?.ownConversationWithholds ?? OWN_CONVERSATION_WITHHELD;
+    return { mode: "own", withheld: listed.filter((key) => !PERSON_CONTEXT_VALUES.has(key)) };
+  }
+  if (selectPageContextOff(conversationId)(state)) {
+    return { mode: "off", withheld: [...PAGE_OFF_WITHHELD] };
+  }
+  return null;
+}
+
+/** Whether the page rule keeps this value from the conversation (corpus `page_context_cases`). */
+function pageWithholds(
+  page: PageContextDirective | null,
+  key: string,
+  surfaceKey: string | undefined,
+): boolean {
+  if (!page || PERSON_CONTEXT_VALUES.has(key)) return false;
+  if (page.withheld.includes(key)) return true;
+  // A value the page itself declared (filed under the page's surface key).
+  return Boolean(surfaceKey && surfaceKey !== DEFAULT_SURFACE_KEY);
+}
+
 export interface RequestContext {
   rows: ResolvedContextRow[];
   /** The request body's `context`, or undefined when nothing is included. */
@@ -85,6 +136,8 @@ export interface RequestContext {
    * keys. Always sent — an empty list means nothing was withheld.
    */
   context_withheld: string[];
+  /** The request body's `page_context`; null = omit (the conversation follows its page). */
+  page_context: PageContextDirective | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -278,7 +331,26 @@ export function collectContextRowSources(
 
   for (const source of opts.extraSources ?? []) byKey.set(source.key, source);
 
-  return [...byKey.values()];
+  // 4. THE PAGE RULE (RULES.md §0): what this conversation never receives is
+  // off at the PAGE layer — the same resolver the server's gate runs, so the
+  // table, the wire and the receipt agree (a person's own rule still wins).
+  const page = pageContextFor(state, conversationId);
+  if (!page) return [...byKey.values()];
+  return [...byKey.values()].map((source) =>
+    pageWithholds(page, source.key, source.surfaceKey)
+      ? {
+          ...source,
+          layers: {
+            ...(source.layers ?? {}),
+            surface: {
+              declared: true,
+              auto_context: false,
+              max_inline_chars: source.layers?.surface?.max_inline_chars ?? null,
+            },
+          },
+        }
+      : source,
+  );
 }
 
 /**
@@ -326,6 +398,35 @@ export function buildRequestContext(
     rows,
     context: Object.keys(wire).length > 0 ? wire : undefined,
     context_withheld: withheldKeys(rows),
+    page_context: pageContextFor(state, conversationId),
+  };
+}
+
+/**
+ * The context fields of `POST /ai/context/preview` — what "what the agent will
+ * receive" is computed from. The SAME door call a send makes (rows, wire,
+ * withheld keys, the page rule) plus the surface the request would name, so
+ * the preview's receipt and the real turn's cannot disagree — on the page's
+ * own conversation and on a switched-off page included (RULES.md §0).
+ */
+export interface PreviewRequestContext {
+  context?: Record<string, unknown>;
+  context_withheld: string[];
+  page_context?: PageContextDirective;
+  surface?: string;
+}
+
+export function buildPreviewRequestContext(
+  state: RootState,
+  conversationId: string,
+): PreviewRequestContext {
+  const door = buildRequestContext(state, conversationId);
+  const surface = resolveClientSurface(state, conversationId);
+  return {
+    ...(door.context ? { context: door.context } : {}),
+    context_withheld: door.context_withheld,
+    ...(door.page_context ? { page_context: door.page_context } : {}),
+    ...(surface ? { surface } : {}),
   };
 }
 
@@ -345,6 +446,8 @@ function displayInputs(state: RootState, conversationId: string): readonly unkno
     state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt.cap ?? null,
     ambientIncluded(state, conversationId),
     resolveClientSurface(state, conversationId) ?? null,
+    pageOwningConversation(conversationId),
+    selectPageContextOff(conversationId)(state),
   ];
 }
 
@@ -561,7 +664,12 @@ export const selectDisplayContextRows =
       const label = row.fromReceipt ? receiptLabel(row) : undefined;
       return label && label !== row.label ? { ...row, label } : row;
     });
-    const out = [...filled, ...serverAdded];
+    // WHAT THE MODEL READ (RULES.md §5 `delivered`): every row the receipt
+    // carries it for shows the server's rendering, never the client's copy.
+    const out = [...filled, ...serverAdded].map((row) => {
+      const fields = deliveredFieldsFor(receipt, row.key, row.surfaceKey);
+      return Object.keys(fields).length > 0 ? { ...row, ...fields } : row;
+    });
     displayMemo.set(conversationId, { rows, receipt, expected, saved, out });
     return out;
   };

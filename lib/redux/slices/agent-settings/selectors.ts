@@ -10,6 +10,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import {
+  classConfigKey,
   selectModelById,
   type AIModel,
 } from "@/features/ai-models/redux/modelRegistrySlice";
@@ -139,10 +140,21 @@ export const selectNormalizedControls = createSelector(
       if (!modelId) return null;
       return selectModelById(state, modelId);
     },
+    // The pinned CLASS's controls (loaded by useModelClassControls) — a model's
+    // classes run through different APIs, so Lightning ≠ Fast.
+    (state: RootState, agentId: string) => {
+      const entry = state.agentSettings?.entries[agentId];
+      const modelId = entry?.overrides?.model ?? entry?.defaults?.model;
+      const pin = entry?.overrides?.offering_id ?? entry?.defaults?.offering_id;
+      return typeof pin === "string" && typeof modelId === "string"
+        ? state.modelRegistry?.classConfigByOffering?.[classConfigKey(modelId, pin)]
+        : undefined;
+    },
   ],
-  (model): NormalizedControls | null => {
+  (model, classConfig): NormalizedControls | null => {
     if (!model) return null;
-    return parseModelControls(model.controls as Record<string, unknown> | null);
+    const controls = classConfig ? classConfig.controls : model.controls;
+    return parseModelControls(controls as Record<string, unknown> | null);
   },
 );
 

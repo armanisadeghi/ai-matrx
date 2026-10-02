@@ -19,6 +19,7 @@
  */
 
 import { useConversationDisplayRows } from "../inputs/smart-input/useConversationDisplayRows";
+import * as contextReact from "@ai-matrx/agents/context/react";
 import { ContextRulesPanelBody } from "@ai-matrx/agents/context/react";
 import type { ResolvedContextRow } from "@ai-matrx/agents/context";
 import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
@@ -37,6 +38,15 @@ import { decodeAgentEditAccess } from "../../utils/agent-edit-access";
 import { docKindForContextKey } from "../../utils/workingDocumentContext";
 import type { ContextObjectType } from "../../types/agent-api-types";
 import { ContextValueBody } from "./ContextValueBody";
+import { ContextDeliveredBlock } from "./ContextDeliveredBlock";
+import type { ContextDeliveredFields } from "../../redux/execution-system/context-rules/receipt-check";
+
+/**
+ * @ai-matrx/agents ≥ 0.27.0 renders what the agent received in the panel
+ * detail itself (`ContextDeliveredValue`); an older installed build does not,
+ * so the host renders it. Retire with the 0.27.0 adoption.
+ */
+const PACKAGE_SHOWS_DELIVERED = "ContextDeliveredValue" in contextReact;
 import {
   WorkingDocumentBody,
   buildWorkingDocumentDrawerItem,
@@ -86,6 +96,12 @@ export function ContextRulesPanel({
       );
     }
     const policy = policies?.find((p) => p.key === row.key);
+    // RULES.md §5: when the receipt says what the model read for this value,
+    // THAT is the content — never the client's pre-send copy (Arman, 2026-10-01).
+    const delivered = row as ResolvedContextRow & ContextDeliveredFields;
+    const received = Boolean(
+      delivered.delivered || delivered.onRequest || delivered.serverRendered,
+    );
     const value =
       row.value && typeof row.value === "object" && !Array.isArray(row.value) && "content" in row.value
         ? (row.value as { content: unknown }).content
@@ -95,11 +111,20 @@ export function ContextRulesPanel({
         {policy?.description || row.description ? (
           <p className="text-xs text-muted-foreground">{policy?.description ?? row.description}</p>
         ) : null}
-        <ContextValueBody
-          type={(policy?.type ?? row.type ?? "text") as ContextObjectType}
-          contextKey={row.key}
-          value={value}
-        />
+        {received ? (
+          PACKAGE_SHOWS_DELIVERED ? null : <ContextDeliveredBlock fields={delivered} />
+        ) : (
+          <>
+            {value !== undefined && value !== null ? (
+              <p className="text-xs font-medium">Will send</p>
+            ) : null}
+            <ContextValueBody
+              type={(policy?.type ?? row.type ?? "text") as ContextObjectType}
+              contextKey={row.key}
+              value={value}
+            />
+          </>
+        )}
         {policy ? <AgentEditAccessBadge access={decodeAgentEditAccess(policy).access} /> : null}
       </div>
     );
