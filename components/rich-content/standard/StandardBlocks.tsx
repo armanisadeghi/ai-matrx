@@ -41,6 +41,7 @@ import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import { NestedRichContent } from "./NestedRichContent";
 import { DocumentFootnotes, DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
 import { healStreamingTail } from "./stream-holdback";
+import { stripThinking, stripThinkingStreaming } from "@ai-matrx/kit/text";
 import {
   MarkdownStreamingProvider,
   useMarkdownStreaming,
@@ -67,6 +68,28 @@ const StandardKindValue = lazy(() => import("./StandardKindRegion"));
 const StandardBrokenKind = lazy(() =>
   import("./StandardKindRegion").then((m) => ({ default: m.StandardBrokenKind })),
 );
+
+/**
+ * Chain-of-thought is never content (Arman, 2026-09-11). The source is
+ * stripped before splitting; a section of these types that still reaches a
+ * block (a tag the strip helper does not know) renders nothing.
+ */
+const CHAIN_OF_THOUGHT_TYPES = new Set([
+  "thinking",
+  "reasoning",
+  "consolidated_reasoning",
+]);
+const THINKING_TAG = /<(thinking|reasoning)\b/i;
+
+/**
+ * THE one strip (@ai-matrx/kit/text): closed `<thinking>` / `<reasoning>`
+ * fences removed; while live, an open one is cut at its tag so partial
+ * chain-of-thought never flashes. Text without a fence is returned untouched.
+ */
+function withoutThinking(source: string, live: boolean): string {
+  if (!THINKING_TAG.test(source)) return source;
+  return live ? stripThinkingStreaming(source).visible : stripThinking(source);
+}
 
 /** XML control sections whose body is prose that may carry nested blocks. */
 const SECTION_TYPES = new Set([
@@ -205,21 +228,12 @@ export function StandardBlock({
     );
   }
 
+  if (CHAIN_OF_THOUGHT_TYPES.has(type)) return null;
+
   if (SECTION_TYPES.has(type)) {
     if (!content.trim()) return null;
-    const muted =
-      type === "thinking" ||
-      type === "reasoning" ||
-      type === "consolidated_reasoning";
     return (
-      <div
-        data-rich-content-section={type}
-        className={
-          muted
-            ? "my-2 border-l-2 border-border pl-3 text-muted-foreground"
-            : "my-2"
-        }
-      >
+      <div data-rich-content-section={type} className="my-2">
         <NestedRichContent source={content} isStreaming={isStreaming} />
       </div>
     );
@@ -319,8 +333,9 @@ export function StandardBlocks({
   // engine above: the tail is held back (stream-holdback.ts) and every
   // MarkdownCore leaf below heals half-arrived inline syntax (stream-heal.ts).
   const live = useMarkdownStreaming() || !!isStreaming;
+  const visible = withoutThinking(source, live);
   const split = splitContentIntoBlocksV2(
-    live ? healStreamingTail(source) : source,
+    live ? healStreamingTail(visible) : visible,
   );
   // THE UNCHANGED-BLOCK LAW (chat-markdown/stable-blocks.ts): hand every block
   // whose data did not change its previous object, so an edit or a stream
@@ -332,7 +347,7 @@ export function StandardBlocks({
   return (
     <MarkdownStreamingProvider value={live}>
       {/* One numbering for the whole document, however many blocks it splits into. */}
-      <DocumentNumberingProvider source={source}>
+      <DocumentNumberingProvider source={visible}>
         <div data-rich-content="standard" data-matrx-doc-root="" className={className ?? "min-w-0"}>
           {blocks.map((block, index) => (
             <StandardBlock
