@@ -20,6 +20,7 @@ import {
   Activity
 } from 'lucide-react';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { getToolDisplayName } from "@ai-matrx/chat/tool-call-visualization/registry/registry";
 
 interface UsageStatsData {
   status: string;
@@ -308,7 +309,7 @@ export function UsageStatsModal({ isOpen, onClose, data }: UsageStatsModalProps)
                   {Object.entries(tool_call_stats.by_tool).map(([toolName, toolStats]) => (
                     <Card key={toolName} className="p-2.5 bg-muted/50">
                       <div className="flex items-center justify-between">
-                        <div className="font-medium text-sm">{toolName}</div>
+                        <div className="font-medium text-sm">{getToolDisplayName(toolName)}</div>
                         <div className="flex items-center gap-3 text-xs">
                           <div className="flex items-center gap-1">
                             <span className="text-muted-foreground">Total:</span>

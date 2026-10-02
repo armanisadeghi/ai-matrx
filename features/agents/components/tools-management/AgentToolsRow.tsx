@@ -14,6 +14,7 @@
 // agent carries, with an Add button that opens the same picker the wrench always opened.
 // The wrench stays where it is for people who know it.
 
+import { getToolDisplayName } from "@ai-matrx/chat/tool-call-visualization/registry/registry";
 import { useEffect, useMemo } from "react";
 import { Wrench, Plus, X, Info } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -43,12 +44,6 @@ interface AgentToolsRowProps {
 }
 
 /** A tool's name as a person writes it: "record_write" reads "Record write". */
-function humanToolName(name: string): string {
-  const spaced = name.replace(/[_-]+/g, " ").trim();
-  if (!spaced) return name;
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
-
 export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
   const dispatch = useAppDispatch();
   const toolIds = useAppSelector((state) => selectAgentTools(state, agentId));
@@ -137,11 +132,11 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
               >
                 <Wrench className="h-3 w-3 shrink-0 text-muted-foreground" />
                 <span className="max-w-[140px] truncate">
-                  {tool ? humanToolName(tool.name) : "Loading…"}
+                  {tool ? getToolDisplayName(tool.name) : "Loading…"}
                 </span>
                 <button
                   type="button"
-                  aria-label={`Remove ${tool ? humanToolName(tool.name) : "this tool"}`}
+                  aria-label={`Remove ${tool ? getToolDisplayName(tool.name) : "this tool"}`}
                   title="Remove from this agent"
                   className="text-muted-foreground hover:text-foreground"
                   onClick={() => remove(id)}

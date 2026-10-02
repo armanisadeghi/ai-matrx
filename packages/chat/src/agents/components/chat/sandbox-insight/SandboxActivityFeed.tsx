@@ -24,6 +24,7 @@ import {
 } from "./sandbox-activity";
 import { DURABLE_VFS_BADGE_TEXT } from "../../../../tool-call-visualization/renderers/shell/ShellInline";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { getToolDisplayName } from "../../../../tool-call-visualization/registry/registry";
 
 function formatDuration(ms: number | null): string | null {
   if (ms === null) return null;
@@ -56,7 +57,7 @@ const ActivityRow: React.FC<{ row: SandboxActivityRow }> = ({ row }) => {
             {row.subject ?? row.toolName}
           </p>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
-            <span>{row.toolName}</span>
+            <span>{getToolDisplayName(row.toolName)}</span>
             {row.exitCode !== null && (
               <span
                 data-testid="activity-exit-code"

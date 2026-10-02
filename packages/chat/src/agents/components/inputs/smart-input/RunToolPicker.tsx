@@ -72,6 +72,7 @@ import { setBuilderAdvancedSettings } from "../../../redux/execution-system/inst
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { getToolDisplayName } from "../../../../tool-call-visualization/registry/registry";
 
 export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
@@ -281,7 +282,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
                   <AgentToolBadge
                     key={t.name}
                     icon={<Code2 className="h-3 w-3" />}
-                    label={t.name}
+                    label={getToolDisplayName(t.name)}
                     sub={t.description ?? "custom"}
                   />
                 ))}
@@ -477,7 +478,7 @@ function ToolRow({
           {selected && <Check className="h-2.5 w-2.5" />}
         </span>
         <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
-          {tool.name}
+          {getToolDisplayName(tool.name)}
         </span>
         {tool.description && (
           <button

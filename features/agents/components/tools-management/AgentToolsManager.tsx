@@ -35,6 +35,7 @@ import {
   Save,
   SlidersHorizontal,
 } from "lucide-react";
+import { getToolDisplayName } from "@ai-matrx/chat/tool-call-visualization/registry/registry";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
@@ -1710,7 +1711,7 @@ function OrphanedToolsBanner({
                   <>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xs font-semibold text-foreground truncate">
-                        {tool.name}
+                        {getToolDisplayName(tool.name)}
                       </span>
                       {tool.category && (
                         <Badge
@@ -1938,7 +1939,7 @@ function CustomToolCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-foreground">
-              {tool.name}
+              {getToolDisplayName(tool.name)}
             </span>
             <Badge variant="secondary" className="text-[10px]">
               {paramCount} param{paramCount !== 1 ? "s" : ""}
@@ -2404,7 +2405,7 @@ function ClientToolRow({
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-foreground">{name}</span>
+          <span className="text-xs font-semibold text-foreground">{getToolDisplayName(name)}</span>
           {source === "custom" && (
             <Badge variant="outline" className="text-[9px] h-4">
               auto-delegated
@@ -4060,7 +4061,7 @@ function ToolCard({
                 active ? colors.text : "text-foreground"
               }`}
             >
-              {tool.name}
+              {getToolDisplayName(tool.name)}
             </span>
             {tool.tags && tool.tags.length > 0 && (
               <div className="flex items-center gap-1">

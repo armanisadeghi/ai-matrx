@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { listWorkspaceIds, subscribeWorkspace } from "../../runtime/workspaceRegistry";
 import { SidePanelHeader } from "../SidePanelChrome";
+import { getToolDisplayName } from "@ai-matrx/chat/tool-call-visualization/registry/registry";
 
 interface ExtensionsPanelProps {
   className?: string;
@@ -109,7 +110,7 @@ export const ExtensionsPanel: React.FC<ExtensionsPanelProps> = ({
           >
             <div className="flex items-center gap-1.5 text-[12px] font-medium text-neutral-800 dark:text-neutral-100">
               <tool.icon size={12} className="text-neutral-500" />
-              {tool.name}
+              {getToolDisplayName(tool.name)}
             </div>
             <div className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
               {tool.description}
