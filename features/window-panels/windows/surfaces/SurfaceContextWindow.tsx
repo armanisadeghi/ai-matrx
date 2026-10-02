@@ -32,6 +32,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { InfoHint } from "@/components/official/InfoHint";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ContextRulesTable, type ContextHierarchy } from "@ai-matrx/agents/context/react";
 import { CONTEXT_RULES_FEATURE, DEFAULT_INLINE_CAP } from "@ai-matrx/agents/context";
@@ -160,6 +161,8 @@ export default function SurfaceContextWindow({
   // composer's chip and full view (one renderer, one data source). Each switch
   // is the person's real rule for this page.
   const dispatch = useAppDispatch();
+  // A phone gets the table's touch rows (44px) and its phone column widths.
+  const isMobile = useIsMobile();
   useEffect(() => {
     if (isOpen) void dispatch(ensureSurfaceFeatureLoaded(CONTEXT_RULES_FEATURE));
   }, [dispatch, isOpen]);
@@ -435,6 +438,7 @@ export default function SurfaceContextWindow({
               rows={tableRows}
               cap={DEFAULT_INLINE_CAP}
               hierarchy={hierarchy}
+              density={isMobile ? "comfortable" : "compact"}
               selectedKey={effectiveSelectedKey}
               onOpenRow={(key) => setSelectedKey(key)}
               onChange={(key, surfaceKey, next) =>
