@@ -1594,7 +1594,7 @@ button.shell-nav-flyout-item {
 }
 
 .shell-header > * {
-  pointer-events: auto;
+  pointer-events: var(--shell-header-pointer-events, auto);
 }
 
 /* A BLOCKING layer (a confirmation, a phone sheet) disables the page by
@@ -1603,10 +1603,20 @@ button.shell-nav-flyout-item {
    header controls fire UNDER a pending "Delete …?" (found live 2026-09-23,
    register ARE-009). While the body is blocked, the header is blocked too.
    Windows (the default desktop Dialog) never set this, so the header stays
-   live beside them — policy ai-reachable-everywhere, rules 1 and 2. */
-body[style*="pointer-events: none"] .shell-header > *,
-body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
-  pointer-events: none !important;
+   live beside them — policy ai-reachable-everywhere, rules 1 and 2.
+
+   🚨 The blocked state is read on <body> ONLY and handed down as an
+   inherited variable. A `[style…]` selector followed by a descendant part
+   (`body[style*=…] .shell-header > *`, as this was until 2026-10-02) makes
+   Chrome restyle the WHOLE SUBTREE of any element whose inline style changes,
+   anywhere on the page: every /board pan frame restyled every tile (1,130
+   elements on a small board, ~1.7 s per pointer move on a heavy one).
+   Guard: styles/__tests__/no-style-attribute-descendant-selectors.test.ts. */
+body[style*="pointer-events: none"] {
+  --shell-header-pointer-events: none;
+}
+.shell-header .pointer-events-auto {
+  pointer-events: var(--shell-header-pointer-events, auto) !important;
 }
 
 /* Header center injection zone */
