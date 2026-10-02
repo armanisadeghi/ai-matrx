@@ -34,6 +34,16 @@ jest.mock("@/features/scopes/hooks/useKindItems", () => ({
   useKindItems: (...args: unknown[]) => useKindItems(...args),
 }));
 
+// This file proves order and the date line; facts are proven in
+// same-named-records-tell-apart.test.tsx.
+jest.mock("@/features/scopes/service/recordFacts", () => {
+  const actual = jest.requireActual("@/features/scopes/service/recordFacts");
+  return { ...actual, fetchRecordFacts: async () => new Map() };
+});
+jest.mock("@/features/organizations/hooks", () => ({
+  useUserOrganizations: () => ({ organizations: [], loading: false, error: null, refresh: () => undefined }),
+}));
+
 // The alphabetical title search the picker used before — never reached for a
 // plain type; if it is, the rows come back A→Z with no dates.
 jest.mock("@/features/scopes/hooks/useUniversalEntitySearch", () => ({

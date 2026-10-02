@@ -38,6 +38,12 @@ import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import type { KindScope } from "@/features/scopes/service/kindInventory";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  composeRecordSecondaryLine,
+  fetchRecordFacts,
+  type RecordFact,
+} from "@/features/scopes/service/recordFacts";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import {
   isEntityTypeToken,
@@ -352,7 +358,13 @@ function RecentRecordSearch({
 }: RecordSearchProps) {
   const info = getEntityInfo(token);
   const list = useKindItems(token, EVERY_RECORD_I_CAN_SEE, query);
+  const facts = useRecordFacts(
+    token,
+    list.items.map((item) => item.id),
+  );
+  const organizationName = useOrganizationNames();
   const now = Date.now();
+  const rows = recordRows(list.items, facts, organizationName, now);
   return (
     <CandidateSearch
       token={token}
@@ -363,11 +375,7 @@ function RecentRecordSearch({
       error={list.error && list.items.length === 0 ? list.error.message : null}
       ready={!list.loading && !list.error}
       onRetry={onRetry}
-      rows={list.items.map((item) => ({
-        id: item.id,
-        title: item.title,
-        secondary: candidateSecondaryLine(item.updatedAt, now),
-      }))}
+      rows={rows}
       footer={
         list.hasMore ? (
           <button
@@ -385,6 +393,70 @@ function RecentRecordSearch({
       }
     />
   );
+}
+
+/**
+ * Each row's secondary line: the organization (only when the rows span more
+ * than one — a single-organization list repeats nothing), one fact that tells
+ * same-named records apart, and when it changed. ≤60 characters.
+ */
+export function recordRows(
+  items: ReadonlyArray<{ id: string; title: string; updatedAt: string | null }>,
+  facts: ReadonlyMap<string, RecordFact>,
+  organizationName: (id: string) => string | null,
+  now: number,
+): Array<{ id: string; title: string; secondary: string | null }> {
+  const organizations = new Set(
+    items
+      .map((item) => facts.get(item.id)?.organizationId)
+      .filter((id): id is string => Boolean(id)),
+  );
+  const spansOrganizations = organizations.size > 1;
+  return items.map((item) => {
+    const fact = facts.get(item.id);
+    return {
+      id: item.id,
+      title: item.title,
+      secondary: composeRecordSecondaryLine({
+        organization:
+          spansOrganizations && fact?.organizationId
+            ? organizationName(fact.organizationId)
+            : null,
+        fact: fact?.fact ?? null,
+        edited: candidateSecondaryLine(item.updatedAt, now),
+      }),
+    };
+  });
+}
+
+/** Facts for the loaded rows; re-read when the set of ids changes. */
+function useRecordFacts(
+  token: string,
+  ids: string[],
+): ReadonlyMap<string, RecordFact> {
+  // A string key: `ids` is a fresh array every render.
+  const idsKey = ids.join(",");
+  const [facts, setFacts] = useState<ReadonlyMap<string, RecordFact>>(
+    () => new Map(),
+  );
+  useEffect(() => {
+    if (!idsKey) return;
+    let cancelled = false;
+    void fetchRecordFacts(token, idsKey.split(",")).then((next) => {
+      if (!cancelled) setFacts(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, idsKey]);
+  return facts;
+}
+
+/** The person's organizations by id — the membership list, never the active org. */
+function useOrganizationNames(): (id: string) => string | null {
+  const { organizations } = useUserOrganizations();
+  const byId = new Map(organizations.map((org) => [org.id, org.name] as const));
+  return (id) => byId.get(id) ?? null;
 }
 
 function RecordReferenceSearch({
