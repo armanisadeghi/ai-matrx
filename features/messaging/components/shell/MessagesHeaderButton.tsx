@@ -18,7 +18,6 @@
 
 import { MessageTapButton } from "@ai-matrx/tap-target/buttons";
 import { useConversations } from "@ai-matrx/messaging/react";
-import { cn } from "@/lib/utils";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 import { useMessagesToggle } from "@/features/messaging/canvas/messagesKind";
 
@@ -61,11 +60,12 @@ function SignedInMessagesButton() {
   const { isVisible, toggle } = useMessagesToggle();
   const label = unread > 0 ? `Messages (${unread} unread)` : "Messages";
   return (
-    <div className="relative shrink-0" data-messages-header-button data-pressed={isVisible ? "" : undefined}>
+    <div className="relative shrink-0" data-messages-header-button>
       <MessageTapButton
         ariaLabel={label}
         tooltip={label}
-        className={cn(isVisible && "bg-accent", (unread > 0 || isVisible) && "text-primary")}
+        className={unread > 0 ? "text-primary" : undefined}
+        pressed={isVisible}
         onClick={toggle}
       />
       <MessagesBadge count={unread} />

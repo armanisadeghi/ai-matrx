@@ -46,7 +46,8 @@ import {
   scratchpadTabId,
 } from "@ai-matrx/chat/host/canvas-tabs";
 import { useChatCanvasView } from "@ai-matrx/chat/host/canvas";
-import { setFocus } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { clearFocus, setFocus } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { registerSurface } from "@ai-matrx/chat/agents/redux/surfaces/surfaces.slice";
 import {
   CHAT_DOCUMENTS_LAUNCHER_KIND,
   chatDocumentsKind,
@@ -217,7 +218,12 @@ describe("every door opens the same Documents tab", () => {
   it("on a brand-new chat it opens the conversation /chat/new already reserved — never a refusal", () => {
     mockPathname = "/chat/new";
     const store = makeStore();
+    // As live on 2026-10-02: the mounted chat page is a registered `chat:` surface
+    // holding its reserved conversation, and nothing is the last-focused surface.
+    store.dispatch(registerSurface({ surfaceKey: "chat:default-agent", kind: "page", basePath: "/chat/[conversationId]" }));
     store.dispatch(setFocus({ surfaceKey: "chat:default-agent", conversationId: CONVERSATION_ID }));
+    store.dispatch(setFocus({ surfaceKey: "quick-chat:panel:default", conversationId: "other" }));
+    store.dispatch(clearFocus("quick-chat:panel:default"));
     const { probe, unmount } = mount(store);
     act(() => probe.pick());
 

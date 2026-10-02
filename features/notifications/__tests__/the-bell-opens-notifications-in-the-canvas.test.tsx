@@ -89,6 +89,10 @@ function press(selector: string) {
   act(() => button.click());
 }
 
+function pressed(selector: string): boolean {
+  return host.querySelector(`${selector} button`)?.getAttribute("aria-pressed") === "true";
+}
+
 function panesIn(node: CanvasLayoutNode): number {
   return node.type === "pane" ? 1 : node.children.reduce((sum, child) => sum + panesIn(child), 0);
 }
@@ -113,11 +117,11 @@ describe("the header bell", () => {
     expect(state.layout.type).toBe("split");
     expect(state.layout.type === "split" ? state.layout.orientation : null).toBe("vertical");
     expect(panesIn(state.layout)).toBe(2);
-    expect(host.querySelector("[data-inbox-header-button]")?.hasAttribute("data-pressed")).toBe(true);
+    expect(pressed("[data-inbox-header-button]")).toBe(true);
 
     press("[data-inbox-header-button]");
     expect(store.getState().items[NOTIFICATIONS_ID]).toBeUndefined();
-    expect(host.querySelector("[data-inbox-header-button]")?.hasAttribute("data-pressed")).toBe(false);
+    expect(pressed("[data-inbox-header-button]")).toBe(false);
   });
 
   it("on an empty canvas it just opens — no empty pane above it", () => {
@@ -136,7 +140,7 @@ describe("the header Messages button", () => {
     press("[data-messages-header-button]");
     expect(store.getState().items[MESSAGES_ID]).toBeDefined();
     expect(store.getState().isOpen).toBe(true);
-    expect(host.querySelector("[data-messages-header-button]")?.hasAttribute("data-pressed")).toBe(true);
+    expect(pressed("[data-messages-header-button]")).toBe(true);
 
     press("[data-messages-header-button]");
     expect(store.getState().items[MESSAGES_ID]).toBeUndefined();
