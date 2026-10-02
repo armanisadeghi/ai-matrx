@@ -18,62 +18,39 @@ controls, never hidden — see `features/shell/FEATURE.md`.
 
 | File | Role |
 |---|---|
-| `components/InboxHeaderButton.tsx` | The bell. Badge = unread notices + conversations with unread + proposals waiting + what waits on you in your tables (the record store's inbox, every organization of yours). Popover on desktop, Drawer on mobile; a guest gets the auth gate. Idle cost: one tap-target + three hooks. |
-| `components/InboxPanel.tsx` | THE inbox body — mounted by the bell AND by `/notifications` (`app/(core)/notifications/page.tsx`). Pinned rows for Messages and Waiting-on-you, then the notice list, Mark-all-read, honest empty/error states. |
-| `useInbox.ts` | `useInboxCounts()` (badge) and `useInboxList()` (rows + `markRead` / `markAllRead`) over react-query. `INBOX_POLL_INTERVAL_MS`, `INBOX_PANEL_LIMIT`. |
-| `service.ts` | The four door calls. Reads/writes go React → Supabase directly. |
-| `types.ts` | `InboxNotification` — the door's RETURNS TABLE. |
+| `components/InboxHeaderButton.tsx` | The bell. Badge = unseen Needs-you + For-you notices + anything new from a counting source since the bell was last opened; clears on open (ruling 1). Updates add a dot, never a number; an unreadable part shows a neutral dot. Fixed 400px popover on desktop, full-height sheet on phone. `G` then `N` opens the inbox window from anywhere. |
+| `components/BellPanel.tsx` | THE bell body — desktop popover AND phone sheet (also mounted by `HeaderPhoneOverflow`). For you / Updates tabs, Needs-you section (3 + "N more"), time buckets, grouped rows, All places strip, footer "Open inbox" as a WINDOW (Ctrl/Cmd-click: new tab). No bulk, no filters. |
+| `components/InboxWorkspace.tsx` | THE inbox — `/notifications` (`InboxPage`, `?org_filter=`, `?view=`) and the inbox window (`windows/InboxWindow.tsx`). Rail (views + Places), grouped list, detail pane, Snoozed (with `HiddenElsewhere`) and Done views, keyboard (J/K, Enter/O, E, Shift+E, U, H, X, Z, ?), bulk, search, type filter, organization filter (default All, never the active org). |
+| `components/NoticeRow.tsx` | ONE row anatomy for bell, sheet and page: unread dot, lead (avatar or type icon), actor · title, context · plain preview, time → hover Done / Snooze / ⋯; 52/64px fixed; swipe on the phone (left Done, right read). |
+| `components/NoticeDetail.tsx` | Detail pane: triage bar, full body (`NotificationBody`), group members. |
+| `components/HiddenElsewhere.tsx` | Snoozed view's cross-source half: snoozed/silenced assists, snoozed/dismissed tasks, snoozed record-store items — each with its way back (ruling 3). |
+| `components/PlacesStrip.tsx` | "All places" strip and the rail's `SourceItem`. |
+| `sources/registry.tsx` | THE notice-source registry (ruling 3): approvals, record-store work, workflows waiting, assists, tasks, HR tasks. Each opens its CANONICAL list as a window (or a new tab when the list owns the address). A new system joins here, never by editing the bell. |
+| `openNotice.ts` | `useOpenNotice` — the one opener. `?panels=` → window in place; route with a window → that window; any other link → NEW TAB, announced (`notice-no-window` / `notice-no-hydrator`). Never the router. |
+| `useInbox.ts` | `useInboxCounts` (badge, dot, shared seen-store), `useInboxFeed` (paged view), `useInboxActions` (optimistic triage + undo), `useWorkWaiting`. |
+| `useNoticeHandlers.ts` | Row actions, once: open marks the group read (never Done-on-open), Done, Snooze, read toggle, new tab, Turn off this type (`setNotificationPreference`, in_app). |
+| `presentation.ts` · `grouping.ts` | Titles (subject → event-type label → humanised key, never the raw key), plain previews, buckets, categories/icons, times; client grouping (target, or event family for updates). |
+| `service.ts` | Door calls with an honest fallback to the pre-triage doors (`triage: false` → Done/Snooze/Snoozed/Done-tab absent). |
 
-## The doors (applied to the main database 2026-09-19 through the Supabase MCP)
+Windows that wrap canonical lists (registered in `features/overlays/catalogue.ts`, metadata, `OverlayController`, openers): `notificationsInboxWindow` (this workspace), `assistsWindow` (`features/assists/windows`, wraps `AssistsManager`), `workInboxWindow` (`features/unified-data/windows`, wraps records-ui `ActionInbox`, all organizations, records open in a new tab), `waitingRunsWindow` (`features/workflow-runtime/discovery/windows`, wraps `WaitingInbox`).
 
-| Door | What |
-|---|---|
-| `communication.my_notifications(p_limit, p_before, p_unread_only)` | The caller's delivered `in_app` rows, newest first, keyset by `created_at`. Never the provider columns. |
-| `communication.my_notification_unread_count()` | The badge number. |
-| `custom.inbox_counts()` | What waits on this person in the record store, one line per organization (waiting / snoozed / cleared / overdue) — the SAME predicate (`custom._inbox_items`) the inbox screen `custom.work_inbox` lists with and the reminder tick reminds from, so the bell, the inbox and the reminders cannot disagree (lane S5-PRIME-2, 2026-09-24). Read by `fetchMyWorkWaiting`; pinned as "In your tables · <organization>", each opening `/data-v2?org=<id>`. |
-| `communication.mark_my_notifications_read()` | Mark all read (`read_channel = 'in_app'`). Returns the count changed. |
-| `communication.mark_notification_read(id, 'in_app')` | Pre-existing; one row, on open. |
+## The doors
 
-All `SECURITY DEFINER`, `auth.uid()` resolved inside the body, `anon` holds no
-EXECUTE, each declared in `platform.client_callable_door` (`declared_by =
-'shell-inbox 2026-09-19'`). Doors rather than a table policy because the
-recipient read arm (`recipient_user_id = auth.uid()`) is still routed to the
-DB-rules owner — only `iam.apply_rls` may emit it — and a door does not
-decertify the table. Verified live as `admin@admin.com` through role
-`authenticated`: 257 unread, list returns rows.
+Pre-triage (live since 2026-09-19): `my_notifications`, `my_notification_unread_count`, `mark_my_notifications_read`, `mark_notification_read`, `custom.inbox_counts`.
+
+Triage (`migrations/notifications_inbox_triage.sql`, **applied on the nightly clone only, held by its `-- draft:` line until the owner is told** — it alters `communication.notification`): columns `seen_at`, `done_at`, `snoozed_until`; `config.bucket` defaults on every event type; doors `inbox_notifications(p_state, p_limit, p_before, p_unread_only, p_org_id)`, `my_inbox_summary()`, `mark_inbox_seen()`, `set_notifications_state(p_ids, p_action, p_until)`, `my_inbox_organizations()`. Snooze needs no schedule: a past `snoozed_until` reads as back, unread, sorted at that moment. Inverse: `migrations/inverse/notifications_inbox_triage_down.sql`. After it lands on live: regenerate types, drop the `as never` seam, delete the pre-triage fallback and `my_notifications` / `my_notification_unread_count` (aidream `scripts/check_db_memory_budget.py` names the latter).
+
+All `SECURITY DEFINER`, `auth.uid()` resolved inside, anon holds no EXECUTE, each declared in `platform.client_callable_door`.
 
 ## Invariants
 
-- **One home.** Anything that tells a person something that they did not just
-  do is a declared spine event, delivered to `in_app`, read here. Never a
-  second list, never a per-feature bell. The ~5,400 `toast.*` sites are for
-  confirming the person's own action; a toast about something else is a
-  notification with no home — convert it to an event.
-- **Pinned rows are a bridge, not a design.** Conversations with unread
-  messages (`@ai-matrx/messaging`) and proposals waiting (`features/approvals`)
-  are pinned above the list with their counts and open their canonical
-  surfaces (`messagesWindow`, `approvalsWindow`). When those producers emit
-  spine events, the pinned rows go and their items become ordinary rows.
-- **Honest badge.** `useInboxCounts().partial` is true when a part could not
-  be read; the bell's label says so instead of printing a confident wrong sum.
-  A read failure in the panel is a red row with Retry, never "all caught up".
-- **Read is a fact the person made.** A row is marked read when opened, or by
-  Mark all read — never on delivery (the `in_app` adapter says the same on its
-  side).
-- **Every row opens.** A row with no link still opens as "read". Never a dead row.
-- 🚨 **(Owner ruling, 2026-10-01; noted by the notifications-ui-redo research session.)** The dropdown and phone sheet **never navigate the page**, for ANY link. It opens a window panel or a new tab only. This widens the rule below beyond `?panels=`. Today's `"route"` case, the hydrator fallback, the "In your tables" pinned row, and the "See all notifications" footer still navigate and must change. The bell is also the one door to every notice system (assists, tasks, record-store inbox, …). Spec: `../../../common-docs/projects/notifications-ui-redo/RESEARCH.md` §0a, §3.8, §3.9.
-- 🚨 **A notice never moves the page** (Arman, 2026-09-30: *"I want to get a window panel and a
-  link to open whatever I need in a new tab. never disrupt the page we're on."*). An internal
-  `deep_link` carrying `?panels=<key>:<id>:<args>` opens that window IN PLACE through its
-  registered hydrator (`openPanelsInPlace.ts`, loaded on the click; the real `UrlPanelRegistry` +
-  `parseParams`) — never `router.push`. Any key with no hydrator: nothing dispatched, the link is
-  navigated to as before, and it is announced (`console.error` + `captureError` source
-  `url-panel-unopened`, code `notice-no-hydrator`). A plain internal link navigates; an external
-  one opens a new tab. Classification: `openNoticeLink.ts`. Every row with a link carries an
-  **Open in new tab** anchor (`target=_blank`, absolute URL, marks read) where the same `?panels=`
-  link hydrates on first load. Guard: `__tests__/notice-opens-window-in-place.test.tsx` (red on the
-  pre-change panel: 3 of 5). Producers: point a notice at a window by declaring a
-  `deep_link_template` with a `?panels=` token — the declared template wins over `notify(deep_link=)`.
+- **One home.** Anything that tells a person something that they did not just do is a declared spine event, delivered to `in_app`, read here. Toasts are for the person's own action.
+- 🚨 **The bell never moves the page** (owner ruling 4, 2026-10-01, widening 2026-09-30). The bell, the phone sheet, the inbox window and every source open a window over the page or a new tab — never the router, never a same-tab link. Guard: `__tests__/bell-never-navigates.test.tsx` clicks every control of the bell with one notice of every link kind and fails on any router call or same-tab anchor; a static half refuses `useRouter` / `next/link` / `AppLink` in the bell's tree. Shown red on the pre-2026-10-01 `InboxPanel` (5 router pushes + the same-tab footer link), green after. Opener contract: `__tests__/notice-opens-without-moving-the-page.test.tsx`.
+- **Triage to zero** (ruling 2). Done is the main gesture; every action is undoable (`Z`, toast Undo) and Done is recoverable from the Done view. Opening never marks Done.
+- **Honest badge** (ruling 1). Counts only what is new and needs you or is addressed to you. Never "N unread" in the header.
+- **One door to every notice system** (ruling 3) — the source registry; hidden things are listed in Snoozed.
+- **Read is a fact the person made.** Opening a row (or its group) marks it read; never on delivery.
+- **Every row opens.** A row with no link still opens into the detail pane.
 
 ## Freshness — and the named follow-on
 
@@ -87,29 +64,20 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 
 ## Follow-ups (owned, not optional)
 
-1. **Regenerate `types/database.types.ts`** (`pnpm db-types`) and delete the
-   `as never` / `UntypedRpcResult` seam in `service.ts`; derive
-   `InboxNotification` from `communication.Functions.my_notifications`. This
-   session had no Supabase access token in its sandbox.
-2. **Realtime** as above.
-3. **Messages and approvals as spine events** — retire the pinned rows.
-4. **HR notices views** (`SPEC-NOTIFICATIONS` §8 D6): `/hr/me/notices` and
-   `/hr/settings/notifications#notices` mount `InboxPanel` filtered by
-   `event_key` prefix, never a separate build.
-5. **Preferences link** — the empty state names Settings › Notifications
-   (`features/settings/tabs/NotificationsTab.tsx`); a direct control in the
-   panel header is the next affordance.
-6. **`custom.inbox_counts` — FIXED 2026-09-29** (`migrations/inbox_counts_one_pass_over_every_organization.sql`).
-   It was an N+1 loop (one `custom._inbox_items` call per organization; the cost was the per-call
-   re-plan over the hash-partitioned `custom.record`, even for organizations with nothing in them).
-   Approvals are now read in one pass over every organization with `_inbox_items`' exact predicate;
-   assignments still come from `_inbox_items` itself, called only for organizations where the
-   caller's person-record is somebody's Assignee (the sight check there is a T-13 ratchet reader,
-   so it stays in one place). Remaining cost is per pending approval
-   (`custom.work_approval_approvers` per row) — test@test.com with 38 pending approvals is ~430 ms
-   on the clone.
+1. **Live apply of `notifications_inbox_triage.sql`** — announced to the owner first (it alters a live table). Then `pnpm db-types`, derive types, delete the fallback.
+2. **Grouped door** `my_notification_groups(...)` so grouping is exact across pages (today: client-side over the loaded page).
+3. **Mute a record** — needs a `notification_mute` table (`platform.create_entity_table` + certification, owner first). "Turn off this type" ships today.
+4. **Mark-unread on the pre-triage door** does not exist; until live apply, unread toggles only work on the clone.
+5. **Producers (aidream):** HR workflow / share / print senders write a `subject`; set `created_by` to the human who caused the event; Needs-you items set `done_at` when decided anywhere; due-date reminders become spine events; toasts about events the person did not cause become spine events.
+6. **Realtime** — broadcast on insert + the "N new" pill (§3.6).
+7. **Detail pane mounts the target's canonical window component inline** (§3.5); today "Open" opens it as a window over the page. Places in the rail open windows rather than mounting in the pane.
+8. **Inline Approve/Decline** on approval rows through the approval kind registry; today Needs-you rows carry "Review", which opens the item in place.
+9. **Version-skew "Not now"** persisted and shown under Snoozed; **HR task inbox** and **question desk** as windows (both write the address today, so HR tasks opens in a new tab).
+10. **Organization overrides** of `config.bucket` through `notification_event_override.config_patch` are not read by the doors yet.
 
 ## Change log
+
+- **2026-10-01** — Notifications UI redo (owner rulings 1–4, `common-docs/projects/notifications-ui-redo/RESEARCH.md`). `InboxPanel` deleted; `BellPanel`, `InboxWorkspace`, `NoticeRow`, `NoticeDetail`, `HiddenElsewhere`, the notice-source registry and four windows built; every open is a window or a new tab (guard red→green); triage migration applied and rehearsed (up/inverse/up) on the clone only. Verified on the clone preview as admin@admin.com at 1440 and 375, dark and light.
 
 - **2026-09-30** — Mandate Candidates F1: `?panels=` notice links open their window in place;
   every linked row gets Open in new tab; unknown window keys fall back loudly. Proven on the clone

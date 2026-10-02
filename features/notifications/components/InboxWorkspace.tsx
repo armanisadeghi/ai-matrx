@@ -138,11 +138,12 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
   const triage = feed.triage && counts.triage;
 
   // Opening the inbox is "seen" too (ruling 1).
-  const { markSeen } = counts;
+  const { markSeen, approvals: approvalsCount, work: workCount } = counts;
   useEffect(() => {
     markSeen();
+    // Re-run as each counting source answers, so what it shows is seen too.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [approvalsCount, workCount]);
 
   // A view that does not exist on this database falls back to the Inbox.
   useEffect(() => {
@@ -420,6 +421,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
             density="page"
             selected={current?.key === group.key}
             checked={checked.has(group.key)}
+            selecting={checked.size > 0}
             onCheck={(shift) => toggleCheck(group, shift)}
             {...rowHandlers}
           />

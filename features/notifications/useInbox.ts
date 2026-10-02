@@ -23,7 +23,7 @@
  * The broadcast on insert is the named follow-up in ./FEATURE.md.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   useInfiniteQuery,
   useQuery,
@@ -94,28 +94,52 @@ export function useWorkWaiting(enabled: boolean) {
 }
 
 // ── "seen" for sources that have none of their own ────────────────────────
+// One store for every mounted bell, sheet and inbox, so marking seen anywhere
+// clears the badge everywhere. Per viewer, in this browser (a convenience).
 const SEEN_SOURCES_KEY = "matrx:inbox:seen-source-counts";
+const EMPTY_SEEN: Readonly<Record<string, number>> = Object.freeze({});
+const seenListeners = new Set<() => void>();
+let seenSnapshot: { key: string; raw: string | null; value: Record<string, number> } | null = null;
+
+function seenKey(userId: string | null): string | null {
+  return userId ? `${SEEN_SOURCES_KEY}:${userId}` : null;
+}
 
 function readSeenSourceCounts(userId: string | null): Record<string, number> {
-  if (!userId || typeof window === "undefined") return {};
+  const key = seenKey(userId);
+  if (!key || typeof window === "undefined") return EMPTY_SEEN;
+  let raw: string | null = null;
   try {
-    const raw = window.localStorage.getItem(`${SEEN_SOURCES_KEY}:${userId}`);
-    const parsed: unknown = raw ? JSON.parse(raw) : {};
-    return typeof parsed === "object" && parsed !== null
-      ? (parsed as Record<string, number>)
-      : {};
+    raw = window.localStorage.getItem(key);
   } catch {
-    return {};
+    return EMPTY_SEEN;
   }
+  if (seenSnapshot && seenSnapshot.key === key && seenSnapshot.raw === raw) return seenSnapshot.value;
+  let value: Record<string, number> = EMPTY_SEEN;
+  try {
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    if (typeof parsed === "object" && parsed !== null) value = parsed as Record<string, number>;
+  } catch {
+    value = EMPTY_SEEN;
+  }
+  seenSnapshot = { key, raw, value };
+  return value;
 }
 
 function writeSeenSourceCounts(userId: string | null, counts: Record<string, number>): void {
-  if (!userId || typeof window === "undefined") return;
+  const key = seenKey(userId);
+  if (!key || typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(`${SEEN_SOURCES_KEY}:${userId}`, JSON.stringify(counts));
+    window.localStorage.setItem(key, JSON.stringify(counts));
   } catch {
     // Storage blocked: the counts simply read as new again next time.
   }
+  for (const listener of seenListeners) listener();
+}
+
+function subscribeSeen(listener: () => void): () => void {
+  seenListeners.add(listener);
+  return () => seenListeners.delete(listener);
 }
 
 export interface InboxCounts {
@@ -144,10 +168,11 @@ export function useInboxCounts(): InboxCounts {
   const queryClient = useQueryClient();
   const approvals = usePendingApprovalCount();
   const idleReady = useIdleReady();
-  const [seenSources, setSeenSources] = useState<Record<string, number>>({});
-  useEffect(() => {
-    setSeenSources(readSeenSourceCounts(userId));
-  }, [userId]);
+  const seenSources = useSyncExternalStore(
+    subscribeSeen,
+    () => readSeenSourceCounts(userId),
+    () => EMPTY_SEEN,
+  );
 
   const workWaiting = useWorkWaiting(idleReady);
   const summary = useQuery({
@@ -166,6 +191,14 @@ export function useInboxCounts(): InboxCounts {
       : workWaiting.data.reduce((sum, o) => sum + o.waiting, 0);
   const workSnoozed = (workWaiting.data ?? []).reduce((sum, o) => sum + o.snoozed, 0);
   const s = summary.data?.summary ?? null;
+  // Items handled since they were seen lower the mark, so the next new one counts.
+  useEffect(() => {
+    const lowered: Record<string, number> = {};
+    if (approvalCount !== null && (seenSources.approvals ?? 0) > approvalCount) lowered.approvals = approvalCount;
+    if (work !== null && (seenSources.work ?? 0) > work) lowered.work = work;
+    if (Object.keys(lowered).length) writeSeenSourceCounts(userId, { ...seenSources, ...lowered });
+  }, [approvalCount, work, seenSources, userId]);
+
   const newSince = (key: string, count: number | null) =>
     count === null ? 0 : Math.max(0, count - (seenSources[key] ?? 0));
 
@@ -180,8 +213,9 @@ export function useInboxCounts(): InboxCounts {
       ...(approvalCount !== null ? { approvals: approvalCount } : {}),
       ...(work !== null ? { work } : {}),
     };
-    setSeenSources(next);
-    writeSeenSourceCounts(userId, next);
+    if (next.approvals !== seenSources.approvals || next.work !== seenSources.work) {
+      writeSeenSourceCounts(userId, next);
+    }
     if (!s || s.unseenNeedsYou + s.unseenDirect + s.unseenUpdates === 0) return;
     // Optimistic: the badge clears the moment the bell opens.
     queryClient.setQueryData(summaryKey(userId), (prev: typeof summary.data) =>

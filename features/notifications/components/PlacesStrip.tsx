@@ -75,7 +75,7 @@ export function SourceItem({
   );
 }
 
-export function PlacesStrip({ onOpened }: { onOpened?: () => void }) {
+export function PlacesStrip({ onOpened, columns = 2 }: { onOpened?: () => void; columns?: 1 | 2 }) {
   const isAdmin = useAppSelector(selectIsAdminPerson);
   const sources = visibleSources(Boolean(isAdmin));
   const [more, setMore] = useState(false);
@@ -85,7 +85,7 @@ export function PlacesStrip({ onOpened }: { onOpened?: () => void }) {
       <div className="flex h-6 items-center px-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         All places
       </div>
-      <div className="grid grid-cols-2 gap-x-1">
+      <div className={cn("grid gap-x-1", columns === 2 ? "grid-cols-2" : "grid-cols-1")}>
         {shown.map((source) => (
           <SourceItem key={source.key} source={source} layout="strip" onOpened={onOpened} />
         ))}

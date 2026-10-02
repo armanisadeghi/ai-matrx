@@ -71,6 +71,8 @@ interface NoticeRowProps extends NoticeRowHandlers {
   density: "bell" | "page" | "sheet";
   selected?: boolean;
   checked?: boolean;
+  /** Some row is selected: every row shows its checkbox. */
+  selecting?: boolean;
   onCheck?: (shift: boolean) => void;
   expanded?: boolean;
   onToggleExpand?: () => void;
@@ -117,6 +119,7 @@ export function NoticeRow({
   density,
   selected = false,
   checked,
+  selecting = false,
   onCheck,
   expanded = false,
   onToggleExpand,
@@ -275,8 +278,11 @@ export function NoticeRow({
         {onCheck ? (
           <span
             className={cn(
-              "flex shrink-0 items-center",
-              checked ? "opacity-100" : "opacity-0 group-hover/row:opacity-100 focus-within:opacity-100",
+              "shrink-0 items-center",
+              // On a phone the checkbox is absent until a selection exists (no invisible tap target).
+              checked || selecting
+                ? "flex"
+                : "hidden opacity-0 @2xl:flex group-hover/row:opacity-100 focus-within:opacity-100",
             )}
           >
             <Checkbox
@@ -321,14 +327,15 @@ export function NoticeRow({
           </span>
         </button>
 
-        {density !== "page" && group.bucket === "needs_you" && hasLink && !done ? (
+        {/* On the phone the whole row is the tap target; a second Review button only squeezes the title. */}
+        {density === "bell" && group.bucket === "needs_you" && hasLink && !done ? (
           <button
             type="button"
             onClick={() => handlers.onOpen(group)}
             className={cn(
               "shrink-0 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-[var(--matrx-glass-bg-hover)]",
-              density === "sheet" ? "h-11" : "h-7 group-hover/row:hidden group-focus-within/row:hidden",
-              pinned && density !== "sheet" ? "hidden" : undefined,
+              "h-7 group-hover/row:hidden group-focus-within/row:hidden",
+              pinned ? "hidden" : undefined,
             )}
           >
             Review

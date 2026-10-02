@@ -225,7 +225,10 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
       data-inbox-panel={variant}
     >
       <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border px-3">
-        <span className="mr-2 text-sm font-semibold text-foreground">Notifications</span>
+        {variant === "compact" ? (
+          // The phone sheet's host already titles it.
+          <span className="mr-2 text-sm font-semibold text-foreground">Notifications</span>
+        ) : null}
         <div role="tablist" aria-label="Notification views" className="flex items-center gap-0.5">
           {tabButton("for_you", "For you", false)}
           {tabButton("updates", "Updates", counts.updatesDot)}
@@ -271,7 +274,7 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1">{body}</div>
 
-      <PlacesStrip onOpened={onNavigate} />
+      <PlacesStrip onOpened={onNavigate} columns={variant === "sheet" ? 1 : 2} />
 
       <div className={cn("shrink-0 border-t border-border px-1 py-1", variant === "sheet" ? "pb-safe" : undefined)}>
         <button
