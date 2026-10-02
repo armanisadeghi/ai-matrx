@@ -59,7 +59,7 @@ const MEETING_JOBS = MEET_PLACES.places.flatMap((place) => place.mandateKeys);
 type Resolution =
   | { readonly state: "loading" }
   | { readonly state: "ready"; readonly meeting: MeetingRecord }
-  | { readonly state: "failed"; readonly message: string; readonly remedy: string };
+  | { readonly state: "failed"; readonly message: string; readonly remedy: string; readonly detail: string };
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -104,14 +104,24 @@ export function MeetingSurface({
       })
       .catch((thrown: unknown) => {
         if (!live) return;
-        // The package's own error carries the remedy. Nothing is invented here.
+        // The person reads the sentence, never the operation tag a server
+        // error carries ("meet_meeting_by_slug: no meeting for that link");
+        // the untouched text still reaches the error menu below.
+        const raw = (thrown as Error)?.message ?? "";
+        const sentence = raw.replace(/^[A-Za-z_.]+(\([^)]*\))?:\s*/, "");
         const message =
-          (thrown as Error)?.message ?? "This meeting link could not be opened.";
-        const remedy =
-          (thrown as { remedy?: string }).remedy ??
+          sentence.length > 0
+            ? sentence.charAt(0).toUpperCase() + sentence.slice(1)
+            : "This meeting link could not be opened.";
+        // A link that matches no meeting is not transient: "retry in a
+        // moment" (the generic server remedy) would send them in circles.
+        const linkRemedy =
           "Check the link — meeting links exclude the characters people mishear " +
             "(no 0/O, no 1/l). If it was shared with you, ask the organizer to resend it.";
-        setResolution({ state: "failed", message, remedy });
+        const remedy = /no meeting for that link/i.test(raw)
+          ? linkRemedy
+          : ((thrown as { remedy?: string }).remedy ?? linkRemedy);
+        setResolution({ state: "failed", message, remedy, detail: raw || message });
       });
     return () => {
       live = false;
@@ -133,7 +143,7 @@ export function MeetingSurface({
     return (
       <Centered>
         <h1 className="text-base font-semibold">This meeting did not open</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{resolution.message} <ErrorAlchemyMenu error={resolution.message} /></p>
+        <p className="mt-2 text-sm text-muted-foreground">{resolution.message} <ErrorAlchemyMenu error={resolution.detail} /></p>
         <p className="mt-2 text-sm text-muted-foreground">{resolution.remedy}</p>
       </Centered>
     );

@@ -366,7 +366,16 @@ These come from real browser measurements: overflow, collapsed columns, nested s
 | `/free/character-counter` | One native `<select>` among styled controls (`features/text-counter/CharacterCounter.tsx`) | inconsistent |
 | Public header | The "assists" chip is 28px beside a 20px button in the same row | inconsistent |
 
-The admin routes could not be swept from the local preview: `/administration` redirects to the production manage host. The core-route sweep's results are appended when it completes.
+| `/schedules` (phone, first load) | "This page stopped working": `RangeError: Maximum call stack size exceeded` in the window-panels / scopes / mandates chunks, alongside `persist.hold.expired scopesTree`. A reload works | broken (flaky) |
+| `/schedules` | A two-clause prose banner (`features/scheduling/components/list/ScheduleList.tsx:175`); 16px labels beside 32px controls in 8 rows | inconsistent |
+| `/meet/<bad slug>` | The error card prints the RPC name: "meet_meeting_by_slug: no meeting for that link" (`features/meet/components/MeetingSurface.tsx`) | inconsistent |
+| `/education/overview` | 4 `rounded-xl` cards nested in a `rounded-2xl` card | inconsistent |
+| `/messages` | The search box is 28px beside 36px siblings (messaging package) | inconsistent |
+| `/files` (phone) | Rows are 55px around 44px controls | minor |
+
+**Clean on the core sweep:** no horizontal overflow and no native `<select>` on `/chat`, `/agents/all`, `/tasks`, `/notes`, `/projects`, `/dashboard`, `/cms`, `/research`, `/workflows` or `/user-settings`.
+
+**Not swept:** the admin routes, because `/administration` on the local preview redirects to the production manage host.
 
 ### 2.6 Where the drift lives
 
