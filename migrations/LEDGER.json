@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-02T19:11:48.400Z",
+  "generated_at": "2026-10-02T19:13:08.265Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3373,6 +3373,12 @@
       "filename": "lane7sec_a_standard_rows_fields_follow_the_field_rule.sql",
       "checksum": "3237ac46c3dcb37d03cf5c46ff23b1b93ce113531c68d4a66430f708fd1323ef",
       "applied_at": "2026-10-02 17:52:49.383716+00"
+    },
+    "migrations/campaign/lane7sec_r1_every_writer_follows_the_field_rule.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7sec_r1_every_writer_follows_the_field_rule.sql",
+      "checksum": "8fd7b69c42265d97f37e3a6f6d3d5d4ca103d849c24b9fb600ad65e9a43fd4a7",
+      "applied_at": "2026-10-02 19:13:06.960394+00"
     },
     "migrations/campaign/leakt10_a_home_of_a_table_is_not_the_whole_table.sql": {
       "source": "matrx-frontend",
