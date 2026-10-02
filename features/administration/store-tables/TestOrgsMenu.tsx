@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import {
@@ -138,7 +139,7 @@ export function TestOrgsMenu({ onChanged }: { onChanged?: () => void }) {
           {orgs === null ? (
             <div className="px-1 py-2 text-xs text-muted-foreground">Loading…</div>
           ) : readError ? (
-            <div className="px-1 py-2 text-xs text-destructive">{readError}</div>
+            <ErrorNotice size="inline" className="px-1 py-2 text-xs" message={readError} operation="Read organizations" calls={["iam.organizations"]} />
           ) : shown.length === 0 ? (
             <div className="px-1 py-2 text-xs text-muted-foreground">No organizations match</div>
           ) : (
@@ -166,13 +167,11 @@ export function TestOrgsMenu({ onChanged }: { onChanged?: () => void }) {
           )}
         </div>
         {refusals.length > 0 && (
-          <ul className="mt-2 space-y-0.5 text-xs text-destructive" data-test-orgs-refusals="">
+          <div className="mt-2 space-y-0.5 text-xs" data-test-orgs-refusals="">
             {refusals.map((o) => (
-              <li key={o.target.id}>
-                <span className="font-medium">{o.target.name}</span>: {o.message}
-              </li>
+              <ErrorNotice key={o.target.id} size="inline" title={o.target.name} message={o.message} operation="Mark test organization" calls={["org_update"]} />
             ))}
-          </ul>
+          </div>
         )}
         <div className="mt-2 flex gap-2 border-t border-border pt-2">
           <Button size="sm" className="h-8 flex-1" disabled={busy || toMark.length === 0} onClick={() => void run(true)}>
