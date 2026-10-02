@@ -269,12 +269,17 @@ const SOURCE_BY_OVERLAY_ID = (() => {
     for (const file of componentFiles(root)) {
       const source = withoutComments(readFileSync(file, "utf8"));
       if (!source.includes("overlayId=")) continue;
-      for (const match of source.matchAll(/overlayId="([A-Za-z0-9_]+)"/g)) {
-        add(match[1], source);
+      // The chat package names its windows through its registry
+      // (`CHAT_WINDOWS.<id>`, packages/chat/src/host/windows.ts) — the same id.
+      for (const match of source.matchAll(
+        /overlayId=(?:"([A-Za-z0-9_]+)"|\{CHAT_WINDOWS\.([A-Za-z0-9_]+)\})/g,
+      )) {
+        add(match[1] ?? match[2], source);
       }
-      const constant = /const\s+OVERLAY_ID\s*=\s*"([A-Za-z0-9_]+)"/.exec(source);
+      const constant =
+        /const\s+OVERLAY_ID\s*=\s*(?:"([A-Za-z0-9_]+)"|CHAT_WINDOWS\.([A-Za-z0-9_]+))/.exec(source);
       if (constant && /overlayId=\{OVERLAY_ID\}/.test(source)) {
-        add(constant[1], source);
+        add(constant[1] ?? constant[2], source);
       }
     }
   }
