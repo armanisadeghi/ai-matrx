@@ -61,6 +61,7 @@ decertify the table. Verified live as `admin@admin.com` through role
   Mark all read — never on delivery (the `in_app` adapter says the same on its
   side).
 - **Every row opens.** A row with no link still opens as "read". Never a dead row.
+- 🚨 **(Owner ruling, 2026-10-01; noted by the notifications-ui-redo research session.)** The dropdown and phone sheet **never navigate the page**, for ANY link. It opens a window panel or a new tab only. This widens the rule below beyond `?panels=`. Today's `"route"` case, the hydrator fallback, the "In your tables" pinned row, and the "See all notifications" footer still navigate and must change. The bell is also the one door to every notice system (assists, tasks, record-store inbox, …). Spec: `../../../common-docs/projects/notifications-ui-redo/RESEARCH.md` §0a, §3.8, §3.9.
 - 🚨 **A notice never moves the page** (Arman, 2026-09-30: *"I want to get a window panel and a
   link to open whatever I need in a new tab. never disrupt the page we're on."*). An internal
   `deep_link` carrying `?panels=<key>:<id>:<args>` opens that window IN PLACE through its
