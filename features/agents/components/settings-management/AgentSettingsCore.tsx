@@ -1916,7 +1916,7 @@ export function AgentSettingsCore({
             </span>
           </TooltipTrigger>
           <TooltipContent side="top" className="text-xs max-w-[260px]">
-            Kept as set. Sent as this model's closest equivalent.
+            Kept as set and sent as this model's closest equivalent
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

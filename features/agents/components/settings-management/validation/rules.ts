@@ -263,7 +263,7 @@ const retiredThinkingBudgetSentinel: ValidationRule = {
         key: "thinking_budget",
         severity: "warning",
         category: "cross_field",
-        message: "Retired value. Clear it to use the model default",
+        message: "Retired value — clear it to use the model default",
         value: thinkingBudget,
         suggestion: "Clear thinking budget",
       },
