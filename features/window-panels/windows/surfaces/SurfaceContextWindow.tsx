@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Braces,
   Check,
@@ -32,7 +32,19 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { InfoHint } from "@/components/official/InfoHint";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { ContextRulesTable, type ContextHierarchy } from "@ai-matrx/agents/context/react";
+import { CONTEXT_RULES_FEATURE, DEFAULT_INLINE_CAP } from "@ai-matrx/agents/context";
+import { ensureSurfaceFeatureLoaded } from "@ai-matrx/chat/surfaces/redux/userStateSlice";
+import {
+  saveContextRule,
+  saveContextRules,
+  selectSavedContextRuleRows,
+} from "@ai-matrx/chat/agents/redux/execution-system/context-rules/context-rules.thunks";
+import {
+  surfaceContextRows,
+  surfaceInspectorPlacer,
+} from "@ai-matrx/chat/agents/redux/execution-system/context-rules/surface-context-rows";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 
 export interface SurfaceContextWindowProps {
@@ -81,7 +93,6 @@ type ContextItem =
   | { key: string; kind: "declared"; declaration: ResolvedSurfaceValue }
   | { key: string; kind: "runtime"; declaration: null };
 
-const RUNTIME_ONLY_GROUP_KEY = "__runtime_only__";
 
 function statusPresentation(
   status: ReturnType<typeof useLiveSurfaceScope>["status"],
@@ -145,6 +156,16 @@ export default function SurfaceContextWindow({
       declaration: null,
     })),
   ];
+  // THE LIST is the context table: the same rows, hierarchy and switches as the
+  // composer's chip and full view (one renderer, one data source). Each switch
+  // is the person's real rule for this page.
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    if (isOpen) void dispatch(ensureSurfaceFeatureLoaded(CONTEXT_RULES_FEATURE));
+  }, [dispatch, isOpen]);
+  const savedRules = useAppSelector(selectSavedContextRuleRows);
+  const contextRows = surfaceContextRows(surfaceName, live.scope, savedRules);
+  const hierarchy: ContextHierarchy = { place: surfaceInspectorPlacer(surfaceName) };
   const [query, setQuery] = useState("");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -161,44 +182,8 @@ export default function SurfaceContextWindow({
       })
     : items;
 
-  // Canonical grouped sections: manifest groups in their curated order
-  // (curated → general → inherited → baselines), runtime-only keys last —
-  // loudly, as completeness defects.
-  const groups = manifest?.groups ?? [];
-  const sections: Array<{
-    key: string;
-    label: string;
-    items: ContextItem[];
-  }> = [];
-  for (const group of groups) {
-    const groupItems = filteredItems.filter(
-      (item) =>
-        item.kind === "declared" && item.declaration.groupKey === group.key,
-    );
-    if (groupItems.length > 0) {
-      sections.push({ key: group.key, label: group.label, items: groupItems });
-    }
-  }
-  const ungroupedDeclared = filteredItems.filter(
-    (item) =>
-      item.kind === "declared" &&
-      !groups.some((g) => g.key === item.declaration.groupKey),
-  );
-  if (ungroupedDeclared.length > 0) {
-    sections.push({
-      key: "__ungrouped__",
-      label: "Other",
-      items: ungroupedDeclared,
-    });
-  }
-  const runtimeItems = filteredItems.filter((item) => item.kind === "runtime");
-  if (runtimeItems.length > 0) {
-    sections.push({
-      key: RUNTIME_ONLY_GROUP_KEY,
-      label: "Undeclared (runtime only)",
-      items: runtimeItems,
-    });
-  }
+  const filteredKeys = new Set(filteredItems.map((item) => item.key));
+  const tableRows = contextRows.rows.filter((row) => filteredKeys.has(row.key));
   const selected =
     items.find((item) => item.key === selectedKey) ?? items[0] ?? null;
   const effectiveSelectedKey = selected?.key ?? null;
@@ -216,7 +201,7 @@ export default function SurfaceContextWindow({
   // supplied answer (the surface contract), never a missing one.
   const missingRequiredNames = declared
     .filter((value) => value.alwaysAvailable && live.scope[value.name] === undefined)
-    .map((value) => value.name);
+    .map((value) => value.label);
   const missingRequired = missingRequiredNames.length;
   // What could be WRITTEN into this page right now — the write half of the
   // contract, beside the values. This is also the ONLY place a declared target
@@ -338,8 +323,8 @@ export default function SurfaceContextWindow({
       minHeight={360}
       position="center"
       bodyClassName="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0"
-      sidebarDefaultSize={260}
-      sidebarMinSize={190}
+      sidebarDefaultSize={380}
+      sidebarMinSize={300}
       defaultSidebarOpen
       actionsRight={
         <div className="flex items-center gap-0.5">
@@ -439,84 +424,64 @@ export default function SurfaceContextWindow({
             contextData={{ content: surfaceName }}
             extraSections={[contextItemSection(menuKey)]}
             resolveContextOnOpen={(target) => {
-              const el = target?.closest<HTMLElement>("[data-row-id]");
-              const key = el?.getAttribute("data-row-id") ?? null;
+              const el = target?.closest<HTMLElement>("[role=\"row\"][data-key]");
+              const key = el?.getAttribute("data-key") ?? null;
               setMenuKey(key);
               return { content: key ?? "" };
             }}
           >
           <div className="min-h-0 flex-1 overflow-y-auto pb-1">
-            {sections.map((section) => (
-              <div key={section.key}>
-                <div
-                  className={cn(
-                    "sticky top-0 z-10 border-b border-border/60 bg-background/95 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wide backdrop-blur",
-                    section.key === RUNTIME_ONLY_GROUP_KEY
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {section.label}
-                </div>
-                {section.items.map((item) => {
-                  const present = hasValue(live.scope[item.key]);
-                  const presentEmpty = isPresentEmpty(live.scope[item.key]);
-                  const required = item.declaration?.alwaysAvailable === true;
+            <ContextRulesTable
+              rows={tableRows}
+              cap={DEFAULT_INLINE_CAP}
+              hierarchy={hierarchy}
+              selectedKey={effectiveSelectedKey}
+              onOpenRow={(key) => setSelectedKey(key)}
+              onChange={(key, surfaceKey, next) =>
+                void dispatch(saveContextRule({ surfaceKey, key, rule: next }))
+              }
+              onSetInclude={(changes) => void dispatch(saveContextRules(changes))}
+              renderRowLead={(row) => {
+                const state = contextRows.status[row.key];
+                if (!state) return null;
+                if (!state.declared) {
                   return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      data-row-id={item.key}
-                      onClick={() => setSelectedKey(item.key)}
-                      className={cn(
-                        "flex w-full min-w-0 items-start gap-2 border-l-2 px-2.5 py-2 text-left transition-colors",
-                        effectiveSelectedKey === item.key
-                          ? "border-primary bg-primary/8"
-                          : "border-transparent hover:bg-muted/50",
-                      )}
+                    <Badge
+                      variant="outline"
+                      className="h-4 px-1 text-[10px] text-amber-600 dark:text-amber-400"
                     >
-                      <span
-                        title={
-                          present
-                            ? "Supplied"
-                            : presentEmpty
-                              ? "Supplied, empty"
-                              : "Not supplied"
-                        }
-                        className={cn(
-                          "mt-1 h-2 w-2 shrink-0 rounded-full",
-                          present
-                            ? "bg-emerald-500"
-                            : presentEmpty
-                              ? "border border-emerald-500 bg-transparent"
-                              : required
-                                ? "bg-destructive"
-                                : "bg-muted-foreground/30",
-                        )}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-medium">
-                          {item.declaration?.label ?? humanizeIdentifier(item.key)}
-                        </span>
-                        {isAdmin ? (
-                          <code className="block truncate text-[10px] text-muted-foreground">
-                            {item.key}
-                          </code>
-                        ) : null}
-                      </span>
-                      {item.kind === "runtime" && (
-                        <Badge
-                          variant="outline"
-                          className="shrink-0 text-[8px] text-amber-600 dark:text-amber-400"
-                        >
-                          undeclared
-                        </Badge>
-                      )}
-                    </button>
+                      Undeclared
+                    </Badge>
                   );
-                })}
-              </div>
-            ))}
+                }
+                return (
+                  <span
+                    title={
+                      state.supplied === "present"
+                        ? "Supplied"
+                        : state.supplied === "empty"
+                          ? "Supplied, empty"
+                          : state.required
+                            ? "Required, not supplied"
+                            : "Not supplied"
+                    }
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      state.supplied === "present"
+                        ? "bg-emerald-500"
+                        : state.supplied === "empty"
+                          ? "border border-emerald-500 bg-transparent"
+                          : state.required
+                            ? "bg-destructive"
+                            : "bg-muted-foreground/30",
+                    )}
+                  />
+                );
+              }}
+              renderRowTrail={
+                isAdmin ? (row) => <code className="text-[10px]">{row.key}</code> : undefined
+              }
+            />
             {/* read-gate-exempt: search result over the declared + live rows in this sidebar; a failed live read is announced by the ErrorAlchemyMenu notice this window pins at its bottom */}
             {filteredItems.length === 0 && (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
