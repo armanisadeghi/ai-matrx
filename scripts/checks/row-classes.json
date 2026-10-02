@@ -6,7 +6,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 112,
+    "repo-only": 113,
     "live-db": 58,
     "clone-db": 3
   },
@@ -53,7 +53,7 @@
       "label": "CX source attribution is registered",
       "class": "repo-only",
       "cmd": "pnpm check:source-attribution",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "both-migration-runners-judge-the-corpus-identically": {
@@ -1978,6 +1978,20 @@
           "signal": "supabase-js client"
         }
       ]
+    },
+    "apps-reaching-custom-outside-ai-matrx-records-ratchet": {
+      "label": "Apps reaching custom.* outside @ai-matrx/records (ratchet)",
+      "class": "repo-only",
+      "cmd": "pnpm check:no-custom-store-code",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "no-custom-store-code-guard-can-still-fail-self-test": {
+      "label": "No-custom-store-code guard can still fail (self-test)",
+      "class": "repo-only",
+      "cmd": "pnpm check:no-custom-store-code:self-test",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
     }
   }
 }

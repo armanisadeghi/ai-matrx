@@ -870,6 +870,9 @@ if $STRICT; then
         "Settings: NEW knob-shaped constants (ratchet)|pnpm check:settings-hardcoded"
         "Settings: behavioural env toggles (ratchet)|pnpm check:settings-env-toggles"
         "Settings: every rung reachable in the universal UI|pnpm check:settings-ladder-ui"
+        # GUARD 7 — apps never write their own custom-data code (see the advisory list below).
+        "Apps reaching custom.* outside @ai-matrx/records (ratchet)|pnpm check:no-custom-store-code"
+        "No-custom-store-code guard can still fail (self-test)|pnpm check:no-custom-store-code:self-test"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -1469,6 +1472,13 @@ else
         # Registry + checklist: scripts/rich-content-inventory/FEATURE.md.
         "Rich content: no new legacy renderer/editor/menu use (ratchet)|pnpm check:rich-content-legacy"
         "Rich content legacy guard can still fail (self-test)|pnpm check:rich-content-legacy:self-test"
+        # GUARD 7 — APPS NEVER WRITE THEIR OWN CUSTOM-DATA CODE (Unified Data System v6,
+        # lane INTEGRATION W1.8). An app file reaching `custom.*` directly (`.schema("custom")`,
+        # `schema: "custom"`, SQL naming `custom.x`) instead of a door from @ai-matrx/records
+        # fails by name; today's files are a shrink-only allowlist mirroring
+        # common-docs projects/data-doctrine-adoption/v6/CENSUS-NO-CUSTOM-CODE.md. Static, offline.
+        "Apps reaching custom.* outside @ai-matrx/records (ratchet)|pnpm check:no-custom-store-code"
+        "No-custom-store-code guard can still fail (self-test)|pnpm check:no-custom-store-code:self-test"
     )
 fi
 
