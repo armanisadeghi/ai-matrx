@@ -42661,6 +42661,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/ai-catalog/settings-probe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Settings Probe
+         * @description Ask the provider whether one offering's translated settings extremes are accepted.
+         *
+         *     The on-demand half of the ``settings_translation_probe`` system task — the same
+         *     service (aidream/services/ai_catalog/live_probe.py), the same cost-guard knobs and
+         *     the same rolling 24-hour budget. Real provider calls; tiny requests. A 409 names
+         *     the missing seed or knobs; an unknown or non-routable offering is a 400.
+         */
+        post: operations["run_settings_probe_admin_ai_catalog_settings_probe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/snapshot-retention/rollup": {
         parameters: {
             query?: never;
@@ -65464,7 +65489,14 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "conversation_prompt" | "fetched_now" | "preview" | "turn_record" | "wire";
+            source: "conversation_prompt" | "fetched_now" | "preview" | "tool_result" | "turn_record" | "wire";
+            /**
+             * Available
+             * @default true
+             */
+            available?: boolean;
+            /** Fetched */
+            fetched?: boolean | null;
         };
         /** ContractAuditReport */
         ContractAuditReport: {
@@ -121807,6 +121839,118 @@ export interface components {
             change: "added" | "changed" | "removed";
             before?: components["schemas"]["JsonValue"] | null;
             after?: components["schemas"]["JsonValue"] | null;
+        };
+        /** SettingsProbeOutcome */
+        SettingsProbeOutcome: {
+            /** Offering Id */
+            offering_id: string;
+            /** Model Name */
+            model_name: string;
+            /** Api */
+            api: string;
+            /** Setting Key */
+            setting_key: string;
+            /** Label */
+            label: string;
+            value?: components["schemas"]["JsonValue"];
+            /** Wire */
+            wire?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Outcome */
+            outcome: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+            /** Provider Message */
+            provider_message?: string | null;
+            /** Provider Param */
+            provider_param?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Fingerprint */
+            fingerprint?: string | null;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
+            /** Cell Id */
+            cell_id?: string | null;
+            /**
+             * Evidence
+             * @default
+             */
+            evidence?: string;
+        };
+        /**
+         * SettingsProbeRequest
+         * @description One offering to probe now (settings-translation I2).
+         */
+        SettingsProbeRequest: {
+            /**
+             * Offering Id
+             * @description The ai.offering id to probe (one routable chat offering).
+             */
+            offering_id: string;
+            /**
+             * Write Evidence
+             * @description Write each result as translation-cell evidence when the cell tables exist.
+             * @default true
+             */
+            write_evidence?: boolean;
+        };
+        /** SettingsProbeResponse */
+        SettingsProbeResponse: {
+            /** Summary */
+            summary: string;
+            /** Source */
+            source: string;
+            /** Started At */
+            started_at: string;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Catalog */
+            catalog: string;
+            /** Offerings Planned */
+            offerings_planned: number;
+            /** Probes Planned */
+            probes_planned: number;
+            /** Probes Sent */
+            probes_sent: number;
+            /** Budget */
+            budget: {
+                [key: string]: number;
+            };
+            /** Stopped By Budget */
+            stopped_by_budget: boolean;
+            /** Left Unprobed */
+            left_unprobed: number;
+            /** Cost Usd */
+            cost_usd: number;
+            /** Evidence Mode */
+            evidence_mode: string;
+            /** Evidence Reason */
+            evidence_reason: string;
+            /** Outcomes */
+            outcomes: components["schemas"]["SettingsProbeOutcome"][];
+            /** Skipped Offerings */
+            skipped_offerings: components["schemas"]["SettingsProbeSkippedOffering"][];
+        };
+        /** SettingsProbeSkippedOffering */
+        SettingsProbeSkippedOffering: {
+            /** Offering Id */
+            offering_id: string;
+            /** Model Name */
+            model_name: string;
+            /** Api */
+            api: string;
+            /** Modality */
+            modality: string;
+            /** Why */
+            why: string;
         };
         /** SettlePlanRequest */
         SettlePlanRequest: {
@@ -213062,6 +213206,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderModelsRefreshSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_settings_probe_admin_ai_catalog_settings_probe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsProbeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsProbeResponse"];
                 };
             };
             /** @description Validation Error */

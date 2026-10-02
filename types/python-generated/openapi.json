@@ -97843,6 +97843,49 @@
         }
       }
     },
+    "/admin/ai-catalog/settings-probe": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin AI Catalog"
+        ],
+        "summary": "Run Settings Probe",
+        "description": "Ask the provider whether one offering's translated settings extremes are accepted.\n\nThe on-demand half of the ``settings_translation_probe`` system task — the same\nservice (aidream/services/ai_catalog/live_probe.py), the same cost-guard knobs and\nthe same rolling 24-hour budget. Real provider calls; tiny requests. A 409 names\nthe missing seed or knobs; an unknown or non-routable offering is a 400.",
+        "operationId": "run_settings_probe_admin_ai_catalog_settings_probe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsProbeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsProbeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/snapshot-retention/rollup": {
       "get": {
         "tags": [
@@ -151940,10 +151983,27 @@
               "conversation_prompt",
               "fetched_now",
               "preview",
+              "tool_result",
               "turn_record",
               "wire"
             ],
             "title": "Source"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": true
+          },
+          "fetched": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched"
           }
         },
         "additionalProperties": false,
@@ -280989,6 +281049,281 @@
           "change"
         ],
         "title": "SettingsDriftKey"
+      },
+      "SettingsProbeOutcome": {
+        "properties": {
+          "offering_id": {
+            "type": "string",
+            "title": "Offering Id"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "api": {
+            "type": "string",
+            "title": "Api"
+          },
+          "setting_key": {
+            "type": "string",
+            "title": "Setting Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "wire": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Wire"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": ""
+          },
+          "provider_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Message"
+          },
+          "provider_param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Param"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fingerprint"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0.0
+          },
+          "cell_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cell Id"
+          },
+          "evidence": {
+            "type": "string",
+            "title": "Evidence",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "offering_id",
+          "model_name",
+          "api",
+          "setting_key",
+          "label",
+          "outcome"
+        ],
+        "title": "SettingsProbeOutcome"
+      },
+      "SettingsProbeRequest": {
+        "properties": {
+          "offering_id": {
+            "type": "string",
+            "title": "Offering Id",
+            "description": "The ai.offering id to probe (one routable chat offering)."
+          },
+          "write_evidence": {
+            "type": "boolean",
+            "title": "Write Evidence",
+            "description": "Write each result as translation-cell evidence when the cell tables exist.",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "offering_id"
+        ],
+        "title": "SettingsProbeRequest",
+        "description": "One offering to probe now (settings-translation I2)."
+      },
+      "SettingsProbeResponse": {
+        "properties": {
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "catalog": {
+            "type": "string",
+            "title": "Catalog"
+          },
+          "offerings_planned": {
+            "type": "integer",
+            "title": "Offerings Planned"
+          },
+          "probes_planned": {
+            "type": "integer",
+            "title": "Probes Planned"
+          },
+          "probes_sent": {
+            "type": "integer",
+            "title": "Probes Sent"
+          },
+          "budget": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Budget"
+          },
+          "stopped_by_budget": {
+            "type": "boolean",
+            "title": "Stopped By Budget"
+          },
+          "left_unprobed": {
+            "type": "integer",
+            "title": "Left Unprobed"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "evidence_mode": {
+            "type": "string",
+            "title": "Evidence Mode"
+          },
+          "evidence_reason": {
+            "type": "string",
+            "title": "Evidence Reason"
+          },
+          "outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsProbeOutcome"
+            },
+            "type": "array",
+            "title": "Outcomes"
+          },
+          "skipped_offerings": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsProbeSkippedOffering"
+            },
+            "type": "array",
+            "title": "Skipped Offerings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary",
+          "source",
+          "started_at",
+          "catalog",
+          "offerings_planned",
+          "probes_planned",
+          "probes_sent",
+          "budget",
+          "stopped_by_budget",
+          "left_unprobed",
+          "cost_usd",
+          "evidence_mode",
+          "evidence_reason",
+          "outcomes",
+          "skipped_offerings"
+        ],
+        "title": "SettingsProbeResponse"
+      },
+      "SettingsProbeSkippedOffering": {
+        "properties": {
+          "offering_id": {
+            "type": "string",
+            "title": "Offering Id"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "api": {
+            "type": "string",
+            "title": "Api"
+          },
+          "modality": {
+            "type": "string",
+            "title": "Modality"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why"
+          }
+        },
+        "type": "object",
+        "required": [
+          "offering_id",
+          "model_name",
+          "api",
+          "modality",
+          "why"
+        ],
+        "title": "SettingsProbeSkippedOffering"
       },
       "SettlePlanRequest": {
         "properties": {
