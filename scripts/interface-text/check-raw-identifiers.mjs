@@ -17,7 +17,10 @@
  * A line inside a `<code>` / `font-mono` element (looked up to 3 lines back) is an identifier on
  * purpose and is skipped. Findings are compared with `raw-identifiers-baseline.json`; only a line
  * not in the baseline is NEW. The baseline only shrinks: fix a NEW line with the label or the
- * humanizer, never by growing the baseline.
+ * humanizer, never by growing the baseline. The 2026-10-02 baseline (156) is a queue of two kinds:
+ * identifiers on purpose (key-entry placeholders like "e.g. budget_code", the run Payload tab, admin
+ * columns that ARE the raw key, code/YAML views) and false positives where `.name`/`.key` holds
+ * words (keywords, voice names, data-table headers) — plus admin labels still to reword.
  *
  * Advisory: exits 0 unless --strict.
  *
