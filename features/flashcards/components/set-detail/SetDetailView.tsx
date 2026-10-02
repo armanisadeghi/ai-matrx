@@ -1170,7 +1170,7 @@ export function SetDetailView({
                       kind: "flashcard-deck",
                       location: `AI Matrx — Flashcards — ${EDU_BASE}/${setId}`,
                       description:
-                        "A flashcard deck as the learner sees it: every card's front and back.",
+                        "A flashcard deck: every card's front and back.",
                       data: {
                         name: data.set.name,
                         topic: data.set.topic,
@@ -1551,7 +1551,7 @@ export function SetDetailView({
                             title={
                               canMergeSelection
                                 ? undefined
-                                : "Pick two or more basic or cloze cards to merge — other card kinds keep their structure in dynamic content, which a front/back merge would destroy"
+                                : "Pick two or more basic or cloze cards — other kinds can't be merged"
                             }
                           >
                             <Merge className="mr-1.5 h-3.5 w-3.5" />
