@@ -8,6 +8,7 @@
 
 import type { Database, Json } from "@/types/database.types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+import type { IncompleteValue } from "@/features/scopes/utils/incompleteValue";
 
 // Re-export the GENERATED entity-token vocabulary so consumers import the
 // canonical, type-safe token set from the scopes types module (the single
@@ -339,6 +340,11 @@ export interface ContextItemValue {
   source_type: string;
   authored_by: string | null;
   created_at: string;
+  /**
+   * Set when `value_text` holds only the start of a text kept as a file (the whole file could not
+   * be read or checked). Editors must not save it back — `utils/incompleteValue.ts`.
+   */
+  value_incomplete?: IncompleteValue | null;
 }
 
 /**

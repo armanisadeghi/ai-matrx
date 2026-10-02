@@ -9,6 +9,7 @@ import { supabase } from "@/utils/supabase/client";
 import { err, mapPgErrorPair, ok } from "@/features/scopes/service/rpcResult";
 import { WHOLE_VALUE_SOURCE_KIND, wholeValueSize, type WholeValuePointer } from "@ai-matrx/records/core";
 import { readFileText } from "@/features/unified-data/recordsFiles";
+import { INCOMPLETE_VALUE_MARKER } from "@/features/scopes/utils/incompleteValue";
 import type {
   ArchivedScopeTypeRow,
   ContextItemRow,
@@ -141,7 +142,7 @@ export async function readContextValues(
 
 /** The first words with one sentence naming the file and why its whole text is not here. */
 function wordsAndFile(words: string, pointer: WholeValuePointer, why: string): string {
-  return `${words}… [This is the start of a ${wholeValueSize(pointer)} text kept as file ${pointer.file_id}; it could not be opened here: ${why}]`;
+  return `${words}${INCOMPLETE_VALUE_MARKER}${wholeValueSize(pointer)} text kept as file ${pointer.file_id}; it could not be opened here: ${why}]`;
 }
 
 /** The SHA-256 of a text's UTF-8 bytes, hex — or null where this runtime has no Web Crypto. */
@@ -178,8 +179,14 @@ export async function wholeScopeValues(
       const cell = cells[i];
       if (!w || w.in_value || !cell || typeof cell.value_text !== "string") return;
       const words = cell.value_text;
+      // Every path below that does not hand the whole text marks the cell (`value_incomplete`), so
+      // no editor can save the first words back over the real value (utils/incompleteValue.ts).
+      const incomplete = (fileId: string | null): void => {
+        cell.value_incomplete = { head: words, chars: typeof w.chars === "number" ? w.chars : null, file_id: fileId };
+      };
       if (!w.file_id) {
-        cell.value_text = `${words}… [This is the start of a ${w.chars ?? "longer"}-character text that is still being saved; open it again in a moment for all of it.]`;
+        cell.value_text = `${words}${INCOMPLETE_VALUE_MARKER}${w.chars ?? "longer"}-character text that is still being saved; open it again in a moment for all of it.]`;
+        incomplete(null);
         return;
       }
       const pointer = { ...w, kind: WHOLE_VALUE_SOURCE_KIND, file_id: w.file_id } as WholeValuePointer;
@@ -188,16 +195,24 @@ export async function wholeScopeValues(
         const text = await texts.get(w.file_id)!;
         if (typeof w.chars === "number" && [...text].length !== w.chars) {
           cell.value_text = wordsAndFile(words, pointer, `the file holds ${[...text].length} characters, not ${w.chars}`);
+          incomplete(w.file_id);
           return;
         }
-        const sha = w.sha256 ? await sha256Hex(text) : null;
-        if (sha !== null && sha !== w.sha256) {
-          cell.value_text = wordsAndFile(words, pointer, "the file's content is not the text the cell points at");
-          return;
+        if (w.sha256) {
+          // No Web Crypto (an insecure origin, an old runtime): the file cannot be checked, so it is
+          // not handed as the value — unverifiable is unverified, said on the cell, never skipped.
+          const sha = await sha256Hex(text);
+          if (sha === null || sha !== w.sha256) {
+            const why = sha === null ? "this browser cannot check the file" : "the file's content is not the text the cell points at";
+            cell.value_text = wordsAndFile(words, pointer, why);
+            incomplete(w.file_id);
+            return;
+          }
         }
         cell.value_text = text;
       } catch (thrown) {
         cell.value_text = wordsAndFile(words, pointer, thrown instanceof Error ? thrown.message : String(thrown));
+        incomplete(w.file_id);
       }
     }),
   );
