@@ -22,6 +22,7 @@ import {
   islandMeta,
   texOf,
   fenceLanguage as fenceLanguageOf,
+  isMatrxFence,
   withFenceLanguage,
 } from "../../islands/island-meta";
 import { consumeAutoEdit } from "../auto-edit";
@@ -73,6 +74,48 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
   const isFence = islandType === "fence";
   const isMath = meta.language === "math";
   const readOnly = context.readOnly || !editor.isEditable;
+
+  if (isMatrxFence(islandType, raw)) {
+    // A reference (chip) or action (card) is shown exactly as readers see it —
+    // the same shared renderer as the preview, one atom, no code chrome, no
+    // JSON. Its bytes are never rewritten; the source views show the fence.
+    return (
+      <NodeViewWrapper
+        className={cn(
+          "rich-editor-island rich-editor-reference group/island relative my-1 flex min-w-0 items-start gap-1 rounded-md transition-colors",
+          selected && "ring-1 ring-primary/40",
+        )}
+        data-island-type="matrx"
+        contentEditable={false}
+      >
+        <span
+          data-drag-handle
+          className="mt-1.5 shrink-0 cursor-grab touch-none text-muted-foreground/60 opacity-100 hover:text-foreground sm:opacity-0 sm:group-hover/island:opacity-100"
+          aria-hidden
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <IslandPreview raw={raw} islandType={islandType} />
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5 text-muted-foreground opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover/island:opacity-100 sm:group-focus-within/island:opacity-100">
+          <button type="button" className="rounded p-1 hover:bg-muted hover:text-foreground pointer-coarse:flex pointer-coarse:h-11 pointer-coarse:w-11 pointer-coarse:items-center pointer-coarse:justify-center" onClick={copy} title={`Copy this ${meta.label.toLowerCase()}`}>
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              className="rounded p-1 hover:bg-destructive/10 hover:text-destructive pointer-coarse:flex pointer-coarse:h-11 pointer-coarse:w-11 pointer-coarse:items-center pointer-coarse:justify-center"
+              onClick={remove}
+              title={`Remove this ${meta.label.toLowerCase()} (Undo brings it back)`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </NodeViewWrapper>
+    );
+  }
 
   return (
     <NodeViewWrapper

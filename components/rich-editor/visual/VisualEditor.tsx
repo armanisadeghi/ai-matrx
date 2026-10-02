@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { TableWriteRefused } from "../core/table-source";
 import { createRichEditorExtensions } from "../core/extensions";
+import { replaceSelectionWithMarkdown } from "../core/paste-markdown";
 import {
   buildVisualDocument,
   captureBaseline,
@@ -225,17 +226,9 @@ export function VisualEditor({
     },
     replaceSelection: (text) => {
       if (!editor) return;
+      // Same structure as pasting the text (a fence becomes its island).
       editor.chain().focus().command(({ tr }) => {
-        const paragraphs = text.split(/\n{2,}/);
-        if (paragraphs.length <= 1) {
-          tr.insertText(text, tr.selection.from, tr.selection.to);
-          return true;
-        }
-        tr.insertText(paragraphs[0] ?? "", tr.selection.from, tr.selection.to);
-        for (const paragraph of paragraphs.slice(1)) {
-          tr.split(tr.selection.from);
-          tr.insertText(paragraph, tr.selection.from);
-        }
+        replaceSelectionWithMarkdown(tr, editor.state.schema, text);
         return true;
       }).run();
     },
@@ -246,7 +239,7 @@ export function VisualEditor({
       editor.commands.command(({ tr }) => {
         const at = tr.selection.from;
         tr.split(at);
-        tr.insertText(text, tr.selection.from);
+        replaceSelectionWithMarkdown(tr, editor.state.schema, text);
         return true;
       });
     },

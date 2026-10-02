@@ -15,7 +15,7 @@
 
 import { Extension, type JSONContent } from "@tiptap/core";
 import { Fragment, Slice, type Node as PMNode, type Schema } from "@tiptap/pm/model";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Plugin, PluginKey, type Transaction } from "@tiptap/pm/state";
 import { buildVisualDocument } from "./visual-document";
 import { mergedCellsNotice, normalizePastedHtml } from "./paste-html";
 
@@ -52,6 +52,19 @@ export function markdownToSlice(text: string, schema: Schema): Slice {
   const openStart = first.type.name === "paragraph" ? 1 : 0;
   const openEnd = last.type.name === "paragraph" ? 1 : 0;
   return new Slice(Fragment.from(blocks), openStart, openEnd);
+}
+
+/**
+ * Text a host inserts at the caret (the right-click menu's Insert reference…,
+ * a content block, an AI result's Replace, dictation) lands exactly as a paste
+ * of that text would: through the ONE parse path. Inserting it as literal
+ * characters turned a ```matrx fence into three paragraphs of raw JSON in the
+ * visual view (2026-10-02) — a fence must arrive as its island.
+ */
+export function replaceSelectionWithMarkdown(tr: Transaction, schema: Schema, text: string): void {
+  const slice = markdownToSlice(text, schema);
+  if (slice.size === 0) tr.deleteSelection();
+  else tr.replaceSelection(slice);
 }
 
 export interface MarkdownTextPasteOptions {

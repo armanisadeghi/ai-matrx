@@ -10,6 +10,8 @@ import {
   Hash,
   Info,
   LayoutPanelTop,
+  Link2,
+  MousePointerClick,
   CodeXml,
   EyeOff,
   FileCog,
@@ -44,6 +46,14 @@ export function kindOf(raw: string): string | null {
   return KIND_RE.exec(raw)?.[1] ?? null;
 }
 
+/** The info string of a fence that carries one Matrx Envelope (a directive). */
+export const MATRX_FENCE_LANGUAGE = "matrx";
+
+/** A ```matrx fence: a reference chip or an action card, never a code block. */
+export function isMatrxFence(islandType: string, raw: string): boolean {
+  return islandType === "fence" && fenceLanguage(raw) === MATRX_FENCE_LANGUAGE;
+}
+
 /** A fence island's language — THE one code-range rule's opener parse. */
 export function fenceLanguage(raw: string): string {
   return fenceOpenerOf(raw.split("\n", 1)[0] ?? "")?.lang ?? "";
@@ -61,6 +71,12 @@ export function islandMeta(islandType: string, raw: string): IslandMeta {
     case "fence": {
       const language = fenceLanguage(raw);
       const kind = kindOf(raw);
+      if (language === MATRX_FENCE_LANGUAGE) {
+        // A reference or action a person inserted: shown as its chip / card,
+        // named in plain words — never its kind slug or JSON.
+        const action = !/^directive_v1_(reference|secret)_/.test(kind ?? "");
+        return { label: action ? "Action" : "Reference", icon: action ? MousePointerClick : Link2, language: "json", renders: true };
+      }
       if (kind) return { label: `Kind · ${kind}`, icon: Shapes, language: "json", renders: true };
       if (language === "mermaid") return { label: "Diagram", icon: Workflow, language: "code", renders: true };
       if (language === "markdown" || language === "md") {
