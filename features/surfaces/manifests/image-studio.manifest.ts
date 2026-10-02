@@ -33,7 +33,7 @@ import {
   OUTPUT_QUALITY_BOUNDS,
 } from "@/features/image-studio/constants/conversion-options";
 import { FILENAME_BASE_MAX_CHARS } from "@/features/image-studio/utils/slugify-filename";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

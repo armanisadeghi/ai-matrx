@@ -29,7 +29,7 @@ import type {
 // or removed view breaks this file at compile time. Erased at build — the
 // manifest registry stays free of client-component imports.
 import type { PlanView } from "@/features/marketing/content-plan/hooks/usePlanWorkspaceParams";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [

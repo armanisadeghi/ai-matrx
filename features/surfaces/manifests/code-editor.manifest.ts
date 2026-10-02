@@ -30,7 +30,7 @@ import type {
 import {
   mergeBaselineValues,
   pickBaseline,
-} from "./_baseline.manifest";
+} from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

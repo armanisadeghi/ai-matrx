@@ -29,7 +29,7 @@ import {
   TASK_PRIORITIES,
   type TaskPriorityValue,
 } from "@/features/tasks/constants/priority";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const TASK_CREATE_SURFACE_NAME = "matrx-user/task-create";
 

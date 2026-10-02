@@ -8,7 +8,7 @@ import { selectInstanceOverrideState } from "../../../redux/execution-system/ins
 import type {
   ChatRunConfigurationRef,
   ChatSandboxBindingRef,
-} from "@host/features/surfaces/manifests/chat.manifest";
+} from "../../../../surfaces/manifests/chat.manifest";
 
 /**
  * Pure store-read of the `run_configuration` surface value — how the user

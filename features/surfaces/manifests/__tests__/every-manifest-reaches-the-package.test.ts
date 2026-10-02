@@ -21,7 +21,12 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-const MANIFEST_DIR = path.resolve(__dirname, "..");
+// The app's manifests, and the chat package's own (moved there in P19) —
+// the app registry must register every one of both.
+const MANIFEST_DIRS = [
+  path.resolve(__dirname, ".."),
+  path.resolve(__dirname, "../../../../packages/chat/src/surfaces/manifests"),
+];
 
 type ManifestLike = { surfaceName: string; values: unknown[] };
 
@@ -36,11 +41,14 @@ function isManifest(value: unknown): value is ManifestLike {
 
 function declaredInFiles(): Array<{ file: string; surfaceName: string }> {
   const out: Array<{ file: string; surfaceName: string }> = [];
-  for (const file of readdirSync(MANIFEST_DIR).filter((f) => f.endsWith(".manifest.ts"))) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require(path.join(MANIFEST_DIR, file)) as Record<string, unknown>;
-    for (const value of Object.values(mod)) {
-      if (isManifest(value)) out.push({ file, surfaceName: value.surfaceName });
+  for (const dir of MANIFEST_DIRS) {
+    for (const name of readdirSync(dir).filter((f) => f.endsWith(".manifest.ts"))) {
+      const file = path.relative(path.resolve(__dirname, "../../../.."), path.join(dir, name));
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require(path.join(dir, name)) as Record<string, unknown>;
+      for (const value of Object.values(mod)) {
+        if (isManifest(value)) out.push({ file, surfaceName: value.surfaceName });
+      }
     }
   }
   return out;
@@ -58,6 +66,8 @@ describe("W-51: every manifest reaches the chat package", () => {
     const seam = require("@ai-matrx/chat/surfaces/runtime/registry") as typeof import("@ai-matrx/chat/surfaces/runtime/registry");
     const declared = declaredInFiles();
     expect(declared.length).toBeGreaterThan(200);
+    // the package's own manifests are part of the census, not skipped
+    expect(declared.filter(({ file }) => file.startsWith("packages/chat/")).length).toBeGreaterThanOrEqual(10);
     const missing = declared
       .filter(({ surfaceName }) => !seam.getManifest(surfaceName))
       .map(({ file, surfaceName }) => `${file}: ${surfaceName}`);

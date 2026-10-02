@@ -28,7 +28,7 @@ import {
   IMAGE_GENERATE_MIN_COUNT,
   IMAGE_GENERATE_SIZES,
 } from "@/features/image-studio/constants/generation-options";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

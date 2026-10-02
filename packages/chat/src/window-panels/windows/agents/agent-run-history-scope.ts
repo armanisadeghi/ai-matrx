@@ -24,7 +24,7 @@ import {
   type AgentRunHistoryRow,
   type AgentRunHistoryTranscriptEntry,
   type AgentRunHistoryVersionSummary,
-} from "@host/features/surfaces/manifests/agent-run-history.manifest";
+} from "../../../surfaces/manifests/agent-run-history.manifest";
 import type { SurfaceScopePayload } from "../../../surfaces/types";
 import type {
   ConversationListItem,

@@ -32,7 +32,7 @@ import {
   CONTEXT_PREVIEW_SURFACE_NAME,
   createContextPreviewScope,
   type AttachedContextEntrySummary,
-} from "@host/features/surfaces/manifests/context-preview.manifest";
+} from "../../../surfaces/manifests/context-preview.manifest";
 import { selectInstanceContextEntries } from "../../redux/execution-system/instance-context/instance-context.selectors";
 import { selectInstanceClientTools } from "../../redux/execution-system/instance-client-tools/instance-client-tools.selectors";
 import {

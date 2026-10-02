@@ -50,7 +50,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { EXTRACTION_JOB_NAME_MAX_LENGTH } from "@/features/page-extraction/data-review/constants";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

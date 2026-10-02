@@ -13,7 +13,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_AI_MODEL_AUDIT_SURFACE_NAME = "matrx-admin/ai-models/audit";
 

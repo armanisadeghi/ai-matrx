@@ -37,7 +37,7 @@ import {
   EMAIL_DRAFT_KEYS,
   EMAIL_SUBJECT_MAX_CHARS,
 } from "@/features/admin/shared/email-compose-draft";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_EMAIL_SURFACE_NAME = "matrx-admin/email";
 

@@ -41,7 +41,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@ai-matrx/chat/surfaces/types";
+} from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const DOCUMENTS_WORKSPACE_SURFACE_NAME = "matrx-user/documents-workspace";

@@ -17,7 +17,7 @@ import {
   AMBIENT_VALUES,
   BASELINE_VALUES,
   PLATFORM_CONTEXT_VALUES,
-} from "@host/features/surfaces/manifests/_baseline.manifest";
+} from "../manifests/_baseline.manifest";
 import type { SurfaceManifest, SurfaceScopePayload } from "../types";
 
 /** At most this many values in one brief. */

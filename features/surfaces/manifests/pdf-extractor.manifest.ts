@@ -39,7 +39,7 @@ import {
   MAX_CHUNK_SIZE,
   MIN_CHUNK_SIZE,
 } from "@/features/page-extraction/constants";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 /**
  * Canonical sections of the extractor studio, in the order the page reads:

@@ -26,7 +26,7 @@ import { SurfaceRuntimeProvider } from "../../../../surfaces/runtime/SurfaceRunt
 import {
   AGENT_GATE_SURFACE_NAME,
   createAgentGateScope,
-} from "@host/features/surfaces/manifests/agent-gate.manifest";
+} from "../../../../surfaces/manifests/agent-gate.manifest";
 
 // ─── WindowPanel body — used by AgentGateWindow ───────────────────────────────
 

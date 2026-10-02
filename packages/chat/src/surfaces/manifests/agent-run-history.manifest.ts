@@ -67,7 +67,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-} from "@ai-matrx/chat/surfaces/types";
+} from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 /** Canonical `ui_surface.name`. The emitter imports this — never a literal. */

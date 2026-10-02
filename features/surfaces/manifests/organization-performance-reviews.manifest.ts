@@ -14,7 +14,7 @@ import {
   RATING_SCHEMA,
   SCALE_LEGEND,
 } from "@/features/employee-performance-reviews/schema";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const PERFORMANCE_REVIEW_SURFACE_NAME =
   "matrx-user/organization-performance-reviews";

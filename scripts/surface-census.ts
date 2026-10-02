@@ -29,7 +29,8 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
 
-const MANIFEST_DIR = "features/surfaces/manifests";
+// The app's manifests, and the chat package's own (moved there in P19).
+const MANIFEST_DIRS = ["features/surfaces/manifests", "packages/chat/src/surfaces/manifests"];
 // Same resolution path as the registry's own static imports (a dynamic import()
 // by file URL takes the ESM path, which one package's exports map refuses).
 const requireModule = createRequire(__filename);
@@ -50,7 +51,7 @@ function callSites(fnName: string, manifestFile: string): string[] {
   try {
     const out = execFileSync(
       "git",
-      ["grep", "-lw", fnName, "--", "*.ts", "*.tsx", ":!features/surfaces/manifests/*.manifest.ts"],
+      ["grep", "-lw", fnName, "--", "*.ts", "*.tsx", ":!features/surfaces/manifests/*.manifest.ts", ":!packages/chat/src/surfaces/manifests/*.manifest.ts"],
       { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
     );
     return out
@@ -69,8 +70,11 @@ async function main() {
 
   // Map each manifest module to its surface name(s) and its scope builders.
   const buildersBySurface = new Map<string, { file: string; builders: string[] }>();
-  for (const file of readdirSync(MANIFEST_DIR).filter((f) => f.endsWith(".manifest.ts"))) {
-    const rel = path.join(MANIFEST_DIR, file);
+  for (const rel of MANIFEST_DIRS.flatMap((dir) =>
+    readdirSync(dir)
+      .filter((f) => f.endsWith(".manifest.ts"))
+      .map((f) => path.join(dir, f)),
+  )) {
     const mod = requireModule(path.resolve(rel)) as Record<string, unknown>;
     const builders = Object.entries(mod)
       .filter(([k, v]) => typeof v === "function" && /^create[A-Za-z0-9]*Scope$/.test(k))

@@ -41,7 +41,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
 import type { CmsHubSiteSummaryEntry } from "./cms.manifest";
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";

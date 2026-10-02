@@ -109,7 +109,7 @@ import {
 } from "./useUnifiedAgentContextMenu";
 import { buildAvailableKeys } from "../model/requirement-gate";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { BASELINE_VALUE_NAMES } from "@/features/surfaces/manifests/_baseline.manifest";
+import { BASELINE_VALUE_NAMES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { useSurfaceConfig } from "@ai-matrx/chat/surfaces/hooks/useSurfaceConfig";
 import type { MenuConfig } from "@ai-matrx/chat/surfaces/config/namespace-registry";
 import { useSurfaceBoundAgents } from "@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents";

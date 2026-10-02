@@ -1,6 +1,6 @@
 /**
  * chatAgentWrites — the pure checks behind the `matrx-user/chat` write targets
- * (declared in `features/surfaces/manifests/chat.manifest.ts`, registered in
+ * (declared in `packages/chat/src/surfaces/manifests/chat.manifest.ts`, registered in
  * `ChatConversationSurface.tsx`). No React, no store, no network: every rule is
  * unit-tested here (`__tests__/chatAgentWrites.test.ts`).
  *
@@ -20,7 +20,7 @@ import {
   CHAT_MESSAGE_TEXT_MAX,
   CHAT_MESSAGES_PER_WRITE,
   isChatDraftWriteMode,
-} from "@host/features/surfaces/manifests/chat.manifest";
+} from "../../../../surfaces/manifests/chat.manifest";
 
 /** A loaded message, as the checks need it. */
 export interface ChatMessageSnapshot {

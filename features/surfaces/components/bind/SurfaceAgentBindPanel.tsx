@@ -40,7 +40,7 @@ import { SurfaceVariableBindingList } from "@/features/surfaces/admin/columns/Su
 import { GlobalBindAgentGuard } from "@/features/surfaces/components/bind/GlobalBindAgentGuard";
 import { BindingSuggestionsTab } from "@/features/surfaces/components/bind/BindingSuggestionsTab";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
+import { BASELINE_VALUES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { buildBindingTargets } from "@ai-matrx/chat/surfaces/utils/buildBindingTargets";
 // THE ONE PRE-FLIGHT (FIX-11) — the same judge every mapping writer runs.
 import { valueMappingsProblems } from "@/features/mandates/provision-shapes";

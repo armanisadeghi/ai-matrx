@@ -19,7 +19,7 @@ import {
 import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import { SurfaceVariableBindingList } from "./SurfaceVariableBinding";
 import { buildBindingTargets } from "@ai-matrx/chat/surfaces/utils/buildBindingTargets";
-import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
+import { BASELINE_VALUES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import type { SurfaceValue, ValueMapping } from "@ai-matrx/chat/surfaces/types";
 
 /** Re-export for existing admin callers. */

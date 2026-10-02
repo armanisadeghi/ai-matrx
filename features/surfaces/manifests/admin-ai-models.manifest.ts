@@ -53,7 +53,7 @@ import {
   MODEL_COMMON_NAME_MAX_CHARS,
   MODEL_DESCRIPTION_MAX_CHARS,
 } from "@/features/ai-models/model-metadata";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_AI_MODELS_SURFACE_NAME = "matrx-admin/ai-models";
 

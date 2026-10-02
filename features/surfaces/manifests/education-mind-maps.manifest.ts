@@ -45,7 +45,7 @@ import type {
 // handler accepts. Types-only module (no React, no client) — safe for the
 // manifest registry.
 import { MEDIA_GENERATOR_SOURCE_KINDS } from "@/features/education/media/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

@@ -31,13 +31,13 @@
  */
 
 import type { SurfaceManifest } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import {
   CONVERSATION_DOCUMENT_GROUPS,
   CONVERSATION_DOCUMENT_VALUES,
   CONVERSATION_DOCUMENT_WRITE_TARGETS,
   createConversationDocumentScope,
-} from "./_conversation-document.manifest";
+} from "@ai-matrx/chat/surfaces/manifests/_conversation-document.manifest";
 
 export const workingDocumentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/working-document",

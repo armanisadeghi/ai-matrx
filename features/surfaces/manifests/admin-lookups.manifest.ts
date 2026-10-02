@@ -33,7 +33,7 @@ import {
   LOOKUP_NAME_MAX_CHARS,
   LOOKUP_NAME_RULES,
 } from "@/features/tool-registry/lookups/lookupsVocabulary";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_LOOKUPS_SURFACE_NAME = "matrx-admin/lookups";
 

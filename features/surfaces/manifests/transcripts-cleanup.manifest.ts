@@ -27,7 +27,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 

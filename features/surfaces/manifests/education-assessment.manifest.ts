@@ -43,7 +43,7 @@ import {
   DIFFICULTIES,
   QUESTION_TYPES,
 } from "@/features/education/assessment/data/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

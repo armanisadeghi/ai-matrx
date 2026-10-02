@@ -6,7 +6,7 @@
  * guide_* values here stay declared for stored bindings but are absent on this route.
  */
 import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup, SurfaceWriteTarget } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   { key: "guide", label: "Current guide", sortOrder: 100, description: "The guide being read or edited." },

@@ -34,7 +34,7 @@ import { ItemRow } from "@host/components/official/item/ItemRow";
 import { buildConversationMenu } from "../../../agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "../../../agents/redux/conversation-list/conversation-row-actions.thunks";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
-import { AGENT_RUN_HISTORY_SURFACE_NAME } from "@host/features/surfaces/manifests/agent-run-history.manifest";
+import { AGENT_RUN_HISTORY_SURFACE_NAME } from "../../../surfaces/manifests/agent-run-history.manifest";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { selectConversationTitle } from "../../../agents/redux/execution-system/messages/messages.selectors";
 import {

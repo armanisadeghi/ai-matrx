@@ -44,7 +44,7 @@ import { SurfaceRuntimeProvider } from "../../surfaces/runtime/SurfaceRuntimeCon
 import {
   CHAT_VOICE_SURFACE,
   createChatVoiceScope,
-} from "@host/features/surfaces/manifests/chat-voice.manifest";
+} from "../../surfaces/manifests/chat-voice.manifest";
 import { deriveVoiceTranscriptScope } from "../agent-context/voiceTranscriptScope";
 import { VoiceOrb } from "./VoiceOrb";
 import { VoiceEdgeRibbon } from "./VoiceEdgeRibbon";

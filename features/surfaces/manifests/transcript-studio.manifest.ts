@@ -42,7 +42,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { CONCEPT_KINDS } from "@/features/transcript-studio/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 /** Concept entry emitted in `concept_items`. */
 export interface StudioConceptItemValue {

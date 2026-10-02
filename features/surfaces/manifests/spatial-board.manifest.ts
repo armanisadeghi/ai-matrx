@@ -15,7 +15,7 @@
 
 import type { SurfaceManifest, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
 import { BOARD_CLIENT_TOOLS } from "@/features/spatial/tools/board-tools";
-import { mergeBaselineValues } from "./_baseline.manifest";
+import { mergeBaselineValues } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const SPATIAL_BOARD_SURFACE_NAME = "matrx-user/spatial-board";
 

@@ -103,7 +103,7 @@ import {
   BUNDLE_NAME_RULE,
   NEW_BUNDLE_DRAFT_FIELDS,
 } from "@/features/tool-registry/bundles/bundlesVocabulary";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_BUNDLES_SURFACE_NAME = "matrx-admin/bundles";
 

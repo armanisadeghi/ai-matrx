@@ -15,7 +15,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import type { DiagramData } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const MAPS_SURFACE_NAME = "matrx-user/maps";
 

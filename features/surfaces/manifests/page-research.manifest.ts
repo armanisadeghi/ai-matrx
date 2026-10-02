@@ -18,7 +18,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
-import { withAllBaselines } from "./_baseline.manifest";
+import { withAllBaselines } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const PAGE_RESEARCH_SURFACE_NAME = "matrx-user/page-research";
 

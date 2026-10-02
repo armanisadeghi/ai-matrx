@@ -36,7 +36,7 @@ import { SurfaceRuntimeProvider } from "../../../../surfaces/runtime/SurfaceRunt
 import {
   DOCUMENTS_WORKSPACE_SURFACE_NAME,
   createDocumentsWorkspaceScope,
-} from "@host/features/surfaces/manifests/documents-workspace.manifest";
+} from "../../../../surfaces/manifests/documents-workspace.manifest";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../../store/hooks";
 import { useIsMobile } from "@ai-matrx/kit/media-query";

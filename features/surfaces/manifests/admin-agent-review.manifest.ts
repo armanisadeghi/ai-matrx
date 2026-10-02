@@ -75,7 +75,7 @@ import {
   type ReviewTriage,
 } from "@/features/admin/agent-review/triage";
 import type { ReviewStatus } from "@/features/admin/agent-review/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_AGENT_REVIEW_SURFACE_NAME = "matrx-admin/agent-review";
 

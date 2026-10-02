@@ -38,7 +38,7 @@ import {
   PAGELESS_CONTENT_INLINE_CEILING,
   PERSON_CONTEXT_VALUES,
   POINTER_INLINE_CEILINGS,
-} from "@host/features/surfaces/manifests/_baseline.manifest";
+} from "../../../../surfaces/manifests/_baseline.manifest";
 import { pageOwningConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import { selectPageContextOff } from "../instance-ui-state/instance-ui-state.selectors";
 import {

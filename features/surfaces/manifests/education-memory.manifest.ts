@@ -17,7 +17,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { MEDIA_GENERATOR_SOURCE_KINDS } from "@/features/education/media/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 /** Bounds the handler enforces, spelled into the target prose so they match. */
 export const MEMORY_TOPIC_MIN = 3;

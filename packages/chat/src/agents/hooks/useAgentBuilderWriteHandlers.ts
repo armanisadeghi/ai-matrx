@@ -3,7 +3,7 @@
 /**
  * Write handlers for `matrx-user/agent-builder` — the receiving end of the
  * surface's `writeTargets` (declared in
- * `features/surfaces/manifests/agent-builder.manifest.ts`).
+ * `packages/chat/src/surfaces/manifests/agent-builder.manifest.ts`).
  *
  * This is the highest-stakes write surface in the product: an agent authoring
  * another agent's system prompt. Three rules keep it safe, and all three are

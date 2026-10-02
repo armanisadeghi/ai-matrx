@@ -61,7 +61,7 @@ import {
   PROMPT_COUNT_OPTIONS,
 } from "@/features/education/spoken-practice/vocabulary";
 import { SPOKEN_PRACTICE_MODES } from "@/features/education/spoken-practice/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 /**
  * Enum prose built FROM the vocabulary the pickers render, never re-typed. If a

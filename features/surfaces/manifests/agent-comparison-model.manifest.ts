@@ -18,8 +18,8 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
-import { CHAT_DRAFT_WRITE_MODES, CHAT_INPUT_DRAFT_MAX } from "./chat.manifest";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { CHAT_DRAFT_WRITE_MODES, CHAT_INPUT_DRAFT_MAX } from "@ai-matrx/chat/surfaces/manifests/chat.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

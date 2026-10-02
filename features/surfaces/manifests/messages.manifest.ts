@@ -102,7 +102,7 @@ import type {
   SurfaceValue,
 } from "@ai-matrx/chat/surfaces/types";
 import { MESSAGING_MANDATE_KEYS, MESSAGING_MANDATE_ROLES } from "@/features/messaging/lib/messagingMandates";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const surfaceSpecific: SurfaceValue[] = [
   {

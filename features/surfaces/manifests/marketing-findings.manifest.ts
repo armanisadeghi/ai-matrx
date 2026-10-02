@@ -26,7 +26,7 @@ import {
   SUPPRESSION_REASON_MAX_LENGTH,
   USER_WRITABLE_FINDING_STATUSES,
 } from "@/features/marketing/data/finding-lifecycle";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

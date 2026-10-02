@@ -36,7 +36,7 @@ import {
   CMS_SITE_DOMAIN_RULE,
   CMS_SITE_SLUG_RULE,
 } from "@/features/cms/utils/siteSlug";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

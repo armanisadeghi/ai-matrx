@@ -53,7 +53,7 @@ import {
   AGENT_TAGS_MAX_COUNT,
   AGENT_TAG_MAX_CHARS,
 } from "@ai-matrx/chat/agents/constants/agent-identity-metadata";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_SYSTEM_AGENTS_SURFACE_NAME = "matrx-admin/system-agents";
 

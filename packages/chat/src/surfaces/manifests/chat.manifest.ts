@@ -26,12 +26,12 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@ai-matrx/chat/surfaces/types";
+} from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type {
   ChatConversationRecord,
   ChatTranscriptEntry,
-} from "@ai-matrx/chat/agents/components/chat/agent-context/chatTranscriptScope";
+} from "../../agents/components/chat/agent-context/chatTranscriptScope";
 
 // ---------------------------------------------------------------------------
 // Write-contract vocabulary — ONE definition, imported by both the manifest

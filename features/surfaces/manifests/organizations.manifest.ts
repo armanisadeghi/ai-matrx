@@ -31,7 +31,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 /** Canonical `ui_surface.name` for this surface. */
 export const ORGANIZATIONS_SURFACE_NAME = "matrx-user/organizations";

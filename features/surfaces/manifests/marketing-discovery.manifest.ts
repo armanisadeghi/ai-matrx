@@ -31,7 +31,7 @@ import {
   DISCOVERY_KIND_POOL_PROSE,
   LABEL_REQUIRED_KIND,
 } from "@/features/marketing/discovery-classification";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

@@ -5,7 +5,7 @@ import {
   type ChatRunConfigurationRef,
   type ChatScratchpadRef,
   type ChatWorkingDocumentRef,
-} from "@host/features/surfaces/manifests/chat.manifest";
+} from "../../../../surfaces/manifests/chat.manifest";
 import type {
   ChatConversationRecord,
   ChatTranscriptEntry,

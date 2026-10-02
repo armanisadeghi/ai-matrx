@@ -28,7 +28,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { keywordResearchManifest } from "./keyword-research.manifest";
 
 export const KEYWORD_RESEARCH_WINDOW_SURFACE_NAME =

@@ -24,7 +24,7 @@ import { withBaselineScope } from "@ai-matrx/chat/surfaces/utils/baseline-scope"
 import {
   BASELINE_VALUE_NAMES,
   type BaselineKey,
-} from "@/features/surfaces/manifests/_baseline.manifest";
+} from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   getSurfaceRuntime,

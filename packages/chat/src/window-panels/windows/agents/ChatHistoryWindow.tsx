@@ -43,7 +43,7 @@ import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntime
 import {
   AI_RESULTS_SURFACE_NAME,
   createAiResultsScope,
-} from "@host/features/surfaces/manifests/ai-results.manifest";
+} from "../../../surfaces/manifests/ai-results.manifest";
 import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
 import { useComposerMode } from "../../../agents/components/inputs/smart-input/composer/useComposerMode";
 import { useCompactInputMaxHeight } from "../../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";

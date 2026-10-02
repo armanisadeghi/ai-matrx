@@ -33,7 +33,7 @@ import {
   CRAWL_MAX_PAGES_BOUNDS,
   CRAWL_RENDER_MODES,
 } from "@/features/marketing/crawler/crawl-options";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

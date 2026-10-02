@@ -31,7 +31,7 @@ import {
   SAVE_MODES,
   UPDATE_METHODS,
 } from "@/features/notes/actions/quick-save/quickNoteSaveVocabulary";
-import { BASELINE_VALUES, mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { BASELINE_VALUES, mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const QUICK_NOTE_SAVE_SURFACE_NAME = "matrx-user/quick-note-save";
 

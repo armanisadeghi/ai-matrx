@@ -36,7 +36,7 @@ import {
   type GateableItem,
   type OfferRefusal,
 } from "@host/features/context-menu-v3/model/requirement-gate";
-import { BASELINE_VALUE_NAMES } from "@host/features/surfaces/manifests/_baseline.manifest";
+import { BASELINE_VALUE_NAMES } from "../manifests/_baseline.manifest";
 import { getManifest } from "./registry";
 import { useSurfaceConfig } from "../hooks/useSurfaceConfig";
 import type { MenuConfig } from "../config/namespace-registry";

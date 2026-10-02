@@ -32,7 +32,7 @@ import {
   type FastFireConfig,
 } from "@/features/flashcards/fast-fire/drill-config";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

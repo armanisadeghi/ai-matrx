@@ -1,5 +1,5 @@
 import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues } from "./_baseline.manifest";
+import { mergeBaselineValues } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_SYNC_FLEET_SURFACE_NAME = "matrx-admin/sync-fleet";
 

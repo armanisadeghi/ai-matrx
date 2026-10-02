@@ -42,7 +42,7 @@ import {
   SITE_DESCRIPTION_MAX,
   SITE_NAME_MAX,
 } from "@/features/marketing/lib/site-write-targets";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

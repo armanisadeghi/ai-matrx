@@ -46,7 +46,7 @@ import {
   makeSelectSurfaceValues,
   makeSelectSurfaceValuesStatus,
 } from "@ai-matrx/chat/surfaces/redux/selectors";
-import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
+import { BASELINE_VALUES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import type {

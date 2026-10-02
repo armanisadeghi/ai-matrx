@@ -38,7 +38,7 @@ import {
   SCRAPE_MODES,
   SCRAPE_MODE_ENUM_TEXT,
 } from "@/features/scraper/scrape-command";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

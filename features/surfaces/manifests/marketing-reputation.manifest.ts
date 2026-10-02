@@ -9,7 +9,7 @@ import {
   REPUTATION_CASE_USER_SETTABLE_STATUSES,
   REPUTATION_RULING_NOTE_MAX_LENGTH,
 } from "@/features/marketing/data/reputation-types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

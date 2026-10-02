@@ -43,7 +43,7 @@ import {
   CHAT_DRAFT_WRITE_MODES,
   CHAT_INPUT_DRAFT_MAX,
   isChatDraftWriteMode,
-} from "@host/features/surfaces/manifests/chat.manifest";
+} from "../../../surfaces/manifests/chat.manifest";
 import { waitForConversationPersisted } from "../../redux/execution-system/conversations/conversation-persistence";
 import { renameConversation } from "../../redux/conversation-list/conversation-row-actions.thunks";
 import { setUserInputText } from "../../redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -369,7 +369,7 @@ export function AgentRunnerPage({
   // The write half of this surface. Which fields earn a target — and the
   // longer list that deliberately does NOT, because this page is the
   // instrument that MEASURES an agent — is written down beside the
-  // declarations in `features/surfaces/manifests/agent-run.manifest.ts`.
+  // declarations in `packages/chat/src/surfaces/manifests/agent-run.manifest.ts`.
   //
   // POSTURE: this whole block sits past the `isAgentRunSurface` gate above, so
   // the `/code` workspace (which mounts this same component under

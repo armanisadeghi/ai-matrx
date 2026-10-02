@@ -98,13 +98,13 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
   SurfaceWriteTarget,
-} from "@ai-matrx/chat/surfaces/types";
-import { VOICES } from "@ai-matrx/chat/voice-agent/constants";
+} from "../types";
+import { VOICES } from "../../voice-agent/constants";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type {
   VoiceActiveTurnScope,
   VoiceTurnScopeEntry,
-} from "@ai-matrx/chat/voice-agent/agent-context/voiceTranscriptScope";
+} from "../../voice-agent/agent-context/voiceTranscriptScope";
 
 /** Canonical surface name for the realtime voice chat route. */
 export const CHAT_VOICE_SURFACE = "matrx-user/chat-voice";

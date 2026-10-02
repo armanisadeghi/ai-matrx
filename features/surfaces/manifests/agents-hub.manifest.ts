@@ -34,7 +34,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { SORT_OPTIONS } from "@ai-matrx/agents/catalog";
 import { AGENT_NONE_SENTINEL } from "@ai-matrx/agents/catalog";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const AGENTS_HUB_SURFACE_NAME = "matrx-user/agents";
 

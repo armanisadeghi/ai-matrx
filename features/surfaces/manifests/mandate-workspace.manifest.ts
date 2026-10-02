@@ -41,7 +41,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const MANDATE_WORKSPACE_SURFACE_NAME = "matrx-admin/mandate-workspace";
 

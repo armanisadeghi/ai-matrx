@@ -37,7 +37,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { FIELD_DATA_TYPES } from "@/features/data-tables/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 /** Real column-type vocabulary, spelled into the model-facing contract. */
 const FIELD_TYPE_ENUM_TEXT = FIELD_DATA_TYPES.map((t) => `"${t}"`).join(" | ");

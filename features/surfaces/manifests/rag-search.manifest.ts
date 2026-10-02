@@ -43,7 +43,7 @@ import {
   MULTI_QUERY_MAX,
   MULTI_QUERY_MIN,
 } from "@/features/rag/search-controls";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

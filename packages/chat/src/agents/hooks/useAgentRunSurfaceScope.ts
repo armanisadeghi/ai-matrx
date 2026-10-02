@@ -17,7 +17,7 @@
 import { useCallback } from "react";
 
 import { useAppStore } from "../../store/hooks";
-import { createAgentRunScope } from "@host/features/surfaces/manifests/agent-run.manifest";
+import { createAgentRunScope } from "../../surfaces/manifests/agent-run.manifest";
 import type { SurfaceScopePayload } from "../../surfaces/types";
 import { extractAgentSystemInstruction } from "../utils/agent-system-instruction";
 import {

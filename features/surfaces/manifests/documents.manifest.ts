@@ -57,7 +57,7 @@ import {
   DOCUMENT_NAME_MAX_LENGTH,
 } from "@/features/data-tables/agent-context/documentWriteValidation";
 import { DOCUMENT_BODY_MAX_LENGTH } from "@/features/data-tables/document-body-text";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

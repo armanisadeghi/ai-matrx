@@ -4,7 +4,7 @@
 //
 // The WRITE half of the `matrx-user/chat-voice` surface — one handler per
 // `writeTargets` entry declared in
-// `features/surfaces/manifests/chat-voice.manifest.ts`.
+// `packages/chat/src/surfaces/manifests/chat-voice.manifest.ts`.
 //
 // Rules this file exists to hold (mirrors `useWarRoomWriteHandlers.ts` and the
 // tasks exemplar in `features/tasks/components/editor/TaskEditorBody.tsx`):

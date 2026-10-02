@@ -17,7 +17,7 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
-} from "@ai-matrx/chat/surfaces/types";
+} from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const AGENT_GATE_SURFACE_NAME = "matrx-user/agent-gate";

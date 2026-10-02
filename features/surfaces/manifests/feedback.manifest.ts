@@ -29,7 +29,7 @@ import {
   BASELINE_VALUES,
   mergeBaselineValues,
   pickBaseline,
-} from "./_baseline.manifest";
+} from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const FEEDBACK_SURFACE_NAME = "matrx-user/feedback";
 

@@ -4,7 +4,7 @@
  * ChatConversationSurface — the `matrx-user/chat` surface for ONE
  * conversation: its live scope (the conversation record, the transcript, the
  * composer, the run configuration) and every write target the manifest
- * declares (`features/surfaces/manifests/chat.manifest.ts`), each saving
+ * declares (`packages/chat/src/surfaces/manifests/chat.manifest.ts`), each saving
  * through the SAME function the chat's own control calls.
  *
  * ONE component, two consumers: `ChatRoomClient` (every `/chat` room) and the
@@ -29,7 +29,7 @@ import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
 } from "../../../surfaces/runtime/SurfaceRuntimeContext";
-import { CHAT_CONVERSATION_TITLE_MAX } from "@host/features/surfaces/manifests/chat.manifest";
+import { CHAT_CONVERSATION_TITLE_MAX } from "../../../surfaces/manifests/chat.manifest";
 import {
   buildChatConversationRecord,
   buildChatTranscript,
@@ -284,7 +284,7 @@ export function ChatConversationSurface({
   // conversation is never offered them). Every handler closes over THIS
   // component's `conversationId` — the conversation actually on the page —
   // and saves through the SAME function the page's own control calls. Which
-  // targets exist and why: `features/surfaces/manifests/chat.manifest.ts`;
+  // targets exist and why: `packages/chat/src/surfaces/manifests/chat.manifest.ts`;
   // the pure checks: `./agent-context/chatAgentWrites.ts`.
   //
   // Plain fn, rebuilt per render; the provider holds it and calls it at write

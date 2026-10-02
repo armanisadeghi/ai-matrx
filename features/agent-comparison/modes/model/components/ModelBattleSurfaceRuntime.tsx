@@ -13,7 +13,7 @@ import {
   CHAT_DRAFT_WRITE_MODES,
   CHAT_INPUT_DRAFT_MAX,
   isChatDraftWriteMode,
-} from "@/features/surfaces/manifests/chat.manifest";
+} from "@ai-matrx/chat/surfaces/manifests/chat.manifest";
 import { createAgentRunVariableValuesHandler } from "@ai-matrx/chat/agents/components/run/agent-run-variable-write";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { isJsonObject } from "@/types/json";

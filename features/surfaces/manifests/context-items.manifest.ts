@@ -33,7 +33,7 @@ import {
   DEFAULT_CATEGORIES,
   VALUE_TYPE_CONFIG,
 } from "@/features/agent-context/constants";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import {
   SCOPES_SURFACE_NAME,
   type ScopesScopeValues,

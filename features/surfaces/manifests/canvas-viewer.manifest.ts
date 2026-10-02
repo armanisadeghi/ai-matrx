@@ -17,7 +17,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
 } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const CANVAS_VIEWER_SURFACE_NAME = "matrx-user/canvas-viewer";
 

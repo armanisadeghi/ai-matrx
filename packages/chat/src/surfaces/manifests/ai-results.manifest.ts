@@ -24,7 +24,7 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
-} from "@ai-matrx/chat/surfaces/types";
+} from "../types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const AI_RESULTS_SURFACE_NAME = "matrx-user/ai-results";

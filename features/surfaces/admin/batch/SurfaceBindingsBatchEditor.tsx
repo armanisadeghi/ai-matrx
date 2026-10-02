@@ -40,7 +40,7 @@ import {
 
 import { SurfaceVariableBindingList } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import { buildBindingTargets } from "@/features/surfaces/admin/columns/BindingColumn";
-import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
+import { BASELINE_VALUES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import {
   loadSurfaces,
   loadBindingsForAgent,

@@ -33,7 +33,7 @@ import {
   getRawManifest,
 } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
-import { allBaseline } from "@/features/surfaces/manifests/_baseline.manifest";
+import { allBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { qualifyingDefaultSurfaces } from "@ai-matrx/chat/surfaces/services/surface-bound-agents.service";
 import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import { cn } from "@/lib/utils";

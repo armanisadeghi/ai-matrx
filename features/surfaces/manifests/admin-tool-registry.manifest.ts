@@ -55,7 +55,7 @@ import {
   TOOL_TAGS_MAX_COUNT,
   TOOL_TAG_MAX_CHARS,
 } from "@/features/tool-call-visualization/admin/mcp-tools/tool-metadata";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_TOOL_REGISTRY_SURFACE_NAME = "matrx-admin/tool-registry";
 

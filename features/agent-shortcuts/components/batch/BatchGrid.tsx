@@ -2,7 +2,7 @@
 
 import { CheckCircle2, X } from "lucide-react";
 import { formatVariableDisplayName } from "@ai-matrx/chat/agents/utils/variable-utils";
-import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
+import { BASELINE_VALUES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import {
   SurfaceVariableBinding,
   type BindingTarget,

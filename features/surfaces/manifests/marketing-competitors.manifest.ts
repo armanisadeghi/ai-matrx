@@ -11,7 +11,7 @@ import {
   COMPETITOR_TRACKING_STATUS_QUOTED_LIST,
   OPPORTUNITY_STATUS_QUOTED_LIST,
 } from "@/features/marketing/competitors/autopsy-controls";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   { key: "selection", label: "Selected site", sortOrder: 100, description: "The managed site currently being investigated." },

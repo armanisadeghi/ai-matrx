@@ -31,7 +31,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import type { GameMiss } from "@/features/education/engage/data/useGamePlay";
 
 export const EDUCATION_GAME_SOLO_SURFACE_NAME = "matrx-user/education-game-solo";

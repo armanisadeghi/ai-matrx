@@ -90,7 +90,7 @@ import {
   THEME_MODE_ENUM_TEXT,
   VOICE_EMOTION_ENUM_TEXT,
 } from "@/features/settings/agent-writable-settings";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

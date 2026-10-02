@@ -34,7 +34,7 @@ import {
   DATAFORSEO_DETAIL_LIMIT_MAX,
   DATAFORSEO_DETAIL_LIMIT_MIN,
 } from "@/features/marketing/data/integrations-schema";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 

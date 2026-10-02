@@ -22,7 +22,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { TASK_LABELS } from "@/features/tasks/constants/labels";
 import type { TaskPriorityValue } from "@/features/tasks/constants/priority";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {

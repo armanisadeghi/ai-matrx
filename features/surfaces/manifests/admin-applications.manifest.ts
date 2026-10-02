@@ -56,7 +56,7 @@ import type {
 // schema module, never re-typed here — the manifest description, the handler
 // and the editor's own Select all read the SAME list.
 import { NOTICE_LEVELS } from "@/features/admin/applications/config/schema";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_APPLICATIONS_SURFACE_NAME = "matrx-admin/applications";
 

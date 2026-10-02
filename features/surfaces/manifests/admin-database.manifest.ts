@@ -52,7 +52,7 @@ import type {
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
 import { SQL_QUERY_WRITE_MAX_CHARS } from "@/features/administration/lib/sql-editor-write-targets";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_DATABASE_SURFACE_NAME = "matrx-admin/database";
 

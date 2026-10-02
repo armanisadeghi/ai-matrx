@@ -51,7 +51,7 @@ import { useCostDisplay } from "@host/components/cost/useCostDisplay";
 import {
   OBSERVATIONAL_MEMORY_SURFACE_NAME,
   createObservationalMemoryScope,
-} from "@host/features/surfaces/manifests/observational-memory.manifest";
+} from "../../../surfaces/manifests/observational-memory.manifest";
 import { CHAT_WINDOWS } from "../../../host/windows";
 
 // =============================================================================

@@ -1,4 +1,4 @@
-import { CHAT_INPUT_DRAFT_MAX } from "@/features/surfaces/manifests/chat.manifest";
+import { CHAT_INPUT_DRAFT_MAX } from "@ai-matrx/chat/surfaces/manifests/chat.manifest";
 import type { RootState } from "@/lib/redux/store";
 import { initInstanceUserInput } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { initInstanceVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";

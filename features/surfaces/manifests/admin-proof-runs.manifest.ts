@@ -1,5 +1,5 @@
 import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
-import { mergeBaselineValues } from "./_baseline.manifest";
+import { mergeBaselineValues } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const ADMIN_PROOF_RUNS_SURFACE_NAME = "matrx-admin/proof-runs";
 const groups: SurfaceValueGroup[] = [{ key: "proofs", label: "Proof runs", sortOrder: 100, description: "Proof check status, recent run receipts, and the currently opened run." }];

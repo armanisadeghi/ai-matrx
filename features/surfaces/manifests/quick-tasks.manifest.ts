@@ -21,7 +21,7 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { TASK_LABELS, type TaskLabel } from "@/features/tasks/constants/labels";
 import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
-import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const QUICK_TASKS_SURFACE_NAME = "matrx-user/quick-tasks";
 
