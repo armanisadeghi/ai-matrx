@@ -193,7 +193,7 @@ export function ContextItemHub({
           <PropRow label="Sensitivity" value={item.sensitivity} />
           <PropRow
             label="Fetch hint"
-            value={item.fetch_hint ? humanizeIdentifier(item.fetch_hint) : undefined}
+            value={humanizeIdentifier(item.fetch_hint ?? "")}
           />
           <PropRow label="Sort order" value={String(item.sort_order ?? 0)} />
         </dl>
