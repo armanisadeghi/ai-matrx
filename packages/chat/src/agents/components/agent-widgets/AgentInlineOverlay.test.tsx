@@ -33,6 +33,8 @@ import messages from "../../redux/execution-system/messages/messages.slice";
 import conversations, {
   createInstance,
 } from "../../redux/execution-system/conversations/conversations.slice";
+import instanceUserInput from "../../redux/execution-system/instance-user-input/instance-user-input.slice";
+import instanceResources from "../../redux/execution-system/instance-resources/instance-resources.slice";
 import { AgentInlineOverlay } from "./AgentInlineOverlay";
 
 jest.mock("../smart/AgentRunner", () => ({
@@ -48,6 +50,9 @@ function makeStore() {
     reducer: {
       messages,
       conversations,
+      // Read by the Escape rule: an unsent composer draft keeps the card.
+      instanceUserInput,
+      instanceResources,
       // Read by the title selector only for an agent-named fallback.
       agentDefinition: (s: { agents: Record<string, unknown> } = { agents: {} }) => s,
     },

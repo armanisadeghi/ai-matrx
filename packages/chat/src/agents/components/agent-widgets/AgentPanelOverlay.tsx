@@ -2,6 +2,7 @@
 
 import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectHasUnsentComposerDraft } from "../../redux/execution-system/instance-user-input/unsent-draft.selectors";
 import FloatingSheet from "@host/components/official/FloatingSheet";
 import { AgentRunner } from "../smart/AgentRunner";
 import { useAgentShellAddress } from "./useAgentShellAddress";
@@ -16,6 +17,9 @@ export function AgentPanelOverlay({
   onClose,
 }: AgentPanelOverlayProps) {
   const title = useAppSelector(selectInstanceDisplayTitle(conversationId));
+  const hasUnsentDraft = useAppSelector(
+    selectHasUnsentComposerDraft(conversationId),
+  );
   useAgentShellAddress(conversationId, "panel");
 
   return (
@@ -28,6 +32,7 @@ export function AgentPanelOverlay({
       height="full"
       closeOnBackdropClick={true}
       closeOnEsc={true}
+      keepOpenOnEsc={hasUnsentDraft}
       showCloseButton={true}
       contentClassName="p-0"
       lockScroll={false}

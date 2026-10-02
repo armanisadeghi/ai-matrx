@@ -29,6 +29,7 @@ import { X } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceStatus } from "../../redux/execution-system/conversations/conversations.selectors";
 import { selectInstanceDisplayTitle } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectHasUnsentComposerDraft } from "../../redux/execution-system/instance-user-input/unsent-draft.selectors";
 import { AgentRunner } from "../smart/AgentRunner";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
@@ -43,6 +44,9 @@ export function AgentInlineOverlay({
 }: AgentInlineOverlayProps) {
   const status = useAppSelector(selectInstanceStatus(conversationId));
   const title = useAppSelector(selectInstanceDisplayTitle(conversationId));
+  const hasUnsentDraft = useAppSelector(
+    selectHasUnsentComposerDraft(conversationId),
+  );
   // Bound = the overlay names a conversation AND that conversation exists in
   // the store. The launcher creates the conversation before it opens this
   // overlay, so a missing record is a wiring defect, never a loading state.
@@ -59,11 +63,17 @@ export function AgentInlineOverlay({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !e.defaultPrevented) onClose();
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      // Unsent work in the composer: take the key, keep the card.
+      if (hasUnsentDraft) {
+        e.preventDefault();
+        return;
+      }
+      onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, hasUnsentDraft]);
 
   return (
     <div

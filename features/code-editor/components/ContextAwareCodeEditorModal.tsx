@@ -46,6 +46,7 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
+import { selectHasUnsentComposerDraft } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/unsent-draft.selectors";
 import type { CanvasItemId } from "@ai-matrx/canvas";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import type { CanvasContent } from "@/features/canvas/canvasContent";
@@ -123,6 +124,9 @@ export function ContextAwareCodeEditorModal({
   const [callbackScope] = useState(createCanvasCallbackScope);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const hasUnsentDraft = useAppSelector(
+    selectHasUnsentComposerDraft(conversationId ?? ""),
+  );
   const [isLaunching, setIsLaunching] = useState(false);
   const hasLaunchedRef = useRef(false);
 
@@ -430,7 +434,13 @@ export function ContextAwareCodeEditorModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full h-[90dvh] p-0 gap-0">
+      <DialogContent
+        className="max-w-[95vw] w-full h-[90dvh] p-0 gap-0"
+        // Unsent work in the composer: Escape never discards it.
+        onEscapeKeyDown={(e) => {
+          if (hasUnsentDraft) e.preventDefault();
+        }}
+      >
         {content}
       </DialogContent>
     </Dialog>

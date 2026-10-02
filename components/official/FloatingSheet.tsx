@@ -15,6 +15,12 @@ interface FloatingSheetProps {
     showCloseButton?: boolean;
     closeOnBackdropClick?: boolean;
     closeOnEsc?: boolean; // Close the sheet when ESC key is pressed
+    /**
+     * Escape is consumed but the sheet stays open — pass `true` while the sheet
+     * holds unsent work (a composer draft) so a stray Escape never discards it.
+     * The close button and the caller's own close still work.
+     */
+    keepOpenOnEsc?: boolean;
     width?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "full";
     height?: "auto" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "full";
     spacing?: string;
@@ -49,6 +55,7 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
     showCloseButton = true,
     closeOnBackdropClick = true,
     closeOnEsc = true,
+    keepOpenOnEsc = false,
     width = "md",
     height = "auto",
     spacing = "0",
@@ -118,6 +125,11 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
             // One Escape closes ONE layer: a menu, sheet or dialog open inside
             // this sheet already took it (Radix marks it defaultPrevented).
             if (e.key === "Escape" && isOpen && closeOnEsc && !e.defaultPrevented) {
+                // Unsent work inside: this layer takes the key and stays.
+                if (keepOpenOnEsc) {
+                    e.preventDefault();
+                    return;
+                }
                 onClose();
             }
         };
@@ -127,7 +139,7 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
         return () => {
             document.removeEventListener("keydown", handleKeyDown);
         };
-    }, [isOpen, closeOnEsc, onClose]);
+    }, [isOpen, closeOnEsc, keepOpenOnEsc, onClose]);
     
     // Handle focus management for accessibility
     useEffect(() => {
