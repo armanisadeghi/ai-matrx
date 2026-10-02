@@ -37,6 +37,44 @@ import { KIND_KEY } from "@ai-matrx/content-ir";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+
+// THE LEDGER READ (content-ir-react 0.14+): the card asks whether this block
+// already ran before it offers Apply. Pinned to "not applied" so these tests
+// read the card a fresh block draws — never a network call from jest.
+jest.mock("@/features/directive-catalog/service", () => ({
+  ...jest.requireActual("@/features/directive-catalog/service"),
+  fetchDirectiveApplyState: async (
+    _baseUrl: string,
+    body: { shells: Array<{ __kind: string; items: unknown[] }> },
+  ) => ({
+    conversation_id: null,
+    shells: body.shells.map((s) => ({
+      directive: s.__kind,
+      proposal_id: "",
+      directive_class: "",
+      noun: "",
+      item_count: s.items.length,
+      message: "",
+      items: s.items.map((_item, index) => ({
+        index,
+        state: "not_applied",
+        message: null,
+        resource_ids: [],
+      })),
+      approvable: true,
+      unreadable: null,
+    })),
+  }),
+}));
+
+/** Let the card's mount-time ledger read settle (one tick + its promise chain). */
+async function settleLedgerRead(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 const AGENT_SLUG = "directive_v1_action_create_agent_definition";
 
 function shell(kind: string, items: unknown[]) {
@@ -106,10 +144,13 @@ describe("THE DIRECTIVE⇄KIND SEAM, as this host supplies it", () => {
 });
 
 describe("the production entry point draws the real card", () => {
-  it("names the write, counts the items, and offers Apply (the confirm seam)", () => {
+  it("names the write, counts the items, and offers Apply (the confirm seam)", async () => {
     const { host, root } = render(
       <MatrxEnvelopeBlock content={shell(AGENT_SLUG, [AGENT_DEFINITION_ITEM])} />,
     );
+    // Until the ledger answers, nothing offers a write.
+    expect(host.querySelector('[data-apply-state="checking"]')).not.toBeNull();
+    await settleLedgerRead();
     const text = host.textContent ?? "";
 
     expect(text).toContain("Masterwork Conductor"); // WHAT it is

@@ -58,7 +58,7 @@ importers:
         version: 0.19.21
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.15.0(react@19.3.0)
+        version: 0.15.1(react@19.3.0)
       '@ai-matrx/data':
         specifier: latest
         version: 0.18.36(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(react@19.3.0)
@@ -1104,8 +1104,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/content-ir-react@0.15.0':
-    resolution: {integrity: sha512-0Dwx0jEz0YW7aaKKjlg85FqY9W1Owuf1r1qb7oHe8YCiN/xi/0OIVUQXCZ3VtI1Xr07VIedSeyRXERVD1QQ6sQ==}
+  '@ai-matrx/content-ir-react@0.15.1':
+    resolution: {integrity: sha512-rFK4bu93E1n6SvI+9GGPBQn0dQppdjmBFF6WxeaZhLA/YBxq0Jmf4KnKKIcswVRTv6zZWhVw7sVumiCJSG1xUQ==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=19.0.0'
@@ -11832,7 +11832,7 @@ snapshots:
       - '@types/react-dom'
       - recharts
 
-  '@ai-matrx/content-ir-react@0.15.0(react@19.3.0)':
+  '@ai-matrx/content-ir-react@0.15.1(react@19.3.0)':
     dependencies:
       '@ai-matrx/content-ir': 0.19.21
       '@ai-matrx/kit': 0.18.5(react@19.3.0)

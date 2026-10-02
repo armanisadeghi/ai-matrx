@@ -35,6 +35,44 @@ import AGENT_DEFINITION_ITEM from "@/app/(dev)/demos/kind-directives/agent-defin
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+
+// THE LEDGER READ (content-ir-react 0.14+): the card asks whether this block
+// already ran before it offers Apply. Pinned to "not applied" so these tests
+// read the card a fresh block draws — never a network call from jest.
+jest.mock("@/features/directive-catalog/service", () => ({
+  ...jest.requireActual("@/features/directive-catalog/service"),
+  fetchDirectiveApplyState: async (
+    _baseUrl: string,
+    body: { shells: Array<{ __kind: string; items: unknown[] }> },
+  ) => ({
+    conversation_id: null,
+    shells: body.shells.map((s) => ({
+      directive: s.__kind,
+      proposal_id: "",
+      directive_class: "",
+      noun: "",
+      item_count: s.items.length,
+      message: "",
+      items: s.items.map((_item, index) => ({
+        index,
+        state: "not_applied",
+        message: null,
+        resource_ids: [],
+      })),
+      approvable: true,
+      unreadable: null,
+    })),
+  }),
+}));
+
+/** Let the card's mount-time ledger read settle (one tick + its promise chain). */
+async function settleLedgerRead(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 const AGENT_SLUG = "directive_v1_action_create_agent_definition";
 const WHOLE = JSON.stringify({ __kind: AGENT_SLUG, items: [AGENT_DEFINITION_ITEM] });
 const PARTIAL = WHOLE.slice(0, 600);
@@ -100,9 +138,10 @@ describe("a directive that is still arriving", () => {
     }
   });
 
-  it("the finished document renders the real side-effect card", () => {
+  it("the finished document renders the real side-effect card", async () => {
     const { host, root } = renderMatrxBlock(WHOLE, false);
     try {
+      await settleLedgerRead();
       expect(host.querySelector("[data-directive-state]")).toBeNull();
       expect(host.querySelector(`[data-directive="${AGENT_SLUG}"]`)).not.toBeNull();
       expect(host.textContent).toContain("Apply");

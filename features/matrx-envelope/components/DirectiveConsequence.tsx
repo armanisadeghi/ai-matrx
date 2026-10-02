@@ -180,7 +180,7 @@ function ChangeList({ item }: { item: Record<string, unknown> }) {
     return <p className="text-xs text-muted-foreground">Sets no fields — nothing would change.</p>;
   }
   return (
-    <ul className="mt-0.5 space-y-0.5 pl-3">
+    <ul className="mx-auto mt-1 w-fit max-w-full space-y-0.5 text-left sm:mx-0 sm:pl-3">
       {changes.map((change) => (
         <li key={change.key} className="flex min-w-0 gap-1.5 text-xs" title={change.full}>
           <span className="shrink-0 text-muted-foreground">{change.label}</span>
