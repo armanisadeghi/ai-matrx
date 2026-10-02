@@ -5,17 +5,18 @@
 // so byte-equality comparisons against the local parsers are valid.
 
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { requestRaw } from "@/lib/python-client";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 export interface RunServerParserOptions {
-  baseUrl: string;
-  authToken?: string | null;
   /**
-   * Full auth header set from `useApiTestConfig().authHeaders` — Authorization
-   * plus the mandatory `X-Organization-Id` organization admission the
-   * backend's AuthMiddleware requires on JWT requests. Preferred over
-   * `authToken`; when provided it wins.
+   * @deprecated Ignored. The host door (`requestRaw`) resolves the active
+   * server; callers should stop passing it.
    */
+  baseUrl?: string;
+  /** @deprecated Ignored. The host door adds Authorization. */
+  authToken?: string | null;
+  /** @deprecated Ignored. The host door adds Authorization + X-Organization-Id. */
   authHeaders?: Record<string, string> | null;
   signal?: AbortSignal;
 }
@@ -52,29 +53,18 @@ export async function runServerParser(
   content: string,
   options: RunServerParserOptions,
 ): Promise<ServerParseResult> {
-  const { baseUrl, authToken, authHeaders, signal } = options;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (authHeaders) Object.assign(headers, authHeaders);
-  else if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
-
-  const res = await fetch(`${baseUrl}${ENDPOINTS.blockProcessing.process}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ content }),
-    signal,
-  });
-  if (!res.ok) {
-    const detail = await res
-      .json()
-      .catch(() => ({}) as Record<string, unknown>);
-    const message =
-      (detail as { detail?: string; message?: string }).detail ??
-      (detail as { detail?: string; message?: string }).message ??
-      `HTTP ${res.status}`;
-    throw new Error(message);
-  }
+  // The host door resolves the server, adds auth + organization headers, and
+  // throws a classified BackendApiError on a non-2xx (read its sentence with
+  // `getUserMessage`).
+  const res = await requestRaw(
+    ENDPOINTS.blockProcessing.process,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    },
+    { signal: options.signal },
+  );
   const rawResponse = await res.text();
   const parsed = JSON.parse(rawResponse) as {
     blocks?: Record<string, unknown>[];

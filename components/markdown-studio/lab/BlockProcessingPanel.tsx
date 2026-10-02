@@ -11,11 +11,11 @@ import React, { useEffect, useEffectEvent, useRef, useState } from "react";
 import { CheckCircle2, Copy, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MarkdownStream from "@/components/MarkdownStream";
-import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
+import { requestRaw } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
-import { isJsonObject } from "@/types/json";
 import type {
   RenderBlockEvent,
   TypedStreamEvent,
@@ -25,17 +25,7 @@ import { asClause } from "@ai-matrx/kit/text";
 
 export type BlockProcessingMode = "json" | "stream";
 
-// Narrow an unknown error-response body (FastAPI-style `{detail}` or `{message}`).
-function extractApiErrorMessage(body: unknown, fallback: string): string {
-  if (isJsonObject(body)) {
-    if (typeof body.detail === "string") return body.detail;
-    if (typeof body.message === "string") return body.message;
-  }
-  return fallback;
-}
-
 export function useBlockProcessing() {
-  const apiConfig = useApiTestConfig({ defaultServerType: "local" });
   const [events, setEvents] = useState<TypedStreamEvent[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,29 +42,23 @@ export function useBlockProcessing() {
     setEvents([]);
     rawRef.current = "";
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      // Authorization + X-Organization-Id organization admission.
-      ...apiConfig.authHeaders,
-    };
-    const body = JSON.stringify({ content });
-    const url = `${apiConfig.baseUrl}${
+    const path =
       mode === "json"
         ? ENDPOINTS.blockProcessing.process
-        : ENDPOINTS.blockProcessing.processStream
-    }`;
+        : ENDPOINTS.blockProcessing.processStream;
 
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers,
-        body,
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        const d: unknown = await res.json().catch(() => ({}));
-        throw new Error(extractApiErrorMessage(d, `HTTP ${res.status}`));
-      }
+      // The host door resolves the server, adds auth + organization headers,
+      // and throws a classified BackendApiError on a non-2xx.
+      const res = await requestRaw(
+        path,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        },
+        { signal: controller.signal },
+      );
       if (mode === "json") {
         const text = await res.text();
         rawRef.current = text;
@@ -108,7 +92,7 @@ export function useBlockProcessing() {
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== "AbortError") {
-        setError(err.message);
+        setError(getUserMessage(err));
       }
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
@@ -119,9 +103,9 @@ export function useBlockProcessing() {
   const copyRaw = () => copyToClipboard(rawRef.current);
   const hasRaw = () => rawRef.current.length > 0;
 
-  // The session token loads asynchronously after mount; a request sent before
-  // it lands leaves unauthenticated and is refused.
-  const isReady = Boolean(apiConfig.authToken);
+  // The host door awaits the session token itself before sending, so the
+  // panel is ready on mount.
+  const isReady = true;
 
   return { events, isProcessing, error, run, copyRaw, hasRaw, isReady };
 }

@@ -72,7 +72,8 @@ import {
 } from "@/features/message-templates/services/message-templates-service";
 import MarkdownStream from "@/components/MarkdownStream";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
+import { requestRaw } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
@@ -186,7 +187,6 @@ export function MessageTemplateManager({
   >("preview");
 
   // Block-processing API
-  const apiConfig = useApiTestConfig({ defaultServerType: "local" });
   const [processedEvents, setProcessedEvents] = useState<TypedStreamEvent[]>(
     [],
   );
@@ -216,34 +216,21 @@ export function MessageTemplateManager({
       setProcessedEvents([]);
       rawApiDataRef.current = "";
 
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        // Authorization + X-Organization-Id organization admission.
-        ...apiConfig.authHeaders,
+      // The host door resolves the server, adds auth + organization headers,
+      // and throws a classified BackendApiError on a non-2xx.
+      const init: RequestInit = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
       };
-      const body = JSON.stringify({ content });
 
       try {
         if (mode === "json") {
-          const res = await fetch(
-            `${apiConfig.baseUrl}${ENDPOINTS.blockProcessing.process}`,
-            {
-              method: "POST",
-              headers,
-              body,
-              signal: controller.signal,
-            },
+          const res = await requestRaw(
+            ENDPOINTS.blockProcessing.process,
+            init,
+            { signal: controller.signal },
           );
-          if (!res.ok) {
-            const d: unknown = await res.json().catch(() => ({}));
-            const detail = isJsonObject(d) ? d.detail : undefined;
-            const message = isJsonObject(d) ? d.message : undefined;
-            throw new Error(
-              (typeof detail === "string" ? detail : undefined) ??
-                (typeof message === "string" ? message : undefined) ??
-                `HTTP ${res.status}`,
-            );
-          }
           const text = await res.text();
           rawApiDataRef.current = text;
           const data = JSON.parse(text) as {
@@ -269,25 +256,11 @@ export function MessageTemplateManager({
           );
           setProcessedEvents(synthetic);
         } else {
-          const res = await fetch(
-            `${apiConfig.baseUrl}${ENDPOINTS.blockProcessing.processStream}`,
-            {
-              method: "POST",
-              headers,
-              body,
-              signal: controller.signal,
-            },
+          const res = await requestRaw(
+            ENDPOINTS.blockProcessing.processStream,
+            init,
+            { signal: controller.signal },
           );
-          if (!res.ok) {
-            const d: unknown = await res.json().catch(() => ({}));
-            const detail = isJsonObject(d) ? d.detail : undefined;
-            const message = isJsonObject(d) ? d.message : undefined;
-            throw new Error(
-              (typeof detail === "string" ? detail : undefined) ??
-                (typeof message === "string" ? message : undefined) ??
-                `HTTP ${res.status}`,
-            );
-          }
           const { events } = parseNdjsonStream(res, controller.signal);
           const acc: TypedStreamEvent[] = [];
           const lines: string[] = [];
@@ -300,14 +273,14 @@ export function MessageTemplateManager({
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "AbortError") {
-          setProcessError(err.message);
+          setProcessError(getUserMessage(err));
         }
       } finally {
         abortRef.current = null;
         setIsProcessing(false);
       }
     },
-    [apiConfig.authHeaders, apiConfig.baseUrl],
+    [],
   );
 
   // Tag management for forms

@@ -12,6 +12,8 @@
 import React, { useState, useCallback, useRef } from "react";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { requestRaw } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { ApiTestConfigPanel } from "@/components/api-test-config/ApiTestConfigPanel";
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
 import { Button } from "@/components/ui/button";
@@ -169,28 +171,22 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
+    // The host door resolves the server (the panel's server switch writes the
+    // global choice it reads), adds auth + organization headers, and throws a
+    // classified BackendApiError on a non-2xx.
+    const init: RequestInit = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content, include_raw: includeRaw }),
     };
-    if (apiConfig.authToken)
-      Object.assign(headers, apiConfig.authHeaders);
-    const body = JSON.stringify({ content, include_raw: includeRaw });
 
     try {
       if (apiMode === "json") {
-        const res = await fetch(
-          `${apiConfig.baseUrl}${ENDPOINTS.blockProcessing.process}`,
-          {
-            method: "POST",
-            headers,
-            body,
-            signal: controller.signal,
-          },
+        const res = await requestRaw(
+          ENDPOINTS.blockProcessing.process,
+          init,
+          { signal: controller.signal },
         );
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          throw new Error(d?.detail || d?.message || `HTTP ${res.status}`);
-        }
         const data: BlockResult = await res.json();
         setJsonResult(data);
 
@@ -214,19 +210,11 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
         setProcessedEvents(syntheticEvents);
       } else {
         // Stream mode — collect raw events AND build typed TypedStreamEvent[]
-        const res = await fetch(
-          `${apiConfig.baseUrl}${ENDPOINTS.blockProcessing.processStream}`,
-          {
-            method: "POST",
-            headers,
-            body,
-            signal: controller.signal,
-          },
+        const res = await requestRaw(
+          ENDPOINTS.blockProcessing.processStream,
+          init,
+          { signal: controller.signal },
         );
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          throw new Error(d?.detail || d?.message || `HTTP ${res.status}`);
-        }
         const { events } = parseNdjsonStream(res, controller.signal);
         const accRaw: Record<string, unknown>[] = [];
         const accTyped: TypedStreamEvent[] = [];
@@ -245,7 +233,7 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== "AbortError") {
-        setError(err.message);
+        setError(getUserMessage(err));
       }
     } finally {
       abortRef.current = null;
@@ -255,8 +243,6 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
     content,
     includeRaw,
     apiMode,
-    apiConfig.baseUrl,
-    apiConfig.authHeaders,
     isRunning,
   ]);
 
@@ -323,7 +309,7 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
           </Badge>
         </div>
         <div className="px-4 pb-2">
-          <ApiTestConfigPanel config={apiConfig} />
+          <ApiTestConfigPanel config={apiConfig} showAuthToken={false} />
         </div>
       </div>
 

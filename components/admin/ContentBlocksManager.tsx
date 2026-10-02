@@ -104,19 +104,11 @@ import type {
   TypedStreamEvent,
   RenderBlockEvent,
 } from "@ai-matrx/agents/generated/stream-events";
-import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
+import { requestRaw } from "@/lib/python-client";
+import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { isJsonObject } from "@/types/json";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
-
-// Narrow an unknown error-response body (FastAPI-style `{detail}` or `{message}`) without `any`.
-function extractApiErrorMessage(body: unknown, fallback: string): string {
-  if (isJsonObject(body)) {
-    if (typeof body.detail === "string") return body.detail;
-    if (typeof body.message === "string") return body.message;
-  }
-  return fallback;
-}
 
 interface ContentBlocksManagerProps {
   className?: string;
@@ -296,7 +288,6 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   >("preview");
 
   // Block-processing API state
-  const apiConfig = useApiTestConfig({ defaultServerType: "local" });
   const [processedEvents, setProcessedEvents] = useState<TypedStreamEvent[]>(
     [],
   );
@@ -329,30 +320,21 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       setLastProcessedTemplate(template);
       rawApiDataRef.current = "";
 
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        // Authorization + X-Organization-Id organization admission.
-        ...apiConfig.authHeaders,
+      // The host door adds Authorization + X-Organization-Id and resolves the
+      // active server; a non-2xx throws a classified BackendApiError.
+      const init: RequestInit = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: template }),
       };
-      const body = JSON.stringify({ content: template });
 
       try {
         if (mode === "json") {
-          const res = await fetch(
-            `${apiConfig.baseUrl}${ENDPOINTS.blockProcessing.process}`,
-            {
-              method: "POST",
-              headers,
-              body,
-              signal: controller.signal,
-            },
+          const res = await requestRaw(
+            ENDPOINTS.blockProcessing.process,
+            init,
+            { signal: controller.signal },
           );
-          if (!res.ok) {
-            const d: unknown = await res.json().catch(() => ({}));
-            throw new Error(
-              extractApiErrorMessage(d, `HTTP ${res.status}`),
-            );
-          }
           const text = await res.text();
           rawApiDataRef.current = text;
           const data = JSON.parse(text) as {
@@ -378,21 +360,11 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
           );
           setProcessedEvents(synthetic);
         } else {
-          const res = await fetch(
-            `${apiConfig.baseUrl}${ENDPOINTS.blockProcessing.processStream}`,
-            {
-              method: "POST",
-              headers,
-              body,
-              signal: controller.signal,
-            },
+          const res = await requestRaw(
+            ENDPOINTS.blockProcessing.processStream,
+            init,
+            { signal: controller.signal },
           );
-          if (!res.ok) {
-            const d: unknown = await res.json().catch(() => ({}));
-            throw new Error(
-              extractApiErrorMessage(d, `HTTP ${res.status}`),
-            );
-          }
           const { events } = parseNdjsonStream(res, controller.signal);
           const acc: TypedStreamEvent[] = [];
           const lines: string[] = [];
@@ -405,14 +377,14 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "AbortError") {
-          setProcessError(err.message);
+          setProcessError(getUserMessage(err));
         }
       } finally {
         abortRef.current = null;
         setIsProcessing(false);
       }
     },
-    [apiConfig.authHeaders, apiConfig.baseUrl],
+    [],
   );
 
   // Re-run when switching to json/stream mode or when template changes while in those modes
