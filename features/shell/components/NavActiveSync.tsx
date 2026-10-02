@@ -28,6 +28,16 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 import { isDomainPanelPath } from "@/features/shell/constants/route-menu-registry";
+import {
+  SHELL_DOMAIN_PANEL_COOKIE,
+  SHELL_SIDEBAR_COOKIE,
+  shellToggleChecked,
+} from "@/features/shell/constants/sidebar-cookie";
+
+function readCookie(name: string): string | undefined {
+  const hit = document.cookie.split("; ").find((part) => part.startsWith(`${name}=`));
+  return hit?.slice(name.length + 1);
+}
 
 function syncNav() {
   const pathname = window.location.pathname;
@@ -40,7 +50,25 @@ function syncNav() {
   } else {
     root.removeAttribute("data-settings-route");
   }
-  root.toggleAttribute("data-domain-panel", isDomainPanelPath(pathname));
+  // Crossing into or out of a domain-panel family hands the sidebar checkbox
+  // to the other remembered state (the panel's, or the main sidebar's).
+  const panel = isDomainPanelPath(pathname);
+  if (root.hasAttribute("data-domain-panel") !== panel) {
+    root.toggleAttribute("data-domain-panel", panel);
+    const toggle = document.getElementById("shell-sidebar-toggle") as HTMLInputElement | null;
+    if (toggle) {
+      const next = shellToggleChecked(
+        panel,
+        readCookie(SHELL_SIDEBAR_COOKIE) === "1",
+        readCookie(SHELL_DOMAIN_PANEL_COOKIE),
+      );
+      if (toggle.checked !== next) {
+        toggle.checked = next;
+        // Listeners (useSidebarExpanded) follow; the cookie writer re-saves the same value.
+        toggle.dispatchEvent(new Event("change"));
+      }
+    }
+  }
 }
 
 export default function NavActiveSync() {

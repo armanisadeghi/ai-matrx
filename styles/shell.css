@@ -2270,7 +2270,9 @@ html[data-board-embed] .shell-header,
 html[data-board-embed] .shell-sidebar,
 html[data-board-embed] .shell-user-block,
 html[data-board-embed] .shell-mobile-trigger,
-html[data-board-embed] .shell-dock {
+html[data-board-embed] .shell-dock,
+html[data-board-embed] .shell-chat-dock,
+html[data-board-embed] .shell-chat-toggle {
   display: none !important;
 }
 html[data-board-embed] .shell-main {
@@ -2804,20 +2806,17 @@ html[data-board-embed] .shell-main {
   left: var(--shell-sidebar-w-expanded);
 }
 
-.shell-root[data-settings-route] .shell-chat-dock {
+.shell-root[data-settings-route] .shell-chat-dock,
+.shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ .shell-chat-dock {
   left: 15rem;
 }
 
-/* Beside an open chat on a narrower desktop, a domain's menu folds to the
-   strip so the page keeps its room; closing the chat brings it back. */
-@media (min-width: 1024px) and (max-width: 1599px) {
-  .shell-root[data-domain-panel][data-shell-chat-open] {
-    --shell-sidebar-w-expanded: var(--shell-sidebar-w);
-  }
-
-  .shell-root[data-domain-panel][data-shell-chat-open] .shell-sidebar-route-nav {
-    visibility: hidden;
-  }
+/* Layouts with no sidebar column leave the dock no room: it stands aside. */
+.shell-root[data-no-sidebar] .shell-chat-dock,
+.shell-root[data-no-sidebar] .shell-chat-toggle,
+.shell-root[data-pathname^="/administration/launchpad"] .shell-chat-dock,
+.shell-root[data-pathname^="/administration/launchpad"] .shell-chat-toggle {
+  display: none !important;
 }
 
 /* The header's chat button: present only where the shell chat can open. */

@@ -12,6 +12,9 @@ export const SHELL_CHAT_TOGGLE_EVENT = "matrx:shell-chat-toggle";
 /** With no remembered choice, the chat starts open at this width and up. */
 export const SHELL_CHAT_WIDE_QUERY = "(min-width: 1440px)";
 
+/** Below this, an open chat folds a domain panel to the strip. */
+export const SHELL_CHAT_FOLD_QUERY = "(max-width: 1599px)";
+
 /** /chat is the chat itself; the code workspace docks its own coding agent. */
 const OWN_CHAT_PATHS = [/^\/chat(?:\/|$)/, /^\/code(?:\/|$)/, /^\/agent-apps\/[^/]+\/code(?:\/|$)/];
 

@@ -33,6 +33,7 @@ import {
   DrawerTitle,
 } from "@ai-matrx/design-system";
 import { useMediaQueryState } from "@ai-matrx/kit/media-query";
+import { SHELL_DOMAIN_PANEL_COOKIE } from "@host/features/shell/constants/sidebar-cookie";
 import { DockedSidePanel } from "@host/components/official/side-panel/DockedSidePanel";
 import { ComposerModeSwitch } from "../../agents/components/inputs/smart-input/composer/ComposerModeSwitch";
 import type { ComposerMode } from "../../agents/components/inputs/smart-input/composer/composer-types";
@@ -42,6 +43,7 @@ import { ChatPanelTitleMenu, useChatPanelTitle } from "./ChatPanelTitleMenu";
 import { useCanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
 import { CANVAS_CHAT_SIZES, CANVAS_PANEL_IDS, canvasChatCookieName, writeCanvasChatCookie } from "./workspace-cookies";
 import {
+  SHELL_CHAT_FOLD_QUERY,
   SHELL_CHAT_TOGGLE_EVENT,
   SHELL_CHAT_WIDE_QUERY,
   shellChatFamily,
@@ -106,7 +108,11 @@ export function ShellChatDock({ initialOpen, initialWidth, initialMode = null, s
   const open = !hostedElsewhere && (choice.open ?? defaultOpen);
   const chatOnScreen = !hostedElsewhere && (compact ? sheetOpen : viewportCompact === false && open);
 
-  const chat = useCanvasWorkspaceConversation(SURFACE_KEY, { enabled: chatOnScreen, addressParam: "chat" });
+  // `pageChat`, not `chat`: pages keep their own `?chat=` (the Board, /code).
+  const chat = useCanvasWorkspaceConversation(SURFACE_KEY, {
+    enabled: signedIn && chatOnScreen,
+    addressParam: "pageChat",
+  });
   const conversationId = chat.conversationId;
   const chatTitle = useChatPanelTitle(conversationId);
 
@@ -119,15 +125,34 @@ export function ShellChatDock({ initialOpen, initialWidth, initialMode = null, s
 
   // The root carries the state: CSS folds a domain menu to its strip beside an
   // open chat on a narrow desktop, and the header toggle shows pressed.
+  const wideKnown = viewportCompact === false;
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".shell-root");
-    if (!root) return undefined;
-    root.toggleAttribute("data-shell-chat-open", open && !compact);
+    if (!root || !signedIn) return undefined;
+    root.toggleAttribute("data-shell-chat-open", open && wideKnown);
     root.toggleAttribute("data-shell-chat-available", !hostedElsewhere);
     return () => {
       root.removeAttribute("data-shell-chat-open");
+      root.removeAttribute("data-shell-chat-available");
     };
-  }, [open, compact, hostedElsewhere]);
+  }, [open, wideKnown, hostedElsewhere, signedIn]);
+
+  // Beside an open chat on a narrower desktop a domain panel steps back to its
+  // strip so the page keeps its room (the person can still open it: the toggle
+  // works and its choice is remembered); closing the chat brings it back.
+  useEffect(() => {
+    if (!signedIn || !wideKnown || hostedElsewhere) return;
+    const root = document.querySelector<HTMLElement>(".shell-root");
+    const toggle = document.getElementById("shell-sidebar-toggle") as HTMLInputElement | null;
+    if (!root?.hasAttribute("data-domain-panel") || !toggle) return;
+    if (open && window.matchMedia(SHELL_CHAT_FOLD_QUERY).matches) {
+      if (toggle.checked) toggle.checked = false;
+    } else if (!open) {
+      const saved = document.cookie.split("; ").find((p) => p.startsWith(`${SHELL_DOMAIN_PANEL_COOKIE}=`));
+      const want = saved?.split("=")[1] !== "0";
+      if (toggle.checked !== want) toggle.checked = want;
+    }
+  }, [open, wideKnown, hostedElsewhere, signedIn, family]);
 
   const onToggle = useEffectEvent(() => {
     if (!hostedElsewhere) toggle();
@@ -135,7 +160,10 @@ export function ShellChatDock({ initialOpen, initialWidth, initialMode = null, s
   useEffect(() => {
     const onEvent = () => onToggle();
     const onKey = (e: KeyboardEvent) => {
-      if (!isToggleShortcut(e) || isTypingTarget(e.target)) return;
+      if (!signedIn || !isToggleShortcut(e)) return;
+      // Typing elsewhere keeps the key; inside the chat's own composer it closes the chat.
+      const inDock = e.target instanceof Element && e.target.closest(".shell-chat-dock");
+      if (isTypingTarget(e.target) && !inDock) return;
       // A page with its own canvas workspace handles ⌘\ itself.
       if (shellChatHostedElsewhere(window.location.pathname, signedIn)) return;
       e.preventDefault();
@@ -181,14 +209,14 @@ export function ShellChatDock({ initialOpen, initialWidth, initialMode = null, s
     };
   });
   useEffect(() => {
-    if (hostedElsewhere) return undefined;
+    if (hostedElsewhere || !signedIn) return undefined;
     return registerInPlaceChatHost({
       activeConversationId: conversationId,
       openConversation: (c) => hostHandlers.current.openConversation(c),
       startNewChat: () => hostHandlers.current.startNewChat(),
       startWithAgent: (agentId) => hostHandlers.current.startWithAgent(agentId),
     });
-  }, [conversationId, hostedElsewhere]);
+  }, [conversationId, hostedElsewhere, signedIn]);
 
   if (!signedIn) return null;
 
@@ -203,7 +231,7 @@ export function ShellChatDock({ initialOpen, initialWidth, initialMode = null, s
 
   return (
     <>
-      {!compact ? (
+      {viewportCompact === null && !open ? null : !compact ? (
         <DockedSidePanel
           panelId={CANVAS_PANEL_IDS.chat}
           edge="left"
