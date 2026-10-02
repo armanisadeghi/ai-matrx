@@ -12,9 +12,13 @@ import "@ai-matrx/canvas/styles.css";
 import "./canvas-host.css";
 import { useEffect } from "react";
 import { CanvasColumn, useCanvasColumnWidth } from "@ai-matrx/canvas/react";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { CANVAS_SURFACE_NAME } from "@/features/surfaces/manifests/canvas.manifest";
+import { useCanvasSurfaceScope } from "./canvasSurfaceScope";
 
 export function ShellCanvasColumn() {
   const width = useCanvasColumnWidth();
+  const getScope = useCanvasSurfaceScope();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -39,12 +43,14 @@ export function ShellCanvasColumn() {
   );
 
   return (
-    <CanvasColumn
-      className="shell-canvas-column"
-      onLiveWidth={(live) => {
-        // The page follows the edge while it is dragged; the stored width takes over on release.
-        if (live !== null) document.documentElement.style.setProperty("--shell-canvas-w", `${live}px`);
-      }}
-    />
+    <SurfaceRuntimeProvider surfaceName={CANVAS_SURFACE_NAME} getScope={getScope}>
+      <CanvasColumn
+        className="shell-canvas-column"
+        onLiveWidth={(live) => {
+          // The page follows the edge while it is dragged; the stored width takes over on release.
+          if (live !== null) document.documentElement.style.setProperty("--shell-canvas-w", `${live}px`);
+        }}
+      />
+    </SurfaceRuntimeProvider>
   );
 }
