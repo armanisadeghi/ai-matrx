@@ -375,7 +375,7 @@ begin
   -- What one transaction CANNOT prove, said plainly: that the undo carries a person's copy edit back into the older
   -- row. The carry reads each row's history AS OF the press (custom.record_state_as_of), and inside one transaction
   -- every history entry is dated now() — before the press's clock — so an edit here is invisible to it. That proof is
-  -- the committed rehearsal (aidream scripts/final_switch_rehearsal/run.sh: write_on_a_copy.sql + verify_carry.sql;
+  -- the clone rehearsal (its one-shot runner, aidream scripts/final_switch_rehearsal/, retired 2026-10-02; history at d4e3a5d19e;
   -- rehearsal 15c 2026-09-30 22:47Z: older WO-5506 = copy WO-5506), registered as check cutover.rehearsal-carry.
   -- Here: the copy still takes a person's edit after the press, and the undo restores tables, doors and the value.
   perform set_config('request.jwt.claims', c_claims, true);

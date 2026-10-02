@@ -11,7 +11,8 @@
 -- context switch in one transaction. An owner who tries Switch back on one organization is told the
 -- organizations go back together. He undoes it: everything is exactly as before.
 --
--- RUN IT (clone, after scripts/final_switch_rehearsal/run.sh has copied every organization again):
+-- RUN IT (on the clone — common-docs/operations/clone/CURRENT.md — after every organization was copied again; the
+-- one-shot rehearsal runner that did that retired 2026-10-02, history at aidream d4e3a5d19e):
 --   psql "<clone DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/finalswitch_green.sql
 -- Everything is rolled back. The two stand-ins the press needs on the clone (the orphan lists
 -- archived, a do-nothing scopes step) are made INSIDE the rolled-back transaction.
@@ -218,7 +219,7 @@ begin
   perform set_config('role', 'authenticated', true);
   v_ready := platform.final_switch_readiness();
   if not (v_ready ->> 'ready')::boolean then
-    raise notice 'SKIPPED 5–8: after the stand-ins the clone still is not ready (%). Run scripts/final_switch_rehearsal/run.sh (it copies every organization again), then this suite.', left(v_ready ->> 'says', 300);
+    raise notice 'SKIPPED 5–8: after the stand-ins the clone still is not ready (%). Copy every organization again on the clone (common-docs/operations/clone/CURRENT.md), then this suite.', left(v_ready ->> 'says', 300);
     return;
   end if;
 

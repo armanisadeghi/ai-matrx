@@ -14,7 +14,8 @@ const ROOT = join(__dirname, "..", "..", "..");
 
 // Each page that renders <WhereItLives> and the RecordsMount it renders under.
 const CHIP_MOUNTS = [
-  "app/(core)/data-v2/[tableId]/page.tsx",
+  // The table page body (moved out of app/(core)/data-v2/[tableId]/page.tsx in 98dc9cc741).
+  "features/unified-data/table-page/UnifiedTable.tsx",
   "app/(core)/data-v2/page.tsx",
   "app/(core)/organizations/[orgId]/tables/page.tsx",
 ];
@@ -27,7 +28,11 @@ describe("the where-it-lives chip's mounts bind the platform's toasts", () => {
     const source = readFileSync(join(ROOT, rel), "utf8");
     // A page may bind the ONE shared host binding (one-grid merge, step 7); then the binding
     // itself must carry the toasts.
-    if (/<RecordsMount[\s\S]*?host=\{recordsUiHostFor\(/.test(source)) {
+    // …directly in the JSX, or built with recordsUiHostFor(…) and handed to the mount's host prop.
+    const bindsSharedHost =
+      /<RecordsMount[\s\S]*?host=\{recordsUiHostFor\(/.test(source) ||
+      (/=\s*[^;]*?recordsUiHostFor\(/.test(source) && /<RecordsMount[^>]*\shost=\{/.test(source));
+    if (bindsSharedHost) {
       const binding = readFileSync(join(ROOT, SHARED_BINDING), "utf8");
       expect(binding).toMatch(/export function recordsUiHostFor[\s\S]*?notify:\s*RECORDS_NOTIFY/);
       return;
