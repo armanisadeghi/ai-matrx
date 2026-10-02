@@ -15,6 +15,9 @@ export const TERMINAL_DEFAULTS = {
   padding: 8,
 } as const;
 
+/** The keyboard accessory bar's height, px (styles.css .mxt-bar) — hosts reserve it as a bottom dock. */
+export const ACCESSORY_BAR_HEIGHT = 44;
+
 export function terminalTheme(dark: boolean): ITheme {
   return dark
     ? {

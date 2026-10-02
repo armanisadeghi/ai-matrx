@@ -92,7 +92,7 @@ export function DeviceConsole({ device }: { device: DeviceRow }) {
         {offlineLine ? (
           <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-muted/50 px-4 text-[13px] text-muted-foreground" role="status">
             <span className={cn("h-2 w-2 shrink-0 rounded-full", status.pill === "refused" ? "bg-destructive" : "bg-muted-foreground/60")} aria-hidden="true" />
-            <span className="truncate">{offlineLine}</span>
+            <span className="truncate" suppressHydrationWarning>{offlineLine}</span>
           </div>
         ) : null}
 

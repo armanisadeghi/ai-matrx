@@ -140,3 +140,9 @@
   outline: 2px solid var(--mxt-accent);
   outline-offset: 1px;
 }
+
+/* xterm.css paints the viewport black; the frame already carries the theme background, so the
+   few pixels below the last whole row match the terminal instead of a black band. */
+.mxt-root .xterm .xterm-viewport {
+  background-color: transparent !important;
+}

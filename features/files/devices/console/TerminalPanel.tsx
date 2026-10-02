@@ -12,6 +12,7 @@
 import "@/styles/terminal-host.css";
 import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
+import { ACCESSORY_BAR_HEIGHT } from "@ai-matrx/terminal";
 import { Terminal } from "@ai-matrx/terminal/react";
 import type { TerminalHandle, TerminalSize } from "@ai-matrx/terminal/react";
 import { isDesktopProtocolError } from "@ai-matrx/desktop-protocol/client";
@@ -44,10 +45,15 @@ export interface TerminalPanelProps {
   hiddenOnPhone?: boolean;
 }
 
+/** "zsh", "vim", "npm" — what a chip calls a shell: its name, else its title or shell, never a path. */
+function baseLabel(pty: PtyInfo): string {
+  const raw = pty.name || pty.title || pty.shell || "Terminal";
+  return raw.includes("/") && !raw.includes(" ") ? raw.split("/").pop() || raw : raw;
+}
+
 function chipLabel(pty: PtyInfo, index: number, all: PtyInfo[]): string {
-  const base = pty.name || pty.title || pty.shell.split("/").pop() || "Terminal";
-  const same = all.filter((p) => (p.name || p.title || p.shell.split("/").pop()) === base);
-  return same.length > 1 ? `${base} ${index + 1}` : base;
+  const base = baseLabel(pty);
+  return all.filter((p) => baseLabel(p) === base).length > 1 ? `${base} ${index + 1}` : base;
 }
 
 export function TerminalPanel({ client, live, resourceId, onResourceChange, visible, hiddenOnPhone = false }: TerminalPanelProps) {
@@ -57,6 +63,8 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
   const sizeRef = useRef<TerminalSize>({ cols: 80, rows: 24 });
   const resizeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startingRef = useRef(false);
+  /** The shell this screen let go of while the page was hidden, and how far it had rendered. */
+  const parkedRef = useRef<{ id: string; seq: number } | null>(null);
   const [ready, setReady] = useState(false);
   const [sessions, setSessions] = useState<PtyInfo[]>([]);
   const [activeId, setActiveId] = useState<string | null>(resourceId);
@@ -126,10 +134,20 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
     );
   }
 
-  function attach(id: string): void {
-    termRef.current?.reset();
+  /**
+   * Follow a running shell. With `sinceSeq` (this screen already shows everything up to it) the
+   * device replays exactly the missed bytes onto the screen as it is; without, it sends a screen
+   * snapshot (a reload, or a different shell).
+   */
+  function attach(id: string, sinceSeq?: number): void {
+    if (sinceSeq === undefined) termRef.current?.reset();
     let stream: LiveStream | null = null;
-    stream = client.stream("session.attach", { resource_id: id, mode: "control" }, handlersFor(() => stream), { windowBytes: WINDOW_BYTES });
+    stream = client.stream(
+      "session.attach",
+      sinceSeq === undefined ? { resource_id: id, mode: "control" } : { resource_id: id, mode: "control", since_seq: sinceSeq },
+      handlersFor(() => stream),
+      { windowBytes: WINDOW_BYTES },
+    );
     setActiveId(id);
     onResourceChange(id);
     follow(stream);
@@ -191,8 +209,10 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
     void (async () => {
       const running = await refreshSessions();
       if (streamRef.current || startingRef.current) return;
-      const wanted = resourceId ?? activeId;
-      if (wanted && running.some((s) => s.resource_id === wanted)) attach(wanted);
+      const parked = parkedRef.current;
+      parkedRef.current = null;
+      const wanted = parked?.id ?? resourceId ?? activeId;
+      if (wanted && running.some((s) => s.resource_id === wanted)) attach(wanted, parked?.id === wanted && parked.seq > 0 ? parked.seq : undefined);
       else if (running[0]) attach(running[0].resource_id);
       else start();
     })();
@@ -211,6 +231,41 @@ export function TerminalPanel({ client, live, resourceId, onResourceChange, visi
       if (resizeTimer.current) clearTimeout(resizeTimer.current);
     };
   }, []);
+
+  // A hidden page renders nothing and credits nothing, and the device paces every shell to its
+  // slowest viewer: a background tab (or a locked phone that has not died yet) would freeze the
+  // shell for everyone. So a hidden page lets go of its shell — it keeps running on the computer —
+  // and on return picks it up from the last byte this screen shows (since_seq), screen intact.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        const stream = streamRef.current;
+        if (!stream?.resourceId) return;
+        // seq 0 = this screen holds only a snapshot: the return asks for a fresh one.
+        parkedRef.current = { id: stream.resourceId, seq: stream.lastSeq };
+        streamRef.current = null;
+        void stream.detach().catch(() => undefined);
+        return;
+      }
+      const parked = parkedRef.current;
+      if (!parked || !live || streamRef.current) return; // not live yet: the first-connection effect resumes it
+      parkedRef.current = null;
+      attach(parked.id, parked.seq > 0 ? parked.seq : undefined);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+    // attach() reads refs; re-binding on `live` is what lets a return before reconnect wait for it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live]);
+
+  // The keyboard accessory bar is this page's bottom dock: publish its height so the assists
+  // launcher sits above it instead of on the keys (the shell's --page-bottom-dock-h contract).
+  useEffect(() => {
+    if (!isMobile || !visible || hiddenOnPhone) return undefined;
+    const root = document.documentElement;
+    root.style.setProperty("--page-bottom-dock-h", `${ACCESSORY_BAR_HEIGHT + 8}px`);
+    return () => root.style.removeProperty("--page-bottom-dock-h");
+  }, [isMobile, visible, hiddenOnPhone]);
 
   function onResize(size: TerminalSize): void {
     sizeRef.current = size;

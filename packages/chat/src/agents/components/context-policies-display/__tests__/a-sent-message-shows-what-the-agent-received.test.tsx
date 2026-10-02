@@ -12,10 +12,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ContextReceiptData } from "@host/types/python-generated/stream-events";
 import { MessageContextReceiptTable } from "../MessageContextReceipt";
-import type {
-  ContextViewTarget,
-  ContextViewedText,
-} from "../../../redux/execution-system/context-rules/context-viewer";
+import type { ContextViewTarget, ContextViewedText } from "@ai-matrx/agents/context";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -164,4 +161,22 @@ it("nothing selected to fetch says None — never an empty box", async () => {
   await flush();
   const fetchable = host.querySelector('section[aria-label="Agent can fetch"]')!;
   expect(fetchable.querySelector('[data-testid="context-delivered-empty"]')?.textContent).toBe("None");
+});
+
+it("an agent that cannot fetch says so and shows nothing as fetchable (Arman, 2026-10-02)", async () => {
+  const off = async (target: ContextViewTarget): Promise<ContextViewedText> =>
+    target.kind === "fetchable"
+      ? { ...target, text: "", chars: 0, sha256: "e3b0", source: "fetched_now", available: false }
+      : load(target);
+  act(() => root.render(<MessageContextReceiptTable receipt={RECEIPT} load={off} />));
+  const open = [...host.querySelectorAll("button")].find((b) => b.textContent === "Organization")!;
+  act(() => open.click());
+  await flush();
+  const fetchable = host.querySelector('section[aria-label="Agent can fetch"]')!;
+  expect(
+    fetchable.querySelector('[data-testid="context-delivered-unavailable"]')?.textContent,
+  ).toBe("Not available to this agent");
+  expect(fetchable.querySelector('[data-testid="context-delivered-text"]')).toBeNull();
+  expect(fetchable.querySelector('[data-testid="context-delivered-empty"]')).toBeNull();
+  expect(fetchable.textContent).not.toContain("chars");
 });

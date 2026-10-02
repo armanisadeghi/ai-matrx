@@ -14,4 +14,4 @@ export { cellAt, spanBetween, wordBounds } from "./core/selection";
 export type { Cell } from "./core/selection";
 export { KEYBOARD_MIN_PX, keyboardInset, visibleHeightBelow } from "./core/viewport";
 export type { ViewportBox } from "./core/viewport";
-export { TERMINAL_DEFAULTS, TERMINAL_FONT_FAMILY, terminalTheme } from "./core/theme";
+export { ACCESSORY_BAR_HEIGHT, TERMINAL_DEFAULTS, TERMINAL_FONT_FAMILY, terminalTheme } from "./core/theme";

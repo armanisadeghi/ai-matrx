@@ -4,7 +4,7 @@
  * test relay. Clone-mode previews set it to the TEST relay, which trusts only the nightly copy
  * (scripts/clone-preview/clone-preview-env.cjs pairs the two).
  */
-import { RelayStatusResponse } from "@ai-matrx/desktop-protocol";
+import { BEARER_PREFIX, RelayStatusResponse, SUBPROTOCOL } from "@ai-matrx/desktop-protocol";
 import type { RelayDeviceStatusEvent } from "@ai-matrx/desktop-protocol";
 
 export const MATRX_RELAY_URL: string = process.env.NEXT_PUBLIC_MATRX_RELAY_URL || "https://relay.matrxserver.com";
@@ -15,7 +15,7 @@ export function relayConnectUrl(deviceId: string, base: string = MATRX_RELAY_URL
 }
 
 export function relaySubprotocols(token: string): string[] {
-  return ["matrx.v1", `bearer.${token}`];
+  return [SUBPROTOCOL, `${BEARER_PREFIX}${token}`];
 }
 
 /**

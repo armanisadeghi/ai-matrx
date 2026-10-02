@@ -71,7 +71,7 @@ function DeviceListRow({ device, status, now }: { device: DeviceRow; status: Rel
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[17px] font-semibold leading-[22px] text-foreground">{name}</span>
-        <span className="block truncate text-[13px] leading-[18px] text-muted-foreground">
+        <span className="block truncate text-[13px] leading-[18px] text-muted-foreground" suppressHydrationWarning>
           {osLine(device.platform, device.os_version)} · {seen}
         </span>
       </span>
