@@ -93,9 +93,7 @@ describe("the host names the consequence before anything runs", () => {
   it("delete: names the record, says it goes to the trash, and is DESTRUCTIVE", async () => {
     const opts = await askAndRead(request("directive_v1_delete_task", [{ id: TASK_ID }]));
     expect(opts.title).toBe("Delete task REVIEW — task create?");
-    expect(opts.description).toMatch(
-      /This moves REVIEW — task create to the trash/,
-    );
+    expect(opts.description).toMatch(/Moves REVIEW — task create to the trash/);
     expect(opts.variant).toBe("destructive");
     expect(opts.confirmLabel).toBe("Delete");
     expect(confirmDirective).not.toHaveBeenCalled();
@@ -112,6 +110,44 @@ describe("the host names the consequence before anything runs", () => {
     expect(text).toContain("Description→Ship by Friday");
     expect(text).toContain("Due date→2026-10-15");
     expect(opts.variant).toBeUndefined();
+  });
+
+  it("Run again: every class says it runs a SECOND time; a delete stays destructive", async () => {
+    const del = await askAndRead({
+      ...request("directive_v1_delete_task", [{ id: TASK_ID }]),
+      again: true,
+    });
+    expect(del.title).toBe("Delete task REVIEW — task create again?");
+    expect(del.description).toContain("This already ran once.");
+    expect(del.variant).toBe("destructive");
+    expect(del.confirmLabel).toBe("Delete again");
+
+    confirmDialog.mockReset();
+    const create = await askAndRead({
+      ...request("directive_v1_create_task", [{ title: "LANE-C — probe" }]),
+      again: true,
+    });
+    expect(create.title).toBe("Create another task LANE-C — probe?");
+    expect(create.description).toContain("adds a second copy");
+    expect(create.confirmLabel).toBe("Create another");
+  });
+
+  it("every dialog description fits the 140-character budget", async () => {
+    const cases: DirectiveAskRequest[] = [
+      request("directive_v1_delete_task", [{ id: TASK_ID }]),
+      request("directive_v1_update_task", [{ id: TASK_ID, status: "done" }]),
+      request("directive_v1_create_task", [{ title: "LANE-C — probe" }]),
+      { ...request("directive_v1_delete_task", [{ id: TASK_ID }]), again: true },
+      { ...request("directive_v1_update_task", [{ id: TASK_ID, status: "done" }]), again: true },
+      { ...request("directive_v1_create_task", [{ title: "LANE-C — probe" }]), again: true },
+    ];
+    for (const req of cases) {
+      confirmDialog.mockReset();
+      const opts = await askAndRead(req);
+      // The sentence only — the change list below it is data, not prose.
+      const sentence = opts.description.split("Status→")[0];
+      expect(sentence.length).toBeLessThanOrEqual(140);
+    }
   });
 
   it("create: names what it creates from the item's own title", async () => {

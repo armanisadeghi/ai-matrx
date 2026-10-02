@@ -198,9 +198,10 @@ function ChangeList({ item }: { item: Record<string, unknown> }) {
  * THE QUESTION, per class. Every sentence names the record(s); a delete is
  * destructive and says where the record goes (the executor SOFT-deletes —
  * `aidream/services/directive_apply/executor.py` `_delete`); an update lists
- * every field it overwrites. Nothing here promises what the platform cannot
- * keep (no "clicking again will not add a second copy" — an in-content apply
- * has no stable idempotency namespace today).
+ * every field it overwrites. A plain apply is idempotent (one ledger key per
+ * namespace — aidream `keys.human_door_namespace`), so only "Run again"
+ * (`request.again`, sent with `force`) can repeat it, and its question says so.
+ * Copy fits the dialog budget: ≤2 sentences, ≤140 characters.
  */
 export function directiveConsequenceDialog(
   request: DirectiveAskRequest,
@@ -211,69 +212,88 @@ export function directiveConsequenceDialog(
   const named = namedItems(request, nouns);
   const one = named.length === 1 ? named[0] : null;
   const many = `${named.length} ${noun} items`;
+  // "Run again" (`request.again`): the ledger already holds this block and a
+  // yes sends `force`, so every question says it runs a SECOND time.
+  const again = request.again === true;
+  const ranBefore = "This already ran once.";
 
   switch (directive.directiveClass) {
     case "delete":
       return {
-        title: one ? <>Delete {noun} {one.name}?</> : `Delete ${many}?`,
+        title: one
+          ? <>Delete {noun} {one.name}{again ? " again" : ""}?</>
+          : `Delete ${many}${again ? " again" : ""}?`,
         description: one ? (
           <p>
-            This moves {one.name} to the trash — the {noun} itself, not just this text. You can
-            restore it from the trash; anything pointing at it stops resolving until then.
+            {again ? `${ranBefore} ` : null}Moves {one.name} to the trash — the {noun} itself, not
+            just this text.{again ? null : " You can restore it from there."}
           </p>
         ) : (
           <>
             <p>
-              This moves these {many} to the trash — the records themselves, not just this text.
-              You can restore them from the trash.
+              {again ? `${ranBefore} ` : null}Moves these {many} to the trash — the records
+              themselves, not just this text.
             </p>
             <NameList named={named} withChanges={false} />
           </>
         ),
-        confirmLabel: one ? "Delete" : `Delete ${named.length}`,
+        confirmLabel: again ? "Delete again" : one ? "Delete" : `Delete ${named.length}`,
         variant: "destructive",
       };
     case "update":
       return {
-        title: one ? <>Update {noun} {one.name}?</> : `Update ${many}?`,
+        title: one
+          ? <>Update {noun} {one.name}{again ? " again" : ""}?</>
+          : `Update ${many}${again ? " again" : ""}?`,
         description: (
           <>
             <p>
-              This overwrites {one ? "these fields" : "the fields below"} on the{" "}
-              {one ? noun : "records"} themselves, as you. The previous values are not kept here.
+              {again
+                ? `${ranBefore} Writes these fields again, as you.`
+                : `Overwrites ${one ? "these fields" : "the fields below"} as you. The old values are not kept.`}
             </p>
             {one ? <ChangeList item={one.item} /> : <NameList named={named} withChanges />}
           </>
         ),
-        confirmLabel: "Update",
+        confirmLabel: again ? "Update again" : "Update",
       };
     case "create":
       return {
-        title: one ? <>Create {noun} {one.name}?</> : `Create ${many}?`,
+        title: again
+          ? one
+            ? <>Create another {noun} {one.name}?</>
+            : `Create ${many} again?`
+          : one
+            ? <>Create {noun} {one.name}?</>
+            : `Create ${many}?`,
         description: (
           <>
             <p>
-              This adds {one ? `this ${noun}` : `these ${many}`} to your workspace for real, as
-              you — not just to this text.
+              {again
+                ? `${ranBefore} Running it again adds a second copy${one ? "" : " of each"}.`
+                : `Adds ${one ? `this ${noun}` : `these ${many}`} to your workspace, as you — not just to this text.`}
             </p>
             {one ? null : <NameList named={named} withChanges={false} />}
           </>
         ),
-        confirmLabel: "Create",
+        confirmLabel: again ? "Create another" : "Create",
       };
     default:
       return {
-        title: `Run this action on ${items.length === 1 ? `one ${noun}` : many}?`,
+        title: again
+          ? "Run this action again?"
+          : `Run this action on ${items.length === 1 ? `one ${noun}` : many}?`,
         description: (
           <>
             <p>
-              This runs now, as you, and changes data outside this text. Only continue if you know
-              where this block came from.
+              {again
+                ? `${ranBefore} Running it again repeats it, as you.`
+                : "Runs now, as you, and changes data outside this text. Continue only if you trust its source."}
             </p>
             <NameList named={named} withChanges={false} />
           </>
         ),
-        confirmLabel: "Run it",
+        confirmLabel: again ? "Run again" : "Run it",
       };
   }
 }

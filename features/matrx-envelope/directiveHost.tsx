@@ -35,6 +35,8 @@
 import type {
   DirectiveHost,
   DirectiveApplyResult,
+  DirectiveApplyState,
+  DirectiveShell,
   DirectiveAskRequest,
   DirectiveCopyProps,
   DirectiveOpenItemOptions,
@@ -57,8 +59,13 @@ import {
   CATALOG_NOUN_DISPLAY,
   DIRECTIVE_ITEM_KINDS,
 } from "@/features/matrx-envelope/catalog-nouns.generated";
-import { confirmDirective } from "@/features/directive-catalog/service";
+import {
+  confirmDirective,
+  fetchDirectiveApplyState,
+} from "@/features/directive-catalog/service";
+import type { DirectiveShellState } from "@/features/directive-catalog/types";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { invalidateReferenceLabel } from "@/features/matrx-envelope/referenceResolvers";
 import { BackendApiError } from "@/lib/api/errors";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
@@ -135,10 +142,7 @@ function ask(request: DirectiveAskRequest): Promise<boolean> {
   return confirmDialog(directiveConsequenceDialog(request, matrxDirectiveNouns));
 }
 
-async function confirm(shell: {
-  __kind: string;
-  items: Record<string, unknown>[];
-}): Promise<DirectiveApplyResult> {
+async function confirm(shell: DirectiveShell): Promise<DirectiveApplyResult> {
   const baseUrl = selectResolvedBaseUrl(requireStore().getState());
   try {
     const result = await confirmDirective(baseUrl, {
@@ -146,7 +150,17 @@ async function confirm(shell: {
       // to guess at what it is confirming.
       directive: shell.__kind,
       items: shell.items,
+      // WHERE the card sits is its namespace: a chat message's conversation —
+      // the same key the agent proposal's Approve uses, so one action never
+      // applies twice — else (a note) the person's.
+      ...(shell.conversationId ? { conversation_id: shell.conversationId } : {}),
+      // "Run again", after the person said yes to a question that named it.
+      ...(shell.force ? { force: true } : {}),
     });
+    const records = appliedRecords(shell.__kind, result.receipts);
+    // Every label on screen naming a record this apply changed resolves again,
+    // so the card's own row never keeps the name it just overwrote.
+    for (const record of records) invalidateReferenceLabel(record.id);
     return {
       applied: result.applied,
       failed: result.failed,
@@ -154,7 +168,7 @@ async function confirm(shell: {
       message: result.message,
       // THE TALLY IS A DOOR: every record the apply wrote, so "Applied 1" is a
       // way into what was created/changed (no dead ends).
-      records: appliedRecords(shell.__kind, result.receipts),
+      records,
     };
   } catch (error) {
     // Prefer the server's gentle user_message; never dump Pydantic/wire detail.
@@ -162,6 +176,109 @@ async function confirm(shell: {
     if (error instanceof BackendApiError) throw new Error(error.userMessage);
     throw error;
   }
+}
+
+interface PendingStateRead {
+  shell: DirectiveShell;
+  resolve: (answer: DirectiveApplyState) => void;
+  reject: (error: unknown) => void;
+}
+
+/** Every card that mounts in the same tick joins ONE `/directives/apply_state` read. */
+let pendingStateReads: PendingStateRead[] = [];
+let stateFlushQueued = false;
+
+/**
+ * One shell's per-item ledger answer → the card's three states.
+ *  - every item applied → `applied`, with the ledger's own sentence (for ONE
+ *    item; a batch line is never composed here) and every record it wrote;
+ *  - any item mid-apply → `in_flight` (the card says it is finishing);
+ *  - otherwise → `not_applied`: still approvable, and confirm replays any
+ *    member the ledger already holds.
+ * An unreadable shell is not "not applied" — it is unknown, so it rejects with
+ * the server's reason and the card reports it.
+ */
+function toApplyState(state: DirectiveShellState): DirectiveApplyState {
+  if (state.unreadable) throw new Error(state.unreadable);
+  const items = state.items;
+  if (items.length > 0 && items.every((item) => item.state === "applied")) {
+    const records = appliedRecords(
+      state.directive,
+      items.map((item) => ({ resource_kind: state.noun, resource_ids: item.resource_ids })),
+    );
+    const message = items.length === 1 ? (items[0].message ?? null) : null;
+    return { state: "applied", message, records };
+  }
+  if (items.some((item) => item.state === "in_flight")) return { state: "in_flight" };
+  return { state: "not_applied" };
+}
+
+async function flushStateReads(): Promise<void> {
+  stateFlushQueued = false;
+  const pending = pendingStateReads;
+  pendingStateReads = [];
+  // ONE read per namespace: the cards in one conversation together, a note's
+  // cards (no conversation — the person's namespace) together.
+  const byNamespace = new Map<string, PendingStateRead[]>();
+  for (const read of pending) {
+    const key = read.shell.conversationId ?? "";
+    byNamespace.set(key, [...(byNamespace.get(key) ?? []), read]);
+  }
+  await Promise.all(
+    [...byNamespace].map(([conversationId, batch]) => readNamespace(conversationId, batch)),
+  );
+}
+
+async function readNamespace(conversationId: string, batch: PendingStateRead[]): Promise<void> {
+  try {
+    const baseUrl = selectResolvedBaseUrl(requireStore().getState());
+    const result = await fetchDirectiveApplyState(
+      baseUrl,
+      {
+        // The ledger is asked in the SAME namespace `confirm` applies in
+        // (aidream `keys.human_door_namespace`): the conversation the card
+        // renders in, else — a note — the person's.
+        shells: batch.map((read) => ({ __kind: read.shell.__kind, items: read.shell.items })),
+        ...(conversationId ? { conversation_id: conversationId } : {}),
+      },
+      // A background read never raises the organization picker — nobody pressed anything.
+      { interactive: false },
+    );
+    batch.forEach((read, index) => {
+      const state = result.shells[index];
+      if (!state) {
+        read.reject(new Error("The ledger read answered fewer blocks than it was asked about."));
+        return;
+      }
+      try {
+        read.resolve(toApplyState(state));
+      } catch (error) {
+        read.reject(error);
+      }
+    });
+  } catch (error) {
+    const safe = error instanceof BackendApiError ? new Error(error.userMessage) : error;
+    batch.forEach((read) => read.reject(safe));
+  }
+}
+
+/**
+ * THE CARD SURVIVES A RELOAD — the package's `applyState` seam (0.14.0).
+ *
+ * After a reload the card's own state is gone; the server's action ledger is
+ * not. Whether a block was applied is decided by a FROZEN server key over the
+ * VALIDATED items, so the host asks (`POST /directives/apply_state`) — it never
+ * computes. Reads are batched per tick so a note with ten cards costs one
+ * request.
+ */
+function applyState(shell: DirectiveShell): Promise<DirectiveApplyState> {
+  return new Promise<DirectiveApplyState>((resolve, reject) => {
+    pendingStateReads.push({ shell, resolve, reject });
+    if (!stateFlushQueued) {
+      stateFlushQueued = true;
+      setTimeout(() => void flushStateReads(), 0);
+    }
+  });
 }
 
 function openItem(options: DirectiveOpenItemOptions): void {
@@ -231,6 +348,7 @@ function renderCopy({ label, value, kind, size }: DirectiveCopyProps) {
 export const matrxDirectiveHost: DirectiveHost = {
   ask,
   confirm,
+  applyState,
   renderRecord: (props) => <DirectiveRecordLink {...props} />,
   openItem,
   renderCopy,

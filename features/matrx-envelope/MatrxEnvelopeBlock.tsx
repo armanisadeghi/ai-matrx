@@ -47,14 +47,25 @@ interface MatrxEnvelopeBlockProps {
    * "Writing…" on a stream that has ended.
    */
   streaming?: boolean;
+  /**
+   * The conversation this fence renders in (a chat message). A side-effect
+   * card applies under it — the same key the agent proposal's Approve uses —
+   * so one action can never apply twice. Absent in a person's own content.
+   */
+  conversationId?: string;
 }
 
 const MatrxEnvelopeBlock: React.FC<MatrxEnvelopeBlockProps> = ({
   content,
   streaming = false,
+  conversationId,
 }) => (
   <DirectiveHostProvider host={matrxDirectiveHost}>
-    <DirectiveRender content={content} streaming={streaming} />
+    <DirectiveRender
+      content={content}
+      streaming={streaming}
+      conversationId={conversationId ?? null}
+    />
   </DirectiveHostProvider>
 );
 

@@ -40,6 +40,7 @@ import { ensureOrganizationForRequest } from "@/lib/organization/organization-ga
  */
 async function authedDirectiveHeaders(
   token: string,
+  options: { interactive?: boolean } = {},
 ): Promise<Record<string, string>> {
   // ORG-GATE-AUDIT: THE GATE, never the bare kernel — every directive call is
   // a write the person pressed, so with no organization selected it asks, then
@@ -50,9 +51,14 @@ async function authedDirectiveHeaders(
   // selected — on an admin page too. The admin section's platform tenant is for
   // seat work; binding it here stamped a person's task into Matrx System while
   // the switcher on the same screen named their own workspace.
+  //
+  // A background READ (the ledger state a card reads on mount) passes
+  // `interactive: false`: nobody pressed anything, so it refuses quietly rather
+  // than raise a picker out of nowhere.
   const organizationId = await ensureOrganizationForRequest({
     method: "POST",
     personWrite: true,
+    interactive: options.interactive,
   });
   return applyOrganizationContextHeader(
     {
@@ -203,13 +209,18 @@ export async function confirmDirective(
  * that guessed would render an Approve button beside that proposal's own receipt.
  * So the identity stays with its one author and we ask.
  *
- * `conversation_id` is REQUIRED and is not decoration: it is the idempotency
- * NAMESPACE, so a state read without it would ask about different keys than the
- * Approve button will run.
+ * `conversation_id` is the idempotency NAMESPACE and must match the apply it
+ * asks about: send the conversation for an agent's proposal; OMIT it for a block
+ * in a person's own content, which `confirm` applies in the person's namespace
+ * (aidream `keys.human_door_namespace` — one rule for both doors).
+ *
+ * `interactive: false` for a background read (a card mounting): never raise the
+ * organization picker when nobody pressed anything.
  */
 export async function fetchDirectiveApplyState(
   baseUrl: string | undefined,
   body: DirectiveApplyStateRequest,
+  options: { interactive?: boolean } = {},
 ): Promise<DirectiveApplyStateResult> {
   if (!baseUrl) {
     throw new Error(
@@ -227,7 +238,7 @@ export async function fetchDirectiveApplyState(
 
   const response = await fetch(url, {
     method: "POST",
-    headers: await authedDirectiveHeaders(token),
+    headers: await authedDirectiveHeaders(token, options),
     body: JSON.stringify(body),
   });
   if (!response.ok) throw await parseHttpError(response);

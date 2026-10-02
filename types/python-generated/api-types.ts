@@ -43735,8 +43735,9 @@ export interface paths {
          *     apply anything — it is how a reloaded conversation can render an agent's
          *     proposal honestly. The client sends back the two-key shells it found in the
          *     stored assistant messages; the server computes the SAME per-item content key
-         *     the dispatcher would (frozen `content_key`, derived ledger type, the
-         *     conversation as namespace), reads `platform.matrx_action_ledger`, and answers
+         *     the dispatcher would (frozen `content_key`, derived ledger type, and the ONE
+         *     human-door namespace — the conversation, else the person, so a block applied
+         *     from a note is readable too), reads `platform.matrx_action_ledger`, and answers
          *     `not_applied` / `in_flight` / `applied` per item — the last carrying the
          *     ledger row's own sentence and resource ids.
          *
@@ -71032,14 +71033,19 @@ export interface components {
         };
         /**
          * DirectiveApplyStateRequest
-         * @description The shells a client read out of one conversation's stored messages.
+         * @description The shells a client read out of stored content — a conversation's
+         *     messages, or a person's own note/document.
          *
-         *     Batched on purpose: a reloaded conversation asks about every shell it found in
-         *     ONE round trip, so hydrating a long chat is one request and not one per
-         *     message. ``conversation_id`` is REQUIRED and is not decoration — it is the
-         *     idempotency NAMESPACE (`dispatcher.apply_directive_items`), so a state read
-         *     that omitted it would compute different keys from the apply it is asking
-         *     about and confidently answer "not applied" about work that was done.
+         *     Batched on purpose: a reloaded page asks about every shell it found in ONE
+         *     round trip, so hydrating a long chat is one request and not one per message.
+         *
+         *     ``conversation_id`` is the idempotency NAMESPACE, resolved by the ONE rule
+         *     every human door uses (`keys.human_door_namespace`): the conversation, else
+         *     the PERSON. Send it for a proposal made in a conversation; omit it for a block
+         *     in the person's own content — exactly as the confirm that applied it did. A
+         *     read that names a different namespace from its apply answers about a
+         *     different apply (reviewer defect 5, 2026-10-02: it used to be REQUIRED, so a
+         *     card applied from a note could never be asked about and offered Apply again).
          */
         DirectiveApplyStateRequest: {
             /**
@@ -71077,12 +71083,12 @@ export interface components {
                 [key: string]: unknown;
             }[];
             /** Conversation Id */
-            conversation_id: string;
+            conversation_id?: string | null;
         };
         /** DirectiveApplyStateResult */
         DirectiveApplyStateResult: {
             /** Conversation Id */
-            conversation_id: string;
+            conversation_id?: string | null;
             /** Shells */
             shells: components["schemas"]["DirectiveShellState"][];
         };

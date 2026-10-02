@@ -36,7 +36,12 @@ export function isDirectiveApplyStateResult(
 ): value is DirectiveApplyStateResult {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
-  return typeof v.conversation_id === "string" && Array.isArray(v.shells);
+  // `conversation_id` is null when the PERSON's namespace was read (a block in
+  // a note) — a real answer, not a malformed one.
+  return (
+    (typeof v.conversation_id === "string" || v.conversation_id === null) &&
+    Array.isArray(v.shells)
+  );
 }
 
 /** One confirm-receipt item — applied or failed (OpenAPI union). */

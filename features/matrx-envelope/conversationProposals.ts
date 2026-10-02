@@ -197,10 +197,12 @@ export async function fetchConversationProposals(
   const shells = await fetchStoredDirectiveShells(conversationId);
   if (shells.length === 0) return { proposals: [], unreadable: [] };
 
-  const state = await fetchDirectiveApplyState(baseUrl, {
-    shells,
-    conversation_id: conversationId,
-  });
+  // A background read on load: never raise the organization picker for it.
+  const state = await fetchDirectiveApplyState(
+    baseUrl,
+    { shells, conversation_id: conversationId },
+    { interactive: false },
+  );
 
   const proposals: ProposedDirective[] = [];
   const unreadable: string[] = [];

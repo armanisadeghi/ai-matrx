@@ -21,7 +21,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { supabase } from "@/utils/supabase/client";
@@ -958,6 +958,29 @@ export type ReferenceResolutionStatus = "idle" | "loading" | "ready" | "fallback
  * lookup is the source of truth, `referenceFallbackLabel` is only the
  * loading/miss placeholder, never a substitute for it.
  */
+/**
+ * THE NAME IS RE-READ WHEN THE RECORD CHANGES. A resolved label is read once
+ * per mount, so a chip or a directive row naming a record kept its OLD name
+ * after this very page renamed it (LANE-C, 2026-10-02: an Update card's row
+ * still read "LANE-C timing probe 1" beside its own "Updated task. → LANE-C
+ * probe renamed" tally). A writer that changes a record announces it here and
+ * every label naming that record resolves again. One counter per record id;
+ * a bump re-runs only the hooks that name it.
+ */
+const referenceLabelVersions = new Map<string, number>();
+const referenceLabelListeners = new Set<() => void>();
+
+export function invalidateReferenceLabel(id: string): void {
+  if (!id) return;
+  referenceLabelVersions.set(id, (referenceLabelVersions.get(id) ?? 0) + 1);
+  for (const listener of referenceLabelListeners) listener();
+}
+
+function subscribeReferenceLabels(listener: () => void): () => void {
+  referenceLabelListeners.add(listener);
+  return () => referenceLabelListeners.delete(listener);
+}
+
 export function useResolvedReferenceLabel(
   item: ReferenceItem,
   type: string,
@@ -970,18 +993,28 @@ export function useResolvedReferenceLabel(
   const [status, setStatus] = useState<ReferenceResolutionStatus>("idle");
   const lastKey = useRef<string | null>(null);
   const refKey = JSON.stringify(ref);
+  const recordId = typeof ref.id === "string" ? ref.id : "";
+  const version = useSyncExternalStore(
+    subscribeReferenceLabels,
+    () => referenceLabelVersions.get(recordId) ?? 0,
+    () => 0,
+  );
 
   useEffect(() => {
     if (!resolver) {
       setStatus("fallback");
       return undefined;
     }
-    const key = `${type}:${refKey}`;
+    const recordKey = `${type}:${refKey}:`;
+    const key = `${recordKey}${version}`;
     if (lastKey.current === key) return undefined;
+    // A re-read of the SAME record after a change keeps the name it had until
+    // the new one lands — never a flash of the fallback id.
+    const reread = lastKey.current?.startsWith(recordKey) ?? false;
     lastKey.current = key;
 
     let cancelled = false;
-    setStatus("loading");
+    setStatus((prev) => (reread && prev === "ready" ? "ready" : "loading"));
 
     Promise.resolve()
       .then(() => resolver.resolveValue(supabase, ref))
@@ -1003,7 +1036,7 @@ export function useResolvedReferenceLabel(
       cancelled = true;
     };
     // refKey captures the ref contents; resolver is stable per type.
-  }, [type, refKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [type, refKey, version]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { display: status === "ready" && value ? value : fallback, status };
 }
