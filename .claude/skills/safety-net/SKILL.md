@@ -226,10 +226,25 @@ own preview hostname (`MATRX_PREVIEW_SESSION=<name> pnpm dev-login …`); the pl
 sessions navigate it. A run during which the shared preview changed database mode, or another lane's edit raised a
 build error, is INCONCLUSIVE; say so and rerun.
 
+**Many playbooks, one lane: the owner serialises, the runner never parks.** Eight runners dispatched at once
+on 2026-10-02 did eight minutes of work: one took the lane, the other seven started a background wait for the
+lock and ENDED THEIR TURN, returning "queued, no captures" as a completed task — a background wait dies with the
+turn. The owner dispatches one runner at a time, after a wait that sees the lock directory absent for thirty
+seconds, and the runner brief says in so many words: a report with no captures is a failed run; if the lane
+is held, wait in the foreground and walk the sheet in this same turn. Budget one lane-run at a time: eight
+playbooks of ten to twenty minutes each is two to three hours of wall clock, not ten minutes.
+
+**Performance is a capture, not an opinion.** Every rerun records, with the runner's own clock (`date +%s` before
+step one, before each send, at the first visible word, at the finished state) and the page's navigation timing
+(`performance.getEntriesByType("navigation")`: ttfb, domReady, load, resource count), how long each step, each
+turn and each page load took; the grader adds the server's own per-turn rows (iterations, tool calls, model and
+tool milliseconds, tokens, cost) and the runner's harness usage. Numbers from two runs of the same sheet are the
+only honest "faster"/"slower"; a run file without them is a story. The capture rules are `RUNNER-ADDENDUM.md` CX4.
+
 ## 6. Where it lives
 
 `common-docs/operations/real-tests/<area>/` — the playbooks and one `LEDGER.md`. Playbooks walk
-the product, not a repository, so they live in common-docs (`cross-repo-docs`). The ledger holds
+the product, not a repository, so they live in common-docs (`docs` skill). The ledger holds
 three small hand-written tables: the weakness list; playbook × weakness coverage, with the marker
 that covers each cell; and the runs — date, playbook, trigger, runner lane, commit, fault planted or
 none, grade, which marker decided it. Weakness ids and playbook ids are stable across changes in
