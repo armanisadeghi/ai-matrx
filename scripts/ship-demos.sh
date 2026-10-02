@@ -96,7 +96,7 @@ echo "ship-demos: waiting for Vercel to pick up ${sha:0:9}…"
 url=""
 for _ in $(seq 1 40); do
     url=$(vercel ls "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" -m "githubCommitSha=$sha" 2>/dev/null \
-        | grep -oE "https://$VERCEL_PROJECT-[a-z0-9]+-[a-z0-9-]+\.vercel\.app" | head -1)
+        | grep -oE "https://[a-z0-9-]+\.vercel\.app" | head -1)
     [[ -n "$url" ]] && break
     sleep 3
 done
