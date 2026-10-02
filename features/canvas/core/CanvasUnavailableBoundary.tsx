@@ -1,23 +1,27 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { setCanvasAvailable } from "@/features/canvas/redux/canvasSlice";
+import { createContext, useContext, type ReactNode } from "react";
 
 /**
- * Marks the global side canvas unavailable while an immersive canvas viewer
- * already owns the viewport. This keeps nested artifact renderers from
- * advertising an impossible second "Open in canvas" action.
+ * Marks the global side canvas unavailable for everything rendered inside it,
+ * while an immersive canvas viewer already owns the viewport. This keeps
+ * nested artifact renderers from advertising an impossible second "Open in
+ * canvas" action — `useCanvasOpenGuard` reads it, so every opener and every
+ * "Open in canvas" control below this boundary sees no canvas.
+ *
+ * Scoped to its subtree (a context), so the rest of the page keeps its canvas.
  */
+const CanvasSuppressedContext = createContext(false);
+
 export function CanvasUnavailableBoundary({ children }: { children: ReactNode }) {
-  const dispatch = useAppDispatch();
+  return (
+    <CanvasSuppressedContext.Provider value={true}>
+      {children}
+    </CanvasSuppressedContext.Provider>
+  );
+}
 
-  useEffect(() => {
-    dispatch(setCanvasAvailable(false));
-    return () => {
-      dispatch(setCanvasAvailable(true));
-    };
-  }, [dispatch]);
-
-  return children;
+/** True inside a `CanvasUnavailableBoundary`. */
+export function useCanvasSuppressed(): boolean {
+  return useContext(CanvasSuppressedContext);
 }

@@ -11,7 +11,7 @@ import {
   parseDiagramJSON,
   type DiagramData,
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
-import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContentType } from "@/features/canvas/canvasContent";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 
 /** The canvas_items.type value that makes a row a map. */

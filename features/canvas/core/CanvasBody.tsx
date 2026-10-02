@@ -40,11 +40,12 @@ import { isJsonObject, type JsonValue } from "@/types/json";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Blocks that are NOT handled by the unified renderer (code_preview /
-// code_edit_error are NON_PERSISTABLE and have no artifact renderer).
-const CodePreviewCanvas = dynamic(
+// code_edit_error are NON_PERSISTABLE and have no artifact renderer). Their
+// data is JSON; their buttons resolve live callbacks by id (liveCallbacks.ts).
+const LiveCodePreviewCanvas = dynamic(
   () =>
-    import("@/features/canvas/custom-components/CodePreviewCanvas").then(
-      (m) => ({ default: m.CodePreviewCanvas }),
+    import("@/features/canvas/custom-components/LiveCodeEditCanvases").then(
+      (m) => ({ default: m.LiveCodePreviewCanvas }),
     ),
   { ssr: false },
 );
@@ -82,10 +83,10 @@ const TopicalMapCanvasBody = dynamic(
     })),
   { ssr: false },
 );
-const CodeEditErrorCanvas = dynamic(
+const LiveCodeEditErrorCanvas = dynamic(
   () =>
-    import("@/features/canvas/custom-components/CodeEditErrorCanvas").then(
-      (m) => ({ default: m.CodeEditErrorCanvas }),
+    import("@/features/canvas/custom-components/LiveCodeEditCanvases").then(
+      (m) => ({ default: m.LiveCodeEditErrorCanvas }),
     ),
   { ssr: false },
 );
@@ -358,18 +359,7 @@ function renderContent(content: CanvasContent): React.ReactNode {
     }
 
     case "code_preview":
-      return (
-        <CodePreviewCanvas
-          originalCode={data.originalCode}
-          modifiedCode={data.modifiedCode}
-          language={data.language}
-          edits={data.edits}
-          explanation={data.explanation}
-          onApply={data.onApply}
-          onDiscard={data.onDiscard}
-          onCloseModal={data.onCloseModal}
-        />
-      );
+      return <LiveCodePreviewCanvas data={data} />;
 
     case "cloud_browser":
       // `data` is a pointer { initialProfileId?, runId? } and the metadata
@@ -443,14 +433,7 @@ function renderContent(content: CanvasContent): React.ReactNode {
       );
 
     case "code_edit_error":
-      return (
-        <CodeEditErrorCanvas
-          errors={data.errors}
-          warnings={data.warnings}
-          rawResponse={data.rawResponse}
-          onClose={data.onClose || (() => {})}
-        />
-      );
+      return <LiveCodeEditErrorCanvas data={data} />;
 
     default:
       return (

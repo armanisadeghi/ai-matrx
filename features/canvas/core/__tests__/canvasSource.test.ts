@@ -19,7 +19,7 @@ import {
   resolveCanvasSource,
   resolveCanvasSourceFromData,
 } from "../canvasSource";
-import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContent } from "@/features/canvas/canvasContent";
 
 describe("a live pane is never offered a Source view", () => {
   it.each([

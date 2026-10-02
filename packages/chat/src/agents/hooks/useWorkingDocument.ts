@@ -992,7 +992,7 @@ export function useWorkingDocument(
           title || (kind === "scratch" ? "Scratchpad" : "Working document"),
         conversationId,
         // Stable dedup key so reopening reuses the same Canvas item instead of
-        // stacking duplicates (openCanvas dedups on sourceMessageId).
+        // stacking duplicates (the canvas keys the tab on sourceMessageId).
         sourceMessageId: `wd:${conversationId}:${kind}`,
       },
     });

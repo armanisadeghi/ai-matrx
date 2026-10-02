@@ -24,11 +24,12 @@ import {
   ensureArtifactPersisted,
   type EnsureArtifactResult,
 } from "@/features/canvas/materialization/ensureArtifactPersisted";
-import type { CanvasContent, CanvasItem } from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContent } from "@/features/canvas/canvasContent";
 
 export interface SyncCanvasItemInput {
   content: CanvasContent;
-  item: Pick<CanvasItem, "savedItemId">;
+  /** canvas_items.id once the tab was saved. */
+  item: { savedItemId?: string };
   title: string;
 }
 

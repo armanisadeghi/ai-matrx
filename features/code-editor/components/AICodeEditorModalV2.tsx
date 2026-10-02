@@ -109,11 +109,19 @@ export function AICodeEditorModalV2({
     launchMandate,
   ]);
 
-  // Reset when modal closes
+  // Reset when modal closes. `closeCanvas` is a fresh function every render,
+  // so the canvas is put away only on the open → closed TRANSITION, never on
+  // every re-render while the modal sits closed.
+  const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (!open) {
-      setHasOpened(false);
-      closePrompt();
+    if (open) {
+      wasOpenRef.current = true;
+      return;
+    }
+    setHasOpened(false);
+    closePrompt();
+    if (wasOpenRef.current) {
+      wasOpenRef.current = false;
       closeCanvas();
     }
   }, [open, closePrompt, closeCanvas]);

@@ -3,7 +3,7 @@
 /**
  * Runtime scope builder for the `matrx-user/canvas` surface.
  *
- * Turns the canvas slice's live state into the declared surface payload. It
+ * Turns the canvas's live state into the declared surface payload. It
  * lives beside the feature (not in the manifest) because the derivation is
  * real work: resolving the DURABLE `canvas_items` id out of two places it can
  * hang, and flattening possibly-ReactNode titles to plain text.
@@ -18,11 +18,23 @@ import {
   type CanvasOpenItemSummary,
 } from "@/features/surfaces/manifests/canvas.manifest";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
-import type {
-  CanvasItem,
-  CanvasRenderMode,
-} from "@/features/canvas/redux/canvasSlice";
-import { titleToString } from "@/features/canvas/canvasContent";
+import {
+  titleToString,
+  type CanvasContent,
+} from "@/features/canvas/canvasContent";
+
+/** One open canvas tab, as the scope sees it. */
+export interface CanvasScopeItem {
+  /** The tab's identity on the canvas. */
+  id: string;
+  content: CanvasContent;
+  /** canvas_items.id once the tab was saved. */
+  savedItemId?: string;
+}
+
+export type CanvasRenderMode = "inline" | "global" | "auto";
+
+type CanvasItem = CanvasScopeItem;
 
 /**
  * The durable `canvas_items` UUID for an open item, or undefined while the

@@ -780,7 +780,7 @@ export function ChatRoomClient({
     >
       <div className="flex h-full flex-col overflow-hidden bg-textured">
         {/* THE CHAT ROUTE HAS NO CANVAS PRESENTATION OF ITS OWN. The canvas is
-            the global `CanvasSideSheet` every other route uses (documents,
+            the global `@ai-matrx/canvas` column every other route uses (documents,
             artifacts, the browser) — mounted once by the shell. A parallel
             docked column lived here from 2026-09-14 to 2026-09-17 and was
             rejected by the owner: "The canvas system set up for the sandboxes

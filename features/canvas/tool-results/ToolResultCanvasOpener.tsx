@@ -21,15 +21,13 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  offerCanvasItem,
-  openCanvas,
-  selectCanvasIsOpen,
-  selectCanvasItems,
-  selectCurrentItemId,
-} from "@/features/canvas/redux/canvasSlice";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
+import {
+  splitCanvasSourceKey,
+  useCanvasOpeners,
+  useCanvasSources,
+} from "@/features/canvas/host/canvasSources";
 import { selectToolCallsForConversation } from "@ai-matrx/chat/agents/redux/execution-system/observability/observability.selectors";
 import { selectLiveToolLifecycleByConversation } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { cxToolCallToLifecycleEntry } from "@ai-matrx/chat/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
@@ -65,8 +63,13 @@ export function ToolResultCanvasOpener({
 }: {
   conversationId?: string | null;
 }): null {
-  const dispatch = useAppDispatch();
   const { isCanvasAvailable } = useCanvasOpenGuard();
+  const canvas = useCanvasOpeners();
+  const {
+    isOpen: canvasIsOpen,
+    sourceKey: canvasSourceKey,
+    activeSourceId: currentSourceId,
+  } = useCanvasSources();
 
   const autoOpen = useAppSelector(
     (s) => s.userPreferences.coding.toolResultCanvasAutoOpen !== false,
@@ -117,17 +120,13 @@ export function ToolResultCanvasOpener({
     return all.slice(Math.max(0, all.length - MAX_OFFERED));
   }, [records, live, conversationId]);
 
-  const items = useAppSelector(selectCanvasItems);
   /**
-   * WHAT the canvas holds, as a stable string — never the `items` array.
-   * Offering a record that is already on the canvas replaces its `content`
-   * with an equal-but-new object, so `items` gets a new reference on every
-   * offer; depending on it here would re-run this effect, which dispatches,
-   * forever. The identities are what the rules actually read.
+   * WHAT the canvas holds is read as a stable string (`canvasSourceKey`),
+   * never the items. Offering a record that is already on the canvas replaces
+   * its data with an equal-but-new object; depending on the items would
+   * re-run this effect, which opens, forever. The identities are what the
+   * rules actually read.
    */
-  const canvasSourceKey = items
-    .map((item) => item.sourceMessageId ?? item.id)
-    .join("|");
   const offeredSourceIds = useMemo(
     () => new Set(offers.map((o) => o.sourceId)),
     [offers],
@@ -160,7 +159,7 @@ export function ToolResultCanvasOpener({
     if (!isCanvasAvailable) return;
 
     const newestId = offers[offers.length - 1].sourceId;
-    const present = canvasSourceKey ? canvasSourceKey.split("|") : [];
+    const present = splitCanvasSourceKey(canvasSourceKey);
     for (const offer of offers) {
       const remembered = readMemory(offer.sourceId);
       const action = decideToolResultCanvasAction({
@@ -179,17 +178,17 @@ export function ToolResultCanvasOpener({
       if (action === "none") continue;
       if (action === "open") {
         rememberMemory(offer.sourceId, { autoOpened: true });
-        dispatch(openCanvas(offer.content));
+        canvas.open(offer.content);
         continue;
       }
-      dispatch(offerCanvasItem(offer.content));
+      canvas.offer(offer.content);
     }
   }, [
     offers,
     autoOpen,
     canvasSourceKey,
     isCanvasAvailable,
-    dispatch,
+    canvas,
     readMemory,
     rememberMemory,
   ]);
@@ -197,10 +196,6 @@ export function ToolResultCanvasOpener({
   // "Put away canvas" while one of these panes was on screen is a DECISION, and
   // it is remembered across the reload that used to undo it. Reopening it
   // clears the decision, so the pane behaves normally again afterwards.
-  const canvasIsOpen = useAppSelector(selectCanvasIsOpen);
-  const currentItemId = useAppSelector(selectCurrentItemId);
-  const currentSourceId =
-    items.find((item) => item.id === currentItemId)?.sourceMessageId ?? null;
   const wasShowing = useRef<string | null>(null);
 
   useEffect(() => {

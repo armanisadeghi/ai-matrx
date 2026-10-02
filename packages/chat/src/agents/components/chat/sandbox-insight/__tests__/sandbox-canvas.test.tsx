@@ -6,18 +6,19 @@
  * The replacement is one more canvas content type beside `cloud_browser`,
  * documents and artifacts — opened on demand, never owning the region.
  *
- * Everything under test runs for real: the real `canvasSlice` reducer, the
- * real decision function, the real `CanvasBody` switch, the real tool filter.
+ * Everything under test runs for real: the real `@ai-matrx/canvas` controller
+ * and reducer (driven through the real `useOpenSandboxCanvas` hook), the real
+ * decision function, the real `CanvasBody` switch, the real tool filter.
  *
  * Proven failing before passing:
  *   1. registered-type   → removed `case "sandbox"` from CanvasBody;
  *      the pane rendered "Unsupported content type: sandbox" → RED.
- *   2. hidden-by-default → made `offerCanvasItem` set `isOpen = true`;
- *      the canvas was open with nothing asked for → RED.
+ *   2. hidden-by-default → made `offer` open without `quiet`; the canvas was
+ *      open with nothing asked for → RED.
  *   3. opens-only-when-empty → dropped the `canvasHasOtherContent` guard in
  *      `decideSandboxCanvasAction`; the sandbox hijacked a document → RED.
- *   4. closing-hides      → returned `isOpen` untouched from `closeCanvas`;
- *      the pane survived the close → RED.
+ *   4. closing-hides      → hiding the canvas closed the tab instead; the pane
+ *      was gone on reopen → RED.
  */
 
 import React, { act } from "react";
@@ -26,20 +27,28 @@ import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
 import {
-  canvasSlice,
-  closeCanvas,
-  offerCanvasItem,
-  openCanvas,
+  canvasActions,
+  createCanvasStore,
+  selectCanvasActiveItem,
+  type CanvasState,
+  type CanvasStoreBinding,
+} from "@ai-matrx/canvas";
+import { CanvasProvider } from "@ai-matrx/canvas/react";
+import {
   NON_PERSISTABLE_CANVAS_TYPES,
   isPersistableCanvasType,
+  getDefaultTitle,
   type CanvasContent,
-} from "@host/features/canvas/redux/canvasSlice";
+} from "@host/features/canvas/canvasContent";
 import { CanvasBody } from "@host/features/canvas/core/CanvasBody";
-import { getDefaultTitle } from "@host/features/canvas/canvasContent";
+import { useArtifactCanvas } from "@host/features/canvas/host/useArtifactCanvas";
+import { canvasItemSourceId } from "@host/features/canvas/host/canvasSources";
 import {
   buildSandboxCanvasContent,
   decideSandboxCanvasAction,
   sandboxCanvasSourceId,
+  useOpenSandboxCanvas,
+  type OpenSandboxCanvasOptions,
 } from "../useOpenSandboxCanvas";
 import { isSandboxTool } from "../sandbox-activity";
 import {
@@ -83,20 +92,61 @@ const documentContent: CanvasContent = {
   },
 };
 
-/** The real reducer, driven from its real initial state. */
-// Any canvas action, not just `openCanvas` — typing the array by one action
-// creator made every `offerCanvasItem` / `closeCanvas` in this file a type
-// error (5 of them, pre-existing before 2026-09-15).
-function reduce(actions: { type: string; payload?: unknown }[]) {
-  return actions.reduce(
-    (state, action) =>
-      canvasSlice.reducer(
-        state,
-        action as Parameters<typeof canvasSlice.reducer>[1],
-      ),
-    canvasSlice.reducer(undefined, { type: "@@init" }),
-  );
+const sandboxOpts: OpenSandboxCanvasOptions = {
+  sandboxRowId: SANDBOX_ROW_ID,
+  conversationId: CONVERSATION_ID,
+  fallbackName: "dev box",
+};
+
+interface CanvasApi {
+  open: (opts: OpenSandboxCanvasOptions) => boolean;
+  offer: (opts: OpenSandboxCanvasOptions) => void;
+  openContent: (content: CanvasContent) => void;
 }
+
+/**
+ * The real canvas (standalone store, real controller) with the real sandbox
+ * opener hook mounted under it. Steps run in order, each inside act().
+ */
+function drive(steps: Array<(api: CanvasApi, store: CanvasStoreBinding) => void>): CanvasState {
+  const store = createCanvasStore();
+  const api: { current: CanvasApi | null } = { current: null };
+  function Probe() {
+    const sandbox = useOpenSandboxCanvas();
+    const canvas = useArtifactCanvas();
+    api.current = {
+      open: sandbox.open,
+      offer: sandbox.offer,
+      openContent: (content) => {
+        canvas.openContent(content);
+      },
+    };
+    return null;
+  }
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  act(() => {
+    root.render(
+      <CanvasProvider store={store} persistence={null} hotkeys={false}>
+        <Probe />
+      </CanvasProvider>,
+    );
+  });
+  for (const step of steps) {
+    act(() => step(api.current as CanvasApi, store));
+  }
+  act(() => root.unmount());
+  container.remove();
+  return store.getState();
+}
+
+const itemsOf = (state: CanvasState) => Object.values(state.items);
+const sourceOfActive = (state: CanvasState) => {
+  const active = selectCanvasActiveItem(state);
+  return active ? canvasItemSourceId(active) : null;
+};
+const SANDBOX_SOURCE = sandboxCanvasSourceId(CONVERSATION_ID, SANDBOX_ROW_ID);
 
 describe("the sandbox is a registered canvas content type", () => {
   it("renders the real Terminal/Files/Activity pane through the canvas switch", async () => {
@@ -162,37 +212,41 @@ describe("the sandbox is a registered canvas content type", () => {
 
 describe("default hidden", () => {
   it("shows nothing before anything has happened", () => {
-    const state = reduce([]);
+    const state = drive([]);
     expect(state.isOpen).toBe(false);
-    expect(state.items).toHaveLength(0);
+    expect(itemsOf(state)).toHaveLength(0);
   });
 
   it("offering a bound sandbox makes it available WITHOUT opening the canvas", () => {
-    const state = reduce([offerCanvasItem(sandboxContent)]);
+    const state = drive([(api) => api.offer(sandboxOpts)]);
     expect(state.isOpen).toBe(false);
-    expect(state.items).toHaveLength(1);
-    // Reachable: the shell only mounts what is current, so an offered item
-    // with nothing else current must become current or it is a dead end.
-    expect(state.currentItemId).toBe(state.items[0].id);
+    expect(itemsOf(state)).toHaveLength(1);
+    // Reachable: an offered item in an empty pane becomes its active tab, or
+    // it is a dead end when the canvas is shown.
+    expect(sourceOfActive(state)).toBe(SANDBOX_SOURCE);
   });
 
   it("offering twice never stacks two sandbox panes", () => {
-    const state = reduce([
-      offerCanvasItem(sandboxContent),
-      offerCanvasItem(sandboxContent),
+    const state = drive([
+      (api) => api.offer(sandboxOpts),
+      (api) => api.offer(sandboxOpts),
     ]);
-    expect(state.items).toHaveLength(1);
+    expect(itemsOf(state)).toHaveLength(1);
   });
 
   it("offering never steals the pane the user is reading", () => {
-    const state = reduce([
-      openCanvas(documentContent),
-      offerCanvasItem(sandboxContent),
+    const state = drive([
+      (api) => api.openContent(documentContent),
+      (api) => api.offer(sandboxOpts),
     ]);
-    expect(state.items).toHaveLength(2);
-    expect(state.currentItemId).toBe(
-      state.items.find((i) => i.content.type === "working_document")?.id,
-    );
+    expect(itemsOf(state)).toHaveLength(2);
+    expect(sourceOfActive(state)).toBe(`wd:${CONVERSATION_ID}:working`);
+  });
+
+  it("opening puts the sandbox on screen", () => {
+    const state = drive([(api) => api.open(sandboxOpts)]);
+    expect(state.isOpen).toBe(true);
+    expect(sourceOfActive(state)).toBe(SANDBOX_SOURCE);
   });
 });
 
@@ -369,9 +423,12 @@ describe("a put-away pane STAYS put away, across reloads", () => {
 
 describe("closing the canvas hides it", () => {
   it("leaves nothing on screen, and keeps the pane reachable for reopen", () => {
-    const state = reduce([openCanvas(sandboxContent), closeCanvas()]);
+    const state = drive([
+      (api) => api.open(sandboxOpts),
+      (_api, store) => store.dispatch(canvasActions.setOpen(false)),
+    ]);
     expect(state.isOpen).toBe(false);
-    expect(state.items).toHaveLength(1);
-    expect(state.currentItemId).not.toBeNull();
+    expect(itemsOf(state)).toHaveLength(1);
+    expect(sourceOfActive(state)).toBe(SANDBOX_SOURCE);
   });
 });

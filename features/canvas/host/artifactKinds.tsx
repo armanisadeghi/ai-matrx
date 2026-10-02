@@ -40,6 +40,7 @@ import {
   Workflow,
   Captions,
   Share2,
+  LayoutDashboard,
   type LucideIcon,
 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
@@ -213,6 +214,23 @@ export const ARTIFACT_CANVAS_KINDS: readonly AnyCanvasKind[] = (Object.keys(ICON
   }),
 );
 
+/**
+ * The person's saved canvas items, as a tab. Offered in an empty pane's
+ * launcher, so an empty canvas always has somewhere to go.
+ */
+export const SAVED_ITEMS_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<null>({
+  id: "saved-items",
+  label: "Saved",
+  icon: LayoutDashboard,
+  load: () =>
+    import("@/features/canvas/core/SavedCanvasItems").then((m) => ({
+      default: m.SavedCanvasItems,
+    })),
+  title: () => "Saved items",
+  restore: true,
+  launcher: { key: "default", data: null, title: "Saved items" },
+});
+
 export function registerArtifactCanvasKinds(): () => void {
-  return registerCanvasKinds(ARTIFACT_CANVAS_KINDS);
+  return registerCanvasKinds([...ARTIFACT_CANVAS_KINDS, SAVED_ITEMS_CANVAS_KIND]);
 }

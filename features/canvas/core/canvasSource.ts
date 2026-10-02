@@ -29,7 +29,7 @@
 import {
   NON_PERSISTABLE_CANVAS_TYPES,
   type CanvasContent,
-} from "@/features/canvas/redux/canvasSlice";
+} from "@/features/canvas/canvasContent";
 import {
   artifactContentToMarkdown,
   kindValueToMarkdown,

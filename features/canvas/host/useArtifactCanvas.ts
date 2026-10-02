@@ -7,7 +7,7 @@
  * drop" rule are enforced once.
  */
 
-import { selectCanvasActiveItem, selectCanvasIsOpen, type CanvasItemId } from "@ai-matrx/canvas";
+import { selectCanvasActiveItem, selectCanvasIsOpen, type CanvasController, type CanvasItemId } from "@ai-matrx/canvas";
 import { useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
 import { reportCanvasOpenDrop, titleForDrop } from "@/features/canvas/openRequest";
 import type { ArtifactDebugTrace, CanvasContent, CanvasContentType } from "@/features/canvas/canvasContent";
@@ -20,28 +20,41 @@ export interface ArtifactPointerInput {
   artifactDebug?: ArtifactDebugTrace | null;
 }
 
+/**
+ * Opens content on a canvas controller; returns null (and announces why) when
+ * it cannot. The non-hook core of `openContent`, for callers that must not
+ * subscribe to canvas state (headless openers whose effects would otherwise
+ * re-run on every item update).
+ */
+export function openArtifactContent(
+  canvas: CanvasController | null,
+  content: CanvasContent,
+  options: ArtifactOpenOptions = {},
+): CanvasItemId | null {
+  const requested = titleForDrop(content?.metadata?.title);
+  if (!content?.type) {
+    reportCanvasOpenDrop({ reason: "no-content", requested });
+    return null;
+  }
+  if (content.data == null) {
+    reportCanvasOpenDrop({ reason: "no-content", requested, detail: `type ${content.type} arrived with no data` });
+    return null;
+  }
+  if (!canvas) {
+    reportCanvasOpenDrop({ reason: "canvas-unavailable", requested });
+    return null;
+  }
+  return canvas.open(artifactOpenInput(content, options));
+}
+
 export function useArtifactCanvas() {
   const canvas = useOptionalCanvas();
   const isOpen = useCanvasStateSafe();
   const activeContent = useActiveContent();
 
   /** Opens content; returns false (and announces why) when it cannot. */
-  const openContent = (content: CanvasContent, options: ArtifactOpenOptions = {}): CanvasItemId | null => {
-    const requested = titleForDrop(content?.metadata?.title);
-    if (!content?.type) {
-      reportCanvasOpenDrop({ reason: "no-content", requested });
-      return null;
-    }
-    if (content.data == null) {
-      reportCanvasOpenDrop({ reason: "no-content", requested, detail: `type ${content.type} arrived with no data` });
-      return null;
-    }
-    if (!canvas) {
-      reportCanvasOpenDrop({ reason: "canvas-unavailable", requested });
-      return null;
-    }
-    return canvas.open(artifactOpenInput(content, options));
-  };
+  const openContent = (content: CanvasContent, options: ArtifactOpenOptions = {}): CanvasItemId | null =>
+    openArtifactContent(canvas, content, options);
 
   /** Opens a saved artifact by pointer — the row is the truth, never a copy. */
   const openPointer = (input: ArtifactPointerInput): CanvasItemId | null =>

@@ -7,7 +7,7 @@
  *  - Per-route favicon color/symbol
  *  - Description templates
  *
- * Add a new entry here whenever a new canvas type is registered in canvasSlice.ts.
+ * Add a new entry here whenever a new canvas type is added to canvasContent.ts.
  */
 
 export interface CanvasBlockMeta {

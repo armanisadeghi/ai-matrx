@@ -37,6 +37,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { createCanvasCallbackScope } from "@/features/canvas/liveCallbacks";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
@@ -92,6 +93,9 @@ export function ContextAwareCodeEditorCompact({
   const dispatch = useAppDispatch();
   const { launchMandate } = useAgentLauncher();
   const { open: openCanvas, close: closeCanvas } = useCanvas();
+  // One registry scope per editor: every preview's Apply / Discard / Close
+  // handlers, released together when the editor closes.
+  const [callbackScope] = useState(createCanvasCallbackScope);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLaunching, setIsLaunching] = useState(false);
@@ -202,18 +206,33 @@ export function ContextAwareCodeEditorCompact({
 
   // ─── Reset when modal closes ─────────────────────────────────────────────────
 
+  // `closeCanvas` is a fresh function every render, so this effect re-runs
+  // while the editor sits closed — hiding the canvas only on the open → closed
+  // TRANSITION keeps it from putting away whatever the person opened since.
+  const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (!open) {
-      if (conversationId) {
-        dispatch(destroyInstanceIfAllowed(conversationId));
-      }
-      setConversationId(null);
-      hasLaunchedRef.current = false;
-      lastProcessedTextRef.current = "";
-      currentVersionRef.current = 1;
+    if (open) {
+      wasOpenRef.current = true;
+      return;
+    }
+    if (conversationId) {
+      dispatch(destroyInstanceIfAllowed(conversationId));
+    }
+    setConversationId(null);
+    hasLaunchedRef.current = false;
+    lastProcessedTextRef.current = "";
+    currentVersionRef.current = 1;
+    if (wasOpenRef.current) {
+      wasOpenRef.current = false;
       closeCanvas();
     }
-  }, [open, conversationId, closeCanvas, dispatch]);
+    // The preview tabs' buttons die with this session — their bodies now
+    // say so instead of calling into a closed editor.
+    callbackScope.releaseAll();
+  }, [open, conversationId, closeCanvas, dispatch, callbackScope]);
+
+  // Unmount releases them too.
+  useEffect(() => () => callbackScope.releaseAll(), [callbackScope]);
 
   // ─── Response handler — same parse/canvas logic as the Modal variant ─────────
 
@@ -236,7 +255,7 @@ export function ContextAwareCodeEditorCompact({
             errors: validation.errors,
             warnings: validation.warnings,
             rawResponse: response,
-            onClose: () => closeCanvas(),
+            callbacks: callbackScope.register({ onClose: () => closeCanvas() }),
           },
           metadata: {
             title: "Code Edit Error",
@@ -254,7 +273,7 @@ export function ContextAwareCodeEditorCompact({
             errors: result_apply.errors,
             warnings: result_apply.warnings || [],
             rawResponse: response,
-            onClose: () => closeCanvas(),
+            callbacks: callbackScope.register({ onClose: () => closeCanvas() }),
           },
           metadata: {
             title: "Code Edit Error",
@@ -305,6 +324,9 @@ export function ContextAwareCodeEditorCompact({
           language,
           edits: parsed.edits,
           explanation: parsed.explanation,
+          // Callbacks never ride in canvas data (it is JSON) — they are
+          // registered here and the canvas body resolves them by id.
+          callbacks: callbackScope.register({
           onApply: () => {
             const nextVersion = currentVersionRef.current + 1;
             currentVersionRef.current = nextVersion;
@@ -333,6 +355,7 @@ export function ContextAwareCodeEditorCompact({
           onCloseModal: () => {
             onOpenChange(false);
           },
+          }),
         },
         metadata: {
           title: titleNode as ReactNode,
@@ -347,6 +370,7 @@ export function ContextAwareCodeEditorCompact({
       language,
       openCanvas,
       closeCanvas,
+      callbackScope,
       onCodeChange,
       onOpenChange,
       conversationId,

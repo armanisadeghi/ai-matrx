@@ -24,11 +24,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useAppSelector } from "../../../../store/hooks";
 import { getEffectiveSandboxRef } from "@host/lib/sandbox/active-binding";
-import {
-  selectCanvasIsOpen,
-  selectCanvasItems,
-  selectCurrentItemId,
-} from "@host/features/canvas/redux/canvasSlice";
+import { useCanvasSources } from "@host/features/canvas/host/canvasSources";
 import { selectToolCallsForConversation } from "../../../redux/execution-system/observability/observability.selectors";
 import { selectLiveToolLifecycleByConversation } from "../../../redux/execution-system/active-requests/active-requests.selectors";
 import { isSandboxTool } from "./sandbox-activity";
@@ -86,16 +82,18 @@ export function SandboxCanvasOpener({
       ? [...live.values()].some((entry) => isSandboxTool(entry.toolName))
       : false);
 
-  const items = useAppSelector(selectCanvasItems);
+  const {
+    isOpen: canvasIsOpen,
+    sourceIds: canvasSourceIds,
+    activeSourceId,
+  } = useCanvasSources();
   const sourceId = sandboxRowId
     ? sandboxCanvasSourceId(conversationId, sandboxRowId)
     : null;
-  const canvasHasOtherContent = items.some(
-    (item) => item.sourceMessageId !== sourceId,
-  );
+  const canvasHasOtherContent = canvasSourceIds.some((id) => id !== sourceId);
 
   // The reveal decision SURVIVES RELOAD. It used to live only in a ref, and
-  // the canvas slice is deliberately not persisted — so every reload replayed
+  // the sandbox tab never comes back after a reload — so every reload replayed
   // the first-tool-call reveal and a pane the user had put away came back.
   //
   // Held in a ref, not state: this is a mirror of an external store
@@ -163,11 +161,7 @@ export function SandboxCanvasOpener({
   // "Put away canvas" while this sandbox pane was the one on screen is a
   // DECISION, and it is remembered. Reopening it clears the decision, so the
   // pane behaves normally again afterwards.
-  const canvasIsOpen = useAppSelector(selectCanvasIsOpen);
-  const currentItemId = useAppSelector(selectCurrentItemId);
-  const sandboxItemId =
-    items.find((item) => item.sourceMessageId === sourceId)?.id ?? null;
-  const sandboxIsCurrent = !!sandboxItemId && currentItemId === sandboxItemId;
+  const sandboxIsCurrent = !!sourceId && activeSourceId === sourceId;
   const wasShowingSandbox = useRef(false);
 
   useEffect(() => {

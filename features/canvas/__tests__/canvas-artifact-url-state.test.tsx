@@ -3,9 +3,9 @@
  * address, so a list route loses it."
  *
  * The live defect (`/artifacts`, recorded as an open item in this feature's
- * `FEATURE.md`): the canvas slice is deliberately not persisted, so a reload
- * emptied it. A chat room re-derives its artifacts from persisted tool-call
- * rows and never noticed. `/artifacts` has no such source — the artifact a
+ * `FEATURE.md`): the canvas was not persisted then, so a reload emptied it.
+ * A chat room re-derives its artifacts from persisted tool-call rows and
+ * never noticed. `/artifacts` has no such source — the artifact a
  * person was reading vanished, Back did nothing, and a link could not be
  * shared.
  *
@@ -40,23 +40,29 @@
  * while a hydrating Next.js page renders `useSyncExternalStore`'s SERVER
  * snapshot (an empty query) for its first commit — so the address genuinely
  * arrives one pass late, and only there.
+ *
+ * Runs against the real `@ai-matrx/canvas` controller and reducer (a
+ * standalone store under a real CanvasProvider); "not available yet" is a
+ * real `CanvasUnavailableBoundary` around the page, lifted later.
  */
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { Provider } from "react-redux";
-import { configureStore } from "@reduxjs/toolkit";
-
 import {
-  canvasSlice,
-  closeCanvas,
-  setCanvasAvailable,
-} from "@/features/canvas/redux/canvasSlice";
+  canvasActions,
+  createCanvasStore,
+  selectCanvasActiveItem,
+  type CanvasStoreBinding,
+} from "@ai-matrx/canvas";
+import { CanvasProvider } from "@ai-matrx/canvas/react";
+
 import {
   CANVAS_ARTIFACT_URL_PARAM,
   useCanvasArtifactUrlState,
 } from "@/features/canvas/hooks/useCanvasArtifactUrlState";
 import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
+import { CanvasUnavailableBoundary } from "@/features/canvas/core/CanvasUnavailableBoundary";
+import { readArtifactItemData, contentOf } from "@/features/canvas/host/artifactItem";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -85,15 +91,12 @@ jest.mock("@/features/canvas/services/canvasArtifactService", () => ({
 const ARTIFACT_A = "11111111-1111-4111-8111-111111111111";
 const ARTIFACT_B = "22222222-2222-4222-8222-222222222222";
 
-function makeStore() {
-  return configureStore({
-    reducer: { canvas: canvasSlice.reducer },
-    middleware: (getDefault) =>
-      getDefault({ serializableCheck: false, immutableCheck: false }),
-  });
+/** The real canvas reducer in a standalone store — what the provider drives. */
+function makeStore(): CanvasStoreBinding {
+  return createCanvasStore();
 }
 
-type Store = ReturnType<typeof makeStore>;
+type Store = CanvasStoreBinding;
 
 /** jsdom's history is real; `useUrlState` reads `window.location` + popstate. */
 function setAddress(search: string, mode: "push" | "replace" = "push") {
@@ -115,11 +118,13 @@ interface Harness {
   root: Root;
   container: HTMLElement;
   open: (artifactId: string) => Promise<void>;
+  /** The canvas front door arrives (the unavailable boundary lifts). */
+  makeAvailable: () => Promise<void>;
   unmount: () => void;
 }
 
 /** Mount the hook exactly as `/artifacts` mounts it, plus a click opener. */
-function mount(store: Store): Harness {
+function mount(store: Store, { available = true } = {}): Harness {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -133,13 +138,20 @@ function mount(store: Store): Harness {
     return null;
   }
 
-  act(() => {
+  const render = (isAvailable: boolean) =>
     root.render(
-      <Provider store={store}>
-        <Probe />
-      </Provider>,
+      <CanvasProvider store={store} persistence={null} hotkeys={false}>
+        {isAvailable ? (
+          <Probe />
+        ) : (
+          <CanvasUnavailableBoundary>
+            <Probe />
+          </CanvasUnavailableBoundary>
+        )}
+      </CanvasProvider>,
     );
-  });
+
+  act(() => render(available));
 
   return {
     root,
@@ -148,6 +160,9 @@ function mount(store: Store): Harness {
       await act(async () => {
         await api.openItem?.({ artifactId });
       });
+    },
+    makeAvailable: async () => {
+      await act(async () => render(true));
     },
     unmount: () => {
       act(() => root.unmount());
@@ -165,10 +180,11 @@ async function settle() {
 }
 
 function openArtifactIdInCanvas(store: Store): string | null {
-  const state = store.getState().canvas;
-  if (!state.isOpen || !state.currentItemId) return null;
-  const item = state.items.find((i) => i.id === state.currentItemId);
-  return item?.content.metadata?.canvasItemId ?? null;
+  const state = store.getState();
+  if (!state.isOpen) return null;
+  const active = selectCanvasActiveItem(state);
+  const data = active ? readArtifactItemData(active.data) : null;
+  return data ? (contentOf(data).metadata?.canvasItemId ?? null) : null;
 }
 
 beforeEach(() => {
@@ -180,30 +196,27 @@ describe("the open artifact is part of /artifacts' address", () => {
   it("restores the artifact named in the address on load (RELOAD)", async () => {
     setAddress(`?${CANVAS_ARTIFACT_URL_PARAM}=${ARTIFACT_A}`, "replace");
     const store = makeStore();
-    store.dispatch(setCanvasAvailable(true));
 
     const h = mount(store);
     await settle();
 
     expect(openArtifactIdInCanvas(store)).toBe(ARTIFACT_A);
-    expect(store.getState().canvas.isOpen).toBe(true);
+    expect(store.getState().isOpen).toBe(true);
     h.unmount();
   });
 
-  it("waits for the idle-deferred canvas instead of a false refusal", async () => {
+  it("waits for the canvas instead of a false refusal", async () => {
     setAddress(`?${CANVAS_ARTIFACT_URL_PARAM}=${ARTIFACT_A}`, "replace");
-    const store = makeStore(); // front door has NOT mounted yet
+    const store = makeStore();
 
-    const h = mount(store);
+    const h = mount(store, { available: false });
     await settle();
 
     // Nothing opened, and crucially nothing LIED about it.
     expect(openArtifactIdInCanvas(store)).toBeNull();
     expect(toastError).not.toHaveBeenCalled();
 
-    await act(async () => {
-      store.dispatch(setCanvasAvailable(true));
-    });
+    await h.makeAvailable();
     await settle();
 
     expect(openArtifactIdInCanvas(store)).toBe(ARTIFACT_A);
@@ -212,7 +225,6 @@ describe("the open artifact is part of /artifacts' address", () => {
 
   it("puts the artifact a click opened into the address", async () => {
     const store = makeStore();
-    store.dispatch(setCanvasAvailable(true));
     const h = mount(store);
     await settle();
     expect(openParam()).toBeNull();
@@ -226,14 +238,13 @@ describe("the open artifact is part of /artifacts' address", () => {
 
   it("removes it from the address when the canvas closes", async () => {
     const store = makeStore();
-    store.dispatch(setCanvasAvailable(true));
     const h = mount(store);
     await h.open(ARTIFACT_A);
     await settle();
     expect(openParam()).toBe(ARTIFACT_A);
 
     await act(async () => {
-      store.dispatch(closeCanvas());
+      store.dispatch(canvasActions.setOpen(false));
     });
     await settle();
 
@@ -243,7 +254,6 @@ describe("the open artifact is part of /artifacts' address", () => {
 
   it("follows Back and Forward, including forward to a visited artifact", async () => {
     const store = makeStore();
-    store.dispatch(setCanvasAvailable(true));
     const h = mount(store);
     await h.open(ARTIFACT_A);
     await settle();
@@ -266,17 +276,17 @@ describe("the open artifact is part of /artifacts' address", () => {
     // Back past the first open → the canvas closes.
     setAddress("", "replace");
     await settle();
-    expect(store.getState().canvas.isOpen).toBe(false);
+    expect(store.getState().isOpen).toBe(false);
     h.unmount();
   });
 
   it("waits for the canvas when the address arrives AFTER hydration", async () => {
     // Reproduces the production shape: the first commit renders the SERVER
     // query snapshot (empty), the real address lands on a later pass, and the
-    // idle-deferred canvas front door has still not mounted.
+    // canvas is still not reachable.
     setAddress("", "replace");
-    const store = makeStore(); // NOT available yet
-    const h = mount(store);
+    const store = makeStore();
+    const h = mount(store, { available: false });
     await settle();
 
     setAddress(`?${CANVAS_ARTIFACT_URL_PARAM}=${ARTIFACT_A}`, "replace");
@@ -286,9 +296,7 @@ describe("the open artifact is part of /artifacts' address", () => {
     expect(openArtifactIdInCanvas(store)).toBeNull();
     expect(toastError).not.toHaveBeenCalled();
 
-    await act(async () => {
-      store.dispatch(setCanvasAvailable(true));
-    });
+    await h.makeAvailable();
     await settle();
 
     expect(openArtifactIdInCanvas(store)).toBe(ARTIFACT_A);
@@ -298,7 +306,6 @@ describe("the open artifact is part of /artifacts' address", () => {
 
   it("adopts an artifact already open when the route is entered client-side", async () => {
     const store = makeStore();
-    store.dispatch(setCanvasAvailable(true));
 
     // Opened elsewhere, then the person navigates to /artifacts.
     const opener = mount(store);

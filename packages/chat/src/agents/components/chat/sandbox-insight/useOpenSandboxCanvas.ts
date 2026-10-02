@@ -21,15 +21,9 @@
  * to `canvas_items`.
  */
 
-import { useCallback } from "react";
-
-import { useAppDispatch } from "../../../../store/hooks";
-import {
-  offerCanvasItem,
-  openCanvas,
-  type CanvasContent,
-} from "@host/features/canvas/redux/canvasSlice";
+import type { CanvasContent } from "@host/features/canvas/canvasContent";
 import { useCanvasOpenGuard } from "@host/features/canvas/hooks/useCanvasOpenGuard";
+import { useCanvasOpeners } from "@host/features/canvas/host/canvasSources";
 import { keepLiveSourceReachable } from "@host/features/canvas/liveSourceReachability";
 
 export interface OpenSandboxCanvasOptions {
@@ -72,26 +66,21 @@ export function buildSandboxCanvasContent({
 }
 
 export function useOpenSandboxCanvas() {
-  const dispatch = useAppDispatch();
   const { ensureCanvasReachable } = useCanvasOpenGuard();
+  // Stable openers that never subscribe to canvas state — the opener's effect
+  // calls these, and a subscribing hook would re-offer on every tab update.
+  const canvas = useCanvasOpeners();
 
-  const open = useCallback(
-    (opts: OpenSandboxCanvasOptions): boolean => {
-      // A route with no canvas surface would swallow this open entirely — the
-      // sandbox pane would simply never appear and nothing would say so.
-      if (!ensureCanvasReachable("Sandbox")) return false;
-      dispatch(openCanvas(buildSandboxCanvasContent(opts)));
-      return true;
-    },
-    [dispatch, ensureCanvasReachable],
-  );
+  const open = (opts: OpenSandboxCanvasOptions): boolean => {
+    // A route with no canvas surface would swallow this open entirely — the
+    // sandbox pane would simply never appear and nothing would say so.
+    if (!ensureCanvasReachable("Sandbox")) return false;
+    return canvas.open(buildSandboxCanvasContent(opts));
+  };
 
-  const offer = useCallback(
-    (opts: OpenSandboxCanvasOptions) => {
-      dispatch(offerCanvasItem(buildSandboxCanvasContent(opts)));
-    },
-    [dispatch],
-  );
+  const offer = (opts: OpenSandboxCanvasOptions) => {
+    canvas.offer(buildSandboxCanvasContent(opts));
+  };
 
   return { open, offer };
 }

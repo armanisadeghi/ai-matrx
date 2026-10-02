@@ -13,36 +13,29 @@
  *
  *   1. An open-in-canvas request that cannot be honoured must ANNOUNCE itself
  *      with a remedy (law 4), never `return` silently. Dispatching into a route
- *      with no canvas surface is the worst case — the slice accepts the item,
- *      `isOpen` flips, and absolutely nothing renders.
- *   2. A DOCKED route is a canvas surface. `selectCanvasIsAvailable` only ever
- *      read the flag the global (idle-deferred) `CanvasSideSheet` raises, so a
- *      route showing the canvas as a resizable column reported "no canvas here"
- *      until that island happened to hydrate — hiding every availability-gated
- *      Canvas affordance, and (with guard 1 in place) refusing real opens.
+ *      with no canvas surface is the worst case — the item is accepted and
+ *      absolutely nothing renders.
+ *   2. The canvas exists exactly where its ONE provider is mounted. There is no
+ *      second availability flag a route could forget to raise.
+ *
+ * Runs against the real `@ai-matrx/canvas` controller and reducer (a
+ * standalone store under a real CanvasProvider).
  *
  * Proven failing before passing — re-run these mutations to re-prove:
- *   a. announces-unreachable → removed the `ensureCanvasReachable` guard from
- *      `useCanvas().open`; the open returned `undefined`, no toast was raised,
- *      and the item landed in a slice nothing renders → RED.
- *   b. announces-no-data     → removed the `data == null` guard; silent → RED.
- *   c. dock-is-a-surface     → reverted `selectCanvasIsAvailable` to
- *      `state.canvas?.isAvailable ?? false`; a mounted dock reported the canvas
- *      unavailable and the document open was REFUSED with a false error → RED.
+ *   a. announces-unreachable → removed the `!canvas` guard from
+ *      `openArtifactContent`; the open threw / returned silently with no
+ *      toast → RED.
+ *   b. announces-no-data     → removed the `data == null` guard; the empty
+ *      tab opened silently → RED.
  */
 
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
-import { Provider } from "react-redux";
-import { configureStore } from "@reduxjs/toolkit";
 
-import {
-  canvasSlice,
-  selectCanvasIsAvailable,
-  selectCanvasItems,
-  setCanvasAvailable,
-  type CanvasContent,
-} from "@/features/canvas/redux/canvasSlice";
+import { createCanvasStore, selectCanvasActiveItem, type CanvasStoreBinding } from "@ai-matrx/canvas";
+import { CanvasProvider } from "@ai-matrx/canvas/react";
+import type { CanvasContent } from "@/features/canvas/canvasContent";
+import { contentOf, readArtifactItemData } from "@/features/canvas/host/artifactItem";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -58,18 +51,11 @@ jest.mock("@/lib/toast", () => ({
   },
 }));
 
-function makeStore() {
-  return configureStore({
-    reducer: { canvas: canvasSlice.reducer },
-    middleware: (getDefault) =>
-      getDefault({ serializableCheck: false, immutableCheck: false }),
-  });
-}
-
-type Store = ReturnType<typeof makeStore>;
+type Store = CanvasStoreBinding;
 
 /** Mount a component that exposes `useCanvas().open` to the test. */
-function mountOpener(store: Store) {
+/** `store === null` mounts with NO canvas provider: a route with no canvas. */
+function mountOpener(store: Store | null) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -83,9 +69,13 @@ function mountOpener(store: Store) {
 
   act(() => {
     root.render(
-      <Provider store={store}>
+      store ? (
+        <CanvasProvider store={store} persistence={null} hotkeys={false}>
+          <Probe />
+        </CanvasProvider>
+      ) : (
         <Probe />
-      </Provider>,
+      ),
     );
   });
 
@@ -119,14 +109,12 @@ beforeEach(() => {
   toastError.mockClear();
 });
 
+const itemCount = (store: Store) => Object.keys(store.getState().items).length;
+
 describe("an open-in-canvas request never silently does nothing", () => {
   it("announces-unreachable: refusing an open on a route with no canvas surface is VISIBLE, not a no-op", () => {
-    const store = makeStore();
-    // No canvas surface mounted at all — exactly the state in which the slice
-    // used to accept the item and render nothing at all.
-    expect(selectCanvasIsAvailable(store.getState())).toBe(false);
-
-    const probe = mountOpener(store);
+    // No canvas provider mounted at all.
+    const probe = mountOpener(null);
     const opened = probe.open(DOCUMENT_REQUEST);
 
     expect(opened).toBe(false);
@@ -139,18 +127,12 @@ describe("an open-in-canvas request never silently does nothing", () => {
     expect(headline).toContain("Canvas Hijack Check");
     expect(headline.toLowerCase()).toContain("canvas");
     expect(options?.description ?? "").not.toHaveLength(0);
-    // And nothing was parked in a slice nobody renders.
-    expect(selectCanvasItems(store.getState())).toHaveLength(0);
 
     probe.unmount();
   });
 
   it("announces-no-data: an open carrying no content is VISIBLE, not a no-op", () => {
-    const store = makeStore();
-    act(() => {
-      store.dispatch(setCanvasAvailable(true));
-    });
-
+    const store = createCanvasStore();
     const probe = mountOpener(store);
     const opened = probe.open({
       type: "working_document",
@@ -160,33 +142,24 @@ describe("an open-in-canvas request never silently does nothing", () => {
 
     expect(opened).toBe(false);
     expect(toastError).toHaveBeenCalledTimes(1);
-    expect(selectCanvasItems(store.getState())).toHaveLength(0);
+    expect(itemCount(store)).toBe(0);
 
     probe.unmount();
   });
 
-  it("one-surface: availability has exactly ONE source — the global front door's flag", () => {
-    const store = makeStore();
-    // The canonical canvas is the ONE globally mounted `CanvasSideSheet`, on
-    // chat exactly as on documents and artifacts. It raises this flag on
-    // mount, and nothing else may raise it: a per-route presentation with a
-    // second availability source is the parallel layer the owner rejected on
-    // 2026-09-16.
-    act(() => {
-      store.dispatch(setCanvasAvailable(true));
-    });
-    expect(selectCanvasIsAvailable(store.getState())).toBe(true);
-
+  it("one-surface: where the provider is mounted, the open lands on screen", () => {
+    const store = createCanvasStore();
     const probe = mountOpener(store);
     const opened = probe.open(DOCUMENT_REQUEST);
 
     expect(opened).toBe(true);
     expect(toastError).not.toHaveBeenCalled();
-    const items = selectCanvasItems(store.getState());
-    expect(items).toHaveLength(1);
-    expect(items[0].content.type).toBe("working_document");
-    expect(store.getState().canvas.isOpen).toBe(true);
-    expect(store.getState().canvas.currentItemId).toBe(items[0].id);
+    expect(itemCount(store)).toBe(1);
+    const state = store.getState();
+    expect(state.isOpen).toBe(true);
+    const active = selectCanvasActiveItem(state);
+    const data = active ? readArtifactItemData(active.data) : null;
+    expect(data ? contentOf(data).type : null).toBe("working_document");
 
     probe.unmount();
   });

@@ -1,7 +1,7 @@
 import {
   CanvasContent,
   isPersistableCanvasType,
-} from "@/features/canvas/redux/canvasSlice";
+} from "@/features/canvas/canvasContent";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";

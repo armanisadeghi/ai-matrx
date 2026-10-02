@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { useCanvas } from '@/features/canvas/hooks/useCanvas';
-import { CanvasContent } from '@/features/canvas/redux/canvasSlice';
+import type { CanvasContent } from '@/features/canvas/canvasContent';
 
 interface CanvasButtonProps {
   content: CanvasContent;

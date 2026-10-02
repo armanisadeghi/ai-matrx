@@ -6,7 +6,8 @@
  * The Canvas is the unified live workspace (working document, scratchpad,
  * flashcards, diagrams, every artifact). This keeps it one click away at the top
  * of the chat instead of buried in the input toolbar:
- *   - Items already in the Canvas → toggle it open/closed (same as ⌘\).
+ *   - This chat's working document is a tab, or the Canvas holds items →
+ *     toggle it open/closed (same as ⌘\).
  *   - Canvas empty → open this conversation's working document into it, so the
  *     button always does something useful rather than nothing.
  *
@@ -14,13 +15,10 @@
  */
 
 import { Columns2 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import { useAppDispatch } from "../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
-import {
-  openCanvas,
-  selectCanvasIsOpen,
-  toggleCanvas,
-} from "@host/features/canvas/redux/canvasSlice";
+import { useArtifactCanvas } from "@host/features/canvas/host/useArtifactCanvas";
+import { useCanvasSources } from "@host/features/canvas/host/canvasSources";
 import { reportCanvasOpenDrop } from "@host/features/canvas/openRequest";
 import { setConversationDocumentEnabledThunk } from "../../redux/execution-system/instance-working-document/instance-working-document.thunks";
 
@@ -32,18 +30,25 @@ interface ChatCanvasButtonProps {
 
 export function ChatCanvasButton({ conversationId }: ChatCanvasButtonProps) {
   const dispatch = useAppDispatch();
-  const isOpen = useAppSelector(selectCanvasIsOpen);
-  const itemCount = useAppSelector((s) => s.canvas?.items?.length ?? 0);
+  const canvas = useArtifactCanvas();
+  const { isOpen, sourceIds } = useCanvasSources();
+  const itemCount = sourceIds.length;
+  const workingDocSourceId = conversationId
+    ? `wd:${conversationId}:working`
+    : null;
+  const hasWorkingDocTab =
+    !!workingDocSourceId && sourceIds.includes(workingDocSourceId);
 
   const handleClick = () => {
-    // Items present (artifacts, an opened doc) → just toggle.
-    if (itemCount > 0) {
-      dispatch(toggleCanvas());
+    // This chat's document is a tab, or anything else is on the canvas →
+    // just toggle.
+    if (hasWorkingDocTab || itemCount > 0) {
+      canvas.toggle();
       return;
     }
     // Empty canvas and no conversation yet (/chat/new before the first turn):
-    // `toggleCanvas` no-ops in the reducer when there is no current item, so a
-    // bare dispatch here is a button that visibly does nothing. Say why.
+    // there is nothing to put on it, so a bare toggle would reveal an empty
+    // column the button did not ask for. Say why instead.
     if (!conversationId) {
       reportCanvasOpenDrop({
         reason: "nothing-to-show",
@@ -59,17 +64,15 @@ export function ChatCanvasButton({ conversationId }: ChatCanvasButtonProps) {
         enabled: true,
       }),
     );
-    dispatch(
-      openCanvas({
-        type: "working_document",
-        data: { conversationId, kind: "working" },
-        metadata: {
-          title: "Working document",
-          conversationId,
-          sourceMessageId: `wd:${conversationId}:working`,
-        },
-      }),
-    );
+    canvas.openContent({
+      type: "working_document",
+      data: { conversationId, kind: "working" },
+      metadata: {
+        title: "Working document",
+        conversationId,
+        sourceMessageId: `wd:${conversationId}:working`,
+      },
+    });
   };
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContent } from "@/features/canvas/canvasContent";
 import {
   ArtifactRender,
   hasArtifactRenderer,

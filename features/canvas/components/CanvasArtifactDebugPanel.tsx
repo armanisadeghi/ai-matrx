@@ -11,12 +11,22 @@ import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
-import type { CanvasItem } from "@/features/canvas/redux/canvasSlice";
+import type { ArtifactDebugTrace, CanvasContent } from "@/features/canvas/canvasContent";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+/** The artifact tab the trace describes (built by ArtifactCanvasView). */
+export interface CanvasArtifactDebugItem {
+  id: string;
+  content: CanvasContent;
+  timestamp: number;
+  savedItemId?: string;
+  isSynced?: boolean;
+  artifactDebug?: ArtifactDebugTrace;
+}
+
 interface CanvasArtifactDebugPanelProps {
-  item: CanvasItem;
+  item: CanvasArtifactDebugItem;
   className?: string;
 }
 

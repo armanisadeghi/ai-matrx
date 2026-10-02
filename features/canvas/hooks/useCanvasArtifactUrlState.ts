@@ -3,8 +3,9 @@
 /**
  * useCanvasArtifactUrlState — THE OPEN ARTIFACT IS PART OF THE PAGE'S ADDRESS.
  *
- * The canvas slice is deliberately not persisted (see `FEATURE.md`), so a full
- * page reload empties it. On a CHAT that costs nothing visible: the room
+ * The canvas remembers its tabs across a reload, but a LIST route's address
+ * is still the person's own record of what they were reading — and a link
+ * pasted into a fresh browser has no remembered canvas at all. On a CHAT that costs nothing visible: the room
  * re-derives its artifacts from persisted tool-call rows. On a LIST route like
  * `/artifacts` there is no such source — the artifact a person was reading
  * simply vanished on reload, and Back/Forward did nothing at all.
@@ -26,9 +27,9 @@
  * that was open before therefore still re-opens it, because the comparison is
  * against the agreed value and not against "a URL we once wrote".
  *
- * 🚨 AVAILABILITY IS AWAITED, NOT ASSUMED. The global `CanvasSideSheet` front
- * door is idle-deferred (`features/shell/islands/DeferredIslands.tsx`), so on a
- * cold load the canvas reports itself unavailable for the first few frames.
+ * 🚨 AVAILABILITY IS AWAITED, NOT ASSUMED. A canvas provider that mounts after
+ * this hook (or a `CanvasUnavailableBoundary` that lifts) reports the canvas
+ * unavailable for a while.
  * Restoring immediately would hit `ensureCanvasReachable` and show the person a
  * FALSE "no canvas here" refusal for an artifact that was about to be openable.
  * We wait for the flag — and if it never arrives, we attempt the open anyway
@@ -39,13 +40,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { commitUrlParams, useUrlSearchParams } from "@ai-matrx/kit/url-state";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  closeCanvas,
-  selectCanvasIsAvailable,
-  selectCanvasIsOpen,
-  selectCurrentCanvasItem,
-} from "@/features/canvas/redux/canvasSlice";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { readArtifactPointerId } from "@/features/canvas/artifact-types/artifactId";
+import { useArtifactCanvas } from "@/features/canvas/host/useArtifactCanvas";
+import { useCanvasOpenGuard } from "./useCanvasOpenGuard";
 import { useOpenCanvasItem } from "./useOpenCanvasItem";
 
 /**
@@ -65,14 +63,26 @@ export const CANVAS_AVAILABILITY_GRACE_MS = 8000;
  * artifacts are addressable — an address that cannot be reopened is a lie.
  */
 export function artifactIdOfOpenCanvasItem(
-  item: { content?: { metadata?: { canvasItemId?: string } }; savedItemId?: string } | null,
+  item: {
+    content?: { data?: unknown; metadata?: { canvasItemId?: string } } | null;
+    savedItemId?: string;
+  } | null,
 ): string {
   if (!item) return "";
-  return item.content?.metadata?.canvasItemId ?? item.savedItemId ?? "";
+  return (
+    item.content?.metadata?.canvasItemId ??
+    item.savedItemId ??
+    readArtifactPointerId(item.content?.data) ??
+    ""
+  );
 }
 
 export function useCanvasArtifactUrlState(): void {
-  const dispatch = useAppDispatch();
+  // The controller is stable; `hide` is read off it, never off a hook object
+  // that is rebuilt on every render.
+  const canvasController = useOptionalCanvas();
+  const { isOpen, activeContent } = useArtifactCanvas();
+  const { isCanvasAvailable: isAvailable } = useCanvasOpenGuard();
   const { openItem } = useOpenCanvasItem();
   const urlArtifactId =
     useUrlSearchParams().get(CANVAS_ARTIFACT_URL_PARAM) ?? "";
@@ -86,10 +96,9 @@ export function useCanvasArtifactUrlState(): void {
     [],
   );
 
-  const isOpen = useAppSelector(selectCanvasIsOpen);
-  const isAvailable = useAppSelector(selectCanvasIsAvailable);
-  const currentItem = useAppSelector(selectCurrentCanvasItem);
-  const canvasArtifactId = isOpen ? artifactIdOfOpenCanvasItem(currentItem) : "";
+  const canvasArtifactId = isOpen
+    ? artifactIdOfOpenCanvasItem(activeContent ? { content: activeContent } : null)
+    : "";
 
   /** The last value both sides agreed on. `null` until the first reconcile. */
   const agreedRef = useRef<string | null>(null);
@@ -129,7 +138,7 @@ export function useCanvasArtifactUrlState(): void {
         return;
       }
       agreedRef.current = urlArtifactId;
-      if (!urlArtifactId && canvasArtifactId) dispatch(closeCanvas());
+      if (!urlArtifactId && canvasArtifactId) canvasController?.hide();
       return;
     }
 
@@ -155,7 +164,7 @@ export function useCanvasArtifactUrlState(): void {
     canvasArtifactId,
     isAvailable,
     graceExpired,
-    dispatch,
+    canvasController,
     openItem,
     setUrlArtifactId,
   ]);

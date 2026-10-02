@@ -13,7 +13,7 @@
  * (the optional fields below) without restructuring callers.
  */
 
-import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
+import type { CanvasContentType } from "@/features/canvas/canvasContent";
 
 export type ArtifactPersistenceStrategy = "custom" | "generic" | "none";
 
