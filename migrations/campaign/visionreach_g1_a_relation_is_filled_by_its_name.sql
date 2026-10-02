@@ -1,5 +1,4 @@
 -- draft: VISION-REACH clone proof pending
--- target: branch,production
 -- additive: yes
 --   It ADDS three functions — custom.relation_name_key(text), custom._relation_names_resolve(uuid,
 --   uuid, text[]) (EXECUTE to postgres only, as the store's event trigger leaves every new custom
@@ -8,6 +7,14 @@
 --   declared below with the body it was written against. No table, column, trigger, policy or row
 --   of anybody's data is touched. Locks: pg_proc row locks and one platform.client_callable_door row.
 --   Inverse: migrations/inverse/visionreach_g1_a_relation_is_filled_by_its_name_down.sql
+--
+-- chair-step: it GRANTS EXECUTE to `authenticated` on ONE new client door of schema `custom`
+--   (`custom.relation_names_match`) and writes that door's argument rules into its
+--   platform.client_callable_door row. The grant is the point of the file: without it the import
+--   panel and the paste cannot ask which record a name is before they write. The door reads only
+--   records the caller may already see (custom.assert_may_know_table, then the read doors' own
+--   predicate) and writes nothing. Nothing is dropped or revoked; no row of anybody's data is
+--   touched. Announced in operations/for-arman/2026-10-02/decisions-made-without-you.md.
 -- guard: custom/system_enabled
 -- lock: custom
 -- lane: VISION-REACH
@@ -56,8 +63,6 @@ create function custom.relation_name_key(p_text text)
 as $function$
   select nullif(lower(regexp_replace(btrim(coalesce(p_text, '')), '\s+', ' ', 'g')), '')
 $function$;
-
-revoke execute on function custom.relation_name_key(text) from public;
 
 comment on function custom.relation_name_key(text) is
   'VISION-REACH G1: the key two spellings of one record name share — lower case, spacing collapsed and trimmed; null for an empty name. Used by custom._relation_names_resolve and nothing else should invent a second one.';
@@ -137,6 +142,18 @@ $function$;
 comment on function custom._relation_names_resolve(uuid, uuid, text[]) is
   'VISION-REACH G1: the ONE matcher from a record''s name to the record. {name key: [{id, words}…]} for the records of p_target whose name column matches each name (custom.relation_name_key), only those the caller''s read predicate admits at viewer when there is a caller; null when the Table has no name column. Server lane.';
 
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, declared_by, reason,
+   signed_in_callers, anonymous_callers, non_client_lane, identity_argtypes)
+values
+  ('custom', '_relation_names_resolve', 'p_organization_id uuid, p_target uuid, p_names text[]',
+   'migrations/campaign/visionreach_g1_a_relation_is_filled_by_its_name.sql (lane VISION-REACH)',
+   'p_organization_id and p_target are decided by every caller before this is reached: custom.relation_names_match asks custom.assert_client_may_reach and custom.assert_may_know_table; custom.io_cell and custom._relation_kernel_targets run inside the store''s write doors, which have already decided the organization and the field''s target Table. NULL for either answers NULL. p_names only filters, and each match is kept only when custom.visible_predicate_sql admits it for the caller.',
+   false, false,
+   'server_only: called by custom.relation_names_match (the client door), custom.io_cell and custom._relation_kernel_targets inside the store; no client ever calls it, because it trusts its organization and table arguments.',
+   '{2950,2950,1009}')
+on conflict do nothing;
+
 -- ──────────────────────────────────────────────────────────────────────────────────────────
 -- 3. THE CLIENT DOOR. What a screen asks before it writes names into a relation column — the
 --    import panel and the grid's paste — so a name that matches nothing, or two records, is shown
@@ -205,11 +222,13 @@ update platform.client_callable_door
          'arguments', jsonb_build_object(
            'p_organization_id', jsonb_build_object('type', 'uuid', 'position', 1, 'entity', 'organization',
              'check', 'this body decides it with custom.assert_client_may_reach(arg1), custom.assert_may_know_table(arg1) — the organization wall — a non-member is refused before anything is read, and that call stands before every other use of this argument in the body.',
-             'foreign', jsonb_build_object('sqlstate', '42501', 'same_as_invented', true),
+             'foreign', jsonb_build_object('bounded', true, 'sqlstate', '42501', 'same_as_invented', true,
+               'note', 'custom.assert_client_may_reach decides it first; every record is read in this organization only.'),
              'verified', '2026-10-02 lane VISION-REACH — read from this body'),
            'p_table_id', jsonb_build_object('type', 'uuid', 'position', 2, 'entity', 'custom_record',
              'check', 'this body decides it with custom.assert_may_know_table(arg2) — the Table''s own ladder — and that call stands before every other use of this argument in the body.',
-             'foreign', jsonb_build_object('sqlstate', '42501', 'same_as_invented', true),
+             'foreign', jsonb_build_object('bounded', true, 'sqlstate', '42501', 'same_as_invented', true,
+               'note', 'Read only as a Table of p_organization_id; custom.assert_may_know_table decides the caller may know it.'),
              'verified', '2026-10-02 lane VISION-REACH — read from this body'),
            'p_names', jsonb_build_object('type', 'text[]', 'position', 3,
              'check', 'A FILTER, AND NOT A LEAK. The names only narrow the records of a Table the caller may already know to those whose name column matches, and each match is kept only when the read doors'' own predicate (custom.visible_predicate_sql) admits it for the caller at viewer; a name the caller may not see matches nothing.',
