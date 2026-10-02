@@ -19,45 +19,19 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => ({
 
 import { enrichSiteBacklinks, refreshSiteBacklinks } from "./client";
 
+/** A real NDJSON response (the core reader needs real headers and body). */
 function ndjsonResponse(payload: Record<string, unknown>): Response {
-  const bytes = Uint8Array.from(
-    [...JSON.stringify(payload)].map((character) => character.charCodeAt(0)),
-  );
-  let sent = false;
-  return {
-    ok: true,
+  return new Response(JSON.stringify(payload), {
     status: 200,
-    body: {
-      getReader: () => ({
-        read: async () => {
-          if (sent) return { done: true, value: undefined };
-          sent = true;
-          return { done: false, value: bytes };
-        },
-      }),
-    },
-  } as unknown as Response;
+    headers: { "Content-Type": "application/x-ndjson" },
+  });
 }
 
 function ndjsonLinesResponse(payloads: Record<string, unknown>[]): Response {
-  const text = payloads.map((payload) => JSON.stringify(payload)).join("\n");
-  const bytes = Uint8Array.from(
-    [...text].map((character) => character.charCodeAt(0)),
+  return new Response(
+    payloads.map((payload) => JSON.stringify(payload)).join("\n"),
+    { status: 200, headers: { "Content-Type": "application/x-ndjson" } },
   );
-  let sent = false;
-  return {
-    ok: true,
-    status: 200,
-    body: {
-      getReader: () => ({
-        read: async () => {
-          if (sent) return { done: true, value: undefined };
-          sent = true;
-          return { done: false, value: bytes };
-        },
-      }),
-    },
-  } as unknown as Response;
 }
 
 describe("SEO backlink work commands", () => {

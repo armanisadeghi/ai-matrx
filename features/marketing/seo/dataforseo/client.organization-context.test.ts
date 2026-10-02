@@ -39,21 +39,12 @@ const backlinkRefreshBody: Parameters<typeof refreshSiteBacklinks>[3] = {
   force_refresh: false,
 };
 
+/** A real NDJSON response (the core reader needs real headers and body). */
 function streamResponse(lines: string[]): Response {
-  const encoder = new TextEncoder();
-  let index = 0;
-  return {
-    ok: true,
+  return new Response(lines.map((line) => `${line}\n`).join(""), {
     status: 200,
-    body: {
-      getReader: () => ({
-        read: async () =>
-          index < lines.length
-            ? { done: false, value: encoder.encode(`${lines[index++]}\n`) }
-            : { done: true, value: undefined },
-      }),
-    },
-  } as unknown as Response;
+    headers: { "Content-Type": "application/x-ndjson" },
+  });
 }
 
 describe("dataforseo client organization admission", () => {
