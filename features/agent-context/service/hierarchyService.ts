@@ -675,7 +675,7 @@ export const hierarchyService = {
         .select("name, organization_id")
         .is("deleted_at", null)
         .eq("id", id)
-        .single();
+        .maybeSingle();
       if (proj) {
         chain.unshift({ type: "project", id, name: proj.name });
         if (proj.organization_id) {
@@ -692,7 +692,7 @@ export const hierarchyService = {
         .from("organizations")
         .select("name")
         .eq("id", id)
-        .single();
+        .maybeSingle();
       if (org) {
         chain.unshift({ type: "organization", id, name: org.name });
       }

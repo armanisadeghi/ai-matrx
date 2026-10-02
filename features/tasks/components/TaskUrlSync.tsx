@@ -28,7 +28,12 @@ export function TaskUrlSync() {
   // Back rewrote the URL, then this effect wrote the stale Redux value
   // straight back over it. `lastSyncedRef` records the value both sides last
   // agreed on, so whichever side moved is the side that wins.
-  const lastSyncedRef = useRef<string | null>(searchParams.get("task"));
+  // A cold `?task=` deep link starts UNSYNCED (`undefined`), so the first pass
+  // adopts the URL. Seeding it with the param made that pass read Redux's
+  // empty selection as "Redux moved" and push the link away to bare /tasks.
+  const lastSyncedRef = useRef<string | null | undefined>(
+    searchParams.get("task") ? undefined : null,
+  );
 
   useEffect(() => {
     const param = searchParams.get("task");

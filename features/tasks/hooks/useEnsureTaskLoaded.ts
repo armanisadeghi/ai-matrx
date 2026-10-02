@@ -37,8 +37,9 @@ export function useEnsureTaskLoaded(taskId: string) {
 
     void dispatch(fetchTask(taskId))
       .unwrap()
-      .then(() => {
+      .then((result) => {
         if (cancelled) return;
+        setMissing(result.status === "missing");
         setLoading(false);
         setMetadataAttempted(true);
       })

@@ -77,17 +77,26 @@ const initialState = tasksAdapter.getInitialState<TasksExtraState>({
 // ─── Thunks ────────────────────────────────────────────────────────────────
 
 /**
+ * Outcome of a single-task read. `missing` is a legitimate answer, not a
+ * fault: a `?task=` deep link, a cached id or a stale selection can name a
+ * task the viewer cannot see (trashed, no access, never existed).
+ */
+export type FetchTaskResult =
+  | { status: "skipped" }
+  | { status: "missing"; id: string }
+  | { status: "loaded"; task: TaskRecord };
+
+/**
  * Fetch a single task at "full-data" level.
  * Skips if the task already has full data that is not stale.
- * Returns null when skipped (reducer ignores null payloads).
  */
-export const fetchTask = createAsyncThunk(
+export const fetchTask = createAsyncThunk<FetchTaskResult, string>(
   "tasks/fetchOne",
-  async (taskId: string, { getState }) => {
+  async (taskId, { getState }) => {
     const state = getState() as StateWithTasks;
     const meta = state.tasks.meta[taskId];
     if (meta && meta.level === "full-data" && !isStale(meta)) {
-      return null; // already fresh full-data — skip network call
+      return { status: "skipped" }; // already fresh full-data — skip network call
     }
 
     const { data, error } = await workspaceDb(supabase)
@@ -97,8 +106,11 @@ export const fetchTask = createAsyncThunk(
       )
       .is("deleted_at", null)
       .eq("id", taskId)
-      .single();
+      // Zero rows is an answer here, not an error: `.single()` turned every
+      // deep link to an unseen task into a 406 PGRST116 red-tier capture.
+      .maybeSingle();
     if (error) throw error;
+    if (!data) return { status: "missing", id: taskId };
 
     // The task's OWN organization first (every task row carries one); the
     // project's only when the row has none. A project-less task used to read
@@ -112,15 +124,18 @@ export const fetchTask = createAsyncThunk(
         .select("organization_id")
         .is("deleted_at", null)
         .eq("id", (data as { project_id: string }).project_id)
-        .single();
+        .maybeSingle();
       organization_id =
         (proj as { organization_id?: string } | null)?.organization_id ?? "";
     }
 
     return {
-      ...(data as Omit<TaskRecord, "organization_id">),
-      organization_id,
-    } as TaskRecord;
+      status: "loaded",
+      task: {
+        ...(data as Omit<TaskRecord, "organization_id">),
+        organization_id,
+      } as TaskRecord,
+    };
   },
 );
 
@@ -398,9 +413,16 @@ const tasksSlice = createSlice({
       })
       .addCase(fetchTask.fulfilled, (state, action) => {
         state.loading = false;
-        if (!action.payload) return; // skipped — already fresh
-        tasksAdapter.upsertOne(state, action.payload);
-        state.meta[action.payload.id] = {
+        const result = action.payload;
+        if (result.status === "skipped") return;
+        if (result.status === "missing") {
+          // The server no longer returns it — a cached thin row is stale.
+          tasksAdapter.removeOne(state, result.id);
+          delete state.meta[result.id];
+          return;
+        }
+        tasksAdapter.upsertOne(state, result.task);
+        state.meta[result.task.id] = {
           level: "full-data",
           fetchedAt: Date.now(),
         };

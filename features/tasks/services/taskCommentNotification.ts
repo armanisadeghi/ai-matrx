@@ -24,7 +24,7 @@ export async function sendTaskCommentNotification(
       .select("id, title, created_by")
       .is("deleted_at", null)
       .eq("id", taskId)
-      .single();
+      .maybeSingle();
 
     if (!task?.created_by) return;
 

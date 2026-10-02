@@ -6,6 +6,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllTasksFlat } from "@/features/tasks/redux/selectors";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import MobileTasksList from "./MobileTasksList";
@@ -26,7 +27,8 @@ function MobileTaskDetailsLoader({
 }: MobileTaskDetailsLoaderProps) {
   const tasks = useAppSelector(selectAllTasksFlat);
   const task = tasks.find((candidate) => candidate.id === taskId);
-  const { isFullData, loading, metadataPending } = useEnsureTaskLoaded(taskId);
+  const { isFullData, loading, metadataPending, missing } =
+    useEnsureTaskLoaded(taskId);
 
   if (task && isFullData) {
     return <MobileTaskDetails task={task} onBack={onBack} />;
@@ -49,7 +51,16 @@ function MobileTaskDetailsLoader({
         <Skeleton className="h-5 w-48 max-w-[60vw]" />
       </div>
       <div className="flex-1 space-y-5 overflow-y-auto p-4" role="status">
-        {readFailed ? (
+        {missing ? (
+          // A deep link to a task this viewer cannot see is an access answer,
+          // not a failed load — the gate names the true cause.
+          <AccessGate
+            token="task"
+            id={taskId}
+            fallbackHref="/tasks"
+            fallbackLabel="Back to Tasks"
+          />
+        ) : readFailed ? (
           <StaleDataNotice
             hasData={false}
             what="task details"

@@ -23,6 +23,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
@@ -153,11 +154,23 @@ function TaskEditorInner({
   } = controller;
 
   if (!task) {
+    if (controller.loading) {
+      return (
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+    // An empty single-task read has four causes (denied, trashed, missing,
+    // signed out) — a `?task=` deep link hits all of them. The gate resolves
+    // the true one instead of asserting "not found".
     return (
-      <div className="flex flex-col items-center justify-center h-full text-muted-foreground px-6">
-        <CircleDashed className="w-8 h-8 mb-2 opacity-40" />
-        <p className="text-xs">Task not found</p>
-      </div>
+      <AccessGate
+        token="task"
+        id={taskId}
+        fallbackHref="/tasks"
+        fallbackLabel="Back to Tasks"
+      />
     );
   }
 

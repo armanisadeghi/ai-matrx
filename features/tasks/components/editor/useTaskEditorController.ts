@@ -104,7 +104,7 @@ export function resolveTaskEditorEffective(
 export function useTaskEditorController(taskId: string) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const { metadataPending } = useEnsureTaskLoaded(taskId);
+  const { metadataPending, loading } = useEnsureTaskLoaded(taskId);
   const task = useAppSelector((s) => selectTaskById(s, taskId));
   const draft = useAppSelector(selectTaskEdit(taskId));
   const isDirty = useAppSelector(selectTaskIsDirty(taskId));
@@ -206,6 +206,8 @@ export function useTaskEditorController(taskId: string) {
     project,
     orgId,
     metadataPending,
+    /** First read still in flight with nothing cached to show. */
+    loading,
     patch,
     handleSave,
     handleDiscard,

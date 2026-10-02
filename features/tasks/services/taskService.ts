@@ -484,11 +484,13 @@ export async function updateTaskLabels(
       .from("tasks")
       .select("settings")
       .eq("id", taskId)
-      .single();
+      .maybeSingle();
     if (readError) {
       console.error("Error reading task settings:", readError.message);
       return false;
     }
+    // Trashed or no longer visible — nothing to label, and not a fault.
+    if (!current) return false;
     const settings = {
       ...((current?.settings as Record<string, unknown> | null) ?? {}),
       labels,
@@ -562,7 +564,8 @@ export async function updateTaskResult(
         .from("tasks")
         .select("assignee_id")
         .eq("id", taskId)
-        .single();
+        // A gone task is reported by the update below, in words.
+        .maybeSingle();
       previousAssigneeId = currentTask?.assignee_id || null;
     }
 
