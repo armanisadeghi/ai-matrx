@@ -341,6 +341,12 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-10-02 — Every "Bring in" picker offers its type's "Start new" entries in its header, so no
+  picker is a dead end. New starts: Meeting (`StartNewEntry.Dialog` — THE ONE MEETING FORM mounted bare,
+  held behind the organization gate like `/meetings`), Workflow run (pick a workflow → its served
+  `RunStartForm`), Research (the start wizard embedded via `ResearchInitForm onCreated`, steps in local
+  state, never the address bar), Project (`ProjectCreatePanel`). Record stays bring-in only (a record
+  is made inside its table tile).
 - 2026-10-01 — Saved boards and agents stop fighting the person: the camera left the saved board
   (per-viewer, never in the version guard — two tabs no longer lock each other out); the document is
   built only when a save goes out and a save reads back only `version`; hide/close flushes as a

@@ -19,7 +19,7 @@
  * `<AccessGate token id/>` resolves denied / in Trash / missing / signed out.
  */
 
-import { createElement, useEffect, useState, type ReactNode } from "react";
+import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ExternalLink, FlaskConical, FolderKanban, ListTodo, Loader2, UsersRound, Video, Workflow } from "lucide-react";
 import { Input, Skeleton } from "@ai-matrx/design-system";
@@ -53,6 +53,9 @@ import type { WarRoomSession } from "@/features/war-room/types";
 // Meeting
 import { useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
 import { MeetingDetail } from "@/features/meet/components/manage/MeetingDetail";
+import { MeetingFormDialog } from "@/features/meet/components/manage/MeetingFormDialog";
+import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 // Workflow run
 import { useRunsList } from "@/features/workflow-runtime/discovery/useRunsList";
 import { useWorkflowFacts } from "@/features/workflow-runtime/discovery/useWorkflowFacts";
@@ -65,6 +68,8 @@ import {
 import type { RunSurfaceConfig } from "@/features/workflow-runtime/surface/config";
 import type { WorkflowDefinitionLike } from "@/features/workflow-runtime/trigger-points";
 import { RunStage } from "@/features/workflow-runtime/components/run/RunStage";
+import { RunStartForm } from "@/features/workflow-runtime/components/RunStartForm";
+import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/WorkflowListDropdown";
 import { WorkflowRunSurfaceHost } from "@/features/workflow-runtime/agent-surface/WorkflowRunSurfaceHost";
 import { MasterworkRulesProvider } from "@/features/masterwork/rules-context/MasterworkRulesContext";
 // Research
@@ -72,10 +77,12 @@ import { useAllTopics } from "@/features/research/hooks/useResearchState";
 import { TopicProvider, useTopicContext } from "@/features/research/context/ResearchContext";
 import DocumentViewer from "@/features/research/components/document/DocumentViewer";
 import { ResearchTopicSurfaceHost } from "@/features/research/components/shell/ResearchTopicSurfaceHost";
+import ResearchInitForm from "@/features/research/components/init/ResearchInitForm";
 // Project
 import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
 import { ProjectRecordWorkspace } from "@/features/projects/components/ProjectWorkspace";
 import { useProject } from "@/features/projects/hooks";
+import { ProjectCreatePanel } from "@/features/projects/components/ProjectCreatePanel";
 
 import type { NodeSource } from "../board/document";
 import type { BoardItemType, ItemBodyProps, PickerProps, PlacedItem } from "./types";
@@ -120,7 +127,7 @@ function NoRecordBody({ what, href, label }: { what: string; href: string; label
     <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
       <p className="text-sm font-medium text-foreground">This tile does not point at a {what}</p>
       <p className="max-w-xs text-xs text-muted-foreground">
-        Take it off the board from its menu and bring the {what} in again.
+        Remove this tile and bring the {what} in again.
       </p>
       <DoorButton href={href}>{label}</DoorButton>
     </div>
@@ -337,12 +344,7 @@ function WarRoomPicker({ onPick, onCancel }: PickerProps) {
         ])
       }
       onCancel={onCancel}
-      emptyState={
-        <>
-          You have no War Rooms yet. Use <span className="font-medium text-foreground">Start new → War Room</span> to
-          make one here.
-        </>
-      }
+      emptyState="No War Rooms yet"
       renderRow={(r) => (
         <>
           <RoomBadge session={r} />
@@ -392,7 +394,7 @@ function WarRoomDraftBody({ onSource }: ItemBodyProps) {
         className="text-base"
       />
       <p className="text-xs text-muted-foreground">
-        A War Room keeps several threads of work running side by side. You can rename it later.
+        Several threads of work, side by side.
       </p>
       <div className="flex justify-end">
         <Button type="submit" disabled={busy} className="gap-1.5">
@@ -522,15 +524,7 @@ function MeetingPicker({ onPick, onCancel }: PickerProps) {
         ])
       }
       onCancel={onCancel}
-      emptyState={
-        <>
-          No meetings yet.{" "}
-          <Link href="/meetings" className="text-primary underline-offset-2 hover:underline">
-            Schedule one in Meetings
-          </Link>
-          .
-        </>
-      }
+      emptyState="No meetings yet"
       renderRow={(m) => {
         const phase = meetingPhase(m);
         return (
@@ -544,6 +538,31 @@ function MeetingPicker({ onPick, onCancel }: PickerProps) {
           </>
         );
       }}
+    />
+  );
+}
+
+/**
+ * A new meeting: THE ONE MEETING FORM, and the saved meeting lands on the
+ * board. Like the Meetings page, the form waits for an organization to create
+ * it in — with none chosen, the canonical gate asks the person for one.
+ */
+function MeetingCreateDialog({ onPick, onCancel }: PickerProps) {
+  const actions = useMeetingActions();
+  const ready = actions.ready;
+  const asked = useRef(false);
+  useEffect(() => {
+    if (ready || asked.current) return;
+    asked.current = true;
+    ensureOrganizationContext().catch(() => onCancel());
+  }, [ready, onCancel]);
+  if (!ready) return null;
+  return (
+    <MeetingFormDialog
+      open
+      onOpenChange={(open) => !open && onCancel()}
+      mode={{ kind: "create" }}
+      onSaved={(m) => onPick([{ title: m.title, source: entitySource(FEATURE_ENTITY.meeting, m.id) }])}
     />
   );
 }
@@ -597,15 +616,7 @@ function WorkflowRunPicker({ onPick, onCancel }: PickerProps) {
         ])
       }
       onCancel={onCancel}
-      emptyState={
-        <>
-          No runs yet.{" "}
-          <Link href="/workflows/all" className="text-primary underline-offset-2 hover:underline">
-            Run a workflow
-          </Link>{" "}
-          and it shows up here.
-        </>
-      }
+      emptyState="No runs yet"
       renderRow={(r) => (
         <>
           <Workflow className="size-4 shrink-0 text-muted-foreground" />
@@ -619,6 +630,33 @@ function WorkflowRunPicker({ onPick, onCancel }: PickerProps) {
         </>
       )}
     />
+  );
+}
+
+/** A new run: choose the workflow, fill its served start form, and the run lands on the board. */
+function WorkflowRunStartPicker({ onPick, onCancel }: PickerProps) {
+  const [workflowId, setWorkflowId] = useState<string | null>(null);
+  return (
+    <div className="flex flex-col gap-3">
+      <WorkflowListDropdown activeWorkflowId={workflowId} onSelect={setWorkflowId} />
+      {workflowId ? (
+        <RunStartForm
+          key={workflowId}
+          definitionId={workflowId}
+          startLabel="Run"
+          onStarted={(runId) =>
+            onPick([{ title: "Workflow run", source: entitySource(FEATURE_ENTITY.workflowRun, runId) }])
+          }
+          onCancel={onCancel}
+        />
+      ) : (
+        <div className="flex justify-end">
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -765,15 +803,7 @@ function ResearchPicker({ onPick, onCancel }: PickerProps) {
         ])
       }
       onCancel={onCancel}
-      emptyState={
-        <>
-          No research topics yet.{" "}
-          <Link href="/research/topics/new" className="text-primary underline-offset-2 hover:underline">
-            Start one in Research
-          </Link>
-          .
-        </>
-      }
+      emptyState="No research topics yet"
       renderRow={(t) => (
         <>
           <FlaskConical className="size-4 shrink-0 text-muted-foreground" />
@@ -821,9 +851,18 @@ function ResearchReport({ id, source, title, onSource }: ItemBodyProps & { id: s
   );
 }
 
+/** A new topic: the Research start wizard, in place; the created topic becomes the tile. */
+function ResearchDraftBody({ onSource }: ItemBodyProps) {
+  return (
+    <div className="h-full min-h-0 overflow-y-auto">
+      <ResearchInitForm onCreated={(topicId, name) => onSource(entitySource(FEATURE_ENTITY.research, topicId), name)} />
+    </div>
+  );
+}
+
 function ResearchBody(props: ItemBodyProps) {
   const id = entityIdOf(props.source);
-  if (!id) return <NoRecordBody what="research topic" href="/research/topics" label="Your research" />;
+  if (!id) return <ResearchDraftBody {...props} />;
   return (
     <TopicProvider key={id} topicId={id}>
       {/* The topic's own agent surface — the host the topic workspace route mounts. */}
@@ -839,7 +878,6 @@ function ResearchBody(props: ItemBodyProps) {
 function ProjectPickerPanel({ onPick, onCancel }: PickerProps) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-muted-foreground">Choose a project, or make a new one from the list.</p>
       <ProjectPicker
         value={null}
         allowClear={false}
@@ -902,15 +940,33 @@ function ProjectRecordBody({ id, source, title, onSource }: ItemBodyProps & { id
   );
 }
 
+/** A new project: the canonical create form; the saved project becomes the tile. */
+function ProjectDraftBody({ onSource }: ItemBodyProps) {
+  return (
+    <div className="h-full min-h-0 overflow-y-auto p-4">
+      <ProjectCreatePanel
+        enableAi={false}
+        enableJsonImport={false}
+        skipRedirect
+        onSuccess={(project) => onSource(entitySource(FEATURE_ENTITY.project, project.id), project.name)}
+        onClose={() => undefined}
+      />
+    </div>
+  );
+}
+
 function ProjectBody(props: ItemBodyProps) {
   const id = entityIdOf(props.source);
-  if (!id) return <NoRecordBody what="project" href="/projects" label="Your projects" />;
+  if (!id) return <ProjectDraftBody {...props} />;
   return <ProjectRecordBody key={id} id={id} {...props} />;
 }
 
 // ─── The catalog entries ─────────────────────────────────────────────────────
 
-const newDraft = (entity: typeof FEATURE_ENTITY.task | typeof FEATURE_ENTITY.warRoom, title: string): PlacedItem => ({
+const newDraft = (
+  entity: typeof FEATURE_ENTITY.task | typeof FEATURE_ENTITY.warRoom | typeof FEATURE_ENTITY.research | typeof FEATURE_ENTITY.project,
+  title: string,
+): PlacedItem => ({
   title,
   source: entitySource(entity, null),
 });
@@ -959,6 +1015,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     defaultSize: { w: 720, h: 680 },
     matches: matchesEntity(FEATURE_ENTITY.meeting),
     Body: MeetingBody,
+    startNew: { label: "New meeting", Dialog: MeetingCreateDialog },
     bringIn: { label: "Meeting", Picker: MeetingPicker },
     // The meeting's home (before, during, after); "Join" in the tile enters the room.
     href: hrefFor(FEATURE_ENTITY.meeting, (id) => `/meetings/${encodeURIComponent(id)}`),
@@ -973,6 +1030,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     defaultSize: { w: 960, h: 760 },
     matches: matchesEntity(FEATURE_ENTITY.workflowRun),
     Body: WorkflowRunBody,
+    startNew: { label: "Run a workflow", Picker: WorkflowRunStartPicker },
     bringIn: { label: "Workflow run", Picker: WorkflowRunPicker },
     href: hrefFor(FEATURE_ENTITY.workflowRun, runHref),
     kindLabel: "workflow run",
@@ -986,6 +1044,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     defaultSize: { w: 820, h: 820 },
     matches: matchesEntity(FEATURE_ENTITY.research),
     Body: ResearchBody,
+    startNew: { label: "New research topic", create: () => newDraft(FEATURE_ENTITY.research, "New research topic") },
     bringIn: { label: "Research topic", Picker: ResearchPicker },
     href: hrefFor(FEATURE_ENTITY.research, registryHref("research_topic")),
     kindLabel: "research report",
@@ -999,6 +1058,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     defaultSize: { w: 620, h: 680 },
     matches: matchesEntity(FEATURE_ENTITY.project),
     Body: ProjectBody,
+    startNew: { label: "New project", create: () => newDraft(FEATURE_ENTITY.project, "New project") },
     bringIn: { label: "Project", Picker: ProjectPickerPanel },
     href: hrefFor(FEATURE_ENTITY.project, registryHref("project")),
     kindLabel: "project",

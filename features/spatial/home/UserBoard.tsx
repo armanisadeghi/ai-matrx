@@ -19,10 +19,11 @@
  */
 
 import { type ComponentType, type DragEvent, useEffect, useRef, useState } from "react";
-import { ExternalLink, PanelRight } from "lucide-react";
+import { ExternalLink, PanelRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { type Camera, type Rect, screenToWorld } from "../engine/camera";
 import { useIsEditing, useIsLiveTile } from "../engine/react";
 import { SurfaceActivity, createSurfaceCapture } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -50,7 +51,7 @@ import { Minimap, ZoomHud } from "../components/SpatialChrome";
 import type { AddTileInput, BoardToolHost, EditTileInput } from "../tools/useBoardAgentTools";
 import { createItemSurfaceIndex, type ItemSurfaceIndex } from "../tools/item-surfaces";
 import { BOARD_ITEM_TYPES, itemTypeFor } from "../items/catalog";
-import type { BoardItemType, PickerProps, PlacedItem, StartNewEntry } from "../items/types";
+import { startNewEntries, type BoardItemType, type PickerProps, type PlacedItem, type StartNewEntry } from "../items/types";
 import { filesToBoardItems } from "../items/file-drop";
 import { noteSeedEdit } from "../items/work-sources";
 import { intakeText } from "./board-intake";
@@ -108,7 +109,13 @@ export function UserBoard({
   // any item on the board (board_items, board_open_item, board_item_act).
   const [itemSurfaces] = useState(createItemSurfaceIndex);
   // The open picker: a bring-in, or a start-new that needs one choice first.
-  const [picking, setPicking] = useState<{ title: string; Picker: ComponentType<PickerProps> } | null>(null);
+  const [picking, setPicking] = useState<{
+    title: string;
+    Picker: ComponentType<PickerProps>;
+    /** Set for a bring-in: its type's "Start new" entries sit beside the list. */
+    type?: BoardItemType;
+  } | null>(null);
+  const [starting, setStarting] = useState<{ Dialog: ComponentType<PickerProps> } | null>(null);
   const [dropping, setDropping] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -515,8 +522,29 @@ export function UserBoard({
       </SpatialBoardMenu>
       <Dialog open={picking !== null} onOpenChange={(open) => !open && setPicking(null)}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader>
+          <DialogHeader className="flex-row items-center justify-between gap-3 space-y-0 pr-8">
             <DialogTitle>{picking?.title ?? "Bring in"}</DialogTitle>
+            {picking?.type ? (
+              <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                {startNewEntries(picking.type).map((entry, i) => {
+                  const type = picking.type as BoardItemType;
+                  const Icon = entry.icon ?? Plus;
+                  return (
+                    <Button
+                      key={`${type.key}:${i}`}
+                      type="button"
+                      size="sm"
+                      variant={i === 0 ? "default" : "outline"}
+                      className="h-8 gap-1.5"
+                      onClick={() => startNew(type, entry)}
+                    >
+                      <Icon className="size-3.5" />
+                      {newLabel(type, entry)}
+                    </Button>
+                  );
+                })}
+              </div>
+            ) : null}
           </DialogHeader>
           {picking && (
             <picking.Picker
@@ -529,8 +557,23 @@ export function UserBoard({
           )}
         </DialogContent>
       </Dialog>
+      {starting && (
+        <starting.Dialog
+          onPick={(items) => {
+            setStarting(null);
+            place(items);
+          }}
+          onCancel={() => setStarting(null)}
+        />
+      )}
     </SpatialBoardSurface>
   );
+}
+
+/** "New meeting", "Chat with an agent": an entry already led by a verb keeps its own words. */
+function newLabel(type: BoardItemType, entry: StartNewEntry): string {
+  if (/^(new|start|run|chat with)\b/i.test(entry.label)) return entry.label;
+  return entry.label === type.label ? `New ${type.label.toLowerCase()}` : entry.label;
 }
 
 /** The edge between two tiles; follows both as they move, without waking the board. */
