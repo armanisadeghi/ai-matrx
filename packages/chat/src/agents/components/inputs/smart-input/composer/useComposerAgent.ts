@@ -23,8 +23,13 @@ import {
   selectAgentName,
 } from "../../../../redux/agent-definition/selectors";
 import { selectInstanceOverrideState } from "../../../../redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { selectModelLabelById } from "@host/features/ai-models/redux/modelRegistrySlice";
+import {
+  selectModelLabelById,
+  selectModelLabelWithClass,
+} from "@host/features/ai-models/redux/modelRegistrySlice";
 import { useModelOptions } from "@host/features/ai-models/hooks/useModels";
+import { useModelClassLabels } from "@host/features/ai-models/hooks/useModelClassLabel";
+import { effectiveOfferingPin } from "../../../../redux/execution-system/instance-model-overrides/offering-pin";
 import { initializeChatAgents } from "../../../../redux/agent-definition/thunks";
 
 /** The tag that makes an agent a Chat-mode preset (A2: "rules later; for now read the tag"). */
@@ -42,7 +47,7 @@ export interface ComposerAgentInfo {
   /** The model this conversation will run on: the override, else the agent's own. */
   effectiveModelId: string | null;
   effectiveModelLabel: string | null;
-  /** True when this conversation runs on a model other than its agent's own. */
+  /** True when this conversation runs on a model (or class) other than its agent's own. */
   modelOverridden: boolean;
   /** The agent's own model label — what runs when no override is in force. */
   agentModelLabel: string | null;
@@ -93,9 +98,17 @@ export function useComposerAgent(conversationId: string): ComposerAgentInfo {
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId)) ?? null;
   const agentName = useAppSelector((state) => (agentId ? selectAgentName(state, agentId) : undefined)) ?? null;
   const effectiveModelId = useEffectiveModelId(conversationId);
-  const effectiveModelLabel = useAppSelector((state) => selectModelLabelById(state, effectiveModelId)) ?? null;
+  // A model offered in several classes is named with the class it runs on.
+  useModelClassLabels();
+  const overrideState = useAppSelector(selectInstanceOverrideState(conversationId));
+  const effectivePin = effectiveOfferingPin(overrideState) ?? null;
+  const basePinRaw = overrideState?.baseSettings?.offering_id;
+  const agentOwnPin = typeof basePinRaw === "string" && basePinRaw ? basePinRaw : null;
+  const effectiveModelLabel =
+    useAppSelector((state) => selectModelLabelWithClass(state, effectiveModelId, effectivePin)) ?? null;
   const agentOwnModelId = useAgentOwnModelId(conversationId);
-  const agentModelLabel = useAppSelector((state) => selectModelLabelById(state, agentOwnModelId)) ?? null;
+  const agentModelLabel =
+    useAppSelector((state) => selectModelLabelWithClass(state, agentOwnModelId, agentOwnPin)) ?? null;
 
   const { mandate: customMandate } = useMandate(MANDATE_KEYS.chat__default_new_chat, { optional: true });
   const customAgentId = customMandate?.agentId ?? null;
@@ -116,7 +129,11 @@ export function useComposerAgent(conversationId: string): ComposerAgentInfo {
     agentName,
     effectiveModelId,
     effectiveModelLabel,
-    modelOverridden: Boolean(effectiveModelId && agentOwnModelId && effectiveModelId !== agentOwnModelId),
+    modelOverridden: Boolean(
+      effectiveModelId &&
+        agentOwnModelId &&
+        (effectiveModelId !== agentOwnModelId || effectivePin !== agentOwnPin),
+    ),
     agentModelLabel,
     customAgentId,
     isCustom: Boolean(agentId && customAgentId && agentId === customAgentId),

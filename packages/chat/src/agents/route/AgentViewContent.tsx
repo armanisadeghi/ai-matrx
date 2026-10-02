@@ -11,7 +11,6 @@ import {
   selectAgentTools,
   selectAgentCustomTools,
   selectAgentContextPolicies,
-  selectAgentModelId,
   selectAgentVersion,
   selectAgentTags,
   selectAgentCategory,
@@ -25,10 +24,8 @@ import {
 } from "../redux/agent-definition/thunks";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import { selectCategoryById } from "../redux/agent-shortcut-categories/selectors";
-import {
-  selectModelLabelById,
-  fetchModelOptions,
-} from "@host/features/ai-models/redux/modelRegistrySlice";
+import { fetchModelOptions } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { useAgentModelLabel } from "../hooks/useAgentModelLabel";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { supabase } from "../../host/db";
 import { Badge } from "@ai-matrx/design-system";
@@ -345,10 +342,8 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
   const contextPolicies = useAppSelector((state) =>
     selectAgentContextPolicies(state, agentId),
   );
-  const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
-  const modelLabel = useAppSelector((state) =>
-    selectModelLabelById(state, modelId ?? null),
-  );
+  // The model it uses, named with its class when the model has several.
+  const { modelId, label: modelLabel } = useAgentModelLabel(agentId);
   const version = useAppSelector((state) => selectAgentVersion(state, agentId));
   const tags = useAppSelector((state) => selectAgentTags(state, agentId));
   const mcpServers = useAppSelector((state) =>

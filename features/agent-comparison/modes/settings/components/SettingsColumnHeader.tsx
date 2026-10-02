@@ -33,7 +33,12 @@ import {
 } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { selectModelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import {
+  selectModelClassName,
+  selectModelLabelWithClass,
+} from "@/features/ai-models/redux/modelRegistrySlice";
+import { useModelClassLabels } from "@/features/ai-models/hooks/useModelClassLabel";
+import { effectiveOfferingPin } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
 import { cn } from "@/lib/utils";
 import { renameSettingsColumn } from "../redux/slice";
 import { removeColumnFromSettingsBattle } from "../redux/thunks";
@@ -71,15 +76,28 @@ export function SettingsColumnHeader({ column, onToggleCollapse }: Props) {
   );
   const overrides = (overrideState?.overrides ?? {}) as Record<string, unknown>;
   const modelOverrideId = overrides.model as string | undefined;
-  const modelRow = useAppSelector((s) =>
-    modelOverrideId ? selectModelById(s, modelOverrideId) : undefined,
+  // A model offered in several classes is named with the class it runs on.
+  useModelClassLabels();
+  const runPin = effectiveOfferingPin(overrideState);
+  const modelLabel = useAppSelector((s) =>
+    modelOverrideId
+      ? selectModelLabelWithClass(s, modelOverrideId, runPin)
+      : undefined,
+  );
+  const baseModelRaw = overrideState?.baseSettings?.model;
+  const classOnlyName = useAppSelector((s) =>
+    !modelOverrideId && "offering_id" in overrides && typeof baseModelRaw === "string"
+      ? selectModelClassName(s, baseModelRaw, runPin)
+      : undefined,
   );
 
   const summaryParts: string[] = [];
-  if (modelRow) {
-    summaryParts.push(modelRow.common_name ?? modelRow.name ?? "model");
+  if (modelLabel) {
+    summaryParts.push(modelLabel);
   } else if (modelOverrideId) {
     summaryParts.push(String(modelOverrideId));
+  } else if (classOnlyName) {
+    summaryParts.push(classOnlyName);
   }
   if (overrides.temperature != null) {
     summaryParts.push(`T=${Number(overrides.temperature).toFixed(2)}`);

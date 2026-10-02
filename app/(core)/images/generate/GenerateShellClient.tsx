@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useModels } from "@/features/ai-models/hooks/useModels";
+import { useModelLabelWithClass } from "@/features/ai-models/hooks/useModelClassLabel";
 import { SettingDoor } from "@/features/settings/doors/SettingDoor";
 import { settingsControlSearchId } from "@/components/official/settings/searchIdentity";
 import {
@@ -61,7 +62,12 @@ export default function GenerateShellClient() {
   const preferredOfferingId = useAppSelector(
     (s) => s.userPreferences.imageGeneration.defaultOfferingId,
   );
-  const { models } = useModels();
+  // Loads the registry the label reads.
+  useModels();
+  const preferredModelLabel = useModelLabelWithClass(
+    preferredModelId,
+    preferredOfferingId,
+  );
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState(() => preferredStyle ?? "");
   const [size, setSize] = useState<ImageGenerateSize>("square");
@@ -274,8 +280,7 @@ export default function GenerateShellClient() {
           <span className="min-w-0 truncate">
             Model:{" "}
             {preferredModelId
-              ? (models.find((m) => m.id === preferredModelId)?.common_name ??
-                "your chosen model")
+              ? (preferredModelLabel ?? "your chosen model")
               : "AI Matrx default"}
           </span>
           <SettingDoor

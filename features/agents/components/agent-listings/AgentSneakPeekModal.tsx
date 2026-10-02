@@ -28,7 +28,7 @@ import {
   importColumnsFromAgentSchema,
 } from "@/features/page-extraction/utils/columns";
 import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 import { fetchModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
 import {
   selectAllTools,
@@ -279,9 +279,8 @@ export function AgentSneakPeekContent({
   const isReady = useAppSelector((state) =>
     selectAgentReadyForBuilder(state, agentId),
   );
-  const modelLabel = useAppSelector((state) =>
-    selectModelLabelById(state, record?.modelId ?? null),
-  );
+  // The model it uses, named with its class when the model has several.
+  const { label: modelLabel } = useAgentModelLabel(agentId);
   const allTools = useAppSelector(selectAllTools);
   const toolsReady = useAppSelector(selectToolsReady);
 

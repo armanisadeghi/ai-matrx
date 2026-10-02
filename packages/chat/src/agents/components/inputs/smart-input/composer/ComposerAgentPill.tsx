@@ -36,7 +36,7 @@ import {
 import { useSessionKnob } from "../../../../../host/prefs-react";
 import { knobRefusalSentence, setKnobOverride } from "../../../../../host/prefs";
 import { CHAT_DEFAULT_MODEL_KNOB } from "@host/features/ai-models/preferredChatModel";
-import { selectModelLabelById } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { selectModelLabelWithClass } from "@host/features/ai-models/redux/modelRegistrySlice";
 import {
   ComposerMenuDivider,
   ComposerMenuHelp,
@@ -163,11 +163,12 @@ function ChatPresetsPanel({
   const userId = useAppSelector((s) => s.userAuth?.id ?? null);
   const personalModel = useSessionKnob(CHAT_DEFAULT_MODEL_KNOB);
   const personalModelId = typeof personalModel === "string" && personalModel.trim() ? personalModel : null;
-  const personalModelLabel = useAppSelector((s) => selectModelLabelById(s, personalModelId)) ?? null;
   // The class (offering) of the Custom model, for THIS chat — seeded beside
   // the model so it rides config_overrides.offering_id.
   const overrideState = useAppSelector(selectInstanceOverrideState(conversationId));
   const pinnedOfferingId = effectiveOfferingPin(overrideState);
+  const personalModelLabel =
+    useAppSelector((s) => selectModelLabelWithClass(s, personalModelId, pinnedOfferingId)) ?? null;
   const onSelectAgent = agentControl?.onSelectAgent;
 
   if (!onSelectAgent) {
@@ -199,34 +200,43 @@ function ChatPresetsPanel({
     }
   };
 
-  const setPersonalModel = async (modelId: string) => {
+  // Your default for Custom is a (model, class) pair, saved per organization
+  // to the model knob and its class companion. With no organization known yet
+  // the press is HELD: boot's answer first, then the person is asked.
+  const savePersonalDefault = async (
+    key: "chat_default_model" | "chat_default_offering",
+    value: string,
+  ): Promise<boolean> => {
     if (!userId) {
       toast.error("Sign in first — your default model is saved to your account.");
-      return;
+      return false;
     }
-    // Your default model is saved per organization. With none known yet the
-    // press is HELD: boot's answer first, then the person is asked.
     let targetOrganizationId: string;
     try {
       targetOrganizationId = organizationId ?? (await ensureOrgId(null));
     } catch (error) {
-      if (isOrganizationSelectionCancelled(error)) return;
-      if (presentOrganizationRefusal(error, { subject: "Your default model", act: "saved" })) return;
+      if (isOrganizationSelectionCancelled(error)) return false;
+      if (presentOrganizationRefusal(error, { subject: "Your default model", act: "saved" })) return false;
       throw error;
     }
     const result = await setKnobOverride({
       feature: "agents.model_prefs",
-      key: "chat_default_model",
+      key,
       scopeKind: "user",
       scopeId: userId,
       organizationId: targetOrganizationId,
-      value: modelId,
+      value,
       note: "Picked under Custom in the chat composer",
     });
     if (!result.ok) {
       toast.error(`Your default chat model was not saved: ${knobRefusalSentence(result)}`);
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const setPersonalModel = async (modelId: string) => {
+    if (!(await savePersonalDefault("chat_default_model", modelId))) return;
     if (info.isCustom) {
       // The saved default seeds NEW conversations; this one changes now too.
       // Seeded: this is the person's DEFAULT for Custom, not a pick for this
@@ -235,6 +245,14 @@ function ChatPresetsPanel({
     } else {
       chooseCustom();
     }
+  };
+
+  // The class is half of the default: saved beside the model ("" = the
+  // model's preferred class), and seeded for this chat at once. The picker
+  // reports it BEFORE the model on every path.
+  const setPersonalClass = (offeringId: string | undefined) => {
+    dispatch(setOfferingPin({ conversationId, offeringId, seeded: true }));
+    void savePersonalDefault("chat_default_offering", offeringId ?? "");
   };
 
   return (
@@ -280,9 +298,7 @@ function ChatPresetsPanel({
             value={personalModelId}
             onValueChange={(modelId) => void setPersonalModel(modelId)}
             pinnedOfferingId={pinnedOfferingId}
-            onOfferingPinChange={(offeringId) =>
-              dispatch(setOfferingPin({ conversationId, offeringId, seeded: true }))
-            }
+            onOfferingPinChange={setPersonalClass}
             inputModalities={[]}
             outputModalities={["text"]}
             placeholder={personalModelLabel ?? "Pick a model"}

@@ -293,6 +293,23 @@ export const selectAgentModelId = createSelector(
 );
 
 /**
+ * The agent's CLASS pin (`settings.offering_id`) for naming the model it uses.
+ *   string    — pinned to that class
+ *   null      — settings loaded, no pin (the model's preferred class runs)
+ *   undefined — settings not loaded (a list-only record): the class is unknown,
+ *               so a display must not guess one
+ */
+export const selectAgentOfferingPin = createSelector(
+  [selectAgentById, selectAgentReadyForCustomExecution],
+  (record, settingsLoaded): string | null | undefined => {
+    if (!record || !settingsLoaded) return undefined;
+    const pin = (record.settings as { offering_id?: unknown } | undefined)
+      ?.offering_id;
+    return typeof pin === "string" && pin !== "" ? pin : null;
+  },
+);
+
+/**
  * True when the agent has no model selected (modelId is null or empty string).
  * Used to show warnings in the builder UI without blocking saves.
  */

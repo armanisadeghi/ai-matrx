@@ -13,9 +13,12 @@ import { useEffect, useMemo } from "react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { aiModelHref } from "@/features/ai-models/doors";
+import { withModelClass } from "@/features/ai-models/utils/model-classes";
 import {
+  fetchModelClasses,
   fetchModelIdentityById,
   makeSelectModelById,
+  selectModelClassName,
   selectModelIdentityById,
   selectModelIdentityLookupStatus,
 } from "@/features/ai-models/redux/modelRegistrySlice";
@@ -74,10 +77,19 @@ function fallbackName(kind: "AI model" | "tool", id: string): string {
 
 export interface AiModelRefProps extends AiIdentityRefCommonProps {
   modelId: string;
+  /**
+   * Naming the model an agent or run USES: a model with several classes is
+   * shown with its class ("Qwen3.8 27B · Matrx Lightning"). `offeringId` is the
+   * pin; none = the preferred class the server runs.
+   */
+  showClass?: boolean;
+  offeringId?: string | null;
 }
 
 export function AiModelRef({
   modelId,
+  showClass = false,
+  offeringId,
   name,
   showId = false,
   showIcon = true,
@@ -97,6 +109,13 @@ export function AiModelRef({
     selectModelIdentityLookupStatus(state, modelId),
   );
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const classStatus = useAppSelector((s) => s.modelRegistry?.modelClassStatus);
+  const className = useAppSelector((s) =>
+    showClass ? selectModelClassName(s, modelId, offeringId) : undefined,
+  );
+  useEffect(() => {
+    if (showClass && !classStatus) void dispatch(fetchModelClasses());
+  }, [dispatch, showClass, classStatus]);
 
   useEffect(() => {
     if (
@@ -110,13 +129,14 @@ export function AiModelRef({
     }
   }, [dispatch, historicalIdentity, lookupStatus, model, modelId, name]);
 
-  const resolvedName =
+  const baseName =
     name?.trim() ||
     model?.common_name ||
     model?.name ||
     historicalIdentity?.common_name ||
     historicalIdentity?.name ||
     fallbackName("AI model", modelId);
+  const resolvedName = withModelClass(baseName, className);
   const mustShowId =
     showId || (!name && !model && !historicalIdentity && isUuidValue(modelId));
 

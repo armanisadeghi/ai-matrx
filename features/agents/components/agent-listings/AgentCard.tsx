@@ -38,7 +38,7 @@ import {
   buildSystemAgentRosterEntries,
   systemAgentRosterEntrySummary,
 } from "@ai-matrx/chat/agents/format";
-import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 
 interface AgentCardProps {
   id: string;
@@ -76,9 +76,9 @@ export function AgentCard({
   const name = record?.name ?? "Untitled Agent";
   const description = record?.description ?? undefined;
   const isArchived = record?.isArchived ?? false;
-  const modelLabel = useAppSelector((state) =>
-    selectModelLabelById(state, record?.modelId ?? null),
-  );
+  // The model it uses — with its class when the model has several and the
+  // agent's settings are loaded (a list record's class is unknown).
+  const { label: modelLabel } = useAgentModelLabel(id);
   const rosterEntry = record
     ? buildSystemAgentRosterEntries(
         [record],

@@ -8,6 +8,12 @@ import { extractErrorMessage } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { normalizeModel } from "@ai-matrx/agents/models";
 import { requireCanonicalCapabilities } from "@/features/ai-models/capabilities/parse";
+import {
+  buildModelClassIndex,
+  modelClassName,
+  withModelClass,
+  type ModelClassIndex,
+} from "@/features/ai-models/utils/model-classes";
 // Minimal local state type — avoids importing RootState from store.ts (which
 // transitively imports this slice via reduxTypes → modelRegistrySlice),
 // breaking the type-level circular dependency.
@@ -97,6 +103,13 @@ interface ModelRegistryState {
    */
   classConfigByOffering: Record<string, ModelClassConfig>;
   classConfigStatusByOffering: Record<string, "loading" | "succeeded" | "failed">;
+  /**
+   * Every routable model's CLASSES (serving endpoints) — what a display names
+   * beside the model when it has several ("Qwen3.8 27B · Matrx Lightning").
+   * Loaded once by `fetchModelClasses`; see utils/model-classes.ts.
+   */
+  modelClassIndex?: ModelClassIndex | null;
+  modelClassStatus?: "loading" | "succeeded" | "failed";
 }
 
 /** Class configs are keyed by model AND class — a pin is only meaningful for its model. */
@@ -123,6 +136,7 @@ const initialState: ModelRegistryState = {
   identityStatusById: {},
   classConfigByOffering: {},
   classConfigStatusByOffering: {},
+  modelClassIndex: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -308,6 +322,34 @@ export const fetchModelClassConfig = createAsyncThunk(
     condition: ({ modelId, offeringId }, { getState }) => {
       const status = (getState() as StateWithModelRegistry).modelRegistry
         ?.classConfigStatusByOffering?.[classConfigKey(modelId, offeringId)];
+      return status !== "loading" && status !== "succeeded";
+    },
+  },
+);
+
+/**
+ * Load every routable model's classes (one `ai.model_offering` read) so any
+ * surface can name the class beside a model — see `selectModelClassName`.
+ */
+export const fetchModelClasses = createAsyncThunk(
+  "modelRegistry/fetchModelClasses",
+  async (_, { rejectWithValue }) => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .schema("ai")
+        .from("model_offering")
+        .select("model_id, offering_id, served_via, served_via_endpoint_id, priority");
+      if (error) throw error;
+      return buildModelClassIndex(data ?? []);
+    } catch (err: unknown) {
+      return rejectWithValue(`Model classes: ${extractErrorMessage(err)}`);
+    }
+  },
+  {
+    condition: (_, { getState }) => {
+      const status = (getState() as StateWithModelRegistry).modelRegistry
+        ?.modelClassStatus;
       return status !== "loading" && status !== "succeeded";
     },
   },
@@ -603,6 +645,20 @@ const modelRegistrySlice = createSlice({
         ] = "failed";
       });
 
+    // ── fetchModelClasses ──────────────────────────────────────────
+    builder
+      .addCase(fetchModelClasses.pending, (state) => {
+        state.modelClassStatus = "loading";
+      })
+      .addCase(fetchModelClasses.fulfilled, (state, action) => {
+        state.modelClassStatus = "succeeded";
+        state.modelClassIndex = action.payload;
+      })
+      .addCase(fetchModelClasses.rejected, (state, action) => {
+        state.modelClassStatus = "failed";
+        console.error("[modelRegistry]", action.payload ?? action.error.message);
+      });
+
     // ── fetchModelIdentityById ─────────────────────────────────────
     builder
       .addCase(fetchModelIdentityById.pending, (state, action) => {
@@ -819,6 +875,34 @@ export const selectModelLabelById = createSelector(
     );
   },
 );
+
+/**
+ * The CLASS to name beside a model ("Matrx Lightning"), or undefined when the
+ * model has one class. `offeringId` = the agent's/run's pin; none = the
+ * preferred class the server runs.
+ */
+export const selectModelClassName = (
+  state: StateWithModelRegistry,
+  modelId: string | null | undefined,
+  offeringId: string | null | undefined,
+): string | undefined =>
+  modelClassName(state.modelRegistry?.modelClassIndex, modelId, offeringId);
+
+/**
+ * THE label for the model an agent or run USES: "Qwen3.8 27B · Matrx Lightning"
+ * when the model has several classes, else the model's name. Load the classes
+ * with `useModelClassLabels()` (or `fetchModelClasses`).
+ */
+export const selectModelLabelWithClass = (
+  state: StateWithModelRegistry,
+  modelId: string | null | undefined,
+  offeringId: string | null | undefined,
+): string | undefined => {
+  const label = selectModelLabelById(state, modelId);
+  return label
+    ? withModelClass(label, selectModelClassName(state, modelId, offeringId))
+    : undefined;
+};
 
 /**
  * Raw model name (the `name` column) for a model ID.
