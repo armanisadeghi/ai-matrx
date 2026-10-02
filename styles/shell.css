@@ -702,6 +702,19 @@ button.shell-nav-item {
   color: var(--shell-nav-icon-hover);
 }
 
+/* A deliberate attention marker (nav-data `tone: "attention"`): the pink icon
+   on the temporary "Other" domain, so nobody forgets its rows need a home. */
+.shell-nav-icon.shell-nav-icon-attention,
+.shell-nav-item:hover .shell-nav-icon.shell-nav-icon-attention,
+.shell-active-pill .shell-nav-icon.shell-nav-icon-attention {
+  color: rgb(236, 72, 153); /* pink-500 */
+}
+.dark .shell-nav-icon.shell-nav-icon-attention,
+.dark .shell-nav-item:hover .shell-nav-icon.shell-nav-icon-attention,
+.dark .shell-active-pill .shell-nav-icon.shell-nav-icon-attention {
+  color: rgb(244, 114, 182); /* pink-400 */
+}
+
 .shell-nav-label {
   opacity: 0;
   transform: translateX(-4px);
@@ -911,6 +924,11 @@ button.shell-nav-item {
 .shell-nav-flyout {
   min-width: 12rem;
   max-width: 16rem;
+  /* Domain menus can be long (Media, Industries): never taller than the
+     viewport — the panel scrolls instead of running off-screen. */
+  max-height: calc(100dvh - 1rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;

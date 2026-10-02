@@ -5,7 +5,7 @@ import {
   type MetricNavigationItem,
 } from "@/components/navigation/MetricNavigation";
 import type { EntityListController } from "@/lib/entity-list/config";
-import { primaryNavItems } from "@/features/shell/constants/nav-data";
+import { AI_WORK_NAV_GROUP } from "@/features/shell/constants/nav-data";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 import type { ConversationBrowseRow } from "../conversations/types";
 
@@ -108,8 +108,8 @@ export const AI_WORK_DOOR_GROUPS = [
 ] as const;
 
 function workNavChildren(): readonly MetricNavigationItem[] {
-  const work = primaryNavItems.find((item) => item.label === "AI Work");
-  return (work?.children ?? []).map((item) => ({
+  const work = AI_WORK_NAV_GROUP;
+  return work.children.map((item) => ({
     key: item.href,
     label:
       item.href === "/work/conversations"
@@ -119,7 +119,7 @@ function workNavChildren(): readonly MetricNavigationItem[] {
           : item.label,
     href: item.href,
     iconName: item.iconName,
-    color: item.color ?? work?.color,
+    color: item.color ?? work.color,
     description:
       item.href === "/work/conversations"
         ? "The current conversation inbox view"

@@ -18,6 +18,7 @@ import { createPortal } from "react-dom";
 import ShellIcon from "../ShellIcon";
 import {
   NAV_WINDOW_PANEL_ICON,
+  navToneIconClass,
   partitionNavChildren,
   type ShellNavChild,
   type ShellNavItem,
@@ -273,7 +274,7 @@ export default function NavFlyoutGroup({
         )}
         onFocus={scheduleOpen}
       >
-        <span className="shell-nav-icon">
+        <span className={cn("shell-nav-icon", navToneIconClass(item.tone))}>
           <ShellIcon name={item.iconName} size={18} strokeWidth={1.75} />
         </span>
         <span className="shell-nav-label">{item.label}</span>

@@ -36,7 +36,7 @@ import {
   selectAllScopeTypesFlat,
   selectOrganizationsList,
 } from "@/features/scopes/redux/selectors/tree";
-import { primaryNavItems } from "@/features/shell/constants/nav-data";
+import { WORKSPACES_NAV_GROUP } from "@/features/shell/constants/nav-data";
 import {
   useAppDispatch,
   useAppSelector,
@@ -86,17 +86,15 @@ export function TasksWorkbenchHome() {
   );
 
   const workspaceDestinations = useMemo<MetricNavigationItem[]>(() => {
-    const workspace = primaryNavItems.find(
-      (item) => item.label === "Workspaces",
-    );
-    return (workspace?.children ?? [])
+    const workspace = WORKSPACES_NAV_GROUP;
+    return workspace.children
       .filter((item) => !item.action && !item.actionItem && !item.panelAction)
       .map((item) => ({
         key: item.href,
         label: item.label,
         href: item.href,
         iconName: item.iconName,
-        color: item.color ?? workspace?.color,
+        color: item.color ?? workspace.color,
         description: item.description,
       }));
   }, []);

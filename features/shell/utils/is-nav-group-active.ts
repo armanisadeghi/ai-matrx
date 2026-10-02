@@ -38,13 +38,44 @@ export function findActiveNavChild(
     )[0];
 }
 
+type NavChild = NonNullable<ShellNavItem["children"]>[number];
+
+/**
+ * A child that is a real destination of this group (not a window-panel or
+ * create action, which borrow a destination's href, and not an external app).
+ */
+function isOwnedDestination(child: NavChild): boolean {
+  return (
+    !child.external &&
+    child.panelAction == null &&
+    child.action == null &&
+    child.actionItem !== true &&
+    child.href.startsWith("/")
+  );
+}
+
+/** Length of the longest destination child that owns this route (0 = none). */
+function childOwnershipLength(pathname: string, item: ShellNavItem): number {
+  let best = 0;
+  for (const child of item.children ?? []) {
+    if (!isOwnedDestination(child)) continue;
+    if (isOnRoute(pathname, child.href, child.exact)) {
+      best = Math.max(best, normalizeRoutePath(child.href).length);
+    }
+  }
+  return best;
+}
+
 /**
  * True when this group owns the current route.
  *
- * Ownership is the group's own href, its declared `ownedRoutePrefixes`, or
- * the same first path segment as the group's href. A flyout child that
- * points into another module (a shortcut / launcher) must not light this
- * group — that other module is the single selected owner.
+ * Ownership is the group's own href, its declared `ownedRoutePrefixes`, one
+ * of its destination children (a domain menu holds modules from several
+ * route namespaces — Media owns /files, /images, /transcripts, /print), or
+ * the same first path segment as the group's href. Every destination href
+ * lives in exactly one domain (guarded by nav-no-loss.test.ts), so a child
+ * never lights two groups; when namespaces overlap, the most specific match
+ * wins in `findOwningNavItem`.
  */
 export function isNavGroupActive(
   pathname: string,
@@ -59,6 +90,8 @@ export function isNavGroupActive(
   ) {
     return true;
   }
+
+  if (childOwnershipLength(pathname, item) > 0) return true;
 
   // Dynamic leaves that are not individually listed still belong to their
   // module's parent namespace (for example /agents/:id/build).
@@ -87,6 +120,7 @@ function ownershipSpecificity(pathname: string, item: ShellNavItem): number {
       best = Math.max(best, normalizeRoutePath(prefix).length);
     }
   }
+  best = Math.max(best, childOwnershipLength(pathname, item));
   if (best === 0) {
     const segment = item.href.split("/").filter(Boolean)[0];
     if (segment) best = segment.length;

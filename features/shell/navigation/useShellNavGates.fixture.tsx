@@ -3,8 +3,8 @@
 /**
  * The tiny sidebar the gate tests render.
  *
- * It is NOT a copy of the nav: it reads the REAL `primaryNavItems`, takes the
- * REAL "Data" group's children, and puts them through the REAL
+ * It is NOT a copy of the nav: it reads the REAL `DATA_NAV_CHILDREN` (the Data
+ * subgroup of the Workspace domain menu) and puts them through the REAL
  * `partitionNavChildren` with the REAL `useShellNavGates`. A fixture that
  * declared its own gated child would be a test of itself.
  *
@@ -14,16 +14,16 @@
  * differ in exactly the thing under test.
  */
 import {
+  DATA_NAV_CHILDREN,
   partitionNavChildren,
-  primaryNavItems,
   type ShellNavChild,
   type ShellNavGates,
 } from "@/features/shell/constants/nav-data";
 import { useShellNavGates } from "./useShellNavGates";
 
-/** The real children of the real "Data" group. */
+/** The real Data children the Workspace menu renders. */
 export const DATA_NAV_CHILDREN_FOR_TEST: ShellNavChild[] =
-  primaryNavItems.find((item) => item.label === "Data")?.children ?? [];
+  DATA_NAV_CHILDREN;
 
 export function GatedDataMenu({ useGates }: { useGates: () => ShellNavGates }) {
   const gates = useGates();

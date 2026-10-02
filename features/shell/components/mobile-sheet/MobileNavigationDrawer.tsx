@@ -12,8 +12,10 @@ import type {
 } from "@/features/shell/constants/nav-data";
 import {
   NAV_WINDOW_PANEL_ICON,
+  navToneIconClass,
   partitionNavChildren,
 } from "@/features/shell/constants/nav-data";
+import { cn } from "@/lib/utils";
 import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
 import { useNavActions } from "@/features/shell/navigation/navActions";
 import { useNavPanelActions } from "@/features/shell/navigation/navPanelActions";
@@ -98,7 +100,7 @@ function GroupButton({
   const className = "shell-mobile-nav-item shell-mobile-group-link";
   const content = (
     <>
-      <span className="shell-nav-icon">
+      <span className={cn("shell-nav-icon", navToneIconClass(item.tone))}>
         <ShellIcon name={item.iconName} size={20} strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
