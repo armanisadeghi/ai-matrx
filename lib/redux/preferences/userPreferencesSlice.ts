@@ -577,6 +577,18 @@ export interface ConnectorsPreferences {
   promptDismissedAt: Record<string, string>;
 }
 
+/**
+ * THE REVERSIBLE ACTION's memory of this person (`lib/reversible`, `@ai-matrx/kit/reversible`):
+ * how many times each reversible verb succeeded (`archive` → 7) and each verb on each kind of thing
+ * (`archive:table` → 2). It decides how loud the next Undo announcement is — taught the first time,
+ * guided the next few, plain after — and it is synced, so a person taught on their laptop is not
+ * taught again on their phone. Undo never lowers it. Shape = kit's `ReversibleCounts`.
+ */
+export interface ReversiblePreferences {
+  verbs: Record<string, number>;
+  pairs: Record<string, number>;
+}
+
 export interface OrganizationPreferences {
   /**
    * RETIRED (2026-10-01): the picker's old single star. Nothing selects an
@@ -809,6 +821,7 @@ export interface UserPreferences {
   lists: ListsPreferences;
   assists: AssistsPreferences;
   connectors: ConnectorsPreferences;
+  reversible: ReversiblePreferences;
 }
 
 /**
@@ -1349,6 +1362,8 @@ export const initializeUserPreferencesState = (
     },
     // Keyed by provider id; absent = the connector card was never dismissed.
     connectors: { promptDismissedAt: {} },
+    // Nothing done yet: the first reversible action teaches.
+    reversible: { verbs: {}, pairs: {} },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -1442,6 +1457,10 @@ export const initializeUserPreferencesState = (
     connectors: {
       ...defaultPreferences.connectors,
       ...preferences.connectors,
+    },
+    reversible: {
+      verbs: { ...defaultPreferences.reversible.verbs, ...preferences.reversible?.verbs },
+      pairs: { ...defaultPreferences.reversible.pairs, ...preferences.reversible?.pairs },
     },
   };
 
@@ -1909,43 +1928,52 @@ export default userPreferencesSlice.reducer;
 // `loadPreferencesFromDatabase` (deleted in this PR). See
 // `docs/concepts/full-sync-boardcast-storage/phase-2-plan.md` §6.
 
-const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
-  "favorites",
-  "display",
-  "prompts",
-  "voice",
-  "textToSpeech",
-  "assistant",
-  "email",
-  "videoConference",
-  "photoEditing",
-  "imageGeneration",
-  "textGeneration",
-  "coding",
-  "sandbox",
-  "flashcard",
-  "tutor",
-  "playground",
-  "aiModels",
-  "system",
-  "messaging",
-  "agentContext",
-  "agentConnections",
-  "mermaid",
-  "conversationFilters",
-  "mediaDevices",
-  "organization",
-  "scratchpad",
-  "notes",
-  "siteWorkbench",
-  "listViews",
-  // THE ARCHIVED-ITEMS LAW's knob. A module missing from this list is written
-  // to Redux and persisted NOWHERE — the choice survives until the next page
-  // load and then silently reverts, which is exactly what happened to `lists`
-  // in browser verification on 2026-09-09.
-  "lists",
-  "assists",
-] as const;
+/**
+ * EVERY MODULE IS PERSISTED, BY CONSTRUCTION. A module missing from this list is written to Redux
+ * and persisted NOWHERE — the choice survives until the next page load and then silently reverts,
+ * which is what happened to `lists` on 2026-09-09 and to `connectors` (the connector card's "not
+ * now") until 2026-10-02. The record below is typed over EVERY key of `UserPreferences`, so a new
+ * module that is not listed here is a type error, not a silent revert.
+ */
+const PERSISTED_PREFERENCE_MODULES: Record<keyof UserPreferences, true> = {
+  favorites: true,
+  display: true,
+  prompts: true,
+  voice: true,
+  textToSpeech: true,
+  assistant: true,
+  email: true,
+  videoConference: true,
+  photoEditing: true,
+  imageGeneration: true,
+  textGeneration: true,
+  coding: true,
+  sandbox: true,
+  flashcard: true,
+  tutor: true,
+  playground: true,
+  aiModels: true,
+  system: true,
+  messaging: true,
+  agentContext: true,
+  agentConnections: true,
+  mermaid: true,
+  conversationFilters: true,
+  mediaDevices: true,
+  organization: true,
+  scratchpad: true,
+  notes: true,
+  siteWorkbench: true,
+  listViews: true,
+  lists: true,
+  assists: true,
+  connectors: true,
+  reversible: true,
+};
+
+const PREFERENCE_MODULE_KEYS = Object.keys(
+  PERSISTED_PREFERENCE_MODULES,
+) as readonly (keyof UserPreferences)[];
 
 export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
   sliceName: "userPreferences",

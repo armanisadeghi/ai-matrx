@@ -63,6 +63,7 @@
  * imports toast from "sonner", switch it to `@/lib/toast`.
  */
 
+import type { ReactElement } from "react";
 import { toast as sonnerToast } from "sonner";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
@@ -636,6 +637,20 @@ export const toastErrorAlreadyCaptured: typeof captured.toastErrorAlreadyCapture
     null,
     MIN_ERROR_TOAST_MS,
   );
+
+/**
+ * A toast that DRAWS ITS OWN BODY (sonner's `toast.custom`) on the same wall clock as every other
+ * toast here: it expires at `duration` (sonner's 4 s otherwise) even in a hidden pane, a pointer or
+ * keyboard focus on it holds it, and `duration: Infinity` keeps it until it is dismissed (raised at
+ * the top, clear of action rows). `toast.custom` itself stays untouched — its existing callers end
+ * their toasts themselves. The one caller today is the reversible action (`lib/reversible`).
+ */
+export function customToastOnWallClock(
+  render: (id: ToastId) => ReactElement,
+  options?: RecordToastOptions,
+): ToastId {
+  return track(captured.toast.custom as unknown as Emit, render, options, null);
+}
 
 // ---------------------------------------------------------------------------
 // Record-aware toasts — tier (a)

@@ -262,4 +262,7 @@ export const defaultUserPreferences: UserPreferences = {
     // Keyed by provider id; absent = never dismissed.
     promptDismissedAt: {},
   },
+  // THE REVERSIBLE ACTION (lib/reversible): nothing done yet, so the first one teaches.
+  // Keep in sync with userPreferencesSlice.ts.
+  reversible: { verbs: {}, pairs: {} },
 };
