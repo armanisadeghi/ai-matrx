@@ -58,6 +58,7 @@ import { CreateFolderDialog } from "./CreateFolderDialog";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
+import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
 
 declare global {
   interface Window {
@@ -807,12 +808,9 @@ export function NoteEditor({
             contentSource={menuContentSource}
             entity={menuEntity}
             contextData={contextData}
-            insertAtCaret={(text) => {
-              const rich = richEditorRef.current;
-              if (!rich) return false;
-              rich.replaceSelection(text);
-              return true;
-            }}
+            insertAtCaret={(text, placement) =>
+              insertAtRichCaret(richEditorRef.current, text, placement)
+            }
             onTextReplace={(newValue) => richEditorRef.current?.setText(newValue)}
             onTextInsertBefore={(text) => richEditorRef.current?.insertText(text, "before")}
             onTextInsertAfter={(text) => richEditorRef.current?.insertText(text, "after")}

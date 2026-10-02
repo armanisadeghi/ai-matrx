@@ -18,6 +18,7 @@ import { toast } from "@/lib/toast";
 import { TableWriteRefused } from "../core/table-source";
 import { createRichEditorExtensions } from "../core/extensions";
 import { replaceSelectionWithMarkdown } from "../core/paste-markdown";
+import { insertMarkdownBlock } from "../core/block-insert";
 import {
   buildVisualDocument,
   captureBaseline,
@@ -234,12 +235,9 @@ export function VisualEditor({
     },
     insertText: (text, where) => {
       if (!editor) return;
-      const { from, to } = editor.state.selection;
-      editor.commands.setTextSelection(where === "before" ? from : to);
+      // Between blocks, never inside a word (core/block-insert.ts).
       editor.commands.command(({ tr }) => {
-        const at = tr.selection.from;
-        tr.split(at);
-        replaceSelectionWithMarkdown(tr, editor.state.schema, text);
+        insertMarkdownBlock(tr, editor.state.schema, text, where);
         return true;
       });
     },

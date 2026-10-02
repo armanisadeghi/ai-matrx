@@ -44,6 +44,7 @@ import { useNoteConflictChoreography } from "../../hooks/useNoteConflictChoreogr
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { cn } from "@/lib/utils";
+import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
 
 /**
  * The phone's modes: Plain (its default) and Write (the one editor). "preview"
@@ -489,12 +490,9 @@ export default function MobileNoteEditor({
             title: noteLabel || note.label,
             resourceType: "note",
           }}
-          insertAtCaret={(text) => {
-            const rich = richRef.current;
-            if (!rich) return false;
-            rich.replaceSelection(text);
-            return true;
-          }}
+          insertAtCaret={(text, placement) =>
+            insertAtRichCaret(richRef.current, text, placement)
+          }
           onTextReplace={handleChangeFlush}
           onTextInsertBefore={(text) => richRef.current?.insertText(text, "before")}
           onTextInsertAfter={(text) => richRef.current?.insertText(text, "after")}

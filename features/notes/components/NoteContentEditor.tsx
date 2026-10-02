@@ -105,6 +105,7 @@ import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import { useNoteConflictChoreography } from "../hooks/useNoteConflictChoreography";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -732,12 +733,8 @@ export function NoteContentEditor({
           getTextarea={() => (richMode ? null : textareaRef.current)}
           insertAtCaret={
             richMode
-              ? (text: string) => {
-                  const rich = richEditorRef.current;
-                  if (!rich) return false;
-                  rich.replaceSelection(text);
-                  return true;
-                }
+              ? (text: string, placement?: "inline" | "block") =>
+                  insertAtRichCaret(richEditorRef.current, text, placement)
               : undefined
           }
           getApplicationScope={getApplicationScope}

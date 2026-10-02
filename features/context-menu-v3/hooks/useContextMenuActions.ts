@@ -1025,10 +1025,12 @@ export function useContextMenuActions(
   };
   const insertReference = (pick: ReferencePick) => {
     // Own paragraph everywhere: a fence must start and end on its own line.
+    // A block: it lands at the end of the caret's line, never inside a word.
     const inserted = insertIntoEditor(insertTargets, {
       editor: `\n${pick.fence}\n`,
       textarea: (field) => ownParagraph(pick.fence, field),
-      caret: `\n\n${pick.fence}\n\n`,
+      caret: pick.fence,
+      placement: "block",
     });
     if (inserted) {
       onContentInserted?.();

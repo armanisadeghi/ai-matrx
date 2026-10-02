@@ -60,3 +60,29 @@ export function insertTextByRef(
   if (!textareaRef) return false;
   return insertTextAtTextareaCursor(textareaRef, text);
 }
+
+/**
+ * WHERE A BLOCK GOES IN PLAIN TEXT — never inside a word.
+ *
+ * A block (a reference fence, a pasted section) inserted at a caret that sits
+ * inside a word split it: "of" became "o" + block + "f" (G5 review,
+ * 2026-10-02). A block belongs on its own line, so it lands at the END of the
+ * caret's line ("after") or the START of it ("before"). A non-empty selection
+ * is replaced where it is — the person chose that range. Every plain-text
+ * surface (textarea, the rich editor's source view, a contentEditable text
+ * node) uses this one rule.
+ */
+export function blockBoundary(
+  text: string,
+  from: number,
+  to: number,
+  where: "before" | "after" = "after",
+): number {
+  if (where === "after") {
+    const newline = text.indexOf("\n", to);
+    return newline === -1 ? text.length : newline;
+  }
+  if (from <= 0) return 0;
+  const newline = text.lastIndexOf("\n", from - 1);
+  return newline === -1 ? 0 : newline + 1;
+}

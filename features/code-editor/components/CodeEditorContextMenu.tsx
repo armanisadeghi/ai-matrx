@@ -198,10 +198,26 @@ export function CodeEditorContextMenu({
     };
 
     // Content blocks and references land at the caret, replacing the selection.
-    const insertAtCaret = (text: string): boolean => {
+    // A block (a reference) goes on its own line after the caret's line —
+    // never inside a word.
+    const insertAtCaret = (text: string, placement: 'inline' | 'block' = 'inline'): boolean => {
         const ed = editorRef.current;
         const selection = ed?.getSelection();
+        const model = ed?.getModel();
         if (!ed || !selection) return false;
+        if (placement === 'block' && selection.isEmpty() && model) {
+            const line = selection.positionLineNumber;
+            const column = model.getLineMaxColumn(line);
+            ed.executeEdits('context-menu-insert', [
+                {
+                    range: { startLineNumber: line, startColumn: column, endLineNumber: line, endColumn: column },
+                    text: `\n${text}\n`,
+                    forceMoveMarkers: true,
+                },
+            ]);
+            ed.focus();
+            return true;
+        }
         ed.executeEdits('context-menu-insert', [
             { range: selection, text, forceMoveMarkers: true },
         ]);

@@ -47,6 +47,7 @@ import {
   setFindHighlights,
   setIslandRendering,
 } from "./live-preview";
+import { blockBoundary } from "@/utils/text-insertion";
 
 const RAW_THEME = EditorView.theme({
   ".cm-content, .cm-line": {
@@ -325,7 +326,8 @@ export function SourceEditor({
       const v = view.current;
       if (!v) return;
       const { from, to } = v.state.selection.main;
-      const at = where === "before" ? from : to;
+      // The caret's line edge, never inside a word (utils/text-insertion).
+      const at = blockBoundary(v.state.doc.toString(), from, to, where);
       const insert = where === "before" ? `${text}\n\n` : `\n\n${text}`;
       v.dispatch({ changes: { from: at, insert } });
     },

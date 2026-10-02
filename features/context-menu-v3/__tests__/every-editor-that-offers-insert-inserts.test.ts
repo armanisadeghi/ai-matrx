@@ -41,7 +41,7 @@ describe("every editor that offers Insert inserts", () => {
     const targets = { getTextarea: () => null, insertAtCaret, onTextReplace: jest.fn() };
     expect(hasEditorInsertTarget(targets)).toBe(true);
     expect(insertIntoEditor(targets, { editor: FENCE, textarea: () => FENCE, caret: `\n\n${FENCE}\n\n` })).toBe("caret");
-    expect(insertAtCaret).toHaveBeenCalledWith(`\n\n${FENCE}\n\n`);
+    expect(insertAtCaret).toHaveBeenCalledWith(`\n\n${FENCE}\n\n`, "inline");
   });
 
   it("the same host with its textarea mounted writes the textarea, not the caret", () => {

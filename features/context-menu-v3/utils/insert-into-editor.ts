@@ -13,15 +13,25 @@
 // one that is actually there and takes the text wins.
 
 import { insertTextAtCursor } from "@/utils/editor-text-insertion";
-import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
+import { blockBoundary, insertTextAtTextareaCursor } from "@/utils/text-insertion";
+
+/**
+ * `inline` goes exactly at the caret; `block` (a reference fence, a section)
+ * goes on its own line — at the end of the caret's line, never inside a word
+ * (G5 review, 2026-10-02: "of" became "o" + block + "f").
+ */
+export type EditorInsertPlacement = "inline" | "block";
 
 export interface EditorInsertTargets {
   /** A contentEditable editor addressed by `data-editor-id`. */
   editorId?: string;
   /** The surface's textarea — may return null when no textarea is mounted now. */
   getTextarea?: () => HTMLTextAreaElement | null;
-  /** A rich editor's insert-at-the-caret. Returns false when it cannot take it. */
-  insertAtCaret?: (text: string) => boolean;
+  /**
+   * A rich editor's insert-at-the-caret. Returns false when it cannot take it.
+   * A `block` must land on its own line/paragraph, never inside a word.
+   */
+  insertAtCaret?: (text: string, placement?: EditorInsertPlacement) => boolean;
   /** Full-value write-back for a controlled textarea. */
   onTextReplace?: (nextValue: string) => void;
 }
@@ -31,6 +41,8 @@ export interface EditorInsertText {
   editor: string;
   textarea: (field: HTMLTextAreaElement) => string;
   caret: string;
+  /** Default `inline`. */
+  placement?: EditorInsertPlacement;
 }
 
 export type EditorInsertTarget = "editor" | "textarea" | "caret";
@@ -51,16 +63,48 @@ export function insertIntoEditor(
   const shaped: EditorInsertText =
     typeof text === "string" ? { editor: text, textarea: () => text, caret: text } : text;
   const { editorId, getTextarea, insertAtCaret, onTextReplace } = targets;
+  const placement = shaped.placement ?? "inline";
 
-  if (editorId && insertTextAtCursor(editorId, shaped.editor)) return "editor";
-
-  const field = editorId ? null : (getTextarea?.() ?? null);
-  if (field && insertTextAtTextareaCursor(field, shaped.textarea(field), onTextReplace)) {
-    return "textarea";
+  if (editorId) {
+    if (placement === "block") moveEditorCaretToLineEnd(editorId);
+    if (insertTextAtCursor(editorId, shaped.editor)) return "editor";
   }
 
-  if (insertAtCaret?.(shaped.caret)) return "caret";
+  const field = editorId ? null : (getTextarea?.() ?? null);
+  if (field) {
+    if (placement === "block" && field.selectionStart === field.selectionEnd) {
+      const at = blockBoundary(field.value, field.selectionStart, field.selectionEnd);
+      field.setSelectionRange(at, at);
+    }
+    if (insertTextAtTextareaCursor(field, shaped.textarea(field), onTextReplace)) {
+      return "textarea";
+    }
+  }
+
+  if (insertAtCaret?.(shaped.caret, placement)) return "caret";
   return null;
+}
+
+/**
+ * A collapsed caret inside a contentEditable text node moves to the end of its
+ * line (the next newline in that node, or the node's end), so a block never
+ * lands inside a word. A selection is left alone: it is replaced where it is.
+ */
+function moveEditorCaretToLineEnd(editorId: string): void {
+  const editor = document.querySelector(`[data-editor-id="${editorId}"]`);
+  const selection = window.getSelection();
+  if (!editor || !selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  if (!range.collapsed || !editor.contains(range.startContainer)) return;
+  const node = range.startContainer;
+  if (node.nodeType !== Node.TEXT_NODE) return;
+  const text = node.textContent ?? "";
+  const at = blockBoundary(text, range.startOffset, range.startOffset);
+  const next = document.createRange();
+  next.setStart(node, at);
+  next.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(next);
 }
 
 /**

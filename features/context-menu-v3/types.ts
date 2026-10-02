@@ -446,9 +446,11 @@ export interface EditableContextMenuExtras {
    * For an editor that is neither a `[data-editor-id]` contenteditable nor a
    * textarea (CodeMirror, Monaco…): put `text` at the caret, replacing the
    * selection. Returns false when it could not, and the menu copies instead.
-   * Content blocks and references insert through it.
+   * Content blocks and references insert through it. `placement: "block"`
+   * (a reference) must land on its own line/paragraph — the end of the
+   * caret's line — never inside a word.
    */
-  insertAtCaret?: (text: string) => boolean;
+  insertAtCaret?: (text: string, placement?: "inline" | "block") => boolean;
   onContentInserted?: () => void;
   onTextReplace?: (newText: string) => void;
   onTextInsertBefore?: (text: string) => void;
@@ -559,7 +561,7 @@ export interface MenuContentProps {
   isEditable: boolean;
   editorId?: string;
   getTextarea?: () => HTMLTextAreaElement | null;
-  insertAtCaret?: (text: string) => boolean;
+  insertAtCaret?: (text: string, placement?: "inline" | "block") => boolean;
   onContentInserted?: () => void;
   onTextReplace?: (newText: string) => void;
   onTextInsertBefore?: (text: string) => void;
