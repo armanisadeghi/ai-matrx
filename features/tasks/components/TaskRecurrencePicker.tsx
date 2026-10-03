@@ -50,7 +50,9 @@ export function TaskRecurrencePicker({
             "inline-flex items-center gap-1 h-6 max-lg:h-11 px-1.5 rounded-md border text-[10px] font-medium transition-colors hover:bg-accent",
             description
               ? "text-foreground border-border bg-muted/40"
-              : "border-transparent text-muted-foreground/50 hover:text-foreground",
+              : // Empty is a state, not a disabled control: full muted text, never
+                // faded (G10A review — Repeat looked disabled at 50%).
+                "border-transparent text-muted-foreground hover:text-foreground",
             className,
           )}
           title="Set repeat"

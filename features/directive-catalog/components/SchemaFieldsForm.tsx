@@ -41,6 +41,7 @@ import { PERSON_TOKEN } from "@/features/directive-catalog/identityPicker";
 import TaskAssigneePicker from "@/features/tasks/components/TaskAssigneePicker";
 import { TaskRecurrencePicker } from "@/features/tasks/components/TaskRecurrencePicker";
 import {
+  emptyFieldLabel,
   splitWarnings,
   type SchemaField,
   type SchemaFieldValue,
@@ -130,19 +131,6 @@ export function SchemaFieldsForm({
 
 // ── One field ───────────────────────────────────────────────────────────────
 
-function hintFor(field: SchemaField, mode: SchemaFormMode): string {
-  // `id` is the record an update acts on, never a value it might leave alone.
-  if (mode === "update" && field.key !== "id") return "Unchanged";
-  if (field.defaultValue !== undefined && field.defaultValue !== null) {
-    const d =
-      typeof field.defaultValue === "string"
-        ? field.defaultValue
-        : JSON.stringify(field.defaultValue);
-    if (d !== "{}" && d !== "[]") return `Default: ${d}`;
-  }
-  return "";
-}
-
 function FieldRow({
   field,
   value,
@@ -212,7 +200,12 @@ function FieldControl({
   const raw = value?.touched ? value.raw : "";
   const text = typeof raw === "string" ? raw : "";
   const setText = (next: string) => onChange({ raw: next, touched: true });
-  const placeholder = hintFor(field, mode);
+  // THE empty word, for every kind (`emptyFieldLabel`).
+  const placeholder = emptyFieldLabel(
+    field,
+    mode,
+    field.recordToken === PERSON_TOKEN,
+  );
 
   switch (field.kind) {
     case "boolean":
@@ -236,6 +229,8 @@ function FieldControl({
             onChange={(userId) =>
               onChange(userId ? { raw: userId, touched: true } : null)
             }
+            emptyLabel={placeholder}
+            className="h-9"
           />
         );
       }
@@ -243,7 +238,7 @@ function FieldControl({
         <RecordControl
           field={field}
           value={value}
-          mode={mode}
+          emptyLabel={placeholder}
           onChange={onChange}
         />
       );
@@ -253,7 +248,7 @@ function FieldControl({
         <TaskRecurrencePicker
           value={text || null}
           onChange={(rule) => onChange(rule ? { raw: rule, touched: true } : null)}
-          emptyLabel={mode === "update" ? "Unchanged" : "Does not repeat"}
+          emptyLabel={placeholder}
           className="h-9 w-full justify-start px-2.5 text-base lg:text-sm border-border"
         />
       );
@@ -261,18 +256,12 @@ function FieldControl({
     case "time":
     case "datetime":
       return (
-        <Input
+        <DateTimeControl
           id={id}
-          type={
-            field.kind === "date"
-              ? "date"
-              : field.kind === "time"
-                ? "time"
-                : "datetime-local"
-          }
+          kind={field.kind}
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="h-9 text-base lg:text-sm"
+          emptyLabel={placeholder}
+          onChange={setText}
         />
       );
     case "number":
@@ -336,12 +325,7 @@ function ChoiceControl({
         : "false"
       : String(value.raw) || UNSET;
 
-  const unsetLabel =
-    mode === "update"
-      ? "Unchanged"
-      : field.defaultValue !== undefined && field.defaultValue !== null
-        ? `Default (${isBool ? (field.defaultValue ? "Yes" : "No") : (field.enumLabels[String(field.defaultValue)] ?? String(field.defaultValue))})`
-        : "Not set";
+  const unsetLabel = emptyFieldLabel(field, mode);
 
   const options: Array<{ value: string; label: string }> = isBool
     ? [
@@ -378,12 +362,13 @@ function ChoiceControl({
 function RecordControl({
   field,
   value,
-  mode,
+  emptyLabel,
   onChange,
 }: {
   field: SchemaField;
   value: SchemaFieldValue | undefined;
-  mode: SchemaFormMode;
+  /** `emptyFieldLabel` — "" means the control's own "Choose a …" prompt. */
+  emptyLabel: string;
   onChange: (value: SchemaFieldValue | null) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -416,9 +401,7 @@ function RecordControl({
             <span className="truncate">
               {picked
                 ? (picked.recordTitle ?? `Chosen ${noun}`)
-                : mode === "update" && field.key !== "id"
-                  ? `Unchanged — choose a ${noun}`
-                  : `Choose a ${noun}`}
+                : emptyLabel || `Choose a ${noun}`}
             </span>
           </button>
         </PopoverTrigger>
@@ -448,6 +431,54 @@ function RecordControl({
         >
           <X className="h-3.5 w-3.5" />
         </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * A date, time or date-and-time input. Untouched with an empty word to say
+ * ("Unchanged" on an Update), it shows that word, never the browser's
+ * "mm/dd/yyyy" mask; focusing it hands over the native picker.
+ */
+function DateTimeControl({
+  id,
+  kind,
+  value,
+  emptyLabel,
+  onChange,
+}: {
+  id: string;
+  kind: "date" | "time" | "datetime";
+  value: string;
+  emptyLabel: string;
+  onChange: (next: string) => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  const showWord = !value && !focused && emptyLabel !== "";
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type={kind === "date" ? "date" : kind === "time" ? "time" : "datetime-local"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        aria-label={showWord ? emptyLabel : undefined}
+        className={cn(
+          "h-9 text-base lg:text-sm",
+          // The mask stays laid out (the picker opens where it always does) but unseen.
+          showWord && "text-transparent [&::-webkit-datetime-edit]:text-transparent",
+        )}
+      />
+      {showWord && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-base text-muted-foreground lg:text-sm"
+        >
+          {emptyLabel}
+        </span>
       )}
     </div>
   );

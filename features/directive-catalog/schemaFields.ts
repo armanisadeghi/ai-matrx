@@ -610,6 +610,54 @@ function isSetByTheSystem(field: SchemaField): boolean {
   return field.key === "timezone";
 }
 
+/** What every untouched control on an Update form says. */
+export const UNCHANGED = "Unchanged";
+
+/**
+ * THE word an untouched control shows — one place, every field kind (G10A
+ * review, 2026-10-02: Update's Assignee said "Unassigned" and its dates showed
+ * "mm/dd/yyyy" while every other field said "Unchanged"; "Unassigned" reads as
+ * "this will unassign").
+ *
+ * Update: "Unchanged" for every field but the record it acts on (`id`).
+ * Create: what leaving it alone gives — the server default, "Not set",
+ * "Unassigned", "Does not repeat" — or "" where the control's own prompt or
+ * the browser's date mask is the honest empty state.
+ *
+ * `isPerson`: the record field points at a person (the caller knows the
+ * person token; this module stays free of the registry).
+ */
+export function emptyFieldLabel(
+  field: SchemaField,
+  mode: SchemaFormMode,
+  isPerson = false,
+): string {
+  if (mode === "update" && field.key !== "id") return UNCHANGED;
+  const d = field.defaultValue;
+  const hasDefault = d !== undefined && d !== null;
+  switch (field.kind) {
+    case "boolean":
+      return hasDefault ? `Default (${d ? "Yes" : "No"})` : "Not set";
+    case "enum":
+      return hasDefault
+        ? `Default (${field.enumLabels[String(d)] ?? String(d)})`
+        : "Not set";
+    case "record":
+      return isPerson ? "Unassigned" : "";
+    case "recurrence":
+      return "Does not repeat";
+    case "date":
+    case "time":
+    case "datetime":
+      return "";
+    default: {
+      if (!hasDefault) return "";
+      const text = typeof d === "string" ? d : JSON.stringify(d);
+      return text === "{}" || text === "[]" ? "" : `Default: ${text}`;
+    }
+  }
+}
+
 /** Apply one control change; `null` returns the field to "not set / unchanged". */
 export function applyFieldChange(
   prev: SchemaFieldValues,

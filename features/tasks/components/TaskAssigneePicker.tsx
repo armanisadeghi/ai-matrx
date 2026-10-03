@@ -41,6 +41,11 @@ interface TaskAssigneePickerProps {
    */
   organizationId?: string;
   className?: string;
+  /**
+   * What the trigger says with nobody chosen. An Update form says
+   * "Unchanged" — there "Unassigned" reads as "this will unassign" (G10A).
+   */
+  emptyLabel?: string;
 }
 
 export default function TaskAssigneePicker({
@@ -49,6 +54,7 @@ export default function TaskAssigneePicker({
   size = "md",
   organizationId,
   className,
+  emptyLabel = "Unassigned",
 }: TaskAssigneePickerProps) {
   const { connections, isLoading, error: connectionsError, partialFailures, refresh } = useUserConnections(
     organizationId ? { organizationId } : {},
@@ -133,7 +139,7 @@ export default function TaskAssigneePicker({
                 />
               </div>
               <span className="flex-1 text-xs text-muted-foreground">
-                Unassigned
+                {emptyLabel}
               </span>
             </>
           )}
