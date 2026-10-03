@@ -33,7 +33,6 @@ import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useUserRole } from "@/features/organizations/hooks";
 
 /** What each listing's rows are, in the store's kind words — every row on the home says its kind. */
 const LISTING_KIND: Record<string, string> = {
@@ -48,13 +47,9 @@ const LISTING_KIND: Record<string, string> = {
   "shared-with-me": "table",
 };
 
-/** The organization's member-visibility setting, at its one registry address. */
-const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
-
 import {
   HUB_CAPABILITIES,
   attachChangedBy,
-  seesOnlyWhatIsShared,
   type HubItem,
   type HubReadContext,
 } from "./capabilities";
@@ -314,18 +309,10 @@ export function OrganizationHub({
    * What the app keeps for itself is listed with the rest, each row saying its kind, and the Kind
    * filter on the bar narrows it. (The fold still serves the organization's own Tables page.)
    */
-  /**
-   * DOES THIS ORGANIZATION SHOW A MEMBER ONLY WHAT IS SHARED WITH THEM? The
-   * organization's own setting, read through the one knob reader. An
-   * unresolved value reads as "no", which keeps the ordinary sentence — it
-   * never invents a sharing rule nobody measured.
-   */
+  // ACCESS LADDER (custom data adoption, 2026-10-03): every member opens every Organization-level
+  // table, so no listing here says "only what is shared with you" — the retired
+  // custom/member_default_visibility setting no longer decides who can open anything.
   const userId = useAppSelector(selectUserId);
-  const memberVisibility = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
-  // THE SENTENCE IS THE READER'S (UI-FIX-19): shared-only speaks to a member, never to the
-  // owner or an admin, whose own lane still reaches every table.
-  const { role: myRole } = useUserRole(organizationId ?? undefined);
-  const sharedOnly = seesOnlyWhatIsShared(memberVisibility, myRole);
   const [states, setStates] = useState<Record<string, HubListingState>>({});
   const [open, setOpen] = useState<Record<string, boolean>>({ tables: true });
   const [archivedTables, setArchivedTables] = useState<ArchivedTable[] | null>(null);
@@ -735,10 +722,6 @@ export function OrganizationHub({
           kind={capability.id === "tables" ? kind : ALL_KINDS}
           order={order}
           inOrganization={oneOrganization ? organizationName : null}
-          /* THE TABLES LISTING IS EVERY ORGANIZATION'S (DATA-HOME-1): "this organization shows
-             each member only what is shared" is one organization's setting and would be false
-             over a list of eleven. It still speaks on the listings that ARE that organization's. */
-          sharedOnly={capability.id === "tables" ? false : sharedOnly}
           open={open[capability.id] ?? false}
           onOpenChange={(next) => setOpen((prev) => ({ ...prev, [capability.id]: next }))}
         />

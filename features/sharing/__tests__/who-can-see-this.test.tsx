@@ -54,7 +54,7 @@ jest.mock("@/features/agent-context/hooks/useNavTree", () => ({
   useNavTree: () => ({ orgs: [{ id: ORG, name: "Oak & River" }], isLoading: false }),
 }));
 
-import { getResourceVisibility, setStoreLane, type WhoCanSee } from "@/utils/permissions/service";
+import { getResourceVisibility, setResourceShownTo, setStoreLane, type WhoCanSee } from "@/utils/permissions/service";
 import { WhoCanSeeThis } from "@/features/sharing/components/WhoCanSeeThis";
 import { OrgAvailabilityNote } from "@/features/sharing/components/OrgAvailabilityNote";
 
@@ -72,31 +72,30 @@ const door = (over: Record<string, unknown>) => ({
   ...over,
 });
 
-describe("1. the lane is read from the store's lane door", () => {
-  it("a table nobody chose a lane for is Everyone in its organization, at the member default", async () => {
+describe("1. a table row reads its row controls off the store's door (access ladder, custom data adoption)", () => {
+  it("a table row carries Shown to and Published to the web, not the old lane control", async () => {
+    answer = door({ lane: "mine", choice: "mine", shown_to: "only_me", published_to_web: false });
+    const v = await getResourceVisibility("record" as never, TABLE);
+    expect(v.whoCanSee ?? null).toBeNull();
+    expect(v).toMatchObject({ isPublic: false, shownTo: "only_me", homeOrganizationId: ORG });
+    // Only me hides from lists and never locks: membership still reaches it.
+    expect(v.organizationDefault).toMatchObject({ level: "viewer", organizationName: "Oak & River" });
+  });
+
+  it("Anyone with the link is Published to the web", async () => {
+    answer = door({ lane: "world", choice: "community", shown_to: null, published_to_web: true });
+    const v = await getResourceVisibility("record" as never, TABLE);
+    expect(v).toMatchObject({ isPublic: true, shownTo: null });
+  });
+
+  it("Shown to on a table row is written through custom.record_row_controls_set with the row's own organization", async () => {
     answer = door({});
-    const v = await getResourceVisibility("record" as never, TABLE);
-    expect(v.whoCanSee).toEqual({
-      source: "store",
-      choice: "organization",
-      organizationId: ORG,
-      organizationName: "Oak & River",
-      memberDefaultLevel: "viewer",
-      membersReachNow: true,
-      worldOffered: false,
+    const r = await setResourceShownTo("record" as never, TABLE, "only_me");
+    expect(rpc).toHaveBeenCalledWith("store_door_lane", { p_resource_type: "record", p_resource_id: TABLE });
+    expect(customRpc).toHaveBeenCalledWith("record_row_controls_set", {
+      p_organization_id: ORG, p_record_id: TABLE, p_controls: { shown_to: "only_me" },
     });
-  });
-
-  it("on mine it still names the organization and what switching back gives", async () => {
-    answer = door({ lane: "mine", choice: "mine", organization_default: null });
-    const v = await getResourceVisibility("record" as never, TABLE);
-    expect(v.whoCanSee).toMatchObject({ choice: "mine", organizationName: "Oak & River", memberDefaultLevel: "viewer", membersReachNow: false });
-    expect(v.organizationDefault).toBeNull();
-  });
-
-  it("offers Anyone with the link only when the world lane is open", async () => {
-    answer = door({ world_open: true });
-    expect((await getResourceVisibility("record" as never, TABLE)).whoCanSee?.worldOffered).toBe(true);
+    expect(r.success).toBe(true);
   });
 
   it("draws no lane control on an agent; its card publish and Shown to are its row controls", async () => {

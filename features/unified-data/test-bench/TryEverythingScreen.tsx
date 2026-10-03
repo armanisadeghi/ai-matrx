@@ -106,8 +106,13 @@ import type { RouteFact, RoutesInThisBuild } from "./routeFacts";
 import { organizationSavedViews } from "./savedViewsPort";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-/** The organization setting section 2 flips, at its one registry address. */
-const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
+/**
+ * The organization setting section 2 flips, at its one registry address: "Shown to by default" for
+ * table rows (access ladder). It decides which LISTS show a row to members; it never decides who
+ * can open it — every member of the organization can (the retired custom/member_default_visibility
+ * used to, and a setting may never change who can open a record).
+ */
+const MEMBER_VISIBILITY = { feature: "access.shown_to_default", key: "record" } as const;
 const MEMBER_VISIBILITY_FULL_KEY = `${MEMBER_VISIBILITY.feature}.${MEMBER_VISIBILITY.key}`;
 
 // THE WORDS FOR THIS SETTING'S CHOICES ARE NOT IN THIS FILE, and no screen's
@@ -562,7 +567,7 @@ function Bench({
                 title={CONTENTS[1]}
                 state="real"
                 defaultOpen
-                what="Every record and every table can be handed to a colleague at one of four levels — viewer, commenter, editor, admin — and the Access tab answers, in sentences, who can open it and why. One organization setting decides what plain membership alone shows."
+                what="Every record and every table can be handed to a colleague at one of four levels — viewer, commenter, editor, admin — and the Access tab answers, in sentences, who can open it and why. Every member can open every row; one organization setting decides which lists show it by default."
             >
                 <ShareTry table={workingTable} organizationId={organizationId} />
                 <MemberVisibilityControl organizationId={organizationId} userId={userId} />
@@ -1046,7 +1051,7 @@ function StatusStrip({
                     problem={tablesError}
                 />
                 <StatusFact
-                    label="Membership alone shows"
+                    label="Shown to by default"
                     value={visibilityWord}
                     problem={visibilityProblem}
                 />
@@ -1338,7 +1343,7 @@ function MemberVisibilityControl({
     if (doorProblem) {
         return (
             <Refusal>
-                This organization’s “Membership alone shows” setting could not be read — {doorProblem}
+                This organization’s “Shown to by default” setting could not be read — {doorProblem}
               <ErrorAlchemyMenu />
             </Refusal>
         );
@@ -1364,7 +1369,7 @@ function MemberVisibilityControl({
                     <label key={choice.value} className="flex cursor-pointer items-start gap-2 text-sm">
                         <input
                             type="radio"
-                            name="membership-alone-shows"
+                            name="shown-to-by-default"
                             className="mt-0.5"
                             checked={current === choice.value}
                             disabled={busy || current === undefined}
@@ -1382,8 +1387,8 @@ function MemberVisibilityControl({
                     <Aside>Reading the current setting…</Aside>
                 ) : (
                     <Aside>
-                        Switch it and re-open the Access tab above: the sentence it shows changes with it,
-                        because both read this one setting.
+                        Switch it and re-open a table: which rows its list shows changes with it. Opening a
+                        row by its link never does.
                     </Aside>
                 )}
                 {refusal ? <Refusal>{refusal} <ErrorAlchemyMenu error={refusal} /></Refusal> : null}

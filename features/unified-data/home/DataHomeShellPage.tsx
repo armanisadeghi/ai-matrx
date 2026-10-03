@@ -25,16 +25,14 @@ import HeaderStructured from "@/features/shell/components/header/variants/varian
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ORG_FILTER_PARAM } from "@/features/unified-data/hub/dataHomeScope";
-import { seesOnlyWhatIsShared } from "@/features/unified-data/hub/capabilities";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
-import { useUserOrganizations, useUserRole } from "@/features/organizations/hooks";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
@@ -45,8 +43,6 @@ import { MountWhenNear } from "./MountWhenNear";
 import { foundHighlightOf } from "@ai-matrx/kit/reversible";
 import { ARCHIVED_TABLES_SPOT } from "./archivedTablesPlace";
 import type { DataHomeMaking } from "./DataHomeRoute";
-
-const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
 
 /** `making` is the route's: a press made on the old home before the swap still opens here. */
 export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
@@ -88,11 +84,6 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
 
   const dataSource = useMemo(() => recordsDataSource(createClient()), []);
 
-  // Shared-only: the sentence speaks to a member of the ONE organization the filter names, never
-  // to its owner or admins (UI-FIX-19).
-  const memberVisibility = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
-  const { role: myRole } = useUserRole(organizationId ?? undefined);
-  const sharedOnlyHere = Boolean(organizationId) && seesOnlyWhatIsShared(memberVisibility, myRole);
 
   const goBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
@@ -150,7 +141,6 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
             <div className="min-h-0 flex-1">
               <DataHomeList
                 dataSource={dataSource}
-                sharedOnlyHere={sharedOnlyHere}
                 footer={
                   <div className="space-y-4">
                     <MountWhenNear>
