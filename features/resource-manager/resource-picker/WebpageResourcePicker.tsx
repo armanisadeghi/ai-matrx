@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useEffectEvent, useRef, useState } from "react";
+import React, { useEffect, useEffectEvent, useState } from "react";
 import {
-  ChevronLeft,
+  ArrowRight,
   Globe,
   Loader2,
   ExternalLink,
@@ -13,7 +13,6 @@ import {
   Scissors,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
 import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
@@ -23,7 +22,13 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
-import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import {
+  PickerSearchField,
+  PickerView,
+  PickerViewBody,
+  ResourcePickerSubViewHeader,
+} from "./ResourcePickerSubViewHeader";
+import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotice";
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
 import { SaveSourceButton } from "@/features/sources/SaveSourceButton";
@@ -74,6 +79,12 @@ interface WebpageResourcePickerCoreProps {
    */
   onReadUrl?: (url: string) => void;
   initialUrl?: string;
+  /**
+   * Given → the view draws the inside-view header itself: Back beside the URL
+   * box, no title row (the attach menu). Absent → the URL box heads the body
+   * (the Source input, which owns its own chrome).
+   */
+  onBack?: () => void;
 }
 
 // Normalize a URL by prepending https:// if no protocol is present
@@ -145,6 +156,7 @@ export function WebpageResourcePickerCore({
   onFileUrl,
   onReadUrl,
   initialUrl,
+  onBack,
 }: WebpageResourcePickerCoreProps) {
   const [url, setUrl] = useState(initialUrl || "");
   const [showPreview, setShowPreview] = useState(false);
@@ -163,7 +175,7 @@ export function WebpageResourcePickerCore({
   const [pastedText, setPastedText] = useState("");
   const { scrapeUrl, data, isLoading, hasError, failure, reset } =
     useScraperApi();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = usePickerInputFocus();
 
   // The content actually sent on confirm — respects the char limit
   const effectiveContent =
@@ -178,11 +190,6 @@ export function WebpageResourcePickerCore({
       : (data?.markdownRenderable ?? editedContent);
     return charLimit > 0 ? base.slice(0, charLimit) : base;
   })();
-
-  // Auto-focus the input on mount (preventScroll to avoid auto-scroll)
-  useEffect(() => {
-    inputRef.current?.focus({ preventScroll: true });
-  }, []);
 
   const handleScrape = async (rawUrl?: string) => {
     const target = rawUrl ?? url;
@@ -315,7 +322,7 @@ export function WebpageResourcePickerCore({
     if (!isLoading) handleScrape();
   };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
     const pastedText = e.clipboardData.getData("text");
     setUrl(pastedText);
@@ -332,181 +339,197 @@ export function WebpageResourcePickerCore({
 
   const pageTitle = data?.overview.page_title;
 
-  return (
-    <>
-      {/* Input area — rendered inline (no dialog wrapper) */}
-      <div className="flex flex-col max-h-[min(460px,70dvh)]">
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-y-auto p-2">
-            <div className="space-y-2">
-              {/* URL Input */}
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <Input
-                    ref={inputRef}
-                    type="url"
-                    placeholder="https://example.com"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onPaste={handlePaste}
-                    disabled={isLoading}
-                    className="flex-1 text-xs h-7"
-                  />
-                  <Button
-                    onClick={() => handleScrape()}
-                    disabled={!url.trim() || isLoading}
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    variant="ghost"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <ChevronLeft className="w-3.5 h-3.5 rotate-180" />
-                    )}
-                  </Button>
-                </div>
-              </div>
+  // The URL box: the inside-view header's field. Paste is caught on its
+  // wrapper so a pasted link previews at once.
+  const urlField = (
+    <div onPaste={handlePaste}>
+      <PickerSearchField
+        ref={inputRef}
+        type="url"
+        placeholder="https://example.com"
+        value={url}
+        loading={isLoading}
+        onChange={setUrl}
+        onKeyDown={handleKeyDown}
+      />
+    </div>
+  );
 
-              {/* A stage is never silent — the box just emptied, so say what
-                  it took and what will happen to it. */}
-              {stagedYouTube && (
-                <p className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-700 dark:text-emerald-400">
-                  Video added — its transcript keeps the timestamps.
-                </p>
+  const goButton = (
+    <button
+      type="button"
+      onClick={() => handleScrape()}
+      disabled={!url.trim() || isLoading}
+      aria-label="Preview"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 pointer-coarse:h-11 pointer-coarse:w-11"
+    >
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <ArrowRight className="h-4 w-4" />
+      )}
+    </button>
+  );
+
+  const body = (
+    <div className="space-y-2">
+      {/* A stage is never silent — the box just emptied, so say what
+          it took and what will happen to it. */}
+      {stagedYouTube && (
+        <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-sm text-emerald-700 dark:text-emerald-400">
+          Video added — its transcript keeps the timestamps.
+        </p>
+      )}
+
+      {/* Suggestion to switch type — ALWAYS spoken. A host without
+          `onSwitchTo` gets the honest refusal instead of silence
+          (nothing fails silently). */}
+      {suggestedType && (
+        <div className="space-y-2">
+          <div className="flex items-start gap-2 rounded-lg border border-blue-500/20 bg-blue-500/10 p-2.5">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+            <p className="text-sm text-blue-600 dark:text-blue-400">
+              {suggestedType === "youtube_channel" ? (
+                <>
+                  That is a YouTube channel page, not a video. Paste the
+                  link to one video and we will read its transcript with
+                  timestamps.
+                </>
+              ) : (
+                <>
+                  This appears to be a{" "}
+                  {suggestedType === "youtube"
+                    ? "YouTube video"
+                    : suggestedType === "image_url"
+                      ? "image"
+                      : "file"}
+                  {/* Never advice we have not verified: the old copy
+                      sent people to Upload / Add file, neither of
+                      which takes a URL. */}
+                  {onSwitchTo
+                    ? "."
+                    : " — and this box cannot bring it in. Add it from the Rulebook's own Resources panel, which reads videos, or paste the text instead."}
+                </>
               )}
+            </p>
+          </div>
+          {onSwitchTo && suggestedType !== "youtube_channel" && (
+            <Button
+              size="sm"
+              className="h-9 w-full text-sm pointer-coarse:h-11"
+              onClick={() => onSwitchTo(suggestedType, url)}
+            >
+              <Globe className="mr-1.5 h-4 w-4" />
+              Switch to{" "}
+              {suggestedType === "youtube"
+                ? "YouTube"
+                : suggestedType === "image_url"
+                  ? "Image link"
+                  : "File link"}
+            </Button>
+          )}
+        </div>
+      )}
 
-              {/* Suggestion to switch type — ALWAYS spoken. A host without
-                  `onSwitchTo` gets the honest refusal instead of silence
-                  (nothing fails silently). */}
-              {suggestedType && (
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2 p-2 border border-blue-500/20 bg-blue-500/10 rounded">
-                    <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-blue-600 dark:text-blue-400">
-                      {suggestedType === "youtube_channel" ? (
-                        <>
-                          That is a YouTube channel page, not a video. Paste the
-                          link to one video and we will read its transcript with
-                          timestamps.
-                        </>
-                      ) : (
-                        <>
-                          This appears to be a{" "}
-                          {suggestedType === "youtube"
-                            ? "YouTube video"
-                            : suggestedType === "image_url"
-                              ? "image"
-                              : "file"}
-                          {/* Never advice we have not verified: the old copy
-                              sent people to Upload / Add file, neither of
-                              which takes a URL. */}
-                          {onSwitchTo
-                            ? "."
-                            : " — and this box cannot bring it in. Add it from the Rulebook's own Resources panel, which reads videos, or paste the text instead."}
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  {onSwitchTo && suggestedType !== "youtube_channel" && (
-                    <Button
-                      size="sm"
-                      className="w-full text-xs h-7"
-                      onClick={() => onSwitchTo(suggestedType, url)}
-                    >
-                      <Globe className="w-3.5 h-3.5 mr-1.5" />
-                      Switch to{" "}
-                      {suggestedType === "youtube"
-                        ? "YouTube"
-                        : suggestedType === "image_url"
-                          ? "Image link"
-                          : "File link"}
-                    </Button>
-                  )}
-                </div>
-              )}
+      {/* Failure — plain words, a remedy the person can press, and the
+          engineer's report only behind "Technical details". Never a stage or a
+          stack as the body (W44). */}
+      {hasError && failure && (
+        <ScrapeFailureNotice
+          failure={failure}
+          remedyAction={
+            pasteOpen
+              ? undefined
+              : {
+                  label: "Paste the text instead",
+                  onClick: () => setPasteOpen(true),
+                }
+          }
+        />
+      )}
 
-              {/* Failure — plain words, a remedy the person can press, and the
-                  engineer's report only behind "Technical details". Never a stage or a
-                  stack as the body (W44). */}
-              {hasError && failure && (
-                <ScrapeFailureNotice
-                  failure={failure}
-                  remedyAction={
-                    pasteOpen
-                      ? undefined
-                      : {
-                          label: "Paste the text instead",
-                          onClick: () => setPasteOpen(true),
-                        }
-                  }
-                />
-              )}
-
-              {/* The paste lane the remedy opens. */}
-              {pasteOpen && (
-                <div className="space-y-2 rounded border border-border bg-muted/40 p-2">
-                  <ProTextarea
-                    value={pastedText}
-                    onChange={(e) => setPastedText(e.target.value)}
-                    placeholder="Paste the text of the page here…"
-                    minHeight={96}
-                    maxHeight={200}
-                    enableTextStats={false}
-                    auxiliaryControlsLabel="pasted page text"
-                    wrapperClassName="w-full"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => {
-                        setPasteOpen(false);
-                        setPastedText("");
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="h-7 text-xs"
-                      disabled={!pastedText.trim()}
-                      onClick={() => {
-                        const text = pastedText.trim();
-                        if (!text) return;
-                        onSelect({
-                          url,
-                          title: url || "Pasted page text",
-                          textContent: text,
-                          charCount: text.length,
-                          scrapedAt: new Date().toISOString(),
-                        }, { processedDocumentId: null });
-                        setPasteOpen(false);
-                        setPastedText("");
-                        setUrl("");
-                        reset();
-                      }}
-                    >
-                      Add this text
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-            </div>
-
-            {/* Loading state */}
-            {isLoading && (
-              <p className="flex items-center gap-2 px-1 py-2 text-sm text-muted-foreground" role="status">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Reading the page…
-              </p>
-            )}
+      {/* The paste lane the remedy opens. */}
+      {pasteOpen && (
+        <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-2">
+          <ProTextarea
+            value={pastedText}
+            onChange={(e) => setPastedText(e.target.value)}
+            placeholder="Paste the text of the page here…"
+            minHeight={120}
+            maxHeight={240}
+            enableTextStats={false}
+            auxiliaryControlsLabel="pasted page text"
+            wrapperClassName="w-full"
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 text-sm pointer-coarse:h-11"
+              onClick={() => {
+                setPasteOpen(false);
+                setPastedText("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="h-9 text-sm pointer-coarse:h-11"
+              disabled={!pastedText.trim()}
+              onClick={() => {
+                const text = pastedText.trim();
+                if (!text) return;
+                onSelect({
+                  url,
+                  title: url || "Pasted page text",
+                  textContent: text,
+                  charCount: text.length,
+                  scrapedAt: new Date().toISOString(),
+                }, { processedDocumentId: null });
+                setPasteOpen(false);
+                setPastedText("");
+                setUrl("");
+                reset();
+              }}
+            >
+              Add this text
+            </Button>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Loading state */}
+      {isLoading && (
+        <p className="flex items-center gap-2 px-1 py-2 text-sm text-muted-foreground" role="status">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Reading the page…
+        </p>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {onBack ? (
+        <PickerView>
+          <ResourcePickerSubViewHeader
+            onBack={onBack}
+            search={urlField}
+            actions={goButton}
+          />
+          <PickerViewBody>{body}</PickerViewBody>
+        </PickerView>
+      ) : (
+        // Hosted without Back (the Source input): the URL box heads the body.
+        <div className="flex max-h-[min(460px,70dvh)] min-h-0 flex-col">
+          <div className="flex shrink-0 items-center gap-1.5 p-1.5">
+            <div className="min-w-0 flex-1">{urlField}</div>
+            {goButton}
+          </div>
+          <PickerViewBody className="pt-0">{body}</PickerViewBody>
+        </div>
+      )}
 
       {/* Preview Modal */}
       <Dialog open={showPreview} onOpenChange={handleClosePreview}>
@@ -522,7 +545,7 @@ export function WebpageResourcePickerCore({
 
           {/* Loading State */}
           {!data && isLoading && (
-            <div className="flex-1 flex flex-col items-center justify-center p-">
+            <div className="flex-1 flex flex-col items-center justify-center p-6">
               <div className="relative">
                 <div className="w-20 h-20 relative">
                   <div className="absolute inset-0 border-4 border-teal-200 dark:border-teal-800 rounded-full"></div>
@@ -577,11 +600,11 @@ export function WebpageResourcePickerCore({
                   <TabsList className="mx-2 mt-2 h-9 w-fit shrink-0">
                     <TabsTrigger
                       value="pretty"
-                      className="text-xs rounded-none"
+                      className="text-sm rounded-none"
                     >
                       Pretty
                     </TabsTrigger>
-                    <TabsTrigger value="edit" className="text-xs rounded-none">
+                    <TabsTrigger value="edit" className="text-sm rounded-none">
                       Edit text
                     </TabsTrigger>
                   </TabsList>
@@ -605,7 +628,7 @@ export function WebpageResourcePickerCore({
                     className="flex-1 flex flex-col overflow-hidden min-h-0 mt-0 data-[state=inactive]:hidden"
                   >
                     <div className="flex items-center justify-between px-6 py-2 bg-muted border-b border-border flex-shrink-0">
-                      <span className="text-xs font-medium text-foreground">
+                      <span className="text-sm font-medium text-foreground">
                         Page text
                       </span>
                       <div className="flex items-center gap-2">
@@ -655,11 +678,11 @@ export function WebpageResourcePickerCore({
               {/* Character limit slider */}
               <div className="flex-shrink-0 px-6 py-3 border-t border-border bg-muted/50">
                 <div className="flex items-center gap-3">
-                  <Scissors className="w-3.5 h-3.5 text-muted-foreground/70 flex-shrink-0" />
+                  <Scissors className="w-4 h-4 text-muted-foreground/70 flex-shrink-0" />
                   {/* Plain words, one line (copy law R9, V4-F 2026-09-30): "Keep  All",
                       "Keep  12K" — never "Limit chars 105,447 / 105,447" wrapped
                       onto two lines; the exact count lives in the footer. */}
-                  <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                  <span className="text-xs text-muted-foreground flex-shrink-0">
                     Keep
                   </span>
                   <Slider
@@ -672,7 +695,7 @@ export function WebpageResourcePickerCore({
                     }}
                     className="flex-1"
                   />
-                  <span className="text-[10px] tabular-nums text-foreground flex-shrink-0 whitespace-nowrap text-right">
+                  <span className="text-xs tabular-nums text-foreground flex-shrink-0 whitespace-nowrap text-right">
                     {charLimit > 0
                       ? formatCount(effectiveContent.length, { style: "compact" })
                       : "All"}
@@ -681,7 +704,7 @@ export function WebpageResourcePickerCore({
                     <button
                       type="button"
                       onClick={() => setCharLimit(0)}
-                      className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0"
                     >
                       Reset
                     </button>
@@ -696,9 +719,9 @@ export function WebpageResourcePickerCore({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 truncate min-w-0"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 truncate min-w-0"
                   >
-                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                    <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                     <span className="truncate">{url}</span>
                   </a>
                   {/*
@@ -706,16 +729,16 @@ export function WebpageResourcePickerCore({
                     twice — "1,258,291 chars" beside "1.2 MB" — and the second
                     was a character count wearing a byte formatter's units.
                   */}
-                  <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                  <span className="text-xs text-muted-foreground flex-shrink-0">
                     {formatCount(effectiveContent.length)} characters
                   </span>
                   {editedContent !== data.textContent && (
-                    <span className="text-[10px] text-orange-600 dark:text-orange-500 flex-shrink-0">
+                    <span className="text-xs text-orange-600 dark:text-orange-500 flex-shrink-0">
                       Edited
                     </span>
                   )}
                   {charLimit > 0 && (
-                    <span className="text-[10px] text-purple-600 dark:text-purple-400 flex-shrink-0">
+                    <span className="text-xs text-purple-600 dark:text-purple-400 flex-shrink-0">
                       Trimmed
                     </span>
                   )}
@@ -724,14 +747,16 @@ export function WebpageResourcePickerCore({
                   <Button
                     variant="outline"
                     onClick={handleClosePreview}
-                    size="xs"
+                    size="sm"
+                    className="h-9 pointer-coarse:h-11"
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleConfirm}
                     disabled={!effectiveContent.trim()}
-                    size="xs"
+                    size="sm"
+                    className="h-9 pointer-coarse:h-11"
                   >
                     Add page
                   </Button>
@@ -752,20 +777,11 @@ export function WebpageResourcePicker({
   initialUrl,
 }: WebpageResourcePickerProps) {
   return (
-    <div className="flex flex-col max-h-[min(460px,70dvh)]">
-      {/* Header */}
-      <ResourcePickerSubViewHeader
-        title="Web page"
-        onBack={onBack}
-        icon={
-          <Globe className="h-3.5 w-3.5 shrink-0 text-teal-600 dark:text-teal-400" />
-        }
-      />
-      <WebpageResourcePickerCore
-        onSelect={onSelect}
-        onSwitchTo={onSwitchTo}
-        initialUrl={initialUrl}
-      />
-    </div>
+    <WebpageResourcePickerCore
+      onBack={onBack}
+      onSelect={onSelect}
+      onSwitchTo={onSwitchTo}
+      initialUrl={initialUrl}
+    />
   );
 }

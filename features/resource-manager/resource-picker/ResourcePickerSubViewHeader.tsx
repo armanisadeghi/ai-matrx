@@ -14,7 +14,7 @@
  */
 
 import { forwardRef, type ComponentType, type CSSProperties, type KeyboardEventHandler, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link2, Loader2, Search, X } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 interface ResourcePickerSubViewHeaderProps {
@@ -83,7 +83,13 @@ export const PickerSearchField = forwardRef<
       {loading ? (
         <Loader2 className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
       ) : (
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        (() => {
+          // A link box reads as a link, a search box as a search.
+          const Lead = type === "url" ? Link2 : Search;
+          return (
+            <Lead className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          );
+        })()
       )}
       <input
         ref={ref}

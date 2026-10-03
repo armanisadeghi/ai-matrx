@@ -1,11 +1,16 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Loader2, AlertCircle, ExternalLink } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ArrowRight, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
-import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import {
+    PickerSearchField,
+    PickerView,
+    PickerViewBody,
+    ResourcePickerSubViewHeader,
+} from "./ResourcePickerSubViewHeader";
+import { usePickerInputFocus } from "./usePickerInputFocus";
 import { youtubeId } from "@/lib/media/youtube";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -74,12 +79,7 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
     const [isValidating, setIsValidating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [videoPreview, setVideoPreview] = useState<YouTubeVideo | null>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    // Auto-focus the input on mount (preventScroll to avoid auto-scroll)
-    useEffect(() => {
-        inputRef.current?.focus({ preventScroll: true });
-    }, []);
+    const inputRef = usePickerInputFocus();
 
     // Auto-validate if initialUrl is provided
     useEffect(() => {
@@ -132,13 +132,15 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
         }
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !isValidating) {
-            handleValidate();
-        }
+    // Enter belongs to this field — same rule as "Add a link" (PB-04 run 2).
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isValidating) handleValidate();
     };
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
         const pastedText = e.clipboardData.getData('text');
         setUrl(pastedText);
 
@@ -172,80 +174,68 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
     };
 
     return (
-        <div className="flex flex-col max-h-[min(460px,70dvh)]">
-            {/* Header */}
+        <PickerView>
             <ResourcePickerSubViewHeader
-                title="YouTube video"
                 onBack={onBack}
-                icon={
-                    <Youtube className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" />
+                search={
+                    <div onPaste={handlePaste}>
+                        <PickerSearchField
+                            ref={inputRef}
+                            type="url"
+                            value={url}
+                            onChange={setUrl}
+                            onKeyDown={handleKeyDown}
+                            loading={isValidating}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                        />
+                    </div>
+                }
+                actions={
+                    <button
+                        type="button"
+                        onClick={handleValidate}
+                        disabled={isValidating || !url.trim()}
+                        aria-label="Preview"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 pointer-coarse:h-11 pointer-coarse:w-11"
+                    >
+                        {isValidating ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <ArrowRight className="h-4 w-4" />
+                        )}
+                    </button>
                 }
             />
 
-            {/* Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
-                <div className="space-y-2">
-                    <div className="flex gap-2">
-                        <Input
-                            ref={inputRef}
-                            type="text"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            onPaste={handlePaste}
-                            placeholder="https://www.youtube.com/watch?v=..."
-                            className="flex-1 text-xs h-7"
-                            disabled={isValidating}
-                        />
-                        <Button
-                            size="sm"
-                            onClick={handleValidate}
-                            disabled={isValidating || !url.trim()}
-                            className="h-7 w-7 p-0"
-                            variant="ghost"
-                        >
-                            {isValidating ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                                <ChevronLeft className="w-3.5 h-3.5 rotate-180" />
-                            )}
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Error */}
+            <PickerViewBody className="space-y-2">
                 {error && (
-                    <div className="flex items-start gap-2 p-2 border border-destructive/20 bg-destructive/10 rounded">
-                        <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-destructive">{error}</p>
-                      <ErrorAlchemyMenu error={error} />
+                    <div className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-2.5">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                        <p className="min-w-0 flex-1 text-sm text-destructive">{error}</p>
+                        <ErrorAlchemyMenu error={error} />
                     </div>
                 )}
 
-                {/* Video Preview - Compact version */}
                 {videoPreview && (
-                    <div className="border-border rounded-lg overflow-hidden">
-                        {/* Thumbnail - Smaller */}
-                        <div className="relative h-32 bg-muted">
+                    <div className="overflow-hidden rounded-lg border border-border">
+                        <div className="relative aspect-video w-full bg-muted">
                             <img
                                 src={videoPreview.thumbnail}
                                 alt={videoPreview.title}
-                                className="w-full h-full object-cover"
+                                className="h-full w-full object-cover"
                             />
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center opacity-90">
-                                    <Youtube className="w-6 h-6 text-white ml-0.5" />
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 opacity-90">
+                                    <Youtube className="ml-0.5 h-6 w-6 text-white" />
                                 </div>
                             </div>
                         </div>
-
-                        {/* Info - Compact */}
-                        <div className="p-2 space-y-1 bg-background">
-                            <h3 className="text-xs font-medium text-foreground line-clamp-2">
+                        <div className="space-y-1 bg-background p-2.5">
+                            <h3 className="line-clamp-2 text-sm font-medium text-foreground">
                                 {videoPreview.title}
                             </h3>
                             {videoPreview.channelName && (
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                     {videoPreview.channelName}
                                 </p>
                             )}
@@ -253,31 +243,28 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
                                 href={videoPreview.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                className="flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
                             >
                                 Watch on YouTube
-                                <ExternalLink className="w-2.5 h-2.5" />
+                                <ExternalLink className="h-3 w-3" />
                             </a>
                         </div>
                     </div>
                 )}
+            </PickerViewBody>
 
-            </div>
-
-            {/* Footer with Add Button - Fixed at bottom */}
             {videoPreview && (
-                <div className="border-t border-border p-2">
+                <div className="shrink-0 border-t border-border p-1.5">
                     <Button
                         onClick={handleSelect}
-                        className="w-full"
+                        className="h-9 w-full text-sm pointer-coarse:h-11"
                         size="sm"
                     >
-                        <Youtube className="w-4 h-4 mr-2" />
+                        <Youtube className="mr-2 h-4 w-4" />
                         Add video
                     </Button>
                 </div>
             )}
-        </div>
+        </PickerView>
     );
 }
-
