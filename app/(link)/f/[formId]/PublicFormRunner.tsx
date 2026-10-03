@@ -102,10 +102,18 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
   const inFlight = useRef<Promise<void> | null>(null);
 
   // ── WHERE WAS I: the link's fragment first, then this browser's own memory ──────────
+  // The fragment is read ONCE per mount and kept here: the effect below clears it from the address
+  // bar, and an effect that runs twice (React's development double-run, a remount) read an empty
+  // fragment the second time and opened the form on question one — the other device's place lost
+  // (MAKE-HOME W5 walk, 2026-10-02).
+  const linkSecret = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     let cancelled = false;
-    const fromLink = /(?:^|[#&])resume=([A-Za-z0-9_-]{16,})/.exec(window.location.hash)?.[1] ?? null;
-    if (fromLink) {
+    if (linkSecret.current === undefined) {
+      linkSecret.current = /(?:^|[#&])resume=([A-Za-z0-9_-]{16,})/.exec(window.location.hash)?.[1] ?? null;
+    }
+    const fromLink = linkSecret.current;
+    if (fromLink && window.location.hash) {
       // The secret is this person's; it does not stay in the address bar to be screenshotted.
       replaceAddressWithoutNavigating(window.location.pathname + window.location.search);
     }

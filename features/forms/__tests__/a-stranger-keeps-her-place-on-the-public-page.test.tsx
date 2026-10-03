@@ -16,7 +16,7 @@
 //
 // Ridgeline Physical Therapy's new-patient intake: Harbor Sports Medicine refers Leilani Okafor.
 
-import { act } from "react";
+import { StrictMode, act } from "react";
 import { createRoot } from "react-dom/client";
 import type { ReactElement } from "react";
 
@@ -199,6 +199,34 @@ describe("keep my place", () => {
     expect(seen.at(-1)!["resumed"]).toBe(true);
     expect(host.textContent).toMatch(/Picked up where you left off/);
     expect(window.localStorage.getItem(`matrx:form-place:${FORM.form_id}`)).toBe(SECRET);
+  });
+
+  // MAKE-HOME W5 (walk 2026-10-02): the effect clears the fragment, and an effect that runs twice
+  // (React's StrictMode double-run in development, a remount) read an empty fragment the second time —
+  // the other device opened on question one and her place was lost. The break this catches: the
+  // fragment read inside the effect on every run instead of once per mount.
+  it("opens the other device's place even when the page's effects run twice", async () => {
+    window.history.replaceState(null, "", `/f/${FORM.form_id}#resume=${SECRET}`);
+    const calls = mockFetch((url) =>
+      url.endsWith("/draft/resume")
+        ? { ok: true, state: "found", answers: { full_name: "Leilani Okafor", phone: "(541) 555-0142" }, saved_at: new Date().toISOString(), expires_at: null, message: null }
+        : { ok: true, asks: [] },
+    );
+    const { host } = render(
+      <StrictMode>
+        <PublicFormRunner form={FORM} />
+      </StrictMode>,
+    );
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const resumes = calls.filter((c) => c.url.endsWith("/draft/resume"));
+    expect(resumes.length).toBeGreaterThan(0);
+    expect(resumes.every((c) => c.body["draft"] === SECRET)).toBe(true);
+    expect(seen.at(-1)!["initialAnswers"]).toEqual({ full_name: "Leilani Okafor", phone: "(541) 555-0142" });
+    expect(host.textContent).toMatch(/Picked up where you left off/);
+    expect(window.location.hash).toBe("");
   });
 
   it("a place that is gone says so in the store's words, and the form starts fresh", async () => {
