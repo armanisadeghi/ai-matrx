@@ -8,6 +8,11 @@ live mutations (one an auth bypass). Every guarantee below answers one of those 
 
 - Per-REPOSITORY lock: plants anywhere in one repo serialize (lock dir, stale-pid steal), because a test
   run can see another plant's live mutation in any file it imports or caches.
+- Live-plant marker: while the lock is held, `<git common dir>/matrx-live-plants/<pid>` holds
+  "<pid>\n<absolute planted path>\n" (the lock's pid file has the same two lines). Every repo's
+  scripts/sync-main.py reads both and never sweeps a file with a live plant into its commit; a dead
+  pid means no plant. Born 2026-10-02 after two sweeps pushed live mutations (aidream e91f90881e,
+  491fbdc7d7). Keep this format: the sweep's live_plants() parses it.
 - The mutation lives on disk only for the command; restore runs in `finally` and on SIGINT/SIGTERM.
 - Restore locates the mutation by its surrounding CONTEXT, so a peer's edit elsewhere in the file
   survives (a deletion mutation included). If it cannot, it screams and exits 3.
@@ -98,6 +103,22 @@ def pid_alive(pid):
         return True
 
 
+def write_marker(path):
+    """The sweep's contract (see docstring): <git common dir>/matrx-live-plants/<pid>."""
+    repo = repo_of(path)
+    if not repo:
+        return None
+    rc, common = git(repo, "rev-parse", "--git-common-dir")
+    if rc != 0:
+        return None
+    d = os.path.join(repo, common.strip(), "matrx-live-plants")
+    os.makedirs(d, exist_ok=True)
+    m = os.path.join(d, str(os.getpid()))
+    with open(m, "w") as f:
+        f.write(f"{os.getpid()}\n{path}\n")
+    return m
+
+
 def acquire_lock(path, wait):
     # One lock per REPOSITORY, not per file: a test run while another plant's mutation is live anywhere
     # in the repo can import that mutation or read a runner cache built from it (observed 2026-09-15:
@@ -159,9 +180,16 @@ def main():
     if lock is None:
         print(f"LOCK TIMEOUT on {path}", file=sys.stderr)
         return 4
+    marker = None
     try:
+        marker = write_marker(path)
         return run(a, path, old, new, cmd)
     finally:
+        if marker:
+            try:
+                os.remove(marker)
+            except OSError:
+                pass
         shutil.rmtree(lock, ignore_errors=True)
 
 

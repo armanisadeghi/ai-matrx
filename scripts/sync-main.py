@@ -707,9 +707,60 @@ def safe_write(p, b, path):
             % (p, why, path))
 
 
+# ── live forcing-function plants ────────────────────────────────────────────────────────────
+# plant.py (skill forcing-function-tests) puts a mutation on disk for the length of one test run.
+# While it does, it keeps two records, each "<pid>\n<absolute planted path>\n":
+#   <git common dir>/matrx-live-plants/<pid>                        (the marker; any TMPDIR)
+#   ${PLANT_STATE_DIR:-<tmp>/plant-mutation-state}/locks/<sha1>/pid  (its per-repo lock)
+# A record whose pid is dead is no plant (plant.py's own stale-lock rule). Step 1 never commits a
+# file with a live plant; it goes in the next sync. 2026-10-02: two sweeps pushed live mutations.
+PLANT_MARKER_DIR = "matrx-live-plants"
+
+
+def _pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def live_plants(top, common_dir):
+    """[(repo-relative path, pid)] for every live plant inside the checkout at `top`."""
+    import glob
+    state = os.environ.get("PLANT_STATE_DIR") or os.path.join(tempfile.gettempdir(),
+                                                                "plant-mutation-state")
+    records = glob.glob(os.path.join(common_dir, PLANT_MARKER_DIR, "*"))
+    records += glob.glob(os.path.join(state, "locks", "*", "pid"))
+    top = os.path.realpath(top)
+    found = {}
+    for rec in records:
+        try:
+            with open(rec) as f:
+                pid, path = f.read().split("\n")[:2]
+            pid = int(pid)
+        except (OSError, ValueError):
+            continue
+        if not path.strip() or not _pid_alive(pid):
+            continue
+        rel = os.path.relpath(os.path.realpath(path.strip()), top)
+        if rel == ".." or rel.startswith(".." + os.sep) or os.path.isabs(rel):
+            continue
+        found[rel] = pid
+    return sorted(found.items())
+
+
 # ── step 1 ──────────────────────────────────────────────────────────────────────────────────
 def commit_all():
-    git("add", "-A")
+    _, common, _ = git("rev-parse", "--git-common-dir")
+    planted = live_plants(os.getcwd(), os.path.abspath(common.strip()))
+    git("add", "-A", "--", ".", *[":(exclude,literal)" + p for p, _ in planted])
+    for p, pid in planted:
+        git("restore", "--staged", "--", ":(literal)" + p, check=False)
+        say("SWEEP SKIPPED %s: a forcing-function plant (pid %d) is live in it; the next sync "
+            "commits it." % (p, pid))
     rc, _, _ = git("diff", "--cached", "--quiet", check=False)
     if rc == 0:
         return 0
