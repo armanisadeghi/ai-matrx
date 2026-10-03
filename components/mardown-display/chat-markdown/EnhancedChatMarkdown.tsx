@@ -11,6 +11,7 @@
 // features/rich-document/FEATURE.md and the `rich-document-actions` skill.
 // ─────────────────────────────────────────────────────────────────────────
 
+import type { AnswerEditRemarkMeta } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
 import { cn } from "@/styles/themes/utils";
 import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/utils/content-splitter-v2";
@@ -138,7 +139,7 @@ export interface ChatMarkdownDisplayProps {
    * because this content is display text (whitespace-normalized, reasoning
    * scrubbed), never the stored row (RC-B5).
    */
-  onContentChange?: (newContent: string, previousContent: string) => void;
+  onContentChange?: (newContent: string, previousContent: string, remark?: AnswerEditRemarkMeta) => void;
   analysisData?: Record<string, unknown>;
   messageId?: string;
   allowFullScreenEditor?: boolean;
@@ -1079,7 +1080,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
   }, []);
 
   const replaceBlockContent = useCallback(
-    (original: string, replacement: string) => {
+    (original: string, replacement: string, remark?: AnswerEditRemarkMeta) => {
       const { currentContent, onContentChange, applyLocalEdits } = latestRef.current;
       try {
         const idx = currentContent.indexOf(original);
@@ -1095,7 +1096,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
           currentContent.slice(0, idx) +
           replacement +
           currentContent.slice(idx + original.length);
-        onContentChange?.(updatedContent, currentContent);
+        onContentChange?.(updatedContent, currentContent, remark);
         if (applyLocalEdits !== false) {
           setEditedContent(updatedContent);
         }

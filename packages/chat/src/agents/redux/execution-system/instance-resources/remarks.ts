@@ -31,6 +31,7 @@
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { ManagedResource } from "../../../types/instance.types";
 import { generateResourceId } from "../utils/ids";
+import { remarkDiff } from "./remark-diff";
 import {
   addResource,
   removeResource,
@@ -87,6 +88,22 @@ export interface EditRemark {
   origin: "text" | "choice" | "kind";
   /** A caller's projection that replaces the raw diff ("I chose SQLite"). */
   projection: string | null;
+  /** What the projection answers (a decision's prompt), shown as the quote. */
+  quote?: string | null;
+}
+
+/**
+ * What an in-body edit says about itself when it is not plain typing: a
+ * decision choice or a kind interaction, with the words that replace the raw
+ * diff. Passed down `onContentChange` → `commitInlineContentEdit` →
+ * `saveAnswerEdit` (the ONE edit stager).
+ */
+export interface AnswerEditRemarkMeta {
+  origin: "choice" | "kind";
+  /** "I chose SQLite." — replaces the raw diff when it is the only change. */
+  projection?: string | null;
+  /** The decision's prompt (or the shape's title). */
+  quote?: string | null;
 }
 
 export interface AnswersRemark {
@@ -172,7 +189,7 @@ export function remarkReadableText(item: RemarkItem): string {
     case "choice":
       return [item.title ? `> ${item.title}` : null, item.chosen].filter(Boolean).join("\n\n");
     case "edit":
-      return item.projection ?? `- ${item.before}\n+ ${item.after}`;
+      return item.projection ?? remarkDiff(item.before, item.after);
     case "answers":
       return item.answers.map((a) => `- ${a.question}: ${a.answer}`).join("\n");
     case "interaction":

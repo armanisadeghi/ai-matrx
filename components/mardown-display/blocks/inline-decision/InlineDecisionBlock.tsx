@@ -14,7 +14,11 @@ import type { InlineDecision, InlineDecisionOption } from "./types";
 interface InlineDecisionBlockProps {
   decision: InlineDecision;
   isStreamActive?: boolean;
-  onResolve: (decisionId: string, rawXml: string, chosenText: string) => void;
+  /**
+   * `choiceLabel` is the picked option's label when its text was kept as is
+   * (null for Custom or an edited text) — the words the choice remark uses.
+   */
+  onResolve: (decisionId: string, rawXml: string, chosenText: string, choiceLabel: string | null) => void;
   rawXml: string;
 }
 
@@ -60,7 +64,9 @@ export default function InlineDecisionBlock({
     if (!editText.trim() || isStreamActive) return;
     setFadeOut(true);
     setTimeout(() => {
-      onResolve(decision.id, rawXml, editText.trim());
+      const picked = allOptions.find((o) => o.id === selectedId);
+      const kept = picked && picked.id !== "custom" && picked.text.trim() === editText.trim();
+      onResolve(decision.id, rawXml, editText.trim(), kept ? picked.label : null);
     }, 280);
   };
 

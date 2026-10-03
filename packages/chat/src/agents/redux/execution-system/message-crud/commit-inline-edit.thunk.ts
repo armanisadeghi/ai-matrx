@@ -53,6 +53,7 @@ import { toast } from "../../../../host/notify";
 import { buildContentBlocksForSave } from "../../../../cx-chat/utils/buildContentBlocksForSave";
 import { stripCitationMarkers } from "../messages/message-citations";
 import { extractFlatText } from "../messages/messages.selectors";
+import type { AnswerEditRemarkMeta } from "../instance-resources/remarks";
 
 /** ms of idle time before the DB write fires. */
 const DB_DEBOUNCE_MS = 800;
@@ -65,6 +66,11 @@ interface PendingEdit {
   /** What the live render showed before this window (restored on refusal). */
   requestId?: string;
   priorEditedText: string | null;
+  /**
+   * What the window's edits were (a decision choice / kind write-back). Any
+   * plain edit in the same window clears it — the diff then says everything.
+   */
+  remark: AnswerEditRemarkMeta | null;
 }
 
 // Module-level debounce map. Keyed by messageId so each message has its
@@ -95,6 +101,8 @@ interface CommitInlineEditArgs {
    * record's current display projection is the base.
    */
   previousText?: string;
+  /** Not plain typing: the choice / kind words that stand in for the diff. */
+  remark?: AnswerEditRemarkMeta | null;
 }
 
 /**
@@ -103,7 +111,7 @@ interface CommitInlineEditArgs {
  * doesn't need to await this.
  */
 export const commitInlineContentEdit =
-  ({ conversationId, messageId, requestId, newText: rawNewText, previousText }: CommitInlineEditArgs) =>
+  ({ conversationId, messageId, requestId, newText: rawNewText, previousText, remark }: CommitInlineEditArgs) =>
   (dispatch: ChatDispatch, getState: () => ChatRootState) => {
     // Inline `<matrxcite n="…" />` citation markers are RENDER-ONLY — the
     // displayed text a cited message hands to inline editors contains them,
@@ -169,7 +177,25 @@ export const commitInlineContentEdit =
       void persistInlineEdit(dispatch, conversationId, messageId, entry);
     }, DB_DEBOUNCE_MS);
 
-    pendingByMessageId.set(messageId, { timer, latestText: newText, baseText, requestId, priorEditedText });
+    // One window, one remark meta: a second worded change in the window joins
+    // the first; a plain edit in the window drops the words (the diff speaks).
+    const windowRemark: AnswerEditRemarkMeta | null = !existing
+      ? (remark ?? null)
+      : existing.remark && remark?.projection && existing.remark.projection
+        ? {
+            origin: existing.remark.origin === remark.origin ? remark.origin : "kind",
+            projection: `${existing.remark.projection}\n${remark.projection}`,
+            quote: existing.remark.quote === remark.quote ? (remark.quote ?? null) : null,
+          }
+        : null;
+    pendingByMessageId.set(messageId, {
+      timer,
+      latestText: newText,
+      baseText,
+      requestId,
+      priorEditedText,
+      remark: windowRemark,
+    });
   };
 
 /**
@@ -211,6 +237,7 @@ async function persistInlineEdit(
       conversationId,
       messageId,
       displayEdit: { previous: entry.baseText, next: entry.latestText },
+      remark: entry.remark,
     }),
   );
   if (!saveAnswerEdit.rejected.match(result)) return;

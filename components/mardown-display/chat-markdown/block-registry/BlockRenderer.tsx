@@ -1,4 +1,5 @@
 "use client";
+import type { AnswerEditRemarkMeta } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import { durableRecordId } from "@ai-matrx/kit/ids";
 import React, { useCallback } from "react";
 import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
@@ -75,7 +76,7 @@ interface BlockRendererProps {
   taskId?: string;
   isLastReasoningBlock?: boolean;
   /** Generic handler: replaces `original` substring with `replacement` in the full content string. */
-  replaceBlockContent: (original: string, replacement: string) => void;
+  replaceBlockContent: (original: string, replacement: string, remark?: AnswerEditRemarkMeta) => void;
   handleOpenEditor: () => void;
   /**
    * Streaming partial kinds ONLY. Set on the recursive render of a
@@ -762,7 +763,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           // not-streaming, exactly like the old `case "table"`.
           onContentChange={
             !loading && replaceBlockContent
-              ? (updated: string) => replaceBlockContent(block.content, updated)
+              ? (updated: string) => replaceBlockContent(block.content, updated, { origin: "kind" })
               : undefined
           }
         />,

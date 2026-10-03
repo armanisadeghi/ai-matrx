@@ -442,6 +442,12 @@ export function spliceDisplayEdit(
       (isl) => (p.start < isl.end && p.end > isl.start) && !(p.start >= isl.end || p.end <= isl.start),
     );
     if (crosses) {
+      // A block that REPLACES ITSELF (a decision resolved to the chosen text, a
+      // kind writing back its whole body) changes one island edge to edge —
+      // the diff splits that into hunks across its edges. Accept it as one
+      // island edit when the whole change sits inside that one island.
+      const whole = wholeIslandReplacement(stored, previousDisplay, nextDisplay, storedAt, islands);
+      if (whole) return whole;
       return {
         error: "One change crosses the edge of protected content (code, math, a table or a section). Nothing was saved — change it inside that block or in the editor.",
       };
@@ -502,4 +508,50 @@ export function spliceDisplayEdit(
   }
   const size = describeDisplayChange(previousDisplay, diffDisplayHunks(previousDisplay, nextDisplay));
   return { text, changedSpans: size.regions, mostlyRewritten: size.mostlyRewritten };
+}
+
+/**
+ * The whole change `previousDisplay → nextDisplay` (common prefix/suffix
+ * trimmed) lies within ONE island's bytes: replace that island, edge to edge,
+ * with what now shows in its place. Null when it does not (the caller refuses).
+ */
+function wholeIslandReplacement(
+  stored: string,
+  previousDisplay: string,
+  nextDisplay: string,
+  storedAt: number[],
+  islands: ReturnType<typeof listIslands>,
+): DisplayEditResult | null {
+  let p = 0;
+  const max = Math.min(previousDisplay.length, nextDisplay.length);
+  while (p < max && previousDisplay[p] === nextDisplay[p]) p++;
+  let q = 0;
+  while (
+    q < max - p &&
+    previousDisplay[previousDisplay.length - 1 - q] === nextDisplay[nextDisplay.length - 1 - q]
+  ) {
+    q++;
+  }
+  const spanEnd = previousDisplay.length - q;
+  if (spanEnd <= p) return null;
+  const first = storedAt[p];
+  const last = storedAt[spanEnd - 1] + 1;
+  const hosts = islands.filter((isl) => first < isl.end && last > isl.start);
+  if (hosts.length !== 1) return null;
+  const isl = hosts[0];
+  if (first < isl.start || last > isl.end) return null;
+  if (/^<(thinking|think|reasoning)>/i.test(isl.raw)) return null;
+  const dStart = storedAt.indexOf(isl.start);
+  const dLast = storedAt.indexOf(isl.end - 1);
+  if (dStart === -1 || dLast === -1 || dLast - dStart !== isl.end - 1 - isl.start) return null;
+  const dEnd = dLast + 1;
+  const replacement = nextDisplay.slice(dStart, nextDisplay.length - (previousDisplay.length - dEnd));
+  let text: string;
+  try {
+    text = spliceSave(stored, [islandEdit(isl, replacement)]).text;
+  } catch {
+    return null;
+  }
+  if (displayOfStoredAnswer(text) !== nextDisplay) return null;
+  return { text, changedSpans: 1, mostlyRewritten: false };
 }

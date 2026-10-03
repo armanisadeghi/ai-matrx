@@ -1,3 +1,4 @@
+import type { AnswerEditRemarkMeta } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import React from "react";
 import { MarkdownErrorBoundary } from "./MarkdownErrorBoundary";
 import { BlockFallback } from "./BlockFallback";
@@ -28,7 +29,7 @@ interface SafeBlockRendererProps {
   messageId?: string;
   taskId?: string;
   isLastReasoningBlock?: boolean;
-  replaceBlockContent: (original: string, replacement: string) => void;
+  replaceBlockContent: (original: string, replacement: string, remark?: AnswerEditRemarkMeta) => void;
   handleOpenEditor: () => void;
   outputSchema?: unknown | null;
 }

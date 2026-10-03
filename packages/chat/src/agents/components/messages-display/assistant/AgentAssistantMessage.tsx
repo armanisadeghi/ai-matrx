@@ -98,6 +98,7 @@ import {
 } from "./answerless-turn";
 import { retryConversationTurn } from "../../../redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "../../../redux/execution-system/message-crud/commit-inline-edit.thunk";
+import type { AnswerEditRemarkMeta } from "../../../redux/execution-system/instance-resources/remarks";
 import { InPlaceAnswerEditor } from "./InPlaceAnswerEditor";
 import { toast } from "../../../../host/notify";
 import { useDomCapturePrint } from "../../../../conversation/hooks/useDomCapturePrint";
@@ -369,7 +370,7 @@ export function AgentAssistantMessage({
   // `isStreamActive` is true, which is the only window without a messageId,
   // so in practice this branch is always taken when an edit fires.
   const handleInlineContentChange = useCallback(
-    (newContent: string, previousContent: string) => {
+    (newContent: string, previousContent: string, remark?: AnswerEditRemarkMeta) => {
       if (!messageId) return;
       dispatch(
         commitInlineContentEdit({
@@ -378,6 +379,7 @@ export function AgentAssistantMessage({
           requestId,
           newText: newContent,
           previousText: previousContent,
+          remark: remark ?? null,
         }),
       );
     },

@@ -42,6 +42,7 @@
  * statically that wasn't already static in BlockRenderer.
  */
 
+import type { AnswerEditRemarkMeta } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import React, { Fragment } from "react";
 import { ReferenceRoleCaption } from "@ai-matrx/chat/agents/image-roles/ReferenceRoleCaption";
@@ -187,7 +188,7 @@ export interface BlockDispatchContext {
    */
   machineFramesVisible?: boolean;
   /** Generic handler: replaces `original` substring with `replacement` in the full content string. */
-  replaceBlockContent: (original: string, replacement: string) => void;
+  replaceBlockContent: (original: string, replacement: string, remark?: AnswerEditRemarkMeta) => void;
   /** The shared BasicMarkdownContent renderer, pre-wired with edit/diagnostic props. */
   renderBasicMarkdown: (content: string) => React.ReactElement;
   /** Bound agent's declared output schema; absent/loading deliberately fails closed. */
@@ -1213,8 +1214,14 @@ const PROTOCOL_BLOCK_DISPATCH = {
         decision={decisionData}
         isStreamActive={isStreamActive}
         rawXml={rawXml}
-        onResolve={(_decisionId: string, xml: string, chosenText: string) => {
-          ctx.replaceBlockContent(xml, chosenText);
+        onResolve={(_decisionId: string, xml: string, chosenText: string, choiceLabel: string | null) => {
+          // The choice also rides the next message as a `choice` remark, in
+          // the person's words (the one edit stager, via saveAnswerEdit).
+          ctx.replaceBlockContent(xml, chosenText, {
+            origin: "choice",
+            projection: choiceLabel ? `I chose ${choiceLabel}.` : `I chose: ${chosenText}`,
+            quote: decisionData.prompt || null,
+          });
         }}
       />
     );

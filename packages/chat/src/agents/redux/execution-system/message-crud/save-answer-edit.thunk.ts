@@ -22,6 +22,11 @@
  *   6. Returns the answer text AS STORED (projected from the returned row) so
  *      the editor can prove the write byte-for-byte.
  *
+ * 7. Stages ONE coalesced `edit` remark chip for the answer in its
+ *      conversation's composer (`stageAnswerEditRemark`, Turn References
+ *      ruling 3) so the change rides along with the person's next message —
+ *      when `chat.remarks.auto_include_interactions` is on (default).
+ *
  * Whether the model sees the edit on the next turn is the organization's
  * `agents.messages / edited_answer_visible_to_model` knob, applied server-side
  * where history is rebuilt (matrx-ai `db/edited_answers.py`).
@@ -34,6 +39,9 @@ import type { Json } from "../../../../host/db-types";
 import { supabase } from "../../../../host/db";
 import { editMessage } from "./edit-message.thunk";
 import { projectAnswerText, spliceAnswerText, spliceDisplayEdit } from "./answer-text-splice";
+import { stageAnswerEditRemark } from "../instance-resources/answer-edit-remark";
+import { remarksAutoIncludeEnabled } from "../instance-resources/remark-knob";
+import type { AnswerEditRemarkMeta } from "../instance-resources/remarks";
 
 export interface SaveAnswerEditArgs {
   conversationId: string;
@@ -51,6 +59,8 @@ export interface SaveAnswerEditArgs {
    * given, a row that changed since then is refused instead of overwritten.
    */
   openedText?: string;
+  /** Not plain typing: a decision choice / kind write-back, with its words. */
+  remark?: AnswerEditRemarkMeta | null;
 }
 
 /** The row's stored content, read from the database (never the Redux copy). */
@@ -89,7 +99,7 @@ interface ThunkApi {
 
 export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerEditArgs, ThunkApi>(
   "messages/saveAnswerEdit",
-  async ({ conversationId, messageId, newText: givenText, displayEdit, openedText }, { dispatch, getState, rejectWithValue }) => {
+  async ({ conversationId, messageId, newText: givenText, displayEdit, openedText, remark }, { dispatch, getState, rejectWithValue }) => {
     const record = getState().messages.byConversationId[conversationId]?.byId?.[messageId];
     if (!record) {
       return rejectWithValue({ message: "This answer is no longer loaded — reload the conversation and edit again." });
@@ -140,7 +150,13 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
       return rejectWithValue({ message });
     }
     const after = getState().messages.byConversationId[conversationId]?.byId?.[messageId];
-    return { written: true, storedText: projectAnswerText(after?.content).text, changedSpans, mostlyRewritten };
+    const storedText = projectAnswerText(after?.content).text;
+    if (record.role === "assistant" && (await remarksAutoIncludeEnabled(getState))) {
+      dispatch(
+        stageAnswerEditRemark({ conversationId, messageId, beforeText: stored.text, afterText: storedText, meta: remark }),
+      );
+    }
+    return { written: true, storedText, changedSpans, mostlyRewritten };
   },
 );
 

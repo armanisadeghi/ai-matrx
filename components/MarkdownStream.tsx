@@ -1,3 +1,4 @@
+import type { AnswerEditRemarkMeta } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import dynamic from "next/dynamic";
 import { TypedStreamEvent } from "@/components/mardown-display/chat-markdown/types";
 import type { ServerProcessedBlock } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
@@ -57,7 +58,7 @@ export interface MarkdownStreamProps {
   isStreamActive?: boolean;
   /** Callback for content changes */
   /** See EnhancedChatMarkdown: `previousContent` is the text the edit applied to. */
-  onContentChange?: (newContent: string, previousContent: string) => void;
+  onContentChange?: (newContent: string, previousContent: string, remark?: AnswerEditRemarkMeta) => void;
   /**
    * When false (with onContentChange), block edits are reported via onContentChange but
    * the visible markdown stays tied to the `content` prop (no local edited overlay).
