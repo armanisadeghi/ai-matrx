@@ -83,11 +83,12 @@ export function DataHomeName({ row }: { row: DataHomeRow }) {
 
 function DataHomeNameLine({ row }: { row: DataHomeRow }) {
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
+    <div className="flex min-w-0 items-center gap-1.5" data-data-home-name={row.name}>
       <KindIcon kind={row.kind} />
       <span className="truncate font-medium text-foreground" title={row.name}>
         {row.name}
       </span>
+      {row.foundation ? <FoundationBadge /> : null}
       {row.parentName ? (
         <span className="truncate text-xs text-muted-foreground" title={`in ${row.parentName}`}>
           in {row.parentName}
@@ -104,6 +105,27 @@ function DataHomeNameLine({ row }: { row: DataHomeRow }) {
         </Tooltip>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * LANE 10 FD: the one small mark on a Foundation table — the business's day-one data. Same chip as
+ * Access, so the row reads as one family; the meaning lives in the tooltip, never on the row.
+ */
+export function FoundationBadge() {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          tabIndex={0}
+          data-data-home-foundation=""
+          className="inline-flex h-5 shrink-0 items-center rounded-full border border-border px-2 text-[11px] text-muted-foreground"
+        >
+          Foundation
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>Day-one data your business is built on.</TooltipContent>
+    </Tooltip>
   );
 }
 

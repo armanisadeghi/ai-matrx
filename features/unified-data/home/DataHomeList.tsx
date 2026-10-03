@@ -182,6 +182,16 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
           countInLabel: false,
           formatValue: (v) => ACCESS_WORD[v as DataHomeAccess] ?? v,
         },
+        // LANE 10 FD: the business's day-one tables. Offered only when there is a choice to make.
+        {
+          facet: "foundation",
+          filterId: "foundation",
+          label: "Foundation",
+          noneLabel: "None",
+          countInLabel: false,
+          minOptions: 2,
+          formatValue: (v) => (v === "true" ? "Foundation" : "Other"),
+        },
       ],
       noneLabels: { owner: "—", records: "Not counted", organization: "None", access: "None" },
       searchPlaceholder: "Search tables, forms, dashboards",

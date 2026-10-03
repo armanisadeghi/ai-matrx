@@ -307,6 +307,11 @@ export interface DataHomeTableRow {
    * "Changed by" uses). Null = the maker is not a member of that organization, or there is none.
    */
   created_by_name?: string | null;
+  /**
+   * Lane 10 FD: part of the business's day-one data (`custom.data_home` reads it off the Table's
+   * document). Absent on a store before that door learned it — read as not Foundation.
+   */
+  foundation?: boolean;
 }
 
 /**

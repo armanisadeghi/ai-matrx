@@ -82,12 +82,14 @@ export function fieldValue(
       return row.publicLabel;
     case "favorite":
       return opts.isStarred(row);
+    case "foundation":
+      return row.foundation;
     default:
       return null;
   }
 }
 
-const FACET_COLUMNS = ["kind", "organization", "owner", "access", "records"] as const;
+const FACET_COLUMNS = ["kind", "organization", "owner", "access", "records", "foundation"] as const;
 
 function text(v: unknown): string {
   return v === null || v === undefined ? "" : String(v);
@@ -252,6 +254,9 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
           const ay = y.row.updatedAt ? Date.parse(y.row.updatedAt) : 0;
           return ay - ax;
         }
+        // LANE 10 FD: FOUNDATION TABLES FIRST — the business's day-one data, pinned under the
+        // person's favourites by the same "pin to top" preference (Notion's pinned teamspaces).
+        if (sort.favoritesFirst && x.row.foundation !== y.row.foundation) return x.row.foundation ? -1 : 1;
         return byColumn(x.row, y.row);
       });
       let rows = out.map((m) => m.row);

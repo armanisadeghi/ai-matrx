@@ -71,6 +71,11 @@ export interface DataHomeRow {
    */
   keptByTheApp: boolean;
   /**
+   * Lane 10 FD: the table is Foundation — part of the business's day-one data. Listed first, with
+   * a badge, and the Foundation filter keeps only these. False for every non-table row.
+   */
+  foundation: boolean;
+  /**
    * Set only on a row the SERVER search found and the instant title search did not (a Field, a
    * description): where it matched, for the "Matched in" line. Absent on every other row.
    */
@@ -174,6 +179,7 @@ function toRow(
     trouble: item.trouble ?? null,
     // Only the Tables listing's own row is the table; a form or dashboard ON a kept table is not kept.
     keptByTheApp: fromTablesListing && table !== undefined && item.id === table.table_id && keptTableRow(table),
+    foundation: fromTablesListing && table !== undefined && item.id === table.table_id && table.foundation === true,
   };
 }
 

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
 import { dataHomeKindWord, type DataHomeRow } from "./dataHomeRows";
-import { KindIcon, useRecordCount } from "./dataHomeColumns";
+import { FoundationBadge, KindIcon, useRecordCount } from "./dataHomeColumns";
 import type { RecordCountStore } from "./dataHomeRecordCounts";
 
 export type DataHomeViewProps = EntityAltViewProps<DataHomeRow> & {
@@ -100,6 +100,7 @@ export function DataHomeCards(props: DataHomeViewProps) {
             <span className="min-w-0 flex-1 truncate text-sm font-medium" title={row.name}>
               {row.name}
             </span>
+            {row.foundation ? <FoundationBadge /> : null}
             <StarButton row={row} starred={props.isStarred(row)} onToggle={props.actions.onToggleFavorite} />
             <RowMenu row={row} props={props} />
           </div>
@@ -132,6 +133,7 @@ export function DataHomeRows(props: DataHomeViewProps) {
             <span className="truncate text-sm" title={row.name}>
               {row.name}
             </span>
+            {row.foundation ? <FoundationBadge /> : null}
             <span className="hidden truncate text-xs text-muted-foreground sm:inline">{subtitle(row)}</span>
           </Link>
           <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
