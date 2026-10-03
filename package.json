@@ -104,6 +104,8 @@
     "check:save-to-table-everywhere:self-test": "tsx scripts/check-save-to-table-everywhere.ts --self-test",
     "check:no-custom-store-code": "tsx scripts/check-no-custom-store-code.ts",
     "check:no-custom-store-code:self-test": "tsx scripts/check-no-custom-store-code.ts --self-test",
+    "check:no-old-flexible-store": "tsx scripts/check-no-old-flexible-store.ts",
+    "check:no-old-flexible-store:self-test": "tsx scripts/check-no-old-flexible-store.ts --self-test",
     "check:reference-vocabulary": "tsx scripts/check-reference-vocabulary.ts",
     "check:reference-vocabulary:self-test": "tsx scripts/check-reference-vocabulary.ts --self-test",
     "check:old-system-unreachable:self-test": "tsx scripts/check-old-system-unreachable.ts --self-test",

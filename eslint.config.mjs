@@ -1356,12 +1356,12 @@ const contentIrChokepointSyntaxRestrictions = [
   {
     selector: "Literal[value='671a423f-d350-4457-83e5-389eac70f287']",
     message:
-      "The Block Schemas category id is retired with platform.flexible_data. Kind schemas live in content_ir — read them through features/content-ir/registry/schema-source-kind-tables.ts.",
+      "The Block Schemas category id is retired with the old flexible_data table. Kind schemas live in content_ir — read them through features/content-ir/registry/schema-source-kind-tables.ts.",
   },
   {
     selector: "Literal[value='6f46917c-be9a-4763-b4dd-107546a3d282']",
     message:
-      "The Sample Block Data category id is retired with platform.flexible_data. Kind samples are content_ir.kind_example rows — read them through features/content-ir/registry/schema-source-kind-tables.ts (listCanonicalKindSamples).",
+      "The Sample Block Data category id is retired with the old flexible_data table. Kind samples are content_ir.kind_example rows — read them through features/content-ir/registry/schema-source-kind-tables.ts (listCanonicalKindSamples).",
   },
 ];
 

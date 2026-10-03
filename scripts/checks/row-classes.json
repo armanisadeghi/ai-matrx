@@ -6,7 +6,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 122,
+    "repo-only": 124,
     "live-db": 59,
     "clone-db": 3
   },
@@ -2054,6 +2054,20 @@
       "class": "repo-only",
       "cmd": "pnpm check:no-custom-store-code:self-test",
       "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "nothing-new-reads-the-old-flexible-data-tables-ratchet": {
+      "label": "Nothing new reads the old flexible data tables (ratchet)",
+      "class": "repo-only",
+      "cmd": "pnpm check:no-old-flexible-store",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "no-old-flexible-store-guard-can-still-fail-self-test": {
+      "label": "No-old-flexible-store guard can still fail (self-test)",
+      "class": "repo-only",
+      "cmd": "pnpm check:no-old-flexible-store:self-test",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "declared-app-tables-missing-archived-drifted-size": {
