@@ -11,6 +11,7 @@ import {
   partMembership,
   partScopeSlug,
   sortParts,
+  sourceFilingTargets,
   titleHintFromEdgeLabel,
 } from "../classParts";
 
@@ -161,5 +162,24 @@ describe("parts", () => {
       [`fc_set:${DECK}`, `processed_document:${WEB_PAGE}`].sort(),
     );
     expect([...(membership.get(UNIT_2) ?? [])]).toEqual([`fc_set:${DECK}`]);
+  });
+});
+
+describe("where Add sources files a Source (the server door's attach_to)", () => {
+  it("files it under the class alone when no part is selected", () => {
+    expect(sourceFilingTargets(CLASS, null)).toEqual([
+      { entity_type: "scope", entity_id: CLASS, label: null, signal: true },
+    ]);
+  });
+
+  it("files it under the class AND the selected part in one keep", () => {
+    expect(sourceFilingTargets(CLASS, UNIT_1).map((t) => t.entity_id)).toEqual([
+      CLASS,
+      UNIT_1,
+    ]);
+  });
+
+  it("never names a display name as the edge label", () => {
+    for (const t of sourceFilingTargets(CLASS, UNIT_2)) expect(t.label).toBeNull();
   });
 });

@@ -35,7 +35,11 @@ import { cn } from "@/utils/cn";
 import type { StudyClass, ClassContentItem } from "../types";
 import type { UseClassContentReturn } from "../hooks/useClassContent";
 import { useClassParts } from "../hooks/useClassParts";
-import { itemKey, type ClassPart } from "../classParts";
+import { itemKey, sourceFilingTargets, type ClassPart } from "../classParts";
+import {
+  keepSource,
+  sourceRefusalSentence,
+} from "@/features/sources/api/sourcesApi";
 import { AddClassContentSheet } from "./AddClassContentSheet";
 import { AddClassSourcesDialog } from "./AddClassSourcesDialog";
 
@@ -100,6 +104,27 @@ export function ClassStudyContent({
     const res = await content.attach(token, id, title);
     if (!res.ok) throw new Error(res.error ?? "The class refused it.");
     if (selected) await parts.addToPart(token, id, selected.id);
+  }
+
+  /**
+   * File one picked Source. A Source (`processed_document`) goes through THE
+   * landing door's Keep (`POST /sources/{id}/keep`) with the class — and the
+   * selected part — as its targets, in one server write; anything else picked
+   * as-is (a note, a file, a transcript record) is an existing record filed
+   * through the association door like "Add content".
+   */
+  async function fileSource(token: string, id: string): Promise<void> {
+    if (token !== "processed_document") return fileItem(token, id);
+    try {
+      await keepSource(id, {
+        attachTo: sourceFilingTargets(cls.id, selected?.id ?? null),
+        organizationId: cls.organizationId,
+      });
+    } catch (err) {
+      throw new Error(sourceRefusalSentence(err), { cause: err });
+    }
+    await content.reload();
+    if (selected) await parts.reloadMembership();
   }
 
   async function removeItem(item: ClassContentItem) {
@@ -354,7 +379,7 @@ export function ClassStudyContent({
         open={sourcesOpen}
         onOpenChange={setSourcesOpen}
         target={target}
-        onFile={(token, id) => fileItem(token, id)}
+        onFile={(token, id) => fileSource(token, id)}
       />
       <AddClassContentSheet
         open={pickerOpen}

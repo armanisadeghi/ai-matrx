@@ -140,3 +140,30 @@ export function partMembership(
   }
   return out;
 }
+
+/** One `attach_to` target of the landing door (`POST /sources/{id}/keep`). */
+export interface SourceFilingTarget {
+  entity_type: "scope";
+  entity_id: string;
+  label: null;
+  signal: true;
+}
+
+/**
+ * Where a Source picked in "Add sources" is filed by the server door: the
+ * class, and the selected part too — both edges in one Keep, so "everything
+ * in the class" never misses what sits in a unit. The label is the registry's
+ * ("about"), never a display name.
+ */
+export function sourceFilingTargets(
+  classId: string,
+  partId: string | null,
+): SourceFilingTarget[] {
+  const ids = partId && partId !== classId ? [classId, partId] : [classId];
+  return ids.map((id) => ({
+    entity_type: "scope",
+    entity_id: id,
+    label: null,
+    signal: true,
+  }));
+}

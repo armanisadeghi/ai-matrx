@@ -6,11 +6,11 @@
 // after the class exists. The input is THE one Source input (`SourceInput`:
 // Use existing + Add new), configured by props only. New material lands and
 // is kept; "Add" then files every picked Source — new or existing — under the
-// target, and under the class too when the target is a part, through the same
-// client association door the hub reads (`assoc_*`). No `attachTo`: the
-// server's landing door cannot file against a scope since aidream b9cf9424d7
-// removed the `context.scopes` ORM model (UnknownEntityType 'scope'), and the
-// client door files the same edge.
+// target, and under the class too when the target is a part, through the
+// host's `onFile`: a Source through THE landing door's Keep
+// (`/sources/{id}/keep`, class + part in one server write), an existing
+// non-Source record through the association door. Nothing is filed before
+// "Add" (no `attachTo` on the input).
 // A pick that cannot be filed under a class is named, never skipped silently.
 //
 // A plain Dialog: it becomes a bottom sheet on mobile by itself.

@@ -154,7 +154,7 @@ These filled genuine open product questions. **Flagged for Arman** — reasonabl
 
 - **2026-10-02 (keep adding + parts of a class)** — After a class exists the owner keeps adding to it
   and files things into its parts. `ClassStudyContent` replaces the hub's inline "Study content":
-  **Add sources** (`AddClassSourcesDialog` — THE Source input, Use existing + Add new, no `attachTo`)
+  **Add sources** (`AddClassSourcesDialog` — THE Source input, Use existing + Add new, no `attachTo`; filed on Add, see 2026-10-03)
   files every picked Source under the class (and the selected unit) through `content.attach` /
   `associationsService`; **Add content** (the association picker) does the same for decks, quizzes,
   notes, media; a row of unit chips (All · Unit 1 · … · + Unit, rename/remove in the selected
@@ -167,10 +167,14 @@ These filled genuine open product questions. **Flagged for Arman** — reasonabl
   `__tests__/classParts.test.ts` (13). Verified on the clone preview as admin@admin.com, 1440 and
   375: two units created, a paste + web page + transcript + file added into Unit 1, a deck into
   Unit 2 via Add content, filed across units, taken out of a unit, removed from the class, renamed.
-  Known gaps: the server landing door cannot file a Source against a scope (aidream `b9cf9424d7`
-  dropped the `context.scopes` model → `UnknownEntityType('scope')`), so the dialog files
-  client-side; members (students) do not see units yet — part scopes are not covered by the
+  Known gap: members (students) do not see units yet — part scopes are not covered by the
   class-membership read branch.
+- **2026-10-03 (Add sources files through the server door again)** — aidream `5d3458e7da` made
+  scope endpoints resolve through the record store (the engine refused every scope after
+  `b9cf9424d7`). "Add sources" files each picked Source (`processed_document`) through
+  `POST /sources/{id}/keep` with the class and the selected part as `attach_to` — both edges in one
+  server write (`sourceFilingTargets` in `classParts.ts`); a picked non-Source record (note, file,
+  transcript row) is filed through the association door like "Add content".
 
 - **2026-09-28 (cross-org assignment: card-membership edges now honor the assignment grant)** —
   Fixed the narrow gap flagged in the entry just below ("a deck attached from a DIFFERENT
