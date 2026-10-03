@@ -279,11 +279,12 @@ export function ComposerPlusMenu({
           <ComposerSubmenu row={{ icon: Wrench, label: "Tools", badge: counts.tools }} panelClassName={PICKER_PANEL}>
             {(closeCascade) => (
               <div className="flex h-full min-h-0 flex-col">
+                <div className="min-h-0 flex-1">{picker("tools", closeCascade)}</div>
                 {/* Brief §4: the server may hand the agent tools the chat
                     needs (a RAG tool for a large document). The same
                     per-conversation switch Advanced Settings carries, worded
                     as what it does. */}
-                <div className="shrink-0 p-1">
+                <div className="shrink-0 border-t border-border p-1">
                   <ComposerMenuSwitchRow
                     label="Let the server add tools"
                     description="e.g. a search tool when you attach a large document"
@@ -298,7 +299,6 @@ export function ComposerPlusMenu({
                     }
                   />
                 </div>
-                <div className="min-h-0 flex-1">{picker("tools", closeCascade)}</div>
               </div>
             )}
           </ComposerSubmenu>
