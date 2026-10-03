@@ -64,17 +64,18 @@ export const associationsDataSource: AssociationsDataSource = {
     // success only; dynamic import keeps tasks code out of this module's
     // import graph (and out of every non-React service consumer).
     return call.then((res) => {
+      const completed = res as unknown as { data?: unknown; error?: unknown };
       if (
-        !res.error &&
+        !completed.error &&
         args?.p_entity_type === "task" &&
         typeof args.p_entity_id === "string" &&
-        typeof args.p_body === "string"
+        typeof completed.data === "string"
       ) {
-        const { p_entity_id, p_body } = args;
+        const commentId = completed.data;
         void import(
           "@/features/tasks/services/taskCommentNotification"
         ).then(({ sendTaskCommentNotification }) =>
-          sendTaskCommentNotification(p_entity_id, p_body),
+          sendTaskCommentNotification(commentId),
         );
       }
       return res;
