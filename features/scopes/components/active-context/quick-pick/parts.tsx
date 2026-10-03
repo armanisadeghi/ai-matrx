@@ -98,7 +98,7 @@ export function NodeLabel({ node }: { node: PickNode }) {
     <>
       {node.label}
       {node.hint ? (
-        <span className="ml-1.5 text-[10px] text-muted-foreground">
+        <span className="ml-1.5 text-xs text-muted-foreground">
           {node.hint}
         </span>
       ) : null}

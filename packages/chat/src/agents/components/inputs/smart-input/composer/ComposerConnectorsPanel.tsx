@@ -103,15 +103,23 @@ export function ComposerConnectorsPanel({
     return (
       <div key={s.entry.slug} className="flex min-h-9 min-w-0 items-center gap-2.5 rounded-lg px-1.5 text-sm hover:bg-accent pointer-coarse:min-h-11">
         <ConnectorMark name={s.entry.name} iconUrl={s.entry.iconUrl} />
-        <span className="min-w-0 flex-1 truncate text-foreground">{s.entry.name}</span>
+        {/* A broken connection says so on its own second line, under the
+            name — the right side keeps only actions. */}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-foreground">{s.entry.name}</span>
+          {broken ? (
+            <span title={presentation.reason ?? undefined} className="truncate text-xs text-destructive">
+              {presentation.status}
+            </span>
+          ) : null}
+        </span>
         {broken ? (
           <>
-          <span title={presentation.reason ?? undefined} className="shrink-0 text-xs text-destructive">{presentation.status}</span>
           <button
             type="button"
             onClick={() => void connect(s.entry)}
             disabled={connectingSlug === s.entry.slug}
-            className="shrink-0 text-xs font-medium text-primary hover:underline disabled:opacity-60"
+            className="flex h-7 shrink-0 items-center rounded-md border border-border px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-60 pointer-coarse:h-9"
           >
             {connectingSlug === s.entry.slug ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reconnect"}
           </button>
