@@ -39,7 +39,7 @@ const service = {
   canEditSource: jest.fn(async () => true),
 };
 jest.mock("../service", () => service);
-const mockRealtime = { open: jest.fn((_spec: unknown) => ({ close: jest.fn() })) };
+const mockRealtime = { open: jest.fn(() => ({ close: jest.fn() })) as jest.Mock };
 jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn(), useRealtimeManager: () => mockRealtime }));
 jest.mock("@ai-matrx/realtime", () => ({
   defineChannelNamespace: (spec: { foreignTopic?: string; namespace: string; parts: string[] }) => ({
