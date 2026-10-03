@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T11:12:23.997Z",
+  "generated_at": "2026-10-03T11:26:55.849Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3565,6 +3565,18 @@
       "filename": "lane7sec_r1_every_writer_follows_the_field_rule.sql",
       "checksum": "8fd7b69c42265d97f37e3a6f6d3d5d4ca103d849c24b9fb600ad65e9a43fd4a7",
       "applied_at": "2026-10-02 19:13:06.960394+00"
+    },
+    "migrations/campaign/lane7sec_r2_an_archived_field_never_blocks_a_row.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7sec_r2_an_archived_field_never_blocks_a_row.sql",
+      "checksum": "557e701192dd2df994f1e4abad1ed200832d8d62bcad82cdc945d985d6fd499a",
+      "applied_at": "2026-10-03 11:26:21.519879+00"
+    },
+    "migrations/campaign/lane7w2_a_a_choice_on_a_standard_row_holds_its_key.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7w2_a_a_choice_on_a_standard_row_holds_its_key.sql",
+      "checksum": "d13f23bfd0f646dfd264fbc3f51df593105fdb113a37199f3c0851742366d826",
+      "applied_at": "2026-10-03 11:26:54.030322+00"
     },
     "migrations/campaign/lane7w2_c_a_grouped_list_has_its_own_ceiling.sql": {
       "source": "matrx-frontend",
