@@ -114,7 +114,11 @@ import {
   agentDefinitionToUpdate,
   versionSnapshotRowToAgentDefinition,
 } from "./converters";
-import { selectUserId } from "../../../host/identity";
+import {
+  selectUserId,
+  isSignedOutVisitor,
+  NotAuthenticatedError,
+} from "../../../host/identity";
 import { selectOrganizationId, ensureOrgId } from "../../../host/org";
 
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
@@ -521,6 +525,9 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
     // `autoContextDisabled: false` it never read, and skipping here left a
     // kill-switch agent's context layer unknown on every send.
     if (selectAgentReadyForExecution(getState(), agentId)) return;
+    // Signed out: the RPC refuses `anon` ("permission denied for function").
+    // Not authenticated is a state the caller renders, never a fetch failure.
+    if (await isSignedOutVisitor()) throw new NotAuthenticatedError();
 
     dispatch(setAgentLoading({ id: agentId, loading: true }));
 
@@ -592,6 +599,8 @@ export const fetchAgentExecutionFull = createAsyncThunk<void, string, ThunkApi>(
   "agentDefinition/fetchExecutionFull",
   async (agentId, { dispatch, getState }) => {
     if (selectAgentCustomExecutionPayload(getState(), agentId).isReady) return;
+    // Signed out: the RPC refuses `anon` — a state, never a fetch failure.
+    if (await isSignedOutVisitor()) throw new NotAuthenticatedError();
 
     dispatch(setAgentLoading({ id: agentId, loading: true }));
 

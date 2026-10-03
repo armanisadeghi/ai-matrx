@@ -56,6 +56,10 @@ import {
   ensureAgentIdentity,
   fetchAgentExecutionFull,
 } from "../../agent-definition/thunks";
+import {
+  isSignedOutVisitor,
+  NotAuthenticatedError,
+} from "../../../../host/identity";
 import { applyLaunchModelOverrides } from "../instance-model-overrides/launch-model-overrides";
 import { selectAgentCustomExecutionPayload } from "../../agent-definition/selectors";
 import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
@@ -201,6 +205,11 @@ export const launchAgentExecution = createAsyncThunk<
     initiation,
     surfaceOwnsOutput,
   } = options;
+
+  // A signed-out visitor never starts an agent conversation (guest chat was
+  // retired 2026-08-20): every read below refuses `anon`. Callers treat this
+  // as a state — the composer's sign-in gate — never as a failed launch.
+  if (await isSignedOutVisitor()) throw new NotAuthenticatedError();
 
   // ── Mandate-driven launch — THE SERVER RESOLVES, this thunk does not ────────
   //

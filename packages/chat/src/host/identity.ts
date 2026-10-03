@@ -108,3 +108,13 @@ export async function hasBrowserSession(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Is this visitor signed out — no id in the store AND no browser session?
+ * Both are checked so the boot race (session present, identity not hydrated
+ * yet) never reads as signed out. The guard for reads and launches only a
+ * signed-in person can make: the database refuses them for `anon`.
+ */
+export async function isSignedOutVisitor(): Promise<boolean> {
+  return !getUserId() && !(await hasBrowserSession());
+}

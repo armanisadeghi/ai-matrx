@@ -13,6 +13,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getUserId } from "@/utils/auth/getUserId";
+import { supabase } from "@/utils/supabase/client";
 
 import type {
   ComputeTargetListResponse,
@@ -58,6 +60,15 @@ let inflight: { generation: number; request: Promise<ComputeTargetListResponse> 
 function loadComputeTargets(): Promise<ComputeTargetListResponse> {
   if (inflight && inflight.generation === generation) return inflight.request;
   const request = (async () => {
+    // Signed out: nobody owns a compute target — an empty list, never a
+    // request the route refuses with 401. The session read covers the boot
+    // race where the store has no id yet.
+    if (!getUserId()) {
+      const { data } = await supabase.auth
+        .getSession()
+        .catch(() => ({ data: { session: null } }));
+      if (!data.session) return { targets: [], max_sandboxes: 0, sandbox_count: 0 };
+    }
     const resp = await fetch("/api/compute-targets");
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");

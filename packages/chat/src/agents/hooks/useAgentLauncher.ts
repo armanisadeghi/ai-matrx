@@ -51,6 +51,7 @@ import {
   warnProjectCreateAi,
 } from "@host/features/projects/debug/projectCreateAiDebug";
 import { toast } from "../../host/notify";
+import { isNotAuthenticatedError } from "../../host/identity";
 
 // =============================================================================
 // ConversationInvocation type guard
@@ -568,6 +569,9 @@ export function useAgentLauncher(
           );
           return;
         }
+        // Signed out: nothing was launched, by design — the composer's
+        // sign-in gate is the answer, not an error toast.
+        if (isNotAuthenticatedError(err)) return;
         if (isProjectCreateFlow(sourceFeature, agentId)) {
           warnProjectCreateAi(
             "useAgentLauncher → launchAgentExecution FAILED",

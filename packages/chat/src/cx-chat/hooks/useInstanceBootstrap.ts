@@ -53,6 +53,7 @@ import {
 import { launchAgentExecution } from "../../agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { loadConversation } from "../../agents/redux/execution-system/thunks/load-conversation.thunk";
 import { toast } from "../../host/notify";
+import { isNotAuthenticatedError } from "../../host/identity";
 import { DEFAULT_AGENT_ID } from "../components/agent/local-agents";
 import type { ChatRootState } from "../../store/root-state";
 import { replaceAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
@@ -180,7 +181,11 @@ export function useInstanceBootstrap() {
         if (launchAgentExecution.fulfilled.match(result)) {
           resolvedId = result.payload.conversationId;
           instanceByAgentId.current.set(agentId, resolvedId);
-        } else if (launchAgentExecution.rejected.match(result)) {
+        } else if (
+          launchAgentExecution.rejected.match(result) &&
+          // Signed out is a state (the sign-in gate), not a failed launch.
+          !isNotAuthenticatedError(result.error)
+        ) {
           // A refused launch (e.g. an extraction model that can't run as a
           // chat agent) was silently swallowed here — say why the chat
           // never appeared.

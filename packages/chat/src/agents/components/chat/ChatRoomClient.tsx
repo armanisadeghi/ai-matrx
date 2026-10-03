@@ -66,7 +66,7 @@ import { toast } from "../../../host/notify";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
-import { selectUserId } from "../../../host/identity";
+import { selectUserId, isNotAuthenticatedError } from "../../../host/identity";
 import { selectOrganizationId } from "../../../host/org";
 
 interface ChatRoomClientProps {
@@ -273,6 +273,12 @@ export function ChatRoomClient({
           }
         }
       } catch (err) {
+        if (isNotAuthenticatedError(err)) {
+          // Signed out: no read was made. A null-error failure lets the
+          // access gate say "signed out" itself — not a logged fault.
+          if (!cancelled) setAgentLoadFailure({ agentId, error: undefined });
+          return;
+        }
         logFailure("[ChatRoomClient] fetchAgentExecutionMinimal failed", err);
         if (!cancelled) setAgentLoadFailure({ agentId, error: err });
       } finally {

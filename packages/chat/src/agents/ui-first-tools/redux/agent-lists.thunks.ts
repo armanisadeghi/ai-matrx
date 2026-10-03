@@ -43,6 +43,7 @@ import {
   upsertUserTodo,
   removeUserTodo,
 } from "./agent-lists.slice";
+import { isSignedOutVisitor } from "../../../host/identity";
 import type {
   CxAgentPlanRow,
   CxAgentTaskRow,
@@ -59,6 +60,14 @@ type AgentListsThunk = ThunkAction<
 export const hydrateAgentLists =
   (conversationId: string): AgentListsThunk =>
   async (dispatch) => {
+    // Signed out: no plan, tasks or todos — never an anon read the database
+    // refuses ("permission denied for table agent_task").
+    if (await isSignedOutVisitor()) {
+      dispatch(
+        setListsForConversation({ conversationId, plan: null, tasks: [], userTodos: [] }),
+      );
+      return;
+    }
     dispatch(setListsLoading(conversationId));
     try {
       const [plan, tasks, userTodos] = await Promise.all([
