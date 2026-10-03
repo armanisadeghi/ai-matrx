@@ -226,6 +226,7 @@ const KIND_TITLE: Record<string, string> = {
   view: "Saved views",
   comment: "Comments",
   dashboard: "Dashboards",
+  page: "Pages",
   portal: "Portals",
   action: "Actions",
   checklist: "Checklists",
@@ -246,6 +247,7 @@ const KIND_ONE: Record<string, string> = {
   view: "Saved view",
   comment: "Comments",
   dashboard: "Dashboard",
+  page: "Page",
   portal: "Portal",
   action: "Actions",
   checklist: "Checklist",
@@ -299,6 +301,8 @@ const KIND_LISTING: Record<string, readonly string[]> = {
   booking: ["bookings"],
   checklist: ["checklists"],
   dashboard: ["dashboards"],
+  // A page built from tables is a dashboard record that says so (v6 lane 11, wave D).
+  page: ["dashboards"],
   portal: ["portals"],
 };
 
