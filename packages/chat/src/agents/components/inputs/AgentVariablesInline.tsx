@@ -390,6 +390,17 @@ export function AgentVariablesInline({
                   align="start"
                   side="top"
                   sideOffset={6}
+                  // A picker inside the editor (the table picker's list) opens in its own
+                  // portal; focus or a click landing there is not "outside" this editor.
+                  onInteractOutside={(event) => {
+                    const target = event.target;
+                    if (
+                      target instanceof Element &&
+                      target.closest("[data-radix-popper-content-wrapper]")
+                    ) {
+                      event.preventDefault();
+                    }
+                  }}
                 >
                   <VariableInputComponent
                     conversationId={conversationId}
