@@ -1,16 +1,18 @@
 -- chair-step: the inverse of lane7w3a_the_table_api_reaches_crm_people.sql. It puts platform._drill_resolve,
--- platform._drill_compile and platform.drill_rows back exactly as they were, drops the three
+-- platform._drill_compile, platform.drill_rows and platform.drill_describe back exactly as they were, drops the
 -- functions it created (and the census) and their door rows, and deletes its three knobs. No
 -- table DDL.
 -- lock: platform
--- based-on: platform._drill_resolve(uuid, text) 362b1c6cbc2079ca9101e005fd7c4e5fa7d74fcca58cb4a01805261f96068cbe
+-- based-on: platform._drill_resolve(uuid, text) 2fcf1598f9d3e10802a00563b092dbc4e217fa6b4e387ce3e22b76d1af6b1049
 -- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 975612daf62b684a19aad8a51b3dfae65c478a95f3ae7a2dffe6ba99e0fd9bd8
--- based-on: platform.drill_rows(uuid, jsonb, jsonb) e6b85722f62b3b68ba89ea0b7a1e5e231d490bada033e4fa46d881d979a9832f
+-- based-on: platform.drill_rows(uuid, jsonb, jsonb) 5014f0d56f251b202d92f82929c9fc09f098e239bc5857b4248dac37c0a34041
+-- based-on: platform.drill_describe(uuid, jsonb) 146f3ad7dd52068efcc0ff1fd988bd698c446997590168439389735d83bb5829
 
 set local lock_timeout = '3s';
 
 DELETE FROM platform.client_callable_door
- WHERE (schema_name, function_name) IN (('custom', 'entity_row_write'), ('platform', 'api_tables'), ('platform', 'api_facts'));
+ WHERE (schema_name, function_name) IN (('custom', 'entity_row_write'), ('platform', 'api_tables'), ('platform', 'api_facts'),
+                                         ('platform', 'api_field_orgs'), ('platform', 'api_sample_rows'));
 DROP FUNCTION IF EXISTS custom.entity_row_write(uuid, text, uuid, jsonb, jsonb, integer, boolean);
 DROP FUNCTION IF EXISTS platform.api_tables();
 DROP FUNCTION IF EXISTS platform.api_facts(text);
@@ -1433,6 +1435,36 @@ begin
     || jsonb_build_object('as_of', null);   -- read live from the table: no summary moment
 end
 $function$;
+
+CREATE OR REPLACE FUNCTION platform.drill_describe(p_organization_id uuid, p_source jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v jsonb;
+begin
+  perform custom.assert_entity_door(p_organization_id, 'platform.drill_describe');
+  v := platform._drill_plan(p_organization_id, p_source, null, 'describe');
+  if p_source ->> 'kind' = 'table' then
+    if not coalesce((v ->> 'd2')::boolean, false) then
+      raise exception 'A custom Table says its own dimensions and measures once lane DRILL-CUSTOM-PARITY''s door (custom.table_dimensions) is on this database.'
+        using errcode = '0A000', hint = 'Until then ask it directly: its columns are its dimensions, and count / sum_<column> its measures.';
+    end if;
+    execute 'select custom.table_dimensions($1, $2)' into v using p_organization_id, (p_source ->> 'id')::uuid;
+    return v || jsonb_build_object('source', jsonb_build_object('kind', 'table', 'id', p_source ->> 'id'),
+                                   'stale_after_knob', null,
+                                   'calendar', platform.drill_calendar(p_organization_id));
+  end if;
+  -- the calendar the door cuts periods in (VERIFY-DRILL-LIVE F8): screens print times in it and say it once
+  return (v -> 'def') || jsonb_build_object('calendar', platform.drill_calendar(p_organization_id));
+end
+$function$;
+
+-- the two field helpers go after the bodies that called them are back
+DROP FUNCTION IF EXISTS platform.api_sample_rows(text);
+DROP FUNCTION IF EXISTS platform.api_field_orgs(text);
 
 -- the knobs go after their readers are gone (knob_resolve raises on a missing key)
 DELETE FROM platform.feature_knob WHERE feature = 'table_api' AND key IN ('exact_count_max', 'statement_timeout_ms', 'standard_tables');

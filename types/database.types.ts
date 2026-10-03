@@ -33141,10 +33141,13 @@ export type Database = {
           type: string
         }[]
       }
-      entity_value_write: {
+      entity_row_write: {
         Args: {
+          p_archive?: boolean
+          p_columns?: Json
+          p_custom?: Json
+          p_expected_version?: number
           p_organization_id: string
-          p_patch: Json
           p_record_id: string
           p_token: string
         }

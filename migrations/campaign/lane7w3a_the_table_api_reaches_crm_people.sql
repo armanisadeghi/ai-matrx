@@ -1,15 +1,17 @@
--- chair-step: this file GRANTS EXECUTE to authenticated on three NEW functions
--- (custom.entity_row_write, platform.api_tables, platform.api_facts), each declared in
--- platform.client_callable_door first. It replaces three live bodies (platform._drill_resolve,
--- platform._drill_compile, platform.drill_rows), creates platform.api_reach_census, and seeds
+-- chair-step: this file GRANTS EXECUTE to authenticated on five NEW functions
+-- (custom.entity_row_write, platform.api_tables, platform.api_facts, platform.api_field_orgs,
+-- platform.api_sample_rows), each declared in platform.client_callable_door first. It replaces
+-- four live bodies (platform._drill_resolve, platform._drill_compile, platform.drill_rows,
+-- platform.drill_describe), creates platform.api_reach_census, and seeds
 -- three knobs (table_api/standard_tables — the per-token API facts, party reached —,
 -- table_api/exact_count_max, table_api/statement_timeout_ms). NO table DDL: no ALTER, no strong
 -- lock on any table (chair ruling 2026-10-02: the facts are a knob, not registry columns). It
--- revokes nothing that existed. Its inverse puts the three bodies back byte for byte.
+-- revokes nothing that existed. Its inverse puts the four bodies back byte for byte.
 -- lock: platform
 -- based-on: platform._drill_resolve(uuid, text) 5a9327b2ba6e7011f76429fbe0b7fefb8e9de301ed894e23b20d9eb39385ff02
 -- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 4dae04a05458dc3ec08a714ae1c3f8462b132467f93669d1438313edcae8173e
 -- based-on: platform.drill_rows(uuid, jsonb, jsonb) ff18fab5ce3c5f83e2821854d3d12799a9019da5994be7989201c75bc0673dae
+-- based-on: platform.drill_describe(uuid, jsonb) 315d6ee5e0cfba26fd9eef05045de621c0ac606ffe2f2498fd86848973582d23
 --
 -- LANE 7 · STANDARD-TABLES · W3a — THE TABLE API REACHES CRM PEOPLE, AS THE PERSON.
 --
@@ -182,6 +184,73 @@ WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name 
 GRANT EXECUTE ON FUNCTION platform.api_tables() TO authenticated;
 
 
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+-- A ROW'S OWN ORGANIZATION'S FIELDS. Two halves, so no access rule is ever copied:
+--   platform.api_field_orgs (DEFINER)   the OTHER organizations that keep fields on a token
+--                                       (ids only — custom is closed to clients), and its table
+--   platform.api_sample_rows (INVOKER)  one row per such organization that her OWN SELECT
+--                                       returns: the table's row rules decide, as her.
+-- platform.drill_describe / drill_rows hand the ids to platform._drill_resolve, which trusts an
+-- id only after iam.has_access says she may view it.
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION platform.api_field_orgs(p_token text)
+ RETURNS TABLE(schema_name text, table_name text, organization_ids uuid[])
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+  select e.schema_name, e.table_name,
+         coalesce((select array_agg(distinct f.organization_id)
+                     from custom.record f
+                    where f.table_id = custom.field_kernel_id() and f.deleted_at is null
+                      and f.data ->> 'table_token' = e.token
+                      and not (f.organization_id in (select iam.my_orgs()))), '{}'::uuid[])
+    from platform.entity_types e
+   where e.token = p_token and e.is_active and e.custom_fields_enabled;
+$function$;
+
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, declared_by, reason, signed_in_callers, identity_argtypes)
+SELECT 'platform', 'api_field_orgs', 'p_token text',
+       'migrations/campaign/lane7w3a_the_table_api_reaches_crm_people.sql (lane 7 STANDARD-TABLES W3a)',
+       'SECURITY DEFINER over custom.record field definitions: the ids of the organizations other than the caller''s own that keep custom fields on one standard table, and that table''s name. Organization ids only — no field, label or row data. Read by platform.api_sample_rows.',
+       true, array['text'::regtype]::oid[]
+WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name = 'platform' AND function_name = 'api_field_orgs');
+
+GRANT EXECUTE ON FUNCTION platform.api_field_orgs(text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION platform.api_sample_rows(p_token text)
+ RETURNS uuid[]
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v record;
+  v_ids uuid[];
+begin
+  select * into v from platform.api_field_orgs(p_token);
+  if v.schema_name is null or cardinality(v.organization_ids) = 0 then
+    return '{}'::uuid[];
+  end if;
+  -- AS THE SEAT: the table's own row rules decide which row, if any, she sees per organization
+  execute format('select coalesce(array_agg(x) filter (where x is not null), ''{}'') from unnest($1) o(org) cross join lateral (select t.id from %I.%I t where t.organization_id = o.org limit 1) s(x)',
+                 v.schema_name, v.table_name)
+    into v_ids using v.organization_ids;
+  return v_ids;
+end
+$function$;
+
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, declared_by, reason, signed_in_callers, identity_argtypes)
+SELECT 'platform', 'api_sample_rows', 'p_token text',
+       'migrations/campaign/lane7w3a_the_table_api_reaches_crm_people.sql (lane 7 STANDARD-TABLES W3a)',
+       'SECURITY INVOKER: one row id per other organization keeping fields on a standard table, read as the caller under the table''s own row rules. Returns ids of rows the caller can already read.',
+       true, array['text'::regtype]::oid[]
+WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name = 'platform' AND function_name = 'api_sample_rows');
+
+GRANT EXECUTE ON FUNCTION platform.api_sample_rows(text) TO authenticated;
+
 CREATE OR REPLACE FUNCTION platform._drill_resolve(p_organization_id uuid, p_token text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -240,10 +309,9 @@ declare
   v_pub    text;
   v_has    jsonb;
   v_field_orgs uuid[];
-  v_cand   uuid[];
+  v_rows   uuid[];
   v_vis    uuid[];
-  v_perm   text;
-  v_restr  text;
+  v_hidden text[];
 begin
   if p_token is null or p_token !~ '^[a-z][a-z0-9_.]{0,62}$' then
     raise exception 'There is no table or definition called "%".', coalesce(p_token, '')
@@ -585,6 +653,7 @@ begin
       from pg_attribute att
      where att.attrelid = format('%I.%I', v_et.schema_name, v_et.table_name)::regclass
        and att.attnum > 0 and not att.attisdropped;
+    v_hidden := coalesce(v_et.client_excluded_columns, '{}'::text[]) || array['custom_fields', 'visi' || 'bility'];
     for a in
       select att.attname::text as col
         from pg_attribute att
@@ -592,9 +661,21 @@ begin
          and att.attnum > 0 and not att.attisdropped
        order by att.attnum
     loop
-      continue when not v_cols ? a.col;
+      -- THE API SHOWS EVERY REAL COLUMN THE SEAT MAY READ, except the ones named here, once:
+      -- the registry's client_excluded_columns; custom_fields (its values are the cf: columns);
+      -- and the access-ladder row column T-13 retires (no new reader may read it; shown_to and
+      -- published_to_web carry its meaning). The drill's own Dimension rules do not narrow this.
+      continue when a.col = any (v_hidden)
+                 or not has_column_privilege(custom.caller_role(), format('%I.%I', v_et.schema_name, v_et.table_name), a.col, 'select');
+      if not v_cols ? a.col then
+        v_col := platform._drill_column(v_et.schema_name, v_et.table_name, a.col);
+        v_cols := v_cols || jsonb_build_object(a.col, jsonb_build_object(
+          'alias', 't', 'column', a.col, 'type', v_col ->> 'type', 'cat', v_col ->> 'cat', 'array', v_col -> 'array'));
+      end if;
       v_col := v_cols -> a.col;
-      v_pub := case when v_col ? 'fk' then 'relation'
+      v_pub := case when coalesce((v_col ->> 'array')::boolean, false) then 'list'
+                    when v_col ->> 'type' in ('jsonb', 'json') then 'json'
+                    when v_col ? 'fk' then 'relation'
                     when v_col ->> 'cat' = 'bool' then 'checkbox'
                     when v_col ->> 'cat' = 'number' then 'number'
                     when v_col ->> 'cat' = 'enum' then 'choice'
@@ -613,31 +694,24 @@ begin
     end loop;
     if coalesce(v_reg.custom_fields_enabled, false) and coalesce((v_has ->> 'custom_fields')::boolean, false)
        and coalesce((v_has ->> 'organization_id')::boolean, false) then
-      -- A row's custom fields are its OWN organization's: the seat's organizations, plus every
-      -- other organization holding fields on this table in which she can read at least one row.
-      -- "Can read" is the table's own SELECT policies, re-asked here (this body is DEFINER, so
-      -- it cannot run as her): the permissive ones ORed, the restrictive ones ANDed, exactly as
-      -- Postgres combines them for role authenticated. Only labels hang on this; every VALUE is
+      -- A row's custom fields are its OWN organization's: the seat's organizations, plus the
+      -- organization of every row platform.api_sample_rows found her own SELECT returning (it
+      -- runs as her, so the table's row rules decided; drill_describe / drill_rows hand the ids
+      -- over in mx.api_rows). Ids are only trusted after iam.has_access says she may view each —
+      -- the platform's one access answer, never a copy of the table's policies — so a forged
+      -- list names no organization she cannot read. Only labels hang on this; every VALUE is
       -- still read as the seat in platform.drill_rows.
       v_field_orgs := array(select iam.my_orgs());
-      select coalesce(array_agg(distinct f.organization_id), '{}') into v_cand
-        from custom.record f
-       where f.table_id = custom.field_kernel_id() and f.deleted_at is null
-         and f.data ->> 'table_token' = v_fact and not (f.organization_id = any (v_field_orgs));
-      if cardinality(v_cand) > 0 then
-        select string_agg('(' || pg_get_expr(p.polqual, p.polrelid) || ')', ' or ') filter (where p.polpermissive),
-               string_agg('(' || pg_get_expr(p.polqual, p.polrelid) || ')', ' and ') filter (where not p.polpermissive)
-          into v_perm, v_restr
-          from pg_policy p
-         where p.polrelid = format('%I.%I', v_et.schema_name, v_et.table_name)::regclass
-           and p.polcmd in ('r', '*') and p.polqual is not null
-           and (0::oid = any (p.polroles) or 'authenticated'::regrole::oid = any (p.polroles));
-        if v_perm is not null then
-          execute format('select coalesce(array_agg(distinct t.organization_id), ''{}'') from %I.%I t where t.organization_id = any ($1) and (%s) and (%s)',
-                         v_et.schema_name, v_et.table_name, v_perm, coalesce(v_restr, 'true'))
-            into v_vis using v_cand;
-          v_field_orgs := v_field_orgs || v_vis;
-        end if;
+      begin
+        v_rows := nullif(current_setting('mx.api_rows', true), '')::uuid[];
+      exception when others then
+        v_rows := null;
+      end;
+      if cardinality(v_rows) > 0 then
+        execute format('select coalesce(array_agg(distinct t.organization_id), ''{}'') from %I.%I t where t.id = any ($1) and iam.has_access($2, t.id, ''viewer'')',
+                       v_et.schema_name, v_et.table_name)
+          into v_vis using v_rows, v_fact;
+        v_field_orgs := v_field_orgs || v_vis;
       end if;
       for v_f in
         select f.id, f.organization_id, f.data, o.name as org_name
@@ -1930,6 +2004,11 @@ declare
   v_off   integer;
 begin
   perform custom.assert_entity_door(p_organization_id, 'platform.drill_rows');
+  -- LANE7-W3A: rows she can read in other organizations that keep fields on this table, found
+  -- by her own SELECT, so their organizations' fields describe them (platform._drill_resolve)
+  if p_source ->> 'kind' = 'entity' then
+    perform set_config('mx.api_rows', coalesce(platform.api_sample_rows(p_source ->> 'token'), '{}')::text, true);
+  end if;
   v_plan := platform._drill_plan(p_organization_id, p_source, p_question, 'rows');
 
   -- THE RECORDS OF A DEFINER DEFINITION (decision 14): its declared records relation, read by the
@@ -1990,6 +2069,36 @@ begin
 end
 $function$;
 
+CREATE OR REPLACE FUNCTION platform.drill_describe(p_organization_id uuid, p_source jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v jsonb;
+begin
+  perform custom.assert_entity_door(p_organization_id, 'platform.drill_describe');
+  -- LANE7-W3A: as in platform.drill_rows — the rows she reads elsewhere name their fields
+  if p_source ->> 'kind' = 'entity' then
+    perform set_config('mx.api_rows', coalesce(platform.api_sample_rows(p_source ->> 'token'), '{}')::text, true);
+  end if;
+  v := platform._drill_plan(p_organization_id, p_source, null, 'describe');
+  if p_source ->> 'kind' = 'table' then
+    if not coalesce((v ->> 'd2')::boolean, false) then
+      raise exception 'A custom Table says its own dimensions and measures once lane DRILL-CUSTOM-PARITY''s door (custom.table_dimensions) is on this database.'
+        using errcode = '0A000', hint = 'Until then ask it directly: its columns are its dimensions, and count / sum_<column> its measures.';
+    end if;
+    execute 'select custom.table_dimensions($1, $2)' into v using p_organization_id, (p_source ->> 'id')::uuid;
+    return v || jsonb_build_object('source', jsonb_build_object('kind', 'table', 'id', p_source ->> 'id'),
+                                   'stale_after_knob', null,
+                                   'calendar', platform.drill_calendar(p_organization_id));
+  end if;
+  -- the calendar the door cuts periods in (VERIFY-DRILL-LIVE F8): screens print times in it and say it once
+  return (v -> 'def') || jsonb_build_object('calendar', platform.drill_calendar(p_organization_id));
+end
+$function$;
+
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- DOOR 4. ONE WRITE DOOR FOR A STANDARD ROW, AS THE PERSON. SECURITY INVOKER: one UPDATE that
 -- the table's own update policy, governance guard and custom-field guard all judge.
@@ -2025,6 +2134,8 @@ declare
   v_has_ver boolean;
   v_cols   jsonb := coalesce(p_columns, '{}'::jsonb);
   v_custom jsonb := coalesce(p_custom, '{}'::jsonb);
+  v_cf     jsonb;
+  v_same   boolean := true;
 begin
   -- the client wall is asked of an organization the call names; a change by id needs none
   if p_organization_id is not null or p_record_id is null then
@@ -2034,10 +2145,8 @@ begin
   perform custom.assert_entity_is_organization_scoped(t.token, t.label, t.has_organization);
   select f.api_reach, f.api_writable_columns, f.create_via into v_reg from platform.api_facts(p_token) f;
 
-  if coalesce(v_reg.api_reach, 'none') <> 'read_write' then
-    raise exception '% records cannot be changed through the API yet.', t.label
-      using errcode = '42501', hint = 'Change them in AI Matrx.';
-  end if;
+  -- (How far the Table API reaches a table is the API's own question, answered before it calls
+  -- this door. This door is the store's: the app's Custom fields section writes through it too.)
   if jsonb_typeof(v_cols) <> 'object' or jsonb_typeof(v_custom) <> 'object' then
     raise exception 'A write names its columns and values as {"name": value}.' using errcode = '22023';
   end if;
@@ -2050,8 +2159,10 @@ begin
   end if;
 
   -- the row, as she may read it: its own organization, never one a caller supplies
-  execute format('select to_jsonb(x) - ''custom_fields'' from %I.%I x where x.id = $1', t.schema_name, t.table_name)
+  execute format('select to_jsonb(x) from %I.%I x where x.id = $1', t.schema_name, t.table_name)
     into v_row using p_record_id;
+  v_cf := case when jsonb_typeof(v_row -> 'custom_fields') = 'object' then v_row -> 'custom_fields' else '{}'::jsonb end;
+  v_row := v_row - 'custom_fields';
   if v_row is null then
     raise exception 'There is no % you can open with that id.', t.label using errcode = '02000';
   end if;
@@ -2104,6 +2215,21 @@ begin
   end if;
 
   v_has_ver := v_row ? 'version';
+  if p_expected_version is not null and v_has_ver and (v_row ->> 'version')::integer is distinct from p_expected_version then
+    raise exception 'Someone changed this % since you read it (it is at version %, and you sent %). Nothing was written.',
+      t.label, v_row ->> 'version', p_expected_version
+      using errcode = 'PT409', hint = 'Read it again, then send your change with the new version.';
+  end if;
+  -- A CHANGE THAT CHANGES NOTHING WRITES NOTHING: the version does not move and no history is made.
+  select v_same and coalesce(bool_and((v_cf -> k) is not distinct from (v_patch -> k)), true) into v_same from jsonb_object_keys(v_patch) k;
+  select v_same and coalesce(bool_and(not (v_cf ? k)), true) into v_same from unnest(v_clear) k;
+  select v_same and coalesce(bool_and((v_row -> k) is not distinct from (v_cols -> k)), true) into v_same from jsonb_object_keys(v_cols) k;
+  if p_archive is not null and ((v_row ->> 'deleted_at') is not null) is distinct from p_archive then
+    v_same := false;
+  end if;
+  if v_same then
+    return jsonb_build_object('id', p_record_id, 'organization_id', v_org, 'token', t.token, 'unchanged', true);
+  end if;
   v_where := 'x.id = $1';
   if p_expected_version is not null then
     if not v_has_ver then
@@ -2131,11 +2257,11 @@ INSERT INTO platform.client_callable_door
 SELECT 'custom', 'entity_row_write',
        'p_organization_id uuid, p_token text, p_record_id uuid, p_columns jsonb, p_custom jsonb, p_expected_version integer, p_archive boolean',
        'migrations/campaign/lane7w3a_the_table_api_reaches_crm_people.sql (lane 7 STANDARD-TABLES W3a)',
-       'SECURITY INVOKER: one UPDATE as the caller, so the standard table''s own update policy, governance guard and custom-field guard decide; a row the caller may not change writes zero rows and is refused by name. The row''s own organization governs a change by id; p_organization_id is optional there (checked by custom.assert_client_may_reach when given, and refused when not the row''s) and required on a create. Real columns only from platform.entity_types.api_writable_columns. No actor argument; _-keys refused by name.',
+       'SECURITY INVOKER: one UPDATE as the caller, so the standard table''s own update policy, governance guard and custom-field guard decide; a row the caller may not change writes zero rows and is refused by name. The row''s own organization governs a change by id; p_organization_id is optional there (checked by custom.assert_client_may_reach when given, and refused when not the row''s) and required on a create. Real columns only from the writable_columns of the knob table_api/standard_tables (none unless a token names them). No actor argument; _-keys refused by name.',
        true,
        array['uuid'::regtype, 'text'::regtype, 'uuid'::regtype, 'jsonb'::regtype, 'jsonb'::regtype, 'integer'::regtype, 'boolean'::regtype]::oid[]
 WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name = 'custom' AND function_name = 'entity_row_write');
-UPDATE platform.client_callable_door SET reason = 'SECURITY INVOKER: one UPDATE as the caller, so the standard table''s own update policy, governance guard and custom-field guard decide; a row the caller may not change writes zero rows and is refused by name. The row''s own organization governs a change by id; p_organization_id is optional there (checked by custom.assert_client_may_reach when given, and refused when not the row''s) and required on a create. Real columns only from platform.entity_types.api_writable_columns. No actor argument; _-keys refused by name.'
+UPDATE platform.client_callable_door SET reason = 'SECURITY INVOKER: one UPDATE as the caller, so the standard table''s own update policy, governance guard and custom-field guard decide; a row the caller may not change writes zero rows and is refused by name. The row''s own organization governs a change by id; p_organization_id is optional there (checked by custom.assert_client_may_reach when given, and refused when not the row''s) and required on a create. Real columns only from the writable_columns of the knob table_api/standard_tables (none unless a token names them). No actor argument; _-keys refused by name.'
  WHERE schema_name = 'custom' AND function_name = 'entity_row_write';
 
 
