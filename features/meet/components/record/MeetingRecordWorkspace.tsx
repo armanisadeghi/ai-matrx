@@ -21,6 +21,7 @@
 // decision / action item, `?recap=1` (the host's "recap ready" notification)
 // opens the recap for review.
 
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -429,6 +430,9 @@ function Workspace({
           ) : null}
 
           <GuestRecordAccessControl meeting={meeting} />
+          {/* The organization's own fields on this meeting (lane 7 W5) — on the Record tab an
+              ended meeting lands on, in its info column. */}
+          <EntityCustomFields entityToken="meet_meeting" recordId={meeting.id} organizationId={meeting.organizationId} />
         </div>
 
         <aside

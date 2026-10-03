@@ -988,8 +988,6 @@
   "route:/messages/[conversationId]",
   "route:/messages/admin",
   "route:/news",
-  "route:/notes",
-  "route:/notes/[id]",
   "route:/notes/[id]/diff",
   "route:/notifications",
   "route:/o/[id]",

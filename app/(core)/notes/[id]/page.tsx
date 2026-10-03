@@ -1,3 +1,4 @@
+// record-view: note
 // app/(a)/notes/[id]/page.tsx
 // Direct deep-link to a single note by id.
 // The parent layout renders <NotesView /> which reads the [id] param via

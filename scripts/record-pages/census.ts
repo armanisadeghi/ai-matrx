@@ -213,7 +213,19 @@ export function buildCensus(opts: CensusOptions): Census {
       for (const token of tokens) {
         judgeToken(key, token);
         const re = new RegExp(`<EntityCustomFields\\b[^>]*?entityToken=["']${token}["']`, "s");
-        if (!reaches(rel, (t) => re.test(t)))
+        // A Next.js page may render nothing itself while its LAYOUT renders the record (/notes/[id]):
+        // the route's own layout.tsx files (this folder up to the route group) count as what it renders.
+        const layouts: string[] = [];
+        if (rel.startsWith("app/")) {
+          let dir = dirname(rel);
+          while (dir.startsWith("app")) {
+            const layout = `${dir}/layout.tsx`;
+            if (read(layout) !== null) layouts.push(layout);
+            if (/\/\([^/]+\)$/.test(dir) || dir === "app") break;
+            dir = dirname(dir);
+          }
+        }
+        if (![rel, ...layouts].some((f) => reaches(f, (t) => re.test(t))))
           problems.push(
             `${key}: declares "${token}" but renders no <EntityCustomFields entityToken="${token}"> (${rel} and what it imports).`,
           );

@@ -2,10 +2,10 @@
  "generatedBy": "scripts/record-pages/generate.ts",
  "counts": {
   "list.sourceWithoutCustomFields": 12,
-  "route.pending": 1304,
-  "route.tokens": 13,
+  "route.pending": 1302,
+  "route.tokens": 15,
   "route.host": 1,
-  "window.pending": 182,
+  "window.pending": 181,
   "window.host": 1,
   "window.tokens": 2,
   "peek.tokens": 19,
@@ -4161,11 +4161,15 @@
   },
   "route:/notes": {
    "file": "app/(core)/notes/page.tsx",
-   "pending": true
+   "tokens": [
+    "note"
+   ]
   },
   "route:/notes/[id]": {
    "file": "app/(core)/notes/[id]/page.tsx",
-   "pending": true
+   "tokens": [
+    "note"
+   ]
   },
   "route:/notes/[id]/diff": {
    "file": "app/(core)/notes/[id]/diff/page.tsx",
@@ -5513,10 +5517,6 @@
   },
   "window:features/review-walk/components/ReviewWalkWindow.tsx": {
    "file": "features/review-walk/components/ReviewWalkWindow.tsx",
-   "pending": true
-  },
-  "window:features/rich-document/annotations/LinkRecordOverlay.tsx": {
-   "file": "features/rich-document/annotations/LinkRecordOverlay.tsx",
    "pending": true
   },
   "window:features/rich-document/hosts/ApplyToSourceReview.tsx": {

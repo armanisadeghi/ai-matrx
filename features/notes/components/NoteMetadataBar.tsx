@@ -8,6 +8,7 @@
 //
 // Props: noteId only (+ optional variant). Everything from Redux.
 
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -210,6 +211,14 @@ export function NoteMetadataBar({
       {scopePickerOpen && (
         <div className="relative z-10 shrink-0 border-t border-border/20 bg-background px-2">
           <NoteContextSection noteId={noteId} />
+          {/* The organization's own fields on this note (lane 7 W5): the note's context panel, the
+              info area the notes page already has, on the page and in the notes window alike. */}
+          <EntityCustomFields
+            entityToken="note"
+            recordId={noteId}
+            organizationId={note?.organization_id ?? null}
+            className="py-2"
+          />
         </div>
       )}
 
