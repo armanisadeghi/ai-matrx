@@ -80,6 +80,7 @@ jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
 import { ApprovalQueue } from "../ApprovalQueue";
 // eslint-disable-next-line import/first -- after the mocks above
 import { ApprovalsWorkspace } from "../ApprovalsWorkspace";
+import { APPROVALS_EMPTY_TITLE } from "../empty-state";
 
 const scope: ApprovalScope = { key: "u1", organizationId: "o1", userId: "u1" };
 
@@ -276,7 +277,7 @@ describe("ApprovalQueue: row state, deep links and scrolling", () => {
     });
     await flush();
 
-    expect(container.textContent).toContain("No proposals yet");
+    expect(container.textContent).toContain(APPROVALS_EMPTY_TITLE);
     expect(container.textContent).not.toContain("it appears here");
   });
 
