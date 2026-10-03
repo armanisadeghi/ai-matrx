@@ -23,12 +23,14 @@
  * comment and the comment was reworded to dodge the guard — that is the guard
  * training the code, the wrong way round).
  *
- * Usage: pnpm check:signout-scope            (scan the repo, exit 1 on a hit)
+ * Usage: pnpm check:signout-scope            (scan the repo — code, tests and scripts — exit 1 on a hit)
+ *        pnpm check:signout-scope --root <git dir>  (scan another checkout, e.g. a planted fixture)
  *        pnpm check:signout-scope --self-test (prove the detector still fails)
  */
 import { REPO_ROOT, repoFiles } from "./lib/repo-files";
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { join, resolve } from "node:path";
 
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
@@ -151,17 +153,28 @@ export function findUnscopedSignOuts(source: string, file: string): Finding[] {
   return out;
 }
 
-function trackedSources(): string[] {
+/**
+ * Which tracked files the law binds. Tests and scripts are IN (2026-10-02): a
+ * clone parity test that ended each seat with a bare `client.auth.signOut()`
+ * signed both test accounts out of every other agent's browser five times in
+ * one day. A test signs in as a real account against the real auth server, so
+ * its sign-out is as global as the header's.
+ */
+export function isScanned(file: string): boolean {
+  return (
+    /\.(tsx?|mjs|cjs|js)$/.test(file) &&
+    !file.startsWith("node_modules/") &&
+    !file.includes("/node_modules/") &&
+    !file.startsWith(".next/") &&
+    file !== "scripts/check-signout-scope.ts"
+  );
+}
+
+function trackedSources(root: string): string[] {
   // git's file list through the ONE lister (scripts/lib/repo-files.ts): a bare
   // `exec*Sync("git ls-files …")` has node's 1 MiB default output buffer, which the repo's
   // .ts/.tsx listing crossed on 2026-09-29 — the check died with ENOBUFS before judging.
-  return repoFiles(REPO_ROOT, { match: /\.tsx?$/ }).filter(
-    (f) =>
-      !f.startsWith("node_modules/") &&
-      f !== "scripts/check-signout-scope.ts" &&
-      !/\.test\.tsx?$/.test(f) &&
-      !/__tests__\//.test(f),
-  );
+  return repoFiles(root).filter(isScanned);
 }
 
 export function selfTest(): boolean {
@@ -179,6 +192,19 @@ export function selfTest(): boolean {
     ["/* a.signOut() in a block comment */", 0, "block comment"],
   ];
   let ok = true;
+  const scopeCases: Array<[string, boolean]> = [
+    ["features/scopes/service/__tests__/store-read-parity.clone.test.ts", true],
+    ["lib/diagnostics/supabaseUnverifiableSession.test.ts", true],
+    ["scripts/some-walk.mjs", true],
+    ["node_modules/@supabase/auth-js/dist/main.js", false],
+    ["scripts/check-signout-scope.ts", false],
+  ];
+  for (const [file, expected] of scopeCases) {
+    if (isScanned(file) !== expected) {
+      ok = false;
+      console.error(`  self-test: ${file}: expected scanned=${expected}, got ${!expected}`);
+    }
+  }
   for (const [src, expected, label] of cases) {
     const got = findUnscopedSignOuts(src, "fixture.ts").length;
     if (got !== expected) {
@@ -191,7 +217,7 @@ export function selfTest(): boolean {
     return false;
   }
   console.log(
-    `check:signout-scope self-test: ${cases.length} cases — the detector fails on every unscoped shape and passes literal local/others, comments and strings.`,
+    `check:signout-scope self-test: ${cases.length} cases + ${scopeCases.length} path cases — the detector fails on every unscoped shape and passes literal local/others, comments and strings; tests and scripts are scanned.`,
   );
   return true;
 }
@@ -201,11 +227,15 @@ function main(): void {
     if (!selfTest()) exitAfterDrain(1);
     return;
   }
+  // --root <dir>: scan another git checkout (used to prove the guard red on a
+  // planted fixture without touching committed files).
+  const rootFlag = process.argv.indexOf("--root");
+  const root = rootFlag > -1 && process.argv[rootFlag + 1] ? resolve(process.argv[rootFlag + 1]) : REPO_ROOT;
   const findings: Finding[] = [];
-  for (const file of trackedSources()) {
+  for (const file of trackedSources(root)) {
     let source: string;
     try {
-      source = readFileSync(file, "utf8");
+      source = readFileSync(join(root, file), "utf8");
     } catch {
       continue;
     }

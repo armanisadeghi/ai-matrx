@@ -656,7 +656,7 @@ describeClone("the store read path equals the old path on the clone", () => {
         bookkeepingRules: BOOKKEEPING.map((b) => ({ readers: String(b.readers), path: String(b.path), why: b.why })),
         clockSample: diffs.filter((d) => d.kind === "clock").slice(0, 20),
       };
-      await client.auth.signOut();
+      await client.auth.signOut({ scope: "local" });
       if (refusal) throw new Error(refusal);
     });
 
