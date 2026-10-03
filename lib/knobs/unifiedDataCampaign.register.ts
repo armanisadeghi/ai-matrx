@@ -330,10 +330,20 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
     why:
       "Lane MAKE-HOME — the /make hub: every tile opens an existing @ai-matrx/records-ui builder " +
       "(TablesHome, FormBuilder, BookingBuilder, ChecklistTemplateEditor, DashboardCanvas, " +
-      "PortalBuilder, ExampleTables) inside MakeMount, which reads the organization's store switch " +
+      "PortalBuilder) inside MakeMount, which reads the organization's store switch " +
       "with UNIFIED_DATA_CAMPAIGN.check before RecordsMount renders and shows the honest switch " +
       "notice otherwise; a new table made from step 1 asks the same switch before declaring it. " +
       "Reads go through the data home's one door (custom.data_home) across every organization.",
+  },
+  {
+    id: "make-template-gallery",
+    file: "features/make/gallery/TemplateGallery.tsx",
+    kind: "runtime",
+    why:
+      "Lane MAKE-HOME wave 4 — the one template gallery on /make and its preview page: cards read " +
+      "through the catalogue door custom.templates, install/remove through runTemplateDoor " +
+      "(@ai-matrx/records/templates), each install or removal asking UNIFIED_DATA_CAMPAIGN.check for " +
+      "the organization first and stopping with the store's words when the switch is off.",
   },
   {
     id: "data-hub-organization-hub",

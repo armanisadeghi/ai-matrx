@@ -29,7 +29,6 @@ import {
   BookingBuilder,
   ChecklistTemplateEditor,
   DashboardCanvas,
-  ExampleTables,
   FormBuilder,
   PickOrAdd,
   PortalBuilder,
@@ -52,10 +51,6 @@ import * as doors from "@/features/unified-data/hub/doors";
 import { buildDataHomeRows, type DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
 import { HUB_CAPABILITIES } from "@/features/unified-data/hub/capabilities";
 import { KindIcon } from "@/features/unified-data/home/dataHomeColumns";
-import { fetchAccessibleKits, fetchKits } from "@/features/kits/service";
-import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { KitCard } from "@/features/kits/components/KitCard";
-import type { KitEntry } from "@/features/kits/types";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -72,6 +67,7 @@ import {
 } from "./tiles";
 import { answerForRecent, isTestOrganization, recentlyChanged, withoutTestOrganizations } from "./recent";
 import { MakeMount, NewTableBody, SAVED_WHERE_CHOSEN, SavesTo } from "./MakeMount";
+import { TemplateGallerySection } from "./gallery/TemplateGallery";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Two reads across every organization: Recent (the data home's one call) and step 1's tables.
@@ -228,10 +224,7 @@ export default function MakeHome() {
 
           <RecentSection recent={recent} />
 
-          <TemplatesSection
-            activeOrganizationId={active.organizationState === "ready" ? active.organizationId : null}
-            onOpenTable={(id) => router.push(`/data-v2/${id}`)}
-          />
+          <TemplateGallerySection />
         </div>
       </div>
 
@@ -317,72 +310,6 @@ function whenWords(at: string | null): string {
   if (h < 24) return `${h}h ago`;
   const d = Math.round(h / 24);
   return d < 30 ? `${d}d ago` : new Date(at).toLocaleDateString();
-}
-
-/**
- * The kits the person can reach: the platform's own (the system organization's, `fetchKits`) and
- * every kit her organizations saved (`fetchAccessibleKits`) — the kits service's own doors, read in
- * the browser so the page never waits on them. A failed read shows no kits row, never an error wall.
- */
-function useKits() {
-  const [kits, setKits] = useState<KitEntry[] | null>(null);
-  useEffect(() => {
-    let alive = true;
-    void (async () => {
-      const client = createClient();
-      // org-fallback-deliberate: the platform's own kits are read from the platform's organization by name, not a stand-in for the person's
-      const platformOrganizationId = await resolveSystemOrgId(client).catch(() => null);
-      const [platform, mine] = await Promise.all([
-        platformOrganizationId ? fetchKits(client, platformOrganizationId) : Promise.resolve({ kits: [], error: null }),
-        fetchAccessibleKits(client, platformOrganizationId),
-      ]);
-      if (platform.error) console.error("[/make] platform kits read failed:", platform.error);
-      if (mine.error) console.error("[/make] organization kits read failed:", mine.error);
-      if (alive) setKits([...mine.kits, ...platform.kits]);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-  return kits;
-}
-
-function TemplatesSection({
-  activeOrganizationId,
-  onOpenTable,
-}: {
-  activeOrganizationId: string | null;
-  onOpenTable: (tableId: string) => void;
-}) {
-  const kits = useKits() ?? [];
-  const [examples, setExamples] = useState(true);
-  return (
-    <section className="flex flex-col gap-3" aria-labelledby="make-templates">
-      <h2 id="make-templates" className="text-sm font-medium text-muted-foreground">
-        Start from a template
-      </h2>
-      {activeOrganizationId ? (
-        examples ? (
-          <MakeMount organizationId={activeOrganizationId}>
-            <ExampleTables onBuilt={onOpenTable} onClose={() => setExamples(false)} className="bg-card" />
-          </MakeMount>
-        ) : (
-          <Button size="sm" variant="outline" className="self-start" onClick={() => setExamples(true)}>
-            Real business examples
-          </Button>
-        )
-      ) : null}
-      {kits.length > 0 ? (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-make-kits="">
-          {kits.map((kit) => (
-            <li key={`${kit.organizationId ?? "platform"}:${kit.key}`} className="min-w-0">
-              <KitCard kit={kit} />
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </section>
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

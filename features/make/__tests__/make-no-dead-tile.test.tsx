@@ -37,7 +37,6 @@ jest.mock("@ai-matrx/records-ui", () => {
     BookingBuilder: stub("BookingBuilder"),
     ChecklistTemplateEditor: stub("ChecklistTemplateEditor"),
     DashboardCanvas: stub("DashboardCanvas"),
-    ExampleTables: stub("ExampleTables"),
     FormBuilder: stub("FormBuilder"),
     PortalBuilder: stub("PortalBuilder"),
     TablesHome: stub("TablesHome"),
@@ -84,12 +83,8 @@ jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), dat
 jest.mock("@/features/unified-data/home/dataHomeRows", () => ({ buildDataHomeRows: jest.fn() }));
 jest.mock("@/features/unified-data/hub/capabilities", () => ({ HUB_CAPABILITIES: [] }));
 jest.mock("@/features/unified-data/home/dataHomeColumns", () => ({ KindIcon: () => <i /> }));
-jest.mock("@/features/kits/service", () => ({
-  fetchAccessibleKits: async () => ({ kits: [], error: null }),
-  fetchKits: async () => ({ kits: [], error: null }),
-}));
-jest.mock("@/lib/organizations/systemOrg", () => ({ resolveSystemOrgId: async () => "39c38960-d30c-4840-b0c1-c9960de95582" }));
-jest.mock("@/features/kits/components/KitCard", () => ({ KitCard: () => null }));
+// The template gallery is its own unit (gallery/TemplateGallery.tsx, guard G3); here it is a stand-in.
+jest.mock("../gallery/TemplateGallery", () => ({ TemplateGallerySection: () => <div data-make-gallery="" /> }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 

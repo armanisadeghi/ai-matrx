@@ -26,7 +26,6 @@ jest.mock("@ai-matrx/records-ui", () => {
     BookingBuilder: spy("BookingBuilder"),
     ChecklistTemplateEditor: spy("ChecklistTemplateEditor"),
     DashboardCanvas: spy("DashboardCanvas"),
-    ExampleTables: spy("ExampleTables"),
     FormBuilder: spy("FormBuilder"),
     PortalBuilder: spy("PortalBuilder"),
     PickOrAdd: () => null,
@@ -65,9 +64,8 @@ jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), dat
 jest.mock("@/features/unified-data/home/dataHomeRows", () => ({ buildDataHomeRows: jest.fn() }));
 jest.mock("@/features/unified-data/hub/capabilities", () => ({ HUB_CAPABILITIES: [] }));
 jest.mock("@/features/unified-data/home/dataHomeColumns", () => ({ KindIcon: () => null }));
-jest.mock("@/features/kits/service", () => ({ fetchAccessibleKits: jest.fn(), fetchKits: jest.fn() }));
-jest.mock("@/lib/organizations/systemOrg", () => ({ resolveSystemOrgId: jest.fn() }));
-jest.mock("@/features/kits/components/KitCard", () => ({ KitCard: () => null }));
+// The template gallery is its own unit (gallery/TemplateGallery.tsx, guard G3); here it is a stand-in.
+jest.mock("../gallery/TemplateGallery", () => ({ TemplateGallerySection: () => <div data-make-gallery="" /> }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
