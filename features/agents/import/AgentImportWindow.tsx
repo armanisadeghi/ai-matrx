@@ -639,10 +639,17 @@ function AgentImportWindowInner({ onClose }: { onClose: () => void }) {
         );
         setPanelState("success");
       } else {
-        const errorMsg =
-          typeof resultAction.payload === "string"
-            ? resultAction.payload
-            : "Import failed. Your data was not lost — it is still in the paste area.";
+        // The store's own reason, whatever shape the rejection carries — never a bare "failed".
+        const payload: unknown = resultAction.payload;
+        const reason =
+          typeof payload === "string"
+            ? payload
+            : payload && typeof payload === "object" && "message" in payload
+              ? String((payload as { message: unknown }).message)
+              : resultAction.error?.message;
+        const errorMsg = reason
+          ? `Import failed: ${reason}`
+          : "Import failed. Your data was not lost — it is still in the paste area.";
         setConversionResult({
           success: false,
           error: errorMsg,
