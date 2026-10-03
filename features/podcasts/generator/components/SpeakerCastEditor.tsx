@@ -62,6 +62,7 @@ import {
   type VoiceSamplePlayer,
 } from "../useVoiceSamplePlayer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 interface SpeakerCastEditorProps {
   hostCount: number;
@@ -220,7 +221,7 @@ function VoicePicker({
                             : "opacity-0",
                         )}
                       />
-                      <span className="text-sm text-foreground">{v.name}</span>
+                      <span className="text-sm text-foreground">{displayLabel(v.name, v.name)}</span>
                       {hintText && (
                         <span className="truncate text-xs text-muted-foreground">
                           {hintText}

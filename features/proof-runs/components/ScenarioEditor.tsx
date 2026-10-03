@@ -211,8 +211,9 @@ function ExpectationRow({
                       .toLowerCase(),
                   })
                 }
+                className="h-8 text-xs font-mono"
+                data-identifier
                 placeholder="no_fabricated_routes"
-                className="h-8 text-xs"
               />
             </div>
           </div>
@@ -463,9 +464,10 @@ export function ScenarioEditor({
                 slug: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "_"),
               }))
             }
+            className="h-8 font-mono text-xs"
+            data-identifier
             placeholder="family_planted_universe"
             disabled={Boolean(initial.slug)}
-            className="h-8 font-mono text-xs"
           />
         </div>
         <div className="space-y-1">

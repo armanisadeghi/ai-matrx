@@ -893,8 +893,9 @@ function ExtraInputRow({
         <Input
           value={row.name}
           onChange={(e) => onPatch({ name: e.target.value })}
-          placeholder="variable_name"
           className="h-6 text-[11px] w-1/3 font-mono"
+          data-identifier
+          placeholder="variable_name"
         />
         <select
           value={isLiteral ? "literal" : "template"}

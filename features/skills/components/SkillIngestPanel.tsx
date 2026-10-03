@@ -166,15 +166,13 @@ export function SkillIngestPanel({
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Each <span className="font-mono text-foreground/90">SKILL.md</span>{" "}
-              is parsed and upserted into the platform skill registry
-              (<span className="font-mono text-foreground/90">skill.definition</span>
-              ), flagged <span className="font-mono text-foreground/90">is_system = true</span>{" "}
+              is parsed and upserted into the platform skill registry, flagged as a system skill{" "}
               and <span className="font-medium text-foreground/90">not published to the web</span> —
               always, on every write, even if a same-id row was previously published. Ingested
               skills are dev/admin tooling, never the same catalog end users get: they show up
               in the <span className="font-medium text-foreground/90">Agent Skills Registry</span>{" "}
               here, but not in any user's agent skill picker or auto-injected context.
-              Matching is by <span className="font-mono text-foreground/90">skill_id</span>{" "}
+              Matching is by skill ID{" "}
               (folder or file name, or a frontmatter <span className="font-mono text-foreground/90">name:</span>{" "}
               override) — same id twice re-uses the row: unchanged body ⇒ skipped, changed
               body ⇒ updated in place, new id ⇒ created. A frontmatter{" "}

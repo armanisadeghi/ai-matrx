@@ -831,8 +831,9 @@ function CreateCategoryRow({
           keyTouchedRef.current = true;
           setKey(e.target.value);
         }}
-        placeholder="category_key"
         className="h-7 text-xs font-mono w-40"
+        data-identifier
+        placeholder="category_key"
       />
       {isAdmin && (
         <label className="inline-flex items-center gap-1 text-xs text-muted-foreground">

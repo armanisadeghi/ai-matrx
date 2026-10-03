@@ -161,7 +161,7 @@ export function ShowsClient() {
         header: "Slug",
         cell: (show) => (
           <span className="block max-w-[140px] truncate font-mono text-xs text-muted-foreground">
-            {show.slug}
+            <code className="font-mono">{show.slug}</code>
           </span>
         ),
       },

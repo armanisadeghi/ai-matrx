@@ -468,6 +468,8 @@ export function AddScopeModal({
                   id={variableKeyId}
                   value={variableKeyInput}
                   onChange={(e) => setVariableKeyInput(e.target.value)}
+                  className="font-mono"
+                  data-identifier
                   placeholder="e.g. budget_code"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {

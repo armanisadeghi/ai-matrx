@@ -257,7 +257,7 @@ export function PackDetailPanel({
             {item.subscriberCount} organization
             {item.subscriberCount === 1 ? "" : "s"} using it
           </span>
-          {item.slug ? <span className="font-mono">{item.slug}</span> : null}
+          {item.slug ? <code className="font-mono">{item.slug}</code> : null}
           <span className="select-all font-mono text-[10px]">{item.id}</span>
         </div>
         {item.entitledVia === "industry" && organizationId ? (

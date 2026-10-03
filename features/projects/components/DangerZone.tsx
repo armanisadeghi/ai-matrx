@@ -51,7 +51,7 @@ export function DangerZone({ project }: DangerZoneProps) {
         void dispatchThunk(invalidateAndRefetchFullContext());
         toast.success("Project deleted");
         // Always land on the unfiltered /projects list. Routing to
-        // /organizations/<slug>/projects redirects to /projects?org_filter=<slug>
+        // an organization's projects page redirects to a filtered /projects view
         // (see next.config.js), silently trapping the user in a filtered view
         // with no project they just deleted and no way to tell why.
         router.push("/projects");

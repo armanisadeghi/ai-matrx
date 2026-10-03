@@ -122,6 +122,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { replaceAppHref } from "@/lib/deployment/navigate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const NONE = "__none__";
 
@@ -939,7 +940,7 @@ function ClassificationSection({
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Raw sort_order</Label>
+          <Label className="text-xs">Raw sort order</Label>
           <Input
             type="number"
             value={sortDraft}
@@ -1778,8 +1779,9 @@ function JsonRecordEditor({
           onKeyDown={(e) => {
             if (e.key === "Enter") addKey();
           }}
-          placeholder="tool_name"
           className={cn("h-7 max-w-[240px] font-mono text-xs", ACTIVE_FIELD)}
+          data-identifier
+          placeholder="tool_name"
           style={{ fontSize: "16px" }}
           disabled={busy}
         />
@@ -2038,7 +2040,7 @@ function RolesSection({
                     {role.name}
                   </code>
                   <Badge variant="outline" className="text-[10px]">
-                    {role.kind}
+                    {humanizeIdentifier(role.kind)}
                   </Badge>
                   {role.kind === "multi" && (
                     <Badge
@@ -2493,7 +2495,7 @@ function UsageSection({
               </Badge>
             </Label>
             {usage.uiComponents.length === 0 ? (
-              <EmptyHint>No tool_ui rows scoped to this surface.</EmptyHint>
+              <EmptyHint>No tool displays scoped to this surface.</EmptyHint>
             ) : (
               <ul className="rounded-md border border-border bg-card divide-y divide-border">
                 {usage.uiComponents.map((u) => (

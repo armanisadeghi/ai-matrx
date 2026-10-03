@@ -977,7 +977,7 @@ function StoreDetailPanel({
                   variant="ghost"
                   className="text-muted-foreground"
                   onClick={() => setAdvancedOpen(true)}
-                  title="Bind a non-cld_file source by id"
+                  title="Bind a source by id"
                 >
                   <Plus className="h-3.5 w-3.5" /> Advanced
                 </Button>

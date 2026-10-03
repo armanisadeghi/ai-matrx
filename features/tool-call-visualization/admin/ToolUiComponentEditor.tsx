@@ -617,8 +617,9 @@ export function ToolUiComponentEditor({
                     tool_name: e.target.value,
                   }))
                 }
-                placeholder="e.g. web_search_v1"
                 className="font-mono text-base"
+                data-identifier
+                placeholder="e.g. web_search_v1"
                 style={{ fontSize: "16px" }}
                 disabled={!!toolName}
               />
@@ -1024,8 +1025,9 @@ export function ToolUiComponentEditor({
                     tool_name: e.target.value,
                   }))
                 }
-                placeholder="e.g. web_search_v1"
                 className="font-mono"
+                data-identifier
+                placeholder="e.g. web_search_v1"
                 disabled={!!toolName}
               />
             </div>

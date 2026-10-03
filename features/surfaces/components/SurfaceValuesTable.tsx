@@ -180,7 +180,7 @@ export function SurfaceValuesTable({
                       {display.label || v.name}
                     </span>
                     <span className="font-mono text-xs text-muted-foreground truncate">
-                      {v.name}
+                      <code>{v.name}</code>
                     </span>
                     {display.alwaysAvailable && (
                       <Badge variant="outline" className="text-xs">

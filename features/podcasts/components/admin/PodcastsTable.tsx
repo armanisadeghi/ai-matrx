@@ -181,7 +181,7 @@ export function PodcastsTable({
         header: "Slug",
         cell: (show) => (
           <span className="block max-w-[120px] truncate font-mono text-xs text-muted-foreground">
-            {show.slug}
+            <code className="font-mono">{show.slug}</code>
           </span>
         ),
       },
@@ -233,7 +233,7 @@ export function PodcastsTable({
                 {episode.title}
               </p>
               <p className="max-w-[180px] truncate font-mono text-xs text-muted-foreground">
-                {episode.slug}
+                <code className="font-mono">{episode.slug}</code>
               </p>
             </div>
           </div>

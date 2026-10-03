@@ -118,6 +118,7 @@ import {
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { SecureLinkPanel } from "@/features/sharing/secure/SecureLinkPanel";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface VaultItemDetailProps {
   item: VaultItem;
@@ -2309,7 +2310,7 @@ function DestinationSection({
             >
               <p className="text-muted-foreground">
                 This item stores its address in the encrypted field{" "}
-                <span className="font-mono">{field.field_key}</span>, which the
+                <span className="font-medium">{humanizeIdentifier(field.field_key)}</span>, which the
                 browser matcher cannot read. Use it as a login URL to make it
                 fillable — the address becomes visible, unencrypted metadata.
               </p>

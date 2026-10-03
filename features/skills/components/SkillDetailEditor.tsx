@@ -467,7 +467,7 @@ export function SkillDetailEditor({
             </div>
           )}
 
-          <Field label="skill_id" required>
+          <Field label="Skill ID" required>
             <Input
               value={draft.skillId}
               onChange={(e) => set("skillId", e.target.value)}

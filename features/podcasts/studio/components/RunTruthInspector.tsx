@@ -521,11 +521,11 @@ export function RunTruthInspector({
 
               {/* Supporting rows. */}
               <JsonBlock
-                title="Studio run row (pc_studio_runs)"
+                title="Studio run"
                 value={truth.studioRun}
               />
               <JsonBlock
-                title="Episode row (pc_episodes)"
+                title="Episode"
                 value={truth.episode}
               />
             </>

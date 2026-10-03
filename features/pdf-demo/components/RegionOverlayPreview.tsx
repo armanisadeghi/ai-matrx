@@ -28,6 +28,7 @@ import type {
   RepeatedRegionBbox,
 } from "@/features/pdf-extractor/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface Props {
   sourcePayload: PdfSourcePayload | null;
@@ -273,7 +274,7 @@ export function RegionOverlayPreview({
                       className="absolute -top-4 left-0 rounded px-1 py-0.5 text-[9px] font-medium text-white"
                       style={{ backgroundColor: o.color }}
                     >
-                      {o.kind}
+                      {humanizeIdentifier(o.kind)}
                     </span>
                   </div>
                 ))}
@@ -292,7 +293,7 @@ export function RegionOverlayPreview({
               className="inline-block h-3 w-3 rounded-sm"
               style={{ backgroundColor: colorForRegion(r.region_id) }}
             />
-            <span className="font-medium">{r.kind}</span>
+            <span className="font-medium">{humanizeIdentifier(r.kind)}</span>
             <span className="text-muted-foreground">
               · {(r.pages ?? []).length} page{(r.pages ?? []).length === 1 ? "" : "s"}
             </span>

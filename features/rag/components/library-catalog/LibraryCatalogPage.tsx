@@ -575,7 +575,7 @@ function CatalogListRow({
         </span>
         {item.slug ? (
           <span className="truncate font-mono text-[10px] text-muted-foreground">
-            {item.slug}
+            <code>{item.slug}</code>
           </span>
         ) : null}
       </div>
@@ -679,7 +679,7 @@ function StoreDetailPanel({
           <span className="tabular-nums">
             {item.itemCount} document{item.itemCount === 1 ? "" : "s"}
           </span>
-          {item.slug ? <span className="font-mono">{item.slug}</span> : null}
+          {item.slug ? <code className="font-mono">{item.slug}</code> : null}
           <span className="select-all font-mono text-[10px]">{item.id}</span>
         </div>
         {/* Why you have access — every grant reaching the caller. */}

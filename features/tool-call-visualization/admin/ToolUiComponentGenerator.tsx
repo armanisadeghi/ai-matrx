@@ -61,6 +61,7 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { buildToolComponentGenerationOffer } from "@/features/tool-call-visualization/admin/toolComponentGenerationOffer";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1166,7 +1167,7 @@ export function ToolUiComponentGenerator({
                 <SelectContent>
                   {tools.map((tool) => (
                     <SelectItem key={tool.name} value={tool.name}>
-                      <span className="font-mono text-xs">{tool.name}</span>
+                      <span className="text-xs">{humanizeIdentifier(tool.name)}</span>
                       {tool.category && (
                         <span className="text-xs text-muted-foreground ml-2">
                           [{tool.category}]
@@ -1376,9 +1377,8 @@ export function ToolUiComponentGenerator({
                   )}
                   {dbEntries.length === 0 && testSamples.length > 0 && (
                     <p className="text-xs text-muted-foreground px-1">
-                      No <span className="font-mono">cx_tool_call</span> entries
-                      found — <span className="font-mono">final_payload</span>{" "}
-                      from test samples will be used as fallback.
+                      No logged tool calls found — test sample results will be
+                      used as fallback.
                     </p>
                   )}
                 </>
@@ -1552,7 +1552,7 @@ export function ToolUiComponentGenerator({
                   <div>
                     <span className="text-muted-foreground block">Tool</span>
                     <p className="font-mono font-medium">
-                      {generatedComponent.tool_name}
+                      {humanizeIdentifier(generatedComponent.tool_name)}
                     </p>
                   </div>
                   <div>
@@ -1602,38 +1602,38 @@ export function ToolUiComponentGenerator({
                   <TabsContent value="inline">
                     <CodeBlock
                       code={generatedComponent.inline_code}
-                      label="inline_code"
+                      label="Inline code"
                     />
                   </TabsContent>
                   <TabsContent value="overlay">
                     <CodeBlock
                       code={generatedComponent.overlay_code}
-                      label="overlay_code"
+                      label="Overlay code"
                     />
                   </TabsContent>
                   <TabsContent value="utility">
                     <CodeBlock
                       code={generatedComponent.utility_code}
-                      label="utility_code"
+                      label="Utility code"
                     />
                   </TabsContent>
                   <TabsContent value="headers" className="space-y-3">
                     <div>
                       <Label className="text-[10px] text-muted-foreground mb-1 block">
-                        header_subtitle_code
+                        Header subtitle code
                       </Label>
                       <CodeBlock
                         code={generatedComponent.header_subtitle_code}
-                        label="header_subtitle_code"
+                        label="Header subtitle code"
                       />
                     </div>
                     <div>
                       <Label className="text-[10px] text-muted-foreground mb-1 block">
-                        header_extras_code
+                        Header extras code
                       </Label>
                       <CodeBlock
                         code={generatedComponent.header_extras_code}
-                        label="header_extras_code"
+                        label="Header extras code"
                       />
                     </div>
                   </TabsContent>

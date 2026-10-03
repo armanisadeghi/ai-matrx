@@ -489,11 +489,11 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
                         <>
                             <JsonBlock label="output" data={toolOutput} defaultExpanded />
                             {fullResult && (
-                                <JsonBlock label="full_result" data={fullResult} />
+                                <JsonBlock label="Full result" data={fullResult} />
                             )}
                         </>
                     ) : fullResult ? (
-                        <JsonBlock label="full_result" data={fullResult} defaultExpanded />
+                        <JsonBlock label="Full result" data={fullResult} defaultExpanded />
                     ) : (
                         <p className="text-xs text-muted-foreground text-center py-4">No result captured.</p>
                     )}
@@ -514,7 +514,7 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
                             </pre>
                         </div>
                         {modelFacingResult && (
-                            <JsonBlock label="model_facing_result" data={modelFacingResult} />
+                            <JsonBlock label="Model-facing result" data={modelFacingResult} />
                         )}
                     </TabsContent>
                 )}
@@ -522,7 +522,7 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
                 {/* Output schema tab */}
                 {outputSchema != null && (
                     <TabsContent value="schema" className="p-3 mt-0">
-                        <JsonBlock label="output_schema" data={outputSchema} defaultExpanded />
+                        <JsonBlock label="Output schema" data={outputSchema} defaultExpanded />
                     </TabsContent>
                 )}
 
@@ -545,7 +545,7 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
                 {/* Raw final payload tab */}
                 <TabsContent value="raw" className="p-3 mt-0">
                     {finalPayload !== null ? (
-                        <JsonBlock label="final_payload (raw)" data={finalPayload} defaultExpanded />
+                        <JsonBlock label="Final payload (raw)" data={finalPayload} defaultExpanded />
                     ) : (
                         <p className="text-xs text-muted-foreground text-center py-4">No payload captured.</p>
                     )}
