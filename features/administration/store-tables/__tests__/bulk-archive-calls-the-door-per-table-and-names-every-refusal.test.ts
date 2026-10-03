@@ -100,6 +100,6 @@ describe("tables the platform keeps are never offered", () => {
     expect(protectionOf(row({ id: "11111111-0005-4000-8000-000000000003", name: "Parity Floor" }))).toBe("named-in-code");
     // admin's Workspace — Rincon Plumbing — Customers: the safety nets' fixture.
     expect(protectionOf(row({ id: "415c3e23-2f90-4c66-9040-b246fa1c4b36", system: false }))).toBe("named-in-code");
-    expect(protectionOf(row({ id: "6a4b2950-935a-4c26-a3f6-0e1ab760d184", name: "Example: Team Directory" }))).toBe("platform-example");
+    expect(protectionOf(row({ id: "30374c26-f16d-4e78-ab12-01495f86b954", name: "Example: Project Tracker" }))).toBe("platform-example");
   });
 });
