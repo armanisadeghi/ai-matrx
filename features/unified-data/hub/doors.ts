@@ -117,6 +117,24 @@ export function entityRecordHome(
   return call<RecordHomeAnswer>(dataSource, "entity_record_home", { p_token: token, p_record_id: recordId });
 }
 
+/**
+ * Lane 7 W5 — whether this person can open the record's custom values at all
+ * (`custom.entity_record_read`, the read the custom-fields section itself makes). The section asks it
+ * once before it mounts, so a store refusal is turned into a short state and never printed raw.
+ */
+export function entityRecordReadable(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+  token: string,
+  recordId: string,
+): Promise<DoorAnswer<unknown>> {
+  return call<unknown>(dataSource, "entity_record_read", {
+    p_organization_id: organizationId,
+    p_token: token,
+    p_record_id: recordId,
+  });
+}
+
 /** REC-27's Table kernel. Every Table of an organization is a record in it. */
 export function tableKernelId(dataSource: RecordsDataSource): Promise<DoorAnswer<string>> {
   return call<string>(dataSource, "table_kernel_id", {});

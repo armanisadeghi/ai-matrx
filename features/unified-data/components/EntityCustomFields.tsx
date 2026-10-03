@@ -12,13 +12,14 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 // organization the person was working in, so a deal of Rincon opened from another of her
 // organizations showed that OTHER organization's custom fields — or none.
 //
-// 🚨 LANE 7 W5 — ONE WAY ONLY: the section asks the store for the row's organization
-// (`custom.entity_record_home(token, id)`, SECURITY INVOKER, so the table's own row rules
-// decide), never takes it as a prop. Windows, peeks and the generic Detail host hold only
-// (token, id), so a prop would have meant a second way in. A record that cannot show custom
-// fields (no organization column, a personal row, a row she cannot read) says the store's
-// sentence in one line — never silently absent. Every state carries
-// `data-section="custom-fields"` + `data-state`, which G1's live check reads
+// 🚨 LANE 7 W5 — THE ROW'S ORGANIZATION, FROM THE STORE FIRST. The section asks the store
+// (`custom.entity_record_home(token, id)`, SECURITY INVOKER, so the table's own row rules decide).
+// A page that holds the row MAY pass `organizationId` (the row's, never the active organization):
+// it is used ONLY while that door is not on the database (the chair's apply), announced once. A
+// surface with neither (Detail window, /detail, a peek) shows no section until the door lands. The
+// section's own first read is asked before it mounts, so a store refusal is never printed raw.
+// A record that cannot show fields once the door exists says why in one line. Every shown state
+// carries `data-section="custom-fields"` + `data-state`, which G1's live check reads
 // (features/unified-data/every-record-view-has-custom-fields.test.ts).
 //
 // That is the whole contract, and it is the same line on all 643 tables the
@@ -42,7 +43,7 @@ import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } fro
 import { Button } from "@/components/ui/button";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { NewTableDialog } from "@/features/make/MakeMount";
-import { entityRecordHome } from "@/features/unified-data/hub/doors";
+import { entityRecordHome, entityRecordReadable } from "@/features/unified-data/hub/doors";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -96,16 +97,58 @@ type RecordHome =
   | { state: "absent" };
 
 /** The row's organization, asked as the person. Never the active organization. */
-/** PostgREST / Postgres say the function is not on this database. */
+/** PostgREST (PGRST202) / Postgres (42883) say the FUNCTION is not on this database — nothing else. */
 function doorIsAbsent(error: { message: string; sqlstate?: string | undefined }): boolean {
-  return (
-    error.sqlstate === "PGRST202" ||
-    error.sqlstate === "42883" ||
-    /could not find the function|does not exist/i.test(error.message)
-  );
+  return error.sqlstate === "PGRST202" || error.sqlstate === "42883";
 }
 let announcedFallback = false;
 let announcedAbsent = false;
+let announcedUnreadable = false;
+
+type Readable = "checking" | "ok" | "absent" | "error";
+
+/**
+ * The section's own first read, asked BEFORE it mounts. A store refusal is never printed raw: the
+ * known pre-apply refusal (42501 — production's `entity_record_read` before lane7w5b reads every
+ * column, and files.files grants 36 of 37) makes the section ABSENT with one console note; anything
+ * else is the short "Couldn't read this record" state.
+ */
+function useRecordReadable(token: string, recordId: string, organizationId: string | null) {
+  const [readable, setReadable] = useState<Readable>("checking");
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (!organizationId) return;
+    let live = true;
+    setReadable("checking");
+    void entityRecordReadable(recordsDataSource(createClient()), organizationId, token, recordId).then(
+      (answer) => {
+        if (!live) return;
+        if (answer.ok) return setReadable("ok");
+        if (answer.error.sqlstate === "42501") {
+          if (!announcedUnreadable) {
+            announcedUnreadable = true;
+            console.warn(
+              "[EntityCustomFields] custom.entity_record_read refused a column of this table (lane7w5b SQL, chair's apply); the section stays hidden on such tables until it is.",
+              { token },
+            );
+          }
+          return setReadable("absent");
+        }
+        console.error("[EntityCustomFields] custom.entity_record_read failed", { token, recordId, error: answer.error });
+        setReadable("error");
+      },
+      (error: unknown) => {
+        if (!live) return;
+        console.error("[EntityCustomFields] custom.entity_record_read threw", { token, recordId, error });
+        setReadable("error");
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [token, recordId, organizationId, attempt]);
+  return { readable, retry: () => setAttempt((n) => n + 1) };
+}
 
 function useRecordHome(
   token: string,
@@ -234,6 +277,7 @@ export function EntityCustomFields({
     [CUSTOM_FIELDS_VALUE_NAME]: customFieldsScopeValue(),
   }));
   const organizationId = home.state === "home" ? home.organizationId : null;
+  const { readable, retry: retryRead } = useRecordReadable(entityToken, recordId, organizationId);
   // Whether she is a member of the ROW's organization: `null` until asked.
   const [member, setMember] = useState<boolean | null>(null);
   // ONE switch: does this organization keep its data in the record store? Set
@@ -299,6 +343,17 @@ export function EntityCustomFields({
     );
   }
   if (!campaign.on) return null;
+  if (readable === "absent" || readable === "checking") return null;
+  if (readable === "error") {
+    return (
+      <SectionLine state="error" title={title} className={className}>
+        <span className="text-muted-foreground">Couldn&apos;t read this record</span>
+        <Button size="sm" variant="ghost" className="ml-auto" onClick={retryRead}>
+          Retry
+        </Button>
+      </SectionLine>
+    );
+  }
   return (
     <RecordsMount
       letTheStoreDecideRights

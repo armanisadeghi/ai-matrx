@@ -25,6 +25,8 @@
 --                    those doors learn an owner column. The section says so in one line.
 --   personal_row     the table has the column but this row's organization is empty
 --   not_found        no such row, or one the person may not read (the same answer, on purpose)
+--   not_readable     the table refuses her the organization_id column itself
+--   read_failed      any other fault while reading the row (never raised to the caller)
 
 set local lock_timeout = '3s';
 
@@ -52,8 +54,21 @@ begin
   end if;
 
   -- AS THE PERSON: the table's own row rules decide. A row she cannot read is not there.
-  execute format('select true, x.organization_id from %I.%I x where x.id = $1', t.schema_name, t.table_name)
-     into v_seen, v_org using p_record_id;
+  -- The read itself may refuse (a table whose organization_id column is not granted to her, or any
+  -- runtime fault): that is answered as a refusal, never raised.
+  begin
+    execute format('select true, x.organization_id from %I.%I x where x.id = $1', t.schema_name, t.table_name)
+       into v_seen, v_org using p_record_id;
+  exception
+    when insufficient_privilege then
+      return jsonb_build_object(
+        'refused', format('You can''t read this %s''s organization here.', lower(t.label)),
+        'reason', 'not_readable', 'token', t.token, 'label', t.label);
+    when others then
+      return jsonb_build_object(
+        'refused', format('This %s could not be read just now.', lower(t.label)),
+        'reason', 'read_failed', 'token', t.token, 'label', t.label);
+  end;
 
   if v_seen is null then
     return jsonb_build_object(

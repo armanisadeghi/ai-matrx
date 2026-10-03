@@ -47,9 +47,11 @@ Routes outside this directory: `app/(core)/data-v2/`, `app/(core)/data/page.tsx`
   `useSharedTable` → `lib/kept-answer/keptAnswer.ts`): one answer per object / organization for the session, read
   synchronously on remount or wake, re-asked in the background when stale, replaced only when it changed, never
   blanked by a retry; forgotten on sign-out. A gate never drops back to "resolving" and unmounts the grid.
-- **The custom-fields section reads the ROW's organization itself** (`custom.entity_record_home(token, id)`, invoker,
-  through `hub/doors.ts`), never a prop and never the active organization; a record that cannot show fields says why
-  in one line (`data-section="custom-fields"` + `data-state` on every state).
+- **The custom-fields section reads the ROW's organization from the store** (`custom.entity_record_home(token, id)`,
+  invoker, through `hub/doors.ts`) — never the active organization. A page holding the row may pass `organizationId`
+  as the fallback used only while that door is not applied; surfaces without one show no section until it is. The
+  section's first read (`custom.entity_record_read`) is asked before it mounts: a refusal is a short state or, for the
+  known pre-apply column refusal, no section — never a raw database error.
 - **Every record view declares its token in its own file** (`<EntityCustomFields entityToken="…">` or a
   `// record-view:` line); regenerate with `pnpm tsx scripts/record-pages/generate.ts --shrink`.
 - **A package change ships package first.** Publish `@ai-matrx/records` / `records-ui` before any consumer code that
