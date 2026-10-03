@@ -11,7 +11,7 @@
  */
 
 import { ExternalLink, MessageSquare, MessageSquarePlus, PanelLeft } from "lucide-react";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { defineCanvasKind, type CanvasKindProps, type CanvasMenuItem } from "@ai-matrx/canvas/react";
 import type { CanvasController, CanvasItemId, CanvasJson } from "@ai-matrx/canvas";
 import { canvasRecord, canvasText, useToolOpener, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
@@ -66,12 +66,12 @@ function QuickChatHeaderAction({ item, data, canvas }: CanvasKindProps) {
   const tab = readQuickChatData(data);
   return (
     <>
-      <TapTargetButton
+      <TapTargetButtonTransparent
         ariaLabel={tab.history ? "Hide conversations" : "Conversations"}
         icon={<PanelLeft className={tab.history ? "h-4 w-4 text-primary" : "h-4 w-4"} />}
         onClick={() => patchQuickChatData(canvas, item.id, { history: !tab.history })}
       />
-      <TapTargetButton
+      <TapTargetButtonTransparent
         ariaLabel="New chat"
         icon={<MessageSquarePlus className="h-4 w-4" />}
         onClick={() => patchQuickChatData(canvas, item.id, { newChat: tab.newChat + 1 })}
