@@ -48,6 +48,7 @@ import { readVerticalChrome, snapToLineGrid } from "./textarea-line-grid";
 import { usePasteImageResource } from "../resources/usePasteImageResource";
 import { useInstanceInputUndoRedo } from "../../../hooks/useInstanceInputUndoRedo";
 import { ComposerDraftNotice } from "./ComposerDraftNotice";
+import { ComposerToolsNotice } from "./ComposerToolsNotice";
 // Lightweight shell (static); the menu body lazy-loads on first open.
 import { EditableContextMenu } from "@host/features/context-menu-v3/EditableContextMenu";
 import type { ComposerTextMenu } from "./composer/composer-types";
@@ -450,6 +451,7 @@ export function AgentTextarea({
           surfaceKey={draftAlias ?? surfaceKey}
           currentChars={charCount}
         />
+        <ComposerToolsNotice conversationId={conversationId} />
         <div className="relative flex items-center min-w-0">
         <textarea
           ref={textareaRef}
@@ -474,6 +476,7 @@ export function AgentTextarea({
         surfaceKey={draftAlias ?? surfaceKey}
         currentChars={charCount}
       />
+      <ComposerToolsNotice conversationId={conversationId} />
       <div className="relative">
         {/* The layout effect owns the exact content height. The CSS cap is a
             second line of defence: if a host reflows between measurement and

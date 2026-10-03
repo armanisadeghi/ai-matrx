@@ -2078,6 +2078,16 @@ export const selectHighWarnings = (requestId: string) =>
  */
 const PROMOTED_WARNING_CODES: ReadonlySet<string> = new Set([
   "setting_not_supported",
+  // THE SERVER'S TOOL NOTICES (TOOL-SOURCES rule L: every removal is
+  // announced). A tool the person or the agent counted on did not reach the
+  // model — the person sees the server's own one-line reason.
+  "tools_removed_no_function_calling",
+  "tools_removed_search_unsupported",
+  "tools_removed_search_json_mode",
+  "tools_removed_schema_conflict",
+  "tools_removed_grammar_budget",
+  "tools_missing",
+  "mcp_server_unavailable",
 ]);
 
 /**

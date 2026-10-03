@@ -134,11 +134,6 @@ export function useVoiceRelaySession(
     // relays on one page share a session. See the prop's own docs.
     instanceScope: surfaceKey,
   });
-  useRealtimeAgentConfig({
-    instanceId,
-    agentId: communicatorAgentId,
-    surface: effectiveSurface,
-  });
 
   // ── The brain: an ordinary execution-system conversation ────────────────
   // 🚨 THE PIN GOES *INTO* THE LAUNCHER, not on top of its answer.
@@ -164,6 +159,24 @@ export function useVoiceRelaySession(
     },
   );
   const conversationId = pinnedConversationId ?? launcherConversationId;
+  // THE PERSON'S PICKS ride the voice too (TOOL-SOURCES rule R): the tools
+  // added to this conversation reach the realtime tool set on resolve AND on
+  // execute, from this ONE read, so the two can never disagree.
+  const addedToolIdsKey = useAppSelector((s) =>
+    conversationId
+      ? JSON.stringify(
+          s.instanceUIState?.byConversationId[conversationId]?.builderAdvancedSettings
+            ?.addedTools ?? [],
+        )
+      : "[]",
+  );
+  const addedToolIds = JSON.parse(addedToolIdsKey) as string[];
+  useRealtimeAgentConfig({
+    instanceId,
+    agentId: communicatorAgentId,
+    surface: effectiveSurface,
+    addedToolIds,
+  });
   const conversationIdRef = useRef<string | null>(null);
   useEffect(() => {
     conversationIdRef.current = conversationId ?? null;
@@ -284,6 +297,7 @@ export function useVoiceRelaySession(
     instanceId,
     agentId: communicatorAgentId,
     surface: effectiveSurface,
+    addedToolIds,
     relay: controller?.binding,
   });
   usePersistVoiceTranscript({ instanceId });
