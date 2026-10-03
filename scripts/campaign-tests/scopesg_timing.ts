@@ -91,7 +91,7 @@ function floorFrom(afterBody: string): string {
 
 function connection(): pg.ClientConfig {
   if (TARGET === "production") {
-    return { connectionString: dsnFor("production", { app: "lane9-scopes-g-timing" }), ssl: { rejectUnauthorized: false } };
+    return { connectionString: dsnFor("production", { app: "lane9-scopes-g-timing" }), ssl: { rejectUnauthorized: false }, keepAlive: true, query_timeout: 300_000 };
   }
   // THE CLONE over its DIRECT host: one real backend for the whole run (the pooler may hand two statements of
   // one client to two backends, and the session-temporary copies live in one).
@@ -100,6 +100,7 @@ function connection(): pg.ClientConfig {
   return {
     host: `db.${ref}.supabase.co`, port: 5432, user: "postgres", password: decodeURIComponent(url.password),
     database: "postgres", ssl: { rejectUnauthorized: false }, application_name: "lane9-scopes-g-timing",
+    keepAlive: true, query_timeout: 300_000, // a clone restarted mid-run fails the run by name, never hangs it
   };
 }
 
