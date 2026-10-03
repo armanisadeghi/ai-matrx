@@ -1,9 +1,8 @@
--- draft: VISION-REACH only-me listing fix — clone proof pending
 -- additive: yes
 --   It ADDS one function — custom.listed_predicate_sql(uuid, uuid, uuid, permission_level, text)
---   (EXECUTE to postgres only, as the store's event trigger leaves every new custom function; it is
---   called only from SECURITY DEFINER doors owned by postgres) — and REPLACES twelve bodies, each
---   declared below with the body it was written against. Ten change ONE thing: their call to
+--   (SECURITY INVOKER, EXECUTE to postgres only, as the store's event trigger leaves every new custom
+--   function; it is called only from SECURITY DEFINER doors owned by postgres, so it runs as postgres) — and REPLACES eleven bodies, each
+--   declared below with the body it was written against. Nine change ONE thing: their call to
 --   custom.visible_predicate_sql becomes custom.listed_predicate_sql. custom.read_records (four
 --   branches) and custom.read_records_archived — both already on T-13's reader list — apply
 --   platform.shown_to_lists inline, the filter custom.query_visible_ids applies. No table, column,
@@ -12,7 +11,6 @@
 -- guard: custom/system_enabled
 -- lock: custom
 -- lane: VISION-REACH
--- based-on: custom._relation_names_resolve(uuid, uuid, text[]) dacdc2b7f0b135ef4727131684ac121aad4f9c66e08f29883d67c0073ac13f82
 -- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 6ffb66bb2c9ab5ead25366c494769674b4f8c4ff17db54d3e75da05e4cb92694
 -- based-on: custom.dashboard_stuck(uuid, uuid, text, integer, jsonb, integer, text) bc799fd4d7dffe30977b6d09ce13acf0f5fa6b8e6f72d04c62a2f2737c74cc8d
 -- based-on: custom.field_history(uuid, uuid, text, integer, integer, uuid) c9051494abeff5b0b8527c864d49e788c77db9c96fafc764cf83d32e9b6cc2f8
@@ -49,7 +47,9 @@
 -- column T-13 retires (platform._t13_no_new_row_column_reader): the list answer stays where it lives.
 -- Every door that lists, counts, exports, drills or keeps history over rows calls it instead. An
 -- archived row is no list member and keeps the open answer (field_history keeps archived rows'
--- history). custom.context_archived_types is untouched: it counts archived rows only. The
+-- history). Untouched on purpose: custom.context_archived_types (counts archived rows only) and
+-- custom._relation_names_resolve (an import matching a typed name to its record is opening by name,
+-- not a list; its inverse would also restore a callee visionreach_g1's inverse drops). The
 -- open-predicate is unchanged for the callers whose question IS "may she open / know it":
 -- custom.assert_may_know_table, custom.visible_record_ids (→ iam.accessible_entity_ids), the parity
 -- censuses, and the by-id doors (read_record, read_records_by_ids, relation words, history of one
@@ -62,7 +62,7 @@
 CREATE OR REPLACE FUNCTION custom.listed_predicate_sql(p_user uuid, p_organization_id uuid, p_table_id uuid, p_required public.permission_level DEFAULT 'viewer'::public.permission_level, p_alias text DEFAULT 'r'::text)
  RETURNS text
  LANGUAGE plpgsql
- STABLE SECURITY DEFINER
+ STABLE
  SET search_path TO ''
 AS $function$
 declare
@@ -106,71 +106,6 @@ begin
 end;
 $function$;
 
-
--- ── custom._relation_names_resolve(uuid,uuid,text[]) ─────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION custom._relation_names_resolve(p_organization_id uuid, p_target uuid, p_names text[])
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO 'pg_catalog'
-AS $function$
-declare
-  v_title text;
-  v_me    uuid;
-  v_keys  text[];
-  v_pred  text;
-  v_memo  text;
-  v_out   jsonb;
-begin
-  if p_organization_id is null or p_target is null then
-    return null;
-  end if;
-  select nullif(t.data ->> 'title_field', '') into v_title
-    from custom.record t
-   where t.organization_id = p_organization_id and t.id = p_target and t.deleted_at is null;
-  if v_title is null then
-    return null;
-  end if;
-  v_keys := array(select distinct k
-                    from (select custom.relation_name_key(n) as k from unnest(coalesce(p_names, '{}'::text[])) n) x
-                   where k is not null);
-  if cardinality(v_keys) = 0 then
-    return '{}'::jsonb;
-  end if;
-
-  -- WHO IS ASKING DECIDES WHAT CAN BE MATCHED: the read doors' own predicate for this person on
-  -- this Table (custom.visible_predicate_sql), built once per transaction and seat — an import of
-  -- 250 rows asks it once, not 250 times. The store's own lanes (no person) match every record.
-  v_me := custom.query_principal();
-  if v_me is null then
-    v_pred := 'true';
-  else
-    v_memo := 'rnm:' || v_me::text || ':' || p_organization_id::text || ':' || p_target::text;
-    v_pred := platform.memo_s_get(v_memo);
-    if v_pred is null then
-      v_pred := custom.listed_predicate_sql(v_me, p_organization_id, p_target, 'viewer'::public.permission_level, 'r');
-      perform platform.memo_s_put(v_memo, v_pred);
-    end if;
-  end if;
-
-  execute format($q$
-    select coalesce(jsonb_object_agg(g.k, g.matches), '{}'::jsonb)
-      from (select custom.relation_name_key(r.data ->> $3) as k,
-                   jsonb_agg(jsonb_build_object('id', r.id, 'words', r.data ->> $3) order by r.created_at, r.id) as matches
-              from custom.record r
-             where r.organization_id = $1
-               and r.table_id = $2
-               and r.data_class = 'record'
-               and r.deleted_at is null
-               and custom.relation_name_key(r.data ->> $3) = any ($4)
-               and (%s)
-             group by 1) g
-  $q$, v_pred)
-    into v_out
-    using p_organization_id, p_target, v_title, v_keys;
-  return coalesce(v_out, '{}'::jsonb);
-end
-$function$;
 
 -- ── custom.agg_sql(uuid,uuid,jsonb,jsonb,jsonb,jsonb,integer,text,jsonb) ─────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION custom.agg_sql(p_organization_id uuid, p_table_id uuid, p_group_by jsonb DEFAULT '[]'::jsonb, p_measures jsonb DEFAULT '[]'::jsonb, p_bucket jsonb DEFAULT NULL::jsonb, p_filter jsonb DEFAULT '{}'::jsonb, p_limit integer DEFAULT 200, p_required text DEFAULT 'viewer'::text, p_window jsonb DEFAULT NULL::jsonb)
