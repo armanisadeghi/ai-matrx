@@ -74,13 +74,16 @@ it("a realtime row landing between a keystroke and its commit never moves the ba
   expect(held.content).toBe(STORED);
   expect(held._remoteObservation?.version).toBe(4); // kept as evidence for the CAS
 
-  jest.advanceTimersByTime(1_000); // the working copy commits
+  jest.advanceTimersByTime(1_000); // the working copy's save comes due
+  // Right before the write, the working copy compares the stored row it was
+  // shown with the base its edit started from: the phone's edit is a
+  // conflict for the person to decide — nothing is written over it.
+  expect(noteWorkingCopy.entry(NOTE_ID)?.conflict).toMatchObject({ theirs, theirsVersion: 4, ancestor: STORED });
   const committed = store.getState().notes.notes[NOTE_ID];
-  expect(committed.content).toBe(`${STORED}\n- parking validation`);
-  // The save will CAS on version 3 → the server refuses → the note's conflict
-  // window shows both; nothing is written over the phone's edit.
+  expect(committed.content).toBe(STORED);
   expect(committed.version).toBe(3);
   expect(committed._dirty).toBe(true);
+  noteWorkingCopy.discard(NOTE_ID);
   release();
 });
 

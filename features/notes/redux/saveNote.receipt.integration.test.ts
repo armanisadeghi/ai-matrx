@@ -30,13 +30,10 @@ import notesReducer, {
   setNoteFields,
   updateNoteFolder,
   upsertNoteFromServer,
-  recordNoteConflict,
-  captureNoteConflictLiveBuffer,
-  applyNoteConflictResolution,
-  refreshNoteConflictComparison,
 } from "./slice";
-import { saveNote, resolveNoteConflict, refreshNoteConflictReview } from "./thunks";
-import { autoSaveMiddleware } from "./autoSaveMiddleware";
+import { saveNote } from "./thunks";
+import { writeNoteRecord } from "./noteRecordWrite";
+import { noteSaveRequestMiddleware } from "./noteSaveRequests";
 
 enableMapSet();
 
@@ -118,8 +115,8 @@ function storeWithNote(options: {
       const base = getDefaultMiddleware({ serializableCheck: false });
       if (options.autoSave) {
         return options.middleware
-          ? base.concat(autoSaveMiddleware, options.middleware)
-          : base.concat(autoSaveMiddleware);
+          ? base.concat(noteSaveRequestMiddleware, options.middleware)
+          : base.concat(noteSaveRequestMiddleware);
       }
       return options.middleware ? base.concat(options.middleware) : base;
     },
@@ -137,122 +134,6 @@ describe("saveNote receipt integration", () => {
     setTargets.mockResolvedValue({ ok: true, data: null });
   });
 
-  it("returns refused without mutation when the resolution buffer unmounts or session changes", async () => {
-    const store = storeWithNote();
-    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
-    store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: "d", reviewId: "r" }));
-    store.dispatch(captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
-    const missing = await store.dispatch(resolveNoteConflict({ noteId: NOTE_ID, decisionId: "d", reviewId: "r", choice: "mine", proposedContent: "mine", getLiveBuffer: () => null }));
-    expect(missing).toMatchObject({ status: "refused" });
-    store.dispatch({ type: "test/switch" }); getSession.mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
-    const switched = await store.dispatch(resolveNoteConflict({ noteId: NOTE_ID, decisionId: "d", reviewId: "r", choice: "mine", proposedContent: "mine", getLiveBuffer: () => "mine" }));
-    expect(switched).toMatchObject({ status: "refused" });
-    expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "mine", version: 7 });
-  });
-
-  it("returns a refused receipt when middleware interleaves a physical edit after async validation", async () => {
-    let store: ReturnType<typeof storeWithNote>;
-    let interleaved = false;
-    store = storeWithNote({ middleware: () => (next) => (action) => {
-      if (!interleaved && applyNoteConflictResolution.match(action)) { interleaved = true; store.dispatch(setNoteField({ id: NOTE_ID, field: "label", value: "interleaved" })); }
-      return next(action);
-    } });
-    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
-    store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: "d2", reviewId: "r2" }));
-    store.dispatch(captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
-    const outcome = await store.dispatch(resolveNoteConflict({ noteId: NOTE_ID, decisionId: "d2", reviewId: "r2", choice: "mine", proposedContent: "mine", getLiveBuffer: () => "mine" }));
-    expect(outcome).toMatchObject({ status: "refused" });
-    expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "mine", label: "interleaved", version: 7 });
-  });
-
-  it("returns refresh refusals for an unmounted editor and changed session", async () => {
-    const store = storeWithNote();
-    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
-    store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: "dr", reviewId: "rr" }));
-    const unmounted = await store.dispatch(refreshNoteConflictReview({ noteId: NOTE_ID, decisionId: "dr", reviewId: "rr", getLiveBuffer: () => null }));
-    expect(unmounted).toMatchObject({ status: "refused" });
-    getSession.mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
-    const switched = await store.dispatch(refreshNoteConflictReview({ noteId: NOTE_ID, decisionId: "dr", reviewId: "rr", getLiveBuffer: () => "mine" }));
-    expect(switched).toMatchObject({ status: "refused" });
-    expect(schema).not.toHaveBeenCalled();
-  });
-
-  it("refuses Refresh when identity or editor ownership changes while its canonical read is in flight", async () => {
-    const startRefresh = () => {
-      let release: ((value: { data: Note; error: null }) => void) | undefined;
-      let started: (() => void) | undefined;
-      const transportStarted = new Promise<void>((resolve) => { started = resolve; });
-      const remote = query({ data: note({ content: "n1", version: 8 }), error: null });
-      remote.maybeSingle.mockImplementation(() => new Promise<{ data: Note; error: null }>((resolve) => {
-        release = resolve;
-        started?.();
-      }));
-      schema.mockReturnValueOnce({ from: jest.fn().mockReturnValue(remote) });
-      const store = storeWithNote();
-      store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
-      store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: "in-flight", reviewId: "review" }));
-      store.dispatch(captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
-      return { store, transportStarted, release: () => release?.({ data: note({ content: "n1", version: 8 }), error: null }) };
-    };
-
-    const identity = startRefresh();
-    const identityPending = identity.store.dispatch(refreshNoteConflictReview({ noteId: NOTE_ID, decisionId: "in-flight", reviewId: "review", getLiveBuffer: () => "mine" }));
-    await identity.transportStarted;
-    identity.store.dispatch({ type: "test/auth-switch" });
-    getSession.mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
-    identity.release();
-    await expect(identityPending).resolves.toMatchObject({ status: "refused" });
-    expect(identity.store.getState().notes.notes[NOTE_ID]._conflictDecision).toMatchObject({ currentVersion: 8, reviewedLiveContent: "mine" });
-
-    getSession.mockResolvedValue({ data: { session: { user: { id: "user-1" } } }, error: null });
-    const editor = startRefresh();
-    let mounted = true;
-    const editorPending = editor.store.dispatch(refreshNoteConflictReview({ noteId: NOTE_ID, decisionId: "in-flight", reviewId: "review", getLiveBuffer: () => mounted ? "mine" : null }));
-    await editor.transportStarted;
-    mounted = false;
-    editor.release();
-    await expect(editorPending).resolves.toMatchObject({ status: "refused" });
-    expect(editor.store.getState().notes.notes[NOTE_ID]._conflictDecision).toMatchObject({ currentVersion: 8, reviewedLiveContent: "mine" });
-  });
-
-  it("returns refused when middleware records N+2 immediately before the refresh reducer receipt", async () => {
-    let store: ReturnType<typeof storeWithNote>; let raced = false;
-    const remote = query({ data: note({ content: "n1", version: 8 }), error: null });
-    schema.mockReturnValue({ from: jest.fn().mockReturnValue(remote) });
-    store = storeWithNote({ middleware: () => (next) => (action) => {
-      if (!raced && refreshNoteConflictComparison.match(action)) { raced = true; store.dispatch(upsertNoteFromServer({ note: { id: NOTE_ID, organization_id: ORG, version: 9, updated_at: "2026-09-12T00:02:00.000Z" }, fetchStatus: "list" })); }
-      return next(action);
-    } });
-    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
-    store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: "di", reviewId: "ri" }));
-    store.dispatch(captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
-    const result = await store.dispatch(refreshNoteConflictReview({ noteId: NOTE_ID, decisionId: "di", reviewId: "ri", getLiveBuffer: () => "mine" }));
-    expect(result).toMatchObject({ status: "refused" });
-    expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "mine", version: 7 });
-    expect(store.getState().notes.notes[NOTE_ID]._conflictDecision).toMatchObject({ currentVersion: 8, stale: true, reviewedLiveContent: "mine" });
-  });
-
-  it("returns a refused Refresh receipt without mutation for malformed or moved transport rows", async () => {
-    const invalidRows: Array<[string, (remote: Note) => boolean]> = [
-      ["malformed", (remote: Note) => Reflect.set(remote, "version", Number.NaN)],
-      ["moved", (remote: Note) => Reflect.set(remote, "id", "99999999-9999-4999-8999-999999999999")],
-    ];
-    for (const [requestId, mutate] of invalidRows) {
-      const remote = note({ content: "untrusted", version: 8 });
-      mutate(remote);
-      const transport = query({ data: remote, error: null });
-      schema.mockReturnValueOnce({ from: jest.fn().mockReturnValue(transport) });
-      const store = storeWithNote();
-      store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
-      store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: requestId, reviewId: "review" }));
-      store.dispatch(captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
-
-      await expect(store.dispatch(refreshNoteConflictReview({ noteId: NOTE_ID, decisionId: requestId, reviewId: "review", getLiveBuffer: () => "mine" }))).resolves.toMatchObject({ status: "refused" });
-      expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "mine", version: 7 });
-      expect(store.getState().notes.notes[NOTE_ID]._conflictDecision).toMatchObject({ reviewId: "review", currentVersion: 8, reviewedLiveContent: "mine" });
-    }
-  });
-
   it("accepts a paired folder display name while persisting only its admitted ID", async () => {
     const folder = query({ data: { id: FOLDER_ID, name: "Archive" }, error: null });
     const updated = query({ data: note({ folder_id: FOLDER_ID, folder_name: "Authoritative Archive", version: 8 }), error: null });
@@ -260,7 +141,7 @@ describe("saveNote receipt integration", () => {
     const store = storeWithNote();
     store.dispatch(setNoteFields({ id: NOTE_ID, updates: { folder_id: FOLDER_ID, folder_name: "Archive" } }));
 
-    const action = await store.dispatch(saveNote(NOTE_ID));
+    const action = await store.dispatch(writeNoteRecord(NOTE_ID));
 
     expect(saveNote.fulfilled.match(action)).toBe(true);
     path.noPreWriteRead();
@@ -274,7 +155,7 @@ describe("saveNote receipt integration", () => {
     const store = storeWithNote();
     store.dispatch(updateNoteFolder({ id: NOTE_ID, folder: "Archive" }));
 
-    const action = await store.dispatch(saveNote(NOTE_ID));
+    const action = await store.dispatch(writeNoteRecord(NOTE_ID));
 
     if (!saveNote.rejected.match(action)) throw new Error("Expected lost acknowledgement to reject.");
     expect(schema).not.toHaveBeenCalled();
@@ -287,22 +168,16 @@ describe("saveNote receipt integration", () => {
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local draft" }));
 
-    const action = await store.dispatch(saveNote(NOTE_ID));
+    const action = await store.dispatch(writeNoteRecord(NOTE_ID));
 
     expect(saveNote.rejected.match(action)).toBe(true);
     path.noPreWriteRead();
     expect(path.from).toHaveBeenCalledTimes(2);
     const record = store.getState().notes.notes[NOTE_ID];
-    expect(record._conflictDecision).toMatchObject({
-      expectedVersion: 7,
-      currentVersion: 8,
-      currentRow: { content: "remote winner", version: 8 },
-      sentSnapshot: { content: "local draft" },
-      actorId: "user-1",
-      organizationId: ORG,
-    });
-    expect(record._conflictDecision?.decisionId).toEqual(expect.any(String));
-    expect(record._conflictDecision?.reviewId).toEqual(expect.any(String));
+    // The stored row is kept for the note's working copy to show as "theirs";
+    // the person's draft and its base are untouched.
+    expect(record._remoteObservation).toMatchObject({ version: 8, complete: true, note: { content: "remote winner", version: 8 } });
+    expect(record).toMatchObject({ content: "local draft", version: 7, _dirty: true });
     expect(record._saving).toBe(false);
     expect(store.getState().notes._savingNoteIds).not.toContain(NOTE_ID);
   });
@@ -318,7 +193,7 @@ describe("saveNote receipt integration", () => {
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local draft" }));
 
-    const action = await store.dispatch(saveNote(NOTE_ID));
+    const action = await store.dispatch(writeNoteRecord(NOTE_ID));
 
     expect(saveNote.fulfilled.match(action)).toBe(true);
     path.noPreWriteRead();
@@ -326,7 +201,7 @@ describe("saveNote receipt integration", () => {
     // The retry CAS'd on the number the row actually held.
     expect(landed.eq).toHaveBeenCalledWith("version", 8);
     const record = store.getState().notes.notes[NOTE_ID];
-    expect(record._conflictDecision).toBeNull();
+    expect(record._remoteObservation).toBeNull();
     expect(record._error).toBeNull();
     expect(record._dirty).toBe(false);
     expect(record.version).toBe(9);
@@ -340,12 +215,12 @@ describe("saveNote receipt integration", () => {
     const path = savePath(missedCas, winner);
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local draft" }));
-    const action = await store.dispatch(saveNote(NOTE_ID));
+    const action = await store.dispatch(writeNoteRecord(NOTE_ID));
     expect(saveNote.rejected.match(action)).toBe(true);
     // The CAS and its one conflict read — the pre-write read is no longer made.
     path.noPreWriteRead();
     expect(path.from).toHaveBeenCalledTimes(2);
-    expect(store.getState().notes.notes[NOTE_ID]._conflictDecision?.currentVersion).toBe(8);
+    expect(store.getState().notes.notes[NOTE_ID]._remoteObservation?.version).toBe(8);
   });
 
   it("a web-created note's first save leaves an edit base, so a later bookkeeping bump rebases instead of conflicting (adversarial review, 2026-09-13)", async () => {
@@ -360,21 +235,21 @@ describe("saveNote receipt integration", () => {
     const store = storeWithNote();
     store.dispatch(createAutogeneratedNote({ id: generatedId, userId: "user-1", folder: { id: FOLDER_ID, name: "Draft", organizationId: ORG }, organizationId: ORG, instanceId: "main" }));
     store.dispatch(setNoteField({ id: generatedId, field: "content", value: "typed" }));
-    const first = await store.dispatch(saveNote(generatedId));
+    const first = await store.dispatch(writeNoteRecord(generatedId));
     expect(saveNote.fulfilled.match(first)).toBe(true);
     const afterInsert = store.getState().notes.notes[generatedId];
     expect(afterInsert._acknowledgedPhysicalSnapshot?.version).toBe(1);
     expect(afterInsert._acknowledgedPhysicalSnapshot?.content).toBe("typed");
 
     store.dispatch(setNoteField({ id: generatedId, field: "content", value: "typed more" }));
-    const second = await store.dispatch(saveNote(generatedId));
+    const second = await store.dispatch(writeNoteRecord(generatedId));
     expect(saveNote.fulfilled.match(second)).toBe(true);
     // Folder admission + insert, then the CAS, its conflict read and the retry.
     path.noPreWriteRead();
     expect(path.from).toHaveBeenCalledTimes(5);
     expect(landed.eq).toHaveBeenCalledWith("version", 2);
     const after = store.getState().notes.notes[generatedId];
-    expect(after._conflictDecision).toBeNull();
+    expect(after._remoteObservation).toBeNull();
     expect(after.version).toBe(3);
     expect(after._dirty).toBe(false);
   });
@@ -388,7 +263,7 @@ describe("saveNote receipt integration", () => {
     setTargets.mockImplementation(() => new Promise((resolve) => { release = resolve; started?.(); }));
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "project_id", value: PROJECT_ID }));
-    const pending = store.dispatch(saveNote(NOTE_ID));
+    const pending = store.dispatch(writeNoteRecord(NOTE_ID));
     await startedPromise;
     // The context-only readback has already run and the edge write is in
     // flight: everything this save reads has been read, and the pre-write read
@@ -416,7 +291,7 @@ describe("saveNote receipt integration", () => {
       : Promise.resolve({ ok: false, error: { message: "task denied" } }));
     const store = storeWithNote();
     store.dispatch(setNoteFields({ id: NOTE_ID, updates: { project_id: PROJECT_ID, task_id: TASK_ID } }));
-    const pending = store.dispatch(saveNote(NOTE_ID));
+    const pending = store.dispatch(writeNoteRecord(NOTE_ID));
     await startedPromise;
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "later physical edit" }));
     release?.({ ok: true, data: null });
@@ -438,7 +313,7 @@ describe("saveNote receipt integration", () => {
     setTargets.mockImplementation(() => new Promise((resolve) => { release = resolve; started?.(); }));
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "project_id", value: PROJECT_ID }));
-    const pending = store.dispatch(saveNote(NOTE_ID));
+    const pending = store.dispatch(writeNoteRecord(NOTE_ID));
     await startedPromise;
     getSession.mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
     release?.({ ok: false, error: { message: "denied" } });
@@ -459,7 +334,7 @@ describe("saveNote receipt integration", () => {
     setTargets.mockImplementation(() => new Promise((resolve) => { release = resolve; started?.(); }));
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "project_id", value: PROJECT_ID }));
-    const pending = store.dispatch(saveNote(NOTE_ID));
+    const pending = store.dispatch(writeNoteRecord(NOTE_ID));
     await startedPromise;
     store.dispatch({ type: "test/auth-switch" });
     getSession.mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
@@ -482,7 +357,7 @@ describe("saveNote receipt integration", () => {
     setTargets.mockImplementation(() => new Promise((resolve) => { release = resolve; started?.(); }));
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "project_id", value: PROJECT_ID }));
-    const pending = store.dispatch(saveNote(NOTE_ID));
+    const pending = store.dispatch(writeNoteRecord(NOTE_ID));
     await startedPromise;
     store.dispatch(upsertNoteFromServer({ note: note({ version: 9, updated_at: "2026-09-12T02:00:00.000Z" }), fetchStatus: "full" }));
     release?.({ ok: true, data: null });
@@ -504,10 +379,10 @@ describe("saveNote receipt integration", () => {
         return next(action);
       },
     });
-    reenterSave = () => store.dispatch(saveNote(NOTE_ID));
+    reenterSave = () => store.dispatch(writeNoteRecord(NOTE_ID));
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "queued" }));
 
-    const first = store.dispatch(saveNote(NOTE_ID));
+    const first = store.dispatch(writeNoteRecord(NOTE_ID));
     expect(subscriberSave).toBe(first);
     release?.({ data: note({ content: "queued", version: 8 }), error: null });
     await first;
@@ -533,7 +408,7 @@ describe("saveNote receipt integration", () => {
     });
     applySecondEdit = () => store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "second" }));
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "first" }));
-    await store.dispatch(saveNote(NOTE_ID));
+    await store.dispatch(writeNoteRecord(NOTE_ID));
     expect(firstUpdate.update.mock.calls.length + secondUpdate.update.mock.calls.length).toBe(2);
     expect(store.getState().notes.notes[NOTE_ID]._dirty).toBe(false);
     path.noPreWriteRead();
@@ -546,7 +421,7 @@ describe("saveNote receipt integration", () => {
     const secondStore = storeWithNote();
     firstStore.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "one" }));
     secondStore.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "two" }));
-    const [first, second] = await Promise.all([firstStore.dispatch(saveNote(NOTE_ID)), secondStore.dispatch(saveNote(NOTE_ID))]);
+    const [first, second] = await Promise.all([firstStore.dispatch(writeNoteRecord(NOTE_ID)), secondStore.dispatch(writeNoteRecord(NOTE_ID))]);
     expect(saveNote.fulfilled.match(first)).toBe(true);
     expect(saveNote.fulfilled.match(second)).toBe(true);
     expect(sharedQuery.update).toHaveBeenCalledTimes(2);
@@ -558,7 +433,7 @@ describe("saveNote receipt integration", () => {
     const path = savePath(updated);
     const store = storeWithNote();
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local" }));
-    const pending = store.dispatch(saveNote(NOTE_ID));
+    const pending = store.dispatch(writeNoteRecord(NOTE_ID));
     getSession.mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
     release?.({ data: note({ content: "local", version: 8 }), error: null });
     const action = await pending;
@@ -588,7 +463,7 @@ describe("saveNote receipt integration", () => {
     });
     editLater = () => store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "later" }));
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "first" }));
-    const action = await store.dispatch(saveNote(NOTE_ID));
+    const action = await store.dispatch(writeNoteRecord(NOTE_ID));
     expect(saveNote.rejected.match(action)).toBe(true);
     expect(updated.update).toHaveBeenCalledTimes(1);
     expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "later", _dirty: true, _saving: false });
@@ -605,11 +480,11 @@ describe("saveNote receipt integration", () => {
     const generatedId = "66666666-6666-4666-8666-666666666666";
     store.dispatch(createAutogeneratedNote({ id: generatedId, userId: "user-1", folder: { id: FOLDER_ID, name: "Draft", organizationId: ORG }, organizationId: ORG, instanceId: "main" }));
     store.dispatch(setNoteField({ id: generatedId, field: "content", value: "draft" }));
-    const first = await store.dispatch(saveNote(generatedId));
+    const first = await store.dispatch(writeNoteRecord(generatedId));
     expect(saveNote.rejected.match(first)).toBe(true);
     expect(store.getState().notes.notes[generatedId]._isAutogenerated).toBe(true);
     expect(store.getState().notes.notes[generatedId]._dirty).toBe(true);
-    const second = await store.dispatch(saveNote(generatedId));
+    const second = await store.dispatch(writeNoteRecord(generatedId));
     expect(saveNote.fulfilled.match(second)).toBe(true);
     expect(lostAcknowledgement.insert).toHaveBeenCalledWith(expect.objectContaining({ id: generatedId }));
     expect(confirmed.insert).toHaveBeenCalledWith(expect.objectContaining({ id: generatedId }));
@@ -624,7 +499,7 @@ describe("saveNote receipt integration", () => {
     const generatedId = "77777777-7777-4777-8777-777777777777";
     store.dispatch(createAutogeneratedNote({ id: generatedId, userId: "user-1", folder: { id: FOLDER_ID, name: "Draft", organizationId: ORG }, organizationId: ORG, instanceId: "main" }));
     store.dispatch(setNoteField({ id: generatedId, field: "content", value: "draft" }));
-    const action = await store.dispatch(saveNote(generatedId));
+    const action = await store.dispatch(writeNoteRecord(generatedId));
     if (!saveNote.rejected.match(action)) throw new Error("Expected lost acknowledgement to reject.");
     expect(lostAcknowledgement.insert).toHaveBeenCalledTimes(1);
     expect(lostAcknowledgement.insert).toHaveBeenCalledWith(expect.objectContaining({ id: generatedId }));
@@ -644,8 +519,8 @@ describe("saveNote receipt integration", () => {
     store.dispatch(createAutogeneratedNote({ id: generatedId, userId: "user-1", folder: { id: FOLDER_ID, name: "Draft", organizationId: ORG }, organizationId: ORG, instanceId: "main" }));
     store.dispatch(setNoteField({ id: generatedId, field: "content", value: "draft" }));
 
-    const first = await store.dispatch(saveNote(generatedId));
-    const second = await store.dispatch(saveNote(generatedId));
+    const first = await store.dispatch(writeNoteRecord(generatedId));
+    const second = await store.dispatch(writeNoteRecord(generatedId));
 
     expect(saveNote.rejected.match(first)).toBe(true);
     expect(saveNote.rejected.match(second)).toBe(true);
@@ -667,8 +542,8 @@ describe("saveNote receipt integration", () => {
     });
     store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "local" }));
 
-    const first = await store.dispatch(saveNote(NOTE_ID));
-    const second = await store.dispatch(saveNote(NOTE_ID));
+    const first = await store.dispatch(writeNoteRecord(NOTE_ID));
+    const second = await store.dispatch(writeNoteRecord(NOTE_ID));
 
     expect(saveNote.rejected.match(first)).toBe(true);
     expect(saveNote.rejected.match(second)).toBe(true);
@@ -676,7 +551,7 @@ describe("saveNote receipt integration", () => {
     expect(store.getState().notes._savingNoteIds).not.toContain(NOTE_ID);
   });
 
-  it("uses the configured autosave middleware and joins a timer save to an in-flight manual save", async () => {
+  it("a field edit asks the note's one save door and a manual Save joins the write already in flight", async () => {
     jest.useFakeTimers();
     let release: ((value: { data: Note; error: null }) => void) | undefined;
     const updated = query(new Promise((resolve) => { release = resolve; }));
@@ -693,38 +568,6 @@ describe("saveNote receipt integration", () => {
     expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ _dirty: false, _saving: false });
     jest.useRealTimers();
     path.noPreWriteRead();
-  });
-
-  it("keeps configured autosave timers isolated across two stores with the same note ID", async () => {
-    jest.useFakeTimers();
-    const firstUpdated = query({ data: note({ content: "one", version: 8 }), error: null });
-    const secondUpdated = query({ data: note({ content: "two", version: 8 }), error: null });
-    const path = savePath(firstUpdated, secondUpdated);
-    const firstStore = storeWithNote({ autoSave: true });
-    const secondStore = storeWithNote({ autoSave: true });
-    firstStore.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "one" }));
-    secondStore.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "two" }));
-
-    await jest.runOnlyPendingTimersAsync();
-
-    expect(firstUpdated.update).toHaveBeenCalledTimes(1);
-    expect(secondUpdated.update).toHaveBeenCalledTimes(1);
-    expect(firstStore.getState().notes.notes[NOTE_ID]._dirty).toBe(false);
-    expect(secondStore.getState().notes.notes[NOTE_ID]._dirty).toBe(false);
-    jest.useRealTimers();
-    path.noPreWriteRead();
-  });
-
-  it("does not schedule a save loop when configured autosave observes a clean note", async () => {
-    jest.useFakeTimers();
-    const store = storeWithNote({ autoSave: true });
-
-    store.dispatch({ type: "notes/requestAutoSave", payload: { id: NOTE_ID } });
-    await jest.runOnlyPendingTimersAsync();
-
-    expect(schema).not.toHaveBeenCalled();
-    expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ _dirty: false, _saving: false });
-    jest.useRealTimers();
   });
 
   it("does not save after a synchronous auto-label dispatch switches Redux identity", async () => {
@@ -757,7 +600,7 @@ describe("saveNote receipt integration", () => {
     store.dispatch(setNoteField({ id: generatedId, field: "folder_name", value: "Draft" }));
     store.dispatch(setNoteField({ id: generatedId, field: "content", value: "draft" }));
 
-    const action = await store.dispatch(saveNote(generatedId));
+    const action = await store.dispatch(writeNoteRecord(generatedId));
 
     expect(saveNote.rejected.match(action)).toBe(true);
     expect(schema).not.toHaveBeenCalled();

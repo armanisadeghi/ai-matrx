@@ -20,7 +20,8 @@ interface UseAutoSaveOptions {
  * Hook to handle auto-save with debouncing and dirty state tracking.
  *
  * Legacy path for `NoteEditor` / NotesLayout. Canonical `/notes` uses Redux
- * `autoSaveMiddleware` (atomic `updated_at` lock + mid-save dirty retention).
+ * the note's working copy (`utils/noteLiveContent.ts`: version CAS, retry,
+ * conflict choice).
  * Mid-flight edits stay in `pendingUpdatesRef` and trigger a follow-up save.
  */
 export function useAutoSave({

@@ -74,7 +74,7 @@ export function useWarRoomThreadWriteHandlers(
      * Notes load LAZILY — `ThreadNotesTab` fetches on first view — so a thread
      * whose Notes tab was never opened has no record in the notes slice at all.
      * Writing into that gap is silent data loss in both directions: the reducer
-     * has no note to patch, and `autoSaveMiddleware` bails on the missing (or
+     * has no note to patch, and the note's save door bails on the missing (or
      * non-dirty) record, so the agent would be told "applied" for a write that
      * never reached the note. Hydrate first, and refuse loudly if it will not
      * load — "not loaded" is never the same answer as "empty".

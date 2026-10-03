@@ -1,7 +1,7 @@
 // Cross-layer "the user is typing this note's title RIGHT NOW" signal.
 //
-// The title input is a React component; the auto-labeler lives in Redux
-// middleware (autoSaveMiddleware) with no access to focus state. Without
+// The title input is a React component; the auto-labeler is a step of the
+// note's working-copy save (utils/noteLiveContent.ts) with no access to focus state. Without
 // this signal, a paste-then-name flow raced: the autosave fired while the
 // user was typing the name, saw the still-default label in Redux, generated
 // one from content, and the Redux→local sync clobbered the user's

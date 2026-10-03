@@ -337,10 +337,6 @@
           "reason": "IS a duration formatter, and cannot be collapsed by this session: it renders a deliberately over-estimated RANGE (\"about N-2N minutes\") with a ceil-outward rounding that is the promise the copy makes. kit has no range voice and no way to render \"N-2N minutes\"."
         },
         {
-          "file": "features/notes/redux/autoSaveMiddleware.ts",
-          "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
           "file": "features/podcasts/chapter-timing.ts",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },

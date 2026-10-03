@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from "react";
-import dynamic from "next/dynamic";
 import { Eye } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
@@ -40,9 +39,8 @@ import {
 } from "../../redux/selectors";
 import { NoteSaveFailureBanner } from "../NoteSaveFailureBanner";
 import { NoteDraftRecoveryBanner } from "../NoteDraftRecoveryBanner";
-import { useNoteConflictChoreography } from "../../hooks/useNoteConflictChoreography";
+import { NoteWorkingCopyAlert } from "../NoteWorkingCopyAlert";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { cn } from "@/lib/utils";
 import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
 
@@ -66,16 +64,6 @@ declare global {
     __mobileNoteEditorState?: MobileNoteEditorWindowState;
   }
 }
-
-// The SAME conflict window desktop mounts — never a mobile copy. It is a
-// Dialog, which on a phone fills the screen.
-const NoteConflictWindow = dynamic(
-  () =>
-    import("@/features/notes/components/NoteConflictWindow").then((mod) => ({
-      default: mod.NoteConflictWindow,
-    })),
-  { ssr: false },
-);
 
 interface MobileNoteEditorProps {
   note: Note;
@@ -108,8 +96,8 @@ export default function MobileNoteEditor({
   // This editor used to keep label/content/folder/tags in React state with a
   // bespoke 2s timer and its own baseline/dirty/failed bookkeeping. It is now
   // the same machine as `NoteContentEditor`: every change goes to Redux
-  // (live buffer + debounced `updateNoteContent`), `autoSaveMiddleware` owns
-  // persistence, and dirty/saving are read back off the record.
+  // (the note's working copy, whose save is the note's ONE save door), and
+  // dirty/saving are read back off the record.
   const record = useAppSelector(selectNoteById(noteId));
   const reduxContent = useAppSelector(selectNoteContent(noteId)) ?? "";
   const noteLabel = useAppSelector(selectNoteLabel(noteId)) ?? note.label ?? "";
@@ -132,7 +120,6 @@ export default function MobileNoteEditor({
   const localContent = workingCopy.content;
   const localContentRef = useRef(localContent);
   const noteIdRef = useRef(noteId);
-  const editorMountedRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // THE ONE EDITOR (Write / Source).
   const richRef = useRef<RichEditorController | null>(null);
@@ -143,12 +130,6 @@ export default function MobileNoteEditor({
   useEffect(() => {
     noteIdRef.current = noteId;
   }, [noteId]);
-  useEffect(() => {
-    editorMountedRef.current = true;
-    return () => {
-      editorMountedRef.current = false;
-    };
-  }, []);
 
   const displayedNote = useMemo(
     () => (record ? { ...record, content: localContent } : null),
@@ -164,26 +145,6 @@ export default function MobileNoteEditor({
         }
       : null,
   );
-
-  // THE ONE conflict choreography — the same hook the desktop editor
-  // consumes, so Keep Mine on a phone produces the desktop dispatch sequence
-  // (begin lock → resolveNoteConflict → the reviewed-save coordinator), never
-  // a resolve-then-`saveNote` shortcut of its own.
-  const adoptResolvedContent = useCallback((content: string) => {
-    localContentRef.current = content;
-    workingCopy.reset(content);
-  }, [workingCopy]);
-  const conflict = useNoteConflictChoreography({
-    noteId,
-    record,
-    noteTitle: noteLabel || "Untitled Note",
-    localContent,
-    editableContentSource,
-    editorMountedRef,
-    noteIdRef,
-    localContentRef,
-    adoptResolvedContent,
-  });
 
   // The delete confirmation belongs to the platform, not to this screen —
   // `requestDelete` opens the canonical `confirm()` (see useNoteDelete).
@@ -202,7 +163,6 @@ export default function MobileNoteEditor({
   const [syncedNoteId, setSyncedNoteId] = useState(noteId);
   if (syncedNoteId !== noteId) {
     setSyncedNoteId(noteId);
-    conflict.resetForNoteSwitch();
   }
 
   const handleChange = useCallback(
@@ -238,7 +198,7 @@ export default function MobileNoteEditor({
   // TYPE, TAP BACK, GONE — closed at the class. The note's working copy
   // commits pending words when its last view detaches (an unmount, a note
   // switch releases the OUTGOING note), exactly as for `NoteContentEditor`;
-  // `autoSaveMiddleware` then persists it. On a TRUE unmount in Write / Source,
+  // its save persists it. On a TRUE unmount in Write / Source,
   // the one editor may hold words its onChange has not delivered yet. A
   // layout-effect cleanup runs before the child editor detaches its imperative
   // handle (and before the passive release), so the live markdown joins the
@@ -397,38 +357,8 @@ export default function MobileNoteEditor({
         <NoteDraftRecoveryBanner noteId={noteId} onRestore={handleChangeFlush} />
       )}
 
-      {conflict.reviewOutcomes.map((outcome) => (
-        <div key={outcome.requestId} className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
-          <span>Reviewed save outcome: {outcome.result.status}. The original reviewed package remains available for inspection.</span>
-          <button
-            type="button"
-            className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium"
-            onClick={() => conflict.acknowledgeOutcome(outcome)}
-          >
-            Dismiss
-          </button>
-        </div>
-      ))}
-      {conflict.dismissedReviewAvailable && (
-        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
-          <span>Your unsaved conflict review is still available.</span>
-          <button
-            type="button"
-            onClick={conflict.reopenConflict}
-            className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium text-amber-900 dark:text-amber-100"
-          >
-            Reopen conflict review
-          </button>
-        </div>
-      )}
-      {/* Desktop parity: a reviewed save refused AFTER the decision cleared (e.g. the
-          editor changed before phase two) is said out loud, never swallowed. */}
-      {conflict.conflictError && !conflict.conflictDecision && (
-        <ErrorNotice size="inline" className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm" message={conflict.conflictError} />
-      )}
-      {conflict.conflictWindowProps != null && (
-        <NoteConflictWindow {...conflict.conflictWindowProps} />
-      )}
+      {/* The note's working copy: Keep mine / Take theirs / Merge, or Retry / Discard. */}
+      <NoteWorkingCopyAlert noteId={noteId} className="shrink-0" />
 
       {/* ── Write: THE ONE EDITOR, the same one desktop uses ─────────────────
           It scrolls itself (its text keeps clear of the dock), so it sits

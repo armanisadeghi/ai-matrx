@@ -33,15 +33,19 @@ feature slice, and never runs its own save timer.
   `draftBaseVersion` / `draftBase`; another version loaded = conflict.
 - **On screen:** `WorkingCopyAlert` (one row: Merge · Keep mine · Take theirs, or Retry · Discard).
   With no view: `announce.ts` (`announceWorkingCopyConflict`, a toast that stays until chosen).
-- **Notes** additionally mark the record's body edited at the first keystroke (`onDirtyChanged` →
-  `noteContentEditPending`), so the realtime row is an observation and the note's own CAS conflict
-  window handles it; the DB-write retry stays `autoSaveMiddleware`'s (the kind's save is a sync commit).
+- **A save can report a conflict**: a kind's `save` throws `WorkingCopySaveConflict({ theirs, version })`
+  when its compare-and-swap was refused — the entry opens the conflict (nothing written, no retry).
+  `conflictChosen` / `discarded` let a text kind's record adopt the person's choice.
+- **`touch` on a text kind** marks the record's other fields unsaved (`touchedSeq`); **`request(id, store)`**
+  saves a record no view holds (a rename, an agent's write, Save) through the same path, held until it lands.
+- **Notes** mark the record's body edited at the first keystroke (`onDirtyChanged` → `noteContentEditPending`)
+  and their save IS the database write (see Kinds).
 
 ## Kinds (one per record type)
 
 | Kind | Where | Save | Engine |
 |---|---|---|---|
-| `note` | `features/notes/utils/noteLiveContent.ts` (+ `hooks/useNoteWorkingCopy.ts`) | `updateNoteContent` into the note record (sync); `autoSaveMiddleware` persists | — |
+| `note` | `features/notes/utils/noteLiveContent.ts` (+ `hooks/useNoteWorkingCopy.ts`, `redux/noteSaveRequests.ts`) | the database save: `updateNoteContent` (undo step) → auto-label → `writeNoteRecord` (version CAS) | — |
 | `file` | `features/files/redux/working-copy.ts` (+ `hooks/useFileWorkingCopy.ts`) | `saveFileNewVersion` — a new version, so `autosave: false` (Save, or the last view leaving) | — (Monaco keeps its own model) |
 | `udt_document` | `features/data-tables/document-model/documentModels.ts` | a new `udt_document_snapshots` row | `DocumentModel` (Univer body, mutation relay between views, snapshot channel, collab room, and the last view's Univer instance KEPT — parked off the page and re-attached to the next view's container, so undo / redo survive hide/show and remount; disposed on `close`) |
 
@@ -62,6 +66,9 @@ failure, load / `source` / draft / engine conflicts, merge, echo), plus
 
 ## Change Log
 
+- 2026-10-03 — Notes' one save door: `WorkingCopySaveConflict`, `request`, text-kind `touch`, `conflictChosen` /
+  `discarded`, quiet session release; the note kind's save is its database write. Tests:
+  `features/notes/__tests__/note-save-one-door.test.ts`.
 - 2026-10-03 — Engines keep the editor, views keep the caret: a document's last view parks its Univer
   instance on the `DocumentModel` (`parkEditor` / `takeParkedEditor`) and the next view re-attaches it,
   so Univer's per-instance undo history survives (remount harness `udt_document:undo`); text views keep

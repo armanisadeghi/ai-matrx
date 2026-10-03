@@ -3,9 +3,7 @@
 // per-note undo/redo, two-stage fetch, and dirty tracking.
 
 import { noteEditBaseFromRecord, noteEditedFieldsEqual } from "../utils/saveVerification";
-import { mayRunNoteConflictCommand } from "./conflictCommandLock";
-import { createSlice, current, type PayloadAction } from "@reduxjs/toolkit";
-import { createReviewSession, materializeReviewSession, reduceReviewSession, type ReviewSessionAction } from "@ai-matrx/diff";
+import { createSlice, current, isDraft, type PayloadAction } from "@reduxjs/toolkit";
 import type { FolderReference, Note } from "../types";
 import {
   type NoteRecord,
@@ -14,10 +12,6 @@ import {
   type NoteFetchStatus,
   type NoteEditorMode,
   type NoteFieldSnapshot,
-  type NoteConflictDecision,
-  type NoteConflictPhysicalSnapshot,
-  type NoteConflictResolutionReceipt,
-  type RetainedNoteConflictReview,
   type NotesSliceState,
   type NoteScopeAssignment,
   type FindReplaceState,
@@ -256,59 +250,58 @@ function applyFetchStatus(record: NoteRecord, status: NoteFetchStatus): void {
   }
 }
 
-function conflictPhysicalSnapshot(note: Note): NoteConflictPhysicalSnapshot {
-  return {
-    content: note.content,
-    label: note.label,
-    folder_name: note.folder_name,
-    folder_id: note.folder_id,
-    tags: note.tags,
-    metadata: note.metadata,
-    shown_to: note.shown_to,
-    published_to_web: note.published_to_web,
-    position: note.position,
-    organization_id: note.organization_id,
-  };
+/** The fields of the stored row a person edits (context links are separate writes). */
+const STORED_PHYSICAL_FIELDS = [
+  "content",
+  "label",
+  "folder_name",
+  "folder_id",
+  "tags",
+  "shown_to",
+  "published_to_web",
+] as const satisfies readonly NoteUndoableField[];
+
+/** The observed stored row is now this record's edit base (its version, its acknowledged snapshot). */
+function settleStoredBase(record: NoteRecord, remote: Partial<Note> & { id: string }): void {
+  if (isCanonicalNoteRevision(remote.version)) record.version = remote.version;
+  if (remote.updated_at) record.updated_at = remote.updated_at;
+  const acknowledged = acknowledgedSnapshotFromFullRead(isDraft(remote) ? current(remote) : remote, "full");
+  if (acknowledged) record._acknowledgedPhysicalSnapshot = acknowledged;
 }
 
-function sameConflictSnapshot(
-  left: NoteConflictPhysicalSnapshot,
-  right: NoteConflictPhysicalSnapshot,
-): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
-}
-
-
-function retainedReviewKey(actorId: string, noteId: string, decisionId: string, reviewId: string): string {
-  return `${actorId}:${noteId}:${decisionId}:${reviewId}`;
-}
-
-function retainConflictReview(
-  state: NotesSliceState,
-  record: NoteRecord,
-  decision: NoteConflictDecision,
-  openingLiveContent: string,
-): void {
-  const priorKey = state.currentConflictReviewKeys[record.id];
-  if (priorKey) {
-    const prior = state.retainedConflictReviews[priorKey];
-    if (prior) prior.readOnly = true;
+/**
+ * Back to what is stored: the observed stored row when there is one (a
+ * refused save brought it), else each edited field's value before the edit.
+ * `content` is the body the person's working copy now shows.
+ */
+function adoptStoredRow(record: NoteRecord, content: string): void {
+  const observed = record._remoteObservation;
+  const remote = observed?.complete ? observed.note : null;
+  if (remote) {
+    for (const [key, value] of Object.entries(remote)) {
+      if (key.startsWith("_")) continue;
+      const field = key as keyof Note;
+      if (field === "project_id" || field === "task_id") continue;
+      writeNoteField(record, field, value as Note[typeof field]);
+    }
+    settleStoredBase(record, remote);
+  } else {
+    for (const field of STORED_PHYSICAL_FIELDS) {
+      if (!record._dirtyFields.has(field)) continue;
+      const before = (record._fieldHistory as NoteFieldSnapshot)[field];
+      if (before !== undefined) writeNoteUndoableField(record, field, before as Note[typeof field]);
+    }
   }
-  const reviewKey = retainedReviewKey(decision.actorId, record.id, decision.decisionId, decision.reviewId);
-  const session = createReviewSession({
-    sessionId: `${decision.reviewId}:initial`,
-    sourceIdentity: reviewKey,
-    original: decision.reviewedRemote.content ?? "",
-    modified: openingLiveContent,
-  });
-  state.retainedConflictReviews[reviewKey] = {
-    reviewKey, noteId: record.id, actorId: decision.actorId, organizationId: decision.organizationId,
-    decisionId: decision.decisionId, reviewId: decision.reviewId,
-    localSnapshot: decision.reviewedLocal, reviewedRemote: decision.reviewedRemote,
-    openingLiveContent, refreshSourceReviewKey: null, proposal: openingLiveContent, session, readOnly: false, dismissed: false,
-    command: { status: "idle", requestId: null, error: null },
-  };
-  state.currentConflictReviewKeys[record.id] = reviewKey;
+  writeNoteField(record, "content", content);
+  for (const field of STORED_PHYSICAL_FIELDS) {
+    record._dirtyFields.delete(field);
+    delete (record._fieldHistory as NoteFieldSnapshot)[field];
+  }
+  record._dirty = record._dirtyFields.size > 0;
+  record._remoteObservation = null;
+  record._error = null;
+  record._consecutiveSaveFailures = 0;
+  record._firstSaveFailureAt = null;
 }
 
 // ── Server upsert (shared by single + batch reducers) ───────────────────────
@@ -441,7 +434,6 @@ function applyServerNoteUpsert(
     existing._dirty &&
     hasDirtyPhysicalField &&
     acknowledgedSnapshotFromFullRead(note, fetchStatus) !== null &&
-    !existing._conflictDecision &&
     incomingVersion !== null &&
     heldVersion !== null &&
     incomingVersion > heldVersion &&
@@ -473,13 +465,6 @@ function applyServerNoteUpsert(
         complete: fetchStatus === "full",
         note: { ...note },
       };
-      if (
-        existing._conflictDecision &&
-        incomingVersion !== null &&
-        incomingVersion > (existing._conflictDecision.comparedVersion ?? -1)
-      ) {
-        existing._conflictDecision.stale = true;
-      }
     }
     return;
   }
@@ -549,9 +534,6 @@ const initialState: NotesSliceState & NotesSharedReadState & NotesIngestReadStat
   sharedStatus: "idle",
   sharedError: null,
   ingestByNoteId: {},
-  conflictResolutionReceipts: {},
-  currentConflictReviewKeys: {},
-  retainedConflictReviews: {},
   instances: {},
   realtimeConnected: false,
   realtimeStatus: "idle",
@@ -730,307 +712,82 @@ const notesSlice = createSlice({
       };
     },
 
-    /** Store a full CAS miss before the thunk rejects so UI decisions have no
-     * second fetch, timestamp fallback, or inferred server row. */
-    recordNoteConflict(
-      state,
-      action: PayloadAction<{
-        id: string;
-        expectedVersion: number;
-        currentVersion: number;
-        currentRow: Note;
-        sentSnapshot: NoteFieldSnapshot;
-        actorId: string;
-        organizationId: string;
-        decisionId: string;
-        reviewId: string;
-      }>,
-    ) {
+    /**
+     * The stored row as the database holds it now, from a save its
+     * compare-and-swap refused. Kept as the record's remote observation: the
+     * note's working copy shows it as the other side of its conflict
+     * (lib/working-copy), and the person's choice adopts it
+     * (`resolveNoteStoredConflict`). Nothing the person typed is touched.
+     */
+    recordNoteStoredRow(state, action: PayloadAction<{ id: string; row: Note }>) {
       const record = state.notes[action.payload.id];
-      if (
-        !record ||
-        record.id !== action.payload.id ||
-        action.payload.currentRow.id !== action.payload.id ||
-        record.organization_id !== action.payload.organizationId ||
-        action.payload.currentRow.organization_id !== action.payload.organizationId ||
-        !isCanonicalNoteRevision(action.payload.expectedVersion) ||
-        !isCanonicalNoteRevision(action.payload.currentVersion) ||
-        !isCanonicalNoteRevision(action.payload.currentRow.version) ||
-        action.payload.currentVersion !== action.payload.currentRow.version
-      ) return;
-      const observedVersion = record._remoteObservation?.version ?? null;
-      if (observedVersion !== null && !isCanonicalNoteRevision(observedVersion)) return;
-      const decision: NoteConflictDecision = {
-        decisionId: action.payload.decisionId,
-        reviewId: action.payload.reviewId,
-        actorId: action.payload.actorId,
-        organizationId: action.payload.organizationId,
-        expectedVersion: action.payload.expectedVersion,
-        currentVersion: action.payload.currentVersion,
-        currentRow: action.payload.currentRow,
-        reviewedRemote: action.payload.currentRow,
-        sentSnapshot: action.payload.sentSnapshot,
-        reviewedLocal: conflictPhysicalSnapshot(record),
-        reviewedLiveContent: null,
-        comparedVersion: action.payload.currentVersion,
-        stale:
-          observedVersion !== null && observedVersion > action.payload.currentVersion,
-        dismissed: false,
+      const row = action.payload.row;
+      if (!record || row.id !== record.id || !isCanonicalNoteRevision(row.version)) return;
+      record._remoteObservation = {
+        version: row.version,
+        updatedAt: row.updated_at ?? null,
+        complete: true,
+        note: { ...row },
       };
-      record._conflictDecision = decision;
-      record._error = "conflict";
       record._saving = false;
       state._savingNoteIds = state._savingNoteIds.filter((id) => id !== record.id);
     },
 
-    captureNoteConflictLiveBuffer(
+    /**
+     * The person's choice for a note whose stored row moved under their edit
+     * (the working copy's Keep mine / Take theirs / Merge). `content` is the
+     * body they chose. Theirs: the record becomes the stored row. Mine /
+     * merge: their edited fields go on top of the stored row — every field
+     * they did not edit follows it — and the next save writes on its version.
+     */
+    resolveNoteStoredConflict(
       state,
-      action: PayloadAction<{ id: string; content: string }>,
+      action: PayloadAction<{ id: string; choice: "mine" | "theirs" | "merge"; content: string }>,
     ) {
       const record = state.notes[action.payload.id];
-      const decision = record?._conflictDecision;
-      if (record && decision && decision.reviewedLiveContent === null) {
-        decision.reviewedLiveContent = action.payload.content;
-        retainConflictReview(state, record, decision, action.payload.content);
-      }
-    },
-
-    /** A refresh replaces only the reviewed server comparison. It intentionally
-     * leaves the editor base, dirty fields, and merge draft untouched. */
-    refreshNoteConflictComparison(
-      state,
-      action: PayloadAction<{ id: string; decisionId: string; reviewId: string; currentRow: Note; nextReviewId: string; requestId: string;
-        commandRequestId?: string; liveContent: string }>,
-    ) {
-      const record = state.notes[action.payload.id];
-      const decision = record?._conflictDecision;
-      const refuse = (reason: string) => { state.conflictResolutionReceipts[action.payload.requestId] = { status: "refused", requestId: action.payload.requestId, reason }; };
-      if (!mayRunNoteConflictCommand(state.retainedConflictReviews, action.payload.id, action.payload.commandRequestId)) { refuse("Another review command is pending. Wait for it to finish."); return; }
-      if (!record || !decision || decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId) { refuse("This comparison changed. Refresh the note again."); return; }
-      if (
-        record.id !== action.payload.id ||
-        action.payload.currentRow.id !== action.payload.id ||
-        decision.organizationId !== record.organization_id ||
-        action.payload.currentRow.organization_id !== decision.organizationId ||
-        !isCanonicalNoteRevision(action.payload.currentRow.version) ||
-        !isCanonicalNoteRevision(decision.currentVersion) ||
-        action.payload.currentRow.version < decision.currentVersion
-      ) { refuse("This saved comparison is unavailable. Reopen the note before refreshing."); return; }
-      const observedVersion = record._remoteObservation?.version;
-      if (observedVersion !== null && observedVersion !== undefined && (!isCanonicalNoteRevision(observedVersion) || observedVersion > action.payload.currentRow.version)) {
-        refuse("A newer remote change arrived. Refresh this comparison again."); return;
-      }
-      const priorReviewKey = state.currentConflictReviewKeys[record.id] ?? null;
-      decision.currentRow = action.payload.currentRow;
-      decision.reviewedRemote = action.payload.currentRow;
-      decision.reviewId = action.payload.nextReviewId;
-      decision.currentVersion = action.payload.currentRow.version;
-      decision.comparedVersion = action.payload.currentRow.version;
-      decision.stale = false;
-      decision.dismissed = false;
-      decision.reviewedLocal = conflictPhysicalSnapshot(record);
-      decision.reviewedLiveContent = action.payload.liveContent;
-      retainConflictReview(state, record, decision, action.payload.liveContent);
-      const nextKey = state.currentConflictReviewKeys[record.id];
-      if (nextKey) state.retainedConflictReviews[nextKey].refreshSourceReviewKey = priorReviewKey;
-      state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "mine", content: action.payload.liveContent };
-    },
-
-    chooseRetainedNoteReviewSource(
-      state,
-      action: PayloadAction<{ reviewKey: string; actorId: string; sourceReviewKey: string; source: "proposal" | "completed"; sessionId: string }>,
-    ) {
-      const review = state.retainedConflictReviews[action.payload.reviewKey];
-      const previous = state.retainedConflictReviews[action.payload.sourceReviewKey];
-      if (!review || !previous || review.actorId !== action.payload.actorId || previous.actorId !== review.actorId ||
-          review.noteId !== previous.noteId || review.refreshSourceReviewKey !== previous.reviewKey ||
-          !mayRunNoteConflictCommand(state.retainedConflictReviews, review.noteId)) return;
-      const completed = materializeReviewSession(previous.session);
-      if (action.payload.source === "completed" && completed.kind !== "complete") return;
-      const proposal = action.payload.source === "completed" && completed.kind === "complete" ? completed.candidate : previous.proposal;
-      review.proposal = proposal;
-      review.session = createReviewSession({ sessionId: action.payload.sessionId, sourceIdentity: review.reviewKey,
-        original: review.reviewedRemote.content ?? "", modified: proposal });
-      review.refreshSourceReviewKey = null;
-    },
-
-    beginRetainedNoteConflictCommand(
-      state,
-      action: PayloadAction<{ reviewKey: string; actorId: string; requestId: string; sessionId: string; revision: number }>,
-    ) {
-      const review = state.retainedConflictReviews[action.payload.reviewKey];
-      if (!review || review.readOnly || review.actorId !== action.payload.actorId || review.session.sessionId !== action.payload.sessionId || review.session.revision !== action.payload.revision || !mayRunNoteConflictCommand(state.retainedConflictReviews, review.noteId)) return;
-      review.command = { status: "pending", requestId: action.payload.requestId, error: null };
-    },
-
-    settleRetainedNoteConflictCommand(
-      state,
-      action: PayloadAction<{ reviewKey: string; actorId: string; requestId: string; error?: string }>,
-    ) {
-      const review = state.retainedConflictReviews[action.payload.reviewKey];
-      if (!review || review.actorId !== action.payload.actorId || review.command.requestId !== action.payload.requestId) return;
-      review.command = action.payload.error
-        ? { status: "refused", requestId: null, error: action.payload.error }
-        : { status: "idle", requestId: null, error: null };
-    },
-
-    transitionRetainedNoteConflictReview(
-      state,
-      action: PayloadAction<{ reviewKey: string; actorId: string; transition: ReviewSessionAction }>,
-    ) {
-      const review = state.retainedConflictReviews[action.payload.reviewKey];
-      if (!review || review.readOnly || review.refreshSourceReviewKey !== null || review.actorId !== action.payload.actorId || review.command.status === "pending") return;
-      const reduction = reduceReviewSession(review.session, action.payload.transition);
-      if (!reduction.accepted) {
-        review.command = { status: "refused", requestId: null, error: "This review changed. Try the choice again." };
+      if (!record) return;
+      const { choice, content } = action.payload;
+      if (choice === "theirs") {
+        adoptStoredRow(record, content);
         return;
       }
-      review.session = reduction.session;
-      review.command = { status: "idle", requestId: null, error: null };
-    },
-
-    setRetainedNoteConflictProposal(
-      state,
-      action: PayloadAction<{ reviewKey: string; actorId: string; proposal: string }>,
-    ) {
-      const review = state.retainedConflictReviews[action.payload.reviewKey];
-      if (!review || review.readOnly || review.refreshSourceReviewKey !== null || review.actorId !== action.payload.actorId || review.command.status === "pending") return;
-      if (review.proposal === action.payload.proposal) return;
-      const hadDecision = review.session.decisions.some((decision) => decision !== "pending");
-      if (hadDecision) review.readOnly = true;
-      const nextKey = hadDecision ? `${review.reviewKey}:proposal:${review.session.revision}` : review.reviewKey;
-      const next = { ...review, reviewKey: nextKey, proposal: action.payload.proposal,
-        session: createReviewSession({ sessionId: `${review.reviewId}:proposal:${review.session.revision + 1}`, sourceIdentity: nextKey, original: review.reviewedRemote.content ?? "", modified: action.payload.proposal }),
-        readOnly: false, command: { status: "idle" as const, requestId: null, error: null },
-      };
-      state.retainedConflictReviews[nextKey] = next;
-      state.currentConflictReviewKeys[review.noteId] = nextKey;
-    },
-
-    dismissNoteConflict(state, action: PayloadAction<{ id: string }>) {
-      if (!mayRunNoteConflictCommand(state.retainedConflictReviews, action.payload.id)) return;
-      const decision = state.notes[action.payload.id]?._conflictDecision;
-      if (decision) decision.dismissed = true;
-      const key = state.currentConflictReviewKeys[action.payload.id];
-      if (key && state.retainedConflictReviews[key]) state.retainedConflictReviews[key].dismissed = true;
-    },
-
-    reopenNoteConflict(state, action: PayloadAction<{ id: string }>) {
-      const decision = state.notes[action.payload.id]?._conflictDecision;
-      if (decision) decision.dismissed = false;
-      const key = state.currentConflictReviewKeys[action.payload.id];
-      if (key && state.retainedConflictReviews[key]) state.retainedConflictReviews[key].dismissed = false;
-    },
-
-    applyNoteConflictResolution(
-      state,
-      action: PayloadAction<{
-        id: string;
-        decisionId: string;
-        reviewId: string;
-        requestId: string;
-        commandRequestId?: string;
-        choice: "mine" | "theirs";
-        proposedContent: string;
-        reviewedLiveContent: string;
-      }>,
-    ) {
-      const record = state.notes[action.payload.id];
-      const decision = record?._conflictDecision;
-      const currentObserved = record?._remoteObservation?.version ?? null;
-      const refuse = (reason: string) => {
-        state.conflictResolutionReceipts[action.payload.requestId] = { status: "refused", requestId: action.payload.requestId, reason };
-      };
-      if (!mayRunNoteConflictCommand(state.retainedConflictReviews, action.payload.id, action.payload.commandRequestId)) { refuse("Another review command is pending. Wait for it to finish."); return; }
-      if (!record || !decision || record.id !== action.payload.id) { refuse("This conflict is no longer available. Refresh the note."); return; }
-      if (decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId) { refuse("This comparison changed. Refresh before applying a choice."); return; }
-      if (decision.organizationId !== record.organization_id || decision.currentRow.id !== action.payload.id || decision.reviewedRemote.id !== action.payload.id) { refuse("This note moved organizations. Reopen it before applying a choice."); return; }
-      if (
-        !isCanonicalNoteRevision(decision.expectedVersion) ||
-        !isCanonicalNoteRevision(decision.currentVersion) ||
-        !isCanonicalNoteRevision(decision.comparedVersion) ||
-        !isCanonicalNoteRevision(decision.currentRow.version) ||
-        !isCanonicalNoteRevision(decision.reviewedRemote.version) ||
-        (currentObserved !== null && !isCanonicalNoteRevision(currentObserved)) ||
-        decision.stale ||
-        (currentObserved !== null && currentObserved > decision.comparedVersion)
-      ) { refuse("A newer remote change arrived. Refresh before applying a choice."); return; }
-      if (decision.reviewedLiveContent !== action.payload.reviewedLiveContent) { refuse("Your editor buffer changed after this comparison. Refresh before applying a choice."); return; }
-      if (!sameConflictSnapshot(conflictPhysicalSnapshot(record), decision.reviewedLocal)) { refuse("Your note fields changed after this comparison. Refresh before applying a choice."); return; }
-      if (decision.reviewedRemote.id !== decision.currentRow.id || decision.reviewedRemote.version !== decision.currentRow.version || JSON.stringify(decision.reviewedRemote) !== JSON.stringify(decision.currentRow)) { refuse("The reviewed server package changed. Refresh before applying a choice."); return; }
-      const remote = decision.currentRow;
-      if (action.payload.choice === "mine") {
-        writeNoteField(record, "content", action.payload.proposedContent);
-        // A reviewed rebase recomputes the whole supported physical dirty set
-        // from the locked local package, never from stale pre-conflict flags.
-        // Context links remain independently dirty and are intentionally not
-        // adopted or cleared by a physical conflict choice.
-        for (const field of ["content", "label", "folder_name", "folder_id", "tags", "shown_to", "published_to_web", "project_id", "task_id"] as const) {
+      const observed = record._remoteObservation;
+      const remote = observed?.complete ? observed.note : null;
+      if (remote) {
+        for (const [key, value] of Object.entries(remote)) {
+          if (key.startsWith("_") || key === "content") continue;
+          const field = key as keyof Note;
+          if (record._dirtyFields.has(field as NoteUndoableField)) continue;
+          writeNoteField(record, field, value as Note[typeof field]);
+        }
+        if (record.content !== content) applyFieldEdit(record, "content", content);
+        for (const field of STORED_PHYSICAL_FIELDS) {
+          if (!record._dirtyFields.has(field)) continue;
           if (JSON.stringify(record[field]) === JSON.stringify(remote[field])) {
             record._dirtyFields.delete(field);
-            delete record._fieldHistory[field];
+            delete (record._fieldHistory as NoteFieldSnapshot)[field];
           } else {
-            record._dirtyFields.add(field);
+            (record._fieldHistory as NoteFieldSnapshot)[field] = remote[field] as never;
           }
         }
         record._dirty = record._dirtyFields.size > 0;
-        // Mine is an explicit reviewed rebase: retain the reviewed local
-        // draft but use the reviewed remote physical row as its next CAS base.
-        record._acknowledgedPhysicalSnapshot = cloneAcknowledgedNote(current(remote));
-        record.updated_at = remote.updated_at;
-        record.version = remote.version;
-        record._error = null;
-        record._conflictDecision = null;
-        state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "mine", content: action.payload.proposedContent };
-        return;
+        settleStoredBase(record, remote);
+      } else if (record.content !== content) {
+        applyFieldEdit(record, "content", content);
       }
-      // Physical row fields are replaced from the reviewed CAS row. Context
-      // links are separate association writes and intentionally survive.
-      for (const field of [
-        "label",
-        "content",
-        "folder_name",
-        "folder_id",
-        "tags",
-        "metadata",
-        "shown_to",
-        "published_to_web",
-        "position",
-        "organization_id",
-        "updated_at",
-        "version",
-        "sync_version",
-        "content_hash",
-        "file_path",
-        "last_device_id",
-        "deleted_at",
-        "created_at",
-        "created_by",
-        "updated_by",
-      ] as const) {
-        writeNoteField(record, field, remote[field]);
-      }
-      for (const field of [
-        "content",
-        "label",
-        "folder_name",
-        "folder_id",
-        "tags",
-        "shown_to",
-        "published_to_web",
-        "organization_id",
-      ] as const) {
-        record._dirtyFields.delete(field);
-        delete record._fieldHistory[field];
-      }
-      record._dirty = record._dirtyFields.size > 0;
-      // The adopted server row is now this record's edit base — exactly as
-      // the "mine" branch does. Leaving the pre-conflict base in place
-      // re-armed the phantom conflict on the very next bookkeeping bump.
-      record._acknowledgedPhysicalSnapshot = cloneAcknowledgedNote(current(remote));
+      record._remoteObservation = null;
       record._error = null;
-      record._conflictDecision = null;
-      state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "theirs", content: remote.content ?? "" };
+    },
+
+    /**
+     * The person threw their unsaved edit away (a failed save's Discard): the
+     * record goes back to what is stored — the stored row when one was
+     * observed, else the value each field had before it was edited.
+     */
+    discardNoteUnsavedEdits(state, action: PayloadAction<{ id: string; content: string }>) {
+      const record = state.notes[action.payload.id];
+      if (!record) return;
+      adoptStoredRow(record, action.payload.content);
     },
 
     markNoteSaving(state, action: PayloadAction<string>) {
@@ -1064,9 +821,7 @@ const notesSlice = createSlice({
       const record = state.notes[action.payload.id];
       if (!record) return;
       record._saving = false;
-      // A later acknowledgement may settle only its sent fields. Do not erase
-      // a CAS decision or remote evidence that arrived during the request.
-      if (!record._conflictDecision) record._error = null;
+      record._error = null;
       // A save landed — the failure streak (and the blocking banner it drives)
       // ends here, not on the next edit.
       record._consecutiveSaveFailures = 0;
@@ -1129,14 +884,11 @@ const notesSlice = createSlice({
       if (record) {
         record._saving = false;
         record._error = action.payload.error;
-        // "conflict" is its own, already-blocking UI (NoteConflictWindow) and
-        // needs a decision, not an escalation — every OTHER failure counts
-        // toward the blocking save-failure banner.
-        if (action.payload.error !== "conflict") {
-          record._consecutiveSaveFailures += 1;
-          if (record._firstSaveFailureAt == null) {
-            record._firstSaveFailureAt = Date.now();
-          }
+        // Every failure counts toward the blocking save-failure banner (a
+        // stored row that moved is a working-copy conflict, never a failure).
+        record._consecutiveSaveFailures += 1;
+        if (record._firstSaveFailureAt == null) {
+          record._firstSaveFailureAt = Date.now();
         }
       }
       state._savingNoteIds = state._savingNoteIds.filter(
@@ -1160,10 +912,6 @@ const notesSlice = createSlice({
       record._saving = false;
       record._error = action.payload.error;
       state._savingNoteIds = state._savingNoteIds.filter((id) => id !== record.id);
-    },
-
-    clearNoteConflictResolutionReceipt(state, action: PayloadAction<string>) {
-      delete state.conflictResolutionReceipts[action.payload];
     },
 
     clearSavingNoteId(state, action: PayloadAction<string>) {
@@ -1797,23 +1545,6 @@ const notesSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Retained reviews are actor-scoped work, never ordinary note buffers. A
-    // token refresh for the same actor preserves them; logout or replacement
-    // cannot expose the previous actor's review state.
-    builder.addMatcher(
-      (action): action is PayloadAction<{ id?: string | null }> => action.type === "userAuth/setUserAuth",
-      (state, action) => {
-        const actorId = action.payload.id;
-        if (actorId === undefined) return;
-        if (actorId === null) { state.retainedConflictReviews = {}; state.currentConflictReviewKeys = {}; return; }
-        for (const [key, review] of Object.entries(state.retainedConflictReviews)) {
-          if (review.actorId !== actorId) delete state.retainedConflictReviews[key];
-        }
-        for (const [noteId, key] of Object.entries(state.currentConflictReviewKeys)) {
-          if (!state.retainedConflictReviews[key]) delete state.currentConflictReviewKeys[noteId];
-        }
-      },
-    );
     // The Trash read's outcome (fetchDeletedNotes, matched by type string —
     // a runtime import of thunks.ts would be circular). The bin says "empty"
     // only after this read succeeded.
@@ -1862,10 +1593,6 @@ const notesSlice = createSlice({
         state.sharedError = action.error?.message ?? "Couldn't load the notes shared with you";
       },
     );
-    builder.addMatcher(
-      (action): action is PayloadAction<undefined> => action.type === "userAuth/clearUserAuth",
-      (state) => { state.retainedConflictReviews = {}; state.currentConflictReviewKeys = {}; },
-    );
     // The thunk is type-only-imported (a runtime import would be circular —
     // thunks.ts imports actions from this slice), so match on the action type
     // string with a predicate that narrows to the thunk's fulfilled action.
@@ -1909,18 +1636,9 @@ export const {
   clearNoteUndoHistory,
   upsertNoteFromServer,
   upsertNotesFromServer,
-  recordNoteConflict,
-  refreshNoteConflictComparison,
-  chooseRetainedNoteReviewSource,
-  beginRetainedNoteConflictCommand,
-  settleRetainedNoteConflictCommand,
-  transitionRetainedNoteConflictReview,
-  setRetainedNoteConflictProposal,
-  dismissNoteConflict,
-  reopenNoteConflict,
-  applyNoteConflictResolution,
-  clearNoteConflictResolutionReceipt,
-  captureNoteConflictLiveBuffer,
+  recordNoteStoredRow,
+  resolveNoteStoredConflict,
+  discardNoteUnsavedEdits,
   removeNote,
   recordNoteWriteAttempt,
   markNoteSaving,

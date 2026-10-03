@@ -16,7 +16,7 @@ import { createSlimRootSaga } from "@/lib/redux/sagas/rootSaga";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { enableMapSet } from "immer";
-import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
+import { noteSaveRequestMiddleware } from "@/features/notes/redux/noteSaveRequests";
 import { registerNotesDraftSource } from "@/features/notes/utils/notesDrafts";
 import { notesRealtimeMiddleware } from "@/features/notes/redux/realtimeMiddleware";
 import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSaveMiddleware";
@@ -265,7 +265,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
       }).concat(
         sagaMiddleware,
         syncMiddleware,
-        autoSaveMiddleware,
+        noteSaveRequestMiddleware,
         notesRealtimeMiddleware,
         codeFilesAutoSaveMiddleware,
         cloudFilesRealtimeMiddleware,

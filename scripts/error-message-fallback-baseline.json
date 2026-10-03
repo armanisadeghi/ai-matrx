@@ -651,7 +651,6 @@
   "features/messaging/components/NewConversationDialog.tsx": 1,
   "features/messaging/hooks/useUserConnections.ts": 1,
   "features/notes/components/diff/NoteVersionHistoryPanel.tsx": 2,
-  "features/notes/components/NoteConflictWindow.tsx": 1,
   "features/notes/redux/thunks.ts": 3,
   "features/notifications/components/InboxPanel.tsx": 2,
   "features/organizations/admin/components/MemberControlsForm.tsx": 1,

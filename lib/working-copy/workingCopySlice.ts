@@ -57,6 +57,12 @@ export interface WorkingCopyEntry {
   baseVersion: number | null;
   /** Bumped by every edit; a save records the number it wrote. */
   editSeq: number;
+  /**
+   * Text records: the edit number of the last `touch` — the record holds
+   * unsaved work the text does not show (a note's renamed title, its folder).
+   * Unsaved until a save that started at or after it lands.
+   */
+  touchedSeq?: number | null;
   savingSeq: number | null;
   savedSeq: number;
   /** Unsaved work exists (text records: `value !== base`; others: an edit since the last save). */
@@ -131,10 +137,12 @@ function entryFor(state: WorkingCopiesState, key: string): WorkingCopyEntry {
 }
 
 function recomputeDirty(entry: WorkingCopyEntry): void {
-  entry.dirty =
-    entry.value !== undefined
-      ? entry.value !== entry.base
-      : entry.editSeq !== entry.savedSeq;
+  if (entry.value === undefined) {
+    entry.dirty = entry.editSeq !== entry.savedSeq;
+    return;
+  }
+  const touched = entry.touchedSeq != null && entry.touchedSeq > entry.savedSeq;
+  entry.dirty = entry.value !== entry.base || touched;
 }
 
 /** Status from the entry's facts (a save in flight keeps "saving"). */
@@ -276,9 +284,9 @@ const workingCopySlice = createSlice({
         if (choice === "theirs") entry.value = conflict.theirs;
         else if (choice === "merge" && merged !== undefined) entry.value = merged;
         entry.base = conflict.theirs;
-      } else if (choice === "theirs") {
-        entry.savedSeq = entry.editSeq;
       }
+      // Theirs: nothing of the person's is pending any more.
+      if (choice === "theirs") entry.savedSeq = entry.editSeq;
       if (conflict.theirsVersion !== null) entry.baseVersion = conflict.theirsVersion;
       entry.conflict = null;
       entry.failure = null;
@@ -296,10 +304,14 @@ const workingCopySlice = createSlice({
       recomputeDirty(entry);
       settleStatus(entry);
     },
-    /** A local edit to a record whose body an engine holds (a Univer document). */
+    /**
+     * A local edit the text does not carry: an engine record's body (a Univer
+     * document), or a text record's other fields (a note's title, folder).
+     */
     workingCopyTouched(state, action: PayloadAction<{ key: string }>) {
       const entry = entryFor(state, action.payload.key);
       entry.editSeq += 1;
+      entry.touchedSeq = entry.editSeq;
       recomputeDirty(entry);
       settleStatus(entry);
     },
@@ -332,6 +344,36 @@ const workingCopySlice = createSlice({
           : action.payload.savedAt !== null
             ? "saved"
             : "idle";
+    },
+    /**
+     * The save found the stored state moved under this edit (a compare-and-swap
+     * refused it). The person decides; nothing is written meanwhile. Text
+     * records carry the stored text (`theirs`); engine records a `ref`.
+     */
+    workingCopySaveConflicted(
+      state,
+      action: PayloadAction<{ key: string; theirs?: string; version?: number | null; ref?: string | null }>,
+    ) {
+      const entry = state.byKey[action.payload.key];
+      if (!entry) return;
+      const { theirs, version, ref } = action.payload;
+      entry.savingSeq = null;
+      entry.writing = undefined;
+      entry.status = "idle";
+      if (entry.value !== undefined && theirs !== undefined && theirs === entry.value) {
+        // The stored text already IS the person's text: nothing to decide.
+        entry.base = theirs;
+        if (version !== undefined) entry.baseVersion = version;
+      } else {
+        entry.conflict = {
+          theirs,
+          theirsVersion: version ?? null,
+          ancestor: entry.value !== undefined ? entry.base : undefined,
+          theirsRef: ref ?? null,
+        };
+      }
+      recomputeDirty(entry);
+      settleStatus(entry);
     },
     workingCopySaveFailed(
       state,
@@ -418,6 +460,7 @@ export const {
   workingCopyTouched,
   workingCopySaveStarted,
   workingCopySaved,
+  workingCopySaveConflicted,
   workingCopySaveFailed,
   workingCopySettled,
   workingCopyDiscarded,

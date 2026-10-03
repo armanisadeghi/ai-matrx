@@ -467,7 +467,7 @@ export default function DiffGalleryPage() {
             chip={
               <LegacyDiffChip
                 label="legacy segments"
-                reason="The note conflict summary (analyzeDiff) now reads @ai-matrx/diff analyzeTextChange; these run-level segments are shown for comparison only — NoteConflictWindow renders the canonical DiffViewer"
+                reason="The note conflict summary (analyzeDiff) now reads @ai-matrx/diff analyzeTextChange; these run-level segments are shown for comparison only"
               />
             }
           >

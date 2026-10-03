@@ -45,6 +45,7 @@ import {
   workingCopyReleased,
   workingCopyReset,
   workingCopySaved,
+  workingCopySaveConflicted,
   workingCopySaveFailed,
   workingCopySaveStarted,
   workingCopySettled,
@@ -65,6 +66,26 @@ export interface WorkingCopyFailureInfo {
   permanent: boolean;
   /** Failed attempts in a row (1 = the first failure of this streak). */
   attempts: number;
+}
+
+/**
+ * Thrown by a kind's `save` when the stored state moved under the edit (its
+ * compare-and-swap refused the write). Not a failure: the entry opens the
+ * conflict and nothing is written until the person chooses.
+ */
+export class WorkingCopySaveConflict extends Error {
+  /** The stored text now (text records). */
+  readonly theirs?: string;
+  readonly version: number | null;
+  /** Engine records: an opaque id of the stored state. */
+  readonly ref: string | null;
+  constructor(moved: { theirs?: string; version?: number | null; ref?: string | null }) {
+    super("The stored record changed under this edit.");
+    this.name = "WorkingCopySaveConflict";
+    this.theirs = moved.theirs;
+    this.version = moved.version ?? null;
+    this.ref = moved.ref ?? null;
+  }
 }
 
 /** Backoff for retrying a failed save (ms). */
@@ -169,6 +190,20 @@ export interface WorkingCopyKindConfig<E> {
   onConflict?: (id: string, conflict: WorkingCopyConflict) => void;
   /** The conflict is gone (chosen, discarded, or the stored text came to equal the person's). */
   onConflictResolved?: (id: string) => void;
+  /**
+   * Text kinds: the person chose (`entry` is the copy after the choice). The
+   * record's own store adopts it here — e.g. takes the stored row for
+   * "theirs", or rebases the edit onto the stored version for "mine"/"merge".
+   */
+  conflictChosen?: (
+    id: string,
+    choice: ConflictChoice,
+    entry: WorkingCopyEntry,
+    conflict: WorkingCopyConflict,
+    store: WorkingCopyStoreLike,
+  ) => void;
+  /** The person threw the unsaved edit away (`entry` is the copy after it). */
+  discarded?: (id: string, entry: WorkingCopyEntry, store: WorkingCopyStoreLike) => void;
   /** Engine kinds: apply the person's choice to the engine before the entry settles. */
   resolveConflict?: (
     engine: E | undefined,
@@ -219,8 +254,23 @@ export interface WorkingCopyKind<E> {
   attach: (id: string, store: WorkingCopyStoreLike) => () => void;
   /** Text: every view shows `value` now; one save follows. `now` saves immediately. */
   edit: (id: string, value: string, options?: { now?: boolean }) => void;
-  /** Engine kinds: an edit happened. */
+  /** Engine kinds: an edit happened. Text kinds: the record's other fields changed (one save follows). */
   touch: (id: string) => void;
+  /**
+   * The record has unsaved work and no view may hold it (a rename from a list,
+   * an agent's write, Save): hold its session until that work is saved —
+   * retried, offline-aware, conflict-checked like any edit. `now` saves at once.
+   * Resolves when the save requested here has run.
+   */
+  request: (
+    id: string,
+    store: WorkingCopyStoreLike,
+    options?: {
+      now?: boolean;
+      /** Text kinds: the record's text was changed outside the views (undo, an agent): every view shows it. */
+      value?: string;
+    },
+  ) => Promise<void>;
   /** The record's stored value arrived / moved; a dirty copy keeps the person's text. */
   load: (
     id: string,
@@ -437,7 +487,22 @@ export function defineWorkingCopyKind<E = never>(config: WorkingCopyKindConfig<E
       return;
     }
     store.dispatch(workingCopySaveStarted({ key, writing: current.value }));
-    const fail = (error: unknown): never => {
+    const conflicted = (moved: WorkingCopySaveConflict): void => {
+      resetRetry(session);
+      const before = read();
+      store.dispatch(
+        workingCopySaveConflicted({ key, theirs: moved.theirs, version: moved.version, ref: moved.ref }),
+      );
+      observe(session, store, before);
+      // Still unsaved: the session is held and the person's choice saves it.
+      session.commit.mark();
+      if (!read()?.conflict) session.commit.schedule();
+    };
+    const fail = (error: unknown): void => {
+      if (error instanceof WorkingCopySaveConflict) {
+        conflicted(error);
+        return;
+      }
       const message = error instanceof Error ? error.message : String(error);
       const permanent = (config.isPermanentFailure ?? isPermanentSaveFailure)(error);
       session.failures += 1;
@@ -477,7 +542,8 @@ export function defineWorkingCopyKind<E = never>(config: WorkingCopyKindConfig<E
     try {
       outcome = config.save({ id, key, entry: current, engine: session.engine, reason, store });
     } catch (error) {
-      return fail(error);
+      fail(error);
+      return;
     }
     if (outcome && typeof (outcome as Promise<unknown>).then === "function") {
       return (outcome as Promise<WorkingCopySaveResult | void>).then(done, fail);
@@ -534,6 +600,34 @@ export function defineWorkingCopyKind<E = never>(config: WorkingCopyKindConfig<E
       const session = registry.peek(id);
       session?.handle.touch();
     },
+    request(id, store, options) {
+      const held = registry.acquire(id);
+      const session = held.session;
+      // No view holds it: the store asking is the one that holds the record.
+      if (!session.store || registry.holders(id) === 1) session.store = store;
+      lastStore = store;
+      let requested: Promise<void>;
+      try {
+        if (options?.value !== undefined && readEntry(session)?.value !== undefined) {
+          dispatch(session, workingCopyEdited({ key: session.key, value: options.value }));
+        }
+        dispatch(session, workingCopyTouched({ key: session.key }));
+        if (options?.now) {
+          session.commit.mark();
+          requested = session.commit.flush("manual");
+        }
+        else {
+          pend(session);
+          requested = Promise.resolve();
+        }
+      } finally {
+        // The session is held by its pending save (debounced like any edit,
+        // or now) until that save lands or the person resolves it — no view
+        // needs to stay for it, and this release flushes nothing early.
+        held.release({ quiet: true });
+      }
+      return requested.then(() => registry.settle(id));
+    },
     load(id, value, options) {
       const session = registry.peek(id);
       if (!session) return;
@@ -570,6 +664,9 @@ export function defineWorkingCopyKind<E = never>(config: WorkingCopyKindConfig<E
       session.commit.cancel();
       resetRetry(session);
       dispatch(session, workingCopyDiscarded({ key: session.key }));
+      const store = storeOf(session);
+      const after = readEntry(session);
+      if (store && after) config.discarded?.(id, after, store);
       // Resolved: a session no view holds may drop now.
       registry.settle(id);
     },
@@ -589,6 +686,9 @@ export function defineWorkingCopyKind<E = never>(config: WorkingCopyKindConfig<E
       }
       dispatch(session, workingCopyConflictResolved({ key: session.key, choice, merged }));
       resetRetry(session);
+      const store = storeOf(session);
+      const after = readEntry(session);
+      if (store && after) config.conflictChosen?.(id, choice, after, conflict, store);
       if (readEntry(session)?.dirty) {
         // Mine (or the merge) goes on top of what is stored now.
         await session.commit.flush("flush");

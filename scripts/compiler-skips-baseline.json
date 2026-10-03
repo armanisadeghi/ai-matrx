@@ -997,7 +997,6 @@
   "features/notes/components/mobile/MobileNotesList.tsx": 1,
   "features/notes/components/mobile/MobileNotesView.tsx": 1,
   "features/notes/components/MoveNoteDialog.tsx": 1,
-  "features/notes/components/NoteConflictWindow.tsx": 1,
   "features/notes/components/NoteContentEditor.tsx": 2,
   "features/notes/components/NoteEditor.tsx": 1,
   "features/notes/components/NotePickerPopover.tsx": 1,

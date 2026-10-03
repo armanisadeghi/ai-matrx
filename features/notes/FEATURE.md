@@ -60,15 +60,23 @@ list hydration also verifies the live Supabase user before its notes read and
 again before association hydration; an expired session pauses at that boundary
 instead of fanning out through both services.
 
-**Conflict review boundary:** A Refresh comparison accepts only the exact note
-row requested by the retained CAS decision, in that decision's organization,
-with a non-negative safe-integer revision. Missing, fractional, unsafe,
-non-finite, string, or moved-row revisions refuse the request-scoped receipt
-before rotating a review or changing the editor's reviewed package. Realtime
-upserts also discard supplied malformed revisions so they cannot poison the
-highest-remote-observation comparison. A Refresh row may equal or advance the
-reviewed revision, never regress it; the CAS decision records a full row only
-when its declared current revision exactly equals that row's revision.
+**One save door:** a note's database save IS its working copy's save
+(`utils/noteLiveContent.ts`, the `note` kind of `lib/working-copy`): the working
+text reaches the record (`updateNoteContent`, one undo step), the auto-label runs,
+then `writeNoteRecord` (`redux/noteRecordWrite.ts`) writes the dirty fields with a
+compare-and-swap on the version the edit started from. Retry (1s → 30s, never
+offline, at once on `online` / the tab returning), the hold until saved and the
+conflict choice (Keep mine / Take theirs / Merge — `WorkingCopyAlert` in the
+editors, the toast with no editor open) all come from the primitive. `saveNote`
+(Save, agents, tools, bulk actions) and every field edit
+(`redux/noteSaveRequests.ts`: rename, folder, tags, undo / redo, an outside body
+write) go through that door. Still outside it (each writes through the service
+directly, not through Redux): the rich-document note source, `NotesInlinePreview`,
+the virtual-files notes adapter, `useNotesCollectionWriteHandlers`,
+`CategoryNotesModal` and the legacy `NotesLayout` / `useAutoSave`. A refused CAS stores the
+stored row as the record's `_remoteObservation`; the person's choice adopts it
+(`resolveNoteStoredConflict`). A note's words are written only as the person who
+typed them.
 
 **RichDocument direct-edit boundary:** A Notes content source is either an
 identity trigger or an editable snapshot. An identity trigger is prepared by
@@ -92,7 +100,7 @@ its self-test proves the structural raw-literal failure.
 
 1. User opens editor → `notes` slice hydrates the target row via `service/`
 2. Edits dispatch granular actions (title, content, labels) — small updates, never full-object replacement
-3. Debounced autosave → Supabase update
+3. The note's working copy saves (debounced; the one door above) → Supabase update
 4. Realtime broadcasts the change to other subscribed clients
 
 ### Flow 2 — Folder organization
@@ -136,7 +144,7 @@ its self-test proves the structural raw-literal failure.
 - **Reviewed saves return their own receipt.** `captureReviewedNoteSave` synchronously binds the actual store, actor, organization, full prepared source, acknowledged revision, and exact dirty fields before dispatch. `saveReviewedNote` reserves that immutable attempt before pending actions; repeated observers of the same permit share only that attempt. Unrelated in-flight writes refuse busy. Actual physical/context/partial receipts survive later replay failures and post-acknowledgement session/cache loss. A released observer does not cancel the write or another observer. Fresh edits require fresh capture; a settled permit never writes twice.
 - **Receipt validation precedes acknowledgement.** Physical postimages must match the sent values and unchanged captured fields; succeeded context matches its submitted value and failed context retains its acknowledged base. Context-only acknowledgement never advances the physical revision. Noncanonical JSON, unknown source keys, accessors and forged/cross-store permits refuse before I/O.
 - **Own-write and remote observations remain distinct.** The shared realtime write ledger owns echo classification; the Notes reducer preserves dirty fields and validates remote revisions. Conflict decisions bind the original actor, organization, expected/current revisions and reviewed row. Resolve or refresh only through the receipt-bearing commands below; never infer a successful save from the live editor buffer.
-- 🚨 **A conflict means the OTHER side changed something you are editing — never that the version number moved.** `version` is bumped by `_touch_row` on EVERY row update: matrx-local writing `file_path`/`last_device_id` back onto a web-created note (0.9s after INSERT, same user), an ingest job stamping metadata, a folder move. Three layers, each proven failing-then-passing, keep such a bump from ever reaching the user as a Note Conflict dialog (root cause of the recurring report, 2026-09-13): (1) the `@ai-matrx/realtime` write ledger is revision-aware — a `version` it never saw is never an echo, so the browser learns the number over realtime even when the write is same-actor + same-content + our save pending; the middleware registers `revision` on `begin`/`settle`/`observe` and hands the reducer the WHOLE projected row (`NOTE_ROW_KEYS`, one list). (2) `applyServerNoteUpsert` FAST-FORWARDS a dirty record to a complete newer row whose user-edited fields (`NOTE_EDITED_FIELDS` in `utils/saveVerification.ts`: content, label, folder_id, folder_name, tags, shown_to, published_to_web) equal `_acknowledgedPhysicalSnapshot` — draft untouched, base advanced, no observation. (3) `persistNoteUpdate({ acknowledgedBase })` passes `guardedUpdate({ rebase })` from `@ai-matrx/data`: a CAS miss whose server row's edited fields still equal the base is retried ONCE on the current version; a second miss or a real change is the conflict it always was. Never widen `NOTE_EDITED_FIELDS` with a bookkeeping column, and never narrow it below what the editor writes.
+- 🚨 **A conflict means the OTHER side changed something you are editing — never that the version number moved.** `version` is bumped by `_touch_row` on EVERY row update: matrx-local writing `file_path`/`last_device_id` back onto a web-created note (0.9s after INSERT, same user), an ingest job stamping metadata, a folder move. Three layers, each proven failing-then-passing, keep such a bump from ever reaching the user as a conflict (root cause of the recurring report, 2026-09-13): (1) the `@ai-matrx/realtime` write ledger is revision-aware — a `version` it never saw is never an echo, so the browser learns the number over realtime even when the write is same-actor + same-content + our save pending; the middleware registers `revision` on `begin`/`settle`/`observe` and hands the reducer the WHOLE projected row (`NOTE_ROW_KEYS`, one list). (2) `applyServerNoteUpsert` FAST-FORWARDS a dirty record to a complete newer row whose user-edited fields (`NOTE_EDITED_FIELDS` in `utils/saveVerification.ts`: content, label, folder_id, folder_name, tags, shown_to, published_to_web) equal `_acknowledgedPhysicalSnapshot` — draft untouched, base advanced, no observation. (3) `persistNoteUpdate({ acknowledgedBase })` passes `guardedUpdate({ rebase })` from `@ai-matrx/data`: a CAS miss whose server row's edited fields still equal the base is retried ONCE on the current version; a second miss or a real change is the conflict it always was. Never widen `NOTE_EDITED_FIELDS` with a bookkeeping column, and never narrow it below what the editor writes.
 - **Realtime is RLS-authorized.** Use Postgres Changes here (not Broadcast) so non-owners only see notes they have access to.
 - **The save-from-anywhere API is a public contract.** Agents and other features depend on it; don't break the signature silently.
 - **Cleanup's whitespace/typography ops never edit protected regions.** `lib/content-cleanup/` masks code / JSON / tables / front-matter / inline-code / HTML out before any whitespace or typography op, then restores them verbatim. The ONE exception is a **region operation** (JSON condense/minify/expand) — opt-in, exclusive, and applied through a real JSON parser + writer, never a regex; it refuses JSON that only parses tolerantly so comments are never silently deleted. The engine is pure and surface-agnostic — reuse it, never fork it, for any paste-cleanup need.
@@ -172,6 +180,7 @@ its self-test proves the structural raw-literal failure.
 
 ## Change log
 
+- `2026-10-03` — **One save door: the note's working copy.** The working-copy kind's save is now the database save (undo step, auto-label, version check as its steps), so retry after the last view leaves, offline / reconnect, the hold until saved and the conflict choice come from `lib/working-copy`. Deleted: `redux/autoSaveMiddleware.ts` (its own retry loop), the Note Conflict window (`NoteConflictWindow`, `useNoteConflictChoreography`, `reviewCommandCoordinator`, `conflictCommandLock`, the retained-review reducers/state and the reviewed-save permits). `saveNote` asks the door; `redux/noteSaveRequests.ts` turns field edits into requests; `redux/noteRecordWrite.ts` is the write. Undo / redo are now saved. Guard: `__tests__/note-save-one-door.test.ts` (6/6 red on the old code).
 - `2026-10-03` — **Versions and Outline show pressed.** The /notes header and `NoteRecordTools` tinted these group tap buttons with a `text-primary` className, which the group's glyph colour overrides and which sets no `aria-pressed`. They now pass the tap system's `pressed` (tinted pill + `aria-pressed`) while the history tab is in front / the outline is open. Guard: `__tests__/note-history-opens-in-the-canvas.test.tsx`.
 - `2026-10-03` — **A narrow compare stacks.** `NoteDiffViewer`'s Content tab was fixed side by side, so at a 360px canvas pane both columns cut words mid-line. It now measures ITS OWN container (`useMeasure`): under 560px the diff is one column (`inline`), wider it is side by side, and a view picked in the toolbar is kept. Guard: `__tests__/note-diff-stacks-in-a-narrow-pane.test.tsx` (red on the fixed `split`).
 - `2026-10-03` — claude (remount-safety lane): **One working copy per note — every editor is a view.** The body a person types lives in Redux `workingCopies["note:<id>"]` (THE platform working copy, `lib/working-copy`; `utils/noteLiveContent.ts` defines the `note` kind, `hooks/useNoteWorkingCopy.ts` is the view hook), never in editor state: `NoteContentEditor` and `MobileNoteEditor` read and write it, so the same note in a board tile and the Quick Notes panel shows each keystroke in both before the debounce and commits once (`updateNoteContent`, synchronous); the last view leaving commits what it held (audit N-07 closed: one view closing no longer clears another's buffer). `NoteStatsFooter` / `NoteSaveFailureBanner` read the copy from Redux. Undo is the note's Redux history: ⌘Z commits pending words first and, inside the one editor, steps the note's history whenever the editor has no steps of its own (`RichEditorController.historyDepth`) — undo survives a remount. Guard: `__tests__/one-note-many-views.test.tsx` (3/3 red on the old code). Browser (clone): the same note in a board tile and Quick Notes — typed in the panel, the tile showed it at once, one PATCH.
