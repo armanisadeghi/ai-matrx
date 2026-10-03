@@ -150,7 +150,11 @@ jest.mock("@/lib/toast", () => ({
 jest.mock("@/lib/redux/slices/appContextSlice", () => {
   const actual = jest.requireActual("@/lib/redux/slices/appContextSlice");
   return {
+    __esModule: true,
     ...actual,
+    // The spread loses the reducer through CJS interop; carry it so the store keeps
+    // `appContext` and real selectors (the chat-host wrapper reads the org name) work.
+    default: actual.default,
     selectOrganizationId: () => ORG_ID,
     selectShouldPromptForOrganization: () => false,
   };
