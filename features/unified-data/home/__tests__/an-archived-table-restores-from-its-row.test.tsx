@@ -5,6 +5,7 @@
  * - the archived row gets the live table's action list (Archive table again, no Restore) → red.
  * - Restore asks the wrong organization, or restores the wrong id → red.
  * - a failed restore reads as done (no error surfaces, the list is told it changed) → red.
+ * - a statement timeout shows Postgres's sentence in the toast → red.
  * - a live table row grows a Restore → red.
  */
 import React, { act } from "react";
@@ -85,6 +86,11 @@ it("a refused restore throws the store's words and changes nothing", async () =>
   recordRestore.mockResolvedValue({ ok: false, error: { code: "refused_by_rule", message: "You need Admin access to restore this table." } });
   await expect(restoreOf(menuFor!(retiredIntake)())!.onSelect()).rejects.toThrow("You need Admin access to restore this table.");
   expect(onChanged).not.toHaveBeenCalled();
+});
+
+it("a timed-out restore is said in a person's words", async () => {
+  recordRestore.mockResolvedValue({ ok: false, error: { code: "timed_out", message: "canceling statement due to statement timeout" } });
+  await expect(restoreOf(menuFor!(retiredIntake)())!.onSelect()).rejects.toThrow("The restore took too long. Try again in a moment.");
 });
 
 it("a live table row has no Restore", () => {

@@ -217,7 +217,12 @@ export function useDataHomeRowMenus({
       if (!row.organizationId || !row.tableId) return;
       const inOrganization = createRecordsClient({ ...client.config, organizationId: row.organizationId });
       const answered = await inOrganization.recordRestore({ record_id: row.tableId });
-      if (!answered.ok) throw new Error(answered.error.message);
+      if (!answered.ok) {
+        // A statement timeout is ours to word; Postgres's sentence never reaches the toast.
+        throw new Error(
+          answered.error.code === "timed_out" ? "The restore took too long. Try again in a moment." : answered.error.message,
+        );
+      }
       onChanged();
     };
     return {
