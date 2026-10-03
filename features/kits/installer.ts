@@ -32,7 +32,7 @@ import { kitKnob } from "./knobs";
 import {
   createRecordsClient,
   declareTable,
-  fieldDeclarationFor,
+  ensureTable,
   type RecordsClient,
   type NewFieldSpec,
 } from "@ai-matrx/records/core";
@@ -96,33 +96,33 @@ const LEDGER_FIELDS: NewFieldSpec[] = [
   { key: "run_until", label: "Running until", type: "text", sort: 80 },
 ];
 
-/** The organization's install ledger, if it has one. Found by its reserved slug. */
+/** The organization's install ledger, if it has one. Found by its reserved slug, kept for "kits". */
 export async function findLedger(client: RecordsClient): Promise<string | null> {
-  const tables = await client.tableList();
-  if (!tables.ok) throw refusal("Could not list this organization's tables", tables.error.message, tables.error.hint);
-  const ledger = tables.data.find((t) => t.slug === KIT_INSTALLS_TABLE.slug);
-  return ledger ? ledger.id : null;
+  const found = await client.tableFind({ slug: KIT_INSTALLS_TABLE.slug, keptFor: "kits" });
+  if (!found.ok) throw refusal("Could not look up this organization's install table", found.error.message, found.error.hint);
+  return found.data ? found.data.id : null;
 }
 
 /**
  * The ledger with its full shape: every column, and the table
  * itself kept by the app (it lives in the app lane, not the person's data list)
- * and closed to agents. Idempotent — safe on every install start.
+ * and closed to agents. Idempotent — safe on every install start. Found or made by the
+ * store's own `ensureTable` (one transaction; two tabs get the same table), which also
+ * adds any column the table does not have yet.
  */
 async function ensureLedger(client: RecordsClient): Promise<string> {
-  let ledger = await findLedger(client);
-  if (!ledger) {
-    const made = await declareTable(client, {
-      name: KIT_INSTALLS_TABLE.name,
-      slug: KIT_INSTALLS_TABLE.slug,
-      labelSingular: "Kit install",
-      labelPlural: KIT_INSTALLS_TABLE.name,
-      titleField: "kit_key",
-      fields: LEDGER_FIELDS,
-    });
-    if (!made.ok) throw refusal(`Could not make the "${KIT_INSTALLS_TABLE.name}" table`, made.error.message, made.error.hint);
-    ledger = made.data;
-  }
+  const made = await ensureTable(client, {
+    name: KIT_INSTALLS_TABLE.name,
+    slug: KIT_INSTALLS_TABLE.slug,
+    labelSingular: "Kit install",
+    labelPlural: KIT_INSTALLS_TABLE.name,
+    titleField: "kit_key",
+    fields: LEDGER_FIELDS,
+    keptByTheApp: true,
+    keptFor: "kits",
+  });
+  if (!made.ok) throw refusal(`Could not make the "${KIT_INSTALLS_TABLE.name}" table`, made.error.message, made.error.hint);
+  const ledger = made.data;
   const placed = await client.recordUpdate({
     record_id: ledger,
     patch: {
@@ -134,14 +134,6 @@ async function ensureLedger(client: RecordsClient): Promise<string> {
   });
   if (!placed.ok) {
     throw refusal(`Could not mark the "${KIT_INSTALLS_TABLE.name}" table as kept by the app`, placed.error.message, placed.error.hint);
-  }
-  const fields = await client.fields({ table_id: ledger });
-  if (!fields.ok) throw refusal("Could not read the install table's columns", fields.error.message, fields.error.hint);
-  const have = new Set(fields.data.map((f) => f.key));
-  for (const spec of LEDGER_FIELDS) {
-    if (have.has(spec.key)) continue;
-    const added = await client.fieldDeclare({ table_id: ledger, spec: fieldDeclarationFor(spec) });
-    if (!added.ok) throw refusal(`Could not add the "${spec.label}" column to the install table`, added.error.message, added.error.hint);
   }
   return ledger;
 }

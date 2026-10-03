@@ -10,7 +10,15 @@
  *   header actions are tap-target buttons; no raw styled <button>.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { RecordsProvider, useAppTable } from "@ai-matrx/records/react";
+import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { createClient } from "@/utils/supabase/client";
+import { uiDecisionPicks } from "../decision-picks.app-table";
 import { Input } from "@ai-matrx/design-system";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
@@ -25,13 +33,14 @@ import { AGREED, DECISIONS, type Decision, type DecisionStatus } from "./decisio
 
 const STORAGE_KEY = "ui-unification-decisions-round2";
 
-interface DecisionState {
+export interface DecisionState {
   winner?: string;
   note?: string;
 }
-type Picks = Record<string, DecisionState>;
+export type Picks = Record<string, DecisionState>;
 
-function readPicks(): Picks {
+/** Picks an earlier version of this board kept in the browser; imported once, then cleared. */
+function readLegacyPicks(): Picks {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
@@ -42,11 +51,11 @@ function readPicks(): Picks {
   }
 }
 
-function writePicks(picks: Picks) {
+function clearLegacyPicks() {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(picks));
+    window.localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // Storage blocked (private window, preview). The board still works in memory.
+    // Storage blocked; nothing to clear.
   }
 }
 
@@ -220,19 +229,90 @@ function DecisionSection({
 }
 
 export function DecisionBoard() {
-  const [picks, setPicks] = useState<Picks>({});
+  const userId = useAppSelector(selectUserId);
+  const active = useOrganizationRequired();
+  const [dataSource] = useState(() => recordsDataSource(createClient()));
+  if (!userId || active.organizationState !== "ready" || !active.organizationId) {
+    return (
+      <OrganizationContextNotice
+        state={userId ? active.organizationState : "resolving"}
+        what="The decision board"
+      />
+    );
+  }
+  return (
+    <RecordsProvider
+      config={{ dataSource, actor: personActor(userId), organizationId: active.organizationId }}
+    >
+      <ConnectedBoard />
+    </RecordsProvider>
+  );
+}
 
-  useEffect(() => {
-    setPicks(readPicks());
-  }, []);
+function ConnectedBoard() {
+  const { rows, upsert, loading, error, status } = useAppTable(uiDecisionPicks);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const imported = useRef(false);
 
-  const update = (id: string, patch: (prev: DecisionState) => DecisionState) => {
-    setPicks((prev) => {
-      const next = { ...prev, [id]: patch(prev[id] ?? {}) };
-      writePicks(next);
-      return next;
+  const picks: Picks = {};
+  for (const r of rows) {
+    picks[r.decision_id] = { winner: r.winner ?? undefined, note: r.note ?? undefined };
+  }
+
+  const save = async (id: string, next: DecisionState) => {
+    const written = await upsert({
+      decision_id: id,
+      winner: next.winner ?? null,
+      note: next.note ?? null,
     });
+    setWriteError(written.ok ? null : written.error.message);
   };
+
+  // One-time import of picks an earlier version kept in localStorage; cleared only once saved.
+  useEffect(() => {
+    if (imported.current || loading || error || status !== "ok") return;
+    imported.current = true;
+    const legacy = Object.entries(readLegacyPicks());
+    if (legacy.length === 0) return;
+    void (async () => {
+      for (const [id, st] of legacy) {
+        if (rows.some((r) => r.decision_id === id)) continue;
+        const written = await upsert({
+          decision_id: id,
+          winner: st.winner ?? null,
+          note: st.note ?? null,
+        });
+        if (!written.ok) {
+          setWriteError(`Could not import your earlier picks: ${written.error.message}`);
+          return;
+        }
+      }
+      clearLegacyPicks();
+    })();
+  }, [loading, error, status, rows, upsert]);
+
+  return (
+    <DecisionBoardView
+      picks={picks}
+      loading={loading && rows.length === 0}
+      error={error?.message ?? writeError}
+      onChange={(id, patch) => void save(id, patch(picks[id] ?? {}))}
+    />
+  );
+}
+
+export function DecisionBoardView({
+  picks,
+  loading,
+  error,
+  onChange,
+}: {
+  picks: Picks;
+  loading: boolean;
+  error: string | null;
+  onChange: (id: string, patch: (prev: DecisionState) => DecisionState) => void;
+}) {
+  const update = onChange;
 
   const decidedCount = DECISIONS.filter((d) => picks[d.id]?.winner).length;
 
@@ -306,6 +386,16 @@ export function DecisionBoard() {
       </div>
 
       <main className="mx-auto max-w-5xl">
+        {loading && (
+          <p className="px-3 py-2 text-xs text-muted-foreground sm:px-6" role="status">
+            Loading your picks…
+          </p>
+        )}
+        {error && (
+          <p className="px-3 py-2 text-xs text-destructive sm:px-6" role="alert">
+            {error}
+          </p>
+        )}
         <section
           id="agreed"
           className="border-b border-border px-3 py-4 sm:px-6"

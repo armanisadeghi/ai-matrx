@@ -66,7 +66,7 @@ export async function kindRecordClient(
 /**
  * Which store holds this organization's kind records, for this person — the one question.
  *
- * A Table-list read the store refuses THROWS with the store's own sentence: the switch said
+ * A table lookup the store refuses THROWS with the store's own sentence: the switch said
  * this organization keeps its data in the store, so "could not look" must never quietly
  * become "write the old table".
  */
@@ -88,15 +88,16 @@ export async function whereKindRecordsLive(
   }
   const probe = { store: "record" as const, organizationId, userId, tableId: "", why: "" };
   const client = await kindRecordClient(probe);
-  const tables = await client.tableList();
-  if (!tables.ok) {
+  // One request each, never a list of every table: the slug first, then the name (the gateway's
+  // `slug_for` convention allows either).
+  let found = await client.tableFind({ slug: KIND_RECORD_SLUG });
+  if (found.ok && !found.data) found = await client.tableFind({ name: KIND_RECORD_SLUG });
+  if (!found.ok) {
     throw new Error(
-      `We could not check where this organization keeps its saved shapes — the record store refused its table list: ${tables.error.message}. Nothing was read or written; try again.`,
+      `We could not check where this organization keeps its saved shapes — the record store refused its table lookup: ${found.error.message}. Nothing was read or written; try again.`,
     );
   }
-  const table = tables.data.find(
-    (t) => t.slug === KIND_RECORD_SLUG || t.name === KIND_RECORD_SLUG,
-  );
+  const table = found.data;
   if (!table) {
     return {
       store: "older",

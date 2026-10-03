@@ -116,6 +116,9 @@ if $STRICT; then
         # app/(core)); nothing local parks, so no local build sees it (2026-10-01, PicklistWindowBody).
         "Route pages imported only by routes (a parked build cannot resolve them)|pnpm check:page-imports"
         "The page-imports guard can still fail (planted in a temp dir)|pnpm check:page-imports:self-test"
+        # Never list every table to find one: tableFind / ensureTable / defineAppTable are the doors.
+        "No hand-written find-or-create of a table (list all, search by slug)|pnpm check:hand-written-find-or-create"
+        "The find-or-create guard can still fail (planted in a temp dir)|pnpm check:hand-written-find-or-create:self-test"
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
         "Agent addresses (a system agent linked into the user shell)|pnpm check:agent-links"
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
