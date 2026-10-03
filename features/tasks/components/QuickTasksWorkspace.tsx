@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@ai-matrx/design-system";
 import React, { useEffect, useMemo, useRef } from "react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
@@ -17,7 +18,7 @@ import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
 import { Input } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
-import { Search, Inbox, FolderKanban, Loader2 } from "lucide-react";
+import { Search, Inbox, FolderKanban } from "lucide-react";
 import CompactTaskItem from "@/features/tasks/components/CompactTaskItem";
 import TaskDetailsPanel from "@/features/tasks/components/TaskDetailsPanel";
 import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
@@ -219,9 +220,13 @@ export function QuickTasksSidebar() {
 
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
         {isLoading ? (
-          <div className="p-4 text-center text-xs text-muted-foreground flex flex-col items-center gap-2 mt-4">
-            <Loader2 className="h-5 w-5 animate-spin opacity-50" />
-            <p>Loading tasks...</p>
+          <div className="space-y-1 px-3 py-2" role="status" aria-label="Loading tasks" aria-busy="true">
+            {[0, 1, 2, 3, 4, 5].map((n) => (
+              <div key={n} className="flex h-8 items-center gap-2">
+                <Skeleton className="h-4 w-4 rounded-full" />
+                <Skeleton className="h-3 flex-1" style={{ maxWidth: `${75 - (n % 3) * 15}%` }} />
+              </div>
+            ))}
           </div>
         ) : isError && tasks.length === 0 ? (
           // A failed read is never "No tasks found" (RC-B12 round 11).

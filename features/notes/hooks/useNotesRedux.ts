@@ -96,7 +96,7 @@ export function useNotesRedux() {
     console.log(
       "[Track Quick Notes] 5, useNotesRedux.ts — dispatch fetchNotesList (listStatus idle)",
     );
-    dispatch(fetchNotesList());
+    dispatch(fetchNotesList({ ifIdle: true }));
   }, [authReady, dispatch, listStatus, userId]);
 
   useEffect(() => {

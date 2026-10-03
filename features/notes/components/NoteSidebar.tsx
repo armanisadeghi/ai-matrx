@@ -19,6 +19,7 @@
 // - Rename Folder dialog
 // - Empty state when no notes exist
 
+import { Skeleton } from "@ai-matrx/design-system";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { noteDisplayLabel } from "@/features/notes/format";
 import React, {
@@ -1232,9 +1233,14 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
         onDragOver={handleListAutoScroll}
       >
         {(listStatus === "idle" || listStatus === "loading") && (
-          <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground" role="status" aria-label="Loading notes">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            <span>Loading notes…</span>
+          // The list's own shape while it loads — rows where the notes will be.
+          <div className="space-y-1 px-2 py-2" role="status" aria-label="Loading notes" aria-busy="true">
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <div key={n} className="flex h-7 items-center gap-2 px-1">
+                <Skeleton className="h-3.5 w-3.5 rounded-sm" />
+                <Skeleton className="h-3 flex-1" style={{ maxWidth: `${70 - (n % 3) * 15}%` }} />
+              </div>
+            ))}
           </div>
         )}
         {listStatus === "error" && (

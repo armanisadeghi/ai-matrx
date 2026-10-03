@@ -249,7 +249,19 @@ type NoteListRow = Pick<
   | "version"
 >;
 
-export const fetchNotesList = createAsyncThunk<void, void>(
+/**
+ * `ifIdle`: a MOUNT-TIME read ("load the list if nothing has yet"). Several
+ * components on one screen each ask on mount — Quick Notes in the canvas mounted
+ * three — and every later run supersedes the earlier one, so one open paid for
+ * three `shown_to_context` + list reads and showed its loader 6–11s
+ * (2026-10-03). With `ifIdle` a read already under way is joined, not
+ * restarted. A refresh after a write passes nothing and still supersedes.
+ */
+export const fetchNotesList = createAsyncThunk<
+  void,
+  { ifIdle?: boolean } | void,
+  { state: RootState }
+>(
   "notes/fetchNotesList",
   async (_, { dispatch, getState }) => {
     console.log("[Track Quick Notes] 6, thunks.ts — fetchNotesList started");
@@ -353,6 +365,10 @@ export const fetchNotesList = createAsyncThunk<void, void>(
       dispatch(setListStatus("error"));
       throw error;
     }
+  },
+  {
+    condition: (arg, { getState }) =>
+      !(arg && arg.ifIdle) || getState().notes.listStatus === "idle",
   },
 );
 
