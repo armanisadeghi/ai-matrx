@@ -2139,6 +2139,11 @@ declare
   v_custom jsonb := coalesce(p_custom, '{}'::jsonb);
   v_cf     jsonb;
   v_same   boolean := true;
+  v_level  public.permission_level;
+  v_mask   jsonb;
+  v_vis    text[];
+  v_decl   text[];
+  v_out    jsonb;
 begin
   -- the client wall is asked of an organization the call names; a change by id needs none
   if p_organization_id is not null or p_record_id is null then
@@ -2230,9 +2235,7 @@ begin
   if p_archive is not null and ((v_row ->> 'deleted_at') is not null) is distinct from p_archive then
     v_same := false;
   end if;
-  if v_same then
-    return jsonb_build_object('id', p_record_id, 'organization_id', v_org, 'token', t.token, 'unchanged', true);
-  end if;
+  if not v_same then
   v_where := 'x.id = $1';
   if p_expected_version is not null then
     if not v_has_ver then
@@ -2252,7 +2255,28 @@ begin
     raise exception 'You can see this %, but it is not yours to change.', t.label
       using errcode = '42501', hint = 'It takes edit access, or a share of this record with you. Nothing was written.';
   end if;
-  return jsonb_build_object('id', p_record_id, 'organization_id', v_org, 'token', t.token);
+  end if;   -- (a change that changes nothing skipped the UPDATE above)
+
+  -- WHAT THIS DOOR ANSWERS: the row and its custom values AS SHE MAY READ THEM — through
+  -- custom.entity_read_mask and custom.mask_document, exactly as custom.entity_record_read
+  -- answers (a field she may not read is null, with its withheld notice). The mask is asked in
+  -- the row's own organization; for a row shared with her from an organization she is not a
+  -- member of, that door has no answer for her, so no values are returned (`custom` absent) and
+  -- the caller reads the row back through a read door.
+  v_out := jsonb_build_object('id', p_record_id, 'organization_id', v_org, 'token', t.token)
+           || case when v_same then '{"unchanged": true}'::jsonb else '{}'::jsonb end;
+  if v_org is not null and iam.has_org_access(v_org) then
+    execute format('select x.custom_fields from %I.%I x where x.id = $1', t.schema_name, t.table_name)
+      into v_cf using p_record_id;
+    if v_cf is null or jsonb_typeof(v_cf) <> 'object' then v_cf := '{}'::jsonb; end if;
+    v_level := custom.entity_seat_level(v_org, p_token, p_record_id);
+    v_mask  := custom.entity_read_mask(v_org, p_token, v_level, 'read');
+    select coalesce(array_agg(x), '{}'::text[]) into v_vis  from jsonb_array_elements_text(v_mask -> 'visible') x;
+    select coalesce(array_agg(x), '{}'::text[]) into v_decl from jsonb_array_elements_text(v_mask -> 'declared') x;
+    v_out := v_out || jsonb_build_object('custom',
+      custom.mask_document(v_cf - '_values' - '_retired', v_vis, v_mask -> 'notices', false, '{}'::jsonb, v_decl));
+  end if;
+  return v_out;
 end
 $function$;
 INSERT INTO platform.client_callable_door
