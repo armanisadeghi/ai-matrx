@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useShellNavGates } from "@/features/shell/navigation/useShellNavGates";
 import { Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 import AppLink from "@/components/navigation/AppLink";
@@ -175,6 +176,8 @@ export default function MobileNavigationDrawer({
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
   const pathname = usePathname() ?? "";
+  // Gated destinations (Make, Records, Kits) appear where their switch is on.
+  const gates = useShellNavGates();
   const settingsRoute = isUserSettingsPath(pathname);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
@@ -336,6 +339,7 @@ export default function MobileNavigationDrawer({
   ) => {
     const { sections, panels, actions } = partitionNavChildren(
       group.children ?? [],
+      gates,
     );
     const activeChild =
       level === "group"
