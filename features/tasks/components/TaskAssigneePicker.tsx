@@ -46,6 +46,8 @@ interface TaskAssigneePickerProps {
    * "Unchanged" — there "Unassigned" reads as "this will unassign" (G10A).
    */
   emptyLabel?: string;
+  /** Text size of the trigger's name — a form row matches its sibling fields. */
+  labelClassName?: string;
 }
 
 export default function TaskAssigneePicker({
@@ -55,6 +57,7 @@ export default function TaskAssigneePicker({
   organizationId,
   className,
   emptyLabel = "Unassigned",
+  labelClassName = "text-xs",
 }: TaskAssigneePickerProps) {
   const { connections, isLoading, error: connectionsError, partialFailures, refresh } = useUserConnections(
     organizationId ? { organizationId } : {},
@@ -104,7 +107,7 @@ export default function TaskAssigneePicker({
                   {getInitials(current.display_name ?? current.email)}
                 </AvatarFallback>
               </Avatar>
-              <span className="flex-1 truncate text-xs font-medium text-foreground">
+              <span className={cn("flex-1 truncate font-medium text-foreground", labelClassName)}>
                 {current.display_name || current.email}
               </span>
               <span
@@ -138,7 +141,7 @@ export default function TaskAssigneePicker({
                   )}
                 />
               </div>
-              <span className="flex-1 text-xs text-muted-foreground">
+              <span className={cn("flex-1 text-muted-foreground", labelClassName)}>
                 {emptyLabel}
               </span>
             </>

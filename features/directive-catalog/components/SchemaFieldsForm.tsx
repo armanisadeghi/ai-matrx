@@ -231,6 +231,7 @@ function FieldControl({
             }
             emptyLabel={placeholder}
             className="h-9"
+            labelClassName="text-base lg:text-sm"
           />
         );
       }
