@@ -1,5 +1,4 @@
--- draft: CHAIR-DOORS-3B rule 27 on the clone not yet green (the clone's sign-in freeze / pool were saturated on 2026-10-03 01:30 PT); body proven in a rolled-back transaction. Remove this line when db:rehearse passes.
--- chair-step: CREATES one new table crm.sending_claim through platform.create_entity_table (entity variant, organization data class, RLS by iam.apply_rls, certified in the same transaction), with a unique index on (organization_id, claim_key) and an index on identity_id; then REVOKEs INSERT, UPDATE, DELETE and TRUNCATE on it from anon and authenticated so only the server writes it (SELECT stays: the standard organization read plus platform_admin_read). A new table with a foreign key to crm.sending_identity takes SHARE ROW EXCLUSIVE on that table for the moment of the CREATE, which is why this file waits for Arman's watched window. No existing function, grant, policy, column or row is touched.
+-- chair-step: CREATES one new table crm.sending_claim through platform.create_entity_table (entity variant, organization data class, soft delete on, RLS by iam.apply_rls, certified in the same transaction; its policies take the supautils ACCESS EXCLUSIVE set on auth/storage/realtime until COMMIT — measured 1.5 s end to end on the clone 2026-10-03, the same freeze chair_tf took at 18:58Z), a validation-only same-organization trigger on identity_id,, with a unique index on (organization_id, claim_key) and an index on identity_id; then REVOKEs INSERT, UPDATE, DELETE and TRUNCATE on it from anon and authenticated so only the server writes it (SELECT stays: the standard organization read plus platform_admin_read). A new table with a foreign key to crm.sending_identity takes SHARE ROW EXCLUSIVE on that table for the moment of the CREATE, which is why this file waits for Arman's watched window. No existing function, grant, policy, column or row is touched.
 -- lane: CHAIR-DOORS-3B (asked by v6 lane 11 AUTOMATIONS-AND-PAGES, need 1f) — WINDOW FILE: proven on the clone, left for the window
 --
 -- A WORKFLOW EMAIL IS SENT ONCE. Today a replayed workflow email whose charge failed, or two replays at
@@ -28,7 +27,7 @@ begin
         'settled_at timestamptz'
       ],
       p_variant => 'entity',
-      p_versioned => false, p_soft_delete => false,
+      p_versioned => false, p_soft_delete => true,
       p_visibility => 'internal',
       p_category => false, p_listed => false, p_org_default => false, p_gin_jsonb => false,
       p_parents => array[]::text[],
@@ -41,6 +40,12 @@ $w2$;
 create unique index if not exists sending_claim_organization_claim_key_key
   on crm.sending_claim (organization_id, claim_key);
 create index if not exists sending_claim_identity_idx on crm.sending_claim (identity_id);
+
+-- The sending identity a claim names belongs to the claim's own organization (validation only: it refuses,
+-- it never assigns). A nullable foreign key into a tenant table reaches COMMIT with this or not at all.
+create trigger trg_same_org_crm_sending_claim_identity_id
+  before insert or update of identity_id on crm.sending_claim
+  for each row execute function platform.assert_same_org('identity_id', 'crm.sending_identity');
 
 -- Server-only writes: the claim is the server's word, never a client's.
 revoke insert, update, delete, truncate on table crm.sending_claim from anon, authenticated;
