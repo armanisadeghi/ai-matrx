@@ -51,6 +51,7 @@ import {
   matrxDirectiveNouns,
 } from "@/features/matrx-envelope/directiveHost";
 import { executeResultHeadline } from "@/features/directive-catalog/executeResult";
+import { wordServerFieldNames } from "@/features/matrx-envelope/directiveFailureWords";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
 import { StateBadge } from "@/features/directive-catalog/components/StateCell";
@@ -136,9 +137,12 @@ const STATE_WORDS: Record<DirectiveState, string> = {
 function PanelError({
   raw,
   headline: given,
+  titleColumn = null,
 }: {
   raw: string;
   headline?: string;
+  /** The form's title column: a refused field is named as the form names it. */
+  titleColumn?: string | null;
 }) {
   const clean = stripTerminalCodes(raw).trim();
   // The server's own sentence first (humanized: colour codes and ORM dumps
@@ -146,9 +150,13 @@ function PanelError({
   // Until 2026-10-02 aidream sent "Bad request. Please check your input." as
   // `user_message` with the real reason in `message` — preferring the status
   // line hid "Nothing was applied — id is required." behind it.
-  const headline =
+  // A field the server refused is named as the form names it ("Title is
+  // required", never "name is required" — G10B review, 2026-10-02).
+  const headline = wordServerFieldNames(
     humanizeBackendError(clean) ??
-    ((given ? stripTerminalCodes(given).trim() : "") || clean);
+      ((given ? stripTerminalCodes(given).trim() : "") || clean),
+    titleColumn,
+  );
   const hasDetail = clean.length > 0 && clean !== headline;
   return (
     <div
@@ -522,8 +530,11 @@ export function DirectiveBuilderPanel({
       const headline = e instanceof BackendApiError ? e.userMessage : undefined;
       setExecError({ raw, headline });
       toast.error(
-        humanizeBackendError(stripTerminalCodes(raw)) ??
-          stripTerminalCodes(headline ?? raw),
+        wordServerFieldNames(
+          humanizeBackendError(stripTerminalCodes(raw)) ??
+            stripTerminalCodes(headline ?? raw),
+          noun ? formTitleColumn(noun) : null,
+        ),
       );
     } finally {
       setExecuting(false);
@@ -587,7 +598,10 @@ export function DirectiveBuilderPanel({
   ) : null;
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
+    // Phone: natural height in the page's one scroll area, with room at the
+    // foot so the floating chips never cover the last control. lg: its own
+    // scrolling pane.
+    <div className="flex flex-col gap-3 p-3 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:h-full lg:overflow-y-auto lg:pb-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <AGENT_ICON className="h-4 w-4 text-primary" />
         Build &amp; test an action
@@ -913,7 +927,11 @@ export function DirectiveBuilderPanel({
           )}
 
           {execError && (
-            <PanelError raw={execError.raw} headline={execError.headline} />
+            <PanelError
+              raw={execError.raw}
+              headline={execError.headline}
+              titleColumn={noun ? formTitleColumn(noun) : null}
+            />
           )}
 
           {result && (
@@ -965,7 +983,9 @@ export function DirectiveBuilderPanel({
                         </span>
                       );
                     })()}
-                  {r.error && <PanelError raw={r.error} />}
+                  {r.error && (
+                    <PanelError raw={r.error} titleColumn={noun ? formTitleColumn(noun) : null} />
+                  )}
                   {r.status !== "failed" &&
                     verb !== "delete" &&
                     r.resource_ids?.length === 1 &&

@@ -11,7 +11,7 @@
  * layout level; this is the documented, lowerable in-page gate (any admin level).
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertTriangle, Loader2, RefreshCw, Server } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -66,6 +66,7 @@ export function DirectiveCatalogClient() {
     openCanvasItem(canvas, directiveShapeOpenInput(selection));
   };
   const [busyToggle, setBusyToggle] = useState<string | null>(null);
+  const builderRef = useRef<HTMLDivElement>(null);
   const [builderPick, setBuilderPick] = useState<DirectiveBuilderPick | null>(
     null,
   );
@@ -105,9 +106,6 @@ export function DirectiveCatalogClient() {
           <h1 className="text-sm font-semibold text-foreground">
             Matrx Directive Catalog
           </h1>
-          <span className="hidden text-xs text-muted-foreground sm:block">
-            Every noun × every verb, live from the backend
-          </span>
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2 text-xs text-muted-foreground sm:gap-3">
@@ -152,8 +150,16 @@ export function DirectiveCatalogClient() {
         </div>
       </div>
 
-      {/* Body */}
-      <div className="min-h-0 flex-1">
+      {/* Body. PHONE-FIRST (G10B review, 2026-10-02): below lg the body is
+          the ONE scroll area and the panes stack — the type table at a real
+          height, then the other actions, then the builder. Splitting a 375px
+          height between them left the table ~0px tall and the builder in a
+          strip under the floating chips. From lg up the panes sit side by
+          side and each scrolls itself. */}
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain lg:overflow-hidden"
+        data-directive-catalog-body=""
+      >
         {isLoading && !catalog ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -176,8 +182,8 @@ export function DirectiveCatalogClient() {
             </Button>
           </div>
         ) : catalog ? (
-          <div className="grid h-full grid-cols-1 lg:grid-cols-[1fr_22rem]">
-            <div className="min-h-0 border-b border-border lg:border-b-0 lg:border-r">
+          <div className="flex flex-col lg:grid lg:h-full lg:grid-cols-[1fr_22rem]">
+            <div className="border-b border-border lg:min-h-0 lg:border-b-0 lg:border-r">
               <DirectiveCatalogGrid
                 catalog={catalog}
                 busyToggle={busyToggle}
@@ -185,15 +191,20 @@ export function DirectiveCatalogClient() {
                   void toggleWritable(noun, enabled)
                 }
                 onInspect={inspect}
-                onPickNoun={(noun) =>
+                onPickNoun={(noun) => {
                   setBuilderPick((prev) => ({
                     noun: noun.noun,
                     nonce: (prev?.nonce ?? 0) + 1,
-                  }))
-                }
+                  }));
+                  // Stacked (phone): the builder is below the table — bring it
+                  // into view. Side by side it is already on screen.
+                  if (!window.matchMedia("(min-width: 1024px)").matches) {
+                    builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
               />
             </div>
-            <div className="min-h-0">
+            <div ref={builderRef} className="lg:min-h-0" data-directive-builder-pane="">
               <DirectiveBuilderPanel catalog={catalog} pick={builderPick} />
             </div>
           </div>

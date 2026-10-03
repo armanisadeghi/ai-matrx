@@ -26,6 +26,14 @@ export interface MenuRegroupValue {
   /** null = draw the menu as it is today (report only). */
   grouping: MenuGrouping | null;
   mergeSameName: boolean;
+  /**
+   * Arrange the resolved rows with a function instead of a grouping (the proposed menu,
+   * `../proposed/proposed-arrangement.ts`). Wins over `grouping`.
+   */
+  transform?: (target: ClickTarget, resolved: readonly ResolvedAction[]) => ResolvedAction[];
+  /** The menu's size and whether it draws its header line (the proposed menu: large, none). */
+  size?: "standard" | "large";
+  hideHeader?: boolean;
   /** Called on every resolve of this menu; `close` shuts the open menu. */
   onResolved?: (report: MenuResolutionReport, close: () => void) => void;
 }
@@ -58,6 +66,7 @@ function regroupingRegistry(inner: ActionRegistry, first: RegroupInputs): Action
       const { value, arrangement, close } = read();
       if (!value) return list;
       value.onResolved?.({ target, resolved: list, arrangement }, close);
+      if (value.transform) return value.transform(target, list);
       if (!value.grouping) return list;
       return regroupResolved(target, list, value.grouping, { mergeSameName: value.mergeSameName }).resolved;
     },

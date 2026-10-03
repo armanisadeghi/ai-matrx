@@ -63,6 +63,7 @@ jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () =
 jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({ UNIFIED_DATA_CAMPAIGN: { check: async () => ({ state: "on" }) } }));
 jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), dataHomeTables: jest.fn(), doorFailureLine: () => "" }));
 jest.mock("@/features/unified-data/home/dataHomeRows", () => ({ buildDataHomeRows: jest.fn() }));
+jest.mock("@/features/unified-data/hub/capabilities", () => ({ HUB_CAPABILITIES: [] }));
 jest.mock("@/features/unified-data/home/dataHomeColumns", () => ({ KindIcon: () => null }));
 jest.mock("@/features/kits/service", () => ({ fetchAccessibleKits: jest.fn(), fetchKits: jest.fn() }));
 jest.mock("@/lib/organizations/systemOrg", () => ({ resolveSystemOrgId: jest.fn() }));

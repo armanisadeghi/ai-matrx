@@ -270,6 +270,14 @@ jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
 }));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => ME,
+  useAppDispatch: () => () => undefined,
+}));
+// These cases are about lanes, kinds and organizations with the app's Lists SHOWN ("Status choices"
+// is one of the rows they order); that a choice List waits behind "Show app tables" by default is
+// guarded in the-hub-keeps-choice-lists-behind-show-app-tables.test.tsx.
+jest.mock("@/features/unified-data/home/useDataHomeMarks", () => ({
+  ...jest.requireActual("@/features/unified-data/home/useDataHomeMarks"),
+  useDataHomeShowAppTables: () => [true, () => undefined],
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));

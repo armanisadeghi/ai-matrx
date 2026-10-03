@@ -24,10 +24,10 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArchivedDisclosure, ArchivedPortals } from "@ai-matrx/records-ui";
+import { ArchivedDisclosure, ArchivedPortals, isValueSet } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
-import { cn } from "@ai-matrx/design-system";
+import { Checkbox, cn } from "@ai-matrx/design-system";
 
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
@@ -89,6 +89,7 @@ import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { makeScope } from "@/lib/list-scope/types";
+import { useDataHomeShowAppTables } from "@/features/unified-data/home/useDataHomeMarks";
 
 
 /** The page reads no organization-bound Table list (see `tables` below). */
@@ -286,8 +287,30 @@ export function OrganizationHub({
   const tables = NO_TABLES;
 
 
+  /**
+   * A CHOICE COLUMN'S LISTS WAIT BEHIND "SHOW APP TABLES" (lane 10 item 7, chair ruling 2026-10-02).
+   * The List a choice column keeps its choices in ("Status choices") is not a table anybody made, so
+   * it is left out until the person turns this on — the same per-person preference
+   * (`lists.dataHomeShowAppTables`) and the same words as the list-shell home's Filters switch. The
+   * rule is the package's `isValueSet`; every table and List a person made is listed either way.
+   */
+  const [showAppTables, setShowAppTables] = useDataHomeShowAppTables();
+  const valueSetIds = useMemo(
+    () =>
+      new Set(
+        everywhere.phase === "read"
+          ? everywhere.rows
+              .filter((r) => isValueSet({ id: r.table_id, name: r.table_name, kind: r.kind, kept_by_the_app: r.kept_by_the_app }))
+              .map((r) => r.table_id)
+          : [],
+      ),
+    [everywhere],
+  );
+  const hiddenValueSet = (tableId: string | null | undefined) => !showAppTables && Boolean(tableId && valueSetIds.has(tableId));
+
   /*
-   * NO "SHOW EVERYTHING" FOLD ON THIS PAGE (Arman, 2026-09-27 21:40 PT): the home hides nothing.
+   * NO "SHOW EVERYTHING" FOLD ON THIS PAGE (Arman, 2026-09-27 21:40 PT): the home hides nothing a
+   * person made (a choice column's Lists are the one exception, above).
    * What the app keeps for itself is listed with the rest, each row saying its kind, and the Kind
    * filter on the bar narrows it. (The fold still serves the organization's own Tables page.)
    */
@@ -577,20 +600,22 @@ export function OrganizationHub({
               items: state.items.filter(
                 (item) =>
                   (!item.scope || inDataHomeScope(item.scope, scope)) &&
+                  !(id === "tables" && item.id === item.tableId && hiddenValueSet(item.tableId)) &&
                   (kind === ALL_KINDS || id !== "tables" || item.kind === kind),
               ),
             }
           : state;
     }
     return out;
-  }, [labelled, scope, kind]);
+  }, [labelled, scope, kind, hiddenValueSet]);
   /** Every kind the store's rows carry, for the Kind filter — never a kind with nothing behind it. */
   /**
    * EACH LANE'S COUNT, and each organization's (the shell's counts shape): the Tables the store
    * listed, counted under every lane the tab bar offers — never a number nobody measured.
    */
   const laneCounts = useMemo<EntityScopeCounts>(() => {
-    const rows = everywhere.phase === "read" ? everywhere.rows : [];
+    // The counts are of what is listed: a hidden choice List is not counted.
+    const rows = everywhere.phase === "read" ? everywhere.rows.filter((r) => !hiddenValueSet(r.table_id)) : [];
     const facts = rows.map((r) => ({
       org: r.organization_id,
       name: r.organization_name,
@@ -613,7 +638,7 @@ export function OrganizationHub({
       perOrg.set(x.org, cur);
     }
     return { byKind, narrow: organizationFilter === ALL_ORGANIZATIONS ? { all: [...perOrg.values()] } : {} };
-  }, [everywhere, organizationFilter]);
+  }, [everywhere, organizationFilter, hiddenValueSet]);
   const kinds = useMemo(
     () => kindsOnOffer(everywhere.phase === "read" ? everywhere.rows.map((r) => r.kind) : [], kind),
     [everywhere, kind],
@@ -662,6 +687,15 @@ export function OrganizationHub({
             </option>
           ))}
         </select>
+      </label>
+      {/* SHOW APP TABLES — on this bar, never a row of its own; the list-shell home's Filters switch. */}
+      <label className="inline-flex items-center gap-1.5 text-xs text-foreground" data-hub-show-app-tables="">
+        <Checkbox
+          checked={showAppTables}
+          onCheckedChange={(next) => setShowAppTables(next === true)}
+          aria-label="Show app tables"
+        />
+        Show app tables
       </label>
       {/* THE ORGANIZATION FILTER, AT THE RIGHT END (the shell's own control): All organizations on
           every visit, `?org_filter=` only, never the active organization — and honoured by the doors

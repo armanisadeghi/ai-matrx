@@ -66,7 +66,8 @@ $function$;
 --    change in a savepoint before it files it, the import, the graph writer, the decision itself) is
 --    judged at its own top, or not at all — never half-way down, where a refusal would break the very
 --    proposal path the knob sends an agent to.
---    Two kinds of Table are the agent's own by construction and are never asked about: one made in THIS
+--    The store's kernels (its own definition tables) are never asked about, and two kinds of Table are the
+--    agent's own by construction and are never asked about either: one made in THIS
 --    transaction (an agent that declares a table and its columns in one breath, conversation or not),
 --    and one the app keeps for a purpose (`kept_for` set: context, choices, agent outputs, bookings,
 --    checklists, workflows, kits, the app's own) — the app's machinery, not somebody's business table.
@@ -119,8 +120,11 @@ begin
   end if;
 
   if v_table is not null then
-    if v_table in (custom.table_kernel_id(), custom.field_kernel_id()) then
-      return;   -- the kernels are guarded by their own shape checks
+    -- The store's own definition tables (Table, Field, Organization/Home, Person, File, Rule …) are
+    -- kernels, kept by the platform in its own organization: an agent making a Home for the table it
+    -- was allowed to make is building, not changing somebody's data. Their shape checks guard them.
+    if exists (select 1 from custom.record k where k.id = v_table and k.data_class = 'kernel') then
+      return;
     end if;
     if exists (select 1 from custom.record t
                 where t.organization_id = p_organization_id and t.id = v_table

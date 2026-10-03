@@ -109,7 +109,7 @@ describe("the host names the consequence before anything runs", () => {
 
   it("delete: names the record, says it goes to the trash, and is DESTRUCTIVE", async () => {
     const opts = await askAndRead(request("directive_v1_delete_task", [{ id: TASK_ID }]));
-    expect(opts.title).toBe("Delete task REVIEW — task create?");
+    expect(opts.title).toBe("Delete Task REVIEW — task create?");
     expect(opts.description).toMatch(/Moves REVIEW — task create to the trash/);
     expect(opts.variant).toBe("destructive");
     expect(opts.confirmLabel).toBe("Delete");
@@ -122,7 +122,7 @@ describe("the host names the consequence before anything runs", () => {
         { id: TASK_ID, description: "Ship by Friday", due_date: "2026-10-15" },
       ]),
     );
-    expect(opts.title).toBe("Update task REVIEW — task create?");
+    expect(opts.title).toBe("Update Task REVIEW — task create?");
     const text = opts.description;
     expect(text).toContain("Description→Ship by Friday");
     expect(text).toContain("Due Date→2026-10-15");
@@ -134,7 +134,7 @@ describe("the host names the consequence before anything runs", () => {
       ...request("directive_v1_delete_task", [{ id: TASK_ID }]),
       again: true,
     });
-    expect(del.title).toBe("Delete task REVIEW — task create again?");
+    expect(del.title).toBe("Delete Task REVIEW — task create again?");
     expect(del.description).toContain("This already ran once.");
     expect(del.variant).toBe("destructive");
     expect(del.confirmLabel).toBe("Delete again");
@@ -144,7 +144,7 @@ describe("the host names the consequence before anything runs", () => {
       ...request("directive_v1_create_task", [{ title: "LANE-C — probe" }]),
       again: true,
     });
-    expect(create.title).toBe("Create another task LANE-C — probe?");
+    expect(create.title).toBe("Create another Task LANE-C — probe?");
     expect(create.description).toContain("adds a second copy");
     expect(create.confirmLabel).toBe("Create another");
   });
@@ -173,7 +173,7 @@ describe("the host names the consequence before anything runs", () => {
 
   it("create: names what it creates from the item's own title", async () => {
     const opts = await askAndRead(request("directive_v1_create_task", [{ title: "LANE-C — probe" }]));
-    expect(opts.title).toBe("Create task LANE-C — probe?");
+    expect(opts.title).toBe("Create Task LANE-C — probe?");
   });
 
   it("confirm never asks again (the package asked first) and hands back the server's sentence + records", async () => {

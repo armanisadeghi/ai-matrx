@@ -13,7 +13,7 @@
 import type { DataHomeAnswer } from "@/features/unified-data/hub/doors";
 import type { DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
 
-import { answerForRecent, carriesArchived, isTestOrganization, recentlyChanged, RECENT_SHOWN } from "../recent";
+import { answerForRecent, carriesArchived, isTestOrganization, recentlyChanged, RECENT_SHOWN, withoutTestOrganizations } from "../recent";
 
 const CEDAR = "0a54df90-eab8-4d07-ab29-81a45fb41e04";
 const SCRATCH = "c0ffee00-0000-4000-8000-000000000001";
@@ -117,4 +117,13 @@ it("Recent is newest change first, at most ten, and skips a row with no change t
   expect(recent).toHaveLength(RECENT_SHOWN);
   expect(recent.slice(0, 2).map((r) => r.id)).toEqual(["b", "a"]);
   expect(recent.map((r) => r.id)).not.toContain("c");
+});
+
+it("built rows in a test organization are dropped once the organizations are known", () => {
+  const rows = [
+    { id: "a", organizationId: CEDAR, updatedAt: "2026-10-02T10:00:00Z" },
+    { id: "b", organizationId: SCRATCH, updatedAt: "2026-10-02T11:00:00Z" },
+  ] as DataHomeRow[];
+  expect(withoutTestOrganizations(rows, new Set([SCRATCH])).map((r) => r.id)).toEqual(["a"]);
+  expect(withoutTestOrganizations(rows, new Set()).map((r) => r.id)).toEqual(["a", "b"]);
 });

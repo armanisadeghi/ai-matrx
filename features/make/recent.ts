@@ -103,3 +103,10 @@ export function recentlyChanged(rows: readonly DataHomeRow[], limit = RECENT_SHO
     .sort((a, b) => Date.parse(b.updatedAt ?? "") - Date.parse(a.updatedAt ?? ""))
     .slice(0, limit);
 }
+
+/** Rows whose organization is a test organization, taken out (Recent applies it once the person's
+ * organizations are known, so the home read never waits for them). */
+export function withoutTestOrganizations(rows: readonly DataHomeRow[], testOrganizationIds: ReadonlySet<string>): DataHomeRow[] {
+  if (testOrganizationIds.size === 0) return [...rows];
+  return rows.filter((r) => !r.organizationId || !testOrganizationIds.has(r.organizationId));
+}

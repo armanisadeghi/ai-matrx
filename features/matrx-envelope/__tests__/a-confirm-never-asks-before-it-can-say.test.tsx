@@ -135,7 +135,7 @@ describe("a confirm never asks before it can say what it will do", () => {
     });
     expect(settled).toBe(false);
     const before = q.read();
-    expect(before.description).toContain("Reading this note");
+    expect(before.description).toContain("Reading this Note");
     expect(before.loadingName).toBe(true);
     expect(before.title).not.toMatch(/ae33f4e0|its organization/);
     expect(before.description).not.toMatch(/its organization/);
@@ -144,7 +144,7 @@ describe("a confirm never asks before it can say what it will do", () => {
     await q.settle();
     expect(settled).toBe(true);
     const after = q.read();
-    expect(after.title).toBe("Update note G8A weekly review?");
+    expect(after.title).toBe("Update Note G8A weekly review?");
     expect(after.description).toContain("Bellweather Co");
     expect(after.description).toContain("TitleG8A weekly review→G8A weekly review v2");
     expect(after.description).not.toMatch(/ae33f4e0|its organization|Reading/);
@@ -169,7 +169,7 @@ describe("a confirm never asks before it can say what it will do", () => {
     await q.settle();
     const after = q.read();
     expect(after.description).toContain("Current values couldn't be read.");
-    expect(after.title).toBe("Update this note?");
+    expect(after.title).toBe("Update this Note?");
     expect(after.title).not.toMatch(/ae33f4e0/);
     await expect(Promise.resolve(q.opts.ready)).resolves.toBeDefined();
     await q.done();
@@ -185,7 +185,7 @@ describe("a confirm never asks before it can say what it will do", () => {
     const q = await openQuestion(request("directive_v1_delete_task", [{ id: TASK_ID }], "Task", true));
     await q.settle();
     const after = q.read();
-    expect(after.title).toBe("Delete task G8A cleanup again?");
+    expect(after.title).toBe("Delete Task G8A cleanup again?");
     expect(after.description).toContain("G8A cleanup is already in the trash in Bellweather Co.");
     expect(after.description).not.toContain("Moves");
     await q.done();

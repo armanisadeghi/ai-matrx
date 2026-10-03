@@ -89,6 +89,14 @@ export function afterCurrentLayerCloses(
   },
   maxMs: number = TRANSIENT_LAYER_WAIT_MS,
 ): Promise<LayerHandoffOutcome> {
+  // NOTHING IS CLOSING: hand over now (G10B review, 2026-10-02). The paint
+  // count below exists for a layer on its way out; with no transient or
+  // persistent layer up and the body unlocked there is nothing to wait for,
+  // and waiting cost every plain-button confirm two frames — and in a tab that
+  // paints no frames the full 500 ms ceiling before the dialog appeared.
+  if (!layers.transient() && !layers.persistent() && isLayerClosed()) {
+    return Promise.resolve("clear");
+  }
   return new Promise((settle) => {
     let settled = false;
     const resolve = (outcome: LayerHandoffOutcome) => {

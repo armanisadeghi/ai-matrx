@@ -55,6 +55,6 @@ export function useDataHomeMarks() {
  */
 export function useDataHomeShowAppTables(): [boolean, (on: boolean) => void] {
   const dispatch = useAppDispatch();
-  const on = useAppSelector((s: RootState) => s.userPreferences.lists.dataHomeShowAppTables === true);
+  const on = useAppSelector((s: RootState) => s.userPreferences.lists.dataHomeShowAppTables) === true;
   return [on, (next) => dispatch(setPreference({ module: "lists", preference: "dataHomeShowAppTables", value: next }))];
 }

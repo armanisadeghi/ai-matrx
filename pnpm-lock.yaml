@@ -58,7 +58,7 @@ importers:
         version: 0.20.1
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.20.2(react@19.3.0)
+        version: 0.21.0(react@19.3.0)
       '@ai-matrx/data':
         specifier: latest
         version: 0.18.37(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(react@19.3.0)
@@ -67,7 +67,7 @@ importers:
         version: 0.54.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/desktop-protocol':
         specifier: latest
-        version: 0.11.0(react@19.3.0)
+        version: 0.12.0(react@19.3.0)
       '@ai-matrx/detail':
         specifier: latest
         version: 0.1.67(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -1083,8 +1083,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/content-ir-react@0.20.2':
-    resolution: {integrity: sha512-vsq2lppSVrwCnhwpSPovmjOf6c1gNkYSzULSgaS1kkmlrjRpCh8uCIu2LbBUPrYlDodHtepDQKkfBbL0uLYzLw==}
+  '@ai-matrx/content-ir-react@0.21.0':
+    resolution: {integrity: sha512-lv1gaUtvT0cDdpj7tpbx6p84Ln+7+oZq7qIFAsUE57E9Z48Arc4RggO9maBjz7UXpHbLmkcZ66XdjBKWgUOvvQ==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=19.0.0'
@@ -1114,8 +1114,8 @@ packages:
       recharts:
         optional: true
 
-  '@ai-matrx/desktop-protocol@0.11.0':
-    resolution: {integrity: sha512-5vr7nvYO2K1I4v3p1wLTNdKj2wsF/eejncRFby9Lp0CxaRd8MRF7frxBSoLBKaXp+Vm2J0k6YlSdqWm5F0uY8g==}
+  '@ai-matrx/desktop-protocol@0.12.0':
+    resolution: {integrity: sha512-BA61cMYI5VHDxOUeY//XN+flLOwax4EbGQtYwc/rHdeiW42cQGDNUg5J5DHOFQpDIMGjJZcFPENwHZ+W5zZBAw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -11833,7 +11833,7 @@ snapshots:
       - '@types/react-dom'
       - recharts
 
-  '@ai-matrx/content-ir-react@0.20.2(react@19.3.0)':
+  '@ai-matrx/content-ir-react@0.21.0(react@19.3.0)':
     dependencies:
       '@ai-matrx/content-ir': 0.20.1
       '@ai-matrx/kit': 0.22.0(react@19.3.0)
@@ -11898,7 +11898,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/desktop-protocol@0.11.0(react@19.3.0)':
+  '@ai-matrx/desktop-protocol@0.12.0(react@19.3.0)':
     dependencies:
       '@ai-matrx/realtime': 0.8.7(react@19.3.0)
       zod: 4.6.5

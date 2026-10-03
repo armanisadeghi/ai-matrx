@@ -82,6 +82,7 @@ jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
 jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
 jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), dataHomeTables: jest.fn(), doorFailureLine: () => "" }));
 jest.mock("@/features/unified-data/home/dataHomeRows", () => ({ buildDataHomeRows: jest.fn() }));
+jest.mock("@/features/unified-data/hub/capabilities", () => ({ HUB_CAPABILITIES: [] }));
 jest.mock("@/features/unified-data/home/dataHomeColumns", () => ({ KindIcon: () => <i /> }));
 jest.mock("@/features/kits/service", () => ({
   fetchAccessibleKits: async () => ({ kits: [], error: null }),
@@ -93,7 +94,7 @@ jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded after the mocks above
-const { MakeFlowSheet } = require("../MakeHome") as typeof import("../MakeHome");
+const { MakeFlowSheet, default: MakeHome } = require("../MakeHome") as typeof import("../MakeHome");
 
 const TABLES = {
   phase: "read" as const,
@@ -192,4 +193,20 @@ it("every tile's secondary line fits its 60-character slot", () => {
 it("wave 1 ships the seven store tiles and no platform tile", () => {
   expect(MAKE_TILES.map((t) => t.id)).toEqual(["table", "form", "booking", "checklist", "dashboard", "portal", "list"]);
   expect(MAKE_TILES.every((t) => t.source === "store")).toBe(true);
+});
+
+it("A4: the tiles paint while every read is still out (no tile waits on the database)", async () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const doors = require("@/features/unified-data/hub/doors") as { dataHome: jest.Mock; dataHomeTables: jest.Mock };
+  doors.dataHome.mockImplementation(() => new Promise(() => undefined));
+  doors.dataHomeTables.mockImplementation(() => new Promise(() => undefined));
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => root.render(<MakeHome />));
+  expect(host.querySelectorAll("[data-make-tile]").length).toBe(MAKE_TILES.length);
+  // And the step-1 table list is not read until a flow that asks for a table is open.
+  expect(doors.dataHomeTables).not.toHaveBeenCalled();
+  await act(async () => root.unmount());
+  host.remove();
 });

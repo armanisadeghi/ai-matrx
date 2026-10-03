@@ -76,7 +76,7 @@ describe("a failed action card in this app", () => {
   it("a person-ready server reason is the sentence, with the remedy", async () => {
     const card = await failedCard("Nothing was applied — title is required.");
     expect(card.querySelector("[data-apply-failure]")!.textContent).toContain(
-      "Nothing was applied — title is required. Edit the block and apply again.",
+      "Nothing was applied — Title is required. Ask for a corrected version, then apply it.",
     );
   });
 });

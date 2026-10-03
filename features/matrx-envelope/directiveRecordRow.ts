@@ -39,8 +39,16 @@ function tableFor(noun: string): { schema: string; table: string } | null {
  * Concurrent reads of one record share one request — within one REVISION of it
  * (`recordRevision`, bumped by every write this page makes). A read started
  * before a write is never handed to a reader asking after it (G7, 2026-10-02).
+ *
+ * A finished read is kept for `RECORD_READ_FRESH_MS` too (G10B review,
+ * 2026-10-02): the card reads its record when it mounts and again when Apply is
+ * hovered or focused, so the confirm that follows opens with the record already
+ * in hand instead of waiting on a second round trip. A write on this page bumps
+ * the revision, so a kept read is never handed out after this page changed it.
  */
 const inFlight = new Map<string, Promise<Record<string, unknown> | null>>();
+const settled = new Map<string, { at: number; value: Record<string, unknown> | null }>();
+export const RECORD_READ_FRESH_MS = 15_000;
 
 export function readDirectiveRecord(
   ref: DirectiveRecordRef,
@@ -48,6 +56,8 @@ export function readDirectiveRecord(
   const where = tableFor(ref.noun);
   if (!where || !isUuidShape(ref.id)) return Promise.resolve(null);
   const key = `${ref.noun}:${ref.id}#${recordRevision(ref.id)}`;
+  const kept = settled.get(key);
+  if (kept && Date.now() - kept.at < RECORD_READ_FRESH_MS) return Promise.resolve(kept.value);
   const pending = inFlight.get(key);
   if (pending) return pending;
   // The table comes from the catalog at run time, so the read goes through the
@@ -60,9 +70,45 @@ export function readDirectiveRecord(
   )
     .then(({ data, error }) => {
       if (error) throw new Error(error.message);
-      return (data as Record<string, unknown> | null) ?? null;
+      const value = (data as Record<string, unknown> | null) ?? null;
+      settled.set(key, { at: Date.now(), value });
+      return value;
     })
     .finally(() => inFlight.delete(key));
   inFlight.set(key, started);
   return started;
+}
+
+/**
+ * When OTHER records of this type carry the same title — the `created_at` of
+ * each (up to `limit`). Empty when none do, or when it cannot be read. A
+ * confirm uses it to tell two same-named records apart (G10B review: "Delete
+ * task Review5?" with two tasks named Review5).
+ */
+export async function readSameTitledCreatedAt(
+  ref: DirectiveRecordRef,
+  titleColumn: string,
+  title: string,
+  limit = 5,
+): Promise<string[]> {
+  const where = tableFor(ref.noun);
+  if (!where || !isUuidShape(ref.id) || !title.trim()) return [];
+  const db: SupabaseClient = supabase;
+  const from =
+    where.schema === "public" ? db.from(where.table) : db.schema(where.schema).from(where.table);
+  const { data, error } = await from
+    .select(`id, created_at`)
+    .eq(titleColumn, title)
+    .neq("id", ref.id)
+    .limit(limit);
+  if (error) {
+    console.warn(
+      `[directiveRecordRow] Could not check for other ${ref.noun} records named the same ` +
+        `(${where.schema}.${where.table}.${titleColumn}: ${error.message}). The confirm names the record without a date.`,
+    );
+    return [];
+  }
+  return ((data ?? []) as Array<Record<string, unknown>>)
+    .map((row) => row.created_at)
+    .filter((at): at is string => typeof at === "string" && at.length > 0);
 }
