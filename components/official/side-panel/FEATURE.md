@@ -38,7 +38,8 @@ is a layout change, not a slide).
 ## Invariants & gotchas
 
 - **The slide animates the panel's WIDTH while its content keeps its own width** — content slides out of view,
-  never reflows mid-animation. Pace: `SIDE_PANEL_SLIDE_CLASS` — the shell sidebar's own 600ms even ease-in-out
+  never reflows mid-animation. Pace: `SIDE_PANEL_SLIDE_CLASS` = `transition-[width]` + `PANEL_MOTION_CLASS` — THE panel motion
+  (`../common-docs/policies/motion-standard.md`; 600ms even ease-in-out)
   (Arman, 2026-09-27: 200ms was "far too fast"). Off while dragging so the edge follows the pointer exactly.
 - **`onCollapse`: drag past the minimum and keep going (80px) and the panel closes** — it slides shut while the
   pointer is still down; dragging back out undoes it; the width it had is kept for reopening.
@@ -64,3 +65,4 @@ is a layout change, not a slide).
   hover reported for the whole panel.
 - **2026-09-27** — 600ms shell-sidebar pace; `onCollapse` (drag past the minimum closes). The shell chat dock was
   removed (Arman rejected a right-side dock under the app header).
+- **2026-10-02** — Pace reads the motion-standard tokens (`PANEL_MOTION_CLASS`, `lib/motion/panel-motion.ts`) instead of literal 600ms / cubic-bezier.

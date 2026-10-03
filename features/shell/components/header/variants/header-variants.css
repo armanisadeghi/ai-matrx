@@ -655,7 +655,8 @@
   padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   border: none;
   border-top: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
-  animation: hdr-sheet-slide-up var(--shell-duration-slow) var(--shell-ease-spring);
+  /* THE panel motion (motion-standard law) — never the spring, which overshoots. */
+  animation: hdr-sheet-slide-up var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel);
 }
 
 @keyframes hdr-sheet-slide-up {

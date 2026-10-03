@@ -2330,6 +2330,26 @@
   pointer-events: auto;
 }
 
+/* THE PANEL MOTION — the one definition (law: common-docs/policies/motion-standard.md).
+   Every panel, sidebar, dock, drawer, sheet and the canvas column slides its
+   size/position on this pair: an even ease-in-out (never the spring, which
+   overshoots) over 600ms. `--shell-ease-smooth` / `--shell-duration-panel`
+   (styles/shell.css) and `--mxc-motion-*` (features/canvas/host/canvas-host.css)
+   are aliases of these, so every surface reads the same values. Under reduced
+   motion the duration is 0ms here, so every consumer stops moving at once.
+   Unlayered so it beats any package's layered token default.
+   Guard: `pnpm check:motion-standard`. */
+:root {
+  --matrx-motion-duration-panel: 600ms;
+  --matrx-motion-ease-panel: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --matrx-motion-duration-panel: 0ms;
+  }
+}
+
 /* @ai-matrx/messaging owns structure; the host owns its palette. Unlayered so
    these semantic mappings beat the package's unthemed defaults while still
    following this app's light/dark primitive values automatically. */

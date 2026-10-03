@@ -17,6 +17,14 @@
   --mxc-mobile-z: 9000;
 }
 
+/* The canvas motion IS the panel motion (motion-standard law): the package's
+   pair aliases the one definition in app/globals.css. Doubled :root so it wins
+   over the package's tokens.css whatever order the chunks load in. */
+:root:root {
+  --mxc-motion-duration: var(--matrx-motion-duration-panel);
+  --mxc-motion-ease: var(--matrx-motion-ease-panel);
+}
+
 .shell-canvas-column {
   position: fixed;
   top: 0;
@@ -45,13 +53,13 @@
 /*
  * MOTION: the page's right edge moves in lockstep with the canvas column's
  * sliding edge — same property pair as the package (--mxc-motion-duration /
- * --mxc-motion-ease = the shell sidebar's 600ms cubic-bezier(0.4, 0, 0.2, 1)).
+ * --mxc-motion-ease, aliased above to THE panel motion).
  * The doubled class out-ranks shell.css's own `.shell-root` transition, whose
  * grid track (sidebar + chat dock) it repeats. Off while the edge is dragged.
  */
 .shell-root.shell-root {
   transition:
-    grid-template-columns 600ms var(--shell-ease-smooth),
+    grid-template-columns var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel),
     right var(--mxc-motion-duration) var(--mxc-motion-ease),
     visibility 0s linear 0s;
 }
@@ -67,7 +75,7 @@
 :root[data-canvas-fullscreen] .shell-root.shell-root {
   visibility: hidden;
   transition:
-    grid-template-columns 600ms var(--shell-ease-smooth),
+    grid-template-columns var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel),
     right var(--mxc-motion-duration) var(--mxc-motion-ease),
     visibility 0s linear var(--mxc-motion-duration);
 }
@@ -81,7 +89,7 @@
 }
 
 :root[data-mxc-resizing] .shell-root.shell-root {
-  transition: grid-template-columns 600ms var(--shell-ease-smooth);
+  transition: grid-template-columns var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel);
 }
 
 :root[data-mxc-resizing] [data-public-layout],

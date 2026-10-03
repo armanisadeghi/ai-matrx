@@ -6,6 +6,7 @@ import { PodcastsTable } from './PodcastsTable';
 import { PodcastDetailPanel } from './PodcastDetailPanel';
 import { podcastService } from '../../service';
 import type { PcShow, PcEpisodeWithShow } from '../../types';
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 
 type ActiveTab = 'shows' | 'episodes';
 
@@ -142,7 +143,7 @@ export function PodcastsContainer() {
             {/* Main content: table + optional detail panel */}
             <div className="flex flex-1 min-h-0 overflow-hidden">
                 {/* Table panel */}
-                <div className={`${panelOpen ? 'w-1/2' : 'w-full'} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}>
+                <div className={`${panelOpen ? 'w-1/2' : 'w-full'} min-w-0 flex flex-col transition-[width] ${PANEL_MOTION_CLASS} overflow-hidden`}>
                     {/* The read's failure is the table's to say, once: the failure with
                         nothing loaded, a stale notice over rows kept from before. */}
                     <PodcastsTable

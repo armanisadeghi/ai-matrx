@@ -70,6 +70,7 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 import CompactTaskItem from "./CompactTaskItem";
 import type { TaskWithProject } from "@/features/tasks/types";
 import TaskDetailsPanel from "./TaskDetailsPanel";
@@ -302,11 +303,14 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
       {/* Collapsible Sidebar */}
       <div
         className={cn(
-          "flex-shrink-0 transition-all duration-300 ease-in-out border-r border-border bg-background flex flex-col",
-          sidebarOpen ? "w-48" : "w-0 border-r-0 overflow-hidden",
+          "flex-shrink-0 transition-[width] border-r border-border bg-background flex flex-col overflow-hidden",
+          PANEL_MOTION_CLASS,
+          sidebarOpen ? "w-48" : "w-0 border-r-0",
         )}
+        inert={!sidebarOpen}
       >
-        <ScrollArea className="flex-1">
+        {/* Fixed width: the list keeps its layout while the edge slides. */}
+        <ScrollArea className="flex-1 w-48">
           <div className="p-2 space-y-4">
             <div className="space-y-1">
               <h4 className="px-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">

@@ -46,6 +46,7 @@ import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavi
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { getUserId } from "@/utils/auth/getUserId";
 import { rowWordsWrite } from "../RowWordsFields";
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 
 function rowToFormData(row: AiProvider): ProviderFormData {
   return {
@@ -547,7 +548,7 @@ export default function ProvidersContainer() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Table panel */}
         <div
-          className={`${panelOpen ? "hidden md:flex md:w-1/2" : "w-full"} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}
+          className={`${panelOpen ? "hidden md:flex md:w-1/2" : "w-full"} min-w-0 flex flex-col transition-[width] ${PANEL_MOTION_CLASS} overflow-hidden`}
         >
           <ProviderTable
             providers={providers}

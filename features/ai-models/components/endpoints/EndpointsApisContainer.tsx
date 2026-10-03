@@ -43,6 +43,7 @@ import { getUserId } from "@/utils/auth/getUserId";
 import { RowWordsFields, rowWordsWrite } from "../RowWordsFields";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 
 // ─── Shared bits ─────────────────────────────────────────────────────────────
 
@@ -969,7 +970,7 @@ export default function EndpointsApisContainer() {
       >
         <div className="flex h-full min-h-0">
           <div
-            className={`${endpointPanelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden transition-all duration-200`}
+            className={`${endpointPanelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden transition-[width] ${PANEL_MOTION_CLASS}`}
           >
             <EndpointApiTable
               title="AI Endpoints (serving vendors)"
@@ -1035,7 +1036,7 @@ export default function EndpointsApisContainer() {
       <TabsContent value="apis" className="flex-1 m-0 overflow-hidden min-h-0">
         <div className="flex h-full min-h-0">
           <div
-            className={`${apiPanelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden transition-all duration-200`}
+            className={`${apiPanelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden transition-[width] ${PANEL_MOTION_CLASS}`}
           >
             <EndpointApiTable
               title="AI APIs (wire contracts)"

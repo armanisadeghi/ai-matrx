@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, ReactNode, useCallback, useRef } from "react";
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 
 // Define type for the component props
 interface FloatingSheetProps {
@@ -32,7 +33,6 @@ interface FloatingSheetProps {
     backdropClassName?: string; // Class name for the backdrop
     initialFocus?: boolean; // Automatically focus the sheet when opened
     lockScroll?: boolean; // Whether to lock body scroll when opened
-    animationDuration?: number; // Custom animation duration in ms
     preserveScrollPosition?: boolean; // Preserve scroll position when reopening
     closeButton?: ReactNode; // Custom close button element
     role?: string; // ARIA role (defaults to "dialog")
@@ -67,7 +67,6 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
     backdropClassName = "",
     initialFocus = true,
     lockScroll = true,
-    animationDuration = 300,
     preserveScrollPosition = true,
     closeButton,
     role = "dialog",
@@ -383,28 +382,14 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
     };
     
     // Get duration class for animations
-    const getDurationClass = () => {
-        // Map animation duration (ms) to Tailwind duration classes
-        const durationMap: Record<number, string> = {
-            75: "duration-75",
-            100: "duration-100",
-            150: "duration-150",
-            200: "duration-200",
-            300: "duration-300",
-            500: "duration-500",
-            700: "duration-700",
-            1000: "duration-1000",
-        };
-        
-        return durationMap[animationDuration] || "duration-300";
-    };
     
     const positionClasses = getPositionClasses();
     const widthClass = getWidthClass();
     const heightClass = getHeightClass();
     const transformClass = getTransformClass();
     const roundedClass = getRoundedClass();
-    const durationClass = getDurationClass();
+    // THE panel motion (motion-standard law) — one pace for every sheet.
+    const durationClass = PANEL_MOTION_CLASS;
     
     // Determine if we need to show the header
     const showHeader = title || showCloseButton || headerContent;
@@ -471,12 +456,13 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
                 ref={sheetRef}
                 className={`fixed ${positionClasses} z-50 ${
                     isMobile || position === "center" ? "" : "w-full"
-                } ${widthClass} ${heightClass} ${roundedClass} bg-textured shadow-xl transition-all ${durationClass} ease-out ${transformClass} ${
+                } ${widthClass} ${heightClass} ${roundedClass} bg-textured shadow-xl transition-[transform,opacity] ${durationClass} ${transformClass} ${
                     isOpen ? "pointer-events-auto" : "pointer-events-none"
                 } ${getSheetHeightClass()} outline-none ${className}`}
                 role={role}
                 aria-modal={isOpen}
                 aria-hidden={!isOpen}
+                inert={!isOpen}
                 aria-labelledby="sheet-title"
                 tabIndex={-1}
                 data-testid="floating-sheet"

@@ -805,6 +805,11 @@ if $STRICT; then
         # (pan/zoom) layer is squeezed to 0px by the phone max-width default
         # (2026-09-28: org charts, React Flow). Zero findings; advisory here.
         "Fixed-width child in a zero-width layer (phones squeeze it to 0)|pnpm check:zero-width-layers"
+        # THE MOTION STANDARD — every panel, sidebar, dock, drawer, sheet and the canvas
+        # slides on ONE pair (--matrx-motion-*-panel; Arman, 2026-10-02 — common-docs
+        # policies/motion-standard.md). Zero findings today; advisory here.
+        "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
+        "Motion standard guard self-test|pnpm check:motion-standard:self-test"
         # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
         # fallback" hides an RTK SerializedError's real message (2026-09-27).
         # Baseline ratchet: exits 1 only on a NEW site; advisory here.
@@ -1419,6 +1424,11 @@ else
         # (pan/zoom) layer is squeezed to 0px by the phone max-width default
         # (2026-09-28: org charts, React Flow). Zero findings; advisory here.
         "Fixed-width child in a zero-width layer (phones squeeze it to 0)|pnpm check:zero-width-layers"
+        # THE MOTION STANDARD — every panel, sidebar, dock, drawer, sheet and the canvas
+        # slides on ONE pair (--matrx-motion-*-panel; Arman, 2026-10-02 — common-docs
+        # policies/motion-standard.md). Zero findings today; advisory here.
+        "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
+        "Motion standard guard self-test|pnpm check:motion-standard:self-test"
         # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
         # fallback" hides an RTK SerializedError's real message (2026-09-27).
         # Baseline ratchet: exits 1 only on a NEW site; advisory here.

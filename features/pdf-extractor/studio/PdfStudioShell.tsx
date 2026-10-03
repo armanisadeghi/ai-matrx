@@ -30,6 +30,7 @@ import React, {
 } from "react";
 import { Loader2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 import { Input } from "@ai-matrx/design-system";
@@ -882,7 +883,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             from the shell header's PanelLeftTapButton (tasks pattern). */}
         <div
           className={cn(
-            "shrink-0 hidden md:flex flex-col overflow-hidden pt-[var(--shell-header-h)] transition-all duration-200",
+            "shrink-0 hidden md:flex flex-col overflow-hidden pt-[var(--shell-header-h)] transition-[width]",
+            PANEL_MOTION_CLASS,
             sidebarOpen ? "w-64" : "w-0",
           )}
         >
@@ -1063,7 +1065,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             only from the shell header's PanelRightTapButton (tasks pattern). */}
         <div
           className={cn(
-            "shrink-0 hidden lg:flex flex-col overflow-hidden pt-[var(--shell-header-h)] transition-all duration-200 min-h-0",
+            "shrink-0 hidden lg:flex flex-col overflow-hidden pt-[var(--shell-header-h)] transition-[width] min-h-0",
+            PANEL_MOTION_CLASS,
             inspectorOpen ? "w-80 xl:w-96" : "w-0",
           )}
         >

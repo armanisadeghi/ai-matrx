@@ -46,7 +46,6 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
   lockScroll={true}                             // Default: true - Lock body scroll
   initialFocus={true}                           // Default: true - Auto focus sheet
   preserveScrollPosition={true}                 // Default: true
-  animationDuration={300}                       // Default: 300ms
   className=""                                  // Additional sheet classes
   contentClassName=""                           // Additional content classes
   headerClassName=""                            // Additional header classes

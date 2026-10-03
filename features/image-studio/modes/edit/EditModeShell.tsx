@@ -55,6 +55,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { selectFileName } from "@/features/files/redux/selectors";
@@ -886,10 +887,12 @@ export function EditModeShell({
           {effectiveCloudFileId && !preserveSource ? (
             <aside
               className={cn(
-                "absolute top-0 right-0 bottom-0 w-72 border-l border-border bg-card flex flex-col min-h-0 shadow-xl z-30 transition-transform duration-200 ease-out",
+                "absolute top-0 right-0 bottom-0 w-72 border-l border-border bg-card flex flex-col min-h-0 shadow-xl z-30 transition-transform",
+                PANEL_MOTION_CLASS,
                 railOpen ? "translate-x-0" : "translate-x-full",
               )}
               aria-hidden={!railOpen}
+              inert={!railOpen}
             >
               <div className="flex items-center justify-end px-2 py-1 border-b border-border bg-muted/30 shrink-0">
                 <Tooltip>

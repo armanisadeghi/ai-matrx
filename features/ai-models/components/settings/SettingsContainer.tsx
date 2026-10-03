@@ -41,6 +41,7 @@ import type {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { getUserId } from "@/utils/auth/getUserId";
 import { rowWordsWrite } from "../RowWordsFields";
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 
 function rowToFormData(row: AiSetting): AiSettingFormData {
   return {
@@ -496,7 +497,7 @@ export default function SettingsContainer() {
       {/* Table + optional detail panel */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <div
-          className={`${panelOpen ? "hidden md:flex md:w-1/2" : "w-full"} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}
+          className={`${panelOpen ? "hidden md:flex md:w-1/2" : "w-full"} min-w-0 flex flex-col transition-[width] ${PANEL_MOTION_CLASS} overflow-hidden`}
         >
           <SettingTable
             settings={settings}

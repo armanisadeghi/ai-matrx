@@ -59,12 +59,15 @@
   /* Spring easing — iOS-grade overshoot */
   --shell-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --shell-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --shell-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Alias of THE panel curve (app/globals.css, motion-standard law). */
+  --shell-ease-smooth: var(--matrx-motion-ease-panel);
 
   /* Transition durations */
   --shell-duration-fast: 200ms;
   --shell-duration-normal: 320ms;
   --shell-duration-slow: 450ms;
+  /* Alias of THE panel duration — panels/sidebars/docks/drawers slide on this. */
+  --shell-duration-panel: var(--matrx-motion-duration-panel);
 }
 
 /* ---------------------------------------------------------------------------
@@ -436,7 +439,7 @@
      visibly grew into already-reflowed content), but closing read as instant
      (content filled immediately while the transparent collapsed sidebar shrank
      with nothing visible to track). */
-  transition: grid-template-columns 600ms var(--shell-ease-smooth);
+  transition: grid-template-columns var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel);
 }
 
 /* Build A/B (FORCE_EXCLUDE_SIDEMENU): no sidebar column — header + main full width. */
@@ -480,7 +483,7 @@
     /* Smooth, non-overshooting ease (NOT the spring — its >1 control point
        overshoots the target width and springs back). Slower duration for a
        calmer collapse/expand that travels once and stops in a single spot. */
-    width 600ms var(--shell-ease-smooth),
+    width var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel),
     background var(--shell-duration-normal) var(--shell-ease-smooth),
     border-color var(--shell-duration-normal) var(--shell-ease-smooth);
   overflow: hidden;
@@ -2816,7 +2819,7 @@ html[data-board-embed] .shell-main {
   bottom: 0;
   left: var(--shell-sidebar-w);
   z-index: 29;
-  transition: left 600ms var(--shell-ease-smooth);
+  transition: left var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel);
 }
 
 .shell-root > #shell-sidebar-toggle:checked ~ .shell-chat-dock,
@@ -2867,7 +2870,7 @@ html[data-board-embed] .shell-main {
     z-index: 31;
     height: 2.75rem;
     align-items: center;
-    transition: left 600ms var(--shell-ease-smooth);
+    transition: left var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel);
   }
 
   .shell-root > #shell-sidebar-toggle:checked ~ * .shell-chat-toggle {
@@ -2984,7 +2987,7 @@ html[data-board-embed] .shell-main {
   padding: 0 0 var(--shell-safe-area-bottom, 0px) 0;
   background: var(--shell-sidebar-bg);
   transition:
-    width 600ms var(--shell-ease-smooth),
+    width var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel),
     background var(--shell-duration-normal) var(--shell-ease-smooth);
 }
 
@@ -3399,8 +3402,8 @@ html[data-board-embed] .shell-main {
     grid-template-columns: 0px 1fr;
     grid-template-rows: 1fr;
     overflow: hidden;
-    transition: grid-template-columns var(--shell-duration-slow)
-      var(--shell-ease-out);
+    transition: grid-template-columns var(--matrx-motion-duration-panel)
+      var(--matrx-motion-ease-panel);
   }
 
   /* Panel open (checkbox checked — default state) */
@@ -3422,7 +3425,7 @@ html[data-board-embed] .shell-main {
     background-image: var(--shell-panel-bg-image);
     padding-top: var(--shell-header-h);
     transform: translateX(calc(-1 * var(--shell-panel-w)));
-    transition: transform var(--shell-duration-slow) var(--shell-ease-out);
+    transition: transform var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel);
   }
 
   .shell-root > #shell-panel-toggle:checked ~ .shell-panel,
@@ -3456,7 +3459,7 @@ html[data-board-embed] .shell-main {
       /* Match the main sidebar's width transition exactly so this strip tracks
          the sidebar edge in lockstep — same smooth ease, same 600ms, no spring
          overshoot. */
-      left 600ms var(--shell-ease-smooth),
+      left var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel),
       opacity var(--shell-duration-normal) var(--shell-ease-smooth);
   }
 
@@ -3519,7 +3522,7 @@ html[data-board-embed] .shell-main {
     background-color: var(--shell-panel-bg);
     background-image: var(--shell-panel-bg-image);
     transform: translateX(-100%);
-    transition: transform var(--shell-duration-slow) var(--shell-ease-spring);
+    transition: transform var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel);
     padding-top: var(--shell-header-h);
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
   }

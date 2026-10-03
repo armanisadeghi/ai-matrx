@@ -408,7 +408,8 @@
 
 /* ── Mobile filter sheet animation ───────────────────────────────────── */
 .notes-filter-sheet-enter {
-  animation: notes-sheet-slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  /* THE panel motion (motion-standard law). */
+  animation: notes-sheet-slide-up var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel) forwards;
 }
 @keyframes notes-sheet-slide-up {
   from { transform: translateY(100%); }

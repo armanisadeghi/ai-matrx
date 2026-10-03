@@ -36,6 +36,7 @@ import type {
   AiOfferingFormData,
 } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 
 const EMPTY_FORM: AiOfferingFormData = {
   model_id: "",
@@ -370,7 +371,7 @@ export default function OfferingsContainer() {
         >
           <div className="flex h-full min-h-0">
             <div
-              className={`${panelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden p-2 transition-all duration-200`}
+              className={`${panelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden p-2 transition-[width] ${PANEL_MOTION_CLASS}`}
             >
               <OfferingTable
                 offerings={offerings}

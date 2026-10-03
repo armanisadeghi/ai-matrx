@@ -36,6 +36,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
+import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
 import { clampSidePanelWidth, writeSidePanelWidth, type SidePanelSizes } from "./side-panel-width";
 
 /** Arrow-key step, and the Shift+arrow step, in px. */
@@ -46,12 +47,12 @@ const DEFAULT_MAX_SHARE = 0.6;
 /** How far past the minimum a drag must go before it closes the panel. */
 const COLLAPSE_PAST_PX = 80;
 /**
- * THE slide — every docked panel opens and closes at this pace: the shell
- * sidebar's own motion (600ms, `--shell-ease-smooth`, an even ease-in-out),
- * never a front-loaded snap (Arman, 2026-09-27: 200ms was "far too fast").
+ * THE slide — every docked panel opens and closes on THE panel motion
+ * (motion-standard law: `PANEL_MOTION_CLASS`, the shell sidebar's own 600ms
+ * even ease-in-out), never a front-loaded snap (Arman, 2026-09-27: 200ms was
+ * "far too fast").
  */
-export const SIDE_PANEL_SLIDE_CLASS =
-  "transition-[width] duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none";
+export const SIDE_PANEL_SLIDE_CLASS = `transition-[width] ${PANEL_MOTION_CLASS}`;
 
 export interface DockedSidePanelProps {
   /** Stable id: the remembered width is stored under it. */
