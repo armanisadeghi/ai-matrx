@@ -12,6 +12,7 @@ import type { CanvasKindProps } from "@ai-matrx/canvas/react";
 import { CommentThread } from "@ai-matrx/associations/react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { dockStateFor, openDockFor, subscribeDocks, docksVersion } from "../record-annotations-store";
+import { RecordCommentThread } from "../comment-remarks";
 import {
   commentThreadKey,
   readCommentThreadData,
@@ -51,7 +52,13 @@ export default function CommentThreadCanvasView({ item, data, isVisible }: Canva
       />
       {held ? null : (
         <div className="min-h-0 flex-1 overflow-y-auto p-3" data-comment-thread-standalone>
-          <CommentThread token={thread.entity as EntityTypeToken} id={thread.id} />
+          {/* A record's thread opened from a page with a chat (the Board) rides along with its next
+              message; a chat answer's thread stays with its own conversation. */}
+          {thread.entity === "message" ? (
+            <CommentThread token={thread.entity as EntityTypeToken} id={thread.id} />
+          ) : (
+            <RecordCommentThread token={thread.entity as EntityTypeToken} id={thread.id} title={thread.title} />
+          )}
         </div>
       )}
     </div>

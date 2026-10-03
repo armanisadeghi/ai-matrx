@@ -48,7 +48,8 @@ import {
 } from "@/features/tasks/redux/thunks";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
-import { CommentThread, useComments } from "@ai-matrx/associations/react";
+import { useComments } from "@ai-matrx/associations/react";
+import { RecordCommentThread } from "@/features/rich-document/annotations/comment-remarks";
 import { TaskContextPicker } from "../TaskContextSection";
 import TaskAssigneePicker from "../TaskAssigneePicker";
 import TaskAttachmentsPanel from "../TaskAttachmentsPanel";
@@ -785,7 +786,8 @@ export function TaskEditorBody({
                 resourceType: "task",
               }}
             >
-              <CommentThread token="task" id={taskId} />
+              {/* On a page with an agent chat (a task tile on the Board), a comment rides along. */}
+              <RecordCommentThread token="task" id={taskId} title={effective.title || null} />
             </NonEditableContextMenu>
           </section>
 

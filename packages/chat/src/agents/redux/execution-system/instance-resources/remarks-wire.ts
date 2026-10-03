@@ -20,7 +20,16 @@ function nonEmpty(text: string | null | undefined): string | undefined {
 
 /** One staged remark in wire shape, or null when it carries nothing the server can read. */
 export function remarkToWire(item: RemarkItem): WireRemark | null {
-  const target = item.target.messageId ? { message_id: item.target.messageId } : null;
+  const record = item.target.record;
+  const target = item.target.messageId
+    ? { message_id: item.target.messageId }
+    : record
+      ? {
+          record_token: record.token,
+          record_id: record.id,
+          ...(nonEmpty(record.title) ? { record_title: record.title!.trim() } : {}),
+        }
+      : null;
   switch (item.kind) {
     case "comment": {
       const quote = nonEmpty(item.quote);

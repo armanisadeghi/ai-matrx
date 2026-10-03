@@ -27,7 +27,7 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { type SavedBoardTarget, useSavedBoard } from "../persistence/useSavedBoard";
-import { boardHref, createBoard } from "../persistence/boardsService";
+import { BOARD_TOKEN, boardHref, createBoard } from "../persistence/boardsService";
 
 const OPENING = "Opening your board…";
 
@@ -87,6 +87,8 @@ export function BoardPage({
         byline={byline}
         initialLayout={initialLayout}
         initialMode={initialMode}
+        // Comments on the whole board ("bigger things"); each rides the next message of this chat.
+        record={ready ? { resourceId: ready.board.id, resourceName: title, commentToken: BOARD_TOKEN } : undefined}
         titleMenu={
           <>
             {ready && (
@@ -140,6 +142,7 @@ export function BoardPage({
                 )}
                 <UserBoard
                   key={ready.board.id}
+                  boardId={ready.board.id}
                   title={ready.board.title}
                   doc={ready.board.doc}
                   viewerCamera={ready.board.viewerCamera}

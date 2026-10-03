@@ -9,21 +9,35 @@
 // edit/delete-own — over the package's `cmt_*` chokepoint; the count rides the
 // same store cache (`useComments`), so every mount stays in sync. Tasks,
 // board notes and any other record type use this one component.
+//
+// On a page with an agent chat (the Board), "With next message" sends each
+// comment posted here along with the person's next message, naming the
+// record (`comment c5 on task “Ship pricing page”`) — `comment-remarks.tsx`.
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { CommentThread, useComments } from "@ai-matrx/associations/react";
+import { useComments } from "@ai-matrx/associations/react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { cn } from "@/lib/utils";
+import { RecordCommentThread } from "@/features/rich-document/annotations/comment-remarks";
 
 export function EntityCommentPopover({
   token,
   id,
+  title,
+  note,
+  showCount = true,
   className,
 }: {
   token: EntityTypeToken;
   id: string;
+  /** The record's name as the person sees it — what a staged remark names. */
+  title?: string | null;
+  /** One short line above the thread (e.g. where these comments are kept). */
+  note?: ReactNode;
+  /** Show the thread's count on the trigger (off when the thread is shared, e.g. the board's). */
+  showCount?: boolean;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -42,9 +56,10 @@ export function EntityCommentPopover({
             className,
           )}
           title="Comments"
+          data-comment-door={`${token}:${id}`}
         >
           <MessageSquare className="size-3.5" />
-          {thread.status === "ready" && thread.comments.length > 0 ? thread.comments.length : "Comment"}
+          {showCount && thread.status === "ready" && thread.comments.length > 0 ? thread.comments.length : "Comment"}
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -53,7 +68,8 @@ export function EntityCommentPopover({
         align="start"
         onClick={(e) => e.stopPropagation()}
       >
-        <CommentThread token={token} id={id} showHeader={false} />
+        {note ? <p className="mb-2 truncate text-xs text-muted-foreground">{note}</p> : null}
+        <RecordCommentThread token={token} id={id} title={title ?? null} showHeader={false} />
       </PopoverContent>
     </Popover>
   );

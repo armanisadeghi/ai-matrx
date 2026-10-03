@@ -22,6 +22,8 @@ export interface RemarkByHandle {
   id: string | null;
   /** The answer it was made on. */
   messageId: string | null;
+  /** The non-chat record it was made on (a board, a task tile …), when not an answer. */
+  record: { token: string; id: string; title: string | null } | null;
   /** The comment it is, when it is one. */
   commentId: string | null;
   quote: string | null;
@@ -53,6 +55,10 @@ export function remarksWithHandle(messages: readonly { content: unknown }[], han
           kind: str(item.kind) ?? "comment",
           id: str(item.id),
           messageId: str(target?.message_id),
+          record:
+            str(target?.record_token) && str(target?.record_id)
+              ? { token: str(target?.record_token)!, id: str(target?.record_id)!, title: str(target?.record_title) }
+              : null,
           commentId: str(item.comment_id),
           quote: str(item.quote),
           body: str(item.body),

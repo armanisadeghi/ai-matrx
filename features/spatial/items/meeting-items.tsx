@@ -28,7 +28,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { MeetingSurfaceHost, MEETING_SURFACE_NAME } from "@/features/meet/agent-surface/MeetingSurfaceHost";
 import { MeetingPartBody, useIsInMeetingRoom } from "@/features/meet/components/board/MeetingNotesBodies";
 import type { NodeSource } from "../board/document";
-import type { BoardItemType, ItemBodyProps, PickerProps, PlacedItem } from "./types";
+import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
 import { RecordList } from "./feature-items";
 import { MEETING_PHASE_LABEL, meetingPhase, orderMeetingsForPicker } from "./feature-items.logic";
 import {
@@ -189,6 +189,8 @@ export const MEETING_ITEMS: BoardItemType[] = [
     Body: MeetingPartItemBody,
     Keep: MeetingPartKeep,
     surface: { name: MEETING_SURFACE_NAME, Host: MeetingPartSurface },
+    // A part of a meeting (its transcript, its decisions) is discussed on the meeting's own thread.
+    comments: entityComments("meet_meeting"),
     bringIn: { label: "Meeting notes", Picker: MeetingPartPicker },
     href: (source) => {
       const target = meetingPartOf(source);

@@ -33,6 +33,7 @@ import { useAnnotationSidecar, type AnnotationSidecarApi } from "./useAnnotation
 import { MentionComposer } from "./MentionComposer";
 import { LinkRecordSheet } from "./LinkRecordSheet";
 import { PassageQuote } from "./PassageQuote";
+import { stageRecordComment, useWithNextMessage, WithNextMessageSwitch } from "./comment-remarks";
 import type { AnnotationSource } from "./types";
 import { useSelectionZone, type SelectionToolbarUi } from "@/components/selection-toolbar/selection-zones";
 import {
@@ -445,6 +446,10 @@ function CommentComposerPanel({
   const [flipped, setFlipped] = useState<boolean | null>(null);
   const sendWithNext = flipped ?? knobDefault;
   const conversationId = !suggest && source.token === "message" ? source.conversationId : undefined;
+  // Any other record (a note or document tile on a board, a record page with a chat beside it):
+  // the comment rides along to the page's own chat when there is one.
+  const toPageChat = useWithNextMessage();
+  const recordRemark = !suggest && source.token !== "message" && toPageChat.available;
   const switchId = useId();
   return (
     <div className="grid gap-1 p-1">
@@ -466,17 +471,31 @@ function CommentComposerPanel({
               <Switch id={switchId} checked={sendWithNext} onCheckedChange={(on) => setFlipped(on)} />
               With next message
             </label>
+          ) : recordRemark ? (
+            <WithNextMessageSwitch state={toPageChat} />
           ) : undefined
         }
         onSubmit={async (text, why) => {
           done();
           const stageInto = conversationId && sendWithNext ? conversationId : null;
+          const stageToPage = recordRemark && toPageChat.on;
           const notice = await api.postComment(
             suggest
               ? { body: why ?? "", anchor: selection.anchor, suggestedText: text }
               : {
                   body: text,
                   anchor: selection.anchor,
+                  ...(stageToPage
+                    ? {
+                        onWritten: (commentId: string) => {
+                          stageRecordComment(
+                            { token: source.token, id: source.id, title: source.title || null },
+                            { id: commentId, body: text },
+                            selection.anchor.exact,
+                          );
+                        },
+                      }
+                    : {}),
                   ...(stageInto
                     ? {
                         onWritten: (commentId: string) => {

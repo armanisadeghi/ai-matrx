@@ -20,6 +20,8 @@
 
 import { type ComponentType, type DragEvent, useEffect, useRef, useState } from "react";
 import { ExternalLink, PanelRight, Plus } from "lucide-react";
+import { EntityCommentPopover } from "@/components/comments/EntityCommentPopover";
+import { BOARD_TOKEN } from "../persistence/boardsService";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -80,6 +82,7 @@ const CAMERA_SAVE_MS = 1200;
  * tile body.
  */
 export function UserBoard({
+  boardId = null,
   title,
   doc,
   viewerCamera = null,
@@ -87,6 +90,8 @@ export function UserBoard({
   onCamera,
   guest = false,
 }: {
+  /** The saved board's id: comments on board-only tiles go on its thread. Null = no board record. */
+  boardId?: string | null;
   title: string;
   /** The saved board this session starts from. */
   doc: BoardDocument;
@@ -532,7 +537,14 @@ export function UserBoard({
               ) : null,
             )}
             {layout.tileIds.map((id) => (
-              <BoardItemTile key={id} id={id} board={board} itemSurfaces={itemSurfaces} onThrow={onThrow} />
+              <BoardItemTile
+                key={id}
+                id={id}
+                board={board}
+                boardRecord={boardId ? { id: boardId, title } : null}
+                itemSurfaces={itemSurfaces}
+                onThrow={onThrow}
+              />
             ))}
           </SpatialViewport>
           </BoardNavigationContext.Provider>
@@ -632,11 +644,14 @@ function BoardLayers({ board, onClose }: { board: BoardStore<UserBoardTile>; onC
 function BoardItemTile({
   id,
   board,
+  boardRecord,
   itemSurfaces,
   onThrow,
 }: {
   id: string;
   board: BoardStore<UserBoardTile>;
+  /** The saved board (comments on board-only tiles go on its thread). */
+  boardRecord: { id: string; title: string } | null;
   itemSurfaces: ItemSurfaceIndex;
   onThrow: (id: string, direction: ThrowDirection) => void;
 }) {
@@ -672,7 +687,9 @@ function BoardItemTile({
         throwActions={BOARD_THROWS}
         sleeps={type?.sleeps ?? false}
         actions={
-          href ? (
+          <>
+            <TileCommentDoor type={type} source={source} title={title} boardRecord={boardRecord} />
+            {href ? (
             <a
               href={href}
               target="_blank"
@@ -683,7 +700,8 @@ function BoardItemTile({
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
-          ) : undefined
+            ) : null}
+          </>
         }
       >
         {(tier) => (
@@ -700,6 +718,42 @@ function BoardItemTile({
         )}
       </SpatialTile>
     </>
+  );
+}
+
+/**
+ * The tile's ONE comment door. A record tile opens its record's own thread —
+ * the same thread its page shows. Board-only content (a write-up, an image, a
+ * web page) and record types with no thread of their own post on the BOARD's
+ * thread, and the popover says so; the remark names the tile. A record that
+ * does not exist yet (a draft) has nothing to comment on: no door.
+ */
+function TileCommentDoor({
+  type,
+  source,
+  title,
+  boardRecord,
+}: {
+  type: BoardItemType | null;
+  source: NodeSource;
+  title: string;
+  boardRecord: { id: string; title: string } | null;
+}) {
+  if (!type) return null;
+  if (type.comments) {
+    const record = type.comments(source);
+    return record ? <EntityCommentPopover token={record.token} id={record.id} title={title} className="h-7" /> : null;
+  }
+  if (!boardRecord) return null;
+  return (
+    <EntityCommentPopover
+      token={BOARD_TOKEN}
+      id={boardRecord.id}
+      title={`${boardRecord.title} — tile “${title}”`}
+      note="Posted on the board"
+      showCount={false}
+      className="h-7"
+    />
   );
 }
 

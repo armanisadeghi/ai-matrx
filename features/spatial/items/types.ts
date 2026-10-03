@@ -20,6 +20,7 @@
 
 import type { ComponentType, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 import type { NodeSource } from "../board/document";
 import type { PaceTier } from "../engine/lod";
 
@@ -95,6 +96,19 @@ export type StartNewEntry =
   | { label: string; icon?: LucideIcon; Picker: ComponentType<PickerProps> }
   | { label: string; icon?: LucideIcon; Dialog: ComponentType<PickerProps> };
 
+/** The record a tile's comments live on: its own thread — the same one its page shows. */
+export interface CommentRecord {
+  /** Platform entity token (`task`, `note`, `conversation` …), never the item key. */
+  token: EntityTypeToken;
+  id: string;
+}
+
+/** `comments` for an item whose source is `{ kind: "entity", id }`: that record, once it exists. */
+export function entityComments(token: EntityTypeToken) {
+  return (source: NodeSource): CommentRecord | null =>
+    source.kind === "entity" && source.id ? { token, id: source.id } : null;
+}
+
 export interface BoardItemType {
   /** Registry key. For entity sources it equals `source.entity`. */
   key: string;
@@ -109,6 +123,13 @@ export interface BoardItemType {
   Body: ComponentType<ItemBodyProps>;
   /** The feature's agent surface for the tile's record (see `ItemSurface`). */
   surface: ItemSurface;
+  /**
+   * Where comments on the tile live. A record item names its record's own
+   * thread (`entityComments(token)`; null while the record does not exist).
+   * `null` = board-only content, or a record type with no thread of its own:
+   * the tile's comment door posts on the BOARD and says so.
+   */
+  comments: ((source: NodeSource) => CommentRecord | null) | null;
   /**
    * "Start something new" — one entry, or several ways to start the same
    * kind of thing (a chat, and a chat with an agent you pick). Each entry is

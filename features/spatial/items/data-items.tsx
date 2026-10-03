@@ -273,6 +273,9 @@ export const DATA_ITEMS: readonly BoardItemType[] = [
   {
     key: TABLE_ENTITY,
     surface: { name: DATA_TABLES_SURFACE },
+    // A data table is not a registered entity type, so it has no thread of its own: the tile's
+    // comments go on the board (the door says so).
+    comments: null,
     label: "Table",
     kindLabel: "data table",
     icon: Database,
@@ -293,6 +296,7 @@ export const DATA_ITEMS: readonly BoardItemType[] = [
   {
     key: "record",
     surface: { name: DATA_TABLES_SURFACE },
+    comments: (s) => (s.kind === "record" ? { token: "record", id: s.recordId } : null),
     label: "Record",
     kindLabel: "data record",
     icon: Rows3,

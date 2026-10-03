@@ -109,6 +109,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
     guestSafe: true,
     usesTier: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
+    comments: null,
     label: "Web page",
     icon: Globe,
     group: "media",
@@ -128,6 +129,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
     // No effects: waking is a plain re-render.
     sleeps: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
+    comments: null,
     label: "Image",
     icon: ImageIcon,
     group: "media",
@@ -145,6 +147,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
     guestSafe: true,
     usesTier: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
+    comments: null,
     label: "Write-up",
     icon: FileText,
     group: "content",
@@ -159,6 +162,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
     // No effects: waking is a plain re-render.
     sleeps: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
+    comments: null,
     label: "Label",
     icon: Type,
     group: "content",

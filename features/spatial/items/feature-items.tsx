@@ -85,7 +85,7 @@ import { useProject } from "@/features/projects/hooks";
 import { ProjectCreatePanel } from "@/features/projects/components/ProjectCreatePanel";
 
 import type { NodeSource } from "../board/document";
-import type { BoardItemType, ItemBodyProps, PickerProps, PlacedItem } from "./types";
+import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
 import {
   FEATURE_ENTITY,
   MEETING_PHASE_LABEL,
@@ -980,6 +980,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   {
     key: FEATURE_ENTITY.task,
     surface: { name: "matrx-user/tasks" },
+    comments: entityComments("task"),
     label: "Task",
     icon: ListTodo,
     group: "work",
@@ -999,6 +1000,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   {
     key: FEATURE_ENTITY.warRoom,
     surface: { name: "matrx-user/war-room" },
+    comments: entityComments("war_room"),
     label: "War Room",
     icon: UsersRound,
     group: "features",
@@ -1020,6 +1022,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   {
     key: FEATURE_ENTITY.meeting,
     surface: { name: "matrx-user/meeting" },
+    comments: entityComments("meet_meeting"),
     label: "Meeting",
     icon: Video,
     group: "features",
@@ -1039,6 +1042,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   {
     key: FEATURE_ENTITY.workflowRun,
     surface: { name: "matrx-user/workflow-run" },
+    comments: entityComments("workflow_run"),
     label: "Workflow run",
     icon: Workflow,
     group: "features",
@@ -1057,6 +1061,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   {
     key: FEATURE_ENTITY.research,
     surface: { name: "matrx-user/research" },
+    comments: entityComments("research_topic"),
     label: "Research",
     icon: FlaskConical,
     group: "features",
@@ -1073,6 +1078,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
   {
     key: FEATURE_ENTITY.project,
     surface: { name: "matrx-user/projects" },
+    comments: entityComments("project"),
     label: "Project",
     icon: FolderKanban,
     group: "features",

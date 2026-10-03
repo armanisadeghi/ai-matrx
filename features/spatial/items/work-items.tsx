@@ -44,7 +44,7 @@ import { InlineUploadArea } from "@/features/resource-manager/resource-picker/In
 import { NoteItemBody } from "./NoteItemBody";
 import type { NodeSource } from "../board/document";
 import { useSpatialStore } from "../engine/react";
-import type { BoardItemType, ItemBodyProps, PickerProps, PlacedItem } from "./types";
+import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
 import {
   chatAgentId,
   chatSource,
@@ -333,6 +333,7 @@ export const WORK_ITEMS: BoardItemType[] = [
   {
     key: "chat",
     surface: { name: "matrx-user/chat" },
+    comments: entityComments("conversation"),
     label: "Chat",
     icon: MessagesSquare,
     group: "work",
@@ -361,6 +362,7 @@ export const WORK_ITEMS: BoardItemType[] = [
   {
     key: "note",
     surface: { name: "matrx-user/notes" },
+    comments: entityComments("note"),
     label: "Note",
     icon: StickyNote,
     group: "work",
@@ -384,6 +386,10 @@ export const WORK_ITEMS: BoardItemType[] = [
   {
     key: "file",
     surface: { name: FILE_SURFACE_NAME, Host: FileSurfaceHost },
+    comments: (s) => {
+      const id = fileIdOf(s) ?? (s.kind === "entity" ? s.id : null);
+      return id ? { token: "file", id } : null;
+    },
     label: "File",
     icon: FileIcon,
     group: "work",

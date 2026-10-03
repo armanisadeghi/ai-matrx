@@ -42,13 +42,19 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
   }
   const remark = remarkByHandle(messages, handle);
   const messageId = remark?.messageId ?? null;
+  // Where the thread lives: the answer it was made on, or the record (a board, a task tile …).
+  const thread = messageId
+    ? { entity: "message", id: messageId, title: "Chat answer" }
+    : remark?.record
+      ? { entity: remark.record.token, id: remark.record.id, title: remark.record.title || "Comments" }
+      : null;
   const label = (
     <>
       <MessagesSquare className="h-3 w-3 shrink-0" aria-hidden />
       Reply in thread · {handle}
     </>
   );
-  if (!messageId) {
+  if (!thread) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" data-comment-reply={handle}>
         {label}
@@ -62,9 +68,9 @@ function CommentReplyLine({ handle, conversationId, streaming }: { handle: strin
       className="inline-flex items-center gap-1.5 rounded text-xs text-muted-foreground hover:text-foreground hover:underline"
       onClick={() =>
         openCommentThread(canvas, {
-          entity: "message",
-          id: messageId,
-          title: "Chat answer",
+          entity: thread.entity,
+          id: thread.id,
+          title: thread.title,
           focus: remark?.commentId ?? null,
         })
       }

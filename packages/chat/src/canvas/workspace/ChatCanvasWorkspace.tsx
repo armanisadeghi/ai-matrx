@@ -47,7 +47,7 @@ import {
 } from "lucide-react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { cn } from "@ai-matrx/design-system";
-import { useAppSelector } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { useMediaQueryState } from "@ai-matrx/kit/media-query";
 import { MatrxFloatingFrame } from "@host/components/matrx/resizable/MatrxFloatingFrame";
 import { DockedSidePanel } from "@host/components/official/side-panel/DockedSidePanel";
@@ -97,6 +97,12 @@ import {
   type CanvasWorkspaceLayout,
 } from "./workspace-cookies";
 import { selectIsAuthenticated } from "../../host/identity";
+import {
+  stageRemark,
+  type RemarkItem,
+  type StageRemarkOptions,
+} from "../../agents/redux/execution-system/instance-resources/remarks";
+import { registerRemarkSink } from "../../agents/redux/execution-system/instance-resources/remark-sink";
 
 const FLOATING_FALLBACK = { width: 340, height: 400 };
 /** Below this the workspace is one pane: the canvas, with chat / properties in sheets (navigation is the shell drawer). */
@@ -105,7 +111,8 @@ const COMPACT_QUERY = "(max-width: 1023px)";
 const WORKSPACE_CHAT_PARAM = "chat";
 
 export interface ChatCanvasWorkspaceRecord {
-  resourceType: ResourceType;
+  /** The record's share type. Absent = no Share control (comments may still show). */
+  resourceType?: ResourceType;
   resourceId: string;
   resourceName: string;
   /** The record's comment token. Absent = no comments control. */
@@ -323,6 +330,40 @@ export function ChatCanvasWorkspace({
     [conversationId],
   );
 
+  // THE REMARK SINK: a comment made on this page (the canvas record, a tile,
+  // a passage inside one, a thread in the canvas) rides along with the next
+  // message of THIS chat. A hidden chat opens so the person sees the chip; a
+  // chat that has not launched yet takes the remark once it has.
+  const dispatch = useAppDispatch();
+  const pendingRemarks = useRef<{ item: RemarkItem; options?: StageRemarkOptions }[]>([]);
+  const sinkHandlers = useRef({ conversationId, reveal: () => {} });
+  useEffect(() => {
+    sinkHandlers.current = {
+      conversationId,
+      reveal: () => {
+        if (compact) openMobileChat();
+        else if (!chatState.open || fullScreen) openChat();
+      },
+    };
+  });
+  useEffect(
+    () =>
+      registerRemarkSink({
+        stage: (item, options) => {
+          const { conversationId: target, reveal } = sinkHandlers.current;
+          if (target) dispatch(stageRemark(target, item, options));
+          else pendingRemarks.current.push({ item, options });
+          reveal();
+        },
+      }),
+    [dispatch],
+  );
+  useEffect(() => {
+    if (!conversationId || pendingRemarks.current.length === 0) return;
+    const queued = pendingRemarks.current.splice(0);
+    for (const { item, options } of queued) dispatch(stageRemark(conversationId, item, options));
+  }, [conversationId, dispatch]);
+
   const hasProperties = properties !== undefined && properties.tabs.length > 0;
   const chatShown = !fullScreen && chatState.open;
   const showDockedChat = chatShown && placement === "side";
@@ -479,10 +520,11 @@ export function ChatCanvasWorkspace({
             <EntityCommentPopover
               token={record.commentToken}
               id={record.resourceId}
+              title={record.resourceName}
               className="h-7"
             />
           ) : null}
-          {record ? (
+          {record?.resourceType ? (
             <ShareButton
               resourceType={record.resourceType}
               resourceId={record.resourceId}

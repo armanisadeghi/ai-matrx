@@ -128,6 +128,7 @@ export const PAGE_ITEMS: BoardItemType[] = [
   {
     key: PAGE_ENTITY,
     surface: { none: "The page's own surface registers inside its frame; the board sees it by title." },
+    comments: null,
     label: "Page",
     icon: AppWindow,
     group: "content",

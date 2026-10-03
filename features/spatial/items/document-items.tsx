@@ -84,6 +84,10 @@ export const DOCUMENT_ITEMS: readonly BoardItemType[] = [
   {
     key: DOCUMENT_ITEM_KEY,
     surface: { name: DOCUMENTS_SURFACE_NAME },
+    comments: (s) => {
+      const id = documentIdOf(s);
+      return id ? { token: "udt_document", id } : null;
+    },
     label: "Document",
     kindLabel: "document",
     icon: FileText,

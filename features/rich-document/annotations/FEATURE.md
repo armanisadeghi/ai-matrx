@@ -52,6 +52,7 @@ Adopters: `/markdown-studio` → Annotate (`components/markdown-studio/AnnotateV
 
 ## Changelog
 
+- 2026-10-03: **Comments on records ride the page's chat.** On a page with an agent chat (the Board), a comment on any record — a passage of a note or document tile, a record's thread in the canvas, `EntityCommentPopover`, a task's own thread — offers "With next message" and stages a remark naming the record (`comment-remarks.tsx`: `RecordCommentThread`, `stageRecordComment`; the sink is `remark-sink.ts` in the chat package). A chat answer's comments still stage into their own conversation. The receipt's Open thread opens a record target's thread too.
 - 2026-09-25: Created (RC-B11).
 - 2026-09-25: verify-RC-B11 F1–F7 fixed by class: `data-content-chrome` marker; idempotent creates; reply/edit keep their text with Retry; one-transaction private notes (`migrations/rcb11_annotation_create_is_one_write.sql`, applied); plain-sentence errors; Add-menu focus; echo by write identity + CAS edits; Ctrl/Cmd+Alt+M into the toolbar with arrow roving.
 - 2026-10-03: **Threads open in the canvas.** The desktop Notes & comments dock is the `comment-thread` canvas tab (no fixed right panel; guard `features/canvas/__tests__/side-panels-are-canvas-tabs.test.tsx` now fails on any fixed full-height right panel). Agent-authored comments name the agent with the agent mark and offer no Edit (`comment-author.ts`, behind the row's agent field). Guards: `__tests__/record-annotations.test.tsx` 3/8/8b/9, `__tests__/agent-authored-comments.test.ts`.

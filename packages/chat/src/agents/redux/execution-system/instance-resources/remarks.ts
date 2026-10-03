@@ -55,6 +55,20 @@ export interface RemarkTarget {
   messageId: string | null;
   /** A shape inside the answer (Content IR block index), when the remark is about one. */
   blockIndex?: number | null;
+  /**
+   * Any other platform record the remark is about (a board, a task on it, a
+   * note's passage): its entity token, id and the title the person saw. The
+   * model reads `comment c5 on task “Ship pricing page”`.
+   */
+  record?: RemarkRecordTarget | null;
+}
+
+/** A non-chat record a remark points at. */
+export interface RemarkRecordTarget {
+  /** The platform entity token (`task`, `note`, `spatial_board` …). */
+  token: string;
+  id: string;
+  title: string | null;
 }
 
 export interface CommentRemark {
