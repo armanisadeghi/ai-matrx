@@ -4,12 +4,16 @@
  * A persisted `input_remarks` part in the user bubble: each remark the person
  * sent with this turn, one compact row — kind icon, the quote, then their words
  * / choice / diff / answers. Read-only; the chip it was before send is gone.
+ * The handle the server gave it (`c3`) shows at the row's end, so the person
+ * can name it ("about c3…") the way the agent does.
  */
 
 import { remarkKindDisplay } from "../../context-items/remark-display";
 import type { RemarkKind } from "../../../redux/execution-system/instance-resources/remarks";
 
 const KINDS = new Set<RemarkKind>(["comment", "choice", "edit", "answers", "interaction"]);
+/** The server's handle grammar (aidream config/remarks.py): `c` + 1–6 digits, no leading zero. */
+const HANDLE = /^c[1-9][0-9]{0,5}$/;
 
 interface Row {
   kind: RemarkKind;
@@ -18,6 +22,7 @@ interface Row {
   diff: string | null;
   title: string | null;
   answers: { question: string; answer: string }[];
+  handle: string | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -47,6 +52,7 @@ function readRows(payload: Record<string, unknown> | null): Row[] {
         diff: str(raw.diff),
         title: str(raw.title),
         answers,
+        handle: typeof raw.handle === "string" && HANDLE.test(raw.handle) ? raw.handle : null,
       },
     ];
   });
@@ -60,7 +66,7 @@ export function RemarksTranscriptView({ payload }: { payload: Record<string, unk
       {rows.map((row, i) => {
         const { icon: Icon, label } = remarkKindDisplay(row.kind);
         return (
-          <div key={i} className="flex min-w-0 items-start gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs">
+          <div key={i} className="flex min-w-0 items-start gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs" data-remark-handle={row.handle ?? undefined}>
             <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-label={label} />
             <div className="grid min-w-0 gap-0.5">
               {row.quote || row.title ? (
@@ -82,6 +88,11 @@ export function RemarksTranscriptView({ payload }: { payload: Record<string, unk
                 </ul>
               ) : null}
             </div>
+            {row.handle ? (
+              <span className="ml-auto shrink-0 font-mono text-[10px] text-muted-foreground" title={`Remark ${row.handle}`}>
+                {row.handle}
+              </span>
+            ) : null}
           </div>
         );
       })}
