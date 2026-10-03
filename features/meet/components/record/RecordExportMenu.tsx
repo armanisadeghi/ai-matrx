@@ -8,10 +8,11 @@
 // exporter (`@ai-matrx/print/document`), never a second converter.
 
 import { useState } from "react";
-import { Copy, Download, Loader2, Mail } from "lucide-react";
+import { Copy, Database, Download, Loader2, Mail } from "lucide-react";
 import {
   attendanceCsv,
   attendanceReport,
+  groupTranscript,
   notesDocument,
   transcriptDocument,
   type MeetingRecord,
@@ -29,6 +30,23 @@ import {
 import { toast } from "@/lib/toast";
 import { downloadBlob } from "@/utils/file-operations/utils";
 import { fileSafe } from "@/features/meet/components/record/AttendancePanel";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
+
+/**
+ * The transcript as rows for THE one "Save to a table": one row per line — when it was said (a
+ * date-time column), who said it (the package's grouping names the speaker), what was said.
+ */
+export function meetingTranscriptRows(
+  bundle: MeetingRecordBundle,
+): Array<Record<string, unknown>> {
+  return groupTranscript(bundle.transcript, bundle.names).flatMap((block) =>
+    block.lines.map((line) => ({
+      said_at: line.startedAt,
+      speaker: block.speaker,
+      text: line.text,
+    })),
+  );
+}
 
 type DocFormat = "docx" | "pdf";
 
@@ -47,6 +65,7 @@ export function RecordExportMenu({
   onSendRecap?: () => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
+  const openSaveToTable = useOpenSaveToTable();
   const base = fileSafe(meeting.title);
   const notes = () => notesDocument(bundle, { link, when });
   const transcript = (format: "txt" | "md" | "vtt") =>
@@ -170,6 +189,20 @@ export function RecordExportMenu({
             >
               <Download className="h-4 w-4" aria-hidden="true" /> Word (.docx)
             </DropdownMenuItem>
+            {openSaveToTable ? (
+              <DropdownMenuItem
+                onSelect={() =>
+                  openSaveToTable({
+                    value: meetingTranscriptRows(bundle),
+                    title: `${meeting.title} transcript`,
+                    organizationId: meeting.organizationId,
+                  })
+                }
+              >
+                <Database className="h-4 w-4" aria-hidden="true" /> Save to a
+                table…
+              </DropdownMenuItem>
+            ) : null}
           </>
         ) : null}
         {bundle.attendees.length > 0 ? (

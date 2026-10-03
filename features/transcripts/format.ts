@@ -103,6 +103,40 @@ export function segmentData(segment: TranscriptSegment) {
   };
 }
 
+/** Whitespace-collapsed, lower-cased — how a selection is matched to the lines it covers. */
+function looseText(text: string): string {
+  return text.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+type TableRowSegment = Pick<TranscriptSegment, "timecode" | "seconds" | "text" | "speaker">;
+
+/**
+ * The transcript as rows for "Save to a table" (the rich-document registry's `tableRows`):
+ * one row per line — the clock, the second it starts at (a number column), who spoke, what was
+ * said. With a selection, only the lines it covers (a line whose words it holds, or the one line
+ * it falls inside); a selection that matches no line saves the whole transcript.
+ */
+export function transcriptTableRows(
+  segments: readonly TableRowSegment[],
+  selection: string | null = null,
+): Array<Record<string, unknown>> {
+  const rowOf = (s: TableRowSegment) => ({
+    time: s.timecode,
+    seconds: s.seconds,
+    speaker: s.speaker?.trim() || null,
+    text: s.text,
+  });
+  const picked = looseText(selection ?? "");
+  if (picked) {
+    const covered = segments.filter((s) => {
+      const line = looseText(s.text ?? "");
+      return line.length > 0 && (picked.includes(line) || line.includes(picked));
+    });
+    if (covered.length > 0) return covered.map(rowOf);
+  }
+  return segments.map(rowOf);
+}
+
 // ── The transcript record ───────────────────────────────────────────────────
 
 /** The rendered transcript body — the same join the viewer's own copy uses. */

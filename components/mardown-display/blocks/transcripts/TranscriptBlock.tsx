@@ -5,13 +5,15 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, FileText, Upload } from "lucide-react";
+import { ChevronDown, Database, FileText, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AdvancedTranscriptViewer from "@/components/mardown-display/blocks/transcripts/AdvancedTranscriptViewer";
 import { ImportTranscriptModal } from "@/features/transcripts/components/ImportTranscriptModal";
 import { parseTranscript } from "./transcript-parser";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
+import { transcriptTableRows } from "@/features/transcripts/format";
 
 interface TranscriptBlockProps {
   content: string;
@@ -23,6 +25,7 @@ const TranscriptBlock: React.FC<TranscriptBlockProps> = ({ content }) => {
   const { toast } = useToast();
 
   const parsed = useMemo(() => parseTranscript(content), [content]);
+  const openSaveToTable = useOpenSaveToTable();
 
   const collapsibleTitle = parsed.title ?? "Transcript";
 
@@ -66,6 +69,23 @@ const TranscriptBlock: React.FC<TranscriptBlockProps> = ({ content }) => {
           <Upload className="h-4 w-4" />
           Import
         </Button>
+        {openSaveToTable && parsed.segments.length > 0 ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              openSaveToTable({
+                value: transcriptTableRows(parsed.segments),
+                title: parsed.title ?? "Transcript",
+              });
+            }}
+            className="mr-2 h-8 px-3"
+          >
+            <Database className="h-4 w-4" />
+            Save to a table
+          </Button>
+        ) : null}
       </div>
       <CollapsibleContent className="bg-transparent">
         <div className="p-2 bg-transparent">

@@ -209,14 +209,24 @@ registerAction({
  * the `saveToTable` overlay: a new table, or rows added to one the person has. No host dialog, no
  * per-surface parse: chat, notes, every RichDocument and the right-click menu reach the same screen.
  */
-const tableShapeText = (ctx: RichDocumentActionContext): string => {
+/**
+ * What "Save to a table" saves, in order: a table-shaped selection; the rows the host says the
+ * content IS (`callbacks.tableRows` — a transcript's lines, a thread's messages), narrowed to the
+ * selection when there is one; the content's own table shape. Null → the action is absent.
+ */
+const tableSource = (
+  ctx: RichDocumentActionContext,
+): { text: string } | { rows: ReadonlyArray<Record<string, unknown>> } | null => {
   // BREAKER-3 B3-16: a selection over RENDERED content (a nested list, a table's rows) is read from
   // the selected DOM, which keeps its shape; the flattened words are the fallback.
   const rendered = liveSelectionShapeText();
-  if (rendered && hasTableShape(rendered)) return rendered;
+  if (rendered && hasTableShape(rendered)) return { text: rendered };
   const selected = ctx.applicationScope?.selection;
-  if (typeof selected === "string" && hasTableShape(selected)) return selected;
-  return ctx.content;
+  if (typeof selected === "string" && hasTableShape(selected)) return { text: selected };
+  const words = typeof selected === "string" && selected.trim() ? selected : null;
+  const rows = ctx.callbacks?.tableRows?.(words);
+  if (rows && rows.length > 0) return { rows };
+  return hasTableShape(ctx.content) ? { text: ctx.content } : null;
 };
 
 registerAction({
@@ -229,18 +239,19 @@ registerAction({
   renderSlot: "overflow",
   order: 14,
   requiresAuth: true,
-  visible: (ctx) => hasTableShape(tableShapeText(ctx)),
+  visible: (ctx) => tableSource(ctx) !== null,
   run: (ctx) => {
-    const text = tableShapeText(ctx);
+    const source = tableSource(ctx);
+    if (!source) return;
     ctx.onClose();
     ctx.dispatch(
       openOverlay({
         overlayId: "saveToTable",
         instanceId: ctx.instanceKey("save-to-table"),
         data: {
-          text,
-          value: null,
-          hasValue: false,
+          text: "text" in source ? source.text : null,
+          value: "rows" in source ? source.rows : null,
+          hasValue: "rows" in source,
           grid: null,
           title: deriveContentTitle(ctx) ?? null,
           shapeIndex: 0,

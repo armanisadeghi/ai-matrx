@@ -364,6 +364,13 @@ export interface RichDocumentActionContextCallbacks {
    * comments" row reads it (annotations/RecordAnnotations).
    */
   annotationRecordKey?: () => string | null;
+  /**
+   * The rows this content already IS — a transcript's lines, a thread's messages — for content
+   * whose text has no table shape of its own. "Save to a table" offers them (typed columns) when
+   * neither the selection nor the text reads as rows. `selection` is the selected words, when any,
+   * so the host can narrow to that part; null or [] means "nothing to offer".
+   */
+  tableRows?: (selection: string | null) => ReadonlyArray<Record<string, unknown>> | null;
 }
 
 /** What a chat-answer save actually wrote (RC-B5) — the source of any "saved" sentence. */

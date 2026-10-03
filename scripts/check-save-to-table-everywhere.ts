@@ -17,6 +17,10 @@
  *      `hasTableShape`, and the selection toolbar must keep `selection:save-to-table` — sent to
  *      the COMMON host half (VERIFIER-30: under the annotation key it never showed in Read mode),
  *      and both it and the registry read a rendered selection through `shapeTextOfNode`;
+ *      Rows are not only tables-in-text: a tool result's object rows (`columns: TableColumn[]`),
+ *      a transcript's lines (`TranscriptSegment`, meet's `groupTranscript`) and a message thread
+ *      (`<ConversationView>`) are rows too (lane 3 W1.6). A renderer whose offer lives in another
+ *      file names it in `OFFERED_BY`, and every file named there must itself offer.
  *   4. a table is born anywhere but the two named homes (VERIFIER-30 #5: a heatmap, a PDF
  *      extraction and the older importer each made their own) — `createTable` from the data
  *      seam or records' `declareTable` outside `BIRTH_HOMES`.
@@ -43,10 +47,18 @@ export const CONTENT_ROOTS = [
   "features/tool-call-visualization", "packages/chat/src/tool-call-visualization",
   "features/content-ir",
   "components/selection-toolbar",
+  "features/transcripts",
+  "features/meet/components/record",
+  "features/messaging",
 ];
 
 /** A file that DRAWS a table-shaped value to a person. */
-const SHAPE_MARKERS = [/\bparseMarkdownTable\(/, /\bdetectTabular\(/, /\bparseCsv\(/, /\bnormalizedData\b/, /\bparseFirstMarkdownTable\(/];
+const SHAPE_MARKERS = [
+  /\bparseMarkdownTable\(/, /\bdetectTabular\(/, /\bparseCsv\(/, /\bnormalizedData\b/, /\bparseFirstMarkdownTable\(/,
+  /\bcolumns:\s*TableColumn\[\]/, // a tool result's object rows
+  /\bTranscriptSegment\b/, /\bgroupTranscript\(/, // a transcript's lines
+  /<ConversationView\b/, // a message thread
+];
 
 /** The ways a renderer offers the one action — directly, or by drawing a renderer that does. */
 const OFFERS = [
@@ -56,6 +68,7 @@ const OFFERS = [
   /<StreamingTableRenderer\b/,
   /<MarkdownTable\b/,
   /<TableWithSeparatedControls\b/,
+  /\btableRows:\s*\(/, // the rich-document registry's rows callback (its ⋯ and right-click carry it)
 ];
 
 /**
@@ -66,6 +79,31 @@ export const DRAWS_NO_ROWS: Record<string, string> = {
   "components/mardown-display/MarkdownRenderer.tsx": "draws TableWithSeparatedControls, which offers it",
   "components/mardown-display/markdown-classification/processors/utils/table-data-parser.tsx": "a parser; renders nothing",
   "components/mardown-display/tables/SaveTableModal.tsx": "the older-store save dialog the overlay itself opens",
+  "components/mardown-display/blocks/transcripts/TranscriptViewer.tsx": "imported by nothing — drawn nowhere",
+  "features/transcripts/components/CreateTranscriptModal.tsx": "a form that writes a new transcript; shows no saved lines",
+  "features/transcripts/components/ImportTranscriptModal.tsx": "imports lines into a transcript; the block that opens it offers them",
+  "features/transcripts/components/RecordingPreview.tsx": "a recording's live preview before it is a transcript",
+  "features/messaging/lib/messagingAiDemand.tsx": "names ConversationView in a comment; draws nothing",
+};
+
+/**
+ * Renderers whose rows are offered by another file — the host that draws them, or the menu beside
+ * them. Every file in `by` must exist and itself offer; a stale claim fails rule 1. An empty `by`
+ * is an offer another team owes; every run prints it.
+ */
+export const OFFERED_BY: Record<string, { by: readonly string[]; why: string }> = {
+  "components/mardown-display/blocks/transcripts/AdvancedTranscriptViewer.tsx": {
+    by: ["features/transcripts/components/TranscriptViewer.tsx", "components/mardown-display/blocks/transcripts/TranscriptBlock.tsx"],
+    why: "the transcript body its two hosts draw; each host offers the lines",
+  },
+  "features/meet/components/record/TranscriptPanel.tsx": {
+    by: ["features/meet/components/record/RecordExportMenu.tsx"],
+    why: "the meeting record's Export menu offers the transcript lines",
+  },
+  "packages/chat/src/tool-call-visualization/result-fields/ResultTable.tsx": {
+    by: [],
+    why: "AWAITING the chat package's result-actions registration (CPM register F-ST); the package owns this file",
+  },
 };
 
 /** The only files that may make a table themselves, each with why. */
@@ -73,6 +111,7 @@ export const BIRTH_HOMES: Record<string, string> = {
   "components/mardown-display/tables/SaveTableModal.tsx": "the older-store branch the saveToTable overlay opens, until the final switch",
   "components/user-generated-table-data/CreateTableModal.tsx": "the older /data home's table builder: columns typed by hand with no rows (no shape to save), retired with the older store",
   "features/kits/installer.ts": "a kit installs the tables its manifest declares — a template, not content a person is saving",
+  "features/make/MakeHome.tsx": "/make's New table: an empty table named before anything is typed — no rows, no shape to save",
 };
 
 /** The one place the older-store dialog may be opened from. */
@@ -90,8 +129,18 @@ export function judge(files: ReadonlyMap<string, string>): Finding[] {
     const inRoots = CONTENT_ROOTS.some((r) => file.startsWith(`${r}/`));
     if (inRoots && file.endsWith(".tsx") && !/\.test\.tsx$/.test(file) && !file.includes("__tests__")) {
       const draws = SHAPE_MARKERS.some((m) => m.test(text));
-      if (draws && !(file in DRAWS_NO_ROWS) && !OFFERS.some((m) => m.test(text))) {
+      const offers = OFFERS.some((m) => m.test(text));
+      const elsewhere = OFFERED_BY[file];
+      if (draws && !(file in DRAWS_NO_ROWS) && !offers && !elsewhere) {
         out.push({ rule: 1, file, says: "draws rows and offers no Save to a table (use useOpenSaveToTable, or draw TableSaveToMenu)" });
+      }
+      if (draws && !offers && elsewhere) {
+        for (const by of elsewhere.by) {
+          const host = files.get(by);
+          if (host === undefined || !OFFERS.some((m) => m.test(host))) {
+            out.push({ rule: 1, file, says: `OFFERED_BY names ${by}, which does not offer Save to a table` });
+          }
+        }
       }
     }
     if (file !== SAVE_TABLE_MODAL_HOME && file !== "components/mardown-display/tables/SaveTableModal.tsx" && !/\.test\.tsx?$/.test(file)) {
@@ -174,7 +223,24 @@ function selfTest(): void {
   const lost = new Map(base);
   lost.set("features/rich-document/actions/handlers/transfer.ts", (base.get("features/rich-document/actions/handlers/transfer.ts") ?? "").replace(/hasTableShape\(/g, "parseFirstMarkdownTable("));
   if (!judge(lost).some((f) => f.rule === 3)) throw new Error("rule 3 did not fire when the registry stopped reading every shape");
-  console.log("✓ self-test: each of the four rules fails when broken, and the tree is green");
+  // W1.6: the widened roots — a tool-result table, a transcript, a thread that offer nothing.
+  for (const [path, body] of [
+    ["packages/chat/src/tool-call-visualization/result-fields/PlantedRows.tsx", "export function T({ columns }: { columns: TableColumn[] }) { return <table/>; }"],
+    ["features/transcripts/components/PlantedLines.tsx", "import type { TranscriptSegment } from '../types';\nexport const L = (p: { s: TranscriptSegment[] }) => <ol/>;"],
+    ["features/meet/components/record/PlantedBlocks.tsx", "export const B = ({ b }) => <ol>{groupTranscript(b.transcript).map(() => null)}</ol>;"],
+    ["features/messaging/components/PlantedThread.tsx", "export const P = () => <ConversationView conversationId={id} />;"],
+  ] as const) {
+    const widened = new Map(base);
+    widened.set(path, body);
+    if (!judge(widened).some((f) => f.rule === 1 && f.file === path)) throw new Error(`rule 1 did not fire on ${path}`);
+  }
+  // A surface that lost its offer, and an OFFERED_BY claim gone stale.
+  for (const host of ["features/messaging/components/ConversationPane.tsx", "features/transcripts/components/TranscriptViewer.tsx", "features/meet/components/record/RecordExportMenu.tsx", "components/mardown-display/blocks/transcripts/TranscriptBlock.tsx"]) {
+    const lost = new Map(base);
+    lost.set(host, (base.get(host) ?? "").replace(/useOpenSaveToTable/g, "useOpenNothing").replace(/tableRows:\s*\(/g, "rows: ("));
+    if (!judge(lost).some((f) => f.rule === 1)) throw new Error(`rule 1 did not fire when ${host} stopped offering`);
+  }
+  console.log("✓ self-test: each of the four rules fails when broken (incl. tool results, transcripts, messaging), and the tree is green");
 }
 
 const argv = process.argv.slice(2);
@@ -188,4 +254,6 @@ if (argv.includes("--self-test")) {
     process.exit(1);
   }
   console.log("✓ every surface that draws rows offers the one Save to a table; no second save path; both menus carry it");
+  // Nothing waits silently: a renderer whose offer is owed by another team is named on every run.
+  for (const [file, { by, why }] of Object.entries(OFFERED_BY)) if (by.length === 0) console.log(`  ! still owed: ${file} — ${why}`);
 }

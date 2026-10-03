@@ -23,6 +23,7 @@
 import {
   Copy,
   CornerUpLeft,
+  Database,
   ExternalLink,
   Link2,
   Pin,
@@ -235,6 +236,25 @@ export function buildConversationMenuSection(args: {
 }
 
 /**
+ * The thread as rows for THE one "Save to a table": one row per message — who sent it (the
+ * package's `resolveActor` byline), when (a date-time column), what was said. Deleted messages
+ * are left out rather than saved as "(message deleted)".
+ */
+export function threadTableRows(
+  messages: readonly Message[],
+  participants: readonly UserSummary[],
+): Array<Record<string, unknown>> {
+  const byId = new Map(participants.map((p) => [p.userId, p]));
+  return messages
+    .filter((m) => m.deletedAt === null)
+    .map((m) => ({
+      sender: messageSenderName(m, byId.get(m.senderId) ?? null),
+      sent_at: m.createdAt,
+      message: messageCopyText(m),
+    }));
+}
+
+/**
  * The shared message section. `onReply` is optional — a host without a
  * composer (a read-only transcript) simply doesn't get the item, rather than
  * getting one that silently does nothing.
@@ -242,8 +262,10 @@ export function buildConversationMenuSection(args: {
 export function buildMessageMenuSection(args: {
   message: Message | null;
   onReply?: (quoted: string) => void;
+  /** Present when the host can open "Save to a table" for the whole thread. */
+  onSaveThreadToTable?: () => void;
 }): ContextMenuExtraSection {
-  const { message, onReply } = args;
+  const { message, onReply, onSaveThreadToTable } = args;
 
   const items: ContextMenuExtraItem[] = [
     {
@@ -279,6 +301,18 @@ export function buildMessageMenuSection(args: {
                 .join("\n");
               onReply(`${quoted}\n\n`);
             },
+          },
+        ]
+      : []),
+    ...(onSaveThreadToTable
+      ? [
+          {
+            kind: "item" as const,
+            id: "dm-thread-save-to-table",
+            label: "Save to a table…",
+            icon: Database,
+            description: "The thread as rows: sender, time, message",
+            onSelect: onSaveThreadToTable,
           },
         ]
       : []),

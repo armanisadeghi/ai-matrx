@@ -43,6 +43,7 @@ import {
   transcriptHeaderSummary,
   transcriptLocation,
   transcriptMetaData,
+  transcriptTableRows,
 } from "@/features/transcripts/format";
 import { useToastManager } from "@/hooks/useToastManager";
 import { ProInput } from "@/components/official/ProInput";
@@ -876,6 +877,11 @@ export function TranscriptViewer() {
                         tags: activeTranscript.tags,
                       },
                       exclude: ["open-fullscreen-editor", "tts-play"],
+                      callbacks: {
+                        // "Save to a table": one typed row per line (or the selected lines).
+                        tableRows: (selection) =>
+                          transcriptTableRows(activeTranscript.segments ?? [], selection),
+                      },
                     }}
                   />
                 )}

@@ -17,6 +17,7 @@ const HANDLERS = path.join(__dirname, "../handlers");
 /** file → why raw ctx.content may be handed on there. */
 const RAW_ALLOWED: Record<string, string> = {
   "capture.ts:text": "save-shape-instance EXTRACTS the kind blocks — it needs the envelopes",
+  "transfer.ts:text": "save-to-table hands the shape reader the whole text, kind envelopes included (a kind value is a shape)",
 };
 
 const OUTBOUND = [

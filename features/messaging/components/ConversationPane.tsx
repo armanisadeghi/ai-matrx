@@ -47,7 +47,9 @@ import {
   messageCopyLines,
   messageEntityRef,
   buildMessageMenuSection,
+  threadTableRows,
 } from "@/features/messaging/lib/messaging-menu-actions";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { useMessagingAiDemand } from "@/features/messaging/lib/messagingAiDemand";
 
 export interface ConversationPaneProps {
@@ -83,6 +85,16 @@ export function ConversationPane({
     null;
   const [menuMessage, setMenuMessage] = useState<Message | null>(null);
   const menuRef = useRef<Message | null>(null);
+  const openSaveToTable = useOpenSaveToTable();
+  const saveThreadToTable =
+    openSaveToTable && messages.some((m) => m.deletedAt === null)
+      ? () =>
+          openSaveToTable({
+            value: threadTableRows(messages, conversation?.participants ?? []),
+            title: conversation ? `${conversation.displayName} messages` : "Messages",
+            organizationId: conversation?.conversation.organizationId ?? null,
+          })
+      : undefined;
 
   return (
     <NonEditableContextMenu
@@ -115,7 +127,12 @@ export function ConversationPane({
           content: messageCopyLines(message),
         };
       }}
-      extraSections={[buildMessageMenuSection({ message: menuMessage })]}
+      extraSections={[
+        buildMessageMenuSection({
+          message: menuMessage,
+          onSaveThreadToTable: saveThreadToTable,
+        }),
+      ]}
     >
       <div
         className={cn(
