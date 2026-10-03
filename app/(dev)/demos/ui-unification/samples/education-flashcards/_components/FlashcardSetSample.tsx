@@ -217,17 +217,22 @@ const SAMPLE_PATH = "/demos/ui-unification/samples/education-flashcards";
      control without editing it. Unlayered CSS beats its Tailwind utilities;
      the rollout does this in the package Button instead. */
 const FC_SAMPLE_CSS = `
+/* Disabled: the cursor law (not-allowed) and a dimmed control. */
+.uc-btn:disabled, .uc-btn[aria-disabled=true] { opacity: 0.5; cursor: not-allowed; }
 .uc-icon.uc-btn { width: var(--matrx-tap-wide-size); padding: 0; color: hsl(var(--muted-foreground)); }
 .uc-icon.uc-btn:hover { color: hsl(var(--foreground)); }
 .uk-split-l.uc-btn { margin-inline-end: 0; border-start-end-radius: 0; border-end-end-radius: 0; padding-inline-end: 0.75rem; }
 .uk-split-r.uc-btn { margin-inline-start: 0; border-start-start-radius: 0; border-end-start-radius: 0; width: 1.75rem; padding: 0; border-inline-start: 1px solid hsl(var(--primary-foreground) / 0.25); }
 .uk-adopt > button, .uk-adopt > a { box-sizing: border-box; height: var(--matrx-tap-wide-size) !important; min-height: 0 !important; margin-inline: calc(var(--matrx-tap-gap) / 2);
   padding-inline: var(--uc-pad-icon) var(--uc-pad-text); border-radius: 9999px; font-size: var(--uc-label); font-weight: 500; gap: 0.375rem; line-height: 1; cursor: pointer; }
+.uk-adopt > button *, .uk-adopt > a * { font-size: inherit; }
 .uk-adopt > button svg, .uk-adopt > a svg { width: var(--matrx-tap-icon-size) !important; height: var(--matrx-tap-icon-size) !important; margin: 0 !important; }
 .uk-adopt-icon > button { box-sizing: border-box; width: var(--matrx-tap-wide-size) !important; height: var(--matrx-tap-wide-size) !important; min-height: 0 !important;
   margin-inline: calc(var(--matrx-tap-gap) / 2); padding: 0 !important; border-radius: 9999px; cursor: pointer; }
 .uk-adopt-icon > button svg { width: var(--matrx-tap-icon-size) !important; height: var(--matrx-tap-icon-size) !important; }
 .uk-full > button, .uk-full > a { width: calc(100% - var(--matrx-tap-gap)); }
+.uc-btn.uk-start, .uk-adopt.uk-grow > button { justify-content: flex-start; }
+.uk-grow > button { flex: 1 1 calc(50% - var(--matrx-tap-gap)); }
 `;
 
 const EDU_BASE = "/education/flashcards";
@@ -1864,7 +1869,7 @@ export function FlashcardSetSample({
                 (only the phone row opens it; desktop shows them on the page).
                 Dialog becomes a bottom sheet on a phone by itself. */}
             <Dialog open={deckToolsOpen} onOpenChange={setDeckToolsOpen}>
-              <DialogContent className="matrx-touch-targets flex max-h-[85dvh] flex-col sm:max-w-lg">
+              <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Deck tools</DialogTitle>
                 </DialogHeader>
@@ -1878,7 +1883,7 @@ export function FlashcardSetSample({
                     </h2>
                     <div className="uc-row -mx-[3px] [&>*]:basis-[calc(50%-var(--matrx-tap-gap))] [&>*]:grow">
                       {canEdit && (
-                        <button type="button" className="uc-btn uc-btn-outline justify-start md:hidden"
+                        <button type="button" className="uc-btn uc-btn-outline uk-start md:hidden"
                           onClick={() =>
                             navigate("edit", `${EDU_BASE}/${setId}/edit`)
                           }
@@ -1886,7 +1891,7 @@ export function FlashcardSetSample({
                           <Pencil aria-hidden /> Edit
                         </button>
                       )}
-                      <button type="button" className="uc-btn uc-btn-outline justify-start"
+                      <button type="button" className="uc-btn uc-btn-outline uk-start"
                         onClick={() =>
                           navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
                         }
@@ -1894,7 +1899,7 @@ export function FlashcardSetSample({
                         <TrendingUp aria-hidden /> Progress
                       </button>
                       {canEdit && (
-                        <button type="button" className="uc-btn uc-btn-outline justify-start"
+                        <button type="button" className="uc-btn uc-btn-outline uk-start"
                           onClick={() => {
                             setDeckToolsOpen(false);
                             setSettingsOpen(true);
@@ -1904,7 +1909,7 @@ export function FlashcardSetSample({
                         </button>
                       )}
                       {(access.isOwner || access.level === "admin") && (
-                        <span className="uk-adopt contents"><ShareButton
+                        <span className="uk-adopt uk-grow contents"><ShareButton
                           resourceType="fc_set"
                           resourceId={setId}
                           resourceName={data.set.name}
@@ -1914,20 +1919,20 @@ export function FlashcardSetSample({
                         /></span>
                       )}
                       {chatHref && (
-                        <Link href={chatHref} className="uc-btn uc-btn-outline justify-start">
+                        <Link href={chatHref} className="uc-btn uc-btn-outline uk-start">
                             <MessagesSquare aria-hidden /> See chat
                           </Link>
                       )}
                       {/* An empty deck has nothing to keep offline or
                           print: those appear with its first card. */}
                       {!deckEmpty && (
-                        <span className="uk-adopt contents"><OfflineDeckButton
+                        <span className="uk-adopt uk-grow contents"><OfflineDeckButton
                           setId={setId}
                           className="justify-start"
                         /></span>
                       )}
                       {!deckEmpty && (
-                        <button type="button" className="uc-btn uc-btn-outline justify-start"
+                        <button type="button" className="uc-btn uc-btn-outline uk-start"
                           onClick={() => {
                             setDeckToolsOpen(false);
                             handlePrint();
@@ -1939,7 +1944,7 @@ export function FlashcardSetSample({
                       {/* This deck is one printable; the hub is the index of
                           the rest (cheat sheets, practice tests, certificates,
                           labels, codes, booklets, printed copies). */}
-                      <Link href="/print" className="uc-btn uc-btn-quiet justify-start" onClick={() => setDeckToolsOpen(false)}>
+                      <Link href="/print" className="uc-btn uc-btn-quiet uk-start" onClick={() => setDeckToolsOpen(false)}>
                           <Printer aria-hidden /> More printing
                         </Link>
                     </div>
@@ -1953,7 +1958,7 @@ export function FlashcardSetSample({
                     <div className="uc-row -mx-[3px] [&>*]:basis-[calc(50%-var(--matrx-tap-gap))] [&>*]:grow">
                       {(["csv", "anki", "md", "json"] as const).map(
                         (format) => (
-                          <button type="button" key={format} className="uc-btn uc-btn-outline justify-start"
+                          <button type="button" key={format} className="uc-btn uc-btn-outline uk-start"
                             onClick={() => exportDeck(format)}
                           >
                             <Download aria-hidden />
@@ -1971,7 +1976,7 @@ export function FlashcardSetSample({
                         Audio
                       </h2>
                       <div className="uc-row -mx-[3px] [&>*]:basis-full">
-                        <button type="button" className="uc-btn uc-btn-outline justify-start"
+                        <button type="button" className="uc-btn uc-btn-outline uk-start"
                           onClick={() => startAudioJob("generate")}
                         >
                           <Volume2 aria-hidden />
@@ -1988,7 +1993,7 @@ export function FlashcardSetSample({
                           const { ready, total } = deckAudioCoverage(data.cards, lane);
                           const done = ready >= total;
                           return (
-                            <button type="button" key={lane} className="uc-btn uc-btn-outline justify-start"
+                            <button type="button" key={lane} className="uc-btn uc-btn-outline uk-start"
                               disabled={done}
                               onClick={() => startAudioJob(lane)}
                             >
@@ -2010,7 +2015,7 @@ export function FlashcardSetSample({
                         Cards
                       </h2>
                       <div className="uc-row -mx-[3px] [&>*]:basis-full">
-                      <button type="button" className="uc-btn uc-btn-outline justify-start"
+                      <button type="button" className="uc-btn uc-btn-outline uk-start"
                         onClick={() => {
                           setDeckToolsOpen(false);
                           setSelecting(true);

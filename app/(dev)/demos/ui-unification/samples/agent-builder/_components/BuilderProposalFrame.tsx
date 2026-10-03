@@ -64,7 +64,7 @@ export function BuilderProposalFrame({ realHref, children }: { realHref: string;
   return (
     <div className="flex h-full min-h-0 flex-col">
       <SampleScale>
-        <div className="relative shrink-0 border-b border-border">
+        <div className="shrink-0 border-b border-border">
           <div className="uc-row py-0.5 pl-3 pr-[9px]" style={{ flexWrap: "nowrap" }}>
             <ReplacesLine href={realHref} className="mx-[3px] min-w-0 flex-1" />
             <button
@@ -106,7 +106,7 @@ export function BuilderProposalFrame({ realHref, children }: { realHref: string;
           {open ? (
             <ol
               id="builder-proposals"
-              className="absolute inset-x-3 top-full z-30 mt-1 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-lg"
+              className="mx-3 mb-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card"
             >
               {PROPOSALS.map((p, i) => (
                 <li key={p.text} className="flex min-h-8 items-center gap-2 px-3 py-1">

@@ -108,6 +108,8 @@ const FORMAT_PROMISE: Record<TargetKind, string> = {
    the component's Tailwind utilities (the same reason the `uc-*` prototype
    wins); the rollout does this in the package Button instead. */
 const KIT_SAMPLE_CSS = `
+/* Disabled: the cursor law (not-allowed) and a dimmed control. */
+.uc-btn:disabled, .uc-btn[aria-disabled=true] { opacity: 0.5; cursor: not-allowed; }
 .uk-adopt > button { box-sizing: border-box; height: var(--matrx-tap-wide-size); min-height: 0; margin-inline: calc(var(--matrx-tap-gap) / 2);
   padding-inline: var(--uc-pad-icon) var(--uc-pad-text); border-radius: 9999px; font-size: var(--uc-label); font-weight: 500; gap: 0.375rem; line-height: 1; }
 .uk-adopt > button svg { width: var(--matrx-tap-icon-size); height: var(--matrx-tap-icon-size); }
