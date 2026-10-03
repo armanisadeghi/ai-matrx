@@ -55,7 +55,12 @@ const PLANTS = {
   readable: (src) => src.replace("and s.id in (select r.id from readable r)", "and true"),
   access: (src) => src.replaceAll("where iam.has_org_access(o.org)", "where true"),
   empty: (src) => src.replace("), '[]'::jsonb)", "), '[{}]'::jsonb)"),
-  per_org: (src) => src.replace("and s.id in (select r.id from readable r)", "and s.id in (select context._readable_scope_ids())"),
+  // The door as it was before it existed: public.get_scope_tree per organization (its old path works the
+  // readable set out inside each call). Same answers — only the once check can see it.
+  per_org: (src) => src.replace(
+    "if not coalesce((platform.knob_resolve('custom', 'scope_readers_read_the_store', null) #>> '{}')::boolean, false) then",
+    "if false then",
+  ),
   type: (src) => src.replace("and (p_type_id is null or s.scope_type_id = p_type_id)", "and true").replace("public.get_scope_tree(o.org, p_type_id)", "public.get_scope_tree(o.org, null)"),
 };
 if (PLANT && !PLANTS[PLANT]) throw new Error(`unknown plant ${PLANT}: ${Object.keys(PLANTS).join(" | ")}`);
