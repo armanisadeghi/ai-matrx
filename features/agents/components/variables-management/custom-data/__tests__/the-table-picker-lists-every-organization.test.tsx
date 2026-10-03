@@ -99,6 +99,11 @@ jest.mock("@ai-matrx/records-ui", () => ({
   keptByTheApp: (t: { kept_by_the_app?: boolean }) => t.kept_by_the_app === true,
   recordsDataSource: () => ({ rpc: jest.fn() }),
   personActor: () => ({}),
+  // The picker's one rule (records-ui tablePicking): tables only, the chosen one always kept.
+  tablePickerEntries: (
+    rows: Array<{ id: string; kept_by_the_app?: boolean }>,
+    { keep }: { keep?: string | null },
+  ) => ({ entries: rows.filter((r) => !r.kept_by_the_app || r.id === keep).map((table) => ({ table })) }),
 }));
 jest.mock("@ai-matrx/design-system", () => ({
   Input: () => null,

@@ -19,6 +19,7 @@
  * The only values that genuinely cannot be typed:
  *   - media (image / audio / video / document / youtube) — a MediaRef, not text
  *   - picklist-bound variables — the value is a reference fence, not text
+ *   - table / tables — the value is a table reference (id or ids), not text
  * Those draw a button that opens the full editor.
  */
 
@@ -26,6 +27,7 @@ import {
   isMediaVariableType,
   type VariableCustomComponent,
 } from "../../types/agent-definition.types";
+import { isTableVariableType } from "../../utils/table-variable";
 
 export type CollapsedRowKind =
   /** One-line text box; the full component is behind the chevron. */
@@ -41,6 +43,8 @@ export function collapsedRowKind(
   if (isMediaVariableType(customComponent?.type ?? "textarea")) {
     return "open-editor";
   }
+  // A table reference is picked, never typed.
+  if (isTableVariableType(customComponent?.type)) return "open-editor";
   return "text-line";
 }
 

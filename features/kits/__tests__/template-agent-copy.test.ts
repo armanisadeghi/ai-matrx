@@ -203,3 +203,40 @@ describe("template binding = the From my data binding", () => {
     expect(isCompleteBinding(b)).toBe(true);
   });
 });
+
+// A TABLE VARIABLE TAKES THE REFERENCE (Arman, 2026-10-03: "users can just select tables instead
+// of text"). "Answers From Your Tables" declares primary_table as a Table and related_tables as
+// Tables; a template copy hands each the installed table id(s) — the same value the person picks
+// in the run form — never a merge-field binding and never text.
+// The module under test can be swapped for a scratch copy with a planted break (forcing function).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const underTest = require(process.env.TEMPLATE_AGENT_COPY_UNDER_TEST ?? "../templateAgentCopy") as typeof import("../templateAgentCopy");
+
+describe("a Table variable gets the table reference", () => {
+  const bindTables = underTest.bindTemplateVariables;
+  const VISITS = "6f1c2a3b-4d5e-4f60-8a71-92b3c4d5e6f7";
+  const PATIENTS = "0a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c3d";
+  const PROVIDERS = "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b";
+  const TABLE_AGENT_DEFS = [
+    { name: "primary_table", defaultValue: "", required: true, customComponent: { type: "table" } },
+    { name: "related_tables", defaultValue: [], customComponent: { type: "tables" } },
+  ];
+  const bind = (variable: string, tableId: string) => ({ variable, tableToken: variable, tableId, describes: "" });
+
+  it("primary_table holds the one id; related_tables holds every id the template names, in order", () => {
+    const defs = bindTables(
+      TABLE_AGENT_DEFS,
+      [bind("primary_table", VISITS), bind("related_tables", PATIENTS), bind("related_tables", PROVIDERS)],
+      TEMPLATE_AGENT_COLLECTION_LIMIT,
+    ) as Record<string, unknown>[];
+    expect(defs[0]).toEqual({ ...TABLE_AGENT_DEFS[0], defaultValue: VISITS });
+    expect(defs[1]).toEqual({ ...TABLE_AGENT_DEFS[1], defaultValue: [PATIENTS, PROVIDERS] });
+    expect(defs.some((d) => "binding" in d)).toBe(false);
+  });
+
+  it("a stale binding on a Table variable is removed — the reference is the one truth", () => {
+    const stale = [{ ...TABLE_AGENT_DEFS[0], binding: { kind: "merge_field", table_id: "x" } }];
+    const [def] = bindTables(stale, [bind("primary_table", VISITS)], 500) as Record<string, unknown>[];
+    expect(def).toEqual({ ...TABLE_AGENT_DEFS[0], defaultValue: VISITS });
+  });
+});

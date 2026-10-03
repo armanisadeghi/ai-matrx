@@ -194,6 +194,20 @@ const COMPONENT_TYPE_META: Record<
     requiresToggleValues: false,
     requiresMinMax: false,
   },
+  table: {
+    label: "Table",
+    description: "Pick one of your tables",
+    requiresOptions: false,
+    requiresToggleValues: false,
+    requiresMinMax: false,
+  },
+  tables: {
+    label: "Tables",
+    description: "Pick one or more of your tables",
+    requiresOptions: false,
+    requiresToggleValues: false,
+    requiresMinMax: false,
+  },
 };
 
 // ─── Derived options list — use this for UI selects/dropdowns ─────────────

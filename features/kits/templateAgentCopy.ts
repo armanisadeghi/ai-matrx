@@ -10,8 +10,12 @@
 //   2. `agx_duplicate_agent` through the `duplicateAgent` thunk — the ONE fork, as the person
 //   3. named from the template (`nameCopiedAgent`: next free name, guarded write), its tags
 //      cleared in that same write (see TAGS below)
-//   4. each template variable bound to its installed table as a `merge_field`
-//      collection (the kit binding shape), its default cleared — the bound value is the truth
+//   4. each template variable connected to its installed table(s). A TABLE variable
+//      (component `table` / `tables`, the platform agent's own — e.g. "Answers From Your
+//      Tables") gets the table REFERENCE as its value: the id, or the ids of every table the
+//      template names for it — the same reference the person picks in the run form, so both
+//      paths are one primitive and she can switch tables. Any other variable is bound as a
+//      `merge_field` collection (the "From my data" binding), its default cleared.
 //   5. the `records` tool attached, so the copy answers a sum or a count through
 //      `custom.record_aggregate` instead of adding rows up in its head (handoff Q6)
 //
@@ -33,6 +37,7 @@
 // `templateAgentCopyHost.ts`.
 import type { Json } from "@/types/database.types";
 import type { CustomDataBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { tableReferenceValue, tableVariableTypeOf } from "@ai-matrx/chat/agents/utils/table-variable";
 import type { AgentRow } from "./installer";
 
 // ─── the contract (structurally identical to @ai-matrx/records templates/install.ts) ──
@@ -98,10 +103,15 @@ export function templateBinding(binding: TemplateAgentBinding, limit: number): C
 }
 
 /**
- * The copied agent's `variable_definitions`, with each template variable bound.
+ * The copied agent's `variable_definitions`, with each template variable connected.
  * Read and written RAW, like the kit installer: every other key of every variable
  * is kept byte-for-byte. A template naming a variable the agent does not have, or a
  * table the install did not create, is a named failure — never a skipped binding.
+ *
+ * A Table variable (`customComponent.type` `table` / `tables`) takes the REFERENCE as its
+ * `defaultValue` — one id, or every id the template names for it, in order — and carries no
+ * binding: the run form shows the table picker with it chosen. Every other variable is bound
+ * as the "From my data" whole-table binding.
  */
 export function bindTemplateVariables(
   definitions: unknown,
@@ -109,6 +119,7 @@ export function bindTemplateVariables(
   limit: number,
 ): unknown[] {
   const defs = Array.isArray(definitions) ? definitions.map((d) => (isRecord(d) ? { ...d } : d)) : [];
+  const referenced = new Map<number, string[]>();
   for (const b of bindings) {
     if (!b.tableId) {
       throw new Error(`The template binds "${b.variable}" to its "${b.tableToken}" table, which was not created.`);
@@ -118,6 +129,15 @@ export function bindTemplateVariables(
       throw new Error(`The copied agent has no "${b.variable.replace(/_/g, " ")}" input to connect.`);
     }
     const def = defs[idx] as Record<string, unknown>;
+    const tableType = tableVariableTypeOf(isRecord(def.customComponent) ? def.customComponent : null);
+    if (tableType) {
+      const ids = referenced.get(idx) ?? [];
+      if (!ids.includes(b.tableId)) ids.push(b.tableId);
+      referenced.set(idx, ids);
+      def.defaultValue = tableReferenceValue(tableType, ids);
+      delete def.binding;
+      continue;
+    }
     def.binding = templateBinding(b, limit);
     def.defaultValue = null;
   }

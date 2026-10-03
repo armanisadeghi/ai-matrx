@@ -52,6 +52,12 @@ export const VARIABLE_COMPONENT_TYPES = [
   "video",
   "youtube",
   "document",
+  // Table references — the value is a table id ("table") or a list of table ids
+  // ("tables"), picked from every table the person can see. The server reads
+  // the table as the person and hands the agent its name, id, columns and first
+  // rows (aidream conversation_context/table_reference_variables.py).
+  "table",
+  "tables",
 ] as const;
 
 /**

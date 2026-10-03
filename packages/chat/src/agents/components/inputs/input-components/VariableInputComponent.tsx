@@ -22,6 +22,8 @@ import {
   type ScalarInputKind,
 } from "./ScalarVariableInput";
 import { CurrencyVariableInput } from "./CurrencyVariableInput";
+import { TableVariableInput } from "./TableVariableInput";
+import { isTableVariableType } from "../../../utils/table-variable";
 import {
   isMediaVariableType,
   type VariableCustomComponent,
@@ -155,6 +157,16 @@ export function VariableInputComponent({
         variableName={formattedName}
         customComponent={customComponent}
         {...sharedProps}
+      />
+    );
+  } else if (isTableVariableType(type)) {
+    // A table REFERENCE — picked, never typed (utils/table-variable.ts).
+    inputComponent = (
+      <TableVariableInput
+        type={type}
+        value={effectiveValue}
+        onChange={onChange}
+        variableName={variableName}
       />
     );
   } else if (isMediaVariableType(type)) {

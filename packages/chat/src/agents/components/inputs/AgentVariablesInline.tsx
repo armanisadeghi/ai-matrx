@@ -42,6 +42,11 @@ import { isMediaVariableType } from "../../types/agent-definition.types";
 import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
 import { calculateVisualViewportLift } from "@ai-matrx/kit/dom";
 import { collapsedRowChoices, collapsedRowKind } from "./collapsed-row";
+import { TableReferenceNames } from "./input-components/TableVariableInput";
+import {
+  isEmptyTableReference,
+  tableVariableTypeOf,
+} from "../../utils/table-variable";
 import { RowChoicesButton } from "./RowChoicesButton";
 import { isControlVariable } from "@ai-matrx/agents";
 import { enterSendsHere } from "@host/components/official/composer/composerSubmit";
@@ -274,6 +279,8 @@ export function AgentVariablesInline({
           const inputText = variableValueToInputText(rawValue);
           const isPicklistBound = !!readStructuredList(variable.customComponent)
             ?.listId;
+          // A table reference shows the table's NAME, never its id.
+          const tableType = tableVariableTypeOf(variable.customComponent);
           // A media variable (image/audio/video/document) whose value names a
           // library file is a FileChip, never raw text — printing the bare
           // file_id here is the exact developer leakage this row must never
@@ -351,7 +358,11 @@ export function AgentVariablesInline({
                     <div className="flex-1 min-w-0">
                       {mediaFileId ? (
                         <FileResourceChip fileId={mediaFileId} size="xs" />
-                      ) : displayValue ? (
+                      ) : tableType && !isEmptyTableReference(rawValue) ? (
+                        <span className="text-sm text-foreground whitespace-nowrap overflow-hidden text-ellipsis block">
+                          <TableReferenceNames value={rawValue} />
+                        </span>
+                      ) : displayValue && !tableType ? (
                         <span className="text-sm text-foreground whitespace-nowrap overflow-hidden text-ellipsis block">
                           {displayValue.replace(/\n/g, " ↵ ")}
                         </span>
@@ -434,7 +445,9 @@ export function AgentVariablesInline({
                   data-variable-index={index}
                   tabIndex={index + 1}
                 >
-                  {displayValue || (
+                  {tableType && !isEmptyTableReference(rawValue) ? (
+                    <TableReferenceNames value={rawValue} />
+                  ) : (!tableType && displayValue) || (
                     <span className="text-muted-foreground/60">
                       {variableRunHint(variable) ?? "Choose…"}
                     </span>

@@ -60,29 +60,13 @@ import {
 } from "./customDataBinding";
 import { CustomDataBindingPreview } from "./CustomDataBindingPreview";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import {
-  countsByOrganization,
-  inLane,
-  inOrganization,
-  useTablesEverywhere,
-} from "@/features/unified-data/hub/useTablesEverywhere";
-import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
-import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
-import type { EntityScopeCounts } from "@/lib/entity-list/types";
-import { makeScope } from "@/lib/list-scope/types";
-import {
-  DATA_HOME_SCOPES,
-  DATA_HOME_SHELL_LANES,
-  isDataHomeScope,
-  type DataHomeScope,
-} from "@/features/unified-data/hub/dataHomeScope";
-import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
+import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
+import { TableChooser } from "@/features/unified-data/hub/TableChooser";
 import {
   CustomDataRecordsScope,
   useCustomDataOrganizationId,
 } from "./CustomDataRecordsScope";
 import { useBindingKnobs } from "./useBindingKnobs";
-import { tablesToPick } from "@/features/unified-data/hub/tablePicking";
 
 /** How many records the record picker lists. Search narrows within them. */
 
@@ -94,14 +78,6 @@ interface CustomDataBindingPickerProps {
   variableName?: string;
 }
 
-/** What a table row says beside its name: its organization, and what kind of table it is. */
-function tableHint(row: DataHomeTableRow): string {
-  const parts = [row.organization_name];
-  if (row.kind && row.kind !== "table") parts.push(row.kind);
-  if (row.kept_by_the_app) parts.push("kept by the app");
-  return parts.join(" · ");
-}
-
 export function CustomDataBindingPicker({
   binding,
   onChange,
@@ -109,16 +85,8 @@ export function CustomDataBindingPicker({
   variableName,
 }: CustomDataBindingPickerProps) {
   const tables = useTablesEverywhere();
-  // THE ORGANIZATION FILTER: All organizations (null) every time the picker opens — a filter on
-  // this list only, never remembered, never the active organization.
-  const [orgFilter, setOrgFilter] = useState<string | null>(null);
-  // THE SHELL'S LANES (All · Mine · My team · My Orgs · Shared · Public · System), All on every open.
-  const [lane, setLane] = useState<DataHomeScope>("all");
   const tableId = binding.table_id || null;
   const shape = binding.semantic_type;
-  // Tables the app keeps for itself (choice lists, ledgers) are out of sight
-  // unless the author asks for them.
-  const [showAppTables, setShowAppTables] = useState(false);
 
   const selectTable = (id: string) => {
     if (id === binding.table_id) return;
@@ -137,140 +105,19 @@ export function CustomDataBindingPicker({
     });
   };
 
-  // The organization filter narrows every lane; the lane narrows the list; counts are what shows.
-  // Tables only unless the author asks for the app's own — the one rule (`tablePicking.ts`).
-  const offeredByDefault = new Set(tablesToPick(tables.rows, tableId).map((t) => t.table_id));
-  const shown = (t: { table_id: string }) => showAppTables || offeredByDefault.has(t.table_id);
-  const inOrg = inOrganization(tables.rows, orgFilter);
-  const allTables = inLane(inOrg, lane);
-  const appKeptCount = allTables.filter((t) => t.kept_by_the_app).length;
-  const laneCounts: EntityScopeCounts = {
-    byKind: Object.fromEntries(
-      DATA_HOME_SCOPES.map((k) => [k, inLane(inOrg, k).filter(shown).length]),
-    ),
-    narrow: {
-      all: countsByOrganization(inLane(tables.rows, lane).filter(shown)),
-    },
-  };
-  // ONE FLAT LIST, never grouped by organization: each row names its organization in its hint,
-  // and the search reads it too.
-  const tableOptions: CreatableOption[] = allTables.filter(shown).map((t) => ({
-    value: t.table_id,
-    label: t.table_name,
-    hint: tableHint(t),
-    keywords: `${t.organization_name} ${t.kind}`,
-  }));
   // Looked up in the COMPLETE answer: a table outside the filter still knows its organization.
   const chosenRow = tables.rows.find((t) => t.table_id === tableId) ?? null;
 
-  const storedTableMissing =
-    Boolean(tableId) && !tables.loading && !tables.error && chosenRow === null;
-  const filteredOut =
-    chosenRow !== null &&
-    !allTables.some((t) => t.table_id === chosenRow.table_id);
-  const filteredToOne = orgFilter !== null || lane !== "all";
-
   return (
     <div className="space-y-2">
-      {/* ── Table ─────────────────────────────────────────────────────── */}
-      <div className="space-y-1.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Label className="shrink-0 text-xs font-medium text-foreground">
-            Table
-          </Label>
-          {/* THE SHELL'S TAB BAR, on the row it filters — never a private one. */}
-          <div className="min-w-[12rem] flex-1">
-            <EntityScopeTabs
-              scope={makeScope(lane)}
-              scopes={[...DATA_HOME_SHELL_LANES]}
-              counts={laneCounts}
-              countsLoading={tables.loading}
-              onChange={(next) =>
-                setLane(isDataHomeScope(next.kind) ? next.kind : "all")
-              }
-            />
-          </div>
-          {/* THE SHELL'S ORGANIZATION FILTER, on the row it filters (default All organizations). */}
-          <EntityOrgFilter
-            orgId={orgFilter}
-            onChange={setOrgFilter}
-            counts={laneCounts}
-            countsLoading={tables.loading}
-          />
-        </div>
-        <CreatablePicker
-          value={tableId}
-          options={tableOptions}
-          onSelect={selectTable}
-          placeholder={
-            tables.loading
-              ? "Loading your tables…"
-              : tables.error
-                ? "Your tables could not be read"
-                : tableOptions.length === 0
-                  ? filteredToOne
-                    ? "No tables here — choose All and All organizations"
-                    : "No tables yet — make one in Data"
-                  : "Choose a table…"
-          }
-          searchPlaceholder="Search your tables…"
-          noun="table"
-          manageAction={{
-            label: "Open Data to add or edit tables",
-            href: "/data-v2",
-          }}
-          footerActions={
-            appKeptCount > 0
-              ? [
-                  {
-                    label: showAppTables
-                      ? "Hide the tables the app keeps"
-                      : `Show ${appKeptCount} ${appKeptCount === 1 ? "table" : "tables"} the app keeps`,
-                    note: "Choice lists and other tables the app manages for itself.",
-                    onSelect: () => setShowAppTables((v) => !v),
-                  },
-                ]
-              : undefined
-          }
-          disabled={readonly}
-          loading={tables.loading}
-          ariaLabel="Table"
-        />
-        {tables.error && (
-          <p className="text-[11px] text-destructive">
-            Your tables could not be read: {tables.error.message}{" "}
-            <button
-              type="button"
-              className="underline underline-offset-2"
-              onClick={tables.reload}
-            >
-              Try again
-            </button>
-            <ErrorAlchemyMenu error={tables.error.message} />
-          </p>
-        )}
-        {filteredOut && (
-          <p className="text-[11px] text-muted-foreground">
-            {chosenRow?.table_name ?? "The bound table"} is hidden by these
-            filters{" "}
-            <button
-              type="button"
-              className="underline underline-offset-2"
-              onClick={() => {
-                setOrgFilter(null);
-                setLane("all");
-              }}
-            >
-              Show everything
-            </button>
-          </p>
-        )}
-        {storedTableMissing && (
-          <p className="text-[11px] text-warning">
-            Bound table unavailable — pick one to rebind
-          </p>
-        )}
-      </div>
+      {/* ── Table ─ THE ONE TABLE PICKER (TableChooser), shared with the run form's Table input. */}
+      <TableChooser
+        tables={tables}
+        value={tableId}
+        onSelect={selectTable}
+        readonly={readonly}
+        missingNote="Bound table unavailable — pick one to rebind"
+      />
 
       {tableId ? (
         <CustomDataRecordsScope
