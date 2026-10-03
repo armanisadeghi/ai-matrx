@@ -21,7 +21,8 @@ import { toast } from "@/lib/toast";
 import { Group, ROWS, STATUS, Section, StatusBadge, type Row } from "./kit";
 
 /* Quiet row actions: muted until the row is hovered or focused; always
-   visible where there is no hover (touch). */
+   visible where there is no hover (touch). They go LEFT of the status chips,
+   so the hidden state never reserves a slot before the "…" menu. */
 const QUIET =
   "flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100";
 
@@ -69,7 +70,8 @@ function DenseList() {
                   Updated {r.updated} · {r.owner}
                 </div>
               </div>
-              <StatusBadge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</StatusBadge>
+              {/* Hover-revealed actions sit LEFT of the chips: hidden, they leave no gap
+                  between the chip and the always-visible More (owner, 2026-10-03). */}
               <div className={QUIET}>
                 <PencilTapButton variant="transparent" ariaLabel="Rename" />
                 <TrashTapButton
@@ -79,6 +81,7 @@ function DenseList() {
                   onClick={() => trash(r)}
                 />
               </div>
+              <StatusBadge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</StatusBadge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <MoreHorizontalTapButton variant="transparent" ariaLabel="More" />
