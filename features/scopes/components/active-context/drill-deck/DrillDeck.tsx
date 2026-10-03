@@ -9,6 +9,7 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PickerSearchField } from "@/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import {
   columnShowsSearch,
   filterColumnRows,
@@ -32,7 +33,6 @@ import {
 } from "../quick-pick/engine";
 import {
   CheckGlyph,
-  ColumnSearch,
   EmptyPane,
   ErrorPane,
   InlineCreate,
@@ -363,23 +363,29 @@ export function DrillDeckCore({
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-          {title}
-        </span>
-        {deck.t !== "root" && deck.t !== "projects" && deck.t !== "tasks" && (
-          <span className="max-w-[45%] shrink-0 truncate pr-1 text-xs text-muted-foreground">
-            {deck.node.path.join(" › ")}
-          </span>
+        {/* Search sits beside Back (the attach-menu inside-view shape); a
+            short column with nothing to search shows its title instead. */}
+        {!loading && !errored && (columnShowsSearch(rows.length) || query) ? (
+          <div className="min-w-0 flex-1">
+            <PickerSearchField
+              value={query}
+              onChange={setQuery}
+              placeholder={`Search ${title}`}
+            />
+          </div>
+        ) : (
+          <>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+              {title}
+            </span>
+            {deck.t !== "root" && deck.t !== "projects" && deck.t !== "tasks" && (
+              <span className="max-w-[45%] shrink-0 truncate pr-1 text-xs text-muted-foreground">
+                {deck.node.path.join(" › ")}
+              </span>
+            )}
+          </>
         )}
       </div>
-
-      {!loading && !errored && (columnShowsSearch(rows.length) || query) && (
-        <ColumnSearch
-          value={query}
-          onChange={setQuery}
-          label={`Search ${title}`}
-        />
-      )}
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5 scrollbar-thin">
         {loading && <SkeletonRows count={6} />}
@@ -473,6 +479,7 @@ export function DrillDeckCore({
         <div className="shrink-0 border-t border-border">
           {creating ? (
             <InlineCreate
+              size="comfortable"
               placeholder={`${createConfig.label} name`}
               onCommit={(value) => {
                 void createConfig.run(value);
@@ -492,7 +499,7 @@ export function DrillDeckCore({
         </div>
       )}
 
-      <PickerFooter engine={engine} mode={mode} dense onCommit={onCommit} />
+      <PickerFooter engine={engine} mode={mode} size="comfortable" onCommit={onCommit} />
     </div>
   );
 }

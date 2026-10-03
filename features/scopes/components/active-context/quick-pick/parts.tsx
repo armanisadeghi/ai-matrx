@@ -220,16 +220,20 @@ export function InlineCreate({
   onCommit,
   onCancel,
   autoFocus = true,
+  size = "compact",
 }: {
   placeholder: string;
   initial?: string;
   onCommit: (value: string) => void;
   onCancel: () => void;
   autoFocus?: boolean;
+  /** `comfortable` = the attach-menu sizing (36px, text-sm). */
+  size?: "compact" | "comfortable";
 }) {
   const [v, setV] = useState(initial);
+  const big = size === "comfortable";
   return (
-    <div className="flex items-center gap-1 px-1 py-1">
+    <div className={cn("flex items-center gap-1", big ? "p-1.5" : "px-1 py-1")}>
       <Input
         autoFocus={autoFocus}
         value={v}
@@ -247,21 +251,27 @@ export function InlineCreate({
           }
         }}
         placeholder={placeholder}
-        className="h-7 flex-1 text-xs"
+        className={cn("flex-1", big ? "h-9 text-sm" : "h-7 text-xs")}
         style={{ fontSize: "16px" }}
       />
       <button
         type="button"
         onClick={() => v.trim() && onCommit(v)}
-        className="flex h-7 shrink-0 items-center gap-1 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground hover:bg-primary/85"
+        className={cn(
+          "flex shrink-0 items-center gap-1 rounded-md bg-primary font-medium text-primary-foreground hover:bg-primary/85",
+          big ? "h-9 px-3 text-sm" : "h-7 px-2 text-xs",
+        )}
       >
-        <Plus className="h-3 w-3" /> Add
+        <Plus className={big ? "h-4 w-4" : "h-3 w-3"} /> Add
       </button>
       <button
         type="button"
         onClick={onCancel}
         aria-label="Cancel"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+        className={cn(
+          "flex shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted",
+          big ? "h-9 w-9" : "h-7 w-7",
+        )}
       >
         <X className="h-3.5 w-3.5" />
       </button>
@@ -275,6 +285,7 @@ export function PickerFooter({
   engine,
   mode,
   dense,
+  size = "compact",
   beforeActions,
   onCommit,
   /** Demo/debug only — production Surface-A engines write inside `toggle`. */
@@ -283,6 +294,8 @@ export function PickerFooter({
   engine: SelectionEngine;
   mode: PickerMode;
   dense?: boolean;
+  /** `comfortable` = the attach-menu sizing (text-sm summary, 36px commit). */
+  size?: "compact" | "comfortable";
   /** Compact sibling controls (for example Project / Task selectors). */
   beforeActions?: React.ReactNode;
   /** Real host commit. Falls back to the demo logger only when omitted. */
@@ -306,10 +319,15 @@ export function PickerFooter({
     <div
       className={cn(
         "flex shrink-0 items-center gap-2 border-t border-border",
-        dense ? "px-2 py-1" : "px-2.5 py-1.5",
+        size === "comfortable" ? "p-1.5 pl-3" : dense ? "px-2 py-1" : "px-2.5 py-1.5",
       )}
     >
-      <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-muted-foreground",
+          size === "comfortable" ? "text-sm" : "text-[11px]",
+        )}
+      >
         {engine.count === 0
           ? engine.single
             ? "Pick one"
@@ -321,7 +339,10 @@ export function PickerFooter({
         <button
           type="button"
           onClick={engine.clear}
-          className="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+          className={cn(
+            "shrink-0 rounded text-muted-foreground hover:bg-muted hover:text-foreground",
+            size === "comfortable" ? "h-9 px-2.5 text-sm" : "px-1.5 py-0.5 text-[11px]",
+          )}
         >
           Clear
         </button>
@@ -340,7 +361,10 @@ export function PickerFooter({
               ? onCommit(engine.nodes)
               : commitSelection(mode, engine.nodes)
           }
-          className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/85 disabled:opacity-40"
+          className={cn(
+            "shrink-0 rounded-md bg-primary font-medium text-primary-foreground hover:bg-primary/85 disabled:opacity-40",
+            size === "comfortable" ? "h-9 px-3.5 text-sm pointer-coarse:h-11" : "px-2.5 py-1 text-[11px]",
+          )}
         >
           {MODE_LABEL[mode]}
           {engine.count > 0 ? ` (${engine.count})` : ""}
