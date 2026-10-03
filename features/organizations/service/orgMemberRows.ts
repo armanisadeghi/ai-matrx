@@ -4,8 +4,11 @@
 // (`get_organization_members_with_users`). Every caller — the members page, the
 // task assignee picker's connections, record stamps, "add everyone in", CRM —
 // reads through here, so one page asking for the same roster many times makes
-// ONE request: a read in flight is joined, and an answer is reused for 30 s.
+// ONE request: a read in flight is joined, and an answer is kept for the tab.
 // RC-B6 round 2: the task page fired ~60 identical roster requests in 7 s.
+// The remount law (2026-10-03): it used to be reused for 30 s only, so a task
+// tile that woke from sleep after half a minute read the roster again. A roster
+// change made in this tab forgets it (below); `fresh` is the explicit refresh.
 //
 // Failures are never cached. Anything that changes a roster calls
 // `forgetOrganizationMemberRows(orgId)` so the next read is fresh.
@@ -17,7 +20,8 @@ import type { Database } from "@/types/database.types";
 export type OrganizationMemberRow =
   Database["public"]["Functions"]["get_organization_members_with_users"]["Returns"][number];
 
-export const MEMBER_ROWS_TTL_MS = 30_000;
+/** How long a settled roster is kept: for the tab (a change made here forgets it). */
+export const MEMBER_ROWS_TTL_MS = Number.POSITIVE_INFINITY;
 
 interface CacheEntry {
   at: number;
