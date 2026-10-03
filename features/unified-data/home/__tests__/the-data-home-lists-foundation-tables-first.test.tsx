@@ -71,6 +71,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DataHomeList } from "../DataHomeList";
 // eslint-disable-next-line import/first
 import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
+// eslint-disable-next-line import/first
+import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 
 const CLINIC = { id: "0a54df90-eab8-4d07-ab29-81a45fb41e04", name: "Cedar Ridge Physical Therapy" };
 const ME = "87a6e699-3622-4869-8843-d0867456c0dd";
@@ -120,6 +122,8 @@ function clinicDoor(tables: DataHomeTableRow[]): RecordsDataSource {
 let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
+  // Every test opens a fresh address: a filter one test chose lives in the URL, and must not leak.
+  window.history.replaceState(null, "", "/data-v2");
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
@@ -138,10 +142,10 @@ async function settle() {
   }
 }
 
-async function mount(tables: DataHomeTableRow[]) {
+async function mount(tables: DataHomeTableRow[], store = makeStore()) {
   await act(async () => {
     root.render(
-      <Provider store={makeStore()}>
+      <Provider store={store}>
         <TooltipProvider>
           <DataHomeList dataSource={clinicDoor(tables)} />
         </TooltipProvider>
@@ -207,5 +211,44 @@ describe("the data home and the Foundation mark", () => {
     await openFilters();
     expect(foundationChip()).toBeUndefined();
     expect(badged()).toEqual([]);
+  });
+});
+
+// THE FILTER IS NEVER THE ACTIVE ORGANIZATION (common-docs/policies/active-org-is-never-a-list-filter.md).
+// Two organizations each mark their own day-one tables. With Cedar Ridge Physical Therapy ACTIVE, the
+// Foundation filter keeps the foundation tables of BOTH — the active organization is only where new
+// things are saved. (`__activeOrg` is the stand-in the verifier's plant reads; the real one is Redux.)
+describe("the Foundation filter across organizations", () => {
+  const DENTAL = { id: "23c2ac41-8044-49ed-9af9-35761370e5c0", name: "Cedar Ridge Dental" };
+  const dental = (id: string, name: string, foundation: boolean): DataHomeTableRow => ({
+    ...table(id, name, "2026-09-03T15:00:00.000Z", foundation),
+    organization_id: DENTAL.id,
+    organization_name: DENTAL.name,
+  });
+  const DENTAL_TABLES = [
+    dental("9a1b2c3d-0001-4e5f-8a9b-0c1d2e3f4a51", "Dental Patients", true),
+    dental("9a1b2c3d-0002-4e5f-8a9b-0c1d2e3f4a52", "Hygiene Recalls", false),
+  ];
+  afterEach(() => {
+    delete (globalThis as { __activeOrg?: string }).__activeOrg;
+  });
+
+  it("with one organization active, keeps the foundation tables of every organization", async () => {
+    const store = makeStore();
+    store.dispatch(setOrganization({ id: CLINIC.id, name: CLINIC.name }));
+    (globalThis as { __activeOrg?: string }).__activeOrg = CLINIC.id;
+    await mount([...LATER, ...FOUNDATION, ...DENTAL_TABLES], store);
+    await openFilters();
+    const chip = foundationChip();
+    expect(chip?.getAttribute("title")).toBe("Foundation (4)");
+    await act(async () => {
+      chip!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await settle();
+    const want = [...NAMES(FOUNDATION), "Dental Patients"].sort();
+    const drawnNames = () => [...new Set([...host.querySelectorAll("[data-data-home-name]")].map((el) => el.getAttribute("data-data-home-name")))].sort();
+    // The active organization's own reads land after the first paint; give the list its settle.
+    for (let i = 0; i < 20 && JSON.stringify(drawnNames()) !== JSON.stringify(want); i += 1) await settle();
+    expect(drawnNames()).toEqual(want);
   });
 });
