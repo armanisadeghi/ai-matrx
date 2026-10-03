@@ -26,6 +26,7 @@ function RecordCrumbs({ tableId, recordId }: { tableId: string; recordId: string
       left={
         <>
           <ChevronLeftTapButton
+            variant="transparent"
             onClick={() => {
               if (typeof window !== "undefined" && window.history.length > 1) router.back();
               else router.push(tableHref);

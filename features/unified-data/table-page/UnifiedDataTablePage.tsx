@@ -78,7 +78,7 @@ function TableRouteHeader({
       fallback={fallback}
       left={
         <>
-          <ChevronLeftTapButton onClick={back} ariaLabel="Back" />
+          <ChevronLeftTapButton variant="transparent" onClick={back} ariaLabel="Back" />
           {name ? (
             <>
               <TableSwitcher tableId={tableId} name={name} allTablesHref={allTablesHref} footer={switcherFooter} />
@@ -279,7 +279,7 @@ export function UnifiedDataTablePage({ tableId }: { tableId: string }) {
             fallback
             left={
               <>
-                <ChevronLeftTapButton href="/data-v2" ariaLabel="Back to your tables" />
+                <ChevronLeftTapButton variant="transparent" href="/data-v2" ariaLabel="Back to your tables" />
                 <span className="truncate px-1.5 text-sm font-medium text-foreground">Data</span>
               </>
             }

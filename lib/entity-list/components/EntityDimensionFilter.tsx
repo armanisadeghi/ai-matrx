@@ -68,8 +68,11 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
   return (
     <DropdownMenu
       onOpenChange={(isOpen) => {
-        if (isOpen) setOpened(true);
-        else setNeedle("");
+        if (isOpen) {
+          setOpened(true);
+          // The search box takes focus on open (Radix focuses the menu itself first), so typing searches.
+          window.setTimeout(() => searchRef.current?.focus(), 30);
+        } else setNeedle("");
       }}
     >
       <DropdownMenuTrigger asChild>
@@ -91,15 +94,7 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
           <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", !valueId && "max-sm:hidden")} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="max-h-[60dvh] min-w-64 overflow-y-auto"
-        // The search box takes focus on open (Radix would focus the menu), so typing searches.
-        onOpenAutoFocus={(e) => {
-          e.preventDefault();
-          searchRef.current?.focus();
-        }}
-      >
+      <DropdownMenuContent align="end" className="max-h-[60dvh] min-w-64 overflow-y-auto">
         <div className="px-1 pb-1">
           <input
             ref={searchRef}
