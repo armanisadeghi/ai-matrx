@@ -766,14 +766,14 @@ export function NotesView({
                 onClick={toggleOutline}
                 ariaLabel="Outline"
                 tooltip="Document outline"
-                className={outlineOpen ? "text-primary" : undefined}
+                pressed={outlineOpen}
               />
               <HistoryTapButton
                 variant="group"
                 onClick={history.toggle}
                 ariaLabel="Versions"
                 tooltip="Version history"
-                className={history.isVisible ? "text-primary" : undefined}
+                pressed={history.isVisible}
               />
               <NoteCleanupButton noteId={activeTabId} asTapGroup />
             </>
@@ -848,14 +848,14 @@ export function NotesView({
                         onClick={toggleOutline}
                         ariaLabel="Outline"
                         tooltip="Document outline"
-                        className={outlineOpen ? "text-primary" : undefined}
+                        pressed={outlineOpen}
                       />
                       <HistoryTapButton
                         variant="group"
                         onClick={history.toggle}
                         ariaLabel="Versions"
                         tooltip="Version history"
-                        className={history.isVisible ? "text-primary" : undefined}
+                        pressed={history.isVisible}
                       />
                       <NoteCleanupButton noteId={headerNoteId} asTapGroup />
                     </>
