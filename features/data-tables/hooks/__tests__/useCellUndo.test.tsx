@@ -15,6 +15,8 @@ import { renderHook } from "@/test-utils/renderHook";
 const upsertCell = jest.fn();
 jest.mock("../../service", () => ({
   upsertCell: (...args: unknown[]) => upsertCell(...args),
+  // The version each row is at right after THIS browser's write — what its undo is sent against.
+  seenRowVersion: async () => 7,
 }));
 jest.mock("@/components/ui/use-toast", () => ({ toast: jest.fn() }));
 
@@ -60,6 +62,7 @@ it("undo writes the value captured BEFORE the edit, then redo writes the new one
     rowId: "job-006",
     fieldName: "status",
     value: "Scheduled",
+    expectedVersion: 7,
   });
   expect(hook.current.canUndo).toBe(false);
   expect(hook.current.canRedo).toBe(true);

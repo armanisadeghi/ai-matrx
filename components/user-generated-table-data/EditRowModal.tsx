@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { upsertRow } from "@/features/data-tables/service";
+import { versionRefusalLabel } from "@/lib/records/record-versions";
 import { offerToAddChoiceOption } from "@/features/data-tables/choice-option-nudge";
 import { isServiceFailure } from "@/features/data-tables/types";
 import { rowWriteError } from "@/features/data-tables/rowInTrash";
@@ -244,8 +245,11 @@ export default function EditRowModal({
 
       // The seam's `upsertRow` scopes by both table and row, is judged by the
       // columns' rules, versioned, and permission-gated.
+      // Sent against the version the grid drew this row at: a colleague's change since is refused.
       const result = await upsertRow({ tableId, rowId, data: typed.data });
       if (isServiceFailure(result)) {
+        const versionLabel = versionRefusalLabel(result.refusal);
+        if (versionLabel) throw new Error(versionLabel);
         throw rowWriteError(result);
       }
 

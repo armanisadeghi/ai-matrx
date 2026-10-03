@@ -20,6 +20,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   DoorRefusal,
+  VERSION_UNREAD_CODE,
   membershipFor,
   portalCommentWrite,
   portalMe,
@@ -32,11 +33,17 @@ export interface PortalWriteOutcome {
   message?: string;
   /** The door's own hint — what it would take — when it gave one. */
   hint?: string | null;
+  /** The record's version after a save landed — the next save is sent against it. */
+  version?: number;
+  /** A write sent against an older version: somebody else changed it, or the version could not be read. */
+  conflict?: "changed" | "unread";
 }
 
 function refusalOutcome(error: unknown): PortalWriteOutcome {
   if (error instanceof DoorRefusal) {
-    return { ok: false, message: error.message, hint: error.hint };
+    const conflict =
+      error.code === "PT409" ? ("changed" as const) : error.code === VERSION_UNREAD_CODE ? ("unread" as const) : undefined;
+    return { ok: false, message: error.message, hint: error.hint, ...(conflict ? { conflict } : {}) };
   }
   return {
     ok: false,
@@ -53,12 +60,16 @@ async function organizationFor(slug: string): Promise<string | null> {
   return membership?.organization_id ?? null;
 }
 
-/** Change one field on one record. The door decides whether it may change. */
+/**
+ * Change one field on one record, against the version she saw (`version`, read with the record on
+ * the page). The door decides whether it may change, and refuses a colleague's change since.
+ */
 export async function savePortalField(
   slug: string,
   recordId: string,
   key: string,
   value: string,
+  version: number | null,
 ): Promise<PortalWriteOutcome> {
   const organizationId = await organizationFor(slug);
   if (!organizationId) {
@@ -68,14 +79,15 @@ export async function savePortalField(
       hint: null,
     };
   }
+  let written: number;
   try {
-    await portalRecordUpdate({ organizationId, recordId, patch: { [key]: value } });
+    written = await portalRecordUpdate({ organizationId, recordId, patch: { [key]: value }, expectedVersion: version });
   } catch (error) {
     return refusalOutcome(error);
   }
   revalidatePath(`/portal/c/${slug}/r/${recordId}`);
   revalidatePath(`/portal/c/${slug}`);
-  return { ok: true };
+  return { ok: true, version: written };
 }
 
 /** Say something on one record. The door decides whether comments are open. */

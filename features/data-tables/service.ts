@@ -169,6 +169,8 @@ export type UpsertRowArgs = {
   /** Pass `null` (or omit) to insert; pass a row id to update that row. */
   rowId?: string | null;
   data: Record<string, unknown>;
+  /** The version the person saw (undo: its own write's). Absent = the seam's ledger of the rows it drew. */
+  expectedVersion?: number | null;
 };
 
 export async function upsertRow(
@@ -186,6 +188,8 @@ export type UpsertCellArgs = {
   rowId: string;
   fieldName: string;
   value: unknown;
+  /** The version the person saw (undo: its own write's). Absent = the seam's ledger of the rows it drew. */
+  expectedVersion?: number | null;
 };
 
 export async function upsertCell(
@@ -809,17 +813,20 @@ export async function readRowHistory(args: {
   return read.success ? { success: true, data: read.data as unknown as import("./types").RowVersion[] } : read;
 }
 
-export async function restoreRowVersion(args: { tableId: string; rowId: string; version: number }) {
+export async function restoreRowVersion(args: { tableId: string; rowId: string; version: number; seenVersion: number | null }) {
   const home = await homeOf(args.tableId);
   if (!home.ok) return home.failure;
   return recordStore.restoreRowVersion(home.home, args);
 }
 
-export async function revertRowField(args: { tableId: string; rowId: string; fieldName: string; version: number }) {
+export async function revertRowField(args: { tableId: string; rowId: string; fieldName: string; version: number; seenVersion: number | null }) {
   const home = await homeOf(args.tableId);
   if (!home.ok) return home.failure;
   return recordStore.revertRowField(home.home, args);
 }
+
+/** The version this browser drew a row at — what an undo step is sent against (`null` = unread). */
+export { seenRowVersion } from "./data-source/record-store";
 
 /** The storage types a column can be changed into (the Sheet's Stores list). */
 export { RECORD_STORE_COLUMN_TYPES } from "./data-source/record-store";

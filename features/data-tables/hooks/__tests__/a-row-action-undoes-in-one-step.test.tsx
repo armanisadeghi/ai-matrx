@@ -17,6 +17,8 @@ const bulkWrite = jest.fn();
 jest.mock("../../service", () => ({
   upsertCell: (...args: unknown[]) => upsertCell(...args),
   bulkWrite: (...args: unknown[]) => bulkWrite(...args),
+  // The version each row is at right after THIS browser's write — what its undo is sent against.
+  seenRowVersion: async (rowId: string) => (rowId === "acct-main" ? 12 : 4),
 }));
 jest.mock("@/components/ui/use-toast", () => ({ toast: jest.fn() }));
 
@@ -63,8 +65,8 @@ it("one Cmd-Z restores every cell the action wrote, in ONE bulk write", async ()
   expect(bulkWrite).toHaveBeenCalledWith({
     tableId: "claude-accounts",
     operations: [
-      { op: "merge", row_id: "acct-main", data: { status: "EXHAUSTED", total: 412 } },
-      { op: "merge", row_id: "acct-backup", data: { status: "LIMITED", total: 97 } },
+      { op: "merge", row_id: "acct-main", data: { status: "EXHAUSTED", total: 412 }, expected_version: 12 },
+      { op: "merge", row_id: "acct-backup", data: { status: "LIMITED", total: 97 }, expected_version: 4 },
     ],
   });
   expect(applied).toHaveLength(4);

@@ -19,6 +19,7 @@
  */
 "use client";
 
+import { versionRefusalLabel } from "@/lib/records/record-versions";
 import { useState } from "react";
 import { diffRecordFields } from "@ai-matrx/diff/structural";
 
@@ -98,6 +99,12 @@ export function VersionHistoryViewer({
 
   const label = (fieldName: string) => fieldLabels?.[fieldName] ?? fieldName;
 
+  /** The version the person sees as newest in this panel — a restore is sent only while it still holds. */
+  const newestSeen = (): number | null => {
+    const id = Number(versions[0]?.id);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  };
+
   const runWrite = async (key: string, work: () => Promise<void>) => {
     if (busyKey) return;
     setBusyKey(key);
@@ -107,6 +114,8 @@ export function VersionHistoryViewer({
       onRowChanged?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
+      // A refused write may mean the record moved on ("Changed by someone else"): read the history again.
+      refresh();
     } finally {
       setBusyKey(null);
     }
@@ -142,8 +151,8 @@ export function VersionHistoryViewer({
     });
     if (!ok) return;
     await runWrite(`restore-${version.id}`, async () => {
-      const back = await restoreRowVersion({ tableId, rowId, version: Number(version.id) });
-      if (isServiceFailure(back)) throw new Error(back.error);
+      const back = await restoreRowVersion({ tableId, rowId, version: Number(version.id), seenVersion: newestSeen() });
+      if (isServiceFailure(back)) throw new Error(versionRefusalLabel(back.refusal) ?? back.error);
       toast.success("Version restored.");
     });
   };
@@ -157,8 +166,8 @@ export function VersionHistoryViewer({
     await runWrite(`revert-${version.id}-${fieldName}`, async () => {
       // "Revert" puts the column back to what it said BEFORE this change —
       // the store's value at the previous version.
-      const back = await revertRowField({ tableId, rowId, fieldName, version: Number(version.id) - 1 });
-      if (isServiceFailure(back)) throw new Error(back.error);
+      const back = await revertRowField({ tableId, rowId, fieldName, version: Number(version.id) - 1, seenVersion: newestSeen() });
+      if (isServiceFailure(back)) throw new Error(versionRefusalLabel(back.refusal) ?? back.error);
       recordToast.success(
         { type: "row", id: rowId },
         `"${label(fieldName)}" reverted. This is recorded in history too.`,

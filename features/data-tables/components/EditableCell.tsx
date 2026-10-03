@@ -43,6 +43,7 @@ import { Loader2 } from "lucide-react";
 
 import { readTypedTime, type RecordsError } from "@ai-matrx/records";
 import { FieldControl, RefusalNotice } from "@ai-matrx/records-ui";
+import { RELOAD_LABEL, versionRefusalLabel } from "@/lib/records/record-versions";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input, Popover, PopoverAnchor, PopoverContent } from "@ai-matrx/design-system";
@@ -136,6 +137,8 @@ type Props = {
   onEndEdit?: (move?: GridMove) => void;
   /** A write landed. Carries the prior value so the grid can offer undo. */
   onRecordEdit?: (priorValue: unknown, nextValue: unknown) => void;
+  /** Read the rows again — the answer to "Changed by someone else" / "Could not check for changes". */
+  onReload?: () => void;
   /**
    * Enter or Tab reached the grid before this editor had focus (BREAKER-2 B2-10): commit what is
    * held and move on. The editor commits once per `n`.
@@ -171,6 +174,7 @@ export function EditableCell({
   onBeginEdit,
   onEndEdit,
   onRecordEdit,
+  onReload,
   commitRequest = null,
   toggleRequest = null,
 }: Props) {
@@ -749,6 +753,7 @@ export function EditableCell({
           refusal={refusal}
           ruleRefusal={ruleRefusal}
           choiceAsk={choiceAsk}
+          {...(onReload ? { onReload } : {})}
           unsent={unsent ? { words: unsentWords(unsent.value) } : null}
           onSendUnsent={sendUnsent}
           onDiscardUnsent={() => setUnsent(null)}
@@ -1064,6 +1069,7 @@ export function EditableCell({
         refusal={refusal}
         ruleRefusal={ruleRefusal}
         choiceAsk={choiceAsk}
+        {...(onReload ? { onReload } : {})}
         unsent={unsent ? { words: unsentWords(unsent.value) } : null}
         onSendUnsent={sendUnsent}
         onDiscardUnsent={() => setUnsent(null)}
@@ -1098,6 +1104,7 @@ function CellRefusalPopover({
   onAnswer,
   onDismiss,
   onDiscard,
+  onReload,
 }: {
   refusal: RecordsError | null;
   ruleRefusal: ColumnRuleRefusal | null;
@@ -1109,7 +1116,10 @@ function CellRefusalPopover({
   onAnswer?: (answer: "add" | "keep" | "cancel") => void;
   onDismiss: () => void;
   onDiscard?: () => void;
+  onReload?: () => void;
 }) {
+  // THE SAME TWO LABELS EVERY SCREEN WEARS for a write sent against an older version (lane 10 VWF).
+  const versionLabel = versionRefusalLabel(refusal);
   const open = refusal !== null || ruleRefusal !== null || choiceAsk !== null || unsent !== null;
   return (
     <Popover
@@ -1173,6 +1183,25 @@ function CellRefusalPopover({
               onKeepEditing={onDismiss}
               {...(onDiscard ? { onDiscard } : {})}
             />
+          ) : refusal && versionLabel ? (
+            <div className="flex items-center gap-2 text-xs" data-matrx-version-refusal="" title={refusal.message}>
+              <span className="font-medium text-destructive">{versionLabel}</span>
+              {onReload ? (
+                <button
+                  type="button"
+                  className="rounded border px-2 py-0.5 hover:bg-muted"
+                  onClick={() => {
+                    onDismiss();
+                    onReload();
+                  }}
+                >
+                  {RELOAD_LABEL}
+                </button>
+              ) : null}
+              <button type="button" className="rounded border px-2 py-0.5 hover:bg-muted" onClick={onDismiss}>
+                Dismiss
+              </button>
+            </div>
           ) : refusal ? (
             <RefusalNotice
               error={refusal}

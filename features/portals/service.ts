@@ -35,6 +35,7 @@ import "server-only";
 // has not opened its external lane all answer `null`. Telling them apart would
 // let a slug be used to learn that something is there.
 
+import { versionUnread } from "@/lib/records/record-versions";
 import { cache } from "react";
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
@@ -391,14 +392,35 @@ export const portalFields = cache(
 );
 
 /**
- * Change one record.
- *
- * `p_expected_version` is `null` on purpose and it is the door's own documented
- * posture: a write that declares no base revision is last-write-wins, which is
- * what a direct UPDATE always was. The portal's read doors do not hand a version
- * out, so declaring one would mean inventing it — and an invented base revision
- * is worse than none, because it would fail a compare-and-swap against a number
- * that never described anything.
+ * The version of one record, as this reader may see it (`custom.record_headers`, as HER — the door's
+ * own reach check decides). Read with the record itself, so a save is sent against the version she
+ * saw. `null` when the door answered nothing or refused: the save then refuses with "Could not check
+ * for changes" rather than overwrite anyone.
+ */
+export async function portalRecordVersion(args: {
+  organizationId: string;
+  recordId: string;
+}): Promise<number | null> {
+  try {
+    const rows = unwrap<Array<{ id: string; version: number }> | null>(
+      "custom.record_headers",
+      await (await myDoors()).rpc("record_headers", {
+        p_organization_id: args.organizationId,
+        p_ids: [args.recordId],
+      }),
+    );
+    const version = (rows ?? []).find((r) => r.id === args.recordId)?.version;
+    return typeof version === "number" ? version : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Change one record, against the version she saw (`lib/records/record-versions.ts`: an update never
+ * goes without one). A colleague's change since is refused by the door itself (`PT409`), and an
+ * unread version is refused here — never sent as "no version", which the store treats as
+ * last-write-wins.
  *
  * A field the portal did not open is REFUSED BY THE DOOR, and the refusal is
  * thrown as a `DoorRefusal` carrying the store's own sentence and hint. Nothing
@@ -408,17 +430,25 @@ export async function portalRecordUpdate(args: {
   organizationId: string;
   recordId: string;
   patch: Record<string, unknown>;
+  expectedVersion: number | null;
 }): Promise<number> {
+  if (args.expectedVersion === null) {
+    const unread = versionUnread();
+    throw new DoorRefusal("custom.record_update", unread.message, unread.hint ?? null, VERSION_UNREAD_CODE);
+  }
   return unwrap<number>(
     "custom.record_update",
     await (await myDoors()).rpc("record_update", {
       p_organization_id: args.organizationId,
       p_record_id: args.recordId,
       p_patch: args.patch,
-      p_expected_version: null,
+      p_expected_version: args.expectedVersion,
     }),
   );
 }
+
+/** The code a `DoorRefusal` carries when the version she saw could not be read. */
+export const VERSION_UNREAD_CODE = "version_unread";
 
 /** One comment on a record, as `custom.io_comments` returns it. */
 export interface PortalComment {

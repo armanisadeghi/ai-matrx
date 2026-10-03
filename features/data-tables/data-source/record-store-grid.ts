@@ -70,14 +70,23 @@ export function choiceNudgeDoor(home: RecordStoreHome) {
   return callGridDoor<string>(home, "choice_nudge", {});
 }
 
-/** Add the words to the named columns' choices and save the cell, in one transaction. */
+/**
+ * Add the words to the named columns' choices and save the cell, in one transaction — against the
+ * version the person saw (`lib/records/record-versions.ts`: an update never goes without one).
+ */
 export function recordUpdateAddingChoices(
   home: RecordStoreHome,
   recordId: string,
   patch: Record<string, unknown>,
   add: Record<string, string[]>,
+  expectedVersion: number,
 ) {
-  return callGridDoor<number>(home, "record_update_adding_choices", { p_record_id: recordId, p_patch: patch, p_add: add });
+  return callGridDoor<number>(home, "record_update_adding_choices", {
+    p_record_id: recordId,
+    p_patch: patch,
+    p_add: add,
+    p_expected_version: expectedVersion,
+  });
 }
 
 // ─── G8: a row change can start an agent ─────────────────────────────────────

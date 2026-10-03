@@ -126,6 +126,8 @@ const STORE_CLIENT = {
     STORE_WRITES.push({ door: "recordUpdate", args });
     return { ok: true, data: 2 };
   }),
+  // The choices' versions, read when the list is drawn (lane VWF: an update carries the version seen).
+  recordHeaders: jest.fn(async ({ ids }: { ids: string[] }) => ({ ok: true, data: ids.map((id) => ({ id, version: 3 })) })),
 };
 const CLIENT_CONFIGS: unknown[] = [];
 jest.mock("@ai-matrx/records/core", () => ({
@@ -249,12 +251,20 @@ test("E. an agent's choice writes land as Records of the list's Table, in the li
   (client.rpc as jest.Mock).mockImplementation(async (fn: string) => {
     if (fn === "get_user_list_with_items") {
       return {
-        data: { list_id: STORE_LIST, list_name: "Hygiene Visit Types", organization_id: "11f4e747-c13a-49c7-81a3-66e6391f8a9b", items_grouped: null },
+        data: {
+          list_id: STORE_LIST,
+          list_name: "Hygiene Visit Types",
+          organization_id: "11f4e747-c13a-49c7-81a3-66e6391f8a9b",
+          items_grouped: { Routine: [{ id: "c1", label: "Recall cleaning", description: null, help_text: null }] },
+        },
         error: null,
       };
     }
     throw new Error(`unexpected rpc ${fn}`);
   });
+  // The list manager draws the list (and, with it, the versions of its choices).
+  const { getListWithItems } = await import("../service");
+  await getListWithItems(STORE_LIST);
   const { buildListSurfaceWriteHandlers } = await import("../surface-write-handlers");
   const handlers = buildListSurfaceWriteHandlers({ resolveListId: () => STORE_LIST, afterWrite: () => undefined });
   const apply = (name: string, value: unknown) => {
@@ -265,7 +275,7 @@ test("E. an agent's choice writes land as Records of the list's Table, in the li
   await apply("update_list_item", { id: "c1", label: "Recall cleaning (6 months)", help_text: null });
   expect(STORE_WRITES).toEqual([
     { door: "recordWrite", args: { table_id: STORE_LIST, data: { name: "Perio maintenance", group_name: "Routine" } } },
-    { door: "recordUpdate", args: { record_id: "c1", patch: { name: "Recall cleaning (6 months)", help_text: null } } },
+    { door: "recordUpdate", args: { record_id: "c1", patch: { name: "Recall cleaning (6 months)", help_text: null }, expectedVersion: 3 } },
   ]);
   expect(CLIENT_CONFIGS.every((c) => (c as { organizationId?: string }).organizationId === "11f4e747-c13a-49c7-81a3-66e6391f8a9b")).toBe(true);
   expect(olderReads).toEqual([]);

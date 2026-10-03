@@ -41,6 +41,7 @@
  * schema to check against — never promoted.
  */
 
+import { VersionLedger, updateRecordAt, versionRefusalLabel } from "@/lib/records/record-versions";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
@@ -365,6 +366,8 @@ async function listFromRecordStore(
   if (archiveFilter !== "archived") {
     const live = await client.list({ table_id: home.tableId, filter, limit: 1000 });
     if (!live.ok) throw storeRefused("list instances", live.error.message);
+    // THE INSTANCES THE STUDIO DRAWS: an edit of one is sent against the version read here.
+    void instanceVersions.drew(client, live.data.rows.map((r) => r.id));
     for (const row of live.data.rows) {
       rows.push({ id: row.id, document: row.document as Record<string, unknown>, archivedAt: null });
     }
@@ -620,6 +623,9 @@ async function recordKind(document: Record<string, unknown>): Promise<{
   return { kindDefinitionId, live: await fetchLiveDefinition(kindDefinitionId) };
 }
 
+/** The versions of the instances this browser listed (lane 10 VWF: every update carries the version it saw). */
+const instanceVersions = new VersionLedger();
+
 async function updateInRecordStore(
   home: RecordStoreHome,
   id: string,
@@ -627,8 +633,13 @@ async function updateInRecordStore(
   what: string,
 ): Promise<KindInstanceWriteResult> {
   const client = await kindRecordClient(home);
-  const written = await client.recordUpdate({ record_id: id, patch });
-  if (!written.ok) throw storeRefused(what, written.error.message);
+  // Against the version the studio's list drew this instance at: a colleague's change since is refused.
+  const written = await updateRecordAt(client, { record_id: id, patch, version: await instanceVersions.seen(id) });
+  if (!written.ok) {
+    const label = versionRefusalLabel(written.error);
+    throw storeRefused(what, label ? `${label}. ${written.error.message}` : written.error.message);
+  }
+  instanceVersions.wrote(client, id, written.data);
   const document = await readStoreRecord(home, id);
   return {
     id,

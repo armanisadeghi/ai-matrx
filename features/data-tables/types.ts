@@ -171,6 +171,11 @@ export type BulkUpdateOp = {
   row_id: string;
   /** REPLACES the row's data wholesale. Keys not in `data` are dropped. */
   data: Record<string, unknown>;
+  /**
+   * The version the person saw this row at, when the caller holds it (an undo carries the version its
+   * own write produced). Absent = the seam's ledger of the rows it drew (`lib/records/record-versions.ts`).
+   */
+  expected_version?: number | null;
 };
 
 export type BulkMergeOp = {
@@ -182,6 +187,11 @@ export type BulkMergeOp = {
    * when sending only changed fields.
    */
   data: Record<string, unknown>;
+  /**
+   * The version the person saw this row at, when the caller holds it (an undo carries the version its
+   * own write produced). Absent = the seam's ledger of the rows it drew (`lib/records/record-versions.ts`).
+   */
+  expected_version?: number | null;
 };
 
 export type BulkCellOp = {
@@ -189,6 +199,11 @@ export type BulkCellOp = {
   row_id: string;
   field_name: string;
   value: unknown;
+  /**
+   * The version the person saw this row at, when the caller holds it (an undo carries the version its
+   * own write produced). Absent = the seam's ledger of the rows it drew (`lib/records/record-versions.ts`).
+   */
+  expected_version?: number | null;
 };
 
 export type BulkDeleteOp = {

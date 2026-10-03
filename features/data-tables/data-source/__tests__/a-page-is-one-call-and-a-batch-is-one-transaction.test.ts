@@ -114,6 +114,8 @@ const client = {
   rowActions: jest.fn(async () => ok({ actions: [] })),
   views: jest.fn(async () => ok([])),
   recordUpdate: jest.fn(async () => ok(2)),
+  // Every row on a drawn page is at version 1 (lane VWF: an edit is sent against the version seen).
+  recordHeaders: jest.fn(async ({ ids }: { ids: string[] }) => ok(ids.map((id) => ({ id, version: 1 })))),
   // The published client's page and batch methods, answered by the same fake store (the op id is
   // added here exactly as the client adds it).
   listPage: jest.fn(async (a: { table_id: string; search?: string | null; sort?: unknown[]; view_id?: string | null; limit: number; offset: number }) => {
@@ -198,12 +200,14 @@ describe("September service board · the Sheet asks the store one question per a
   it("a cell edit is ONE write — nothing is read before it or after it", async () => {
     const rs: Seam = await import(SEAM);
     await rs.getTableMetadata(HOME, { tableId: TABLE });
+    // The dispatcher sees the page the job is on (its versions are read with it).
+    await rs.getTablePage(HOME, { tableId: TABLE, limit: 50, offset: 0 });
     store.calls = [];
     const readsBefore = clientReads();
     const saved = await rs.upsertCell(HOME, { tableId: TABLE, rowId: JOBS[42]!.id, fieldName: "customer", value: "Nadia Lindqvist" });
     expect(saved.success).toBe(true);
     expect(client.recordUpdate).toHaveBeenCalledTimes(1);
-    expect(client.recordUpdate).toHaveBeenCalledWith({ record_id: JOBS[42]!.id, patch: { customer: "Nadia Lindqvist" } });
+    expect(client.recordUpdate).toHaveBeenCalledWith({ record_id: JOBS[42]!.id, patch: { customer: "Nadia Lindqvist" }, expectedVersion: 1 });
     // The next page does not re-read the table's declaration either: the edit did not change it.
     await rs.getTablePage(HOME, { tableId: TABLE, limit: 20, offset: 0 });
     expect(clientReads()).toBe(readsBefore);
@@ -213,6 +217,7 @@ describe("September service board · the Sheet asks the store one question per a
   it("filling twenty rows is ONE call to the store's many-changes door", async () => {
     const rs: Seam = await import(SEAM);
     await rs.getTableMetadata(HOME, { tableId: TABLE });
+    await rs.getTablePage(HOME, { tableId: TABLE, limit: 50, offset: 0 });
     store.calls = [];
     const twenty = JOBS.slice(0, 20);
     const done = await rs.bulkWrite(HOME, {
@@ -231,6 +236,7 @@ describe("September service board · the Sheet asks the store one question per a
   it("when the store refuses one row of the batch, NO row changes and the store's sentence comes back", async () => {
     const rs: Seam = await import(SEAM);
     await rs.getTableMetadata(HOME, { tableId: TABLE });
+    await rs.getTablePage(HOME, { tableId: TABLE, limit: 50, offset: 0 });
     const five = JOBS.slice(20, 25);
     const before = five.map((j) => ({ ...store.data.get(j.id)! }));
     const done = await rs.bulkWrite(HOME, {

@@ -40,7 +40,8 @@ import {
 
 import { toast } from "@/components/ui/use-toast";
 
-import { bulkWrite, upsertCell } from "../service";
+import { bulkWrite, seenRowVersion, upsertCell } from "../service";
+import { versionRefusalLabel } from "@/lib/records/record-versions";
 import { describeBulkFailures, isBulkOpError, isServiceFailure } from "../types";
 
 /** One reversible cell write. */
@@ -54,7 +55,27 @@ export type CellEdit = {
   priorValue: unknown;
   /** The value written. Restoring this is the redo. */
   nextValue: unknown;
+  /**
+   * The version the last write of this cell produced — what its undo (or redo) is sent against, so
+   * a colleague's change since is refused ("Changed by someone else"), never overwritten. Captured
+   * by the stack itself right after the write; `null` = could not be read, and the undo refuses.
+   */
+  version?: number | null;
 };
+
+/** An edit's version capture still in flight — its undo waits for it. */
+const capturing = new WeakMap<CellEdit, Promise<void>>();
+
+/** The version each row is at right after THIS browser's write (the seam's ledger, raised by that write). */
+function captureVersions(group: readonly CellEdit[]): Promise<void> {
+  const done = (async () => {
+    const byRow = new Map<string, number | null>();
+    for (const e of group) if (!byRow.has(e.rowId)) byRow.set(e.rowId, await seenRowVersion(e.rowId));
+    for (const e of group) e.version = byRow.get(e.rowId) ?? null;
+  })();
+  for (const e of group) capturing.set(e, done);
+  return done;
+}
 
 /** A whole-row step with its own two doors; each answers whether it landed (and says so if not). */
 export type RowStep = { undo: () => Promise<boolean>; redo: () => Promise<boolean> };
@@ -131,7 +152,9 @@ export function useCellUndo(options: {
         group.map((e) => ({ rowId: e.rowId, columnId: e.fieldName, value: e.nextValue })),
         label,
       );
-      edits.current.set(entry, [...group]);
+      const held = [...group];
+      edits.current.set(entry, held);
+      void captureVersions(held);
       commit(pushUndo(stack.current, entry));
       return entry;
     },
@@ -165,6 +188,7 @@ export function useCellUndo(options: {
   const applySide = useCallback(
     async (group: readonly CellEdit[], side: "undo" | "redo"): Promise<boolean> => {
       const valueOf = (e: CellEdit) => (side === "undo" ? e.priorValue : e.nextValue);
+      await Promise.all(group.map((e) => capturing.get(e)));
       if (group.length === 1) {
         const edit = group[0];
         const result = await upsertCell({
@@ -172,33 +196,47 @@ export function useCellUndo(options: {
           rowId: edit.rowId,
           fieldName: edit.fieldName,
           value: valueOf(edit) as never,
+          expectedVersion: edit.version ?? null,
         });
         if (isServiceFailure(result)) {
           // Loud, never silent: the stack is NOT popped on failure, so the user
           // can try again rather than losing the step.
-          toast({ title: "Could not undo that change", description: result.error, variant: "destructive" });
+          toast({
+            title: versionRefusalLabel(result.refusal) ?? "Could not undo that change",
+            description: result.error,
+            variant: "destructive",
+          });
           return false;
         }
+        await captureVersions(group);
         return true;
       }
       const byRow = new Map<string, Record<string, unknown>>();
+      const versionOf = new Map<string, number | null>();
       for (const e of group) {
         const data = byRow.get(e.rowId) ?? {};
         data[e.fieldName] = valueOf(e);
         byRow.set(e.rowId, data);
+        versionOf.set(e.rowId, e.version ?? null);
       }
       const result = await bulkWrite({
         tableId: group[0].tableId,
-        operations: [...byRow].map(([row_id, data]) => ({ op: "merge" as const, row_id, data })),
+        operations: [...byRow].map(([row_id, data]) => ({
+          op: "merge" as const,
+          row_id,
+          data,
+          expected_version: versionOf.get(row_id) ?? null,
+        })),
       });
       if (isServiceFailure(result)) {
         toast({
-          title: side === "undo" ? "Could not undo that change" : "Could not redo that change",
+          title: versionRefusalLabel(result.refusal) ?? (side === "undo" ? "Could not undo that change" : "Could not redo that change"),
           description: `${result.error} Nothing was changed; try again.`,
           variant: "destructive",
         });
         return false;
       }
+      await captureVersions(group);
       const missing = (result.data?.results ?? []).filter(isBulkOpError);
       if (missing.length > 0) {
         toast({

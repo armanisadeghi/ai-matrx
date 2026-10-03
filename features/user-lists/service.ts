@@ -16,6 +16,14 @@ import type {
   StructuredListForSelection,
 } from "./types";
 import { accessiblePickLists } from "./where-lists-live";
+import { VersionLedger, updateRecordAt } from "@/lib/records/record-versions";
+
+/**
+ * THE VERSIONS OF THE CHOICES THIS BROWSER DREW (lane 10 VWF): read once whenever a list's items are
+ * read for a screen, so a change to a choice is sent against what the person (or the agent beside
+ * them) saw — a colleague's change since is refused, never overwritten.
+ */
+const choiceVersions = new VersionLedger();
 
 // ─── Index ────────────────────────────────────────────────────────────────────
 
@@ -32,11 +40,34 @@ export async function getAccessibleLists(): Promise<UserList[]> {
 export async function getListWithItems(
   listId: string,
 ): Promise<UserListWithItems | null> {
+  const list = await readListWithItems(listId);
+  if (list?.organization_id) {
+    const ids = Object.values(list.items_grouped ?? {}).flatMap((items) => items.map((i) => i.id));
+    void choiceVersions.drew(clientFor(list.organization_id, await currentUserId()), ids);
+  }
+  return list;
+}
+
+/** The list as stored, WITHOUT reading its choices' versions (the write path's own lookup). */
+async function readListWithItems(listId: string): Promise<UserListWithItems | null> {
   const { data, error } = await supabase.rpc("get_user_list_with_items", {
     p_list_id: listId,
   });
   if (error) throw new Error(`Failed to load list: ${error.message}`);
   return (data as unknown as UserListWithItems) ?? null;
+}
+
+async function currentUserId(): Promise<string | null> {
+  const { data: session } = await supabase.auth.getSession();
+  return session.session?.user?.id ?? null;
+}
+
+function clientFor(organizationId: string, userId: string | null): RecordsClient {
+  return createRecordsClient({
+    dataSource: recordsDataSource(createClient()),
+    actor: personActor(userId),
+    organizationId,
+  });
 }
 
 /**
@@ -102,16 +133,12 @@ export async function updateList(input: UpdateListInput) {
 
 /** The records client for one list: its own organization, the person's own seat. */
 async function recordsClientForList(listId: string): Promise<RecordsClient> {
-  const list = await getListWithItems(listId);
+  // NEVER the version-reading read: a version read just before a write would hide a colleague's change.
+  const list = await readListWithItems(listId);
   if (!list?.organization_id) {
     throw new Error("This list could not be opened, so nothing was written to it.");
   }
-  const { data: session } = await supabase.auth.getSession();
-  return createRecordsClient({
-    dataSource: recordsDataSource(createClient()),
-    actor: personActor(session.session?.user?.id ?? null),
-    organizationId: list.organization_id,
-  });
+  return clientFor(list.organization_id, await currentUserId());
 }
 
 export interface NewChoice {
@@ -155,6 +182,8 @@ export async function updateChoice(
   if (patch.description !== undefined) fields.description = patch.description;
   if (patch.helpText !== undefined) fields.help_text = patch.helpText;
   if (patch.groupName !== undefined) fields.group_name = patch.groupName;
-  const updated = await client.recordUpdate({ record_id: choiceId, patch: fields });
+  // Sent against the version the list was drawn at (`getListWithItems`); unread = refused.
+  const updated = await updateRecordAt(client, { record_id: choiceId, patch: fields, version: await choiceVersions.seen(choiceId) });
   if (!updated.ok) throw new Error(`Failed to update the choice: ${updated.error.message}`);
+  choiceVersions.wrote(client, choiceId, updated.data);
 }

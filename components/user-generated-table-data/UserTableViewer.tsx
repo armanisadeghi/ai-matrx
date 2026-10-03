@@ -1,5 +1,6 @@
 "use client";
 
+import { versionRefusalLabel } from "@/lib/records/record-versions";
 import React, { useEffect, useEffectEvent, useRef, useState } from "react";
 import { SheetBodyRow, choiceMapSignature, contentSignature, shareUnchangedRows, useHeldByContent, useLatest, useLatestBox, useRowEpoch, useSlot, useSteadyHandlers, useSteadyLate, SheetChromePart, useSheetUndoSource } from "@/features/data-tables/components/sheet-body-row";
 import {
@@ -2763,14 +2764,18 @@ const UserTableViewer = ({
       }));
       const result = await bulkWrite({ tableId, operations: ops });
       if (isServiceFailure(result)) {
+        const versionLabel = versionRefusalLabel(result.refusal);
         toast({
           title:
-            targets.length === 1
+            versionLabel ??
+            (targets.length === 1
               ? "Could not clear that cell"
-              : `Could not clear ${targets.length} cells`,
+              : `Could not clear ${targets.length} cells`),
           description: result.error,
           variant: "destructive",
         });
+        // Somebody else changed these rows (or their versions could not be read): read the page again.
+        if (versionLabel) refreshAfterWrite();
         return;
       }
       const failedOps = result.data.results.filter(isBulkOpError);
@@ -2819,11 +2824,14 @@ const UserTableViewer = ({
       if (isReadOnly || ops.length === 0) return false;
       const result = await bulkWrite({ tableId, operations: ops });
       if (isServiceFailure(result)) {
+        const versionLabel = versionRefusalLabel(result.refusal);
         toast({
-          title: "Bulk change failed",
+          title: versionLabel ?? "Bulk change failed",
           description: result.error,
           variant: "destructive",
         });
+        // Somebody else changed these rows (or their versions could not be read): read the page again.
+        if (versionLabel) refreshAfterWrite();
         return false;
       }
       // The many-changes write reports per-op failures inside a successful envelope, so
@@ -4572,6 +4580,8 @@ const UserTableViewer = ({
                     // EditableCell); a choice it added is re-read here.
                   }}
                   onChoicesAdded={() => void S().reloadCurrentPage()}
+                  // "Changed by someone else" / "Could not check for changes": the page is read again.
+                  onReload={() => void S().reloadCurrentPage()}
                 />
               </div>
               {cellData && (

@@ -33,6 +33,7 @@
  * not because a flag says so.
  */
 
+import { VersionLedger, updateRecordAt, versionRefusalLabel } from "@/lib/records/record-versions";
 import {
   bulkWrite,
   getCompleteTable,
@@ -156,8 +157,12 @@ const scopeDatasetStore: ListStore<
           ? { op: "delete", row_id: proposal.rowId }
           : { op: "merge", row_id: proposal.rowId, data: proposal.patch };
 
+    // An update is sent against the version the seam drew the row at when this proposal read the list.
     const res = await bulkWrite({ tableId, operations: [op] });
-    if (!res.success) return { status: "refused", detail: res.error };
+    if (!res.success) {
+      const label = versionRefusalLabel(res.refusal);
+      return { status: "refused", detail: label ? `${label}. ${res.error}` : res.error };
+    }
 
     const slot = res.data.results[0];
     if (slot === undefined) {
@@ -243,6 +248,9 @@ async function recordsClientOrRefusal(tableId: string): Promise<{ client: Record
   };
 }
 
+/** The versions of the rows a proposal card read (lane 10 VWF: every update carries the version it saw). */
+const tableRowVersions = new VersionLedger();
+
 const recordTableStore: ListStore<Extract<ListChangeTarget, { kind: "table" }>> = {
   async read(target) {
     const resolved = await recordsClientOrRefusal(target.tableId);
@@ -255,6 +263,8 @@ const recordTableStore: ListStore<Extract<ListChangeTarget, { kind: "table" }>> 
     ]);
     if (!fields.ok) return { status: "refused", detail: fields.error.message };
     if (!page.ok) return { status: "refused", detail: page.error.message };
+    // THE ROWS THE PROPOSAL IS SHOWN AGAINST: their versions are what an accepted update is sent at.
+    void tableRowVersions.drew(client, page.data.rows.map((r) => r.id));
 
     return {
       status: "read",
@@ -281,8 +291,17 @@ const recordTableStore: ListStore<Extract<ListChangeTarget, { kind: "table" }>> 
       if (!deleted.ok) return { status: "refused", detail: deleted.error.message };
       return { status: "applied", rowId: proposal.rowId, detail: "Removed from the list." };
     }
-    const updated = await client.recordUpdate({ record_id: proposal.rowId, patch: proposal.patch });
-    if (!updated.ok) return { status: "refused", detail: updated.error.message };
+    // Against the version the proposal was shown at: a colleague's change since is refused, never overwritten.
+    const updated = await updateRecordAt(client, {
+      record_id: proposal.rowId,
+      patch: proposal.patch,
+      version: await tableRowVersions.seen(proposal.rowId),
+    });
+    if (!updated.ok) {
+      const label = versionRefusalLabel(updated.error);
+      return { status: "refused", detail: label ? `${label}. ${updated.error.message}` : updated.error.message };
+    }
+    tableRowVersions.wrote(client, proposal.rowId, updated.data);
     return { status: "applied", rowId: proposal.rowId, detail: "Updated on the list." };
   },
 };

@@ -30,7 +30,7 @@ type Provided = {
   isEditable: boolean;
 };
 let provided: Provided | null = null;
-const recordUpdate = jest.fn(async () => ({ ok: true }));
+const recordUpdate = jest.fn(async () => ({ ok: true, data: 5 }));
 
 jest.mock("@/components/official/icons/IconInputWithValidation.dynamic", () => ({ IconInputCompact: () => null }));
 jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({
@@ -73,6 +73,8 @@ jest.mock("@ai-matrx/records-ui", () => ({
 // whose answer re-rendered, forever — `act` never settled and the test timed out.
 const mockClient = {
   recordUpdate,
+  // The record's version, read when the agent is handed the scope (lane VWF).
+  recordHeaders: async ({ ids }: { ids: string[] }) => ({ ok: true, data: ids.map((id) => ({ id, version: 4 })) }),
   rowActions: async () => ({ ok: true, data: { actions: [], stale: [] } }),
 };
 const mockTable = { data: { id: TABLE, name: "Appointments", title_field: "patient" }, loading: false, error: null, reload: () => undefined };
@@ -146,9 +148,10 @@ describe("a record shown alone carries the data-tables surface for that row", ()
 
   it("cell_value writes this record through the store and refuses any other row", async () => {
     const { root } = await mount();
+    provided!.getScope(); // the agent is shown this record (and its version is read with it)
     const write = apply(provided!.getWriteHandlers()["cell_value"]);
     await write({ row_id: MAPLE, field_name: "visit_status", value: "Checked in" });
-    expect(recordUpdate).toHaveBeenCalledWith({ record_id: MAPLE, patch: { visit_status: "Checked in" } });
+    expect(recordUpdate).toHaveBeenCalledWith({ record_id: MAPLE, patch: { visit_status: "Checked in" }, expectedVersion: 4 });
     await expect(write({ row_id: PEPPER, field_name: "visit_status", value: "Checked in" })).rejects.toThrow(
       /not one of the 1 row\(s\) on screen/,
     );

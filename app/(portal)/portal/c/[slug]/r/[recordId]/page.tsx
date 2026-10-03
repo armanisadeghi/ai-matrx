@@ -34,6 +34,7 @@ import {
   portalPublic,
   portalRecord,
   portalRecordHistory,
+  portalRecordVersion,
   portalRecords,
   portalViewer,
   type PortalMembership,
@@ -116,7 +117,7 @@ export default async function PortalRecordPage({
   }
 
   const { table } = located;
-  const [document, fields, history] = await Promise.all([
+  const [document, fields, history, version] = await Promise.all([
     portalRecord({ organizationId: membership.organization_id, recordId }),
     shownFields(membership.organization_id, table),
     // S6: the status line reads the EXISTING history door as her, which masks every field the
@@ -124,6 +125,8 @@ export default async function PortalRecordPage({
     table.stage
       ? portalRecordHistory({ organizationId: membership.organization_id, recordId }).catch(() => null)
       : Promise.resolve([]),
+    // THE VERSION SHE SEES, read with the record: every save is sent against it (lane 10 VWF).
+    portalRecordVersion({ organizationId: membership.organization_id, recordId }),
   ]);
   if (!document) notFound();
   const stageKey = table.stage?.field ?? null;
@@ -215,6 +218,7 @@ export default async function PortalRecordPage({
                 fieldKey={field.key}
                 label={field.label}
                 initialValue={readable(document[field.key])}
+                initialVersion={version}
                 save={savePortalField}
               />
             ))}

@@ -12,6 +12,7 @@
  * `RecordStoreTableSurface` sits INSIDE it, so its write reaches the store as this person.
  */
 import { useRef, useState, type ReactNode } from "react";
+import { VersionLedger, updateRecordAt, versionRefusalLabel } from "@/lib/records/record-versions";
 import type { GridContextSnapshot } from "./recordStoreTableScope";
 import { useRecordsClient } from "@ai-matrx/records/react";
 
@@ -114,8 +115,13 @@ export function RecordStoreTableSurface({
 }) {
   const client = useRecordsClient();
   const { latest } = channel;
+  // THE VERSIONS OF THE ROWS THE AGENT WAS SHOWN: read when the scope is handed over, so its one
+  // confirmed cell is sent against what it saw — a colleague's change since is refused, never overwritten.
+  const ledger = useRef<VersionLedger | null>(null);
+  ledger.current ??= new VersionLedger();
   const getScope = () => {
     const snapshot = latest.current;
+    if (snapshot) void ledger.current!.drew(client, snapshot.visibleRows.map((r) => r.id));
     return buildDataTablesScope(
       snapshot
         ? scopeInputFromGrid(snapshot)
@@ -123,8 +129,17 @@ export function RecordStoreTableSurface({
     );
   };
   const handlers = recordStoreWriteHandlers(latest, async (recordId, key, value) => {
-    const answer = await client.recordUpdate({ record_id: recordId as never, patch: { [key]: value } as never });
-    return answer.ok ? { ok: true } : { ok: false, says: answer.error.message };
+    const answer = await updateRecordAt(client, {
+      record_id: recordId,
+      patch: { [key]: value },
+      version: await ledger.current!.seen(recordId),
+    });
+    if (answer.ok) {
+      ledger.current!.wrote(client, recordId, answer.data);
+      return { ok: true };
+    }
+    const label = versionRefusalLabel(answer.error);
+    return { ok: false, says: label ? `${label}: ${answer.error.message}` : answer.error.message };
   });
   const snapshot = latest.current;
   if (!enabled) return <>{children}</>;

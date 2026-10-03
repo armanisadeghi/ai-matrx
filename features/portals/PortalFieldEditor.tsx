@@ -10,7 +10,8 @@
 // person wrote stays exactly where it is — so nothing they typed is lost and
 // nothing pretends to have saved.
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { PortalWriteOutcome } from "@/app/(portal)/portal/c/[slug]/r/[recordId]/actions";
 import { guardedSave } from "@/lib/save/guardedSave";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { RELOAD_LABEL, STALE_MOVE_LABEL, VERSION_UNREAD_LABEL } from "@/lib/records/record-versions";
 
 export function PortalFieldEditor({
   slug,
@@ -25,6 +27,7 @@ export function PortalFieldEditor({
   fieldKey,
   label,
   initialValue,
+  initialVersion,
   save,
 }: {
   slug: string;
@@ -32,19 +35,36 @@ export function PortalFieldEditor({
   fieldKey: string;
   label: string;
   initialValue: string;
+  /** The record's version when the page read it — every save is sent against it (`null` = unread). */
+  initialVersion: number | null;
   save: (
     slug: string,
     recordId: string,
     key: string,
     value: string,
+    version: number | null,
   ) => Promise<PortalWriteOutcome>;
 }) {
+  const router = useRouter();
   const [value, setValue] = useState(initialValue);
   const [saved, setSaved] = useState(initialValue);
+  const [version, setVersion] = useState<number | null>(initialVersion);
+  const savedRef = useRef(saved);
+  savedRef.current = saved;
   const [refusal, setRefusal] = useState<{
     message: string;
     hint: string | null;
+    conflict?: "changed" | "unread";
   } | null>(null);
+  // THE PAGE WAS READ AGAIN (Reload, or after a save on this page): the version is what it read, and
+  // the stored value replaces the field's text unless she has unsaved words in it.
+  useEffect(() => {
+    const before = savedRef.current;
+    setVersion(initialVersion);
+    setValue((typed) => (typed === before ? initialValue : typed));
+    setSaved(initialValue);
+    setRefusal((r) => (r?.conflict ? null : r));
+  }, [initialVersion, initialValue]);
   const [justSaved, setJustSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -55,7 +75,7 @@ export function PortalFieldEditor({
     setJustSaved(false);
     startTransition(async () => {
       const outcome = await guardedSave(
-        () => save(slug, recordId, fieldKey, value),
+        () => save(slug, recordId, fieldKey, value, version),
         {
           what: "this field",
           onRetry: () => onSave(),
@@ -63,12 +83,14 @@ export function PortalFieldEditor({
       );
       if (outcome.ok) {
         setSaved(value);
+        if (typeof outcome.version === "number") setVersion(outcome.version);
         setJustSaved(true);
         return;
       }
       setRefusal({
         message: outcome.message ?? "That did not save.",
         hint: outcome.hint ?? null,
+        ...(outcome.conflict ? { conflict: outcome.conflict } : {}),
       });
     });
   }
@@ -110,7 +132,20 @@ export function PortalFieldEditor({
           </span>
         ) : null}
       </div>
-      {refusal ? (
+      {refusal?.conflict ? (
+        <div
+          className="mt-2 flex items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm"
+          data-portal-version-refusal=""
+          title={refusal.message}
+        >
+          <span className="font-medium text-destructive">
+            {refusal.conflict === "changed" ? STALE_MOVE_LABEL : VERSION_UNREAD_LABEL}
+          </span>
+          <Button type="button" size="sm" variant="outline" className="h-8" onClick={() => router.refresh()}>
+            {RELOAD_LABEL}
+          </Button>
+        </div>
+      ) : refusal ? (
         <div className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
           <p className="font-medium text-destructive">{refusal.message}</p>
           {refusal.hint ? (
