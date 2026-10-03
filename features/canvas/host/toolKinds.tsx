@@ -26,6 +26,7 @@ import { conversationContextKind } from "./conversation/conversationContextKind"
 import { conversationListsKind } from "./conversation/conversationListsKind";
 import { agentUnsavedChangesKind } from "./agent/agentUnsavedChangesKind";
 import { contextItemsKind } from "./conversation/contextItemsKind";
+import { messageContextReceiptKind } from "./conversation/messageContextReceiptKind";
 import { contextValueKind } from "./conversation/contextValueKind";
 import { workingDocumentHistoryKind } from "./conversation/workingDocumentHistoryKind";
 import { chatDocumentsKind } from "./conversation/chatDocumentsKind";
@@ -44,6 +45,7 @@ export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   conversationListsKind,
   agentUnsavedChangesKind,
   contextItemsKind,
+  messageContextReceiptKind,
   contextValueKind,
   workingDocumentHistoryKind,
   noteKnowledgeKind,

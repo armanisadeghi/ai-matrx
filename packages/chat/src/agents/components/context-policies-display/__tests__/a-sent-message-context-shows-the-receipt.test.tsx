@@ -1,6 +1,7 @@
 /**
- * The sent message's context popover renders the SERVER'S receipt rows —
- * what was sent, what was off and why — read-only (RULES.md §5).
+ * The sent message's receipt (its canvas tab's table) renders the SERVER'S
+ * receipt rows — what was sent, what was off and why — read-only (RULES.md §5).
+ * The pill on the message toggles that tab, keyed by the message.
  *
  * Breaks this catches: the popover rendering anything but the receipt's rows
  * (the old live-value list), dropping the person's "off" row, letting a
@@ -12,7 +13,21 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ContextReceiptData } from "@ai-matrx/agents/generated/stream-events";
-import { MessageContextReceipt } from "../MessageContextReceipt";
+import { MessageContextReceipt, MessageContextReceiptTable } from "../MessageContextReceipt";
+
+const presses: Array<{ title: string; data: Record<string, unknown> }> = [];
+let tabRef: { kind: string; key: string } | null = null;
+jest.mock("../../../../host/canvas", () => ({
+  useChatCanvasTab: (ref: { kind: string; key: string }) => {
+    tabRef = ref;
+    return {
+      isAvailable: true,
+      isVisible: false,
+      selected: null,
+      toggle: (open: { title: string; data: Record<string, unknown> }) => presses.push(open),
+    };
+  },
+}));
 import captured from "../../../redux/execution-system/messages/__tests__/fixtures/notes-context-receipts.json";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -43,15 +58,25 @@ afterEach(() => {
   host.remove();
 });
 
+function pill(receipt: ContextReceiptData) {
+  act(() =>
+    root.render(<MessageContextReceipt conversationId="c-1" messageId="m-1" receipt={receipt} />),
+  );
+  return host.querySelector("button")!;
+}
+
 function openFor(receipt: ContextReceiptData) {
-  act(() => root.render(<MessageContextReceipt receipt={receipt} />));
-  const trigger = host.querySelector("button")!;
-  act(() => {
-    trigger.click();
-  });
+  const trigger = pill(receipt);
+  // The pill toggles the message's canvas tab, whose body is the table.
+  presses.length = 0;
+  act(() => trigger.click());
+  expect(tabRef).toEqual({ kind: "message-context-receipt", key: "m-1" });
+  expect(presses[0]?.data).toEqual({ conversationId: "c-1", messageId: "m-1" });
+  const summary = trigger.textContent;
+  act(() => root.render(<MessageContextReceiptTable receipt={receipt} />));
   const table = document.body.querySelector('[role="table"]');
-  if (!table) throw new Error("the context popover never opened its table");
-  return { trigger, table };
+  if (!table) throw new Error("the receipt table never rendered");
+  return { trigger: { textContent: summary }, table };
 }
 
 function rowsOf(table: Element) {
@@ -97,8 +122,7 @@ it("says so when the model reads no context", () => {
 });
 
 it("the sent-message badge is a count with no generic word (Arman, 2026-10-01)", () => {
-  act(() => root.render(<MessageContextReceipt receipt={FIRST} />));
-  const trigger = host.querySelector("button")!;
+  const trigger = pill(FIRST);
   expect(trigger.textContent).toBe("8 sent");
   expect(trigger.getAttribute("aria-label") ?? "").not.toMatch(/context/i);
 });

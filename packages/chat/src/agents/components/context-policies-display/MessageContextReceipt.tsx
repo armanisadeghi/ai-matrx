@@ -7,14 +7,15 @@
  * (`selectMessageContextReceipt`: persisted `model_context.delivery.receipt`,
  * else the live receipt of the request this message was sent with) — never
  * from live context values and never from the client's belief. Read-only:
- * a sent turn cannot be changed; rules are edited in the composer.
+ * a sent turn cannot be changed; rules are edited in the composer. The pill
+ * on the message toggles the turn's canvas tab (`message-context-receipt`,
+ * keyed by the message id), whose body is `MessageContextReceiptView`.
  *
  * Contract: common-docs/systems/account/scopes-context/context-delivery/RULES.md §5.
  */
 
 import { useMemo, useState } from "react";
 import { Boxes, TriangleAlert } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import {
   ContextDeliveredValue,
   ContextReceiptBlockDetail,
@@ -29,10 +30,16 @@ import {
 import type { ContextHierarchy } from "@ai-matrx/agents/context/react";
 import { contextRowPlacer } from "../../redux/execution-system/context-rules/context-hierarchy";
 import type { ContextReceiptData } from "@ai-matrx/agents/generated/stream-events";
-import { receiptRowToResolved } from "../../redux/execution-system/messages/message-context-receipt";
+import {
+  receiptRowToResolved,
+  selectMessageContextMismatches,
+  selectMessageContextReceipt,
+} from "../../redux/execution-system/messages/message-context-receipt";
 import { ValueCountPill } from "./ValueCountPill";
 import { loadContextView } from "../../redux/execution-system/context-rules/context-viewer";
-import { useAppDispatch } from "../../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import { useChatCanvasTab } from "../../../host/canvas";
+import { MESSAGE_CONTEXT_RECEIPT_KIND } from "../../../host/canvas-tabs";
 
 /** The viewer door for a SENT turn (`GET /ai/context/delivered`), called only on open. */
 export function useSentTurnContextView(conversationId: string, messageId: string): ContextViewLoader {
@@ -123,43 +130,66 @@ export function MessageContextReceiptTable({
   );
 }
 
+/**
+ * A sent turn's receipt in full — the body of its `message-context-receipt`
+ * canvas tab. Reads the receipt and its mismatches for the message itself, so
+ * the tab needs only the two ids.
+ */
+export function MessageContextReceiptView({
+  conversationId,
+  messageId,
+}: {
+  conversationId: string;
+  messageId: string;
+}) {
+  const receipt = useAppSelector(
+    useMemo(() => selectMessageContextReceipt(conversationId, messageId), [conversationId, messageId]),
+  );
+  const mismatches = useAppSelector(
+    useMemo(() => selectMessageContextMismatches(conversationId, messageId), [conversationId, messageId]),
+  );
+  const load = useSentTurnContextView(conversationId, messageId);
+  if (!receipt) {
+    return <p className="px-3 py-2 text-xs text-muted-foreground">No receipt for this turn</p>;
+  }
+  return (
+    <div className="h-full min-h-0 overflow-y-auto">
+      <MessageContextReceiptTable receipt={receipt} mismatches={mismatches} load={load} />
+    </div>
+  );
+}
+
+/**
+ * The receipt's pill on a sent message: toggles that message's receipt tab in
+ * the host canvas (absent → open · behind → focus · in front → close) and is
+ * pressed while it is in front.
+ */
 export function MessageContextReceipt({
+  conversationId,
+  messageId,
   receipt,
   mismatches,
-  load,
   className,
 }: {
+  conversationId: string;
+  messageId: string;
   receipt: ContextReceiptData;
   mismatches?: readonly ContextReceiptMismatch[];
-  /** The viewer door for this sent turn (RULES.md §5b: `useSentTurnContextView`). */
-  load?: ContextViewLoader;
   className?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const tab = useChatCanvasTab({ kind: MESSAGE_CONTEXT_RECEIPT_KIND, key: messageId });
   const hasMismatch = (mismatches?.length ?? 0) > 0;
+  const summary = receiptSummary(receipt);
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <ValueCountPill
-          text={receiptSummary(receipt)}
-          title={hasMismatch ? "Sent differently than shown" : undefined}
-          icon={hasMismatch ? TriangleAlert : Boxes}
-          warn={hasMismatch}
-          aria-label={receiptSummary(receipt)}
-          className={className}
-        />
-      </PopoverTrigger>
-      <PopoverContent
-        sizing="content"
-        align="start"
-        side="top"
-        sideOffset={6}
-        className="w-[min(28rem,calc(100vw-2rem))] p-0"
-      >
-        <div className="max-h-72 overflow-y-auto">
-          <MessageContextReceiptTable receipt={receipt} mismatches={mismatches} load={load} />
-        </div>
-      </PopoverContent>
-    </Popover>
+    <ValueCountPill
+      text={summary}
+      title={hasMismatch ? "Sent differently than shown" : undefined}
+      icon={hasMismatch ? TriangleAlert : Boxes}
+      warn={hasMismatch}
+      aria-label={summary}
+      aria-pressed={tab.isVisible}
+      onClick={() => tab.toggle({ title: `Sent · ${summary}`, data: { conversationId, messageId } })}
+      className={className}
+    />
   );
 }

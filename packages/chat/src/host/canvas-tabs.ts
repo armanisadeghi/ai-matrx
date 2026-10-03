@@ -50,12 +50,20 @@ export const CONTEXT_VALUE_KIND = "context-value";
 /** A conversation's working-document version history: ONE tab per conversation. */
 export const WORKING_DOCUMENT_HISTORY_KIND = "working-document-history";
 
+/**
+ * What a SENT turn actually delivered (the server's context receipt), with
+ * every value's delivered text one click in: ONE tab per message, keyed by
+ * the message id.
+ */
+export const MESSAGE_CONTEXT_RECEIPT_KIND = "message-context-receipt";
+
 /** Every tab kind the package opens by name through `canvas.useTab`. */
 export type ChatCanvasTabKind =
   | typeof CONVERSATION_CONTEXT_KIND
   | typeof CONVERSATION_LISTS_KIND
   | typeof AGENT_UNSAVED_CHANGES_KIND
   | typeof CONTEXT_ITEMS_KIND
+  | typeof MESSAGE_CONTEXT_RECEIPT_KIND
   | typeof CONTEXT_VALUE_KIND
   | typeof WORKING_DOCUMENT_HISTORY_KIND;
 /** The scratchpad tab follows the ACTIVE scratchpad, so there is exactly one. */
