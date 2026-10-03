@@ -45,7 +45,9 @@ const service = {
   canEditSource: jest.fn(async () => false),
 };
 jest.mock("../service", () => service);
-jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn() }));
+// The sidecar's live half opens through the realtime manager, once per source (sidecarStore.ts).
+const mockRealtime = { open: jest.fn((_spec: unknown) => ({ close: jest.fn() })) };
+jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn(), useRealtimeManager: () => mockRealtime }));
 jest.mock("@ai-matrx/realtime", () => ({ defineChannelNamespace: () => ({ topic: () => "t" }) }));
 jest.mock("@/features/scopes/host/associationsStore", () => ({ getAssociationsStore: () => ({ titles: { fetch: async () => new Map() } }) }));
 jest.mock("@/features/scopes/registry/entityRegistry", () => ({ tryGetEntityInfo: () => ({}) }));
@@ -83,7 +85,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
 });
-afterEach(() => {
+afterEach(() => { act(() => (jest.requireActual("../sidecarStore") as typeof import("../sidecarStore")).resetSidecarStoreForTests());
   act(() => root.unmount());
   container.remove();
 });
@@ -162,6 +164,9 @@ it("4 — the ⋯ toggle is present only when the record holds something", async
     collaborationDoors: true,
   });
   act(() => root.unmount());
+  // A fresh tab: the sidecar keeps a source's annotations for the tab (sidecarStore.ts), so a
+  // remount alone renders the kept answer and reads nothing.
+  act(() => (jest.requireActual("../sidecarStore") as typeof import("../sidecarStore")).resetSidecarStoreForTests());
   root = createRoot(container);
   await mountAnswer();
   expect(dockStateFor("message:msg-1")).toEqual({ count: 1, open: false });

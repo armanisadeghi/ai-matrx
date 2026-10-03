@@ -31,7 +31,8 @@ Adopters: `/markdown-studio` → Annotate (`components/markdown-studio/AnnotateV
 | `echo.ts` | own realtime echoes recognised by write identity (create request id, edit version, deleted id) — never a time window |
 | `useSidecarPaint.ts` | CSS Custom Highlight API painter; unsaved/failed marks paint as a wavy underline, never as saved |
 | `service.ts` | every store call on a canonical door: `cmt_*` via the one comment seam (creates carry a client request id; until the door dedupes, a Retry first reads back whether the lost attempt landed; edits are compare-and-swap with an honest conflict); private highlight/note = `content.annotation_create` (ONE transaction: annotation document + `annotates` edge, idempotent on the draft's id, filed in the person's own org); `anchored_to` links via `associationsService`; edges into the source read directly (live-only) |
-| `useAnnotationSidecar.ts` | state, drafts (pending → confirmed \| failed, kept for Retry), realtime (`platform.comments`, filtered by `entity_id`), resolution |
+| `useAnnotationSidecar.ts` | drafts (pending → confirmed \| failed, kept for Retry), resolution; confirmed items + realtime come from `sidecarStore.ts` |
+| `sidecarStore.ts` | one entry per source (per person): confirmed items, doors, may-edit, captured bodies — read once per tab; ONE ref-counted pair of channels (`platform.comments` + the delete/restore notice) per source, closed 60 s after the last view (then stale → read once); late-answer guard |
 | `suggestion.ts` | accept = splice through the source's save adapter (`review/proposedEdit.ts` → `spliceSave`) |
 | `mentions.ts` | `@[Name](user:<uuid>)`, `@[label](date:YYYY-MM-DD)`, records as RC-B8 wikilinks `[[token:id\|Title]]` |
 | `AnnotationSidecar.tsx`, `AnnotationPanel.tsx`, `MentionComposer.tsx`, `LinkRecordSheet.tsx` | UI |
@@ -54,3 +55,4 @@ Adopters: `/markdown-studio` → Annotate (`components/markdown-studio/AnnotateV
 - 2026-09-25: Created (RC-B11).
 - 2026-09-25: verify-RC-B11 F1–F7 fixed by class: `data-content-chrome` marker; idempotent creates; reply/edit keep their text with Retry; one-transaction private notes (`migrations/rcb11_annotation_create_is_one_write.sql`, applied); plain-sentence errors; Add-menu focus; echo by write identity + CAS edits; Ctrl/Cmd+Alt+M into the toolbar with arrow roving.
 - 2026-09-27: The reading set on every saved record — `RecordAnnotations` mounted once by RichDocument and the chat answer, the Notes & comments dock (desktop floating right panel, phone bottom sheet, ⋯ toggle), Highlight/Link gated on the association vocabulary. Guard: `__tests__/record-annotations.test.tsx`.
+- 2026-10-03: The remount law — the sidecar's confirmed items live in `sidecarStore.ts` by source and are read once per tab; a wake, a Remove + Undo or a second view reads nothing (`cmt_list` / `platform.associations` were re-read on every mount). Guard: `__tests__/sidecar-reads-once.test.tsx` (3/4 red on the old hook).

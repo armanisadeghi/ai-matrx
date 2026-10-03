@@ -25,7 +25,7 @@ live in the custom-data node (`STATE.md`, `HANDOFF.md`, `DECISIONS.md`, `VISION.
 | `records*.ts(x)` at the root | Host ports handed to `@ai-matrx/records-ui`: files, file images, clean text, references and kinds, toasts |
 | `whereThisTableLives.ts`, `objectOrganization.ts` | A table's organization, read from its own id through `custom.where_id_opens` |
 | `standard-field-columns/` | Custom fields shown as columns on standard tables' lists; `useTableCustomFieldColumns` is the table host's `useCustomFieldColumns` binding, and `EntityListPage` adds the same columns to every canonical list's picker |
-| `components/EntityCustomFields.tsx` | The custom-fields section on every record view: pages, the Detail host port (`window-panels/detail/DetailCustomFieldsSection.tsx`), peeks (`PeekDialog record={{token,id}}`) |
+| `components/EntityCustomFields.tsx` | The custom-fields section on every record view: pages, the Detail host port (`window-panels/detail/DetailCustomFieldsSection.tsx`), peeks (`PeekDialog record={{token,id}}`); its own reads (row home, row readable) are kept by record in `storeReads` and the store switch for the session — a wake or remount asks nothing (`__tests__/entity-custom-fields-reads-once.test.tsx`) |
 | `every-record-view-has-custom-fields.test.ts` | G1: the record-view census (`scripts/record-pages/`), its generated map and shrink-only ledger (`lib/record-pages/`); live half = safety-net check `custom-fields.walk-every-record-view` |
 | `grid-agent-context/`, `page-capture/`, `record-chat/`, `row-agent-action/`, `row-change-agent/` | What a table, a row or a visible view hands to agents and chat |
 | `typedAnswers.ts` | What a stranger typed on a public door (form, booking, portal), turned into values once |

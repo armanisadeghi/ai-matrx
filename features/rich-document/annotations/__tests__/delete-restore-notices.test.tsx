@@ -41,7 +41,9 @@ const service = {
   canEditSource: jest.fn(async () => true),
 };
 jest.mock("../service", () => service);
-jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn() }));
+// The sidecar's live half opens through the realtime manager, once per source (sidecarStore.ts).
+const mockRealtime = { open: jest.fn((_spec: unknown) => ({ close: jest.fn() })) };
+jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn(), useRealtimeManager: () => mockRealtime }));
 // Topics built the way the package builds a foreign topic: root + ":" + parts in order.
 jest.mock("@ai-matrx/realtime", () => ({
   defineChannelNamespace: (spec: { foreignTopic?: string; namespace: string; parts: string[] }) => ({
@@ -63,7 +65,6 @@ jest.mock("../LinkRecordSheet", () => ({ LinkRecordSheet: () => null }));
 
 import { AnnotatedContent, AnnotationSidecarProvider } from "../AnnotationSidecar";
 import { AnnotationPanel } from "../AnnotationPanel";
-import { useChannel } from "@ai-matrx/realtime/react";
 
 const SOURCE = { token: "note", id: "guide-3", title: "Maps", body: "## Maps\n\nDot density maps.", contentVersion: 1 };
 const thread = { key: "comment:c1", kind: "comment", saveState: "confirmed", anchor: null, author: { id: "me", name: "You" }, mine: true,
@@ -81,7 +82,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
 });
-afterEach(() => {
+afterEach(() => { act(() => (jest.requireActual("../sidecarStore") as typeof import("../sidecarStore")).resetSidecarStoreForTests());
   act(() => root.unmount());
   container.remove();
   jest.useRealTimers();
@@ -90,7 +91,7 @@ async function flush(n = 6) {
   for (let i = 0; i < n; i++) await act(async () => { jest.advanceTimersByTime(300); await Promise.resolve(); await Promise.resolve(); });
 }
 function noticeSpec() {
-  const specs = (useChannel as jest.Mock).mock.calls.map((c) => c[0]).filter(Boolean);
+  const specs = mockRealtime.open.mock.calls.map((c) => c[0]).filter(Boolean);
   return specs.reverse().find((s: { topic: string }) => s.topic === "comments:note:guide-3");
 }
 async function mount() {

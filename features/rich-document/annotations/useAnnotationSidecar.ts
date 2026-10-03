@@ -8,13 +8,17 @@
 // New comments by others arrive live (postgres_changes on platform.comments,
 // RLS-authorized per subscriber by RC-A2's parent rule) and on every
 // reconnect / tab wake (onBackfill).
+//
+// 🚨 THE CONFIRMED ITEMS ARE KEPT BY SOURCE, NOT BY THIS HOOK (`sidecarStore.ts`, the remount
+// law 2026-10-03): read once per tab, one ref-counted pair of channels per source. A view that
+// sleeps and wakes, a Remove + Undo, or a second view of the same record renders the kept answer
+// and reads nothing (it used to read `cmt_list` and `platform.associations` on every mount).
 
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { defineChannelNamespace } from "@ai-matrx/realtime";
-import { useChannel } from "@ai-matrx/realtime/react";
-import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
+import { useRealtimeManager } from "@ai-matrx/realtime/react";
 import { getUserId } from "@/utils/auth/getUserId";
 import { ANCHOR_WRITES_ENABLED, DEFAULT_HIGHLIGHT_COLOR, type HighlightColor } from "./constants";
 import type { TextAnchor } from "./anchor";
@@ -33,7 +37,6 @@ import {
   editComment,
   linkRecord,
   listCommentThreads,
-  listEdgeItems,
   annotationPairs,
   notifyMentions,
   resolveComment,
@@ -52,6 +55,16 @@ import { isOrganizationRequiredError } from "@/lib/organizations/organizationReq
 import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { createEchoLedger, isOwnEcho } from "./echo";
+import {
+  ensureCapturedBodies,
+  holdSidecarLive,
+  loadSidecar,
+  scheduleSidecarReload,
+  sidecarKey,
+  sidecarLedger,
+  sidecarSnapshot,
+  subscribeSidecars,
+} from "./sidecarStore";
 import { humanError } from "./errors";
 
 /** One id per draft, reused by every Retry of it (the idempotency key). */
@@ -105,6 +118,17 @@ interface CommentNotice {
   at?: string;
 }
 
+/** A delete/restore notice: this tab's own delete already reloaded when the door answered. */
+function onCommentNotice(
+  ledger: ReturnType<typeof createEchoLedger>,
+  received: { data?: unknown },
+  changed: () => void,
+): void {
+  const notice = (received.data ?? {}) as CommentNotice;
+  if (notice.op === "deleted" && notice.comment_id && ledger.deletedIds.has(notice.comment_id)) return;
+  changed();
+}
+
 let draftSeq = 0;
 function draftKey(): string {
   draftSeq += 1;
@@ -130,147 +154,106 @@ export interface CommentDraft {
 }
 
 export function useAnnotationSidecar(source: AnnotationSource | null) {
-  const [confirmed, setConfirmed] = useState<AnnotationItem[]>([]);
   const [drafts, setDrafts] = useState<AnnotationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [doors, setDoors] = useState(false);
-  const [canEdit, setCanEdit] = useState(false);
-  const [capturedBodies, setCapturedBodies] = useState<Record<number, string | null>>({});
+  const [pairsError, setPairsError] = useState<string | null>(null);
   const sourceRef = useRef(source);
   sourceRef.current = source;
-  const loadSeq = useRef(0);
 
-  const sourceKey = source ? `${source.token}:${source.id}` : null;
+  // Keyed by the person too: one person's kept answer is never another's.
+  const sourceKey = source ? `${getUserId() ?? "-"}|${sidecarKey(source)}` : null;
+  const kept = useSyncExternalStore(
+    subscribeSidecars,
+    () => sidecarSnapshot(sourceKey),
+    () => sidecarSnapshot(null),
+  );
+  const { confirmed, doors, canEdit, capturedBodies } = kept;
+  const loading = sourceKey ? kept.loading : true;
+  const error = kept.error ?? pairsError;
+  // This tab's own writes, shared by every view of the source, so their echoes are not news.
+  const ownLedger = useRef(createEchoLedger());
+  const ledger = { current: sourceKey ? sidecarLedger(sourceKey) : ownLedger.current };
 
   const reload = useCallback(async () => {
     const src = sourceRef.current;
     if (!src) return;
-    const seq = ++loadSeq.current;
-    setError(null);
-    // The two halves load independently: a refused edge read must never hide
-    // the comment threads (or the reverse). Each failure is shown by name.
-    const titles = getAssociationsStore().titles;
-    const [threads, edges, editable] = await Promise.allSettled([
-      listCommentThreads(src),
-      listEdgeItems(src, (token, ids) => titles.fetch(token, ids)),
-      src.save ? canEditSource(src) : Promise.resolve(false),
-    ]);
-    if (seq !== loadSeq.current) return;
-    setCanEdit(editable.status === "fulfilled" && editable.value === true);
-    const next: AnnotationItem[] = [];
-    const errors: string[] = [];
-    if (threads.status === "fulfilled") {
-      next.push(...threads.value.items);
-      setDoors(threads.value.collaborationDoors);
-    } else errors.push(message(threads.reason));
-    if (edges.status === "fulfilled") next.push(...edges.value.highlights, ...edges.value.links);
-    else errors.push(message(edges.reason));
-    setConfirmed(next);
-    setError(errors.length ? errors.join(" ") : null);
-    setLoading(false);
+    await loadSidecar(`${getUserId() ?? "-"}|${sidecarKey(src)}`, src, { force: true, describe: message });
   }, []);
 
+  // Mount and wake: read unless the source is already kept (and current).
   useEffect(() => {
-    setConfirmed([]);
     setDrafts([]);
-    setLoading(true);
-    setCapturedBodies({});
-    if (sourceKey) void reload();
-  }, [sourceKey, reload]);
+    const src = sourceRef.current;
+    if (sourceKey && src) void loadSidecar(sourceKey, src, { describe: message });
+  }, [sourceKey]);
 
-  // Older captured versions the resolver can map through (one read per version).
+  // Older captured versions the resolver can map through (one read per version, kept by source).
   const anchorVersions = [...confirmed, ...drafts]
     .map((i) => i.anchor?.content_version)
     .filter((v): v is number => typeof v === "number");
   const versionKey = [...new Set(anchorVersions)].sort((a, b) => a - b).join(",");
   useEffect(() => {
     const src = sourceRef.current;
-    if (!src?.readVersionBody) return;
-    const wanted = versionKey
-      .split(",")
-      .filter(Boolean)
-      .map(Number)
-      .filter((v) => v !== src.contentVersion && !(v in capturedBodies));
-    if (wanted.length === 0) return;
-    let stale = false;
-    void Promise.all(
-      wanted.map(async (v) => [v, await src.readVersionBody!(v).catch(() => null)] as const),
-    ).then((pairs) => {
-      if (stale) return;
-      setCapturedBodies((prev) => ({ ...prev, ...Object.fromEntries(pairs) }));
-    });
-    return () => {
-      stale = true;
-    };
-  }, [versionKey, source?.contentVersion, capturedBodies]);
+    if (!src || !sourceKey) return;
+    ensureCapturedBodies(sourceKey, src, versionKey.split(",").filter(Boolean).map(Number));
+  }, [versionKey, sourceKey, source?.contentVersion]);
 
-  // Live comments from everyone who can read the source. Own echoes are recognised by the
+  // Live comments from everyone who can read the source — ONE pair of channels per source, however
+  // many views hold it, open while any does (and a grace after). Own echoes are recognised by the
   // exact writes this tab made (echo.ts), never by a time window.
-  const ledger = useRef(createEchoLedger());
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scheduleReload = useCallback(() => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
-    refreshTimer.current = setTimeout(() => void reload(), 250);
-  }, [reload]);
-  useEffect(() => () => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
-  }, []);
-  useChannel(
-    source
-      ? {
-          topic: commentsChannel.topic({ entityId: source.id }),
-          postgresChanges: [
-            {
-              event: "*",
-              schema: "platform",
-              table: "comments",
-              filter: `entity_id=eq.${source.id}`,
-              rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
-              onChange: ({ row, payload }) => {
-                // This tab's own writes already reloaded when the door answered.
-                if (isOwnEcho(String(payload?.eventType ?? ""), row, ledger.current)) return;
-                scheduleReload();
-              },
+  const manager = useRealtimeManager();
+  const sourceId = source?.id ?? null;
+  const sourceToken = source?.token ?? null;
+  useEffect(() => {
+    if (!manager || !sourceKey || !sourceId || !sourceToken) return undefined;
+    const key = sourceKey;
+    const current = () => sourceRef.current;
+    const changed = () => scheduleSidecarReload(key, current);
+    const backfill = async () => {
+      const src = current();
+      if (src) await loadSidecar(key, src, { force: true, describe: message });
+    };
+    return holdSidecarLive(key, manager, () => {
+      const keptLedger = sidecarLedger(key);
+      const comments = manager.open({
+        topic: commentsChannel.topic({ entityId: sourceId }),
+        postgresChanges: [
+          {
+            event: "*",
+            schema: "platform",
+            table: "comments",
+            filter: `entity_id=eq.${sourceId}`,
+            rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+            onChange: ({ row, payload }) => {
+              // This tab's own writes already reloaded when the door answered.
+              if (isOwnEcho(String(payload?.eventType ?? ""), row, keptLedger)) return;
+              changed();
             },
-          ],
-          onBackfill: async () => {
-            await reload();
           },
-        }
-      : null,
-  );
-  const onCommentNotice = useCallback(
-    (message: { data?: unknown }) => {
-      const notice = (message.data ?? {}) as CommentNotice;
-      // This tab's own delete already reloaded when the door answered.
-      if (notice.op === "deleted" && notice.comment_id && ledger.current.deletedIds.has(notice.comment_id)) return;
-      scheduleReload();
-    },
-    [scheduleReload],
-  );
-  useChannel(
-    source
-      ? {
-          topic: commentNoticeChannel.topic({ entityType: source.token, entityId: source.id }),
-          // Authorized by RLS on realtime.messages; the package awaits setAuth() before joining.
-          // realtime-admission: comments
-          private: true,
-          // The sender is Postgres: no Matrx envelope, so echo suppression is done above, by
-          // the ids this tab deleted (echo.ts ledger).
-          wire: { mode: "raw" },
-          // Every notice carries its own id (gen_random_uuid() in platform._comments_announce_delete).
-          eventKey: (_source, payload) => ((payload ?? {}) as CommentNotice).id,
-          broadcast: [
-            { event: "comment.deleted", onMessage: onCommentNotice },
-            { event: "comment.restored", onMessage: onCommentNotice },
-          ],
-          onBackfill: async () => {
-            await reload();
-          },
-        }
-      : null,
-  );
+        ],
+        onBackfill: backfill,
+      });
+      const notices = manager.open({
+        topic: commentNoticeChannel.topic({ entityType: sourceToken, entityId: sourceId }),
+        // Authorized by RLS on realtime.messages; the package awaits setAuth() before joining.
+        // realtime-admission: comments
+        private: true,
+        // The sender is Postgres: no Matrx envelope, so echo suppression is done here, by the ids
+        // this tab deleted (echo.ts ledger).
+        wire: { mode: "raw" },
+        // Every notice carries its own id (gen_random_uuid() in platform._comments_announce_delete).
+        eventKey: (_source, payload) => ((payload ?? {}) as CommentNotice).id,
+        broadcast: [
+          { event: "comment.deleted", onMessage: (m) => onCommentNotice(keptLedger, m, changed) },
+          { event: "comment.restored", onMessage: (m) => onCommentNotice(keptLedger, m, changed) },
+        ],
+        onBackfill: backfill,
+      });
+      return () => {
+        comments.close();
+        notices.close();
+      };
+    });
+  }, [manager, sourceKey, sourceId, sourceToken]);
 
   // ── resolution ──────────────────────────────────────────────────────────
   const items: ResolvedItem[] = [...confirmed, ...drafts].map((item) => ({
@@ -549,7 +532,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
         if (!stale) setPairs({ token, ...p });
       })
       .catch((e: unknown) => {
-        if (!stale) setError(message(e));
+        if (!stale) setPairsError(message(e));
       });
     return () => {
       stale = true;

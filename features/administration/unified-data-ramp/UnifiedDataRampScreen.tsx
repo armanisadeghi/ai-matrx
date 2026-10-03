@@ -34,6 +34,7 @@ import { getUserOrganizations } from "@/features/organizations/service";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
+import { forgetUnifiedDataCampaignAnswers } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RampConsumer {
@@ -186,6 +187,8 @@ export function UnifiedDataRampScreen() {
           .schema("platform")
           .rpc("unified_data_store_set", { p_organization_id: organizationId, p_on: on });
         if (refused) throw new Error(refused.message);
+        // Every screen in this tab keeps the switch's answer for the session: it must hear this.
+        forgetUnifiedDataCampaignAnswers();
         // NAMED, NOT "this organization". The picker at the top of this screen
         // and the app's own active organization are two different choices, and
         // on 19 September a person flipped the switch here and opened a

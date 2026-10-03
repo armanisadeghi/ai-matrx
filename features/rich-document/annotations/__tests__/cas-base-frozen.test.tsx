@@ -43,7 +43,9 @@ const service = {
   canEditSource: jest.fn(async () => true),
 };
 jest.mock("../service", () => service);
-jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn() }));
+// The sidecar's live half opens through the realtime manager, once per source (sidecarStore.ts).
+const mockRealtime = { open: jest.fn((_spec: unknown) => ({ close: jest.fn() })) };
+jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn(), useRealtimeManager: () => mockRealtime }));
 jest.mock("@ai-matrx/realtime", () => ({ defineChannelNamespace: () => ({ topic: () => "t" }) }));
 jest.mock("@/features/scopes/host/associationsStore", () => ({
   getAssociationsStore: () => ({ titles: { fetch: async () => new Map() } }),
@@ -60,7 +62,6 @@ jest.mock("../LinkRecordSheet", () => ({ LinkRecordSheet: () => null }));
 
 import { AnnotatedContent, AnnotationSidecarProvider } from "../AnnotationSidecar";
 import { AnnotationPanel } from "../AnnotationPanel";
-import { useChannel } from "@ai-matrx/realtime/react";
 
 const BODY = "## Maps\n\nA graduated symbol map changes the size of a symbol.";
 const SOURCE = { token: "note", id: "guide-2", title: "Maps", body: BODY, contentVersion: 1 };
@@ -82,7 +83,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
 });
-afterEach(() => {
+afterEach(() => { act(() => (jest.requireActual("../sidecarStore") as typeof import("../sidecarStore")).resetSidecarStoreForTests());
   act(() => root.unmount());
   container.remove();
   jest.useRealTimers();
@@ -116,7 +117,7 @@ it("a realtime reload while the editor is open does not move the edit's base ver
 
   // Someone else saves: realtime delivers, the thread reloads at version 4 with their text.
   service.listCommentThreads.mockResolvedValue({ items: [thread("Size shows magnitude.", 4)], collaborationDoors: true });
-  const cfg = (useChannel as jest.Mock).mock.calls.map((c) => c[0]).filter((s) => s?.postgresChanges).at(-1);
+  const cfg = mockRealtime.open.mock.calls.map((c) => c[0]).filter((s) => s?.postgresChanges).at(-1);
   await act(async () => cfg.postgresChanges[0].onChange({ row: { id: "c1", version: 4 }, payload: { eventType: "UPDATE" } }));
   await flush();
 
