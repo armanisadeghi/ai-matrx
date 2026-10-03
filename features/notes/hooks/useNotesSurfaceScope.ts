@@ -118,8 +118,11 @@ export function useNotesSurfaceScope(
         scope_type: a.scope_type,
       }));
     // The note's version history is its canvas tab; "open" = in front.
-    const historyOpen =
-      selectCanvasKindVisibility(state.canvasHost, NOTE_HISTORY_KIND, noteId) === "visible";
+    // (A store mounted without the canvas has no tab to be in front.)
+    const canvasHost = state.canvasHost as typeof state.canvasHost | undefined;
+    const historyOpen = canvasHost
+      ? selectCanvasKindVisibility(canvasHost, NOTE_HISTORY_KIND, noteId) === "visible"
+      : false;
     const fr = selectFindReplaceState(instanceKey)(state);
     const findReplace: NotesEditorFindReplace | null =
       fr && fr.isOpen
