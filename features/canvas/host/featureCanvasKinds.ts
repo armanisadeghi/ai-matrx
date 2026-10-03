@@ -21,6 +21,7 @@ import {
   DOCUMENT_HISTORY_CANVAS_KIND,
   WORKBOOK_HISTORY_CANVAS_KIND,
 } from "@/features/data-tables/canvas/historyKinds";
+import { KNOWLEDGE_ASSETS_CANVAS_KIND } from "@/features/rag/canvas/knowledgeAssetsKind";
 import { PAGE_PANEL_CANVAS_KIND } from "./pagePanel";
 
 export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
@@ -34,6 +35,8 @@ export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   // A document's / a workbook's snapshot history beside its editor.
   DOCUMENT_HISTORY_CANVAS_KIND,
   WORKBOOK_HISTORY_CANVAS_KIND,
+  // A document's Knowledge Assets builder beside the source.
+  KNOWLEDGE_ASSETS_CANVAS_KIND,
   // A page's own live panel (a table's row detail, an admin form) — see pagePanel.tsx.
   PAGE_PANEL_CANVAS_KIND,
 ];

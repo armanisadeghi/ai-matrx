@@ -82,8 +82,8 @@ import {
 } from "./DocumentSearch";
 import type { DocStatus } from "@/features/rag/types/library";
 import { ChunksOnPage } from "./ChunkList";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
+import { useToolOpener, useToolToggle } from "@/features/canvas/host/toolCanvas";
+import { knowledgeAssetsInput } from "@/features/rag/canvas/knowledgeAssetsKind";
 import { PageContentHeader } from "./PageContentHeader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { SOURCES_PATH } from "@/features/knowledge/modulePaths";
@@ -152,9 +152,17 @@ export function LibraryPreviewPage({
   );
   const router = useRouter();
   const [forking, setForking] = useState(false);
-  // Knowledge Assets drawer — opens the builder alongside (not over) the doc,
-  // so pages + text stay visible behind the resizable panel.
-  const [assetsOpen, setAssetsOpen] = useState(initialAssetsOpen);
+  // Knowledge Assets is a canvas tab beside the document (pages and text stay
+  // in view); `initialAssetsOpen` opens it once the document is read.
+  const assetsDoc = doc ? { id: doc.id, name: doc.name, totalPages: doc.pagesPersisted ?? null } : null;
+  const assets = useToolToggle(knowledgeAssetsInput(assetsDoc));
+  const openAssets = useToolOpener(knowledgeAssetsInput);
+  const assetsDeepLinkPending = useRef(initialAssetsOpen);
+  useEffect(() => {
+    if (!assetsDeepLinkPending.current || !assetsDoc) return;
+    assetsDeepLinkPending.current = false;
+    openAssets(assetsDoc);
+  }, [assetsDoc, openAssets]);
 
   // In-document search — lifted to the viewer so one query drives the page-text
   // highlights, the summary banner, the per-page match stepper, and the ranked
@@ -296,7 +304,7 @@ export function LibraryPreviewPage({
                     {
                       label: "Knowledge Assets",
                       icon: Library,
-                      onPress: () => setAssetsOpen(true),
+                      onPress: assets.toggle,
                     },
                     {
                       label: "Make my copy",
@@ -382,8 +390,9 @@ export function LibraryPreviewPage({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setAssetsOpen(true)}
-                        className="h-7 px-2 text-xs shrink-0"
+                        onClick={assets.toggle}
+                        aria-pressed={assets.isVisible}
+                        className={cn("h-7 px-2 text-xs shrink-0", assets.isVisible && "bg-accent text-accent-foreground")}
                         title="Build premium knowledge representations from this document"
                       >
                         Knowledge Assets
@@ -465,30 +474,6 @@ export function LibraryPreviewPage({
           )}
         </div>
 
-        {/* Knowledge Asset Builder — resizable right drawer. The doc stays fully
-          visible behind it (the panel sits alongside, not over), so the user
-          reads the source while building / inspecting representations. */}
-        {doc && (
-          <MatrxDynamicPanelHost
-            open={assetsOpen}
-            onOpenChange={setAssetsOpen}
-            title="Knowledge Assets"
-            description={doc.name}
-            position="right"
-            defaultSize={46}
-            minSize={28}
-            maxSize={80}
-            contentClassName="p-0"
-          >
-            <KnowledgeAssetPanel
-              doc={{
-                id: doc.id,
-                name: doc.name,
-                totalPages: doc.pagesPersisted ?? null,
-              }}
-            />
-          </MatrxDynamicPanelHost>
-        )}
       </div>
     </Frame>
   );

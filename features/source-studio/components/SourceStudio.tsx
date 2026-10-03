@@ -77,8 +77,8 @@ import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceR
 import { buildRagViewerContextData } from "@/features/rag/agent-context/buildRagViewerContextData";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
 import { useDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { KnowledgeAssetPanel } from "@/features/rag/components/library/KnowledgeAssetPanel";
+import { useToolOpener, useToolToggle } from "@/features/canvas/host/toolCanvas";
+import { knowledgeAssetsInput } from "@/features/rag/canvas/knowledgeAssetsKind";
 import { PaneHeader } from "@/features/pdf-extractor/studio/PdfStudioReader";
 import { useCurrentVersion } from "@/features/sources/hooks/useCurrentVersion";
 import { useSourceKept } from "@/features/sources/hooks/useSourceKept";
@@ -333,7 +333,16 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
   const layout = studioLayout(widthPx, panes, phonePane);
   const [sideSheetOpen, setSideSheetOpen] = useState(false);
   const [partsSheetOpen, setPartsSheetOpen] = useState(false);
-  const [assetsOpen, setAssetsOpen] = useState(deepLink.assets);
+  // Knowledge Assets is a canvas tab beside the source; `?assets` opens it once.
+  const assetsDoc = doc ? { id: doc.id, name: doc.name, totalPages: doc.total_pages } : null;
+  const assets = useToolToggle(knowledgeAssetsInput(assetsDoc));
+  const openAssets = useToolOpener(knowledgeAssetsInput);
+  const assetsDeepLinkPending = useRef(deepLink.assets);
+  useEffect(() => {
+    if (!assetsDeepLinkPending.current || !assetsDoc) return;
+    assetsDeepLinkPending.current = false;
+    openAssets(assetsDoc);
+  }, [assetsDoc, openAssets]);
 
   // ── Actions ────────────────────────────────────────────────────────────
   const [saveOpen, setSaveOpen] = useState(false);
@@ -574,7 +583,7 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
         ...(portions.length > 0
           ? [{ label: "Export", icon: Download, onPress: exportMarkdown }]
           : []),
-        { label: "Knowledge Assets", icon: Wand2, onPress: () => setAssetsOpen(true) },
+        { label: "Knowledge Assets", icon: Wand2, onPress: assets.toggle },
         ...(isPdf
           ? [
               {
@@ -1035,23 +1044,6 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
           </DialogContent>
         </Dialog>
 
-        {doc && (
-          <MatrxDynamicPanelHost
-            open={assetsOpen}
-            onOpenChange={setAssetsOpen}
-            title="Knowledge Assets"
-            description={doc.name}
-            position="right"
-            defaultSize={46}
-            minSize={28}
-            maxSize={80}
-            contentClassName="p-0"
-          >
-            <KnowledgeAssetPanel
-              doc={{ id: doc.id, name: doc.name, totalPages: doc.total_pages }}
-            />
-          </MatrxDynamicPanelHost>
-        )}
       </div>
     </SurfaceRuntimeProvider>
   );
