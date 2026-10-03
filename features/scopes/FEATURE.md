@@ -402,6 +402,17 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-10-03 — **The flip: scopes are read from the record store only** (lane 9 SCOPES-ON-THE-STORE, wave 1 step 5;
+  Arman's "burn the boats"). Every knob-off `context.*` read branch is deleted from `scopesService.ts`, `tagApi.ts`
+  (its three unconditional old-table readers now use `custom.context_scopes`), `ensureScopeSkeleton.ts`, the
+  envelope's scope / scope type / context item resolvers, the scope short link and the class checkout;
+  `scopesReadKnob.ts` / `scopesReadKnob.server.ts`, the `*.context-tables.test.ts` twins, the switch's guard and the
+  two-path parity harness (`store-read-parity.clone.test.ts`, nothing left to compare) are gone; the four
+  `old-system-unreachable` baseline entries are removed, so `pnpm check:old-system-unreachable` fails on any web read
+  of the old scope tables. The seven database readers lose their old branch
+  (`scopesflip_b_the_scope_readers_read_only_the_store.sql`) and the knob is retired through `platform.knob_archive`
+  (`scripts/campaign-tests/scopesflip_retire_the_read_switch.mjs`).
+
 - 2026-10-01 — PB-08: `ContextTree`'s footer is `min-h`, never a fixed `h`, so under `matrx-touch-targets` (the phone Chat options sheet) the 44px clear button sits in its own row instead of spilling over the list.
 - 2026-10-01 — A scope's template-backed table is provisioned only in the record store (`custom.scope_table_provision`); the older `context.provision_scope_dataset` path and `service/olderContextWrites.ts` are deleted (lane OLD-READERS-REMOVAL).
 - 2026-10-01 — PB-07 W-62: the composer's context chip (`ActiveContextLensChip`) is keyed to the CONVERSATION — a persisted chat names its own organization and the scopes its next send carries (`displayedSendScopeIds`, same rule as `conversationScopeGate`: an empty sidebar shows the chat's durable tags). A shell org switch no longer turns `COM · 1 scope` into `ASW` while the lane still goes out. Guard: `components/active-context/__tests__/lens-chip-follows-the-conversation.test.tsx` (red on the prior chip).

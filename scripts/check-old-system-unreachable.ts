@@ -124,9 +124,9 @@ export const OLD_MODULES = ["@/utils/user-table-utls"] as const;
  * `features/content-ir/studio/kind-record-home.ts`.
  *
  * THE OLD SCOPE TABLES (lane SCOPES-READS-WEB, SCOPES-CUTOVER-PLAN step 2.4; SCOPES-WEB-REVERT
- * 2026-09-29): every web read of a scope type / scope / context item goes through the store's
- * `custom.context_*` doors once the knob `custom.scope_readers_read_the_store` is on; the knob-off
- * old-table reads are in the baseline with their owner until it is on for everyone. The context schema's REFERENCE tables stay and are not matched.
+ * 2026-09-29; the flip, 2026-10-03): every web read of a scope type / scope / context item goes through the
+ * store's `custom.context_*` doors; the read switch and its knob-off old-table reads are deleted, so the baseline
+ * holds none of them. The context schema's REFERENCE tables stay and are not matched.
  */
 export const OLD_RELATIONS: ReadonlyArray<{ name: string; re: RegExp; only?: RegExp }> = [
   { name: "content_ir.kind_instance", re: /\.from\(\s*['"`]kind_instance['"`]\s*\)|get_db_model\(\s*['"]KindInstance['"]\s*\)|\bKindInstance\.(?:create|create_item|filter|get|get_or_none|update_where|objects)\b/ },
