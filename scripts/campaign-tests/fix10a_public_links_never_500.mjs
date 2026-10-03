@@ -24,7 +24,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
 const ORIGIN = process.argv[2] ?? "http://localhost:3001";
-const SHOTS = process.argv[3] ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const SHOTS = process.argv[3] ?? "/tmp/matrx-evidence/2026-09-22";
 const FATAL = "useRecordsClient was called outside";
 
 // Real links, from the real rows in custom.anon_form on the main database. Each

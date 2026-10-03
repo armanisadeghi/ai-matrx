@@ -5,7 +5,7 @@ import { signIn, setOrganization, until, sleep } from "../lib/seat-browser.mjs";
 import fs from "node:fs";
 
 const ORIGIN = "http://fix11a.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 const JOBS = "af3bfff6-a255-41e5-9ac2-879d53816163";
 const env = Object.fromEntries(
   fs.readFileSync(new URL("../../.env.local", import.meta.url), "utf8")

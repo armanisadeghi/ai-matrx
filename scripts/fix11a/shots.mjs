@@ -4,7 +4,7 @@ import { signIn, setOrganization, until, sleep } from "/Users/armanisadeghi/code
 import fs from "node:fs";
 
 const ORIGIN = "http://fix11a.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 const env = Object.fromEntries(
   fs.readFileSync("/Users/armanisadeghi/code/matrx-frontend/.env.local", "utf8")
     .split("\n").filter((l) => l.includes("=")).map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1).replace(/^"|"$/g, "")]),

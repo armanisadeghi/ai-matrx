@@ -12,7 +12,7 @@ import { signIn, setOrganization, until, sleep } from "../lib/seat-browser.mjs";
 
 const TABLE = process.argv[2];
 const ORIGIN = "http://fix10b.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 mkdirSync(OUT, { recursive: true });
 
 function env(file) {

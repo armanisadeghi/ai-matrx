@@ -32,7 +32,7 @@ import { signIn, setOrganization, sleep, until } from "../lib/seat-browser.mjs";
 
 const ORIGIN = process.env.WALK_ORIGIN ?? "http://agent-builds.localhost:3001";
 const OUT =
-  process.env.WALK_OUT ?? resolve(process.cwd(), "../common-docs/operations/for-arman/2026-09-21");
+  process.env.WALK_OUT ?? resolve("/tmp/matrx-evidence/2026-09-21");
 const ORG = "Hands & Hope Alliance";
 const DONORS_TABLE = process.env.WALK_TABLE ?? "335be3d6-39ed-4fe6-9725-c28952bc18c3";
 const DIGEST_NAME = "Monday donor summary";

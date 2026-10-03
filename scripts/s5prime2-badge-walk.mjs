@@ -17,7 +17,7 @@ import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
 const ORIGIN = "http://s5-prime-2.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-24/s5-prime-2";
+const OUT = "/tmp/matrx-evidence/2026-09-24/s5-prime-2";
 mkdirSync(OUT, { recursive: true });
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")

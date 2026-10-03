@@ -16,7 +16,7 @@ import { signIn } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://order-fix.localhost:3001";
 const TABLE = process.env.TABLE ?? "f09747ca-232a-496e-844e-e00eb064f1f5";
-const OUT = process.env.OUT ?? "/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/shots/order-fix";
+const OUT = process.env.OUT ?? "/tmp/matrx-evidence/projects/data-doctrine-adoption/v5/handoff-2026-09-20/shots/order-fix";
 mkdirSync(OUT, { recursive: true });
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")

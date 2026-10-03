@@ -21,7 +21,7 @@ const LEASE = join(
 const MODE = existsSync(LEASE) ? (/^MODE=(\w+)$/m.exec(readFileSync(LEASE, "utf8"))?.[1] ?? "") : "";
 if (!ORIGIN || !/:3001\b/.test(ORIGIN)) throw new Error("ORIGIN must be the one dev server, http://<you>.localhost:3001");
 if (MODE !== "clone") throw new Error(`the dev server is in '${MODE || "no"}' mode, not clone — never walk against live`);
-const SHOTS = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/scopes-tree-paged";
+const SHOTS = "/tmp/matrx-evidence/2026-09-30/scopes-tree-paged";
 mkdirSync(SHOTS, { recursive: true });
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n")

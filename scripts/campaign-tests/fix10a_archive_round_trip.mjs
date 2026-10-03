@@ -40,7 +40,7 @@ for (const f of [".env.local", ".env"]) {
 }
 
 const ORIGIN = process.argv[2] ?? "http://fix10a-archive.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 const TABLE = "adeb37a2-476e-451a-b4a4-7800303f550f"; // Truck 1 dispatch backlog
 mkdirSync(OUT, { recursive: true });
 

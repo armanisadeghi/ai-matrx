@@ -36,7 +36,7 @@ const PORT = process.env.WALK_PORT ?? "3001";
 const ORIGIN = `http://refusalsweep3.localhost:${PORT}`;
 /** Rincon Plumbing & Drain — Service Calls (the dispatch board). */
 const CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23";
+const OUT = "/tmp/matrx-evidence/2026-09-23";
 const SHOT = `${OUT}/refusal-rowmodal-relation.png`;
 mkdirSync(OUT, { recursive: true });
 

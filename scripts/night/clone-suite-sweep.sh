@@ -46,7 +46,8 @@
 source /Users/armanisadeghi/code/matrx-frontend/scripts/night/lib-night.sh
 
 LANE=CLONE-SUITES
-HANDOFF=/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20
+HANDOFF="${NIGHT_LOG_DIR:-$HOME/.matrx/night-logs}"  # job logs live outside common-docs (plans only)
+mkdir -p "$HANDOFF"
 LOG="${1:-$HANDOFF/night-$(date -u +%F)-clone-suites.log}"
 SUITES="$FRONTEND/scripts/campaign-tests"
 PER_SUITE_CAP=180          # seconds of wall clock any single suite may take

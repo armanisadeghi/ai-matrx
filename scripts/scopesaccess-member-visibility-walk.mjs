@@ -15,7 +15,7 @@ const ORIGIN = process.env.WALK_ORIGIN ?? "http://scopes-reads-access.localhost:
 const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f"; // admin's Workspace
 const LABEL = "What members can see by default";
 const CHOICE = "Everyone in this organization can see every record";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-29/scopes-reads-access";
+const OUT = "/tmp/matrx-evidence/2026-09-29/scopes-reads-access";
 mkdirSync(OUT, { recursive: true });
 const env = Object.fromEntries(readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n")
   .map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2].replace(/^"|"$/g, "")]));

@@ -19,7 +19,7 @@ import { signIn } from "./lib/seat-browser.mjs";
 const ORIGIN = process.env.ORIGIN ?? "http://order-filter.localhost:3001";
 const TABLE = process.env.TABLE ?? "b4c1c451-13d6-4cc9-9ca7-722fa640448a";
 const EXPECTED = readFileSync(process.env.EXPECTED, "utf8").trim().split(" | ");
-const OUT = process.env.OUT ?? "/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/shots/order-filter";
+const OUT = process.env.OUT ?? "/tmp/matrx-evidence/projects/data-doctrine-adoption/v5/handoff-2026-09-20/shots/order-filter";
 mkdirSync(OUT, { recursive: true });
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")

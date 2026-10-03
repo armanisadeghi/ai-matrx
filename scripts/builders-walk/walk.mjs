@@ -39,7 +39,7 @@ const HOST = process.env.WALK_HOST ?? "builders.localhost";
 // this lane's cookie jar is its own and no other agent's dev-login is evicted.
 const PORT = process.env.WALK_PORT ?? "3001";
 const ORIGIN = `http://${HOST}:${PORT}`;
-const OUT = process.env.WALK_OUT ?? resolve(ROOT, "../common-docs/operations/for-arman/2026-09-21");
+const OUT = process.env.WALK_OUT ?? resolve("/tmp/matrx-evidence/2026-09-21");
 mkdirSync(OUT, { recursive: true });
 
 /** The four real businesses, with the tables they actually keep their work in. */

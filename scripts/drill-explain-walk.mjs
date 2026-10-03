@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://drillexplain.localhost:3001";
-const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-explain";
+const SHOTS = process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-30/drill-explain";
 mkdirSync(SHOTS, { recursive: true });
 const out = { started: new Date().toISOString(), origin: ORIGIN, steps: [], console_errors: [], frictions: [] };
 const friction = (what) => {

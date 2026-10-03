@@ -38,7 +38,7 @@ import { writeDevLoginNonce } from "../lib/dev-login-nonce.mjs";
 const HOST = process.argv[2] ?? "s8d677a69.localhost";
 const ORIGIN = `http://${HOST}:3001`;
 const TABLE = "/data/dbc7cd48-7b46-4402-ac9d-e459a95f4598"; // Rincon Plumbing — Service Calls
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23";
+const OUT = "/tmp/matrx-evidence/2026-09-23";
 mkdirSync(OUT, { recursive: true });
 
 const SURFACES = [

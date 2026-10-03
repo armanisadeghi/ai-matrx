@@ -58,7 +58,8 @@ ATTEMPTS=3
 # which is what another lane reads to know these objects are being worked on.
 LOCKS=(context iam billing)
 
-HANDOFF=/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20
+HANDOFF="${NIGHT_LOG_DIR:-$HOME/.matrx/night-logs}"  # job logs live outside common-docs (plans only)
+mkdir -p "$HANDOFF"
 LOG="$HANDOFF/night-2026-09-23-w1-org-apply.log"
 [ "$REHEARSE" = "1" ] && LOG="${LOG%.log}-rehearsal.log"
 exec >>"$LOG" 2>&1

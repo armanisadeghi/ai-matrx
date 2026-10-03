@@ -37,7 +37,7 @@ import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 
 const ORIGIN = process.argv[2] ?? "http://127.0.0.1:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 const LONG_NAME = "Marisol Okonkwo — 418 Calle Puerto Vallarta, Camarillo";
 mkdirSync(OUT, { recursive: true });
 

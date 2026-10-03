@@ -21,7 +21,7 @@ import { resolve } from "node:path";
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const ORIGIN = `http://127.0.0.1:${PORT}`;
-const OUT = "/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/shots";
+const OUT = "/tmp/matrx-evidence/projects/data-doctrine-adoption/v5/handoff-2026-09-20/shots";
 mkdirSync(OUT, { recursive: true });
 
 const arg = (name) => {

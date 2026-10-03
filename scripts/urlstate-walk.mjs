@@ -15,7 +15,7 @@ import { signIn } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://url-state.localhost:3001";
 const TABLE = process.env.TABLE ?? "b3893755-a8e8-4aa5-9680-6bf7d32669eb";
-const OUT = process.env.OUT ?? "/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/shots/url-state";
+const OUT = process.env.OUT ?? "/tmp/matrx-evidence/projects/data-doctrine-adoption/v5/shots/url-state";
 mkdirSync(OUT, { recursive: true });
 const env = Object.fromEntries(readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n").map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2].replace(/^"|"$/g, "")]));
 const results = [];

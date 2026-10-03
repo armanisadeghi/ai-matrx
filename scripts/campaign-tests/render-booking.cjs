@@ -24,7 +24,7 @@ const path = require("path");
 
 const BASE = process.env.BASE || "http://127.0.0.1:3001";
 const FORM = process.env.FORM;
-const OUT = process.env.OUT || "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-20";
+const OUT = process.env.OUT || "/tmp/matrx-evidence/2026-09-20";
 
 const SHOTS = [
   { name: "phone-light", width: 390, height: 844, scheme: "light" },

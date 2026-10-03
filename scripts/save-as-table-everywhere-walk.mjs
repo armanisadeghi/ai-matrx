@@ -19,7 +19,7 @@ import { signIn, setOrganization, until, sleep } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://save-as-table.localhost:3001";
 const STEP = process.env.STEP ?? "note";
-const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-29/save-as-table";
+const SHOTS = process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-29/save-as-table";
 const STATE = process.env.WALK_STATE ?? "/private/tmp/save-as-table-walk-state.json";
 mkdirSync(SHOTS, { recursive: true });
 const env = Object.fromEntries(

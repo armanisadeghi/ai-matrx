@@ -2,7 +2,7 @@ import { chromium } from "playwright";
 import { resolve } from "node:path";
 import { signIn, setOrganization, sleep } from "../lib/seat-browser.mjs";
 const ORIGIN = "http://reldisp2.localhost:3001";
-const OUT = resolve(process.cwd(), "../common-docs/operations/for-arman/2026-09-21");
+const OUT = resolve("/tmp/matrx-evidence/2026-09-21");
 const JOBS = "af3bfff6-a255-41e5-9ac2-879d53816163";
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1680, height: 1000 } });

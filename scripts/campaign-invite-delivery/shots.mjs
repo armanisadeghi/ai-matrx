@@ -32,7 +32,7 @@ const argv = process.argv.slice(2);
 const arg = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
 const ROOT = "/Users/armanisadeghi/code/matrx-frontend";
 const PORT = arg("--port", "3055");
-const OUT = arg("--out", "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-21");
+const OUT = arg("--out", "/tmp/matrx-evidence/2026-09-21");
 const ORG_ID = arg("--org-id");
 const TABLE = arg("--table");
 const OTHER_TABLE = arg("--other-table");

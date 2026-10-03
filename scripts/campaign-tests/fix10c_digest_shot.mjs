@@ -1,6 +1,6 @@
 // FIX-10C F15 — the digest dialog's clock, and the one thing it never said.
 import { chromium } from "playwright";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 const b = await chromium.launch({ headless: true });
 const ctx = await b.newContext({ viewport: { width: 1100, height: 950 } });
 const p = await ctx.newPage();

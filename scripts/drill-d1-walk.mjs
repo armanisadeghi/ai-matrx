@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://localhost:3001";
-const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-10-01/drill-d1";
+const SHOTS = process.env.SHOTS ?? "/tmp/matrx-evidence/2026-10-01/drill-d1";
 mkdirSync(SHOTS, { recursive: true });
 const out = { origin: ORIGIN, started: new Date().toISOString(), checks: [], console_errors: [], requests_after_open: [] };
 const readEnv = (p) => Object.fromEntries(readFileSync(p, "utf8").split("\n").map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2].replace(/^"|"$/g, "")]));
