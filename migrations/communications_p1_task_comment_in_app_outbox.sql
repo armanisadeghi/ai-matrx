@@ -47,7 +47,8 @@ declare
   v_refusal text;
   v_status text;
 begin
-  if new.entity_type not in ('task', 'canvas', 'note') or new.deleted_at is not null then
+  -- Canvas items have no valid record deep link yet. Do not mail a 404.
+  if new.entity_type not in ('task', 'note') or new.deleted_at is not null then
     return new;
   end if;
 
@@ -56,11 +57,6 @@ begin
       from workspace.tasks t where t.id = new.entity_id
        and t.organization_id = new.organization_id and t.deleted_at is null;
     v_resource_kind := 'task';
-  elsif new.entity_type = 'canvas' then
-    select c.created_by, c.title into v_owner, v_title
-      from canvas.canvas_items c where c.id = new.entity_id
-       and c.organization_id = new.organization_id and c.deleted_at is null;
-    v_resource_kind := 'canvas_item';
   else
     select n.created_by, n.label into v_owner, v_title
       from workbench.notes n where n.id = new.entity_id
@@ -112,7 +108,6 @@ begin
                         'notice', jsonb_build_object('subject', v_subject, 'body', v_body)),
      v_resource_kind, new.entity_id,
      case new.entity_type when 'task' then '/tasks?task=' || new.entity_id::text
-          when 'canvas' then '/canvas/' || new.entity_id::text
           else '/notes/' || new.entity_id::text end)
   on conflict (dedupe_key) where dedupe_key is not null do nothing;
   end if;
@@ -142,7 +137,6 @@ begin
          'notice', jsonb_build_object('subject', v_subject, 'body', v_body)),
        v_resource_kind, new.entity_id,
        case new.entity_type when 'task' then '/tasks?task=' || new.entity_id::text
-            when 'canvas' then '/canvas/' || new.entity_id::text
             else '/notes/' || new.entity_id::text end)
     on conflict (dedupe_key) where dedupe_key is not null do nothing;
   end if;
@@ -158,4 +152,4 @@ create trigger task_comment_in_app_outbox
   for each row execute function communication._task_comment_in_app_outbox();
 
 comment on function communication._task_comment_in_app_outbox() is
-  'P1: saved task, canvas, and note comments create one preference-gated in-app notice and optional email intent in their organization.';
+  'P1: saved task and note comments create one preference-gated in-app notice and optional email intent in their organization.';

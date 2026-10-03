@@ -7,6 +7,7 @@ declare
   v_admin uuid;
   v_org uuid;
   v_task uuid;
+  v_note uuid;
   v_comment uuid;
   v_count integer;
 begin
@@ -100,6 +101,28 @@ begin
    where target_id = v_task and event_key = 'comment.added' and channel = 'sms';
   if v_count <> 0 then
     raise exception 'Task comment created % SMS intents', v_count;
+  end if;
+
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('app.actor_system', 'communications_clone_fixture', true);
+  insert into workbench.notes (organization_id, label, created_by)
+  values (v_org, 'Quarterly summary', v_admin) returning id into v_note;
+  insert into platform.comments (organization_id, entity_type, entity_id, body)
+  values (v_org, 'note', v_note, 'Please check the figures.')
+  returning id into v_comment;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('comment.added:%s:in_app', v_comment)
+     and target_kind = 'note' and target_id = v_note
+     and deep_link like '/notes/' || v_note::text || '%';
+  if v_count <> 1 then
+    raise exception 'Saved note comment did not create an exact owner notice';
+  end if;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('comment.added:%s:email', v_comment)
+     and target_kind = 'note' and target_id = v_note
+     and channel = 'email';
+  if v_count <> 1 then
+    raise exception 'Saved note comment did not create one email intent';
   end if;
 end;
 $test$;
