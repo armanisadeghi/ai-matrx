@@ -94,7 +94,7 @@ export type ResultShape =
      * `conversation_context/resource_context.py`) — drawn as the record it
      * points to (title + door), never as kind data or JSON.
      */
-    | { kind: "recordRef"; token: string; id: string }
+    | { kind: "recordRef"; token: string; id: string; label?: string }
     /**
      * A sentence that embeds `resource_ref` pointers (a write receipt's
      * "Before this call … was: {…}") — the prose stays prose, each pointer
@@ -537,7 +537,7 @@ export interface DetectResultShapeOptions {
  */
 export function coerceResourceRef(
     value: unknown,
-): { token: string; id: string } | null {
+): { token: string; id: string; label?: string } | null {
     let candidate: unknown = value;
     if (typeof value === "string") {
         const text = value.trim();
@@ -555,12 +555,19 @@ export function coerceResourceRef(
     const id = candidate.resource_id;
     if (typeof token !== "string" || !token.trim()) return null;
     if (typeof id !== "string" || !id.trim()) return null;
-    return { token: token.trim().toLowerCase(), id: id.trim() };
+    // The name the person sees on the record (a canvas tab's title), when the
+    // pointer carries one — it beats any fallback the title service can give.
+    const label = typeof candidate.label === "string" ? candidate.label.trim() : "";
+    return {
+        token: token.trim().toLowerCase(),
+        id: id.trim(),
+        ...(label ? { label } : {}),
+    };
 }
 
 export type RecordRefSegment =
     | { type: "text"; text: string }
-    | { type: "ref"; token: string; id: string };
+    | { type: "ref"; token: string; id: string; label?: string };
 
 /** Index of the `}` closing the object that opens at `start`, or -1. */
 function closingBrace(text: string, start: number): number {

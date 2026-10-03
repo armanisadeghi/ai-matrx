@@ -565,6 +565,16 @@ export interface SurfaceManifest extends SurfaceDeclaration {
    */
   ownConversationWithholds?: readonly string[];
   /**
+   * A COMPANION surface: a shell-level pane that sits BESIDE every page (the
+   * canvas column) and is never the page itself. It follows whichever
+   * conversation is beside it — including a page's OWN conversation (the main
+   * /chat), which otherwise receives no surface at all. That conversation gets
+   * the companion's values (as `surface_chain` levels) and its write targets
+   * and client tools, never the owning page's. (2026-10-03: the /chat main
+   * conversation could not read or edit the HTML page open in the canvas.)
+   */
+  companion?: boolean;
+  /**
    * Every turn requires a mounted live provider to prepare request-specific
    * evidence. Missing providers and send-while-running inbox delivery fail
    * closed because neither can attach a fresh context snapshot.

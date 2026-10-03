@@ -153,6 +153,28 @@ export async function buildSurfaceChain(
   return levels;
 }
 
+/** True when `surfaceName`'s manifest declares it a companion pane (`companion`). */
+export function isCompanionSurface(surfaceName: string | null | undefined): boolean {
+  return Boolean(surfaceName && getManifest(surfaceName)?.companion);
+}
+
+/** True when a companion pane (the canvas) is mounted right now. */
+export function companionSurfaceOpen(): boolean {
+  return getSurfaceRuntimeStack().some((runtime) => isCompanionSurface(runtime.surfaceName));
+}
+
+/**
+ * The scope a page's OWN conversation receives: only the COMPANION panes open
+ * beside the page (the canvas), as `surface_chain` levels — never the page
+ * itself, which that conversation IS. Empty when no companion is mounted.
+ */
+export async function companionSurfaceScope(): Promise<ApplicationScope> {
+  const levels = (await buildSurfaceChain(null)).filter((level) =>
+    isCompanionSurface(level.surface),
+  );
+  return levels.length > 0 ? { [SURFACE_CHAIN_KEY]: levels } : {};
+}
+
 /**
  * The ONE place a run's scope gains the live screens around it. Called by
  * every chokepoint that builds a run's scope — agent launch

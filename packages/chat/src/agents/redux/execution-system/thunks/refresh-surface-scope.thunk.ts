@@ -23,7 +23,10 @@ import {
 } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import { getManifest } from "../../../../surfaces/runtime/registry";
 import { withBaselineScope } from "../../../../surfaces/utils/baseline-scope";
-import { withLiveSurfaceContext } from "../../../../surfaces/runtime/surface-chain";
+import {
+  companionSurfaceScope,
+  withLiveSurfaceContext,
+} from "../../../../surfaces/runtime/surface-chain";
 import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import { withSurfaceDocumentEvidence } from "../../../../surfaces/utils/document-evidence";
 import { alwaysOnSurfaceKeys } from "../../../../surfaces/utils/always-on-context";
@@ -51,6 +54,37 @@ export interface RefreshSurfaceScopeResult {
     | "own_page_conversation";
 }
 
+/**
+ * A page's OWN conversation (the main /chat) is the page and never receives
+ * it — but the COMPANION panes beside the page (the canvas) are not the page,
+ * so it receives those, every turn, exactly as any other conversation would.
+ */
+async function refreshCompanionScope(
+  conversationId: string,
+  state: ChatRootState,
+  dispatch: ChatDispatch,
+): Promise<RefreshSurfaceScopeResult> {
+  const scope = await companionSurfaceScope();
+  const agentId = state.conversations.byConversationId[conversationId]?.agentId;
+  const agent = agentId ? state.agentDefinition.agents?.[agentId] : undefined;
+  const result = mapScopeToInstanceWithSurface(
+    scope,
+    null,
+    {},
+    [],
+    agent?.contextPolicies ?? [],
+    null,
+  );
+  dispatch(
+    replaceSurfaceContextEntries({ conversationId, entries: result.contextEntries }),
+  );
+  return {
+    refreshed: false,
+    reason: "own_page_conversation",
+    contextCount: result.contextEntries.length,
+  };
+}
+
 export const refreshSurfaceScope = createAsyncThunk<
   RefreshSurfaceScopeResult,
   { conversationId: string; composerText?: string },
@@ -64,6 +98,10 @@ export const refreshSurfaceScope = createAsyncThunk<
 
     const agentId = conversation.agentId;
     if (!agentId) return { refreshed: false, reason: "no_agent" };
+
+    // The page's own conversation: the companion panes beside it, nothing else.
+    if (isPageOwnConversation(conversationId))
+      return refreshCompanionScope(conversationId, state, dispatch);
 
     const surfaceName = conversation.surfaceName ?? undefined;
     if (!surfaceName) return { refreshed: false, reason: "no_surface" };

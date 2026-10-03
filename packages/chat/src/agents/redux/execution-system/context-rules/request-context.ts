@@ -44,6 +44,10 @@ import {
   POINTER_INLINE_CEILINGS,
 } from "../../../../surfaces/manifests/_baseline.manifest";
 import { pageOwningConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import {
+  companionSurfaceOpen,
+  SURFACE_CHAIN_KEY,
+} from "../../../../surfaces/runtime/surface-chain";
 import { selectPageContextOff } from "../instance-ui-state/instance-ui-state.selectors";
 import {
   selectAgentAutoContextDisabled,
@@ -109,7 +113,18 @@ export function pageContextFor(
   const owner = pageOwningConversation(conversationId);
   if (owner) {
     const listed = getManifest(owner)?.ownConversationWithholds ?? OWN_CONVERSATION_WITHHELD;
-    return { mode: "own", withheld: listed.filter((key) => !PERSON_CONTEXT_VALUES.has(key)) };
+    // The COMPANION panes beside the page (the canvas) are not the page: the
+    // own conversation's `surface_chain` carries only them
+    // (`refreshCompanionScope`), so it is not withheld while one is open.
+    const companionOpen = companionSurfaceOpen();
+    return {
+      mode: "own",
+      withheld: listed.filter(
+        (key) =>
+          !PERSON_CONTEXT_VALUES.has(key) &&
+          !(companionOpen && key === SURFACE_CHAIN_KEY),
+      ),
+    };
   }
   if (selectPageContextOff(conversationId)(state)) {
     return { mode: "off", withheld: [...PAGE_OFF_WITHHELD] };

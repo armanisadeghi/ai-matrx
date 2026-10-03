@@ -24,9 +24,11 @@ export interface ResultRecordRefProps {
     token: string;
     /** The pointer's `resource_id`. */
     id: string;
+    /** The pointer's own `label` — the name the person sees on the record. */
+    label?: string;
 }
 
-export function ResultRecordRef({ token, id }: ResultRecordRefProps) {
+export function ResultRecordRef({ token, id, label }: ResultRecordRefProps) {
     const canonical = resolveEntityToken(token);
     const [title, setTitle] = useState<string | null>(() =>
         getCachedEntityTitle(canonical, id),
@@ -55,7 +57,7 @@ export function ResultRecordRef({ token, id }: ResultRecordRefProps) {
         <EntityRef
             token={canonical}
             id={id}
-            name={title ?? entityTitleFallback(canonical)}
+            name={title ?? (label || entityTitleFallback(canonical))}
             openInNewTab
             className="text-sm"
         />

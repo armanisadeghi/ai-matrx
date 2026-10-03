@@ -264,7 +264,9 @@ export const ResultValue: React.FC<ResultValueProps> = ({
                 );
 
             case "recordRef":
-                return <ResultRecordRef token={shape.token} id={shape.id} />;
+                return (
+                    <ResultRecordRef token={shape.token} id={shape.id} label={shape.label} />
+                );
 
             case "textWithRecordRefs":
                 return (
@@ -278,6 +280,7 @@ export const ResultValue: React.FC<ResultValueProps> = ({
                                     key={`r${index}`}
                                     token={segment.token}
                                     id={segment.id}
+                                    label={segment.label}
                                 />
                             ),
                         )}

@@ -86,6 +86,17 @@ describe("canvas items reach the agent as references", () => {
     expect(scope.canvas_json).toBeUndefined();
   });
 
+  it("an untitled item is labeled with the tab's own name, never its record type", () => {
+    const scope = buildCanvasScope({
+      items: [{ id: "canvas-tab-9", content: { type: "iframe", data: PAGE_URL } }],
+      currentItemId: "canvas-tab-9",
+      secondaryItemId: null,
+      renderMode: "global",
+      isSplit: false,
+    }) as Record<string, unknown>;
+    expect(scope.current_canvas_item).toMatchObject({ label: "Web View" });
+  });
+
   it("a session-only item has no reference and sends its own payload", () => {
     const scope = scopeFor("canvas-tab-3");
     expect(scope.current_canvas_item).toBeUndefined();

@@ -46,6 +46,7 @@ import { selectDesktopTargetInstanceId } from "../../../../host/prefs";
 // consumer runs. See features/.../client-capabilities/register-all.ts.
 import "../client-capabilities/register-all";
 import { surfacePatchContractLine } from "../../../../surfaces/runtime/surface-write-patch";
+import { isCompanionSurface } from "../../../../surfaces/runtime/surface-chain";
 import { detectActiveSurface } from "../../../../surfaces/utils/route-to-surface";
 import { selectCreatorSettings } from "../../../../host/prefs";
 import { isWarRoomToolName } from "@host/features/agents/war-room-tools/tools/names";
@@ -318,10 +319,17 @@ export async function buildToolInjection(
   // write targets / client tools / feedback would give it awareness of itself
   // — e.g. the main chat writing its own composer. Other agents on the same
   // screen (a window, a sidebar) are unaffected. Arman, 2026-09-27.
+  // ...EXCEPT the COMPANION panes beside the page (the canvas): they are not
+  // the page, so its own conversation gets their targets and tools — and
+  // only theirs (`SurfaceManifest.companion`, 2026-10-03).
   const isOwnPageConversation = isPageOwnConversation(conversationId);
-  if (!disableInjection && !isOwnPageConversation) {
-    const liveSurfaceTools = listLiveSurfaceClientTools();
-    const writableTargets = listAgentWritableTargets();
+  if (!disableInjection) {
+    const ownFilter = <T extends { surfaceName: string }>(rows: readonly T[]): T[] =>
+      isOwnPageConversation
+        ? rows.filter((row) => isCompanionSurface(row.surfaceName))
+        : [...rows];
+    const liveSurfaceTools = ownFilter(listLiveSurfaceClientTools());
+    const writableTargets = ownFilter(listAgentWritableTargets());
     const outputContract =
       liveSurfaceTools.length > 0 || writableTargets.length > 0
         ? await resolveRunOutputContract(state, conversationId)

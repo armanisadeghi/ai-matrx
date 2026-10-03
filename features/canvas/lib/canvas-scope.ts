@@ -25,6 +25,7 @@ import {
   type CanvasItemReference,
 } from "@/features/canvas/lib/canvas-item-reference";
 import {
+  getDefaultTitle,
   titleToString,
   type CanvasContent,
 } from "@/features/canvas/canvasContent";
@@ -53,7 +54,10 @@ function resolveTitle(item: CanvasItem): string {
  */
 export function referenceFor(item: CanvasItem): CanvasItemReference | undefined {
   const record = canvasItemRecord(item.content, item.savedItemId);
-  return record ? canvasItemReference(record, resolveTitle(item)) : undefined;
+  // The name the person sees on the tab — its title, else the tab's own
+  // default for that type ("Web View") — never the record type.
+  const label = resolveTitle(item) || getDefaultTitle(item.content.type);
+  return record ? canvasItemReference(record, label) : undefined;
 }
 
 export interface BuildCanvasScopeInput {

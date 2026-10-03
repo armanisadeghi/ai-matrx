@@ -136,6 +136,25 @@ describe("a resource_ref renders as the record it points to", () => {
     expect(detectResultShape("the word resource_ref alone").kind).not.toBe("textWithRecordRefs");
   });
 
+  it("a pointer that carries its own label shows that name, never the raw type", async () => {
+    // 2026-10-03: a canvas HTML page read back as "Untitled html_page".
+    mockFetchTitles.mockResolvedValueOnce(new Map());
+    await render(
+      <ResultValue
+        value={{
+          __kind: "resource_ref",
+          resource_type: "html_page",
+          resource_id: NOTE_ID,
+          label: "Mini Reaction Lab",
+        }}
+        density="full"
+      />,
+    );
+    const text = container.textContent ?? "";
+    expect(text).toContain("Mini Reaction Lab");
+    expect(text).not.toContain("html_page");
+  });
+
   it("an unknown resource type still names itself without raw data or a report", async () => {
     await render(
       <ResultValue

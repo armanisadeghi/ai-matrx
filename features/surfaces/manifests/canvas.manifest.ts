@@ -197,6 +197,9 @@ export const canvasManifest: SurfaceManifest = {
   executionMode: "python-stream",
   description:
     "Visual canvas and diagram editors",
+  // A pane beside every page, never the page: the page's own conversation
+  // (the main /chat) receives the canvas too (`SurfaceManifest.companion`).
+  companion: true,
   readiness: "partial",
   readinessNote:
     // access-errors: ok — internal readiness note about a removed editor's vocabulary, verified against the codebase; never rendered to a user as record state
