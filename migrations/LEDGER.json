@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T03:15:49.513Z",
+  "generated_at": "2026-10-03T03:43:26.333Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3661,6 +3661,18 @@
       "filename": "makehome_w5_a_public_form_wears_its_look.sql",
       "checksum": "4ffb26e708f3440431f828ee151aa3dcf9d9e9648ceb3cb14f08c68ea17c3eb0",
       "applied_at": "2026-10-02 23:47:06.31691+00"
+    },
+    "migrations/campaign/makehome_w5b_a_form_picks_from_the_public_pictures.sql": {
+      "source": "matrx-frontend",
+      "filename": "makehome_w5b_a_form_picks_from_the_public_pictures.sql",
+      "checksum": "9ab1d7b620dbfebf4c2a24e2d90e48a8955d574855ee7bd6eb1a4c1dfc3aaa06",
+      "applied_at": "2026-10-03 03:43:15.421943+00"
+    },
+    "migrations/campaign/makehome_w5b_the_form_look_door_can_be_reached.sql": {
+      "source": "matrx-frontend",
+      "filename": "makehome_w5b_the_form_look_door_can_be_reached.sql",
+      "checksum": "4fbf6d2d9e09053ce2f07a408adf6f0c948ca207cb0245cf852e830a84c550a0",
+      "applied_at": "2026-10-03 03:43:24.967389+00"
     },
     "migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql": {
       "source": "matrx-frontend",

@@ -46,7 +46,7 @@ import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavi
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { getUserId } from "@/utils/auth/getUserId";
 import { rowWordsWrite } from "../RowWordsFields";
-import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
+import { ListDetailSplit } from "@/components/official/side-panel/ListDetailSplit";
 
 function rowToFormData(row: AiProvider): ProviderFormData {
   return {
@@ -545,11 +545,12 @@ export default function ProvidersContainer() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Table panel */}
-        <div
-          className={`${panelOpen ? "hidden md:flex md:w-1/2" : "w-full"} min-w-0 flex flex-col transition-[width] ${PANEL_MOTION_CLASS} overflow-hidden`}
-        >
+      <ListDetailSplit
+        panelId="ai-models-providers-detail"
+        open={panelOpen}
+        aria-label="Provider details"
+        className="flex-1"
+        list={
           <ProviderTable
             providers={providers}
             isLoading={isLoading}
@@ -561,20 +562,18 @@ export default function ProvidersContainer() {
             onCreate={openNew}
             onRetry={refreshData}
           />
-        </div>
-
-        {/* Detail panel */}
-        {panelOpen && (
-          <div className="w-full md:w-1/2 border-l-0 md:border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
+        }
+        detail={
+          panelOpen ? (
             <ProviderDetailPanel
               provider={selectedProvider}
               isNew={isNewProvider}
               onClose={closePanel}
               onSaved={handleSaved}
             />
-          </div>
-        )}
-      </div>
+          ) : null
+        }
+      />
     </div>
   );
 }

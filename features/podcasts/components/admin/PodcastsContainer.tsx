@@ -6,7 +6,7 @@ import { PodcastsTable } from './PodcastsTable';
 import { PodcastDetailPanel } from './PodcastDetailPanel';
 import { podcastService } from '../../service';
 import type { PcShow, PcEpisodeWithShow } from '../../types';
-import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
+import { ListDetailSplit } from "@/components/official/side-panel/ListDetailSplit";
 
 type ActiveTab = 'shows' | 'episodes';
 
@@ -140,12 +140,15 @@ export function PodcastsContainer() {
                 ))}
             </div>
 
-            {/* Main content: table + optional detail panel */}
-            <div className="flex flex-1 min-h-0 overflow-hidden">
-                {/* Table panel */}
-                <div className={`${panelOpen ? 'w-1/2' : 'w-full'} min-w-0 flex flex-col transition-[width] ${PANEL_MOTION_CLASS} overflow-hidden`}>
-                    {/* The read's failure is the table's to say, once: the failure with
-                        nothing loaded, a stale notice over rows kept from before. */}
+            {/* Main content: table + the detail docked on the right */}
+            <ListDetailSplit
+                panelId="podcasts-admin-detail"
+                open={panelOpen}
+                aria-label="Podcast details"
+                className="flex-1"
+                // The read's failure is the table's to say, once: the failure with
+                // nothing loaded, a stale notice over rows kept from before.
+                list={
                     <PodcastsTable
                         activeTab={activeTab}
                         shows={shows}
@@ -160,26 +163,26 @@ export function PodcastsContainer() {
                         onDeleteEpisode={handleEpisodeDeleted}
                         read={readOf({ loading: isLoading, error: loadError }, { what: "the podcasts", onRetry: () => void loadData() })}
                     />
-                </div>
-
-                {/* Detail panel */}
-                {panelOpen && (
-                    <div className="w-1/2 border-l shrink-0 overflow-y-auto">
-                        <PodcastDetailPanel
-                            activeTab={activeTab}
-                            show={activeTab === 'shows' ? selectedShow : null}
-                            episode={activeTab === 'episodes' ? selectedEpisode : null}
-                            isNew={isNew}
-                            shows={shows}
-                            onClose={closePanel}
-                            onShowSaved={handleShowSaved}
-                            onEpisodeSaved={handleEpisodeSaved}
-                            onShowDeleted={handleShowDeleted}
-                            onEpisodeDeleted={handleEpisodeDeleted}
-                        />
-                    </div>
-                )}
-            </div>
+                }
+                detail={
+                    panelOpen ? (
+                        <div className="h-full min-h-0 overflow-y-auto">
+                            <PodcastDetailPanel
+                                activeTab={activeTab}
+                                show={activeTab === 'shows' ? selectedShow : null}
+                                episode={activeTab === 'episodes' ? selectedEpisode : null}
+                                isNew={isNew}
+                                shows={shows}
+                                onClose={closePanel}
+                                onShowSaved={handleShowSaved}
+                                onEpisodeSaved={handleEpisodeSaved}
+                                onShowDeleted={handleShowDeleted}
+                                onEpisodeDeleted={handleEpisodeDeleted}
+                            />
+                        </div>
+                    ) : null
+                }
+            />
         </div>
     );
 }

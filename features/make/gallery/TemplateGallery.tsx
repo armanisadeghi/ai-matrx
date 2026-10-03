@@ -303,7 +303,9 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
   if (read.phase === "failed") return <Failed why={read.why} retry={read.reload} />;
   if (!card) return <p className="text-sm text-muted-foreground">This template is not in the gallery</p>;
 
-  const installId = run.phase === "installed" ? (run.answer.install_id ?? null) : (card.installed?.install_id ?? null);
+  // A refused or half-made install also has an id: Remove archives whatever it made so far.
+  const installId =
+    run.phase === "removed" ? null : ((run.phase !== "idle" ? run.answer?.install_id : null) ?? card.installed?.install_id ?? null);
   const isInstalled = run.phase === "installed" || (run.phase !== "removed" && card.installed?.state === "installed");
   const made = ((run.phase !== "idle" ? run.answer?.made : null) ?? []) as MadeObject[];
   const parts = footprintParts(card.footprint);
@@ -349,11 +351,6 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
               <Button onClick={install} disabled={run.phase === "running"} data-make-template-open="">
                 Show what it made
               </Button>
-              {installId ? (
-                <Button variant="outline" onClick={() => setConfirmRemove(true)} disabled={run.phase === "running"} data-make-template-remove="">
-                  Remove
-                </Button>
-              ) : null}
             </>
           ) : (
             <Button onClick={install} disabled={run.phase === "running"} data-make-template-install="">
@@ -361,6 +358,11 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
               Install
             </Button>
           )}
+          {installId ? (
+            <Button variant="outline" onClick={() => setConfirmRemove(true)} disabled={run.phase === "running"} data-make-template-remove="">
+              Remove
+            </Button>
+          ) : null}
           <SavesTo />
         </div>
 

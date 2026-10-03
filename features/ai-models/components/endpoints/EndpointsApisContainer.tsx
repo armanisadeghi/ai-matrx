@@ -43,7 +43,7 @@ import { getUserId } from "@/utils/auth/getUserId";
 import { RowWordsFields, rowWordsWrite } from "../RowWordsFields";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
-import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
+import { ListDetailSplit } from "@/components/official/side-panel/ListDetailSplit";
 
 // ─── Shared bits ─────────────────────────────────────────────────────────────
 
@@ -968,10 +968,11 @@ export default function EndpointsApisContainer() {
         value="endpoints"
         className="flex-1 m-0 overflow-hidden min-h-0"
       >
-        <div className="flex h-full min-h-0">
-          <div
-            className={`${endpointPanelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden transition-[width] ${PANEL_MOTION_CLASS}`}
-          >
+        <ListDetailSplit
+          panelId="ai-models-endpoints-detail"
+          open={endpointPanelOpen}
+          aria-label="Endpoint details"
+          list={
             <EndpointApiTable
               title="AI Endpoints (serving vendors)"
               rows={endpoints}
@@ -1007,9 +1008,9 @@ export default function EndpointsApisContainer() {
                 </div>
               )}
             />
-          </div>
-          {endpointPanelOpen && (
-            <div className="w-1/2 border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
+          }
+          detail={
+            endpointPanelOpen ? (
               <DetailPanel
                 title={
                   endpointIsNew
@@ -1028,16 +1029,17 @@ export default function EndpointsApisContainer() {
                   onChange={setEndpointForm}
                 />
               </DetailPanel>
-            </div>
-          )}
-        </div>
+            ) : null
+          }
+        />
       </TabsContent>
 
       <TabsContent value="apis" className="flex-1 m-0 overflow-hidden min-h-0">
-        <div className="flex h-full min-h-0">
-          <div
-            className={`${apiPanelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden transition-[width] ${PANEL_MOTION_CLASS}`}
-          >
+        <ListDetailSplit
+          panelId="ai-models-apis-detail"
+          open={apiPanelOpen}
+          aria-label="API details"
+          list={
             <EndpointApiTable
               title="AI APIs (wire contracts)"
               rows={apis}
@@ -1072,9 +1074,9 @@ export default function EndpointsApisContainer() {
                 </div>
               )}
             />
-          </div>
-          {apiPanelOpen && (
-            <div className="w-1/2 border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
+          }
+          detail={
+            apiPanelOpen ? (
               <DetailPanel
                 title={
                   apiIsNew ? "New API" : selectedApi?.display_name || "API"
@@ -1088,9 +1090,9 @@ export default function EndpointsApisContainer() {
               >
                 <ApiFormFields data={apiForm} onChange={setApiForm} />
               </DetailPanel>
-            </div>
-          )}
-        </div>
+            ) : null
+          }
+        />
       </TabsContent>
     </Tabs>
   );

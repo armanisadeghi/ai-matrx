@@ -47,6 +47,10 @@ export function ScaledSlide({
           style={{
             width: SLIDE_STAGE.width,
             height: SLIDE_STAGE.height,
+            // A narrow-screen global max-width would clamp the stage to the
+            // pane and reflow the slide; the stage is fixed by design.
+            maxWidth: "none",
+            maxHeight: "none",
             left,
             top,
             transform: `scale(${scale})`,

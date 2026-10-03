@@ -30,7 +30,8 @@ import React, {
 } from "react";
 import { Loader2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
+import { DockedSidePanel } from "@/components/official/side-panel/DockedSidePanel";
+import type { SidePanelSizes } from "@/components/official/side-panel/side-panel-width";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 import { Input } from "@ai-matrx/design-system";
@@ -100,6 +101,10 @@ import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/Surfa
 interface PdfStudioShellProps {
   initialDocumentId?: string;
 }
+
+/** Docked rails (motion-standard law): they slide on THE panel motion and the person drags their width. */
+const PDF_STUDIO_SIDEBAR_SIZES: SidePanelSizes = { defaultPx: 256, minPx: 208, maxPx: 440 };
+const PDF_STUDIO_INSPECTOR_SIZES: SidePanelSizes = { defaultPx: 352, minPx: 288, maxPx: 560 };
 
 const PANE_ORDER: PaneKey[] = ["pdf", "raw", "clean", "chunks", "extractions"];
 
@@ -881,16 +886,18 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       <div className="flex h-full min-h-0 bg-background">
         {/* LEFT — sidebar (collapsible). Collapses to width 0 — expand only
             from the shell header's PanelLeftTapButton (tasks pattern). */}
-        <div
-          className={cn(
-            "shrink-0 hidden md:flex flex-col overflow-hidden pt-[var(--shell-header-h)] transition-[width]",
-            PANEL_MOTION_CLASS,
-            sidebarOpen ? "w-64" : "w-0",
-          )}
+        <DockedSidePanel
+          panelId="pdf-studio-sidebar"
+          edge="left"
+          open={sidebarOpen}
+          sizes={PDF_STUDIO_SIDEBAR_SIZES}
+          aria-label="Documents and pages"
+          outerClassName="max-md:hidden"
+          className="pt-[var(--shell-header-h)]"
         >
           {/* Border lives on `<aside>` inside — it starts below the padding
-              above, so it never bleeds into the transparent shell header. */}
-          {sidebarOpen && (
+              above, so it never bleeds into the transparent shell header.
+              Closed, it stays mounted (inert): its list and scroll survive. */}
             <PdfStudioSidebar
               docsState={docsState}
               activeDocId={activeDoc?.id ?? null}
@@ -910,8 +917,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               activePage={activePage}
               onSelectPage={jumpToPage}
             />
-          )}
-        </div>
+        </DockedSidePanel>
 
         {/* Upload drawer */}
         <PdfStudioUploadDrawer
@@ -1063,17 +1069,18 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
 
         {/* RIGHT — inspector (collapsible). Collapses to width 0 — expand
             only from the shell header's PanelRightTapButton (tasks pattern). */}
-        <div
-          className={cn(
-            "shrink-0 hidden lg:flex flex-col overflow-hidden pt-[var(--shell-header-h)] transition-[width] min-h-0",
-            PANEL_MOTION_CLASS,
-            inspectorOpen ? "w-80 xl:w-96" : "w-0",
-          )}
+        <DockedSidePanel
+          panelId="pdf-studio-inspector"
+          edge="right"
+          open={inspectorOpen}
+          sizes={PDF_STUDIO_INSPECTOR_SIZES}
+          aria-label="Inspector"
+          outerClassName="max-lg:hidden"
+          className="pt-[var(--shell-header-h)]"
         >
           {/* Border lives on `<aside>` inside (PdfStudioInspector) — starts
               below the padding above, never bleeds into the shell header. */}
-          {inspectorOpen &&
-            (activeDoc ? (
+          {activeDoc ? (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <PdfStudioInspector
                   doc={activeDoc}
@@ -1092,8 +1099,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               </div>
             ) : (
               <div className="flex-1 bg-card/30" />
-            ))}
-        </div>
+            )}
+        </DockedSidePanel>
       </div>
     </SurfaceRuntimeProvider>
   );

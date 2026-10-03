@@ -17,7 +17,13 @@
 //         sheet, canvas, rail, inspector, the shell root/layouts) transitioning or
 //         animating a geometry property (width, left, right, grid-template-columns,
 //         transform, margin-left/right, flex-basis, a slide keyframe) on anything
-//         but the panel tokens or their aliases.
+//         but the panel tokens or their aliases;
+//   VARIABLE — a custom property that names a panel's pace given its own value
+//         (`--sidebar-duration: 200ms`, `"--drawer-easing": "linear"` in a style
+//         object) instead of the panel tokens — the Sidebar shipped exactly this;
+//   NAMED SETTING — a pace passed through a named prop / option / constant
+//         (`animationDuration={300}`, `slideDurationMs: 250`,
+//         `const SIDEBAR_SLIDE = "transition-[width] duration-300"`) on a panel.
 //
 // Heuristic by design: it catches the shapes that shipped, not every possible
 // one. A true exception goes in ALLOWED with its reason. Advisory (scream, never
@@ -53,17 +59,38 @@ const OFFSCREEN = /-?translate-[xy]-full\b/;
 const PANEL_WORD = /<aside\b|\b(?:sidebar|panel|rail|drawer|dock|inspector|sheet)\b/i;
 const isPanelWindow = (win) => PANEL_STATE.test(win) || COLLAPSES_TO_ZERO.test(win) || (OFFSCREEN.test(win) && PANEL_WORD.test(win));
 const USES_TOKEN = /PANEL_MOTION_CLASS|--matrx-motion-|SIDE_PANEL_SLIDE_CLASS/;
+/** A constant whose NAME says it holds a panel's motion: `const SIDEBAR_SLIDE = "…"`. */
+const PANEL_CONST = /\b(?:const|let)\s+\w*(?:SIDEBAR|PANEL|RAIL|DRAWER|DOCK|INSPECTOR|SHEET|[sS]idebar|[pP]anel|[rR]ail|[dD]rawer|[dD]ock|[iI]nspector|[sS]heet)\w*\s*=/;
+
+// ── VARIABLE / NAMED SETTING (shared by TSX and CSS) ────────────────────────
+/** A custom property naming a panel's pace: --sidebar-duration, --drawer-ease, --panel-transition … */
+const PACE_VAR_DECL = /(["'`]?)(--[\w-]*(?:sidebar|panel|rail|drawer|dock|inspector|sheet)[\w-]*-(?:duration|easing|ease|speed|timing|transition))\1\s*:\s*([^;,}\n]+)/i;
+/** A named pace setting: animationDuration={300}, slideDurationMs: 250, collapseEasing: "ease-out" … */
+const NAMED_PACE = /\b((?:animation|transition|slide|collapse|expand|open|close)(?:Duration(?:Ms)?|Ms|Easing|Ease|TimingFunction|Speed))\s*(?::|=)\s*\{?\s*(["'`][^"'`]*["'`]|\d[\d.]*)/;
+const TOKEN_VALUE = /var\(--(?:matrx-motion-(?:duration|ease)-panel|mxc-motion-(?:duration|ease)|shell-duration-panel|shell-ease-smooth)\)|PANEL_MOTION_(?:DURATION|EASE)_VAR/;
+
+function paceVariableFindings(line, file, lineNo) {
+  const v = line.match(PACE_VAR_DECL);
+  if (!v || TOKEN_VALUE.test(v[3])) return [];
+  return [`${file}:${lineNo}  panel pace variable ${v[2]} given its own value "${v[3].trim()}" — define it from var(--matrx-motion-duration-panel) / var(--matrx-motion-ease-panel)`];
+}
 
 function findingsForSource(src, file) {
   const out = [];
   const lines = src.split("\n");
   for (let i = 0; i < lines.length; i++) {
+    out.push(...paceVariableFindings(lines[i], file, i + 1));
+    const win = lines.slice(Math.max(0, i - 3), i + 4).join("\n");
+    const named = lines[i].match(NAMED_PACE);
+    if (named && !TOKEN_VALUE.test(named[2]) && (isPanelWindow(win) || PANEL_WORD.test(win) || PANEL_CONST.test(win))) {
+      out.push(`${file}:${i + 1}  panel pace set through "${named[1]}" = ${named[2]} — a panel slides on THE panel motion (PANEL_MOTION_CLASS / PANEL_MOTION_DURATION_VAR), never its own setting`);
+      continue;
+    }
     const m = lines[i].match(TW_LITERAL_TIMING);
     if (!m || USES_TOKEN.test(lines[i])) continue;
     const near = lines.slice(Math.max(0, i - 1), i + 2).join("\n");
     if (!TW_GEOM.test(near)) continue;
-    const win = lines.slice(Math.max(0, i - 3), i + 4).join("\n");
-    if (!isPanelWindow(win)) continue;
+    if (!isPanelWindow(win) && !PANEL_CONST.test(lines.slice(Math.max(0, i - 1), i + 1).join("\n"))) continue;
     out.push(`${file}:${i + 1}  panel slide with its own pace "${m[1]}" — use PANEL_MOTION_CLASS (lib/motion/panel-motion.ts)`);
   }
   return out;
@@ -109,8 +136,9 @@ function findingsForCss(css, file) {
   while ((m = RULE.exec(text))) {
     const selector = m[1].trim().replace(/\s+/g, " ");
     if (selector.startsWith("@") || /^(?:from|to|\d+%)/.test(selector)) continue;
-    if (!selector.split(",").some(isPanelSubject)) continue;
     const line = text.slice(0, m.index + m[1].length).split("\n").length;
+    for (const decl of m[2].split(";")) out.push(...paceVariableFindings(decl, file, line));
+    if (!selector.split(",").some(isPanelSubject)) continue;
     for (const decl of m[2].split(";")) {
       const d = decl.match(/^\s*(transition|animation)\s*:\s*([\s\S]+)$/);
       if (!d) continue;
@@ -165,6 +193,13 @@ function selfTest() {
     [".shell-sidebar { transition: width 600ms cubic-bezier(0.4, 0, 0.2, 1), background 200ms ease; }", "x.css"],
     [".shell-panel { transition: transform var(--shell-duration-slow) var(--shell-ease-spring); }", "x.css"],
     [".hdr-sheet-panel { animation: hdr-sheet-slide-up 450ms var(--shell-ease-spring); }", "x.css"],
+    // A pace through a VARIABLE (the design-system Sidebar shipped this until 0.56.0).
+    ['style={{ "--sidebar-duration": "200ms", "--sidebar-easing": "linear" } as React.CSSProperties}', "x.tsx"],
+    [":root { --drawer-transition-duration: 300ms; }", "x.css"],
+    // A pace through a NAMED SETTING.
+    ['<FloatingSheet open={railOpen} animationDuration={300} />', "x.tsx"],
+    ['const drawer = { slideDurationMs: 250, side: "right" };', "x.tsx"],
+    ['const SIDEBAR_SLIDE =\n  "transition-[width] duration-300 ease-out";', "x.tsx"],
   ];
   const green = [
     ['<aside className={cn("absolute right-0 w-72 transition-transform", PANEL_MOTION_CLASS, railOpen ? "translate-x-0" : "translate-x-full")} />', "x.tsx"],
@@ -174,6 +209,11 @@ function selfTest() {
     [".shell-chat-dock { transition: left var(--shell-duration-panel) var(--shell-ease-smooth); }", "x.css"],
     [".shell-dock-item { transition: color 200ms ease; }", "x.css"],
     [".menu-chevron { transition: transform 200ms var(--shell-ease-spring); }", "x.css"],
+    ['style={{ "--sidebar-duration": "var(--matrx-motion-duration-panel)", "--sidebar-easing": "var(--matrx-motion-ease-panel)" } as React.CSSProperties}', "x.tsx"],
+    [":root { --shell-duration-panel: var(--matrx-motion-duration-panel); --sidebar-width: 16rem; }", "x.css"],
+    ['<Tooltip delayDuration={0} />', "x.tsx"],
+    ['<Toast animationDuration={300} />', "x.tsx"],
+    ['<FloatingSheet open={railOpen} animationDuration={PANEL_MOTION_DURATION_VAR} />', "x.tsx"],
   ];
   let failed = 0;
   for (const [src, f] of red) {

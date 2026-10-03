@@ -41,7 +41,7 @@ import type {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { getUserId } from "@/utils/auth/getUserId";
 import { rowWordsWrite } from "../RowWordsFields";
-import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
+import { ListDetailSplit } from "@/components/official/side-panel/ListDetailSplit";
 
 function rowToFormData(row: AiSetting): AiSettingFormData {
   return {
@@ -494,11 +494,12 @@ export default function SettingsContainer() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Table + optional detail panel */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <div
-          className={`${panelOpen ? "hidden md:flex md:w-1/2" : "w-full"} min-w-0 flex flex-col transition-[width] ${PANEL_MOTION_CLASS} overflow-hidden`}
-        >
+      <ListDetailSplit
+        panelId="ai-models-settings-detail"
+        open={panelOpen}
+        aria-label="Setting details"
+        className="flex-1"
+        list={
           <SettingTable
             settings={settings}
             isLoading={isLoading}
@@ -510,10 +511,9 @@ export default function SettingsContainer() {
             onCreate={openNew}
             onRetry={refreshData}
           />
-        </div>
-
-        {panelOpen && (
-          <div className="w-full md:w-1/2 border-l-0 md:border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
+        }
+        detail={
+          panelOpen ? (
             <SettingDetailPanel
               setting={selectedSetting}
               isNew={isNewSetting}
@@ -521,9 +521,9 @@ export default function SettingsContainer() {
               onSaved={handleSaved}
               onDeleted={handleDeleted}
             />
-          </div>
-        )}
-      </div>
+          ) : null
+        }
+      />
     </div>
   );
 }

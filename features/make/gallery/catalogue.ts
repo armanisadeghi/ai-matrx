@@ -162,6 +162,7 @@ const EXTRA_WORDS: Record<string, [string, string]> = {
   document: ["document", "documents"],
   notification: ["notification", "notifications"],
   row_action: ["row action", "row actions"],
+  stage_rules: ["stage rule set", "stage rule sets"],
   drill_down: ["drill-down", "drill-downs"],
   automation: ["automation", "automations"],
 };

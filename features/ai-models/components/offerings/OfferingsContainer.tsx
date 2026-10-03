@@ -36,7 +36,7 @@ import type {
   AiOfferingFormData,
 } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
+import { ListDetailSplit } from "@/components/official/side-panel/ListDetailSplit";
 
 const EMPTY_FORM: AiOfferingFormData = {
   model_id: "",
@@ -369,10 +369,12 @@ export default function OfferingsContainer() {
           value="manage"
           className="flex-1 m-0 overflow-hidden min-h-0"
         >
-          <div className="flex h-full min-h-0">
-            <div
-              className={`${panelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden p-2 transition-[width] ${PANEL_MOTION_CLASS}`}
-            >
+          <ListDetailSplit
+            panelId="ai-models-offerings-detail"
+            open={panelOpen}
+            aria-label="Offering details"
+            listClassName="p-2"
+            list={
               <OfferingTable
                 offerings={offerings}
                 models={models}
@@ -387,97 +389,98 @@ export default function OfferingsContainer() {
                 // notice above the tabs); the table carries the read's wait.
                 read={{ status: loading && offerings.length === 0 ? "loading" : "ready", what: "the model offerings", hasData: offerings.length > 0 }}
               />
-            </div>
-
-            {panelOpen && (
-              <div className="w-1/2 border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden bg-card">
-                <div className="flex items-center justify-between px-3 py-2 border-b shrink-0 bg-muted/20">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/60 shrink-0 select-none">
-                      <PanelRight className="h-3 w-3" />
-                      Detail
-                    </span>
-                    <div className="w-px h-3 bg-border shrink-0" />
-                    <span className="text-sm font-semibold truncate">
-                      {isNew ? "New Offering" : "Edit Offering"}
-                    </span>
-                    {isDirty && !saving && (
-                      <span
-                        className="w-2 h-2 rounded-full bg-orange-400 shrink-0"
-                        title="Unsaved changes"
-                      />
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 shrink-0"
-                    onClick={requestClose}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="flex-1 overflow-auto p-3 min-h-0">
-                  <OfferingForm
-                    data={formData}
-                    models={models}
-                    endpoints={endpoints}
-                    apis={apis}
-                    onChange={setFormData}
-                  />
-                </div>
-
-                <div className="border-t bg-card shrink-0">
-                  {saveError && (
-                    <div className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300">
-                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-500" />
-                      <span className="flex-1 min-w-0 break-words">
-                        {saveError}
+            }
+            detail={
+              panelOpen ? (
+                <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card">
+                  <div className="flex items-center justify-between px-3 py-2 border-b shrink-0 bg-muted/20">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/60 shrink-0 select-none">
+                        <PanelRight className="h-3 w-3" />
+                        Detail
                       </span>
-                      <ErrorAlchemyMenu error={saveError} />
+                      <div className="w-px h-3 bg-border shrink-0" />
+                      <span className="text-sm font-semibold truncate">
+                        {isNew ? "New Offering" : "Edit Offering"}
+                      </span>
+                      {isDirty && !saving && (
+                        <span
+                          className="w-2 h-2 rounded-full bg-orange-400 shrink-0"
+                          title="Unsaved changes"
+                        />
+                      )}
                     </div>
-                  )}
-                  <div className="px-3 py-2 flex items-center justify-between gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 px-3 text-xs gap-1.5"
+                      className="h-7 w-7 p-0 shrink-0"
                       onClick={requestClose}
                     >
-                      <X className="h-3.5 w-3.5" />
-                      Close
+                      <X className="h-4 w-4" />
                     </Button>
-                    <div className="flex items-center gap-2">
+                  </div>
+
+                  <div className="flex-1 overflow-auto p-3 min-h-0">
+                    <OfferingForm
+                      data={formData}
+                      models={models}
+                      endpoints={endpoints}
+                      apis={apis}
+                      onChange={setFormData}
+                    />
+                  </div>
+
+                  <div className="border-t bg-card shrink-0">
+                    {saveError && (
+                      <div className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-500" />
+                        <span className="flex-1 min-w-0 break-words">
+                          {saveError}
+                        </span>
+                        <ErrorAlchemyMenu error={saveError} />
+                      </div>
+                    )}
+                    <div className="px-3 py-2 flex items-center justify-between gap-2">
                       <Button
+                        variant="ghost"
                         size="sm"
-                        variant="outline"
                         className="h-8 px-3 text-xs gap-1.5"
-                        onClick={() => handleSave()}
-                        disabled={saving || !canSave}
+                        onClick={requestClose}
                       >
-                        <Save className="h-3.5 w-3.5" />
-                        {saving ? "Saving…" : isNew ? "Create" : "Save"}
+                        <X className="h-3.5 w-3.5" />
+                        Close
                       </Button>
-                      <Button
-                        size="sm"
-                        className="h-8 px-3 text-xs gap-1.5 bg-primary hover:bg-primary/90"
-                        onClick={handleSaveAndClose}
-                        disabled={saving || !canSave}
-                      >
-                        <LogOut className="h-3.5 w-3.5" />
-                        {saving
-                          ? "Saving…"
-                          : isNew
-                            ? "Create & Close"
-                            : "Save & Close"}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 text-xs gap-1.5"
+                          onClick={() => handleSave()}
+                          disabled={saving || !canSave}
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          {saving ? "Saving…" : isNew ? "Create" : "Save"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-8 px-3 text-xs gap-1.5 bg-primary hover:bg-primary/90"
+                          onClick={handleSaveAndClose}
+                          disabled={saving || !canSave}
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                          {saving
+                            ? "Saving…"
+                            : isNew
+                              ? "Create & Close"
+                              : "Save & Close"}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              ) : null
+            }
+          />
         </TabsContent>
 
         <TabsContent
