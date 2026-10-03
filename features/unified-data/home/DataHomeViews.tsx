@@ -12,7 +12,11 @@ import { MoreVertical, Star } from "lucide-react";
 
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { MatrxTableRowAlchemyProvider } from "@ai-matrx/design-system/data-table";
-import type { CopyControlProps, MatrxDataTableRecordControls } from "@ai-matrx/design-system/data-table";
+import type { MatrxDataTableRecordControls } from "@ai-matrx/design-system/data-table";
+import type { ComponentProps } from "react";
+
+/** The row copy the provider takes (its type is not a public export of the package). */
+type RowCopy = ComponentProps<typeof MatrxTableRowAlchemyProvider>["copy"];
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
@@ -82,7 +86,7 @@ function StarButton({
  * entry; the cards and rows put the same provider around the same `ItemMenu`, so one thing has one
  * menu on every surface.
  */
-export function dataHomeRowCopy(row: DataHomeRow): CopyControlProps {
+export function dataHomeRowCopy(row: DataHomeRow): RowCopy {
   return {
     sourceId: `data-home:row:${row.id}`,
     label: dataHomeKindWord(row.kind),
