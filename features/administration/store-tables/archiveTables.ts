@@ -17,6 +17,8 @@ export interface TableArchivePass {
   table_id: string;
   table_name?: string;
   archived: number;
+  /** What is built on the table (forms, views, dashboards…) THIS pass archived (TABLE-ACTIONS). */
+  built_on_archived?: number;
   remaining: number;
   done: boolean;
   table_archived?: boolean;
@@ -88,7 +90,8 @@ async function archiveOne(target: ArchiveTarget, door: TableArchiveDoor): Promis
     }
     records += answer.data.archived ?? 0;
     if (answer.data.done) return { status: "archived", target, records };
-    if ((answer.data.archived ?? 0) === 0) {
+    // A pass that took only what is built on the table is progress, not a stall.
+    if ((answer.data.archived ?? 0) + (answer.data.built_on_archived ?? 0) === 0) {
       return {
         status: "refused",
         target,

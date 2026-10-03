@@ -98,9 +98,14 @@ $a$;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated","session_id":"5d0c3f5e-2f7b-4b36-9d0c-databasics2l2"}', true);
 do $c$
-declare s jsonb := current_setting('dv2b2.l2')::jsonb;
+declare s jsonb := current_setting('dv2b2.l2')::jsonb; v_res jsonb; v_calls integer := 0;
 begin
-  perform custom.table_archive('884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f', (s ->> 'tbl')::uuid, 50, true);
+  -- The caller loops until done (TABLE-ACTIONS 2026-10-03: the table's last pass is chunked too).
+  loop
+    v_res := custom.table_archive('884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f', (s ->> 'tbl')::uuid, 50, true);
+    v_calls := v_calls + 1;
+    exit when (v_res ->> 'done')::boolean or v_calls > 10;
+  end loop;
 end
 $c$;
 reset role;
