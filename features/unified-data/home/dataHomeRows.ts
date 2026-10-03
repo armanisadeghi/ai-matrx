@@ -113,7 +113,7 @@ export function archivedTableRow(table: ArchivedEverywhereRow, me: string | null
     parentName: null,
     updatedAt: table.archived_at,
     createdBy: table.created_by ?? null,
-    createdByName: null,
+    createdByName: table.created_by_name ?? null,
     mine,
     team: false,
     member: true,

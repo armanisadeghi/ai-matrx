@@ -255,14 +255,15 @@ describe("W4 — the Archived filter pages like the store pages it", () => {
     archived.mockResolvedValueOnce({
       ok: true,
       data: [
-        { ...archivedRows(1)[0], id: "mine-1", created_by: DANA },
-        { ...archivedRows(1, 1)[0], id: "theirs-1", created_by: LUIS },
+        { ...archivedRows(1)[0], id: "mine-1", created_by: DANA, created_by_name: "Dana Reyes" },
+        { ...archivedRows(1, 1)[0], id: "theirs-1", created_by: LUIS, created_by_name: "Luis Ortega" },
       ],
     });
     const page = await readArchivedDataHomePage({} as never, { offset: 0, limit: 100 }, DANA);
-    expect(page.rows.map((r) => [r.itemId, r.mine])).toEqual([
-      ["mine-1", true],
-      ["theirs-1", false],
+    // The maker's name comes from the door (custom.archived_tables_everywhere, tableactions_d).
+    expect(page.rows.map((r) => [r.itemId, r.mine, r.createdByName])).toEqual([
+      ["mine-1", true, "Dana Reyes"],
+      ["theirs-1", false, "Luis Ortega"],
     ]);
   });
 
