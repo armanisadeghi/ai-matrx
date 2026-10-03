@@ -268,6 +268,12 @@ if $STRICT; then
         "One door for an agent request's context|pnpm check:context-single-door"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
+        # UI DRIFT (docs/ui-unification-plan.md §2.12): one item per drifting site, ratcheted against
+        # scripts/ui-drift/baseline.json, which only shrinks. Measured centrally by its OWN daily
+        # schedule ("UI drift check — daily", .github/workflows/ui-drift-daily.yml), never the hourly
+        # repo-only leg (run.mjs OWN_SCHEDULE). Offline, ~15 s.
+        "UI drift|pnpm check:ui-drift:strict"
+        "UI drift — self-test|pnpm check:ui-drift:self-test"
         # No blocking layers (register ARE-008): a desktop dialog forced to
         # block, or built straight on Radix, hides every AI door on the page.
         "No blocking dialogs (AI stays reachable)|pnpm check:blocking-dialogs"
@@ -1053,6 +1059,8 @@ else
         "One door for an agent request's context|pnpm check:context-single-door"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
+        "UI drift|pnpm check:ui-drift"
+        "UI drift — self-test|pnpm check:ui-drift:self-test"
         "No blocking dialogs (AI stays reachable)|pnpm check:blocking-dialogs"
         "No blocking dialogs — self-test|pnpm check:blocking-dialogs:self-test"
         # See the strict lane above for why this class is a shipped-code hazard.

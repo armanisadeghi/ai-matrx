@@ -332,7 +332,7 @@ These run on day one, because they are cheap and they stop new drift that copies
 - Each item names its file:line, so the commit and session that introduced it are one `git blame` away.
 - Fixer agents drain that queue with the existing fix-or-accept flow, so an ignored warning becomes somebody's task instead of disappearing.
 - **The one approval this needs:** the in-app schedule. Every automated schedule is approved by exact name and interval. Proposed: **"UI drift check — daily"**.
-- Until it is approved, the check still runs on demand, and its output can be ingested by hand (`aidream/scripts/checks/ingest.py`).
+- **Built 2026-10-03, approved the same day** ("Daily check is an absolute yes!"): `scripts/ui-drift/check-ui-drift.mjs` (row `ui-drift`, baseline `scripts/ui-drift/baseline.json`, shrink-only), run daily by `.github/workflows/ui-drift-daily.yml` and ingested by the app's hourly pull. Card-in-card and page-gutter rules are not in it yet.
 
 **Agents are told once, in the root `CLAUDE.md` UI section:** "after any UI change run `pnpm findings <files>`". The tap-target precedent shows the guard does most of the teaching.
 

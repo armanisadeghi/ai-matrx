@@ -199,7 +199,7 @@ test("--skip-live-db runs no live-db or unclassified row and says so in one line
   assert.equal(existsSync(marker("unknown")), false, "an unclassified row executed");
   assert.equal(existsSync(marker("repo")), true);
   assert.equal(existsSync(marker("clone")), true);
-  assert.match(out, /^checks: skipped 2 live-db rows \(1 unclassified \S+ run pnpm checks:classify\); they live in .*REGISTER\.md/m);
+  assert.match(out, /^checks: skipped 2 live-db rows \(1 unclassified \S+ run pnpm checks:classify\); they live in .*checks-run-in-the-app\/PLAN\.md/m);
   const { git_sha: _sha, started_at: _at, checks: _m, ...rest } = header;
   assert.deepEqual(rest, { ran: ["repo-gate", "clone-gate"], skipped_live_db: ["live-gate", "unknown-gate"] });
   assert.equal(findings.length, 0);
@@ -435,6 +435,22 @@ test("--repo-only runs ONLY rows declared repo-only — never clone-db, live-db 
   assert.deepEqual(header.ran, ["repo-gate"]);
   assert.deepEqual([...header.skipped_not_repo_only].sort(), ["clone-gate", "live-gate", "mystery-gate"]);
   assert.match(out, /skipped 3 row\(s\) not declared repo-only/);
+});
+
+// A row on its OWN approved schedule (OWN_SCHEDULE: ui-drift → "UI drift check — daily") is left
+// out of the hourly repo-only leg — else the hourly leg would measure it every hour, an interval
+// nobody approved — and runs only when --only names it (its own workflow does).
+test("--repo-only leaves out a row on its own schedule unless --only names it", () => {
+  const rows = ["UI drift|echo drift", "Repo gate|echo repo"];
+  const dir = mkdtempSync(join(tmpdir(), "release-checks-own-schedule-"));
+  const classes = declareRows(rows, dir, () => "repo-only");
+  const hourly = runWithManifest(rows, ["--classes", classes, "--repo-only"]);
+  assert.deepEqual(hourly.header.ran, ["repo-gate"]);
+  assert.deepEqual(hourly.header.skipped_own_schedule, ["ui-drift"]);
+  assert.match(hourly.out, /ui-drift runs on its own schedule — UI drift check — daily/);
+  const daily = runWithManifest(rows, ["--classes", classes, "--repo-only", "--only", "ui-drift"]);
+  assert.deepEqual(daily.header.ran, ["ui-drift"]);
+  assert.equal(daily.header.skipped_own_schedule, undefined);
 });
 
 // -- The database-reading leg: --db-only --target clone (checks-run-in-the-app P3) --------------

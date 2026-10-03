@@ -22,6 +22,7 @@ import { applyAcceptRule, readUtf8Strict, ruleFiles } from "./accept-rules.mjs";
 import ACCEPT_RULES from "./accept-rules.json" with { type: "json" };
 import { SUMMARY as VISIBILITY_SUMMARY, remedyForKey as visibilityRemedyForKey } from "../visibility-vocab/remedies.mjs";
 import { featureRegExp } from "../lib/source-roots.cjs";
+import { remedyForKey as uiDriftRemedyForKey } from "../ui-drift/check-ui-drift.mjs";
 
 /**
  * accept / noAccept come from accept-rules.json — the ONE declaration the server's Mark OK button
@@ -153,6 +154,15 @@ export const FINDINGS_CHECKS = [
     watch: featureRegExp(/(^(app|features|components)\/.*\.tsx?$)|^features\/surfaces\/manifests\//),
     fix: "Register the surface's fixed job in the top Agents menu (manifest agentRole with mandateKey, or useDeclaredSurfaceMandates) — invoke the `agent-disclosure` skill; never add visible page content.",
     ...fromRules("surfaces-running-an-agent-without-naming-it"),
+  },
+  {
+    // docs/ui-unification-plan.md §2.12 — scans only the given files when `findings <paths>` names
+    // them (MATRX_FINDINGS_PATHS), so a changed-files run takes about a second.
+    id: "ui-drift",
+    watch: /\.tsx$/,
+    fix: "Use the design system instead of re-styling it: placement-only classes on primitives, semantic colour tokens, the type scale, the shared spinner, overlays and tabs — the item's own fix line names the rule.",
+    fixFor: uiDriftRemedyForKey,
+    ...fromRules("ui-drift"),
   },
   {
     id: "route-metadata-and-favicons",

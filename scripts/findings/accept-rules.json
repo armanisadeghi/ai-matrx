@@ -75,6 +75,12 @@
     "surfaces-running-an-agent-without-naming-it": {
       "no_accept": "scripts/check-agent-disclosure.ts has no allowlist or baseline: every item is new."
     },
+    "ui-drift": {
+      "accept": {
+        "kind": "ids-count-reasons",
+        "file": "scripts/ui-drift/baseline.json"
+      }
+    },
     "route-metadata-and-favicons": {
       "no_accept": "scripts/check-route-metadata.ts has no allowlist or baseline: every item is new."
     }

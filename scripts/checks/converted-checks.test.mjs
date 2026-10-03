@@ -228,6 +228,14 @@ export const CONVERTED = [
     keyShape: /^((undisclosed|inline-disclosure)\|[^|]+\.tsx?|cross-surface\|.+)$/,
   },
   {
+    // Baseline: scripts/ui-drift/baseline.json `ids` — `<rule>|<file>|<site>[#n]` (no line).
+    id: "ui-drift",
+    cmd: "pnpm check:ui-drift:strict",
+    allowKeys: () => json("scripts/ui-drift/baseline.json").ids,
+    keyShape: /^(primitive-visual-class|arbitrary-text-size|raw-color|spinner-outside-spinner|styled-raw-button|hand-rolled-overlay|glass-tap-on-solid)\|[^|]+\.tsx\|.+$/s,
+    reasonedKeys: () => Object.entries(json("scripts/ui-drift/baseline.json").reasons ?? {}).filter(([, v]) => withReason(v)).map(([k]) => k),
+  },
+  {
     id: "route-metadata-and-favicons",
     cmd: "pnpm check:route-metadata",
     allowKeys: () => [],

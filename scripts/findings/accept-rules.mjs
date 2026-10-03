@@ -309,6 +309,8 @@ const SYNTHETIC = [
   },
 ];
 
+const REAL_FILE_CORPUS_LIMIT = 1_000_000;
+
 /** Every case the corpus holds: synthetic edge cases plus each live rule over its real file today. */
 export function corpusCases(root = REPO_ROOT) {
   const cases = [];
@@ -322,13 +324,24 @@ export function corpusCases(root = REPO_ROOT) {
     for (const rel of ruleFiles(entry.accept)) {
       files[rel] = existsSync(join(root, rel)) ? readUtf8Strict(join(root, rel)) : null;
     }
+    // A multi-megabyte baseline (ui-drift: ~5.5 MB) would be copied into the corpus twice (input
+    // and expected) and fetched by the server before every Mark OK. Its rule is proven over the
+    // real file's own head instead: the same keys, note and reasons, the first ids only.
+    let realFile = "over its real file";
+    for (const [rel, text] of Object.entries(files)) {
+      if (!text || text.length <= REAL_FILE_CORPUS_LIMIT || entry.accept.kind !== "ids-count-reasons") continue;
+      const data = JSON.parse(text);
+      const ids = data.ids.slice(0, 25);
+      files[rel] = `${JSON.stringify({ ...data, count: ids.length, ids }, null, 2)}\n`;
+      realFile = "over its real file's first 25 ids";
+    }
     const sample = {
       "detector-allowlist": `${entry.accept.detectors?.[0]}|corpus/sample — file.ts|*`,
       "sorted-array-with-sibling-reasons": "corpus/sample — file.ts",
       "ids-count-reasons": "corpus/sample.ts::`Sample \"${x}\" — ok`",
     }[entry.accept.kind];
     cases.push({
-      name: `${id} over its real file`,
+      name: `${id} ${realFile}`,
       rule: entry.accept,
       files,
       params: { key: sample, reason: "corpus: a reason with \"quotes\" — and a dash", by: "Corpus Admin", date: "2026-09-26" },

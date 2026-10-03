@@ -146,6 +146,14 @@ export function loadRowClasses(path = ROW_CLASSES_PATH) {
   }
 }
 
+// Rows measured centrally by THEIR OWN approved schedule, not by the hourly repo-only leg. Each
+// names the workflow that runs it (`--only <id>`); `--repo-only` leaves them out unless `--only`
+// names them, and the header says so (`skipped_own_schedule`). Approval: common-docs/operations/
+// scheduled-tasks.md. A hand run, the release after-phase and `pnpm findings` still run them.
+export const OWN_SCHEDULE = {
+  "ui-drift": "UI drift check — daily (.github/workflows/ui-drift-daily.yml; Arman, 2026-10-03)",
+};
+
 // Where the live-db rows went when the release stopped running them (P0, 2026-09-25).
 const LIVE_DB_HOME = "common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md § Moved off the release path (P0) — back on the scheduled clone tick in P3; run one by hand with --only <id>";
 
@@ -715,6 +723,12 @@ export async function main(argv = process.argv.slice(2)) {
     rows = rows.filter((r) => r.dbClass === REPO_ONLY);
     process.stdout.write(`checks: skipped ${notRepoOnly.length} row(s) not declared repo-only\n`);
   }
+  let ownSchedule = [];
+  if (args.repoOnly) {
+    ownSchedule = rows.filter((r) => OWN_SCHEDULE[r.id] && !args.only.includes(r.id));
+    rows = rows.filter((r) => !ownSchedule.includes(r));
+    for (const r of ownSchedule) process.stdout.write(`checks: ${r.id} runs on its own schedule — ${OWN_SCHEDULE[r.id]}\n`);
+  }
   if (args.list) {
     for (const r of rows) process.stdout.write(`${r.id}\t${r.category}\t${r.level}\t${r.dbClass}\t${r.cmd}\n`);
     if (skipped.length) process.stdout.write(`skipped ${skipped.length} live-db row(s): ${skipped.map((r) => r.id).join(", ")}\n`);
@@ -748,6 +762,7 @@ export async function main(argv = process.argv.slice(2)) {
     const header = { ran: rows.map((r) => r.id), git_sha: sha, started_at: runStartedAt, checks: metrics };
     if (skipped.length) header.skipped_live_db = skipped.map((r) => r.id);
     if (notRepoOnly.length) header.skipped_not_repo_only = notRepoOnly.map((r) => r.id);
+    if (ownSchedule.length) header.skipped_own_schedule = ownSchedule.map((r) => r.id);
     if (dbTarget) header.db_target = dbTarget;
     const tally = itemTally(findings);
     if (Object.keys(tally).length) header.items = tally;

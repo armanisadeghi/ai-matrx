@@ -73,7 +73,18 @@ export async function collect({ paths = [], checkIds = [], root = REPO_ROOT, wor
   }
   if (rels.length) checks = checks.filter((c) => rels.some((r) => dirs.has(r) || c.watch.test(r)));
   if (!checks.length) return { ran: [], items: [], broken: [] };
-  const findings = await runRows(rowsFor(checks, rows), { workers });
+  // A check that can narrow its scan reads the paths from here (scripts/ui-drift/check-ui-drift.mjs
+  // does: a full scan takes ~15 s, the changed files ~1 s). A narrowed check never prints the
+  // end-of-scan marker; every other check ignores the variable and scans everything as before.
+  const previousPaths = process.env.MATRX_FINDINGS_PATHS;
+  if (rels.length) process.env.MATRX_FINDINGS_PATHS = JSON.stringify(rels);
+  let findings;
+  try {
+    findings = await runRows(rowsFor(checks, rows), { workers });
+  } finally {
+    if (previousPaths === undefined) delete process.env.MATRX_FINDINGS_PATHS;
+    else process.env.MATRX_FINDINGS_PATHS = previousPaths;
+  }
   const items = findings.filter((f) => f.item_key);
   const broken = findings.filter((f) => !f.item_key && / could not run: /.test(f.title));
   const inScope = rels.length ? items.filter((i) => rels.some((r) => touches(r, dirs.has(r), i))) : items;

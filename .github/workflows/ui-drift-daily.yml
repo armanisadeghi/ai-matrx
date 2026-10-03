@@ -1,0 +1,63 @@
+name: UI drift check — daily
+
+# The central half of the UI drift check (docs/ui-unification-plan.md §2.12): the `ui-drift` row of
+# scripts/checks/run.mjs runs once a day on the head of main, and the runner's --json is uploaded as
+# the artifact `checks-findings`. The app's hourly pull (aidream `platform_checks_ci_pull`,
+# ci_pull.py OWN_SCHEDULE_LEGS) ingests it into ops.check_item, where its items show on
+# /administration/reporting/check-findings beside every other check's.
+#
+# 🚨 SCHEDULE APPROVED by Arman, 2026-10-03 (in chat, verbatim "Daily check is an absolute yes!"):
+# exact name "UI drift check — daily", once a day at 06:20 UTC — register row in
+# common-docs/operations/scheduled-tasks.md. Change the cron only with his word and update that row
+# in the same change. The hourly repo-only leg leaves this row out (run.mjs OWN_SCHEDULE), so this
+# is the only schedule that measures it. A hand run: gh workflow run ui-drift-daily.yml --ref main
+#
+# 🚨 THIS REPOSITORY IS PUBLIC. The check reads only the repository: no database, no secret.
+on:
+  schedule:
+    - cron: '20 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ui-drift-daily
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ui-drift:
+    name: UI drift (head of main)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run the UI drift check (items on)
+        env:
+          MATRX_ITEMS: "1"
+        run: |
+          mkdir -p tmp/checks
+          node scripts/checks/run.mjs --only ui-drift --json tmp/checks/findings.jsonl
+      - name: Upload the findings artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checks-findings
+          path: tmp/checks/findings.jsonl
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload the check's log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checks-logs
+          path: tmp/checks/*.log
+          if-no-files-found: warn
+          retention-days: 7
