@@ -80,6 +80,8 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 
 ## Change log
 
+- `2026-10-03` — claude: **A short pane keeps its notices.** In a split canvas the Notifications pane was ~270px and the pinned All places strip plus the footer took all of it — "Needs you · 24" was clipped under the strip. The notices now keep a 96px floor and the strip yields first, scrolling inside itself (`BellPanel`). Verified live at a 215px pane: the Needs you label and its first row show, All places scrolls.
+
 - **2026-10-02** — The bell opens Notifications as a canvas tab (kind `notifications`, body `BellPanel variant="pane"`) in a vertical split below the tab in front; an empty canvas just opens it; a second press closes it. The popover, the phone drawer and the `sheet` variant are gone. Guard: `__tests__/the-bell-opens-notifications-in-the-canvas.test.tsx`.
 
 - **2026-10-02** — An absent triage door is no longer filed RED on every load (`/board` captured `PGRST202 communication.my_inbox_summary` while the inbox ran on its fallback). Doors with a working pre-triage fallback go through `allowAbsentDoor` (`lib/diagnostics/supabaseErrorCapture.ts`); Done/Snooze against an absent door and every other error still capture; the stand-in announces itself once per page in the console with the remedy. Guard: `__tests__/absent-door-is-not-an-incident.test.ts` (red on the old reader).
