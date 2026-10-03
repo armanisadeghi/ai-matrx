@@ -78,6 +78,9 @@ describe("a cell that holds only the start of its value", () => {
     ["saved as it was shown", SHOWN],
     ["saved with the sentence left in", `${SHOWN}\nAddendum: supplemental report requested 2026-10-01.`],
     ["saved as its first words with an edit", `${HEAD}\nAddendum: supplemental report requested 2026-10-01.`],
+    // D-LAST: the first page deleted, the fallback sentence kept — only the sentence rule catches it
+    // (the draft is not the seeded text and does not start with the cell's first words).
+    ["saved with its first words cut and the sentence kept", SHOWN.slice(SHOWN.indexOf("\n") + 1)],
   ])("is refused when %s, and nothing is written", async (_how, draft) => {
     const res = await save(REPORT_ITEM, draft);
     expect(res.ok).toBe(false);
