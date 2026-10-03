@@ -57,9 +57,19 @@
 -- and is atomic outright. A refused install keeps what earlier calls made, listed in `made`, so
 -- uninstall archives exactly that.
 --
+-- ONE CALL FOR THE WHOLE PLAN (CHAIR-DOORS-3B, lane 8's 15 s bar). The three budgeted doors carry
+-- `SET statement_timeout TO '90s'`: PostgREST hoists a function's statement_timeout to the transaction
+-- it runs the RPC in (db-hoisted-tx-settings), so a client that sends p_budget_ms = 60000 gets the whole
+-- plan in ONE server call, in one transaction, still as the person through the same doors — no per-call
+-- 8 s ceiling and no client round trip per 4 s. The default budget (4000) keeps the resumable shape for
+-- callers that want progress. The setting changes nothing for a caller that is not PostgREST (a direct
+-- session keeps its own ceiling).
+-- THE DOOR LIST admits custom.record_change_many (links between tables that point at each other, set once
+-- every row exists) and custom.query_table_homes (uninstall archives each choice list's Home).
+--
 -- INVERSE: migrations/inverse/chair_tf_one_template_family_one_install_door_down.sql
 --
--- chair-step: two new tables (custom.template, custom.template_install; RLS on, no client grant, no FK to iam.organizations or auth.users) and seven new signed-in doors with their platform.client_callable_door rows; custom.reopen_declared_doors() issues EXECUTE to authenticated. anon gains nothing.
+-- chair-step: two new tables (custom.template, custom.template_install; RLS on, no client grant, no FK to iam.organizations or auth.users) and seven new signed-in doors with their platform.client_callable_door rows; custom.reopen_declared_doors() issues EXECUTE to authenticated. anon gains nothing. The three budgeted doors (install, uninstall, restore) carry SET statement_timeout TO '90s', which PostgREST hoists to the RPC's transaction so one call may run a whole plan; it grants no privilege and changes no role setting.
 -- lock: custom
 -- lane: CHAIR-TEMPLATE-FAMILY
 
@@ -160,7 +170,8 @@ as $function$
                'table_from_example', 'table_declare', 'field_declare', 'applicable_fields',
                'table_dimensions_set', 'view_declare', 'form_declare', 'booking_declare',
                'dashboard_declare', 'pipeline_declare', 'doc_template_save', 'action_declare',
-               'subscription_declare', 'rule_declare', 'checklist_declare', 'portal_declare']::text[]
+               'subscription_declare', 'rule_declare', 'checklist_declare', 'portal_declare',
+               'query_table_homes']::text[]
 $function$;
 revoke all on function custom._template_doors() from public, anon, authenticated;
 
@@ -513,6 +524,7 @@ create or replace function custom.template_install(p_organization_id uuid, p_tem
  language plpgsql
  security definer
  set search_path to 'pg_catalog'
+ set statement_timeout to '90s'
 as $function$
 declare
   v_me      uuid := auth.uid();
@@ -708,6 +720,7 @@ create or replace function custom.template_uninstall(p_organization_id uuid, p_i
  language plpgsql
  security definer
  set search_path to 'pg_catalog'
+ set statement_timeout to '90s'
 as $function$
 declare
   v_i      custom.template_install;
@@ -825,6 +838,7 @@ create or replace function custom.template_restore(p_organization_id uuid, p_ins
  language plpgsql
  security definer
  set search_path to 'pg_catalog'
+ set statement_timeout to '90s'
 as $function$
 declare
   v_i        custom.template_install;
