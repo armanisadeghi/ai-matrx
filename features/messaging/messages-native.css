@@ -90,14 +90,6 @@
   :is(.mx-msg__row-time, .mx-msg__row-preview) {
   color: inherit;
 }
-/* A badge is a content-sized pill, never a bar (2026-10-03). The package's
-   `.mx-msg__row-preview span { flex: 1 1 auto }` is meant for the preview text
-   but also matches the badge (a span in the same row) and out-ranks
-   `.mx-msg__badge`, so beside a short preview a "1" stretched to ~100px.
-   The package selector needs `> span:first-child` (@ai-matrx/messaging). */
-.messages-native .mx-msg__row-preview > .mx-msg__badge {
-  flex: 0 0 auto;
-}
 .messages-native .mx-msg__badge {
   min-width: 16px;
   height: 16px;
