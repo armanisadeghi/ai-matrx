@@ -60,7 +60,8 @@ export const ChartBlock: React.FC<ChartBlockProps> = ({ content = "", isStreamAc
   // In a canvas pane the plot takes the pane's shape: taller with the legend
   // below when narrow, bar charts turn sideways in a portrait pane. Outside the
   // canvas (`null`) the fixed 340px card is unchanged.
-  const paneLayout = chartPaneLayout(useCanvasPresentation(), spec?.type ?? "");
+  const presentation = useCanvasPresentation();
+  const paneLayout = chartPaneLayout(presentation, spec?.type ?? "");
 
   const handleCopy = async () => {
     try {
@@ -92,7 +93,8 @@ export const ChartBlock: React.FC<ChartBlockProps> = ({ content = "", isStreamAc
             <IconBtn label={copied ? "Copied" : "Copy chart source"} onClick={handleCopy}>
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             </IconBtn>
-            {spec && (
+            {/* In a canvas pane, the pane's own Expand does this. */}
+            {spec && presentation === null && (
               <IconBtn label="View fullscreen" onClick={() => setFullscreen(true)}>
                 <Expand className="h-3.5 w-3.5" />
               </IconBtn>

@@ -12,6 +12,7 @@ import {
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
@@ -112,6 +113,10 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
   const isMobile = useIsMobile();
   const { open: openCanvas } = useCanvas();
   const { openArtifact } = useOpenArtifactInCanvas();
+  // Inside a canvas pane the pane already owns Expand and IS the canvas, so
+  // the block's own "Open Canvas" and full-screen buttons would only repeat
+  // the pane's controls (`useCanvasPresentation()` is null everywhere else).
+  const inCanvasPane = useCanvasPresentation() !== null;
 
   // Close fullscreen on ESC (desktop & mobile)
   useEffect(() => {
@@ -242,7 +247,7 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
   // Inject caller-supplied items (e.g. block-specific actions like task import)
   mobileMenuItems.push(...extraMenuItems);
 
-  if (!isFullScreen && canvasType && canvasData) {
+  if (!isFullScreen && !inCanvasPane && canvasType && canvasData) {
     mobileMenuItems.push({
       key: "canvas",
       icon: ExternalLink,
@@ -253,9 +258,11 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
     });
   }
 
-  // NOTE: fullscreen toggle is always visible on mobile (not in the menu)
+  // NOTE: the fullscreen toggle is always visible on mobile (not in the menu),
+  // except inside a canvas pane, whose own Expand does that job.
 
-  const showCanvas = !isFullScreen && canvasType && canvasData;
+  const showCanvas = !isFullScreen && !inCanvasPane && canvasType && canvasData;
+  const showFullScreenToggle = isFullScreen || !inCanvasPane;
 
   return (
     <>
@@ -367,7 +374,7 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                             className={canvasButtonClassName}
                           />
                         )}
-                        {!isFullScreen ? (
+                        {!showFullScreenToggle ? null : !isFullScreen ? (
                           <IconButton
                             icon={Maximize2}
                             tooltip="Expand to full screen"
@@ -391,7 +398,7 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                     {isMobile && (
                       <>
                         {/* Fullscreen toggle — always visible */}
-                        {isFullScreen ? (
+                        {!showFullScreenToggle ? null : isFullScreen ? (
                           <IconButton
                             icon={Minimize2}
                             tooltip="Exit full screen"

@@ -18,6 +18,9 @@ import type { CanvasPresentation } from "@ai-matrx/canvas";
 
 let mockPresentation: CanvasPresentation | null = null;
 jest.mock("@ai-matrx/canvas/react", () => ({
+  // The real module (kind definitions etc. load through the task editor);
+  // only the pane's presentation is a double.
+  ...jest.requireActual("@ai-matrx/canvas/react"),
   useCanvasPresentation: () => mockPresentation,
 }));
 
