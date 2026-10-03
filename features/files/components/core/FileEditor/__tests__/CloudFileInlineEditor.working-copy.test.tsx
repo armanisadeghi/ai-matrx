@@ -97,9 +97,16 @@ jest.mock("@/lib/toast", () => ({
 
 // ── Monaco: one textarea per view, reporting typing like Monaco's onChange ──
 const views: Array<{ path: string; type: (next: string) => void }> = [];
+const editorOptions: Array<Record<string, unknown>> = [];
 jest.mock("next/dynamic", () => () =>
-  function MonacoStub(props: { value: string; path: string; onChange: (next: string) => void }) {
+  function MonacoStub(props: {
+    value: string;
+    path: string;
+    onChange: (next: string) => void;
+    onEditorMount?: (editor: { updateOptions: (o: Record<string, unknown>) => void }) => void;
+  }) {
     views.push({ path: props.path, type: props.onChange });
+    props.onEditorMount?.({ updateOptions: (o) => editorOptions.push(o) });
     return <textarea readOnly value={props.value} data-testid="editor-view" />;
   },
 );
@@ -362,4 +369,12 @@ it("unsaved text kept across a reload, typed on an older version, opens as a con
   // Both edits touch different lines: Merge is offered.
   expect(host.textContent).toContain("Merge");
   expect(uploads.filter((u) => u.text === TYPED)).toEqual([]);
+});
+
+it("a prose file in a pane with no control rail wraps its lines", async () => {
+  const fileId = newFile();
+  store = makeStore(fileId);
+  editorOptions.length = 0;
+  await show(<CloudFileInlineEditor fileId={fileId} />);
+  expect(editorOptions.at(-1)).toMatchObject({ wordWrap: "on" });
 });
