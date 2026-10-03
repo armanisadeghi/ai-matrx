@@ -457,7 +457,8 @@ export const SECTIONS: MetricSection[] = [
     rows: [
       {
         label: "Total tokens",
-        scored: true,
+        // Not in the Standings: cost already carries it (counting both
+        // scored the same thing twice).
         pick: (s) => s.tokensTotal,
         format: fmtTokens,
         unit: "tokens",
@@ -474,7 +475,7 @@ export const SECTIONS: MetricSection[] = [
         emphasized: true,
       },
       {
-        label: "Server total duration",
+        label: "Total duration",
         scored: true,
         pick: (s) => s.serverDurationTotal,
         format: fmtServerSeconds,
@@ -514,7 +515,7 @@ export const SECTIONS: MetricSection[] = [
         pick: (s) => s.tokensCached,
         format: fmtTokens,
         unit: "tokens",
-        direction: "higher",
+        direction: "none",
       },
       {
         label: "Output tokens",
@@ -662,7 +663,7 @@ export const SECTIONS: MetricSection[] = [
         pick: (s) => s.ctxLastReqCached,
         format: fmtTokens,
         unit: "tokens",
-        direction: "higher",
+        direction: "none",
       },
       {
         label: "Last output tokens",
@@ -806,39 +807,6 @@ export const SECTIONS: MetricSection[] = [
     ],
   },
 ];
-
-// =============================================================================
-// Highlights — min/max per row given a direction
-// =============================================================================
-
-export type Highlight = "best" | "worst" | null;
-
-export function computeRowHighlights(
-  row: MetricRow,
-  cols: ColumnStats[],
-): Record<string, Highlight> {
-  const out: Record<string, Highlight> = {};
-  if (row.direction === "none") return out;
-  const values = cols
-    .map((c) => ({ id: c.columnId, v: row.pick(c) }))
-    .filter((x): x is { id: string; v: number } => x.v != null);
-  if (values.length < 2) return out;
-  let min = values[0];
-  let max = values[0];
-  for (const x of values.slice(1)) {
-    if (x.v < min.v) min = x;
-    if (x.v > max.v) max = x;
-  }
-  if (min.v === max.v) return out;
-  if (row.direction === "lower") {
-    out[min.id] = "best";
-    out[max.id] = "worst";
-  } else {
-    out[max.id] = "best";
-    out[min.id] = "worst";
-  }
-  return out;
-}
 
 const EMPTY_COLUMN_STATS: ColumnStats[] = [];
 

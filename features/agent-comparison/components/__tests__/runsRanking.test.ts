@@ -4,7 +4,7 @@
  * thing that you compare").
  */
 import type { ColumnStats, MetricRow, MetricSection } from "../runsComparisonData";
-import { computeRanking, ordinal, rankRow } from "../runsRanking";
+import { computeRanking, ordinal, rankRow, rowHighlights } from "../runsRanking";
 
 const col = (columnId: string, cost: number | null, tokens: number | null, score: number | null) =>
   ({ columnId, agentName: columnId.toUpperCase(), cost, tokensTotal: tokens, fbOverall: score }) as unknown as ColumnStats;
@@ -28,20 +28,44 @@ const diagnosticRow: MetricRow = { ...costRow, label: "Events", scored: false, p
 describe("rankRow", () => {
   it("places lower-is-better values in order, ties sharing a place (1-1-3)", () => {
     const stats = [col("a", 5, 0, 0), col("b", 2, 0, 0), col("c", 2, 0, 0)];
-    expect(rankRow(costRow, stats)).toEqual({ a: 3, b: 1, c: 1 });
+    expect(rankRow(costRow, stats, "points")).toEqual({ a: 3, b: 1, c: 1 });
   });
 
   it("places higher-is-better values highest first", () => {
     const stats = [col("a", 0, 0, 3), col("b", 0, 0, 5)];
-    expect(rankRow(scoreRow, stats)).toEqual({ a: 2, b: 1 });
+    expect(rankRow(scoreRow, stats, "points")).toEqual({ a: 2, b: 1 });
   });
 
   it("does not rank a row where every column is equal", () => {
-    expect(rankRow(costRow, [col("a", 1, 0, 0), col("b", 1, 0, 0)])).toEqual({ a: null, b: null });
+    expect(rankRow(costRow, [col("a", 1, 0, 0), col("b", 1, 0, 0)], "points")).toEqual({ a: null, b: null });
   });
 
   it("does not rank a lone value or a missing one", () => {
-    expect(rankRow(costRow, [col("a", 5, 0, 0), col("b", null, 0, 0)])).toEqual({ a: null, b: null });
+    expect(rankRow(costRow, [col("a", 5, 0, 0), col("b", null, 0, 0)], "points")).toEqual({ a: null, b: null });
+  });
+});
+
+describe("ties are what a person sees", () => {
+  const secondsRow: MetricRow = {
+    ...costRow,
+    label: "Total client",
+    format: (v) => (v == null ? "—" : `${Math.round(v / 1000)}s`),
+  };
+
+  it("values that read the same share a place, even when the raw numbers differ", () => {
+    // 50.6s, 51.2s and 51.4s all read "51s" — never 1st, 2nd and 3rd.
+    const stats = [col("a", 51200, 0, 0), col("b", 50600, 0, 0), col("c", 51400, 0, 0), col("d", 60000, 0, 0)];
+    expect(rankRow(secondsRow, stats, "points")).toEqual({ a: 1, b: 1, c: 1, d: 4 });
+  });
+
+  it("a row that reads all-equal is unranked", () => {
+    const stats = [col("a", 51200, 0, 0), col("b", 50600, 0, 0)];
+    expect(rankRow(secondsRow, stats, "points")).toEqual({ a: null, b: null });
+  });
+
+  it("green and red come from the places: every tied first is best, every tied last is worst", () => {
+    const stats = [col("a", 2, 0, 0), col("b", 1, 0, 0), col("c", 2, 0, 0)];
+    expect(rowHighlights(costRow, stats, "points")).toEqual({ b: "best", a: "worst", c: "worst" });
   });
 });
 

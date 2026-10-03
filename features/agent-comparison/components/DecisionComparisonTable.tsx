@@ -16,7 +16,7 @@
  * version that answered.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ import { labelConversations } from "@/features/agents/decision-review/service";
 import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import {
   selectActiveBattleColumns,
+  selectMountedBattleName,
   selectMountedBattleSetId,
 } from "../shared/activeBattleColumns";
 import { readAnswersFromContent } from "../decisions/readColumnAnswers";
@@ -43,6 +44,8 @@ import {
 import type { RootState } from "@/lib/redux/store";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { BattleTableTools } from "../shared/BattleTableTools";
+import { selectBlindActive, selectBlindOrder } from "../redux/selectors";
+import { blindAnonLabel } from "../shared/blind";
 
 function percent(value: number | null): string {
   return value == null ? "—" : `${Math.round(value * 100)}%`;
@@ -118,18 +121,18 @@ export function DecisionComparisonTable() {
     (state: RootState) => state.messages.byConversationId,
   );
 
-  const answersByColumn: ColumnAnswers[] = useMemo(
-    () =>
-      columns.map((column, index) => ({
-        columnId: column.columnId,
-        label: column.label ?? `Agent ${index + 1}`,
-        view: selectColumnAnswers(
-          messagesByConversationId,
-          column.conversationId,
-        ),
-      })),
-    [columns, messagesByConversationId],
-  );
+  const blindActive = useAppSelector(selectBlindActive);
+  const battleName = useAppSelector(selectMountedBattleName);
+  const blindOrder = useAppSelector(selectBlindOrder);
+  // A blind test names columns "Response A…" everywhere, this table and what
+  // it copies or saves included.
+  const answersByColumn: ColumnAnswers[] = columns.map((column, index) => ({
+    columnId: column.columnId,
+    label: blindActive
+      ? blindAnonLabel(column.columnId, blindOrder)
+      : (column.label ?? `Agent ${index + 1}`),
+    view: selectColumnAnswers(messagesByConversationId, column.conversationId),
+  }));
 
   const answering = answersByColumn.filter((c) => c.view);
 
@@ -145,20 +148,27 @@ export function DecisionComparisonTable() {
     }
   }
 
-  const [verdicts, setVerdicts] = useState<DecisionVerdicts>({});
+  // Verdicts are kept WITH the battle they belong to, so switching battles
+  // shows none until the new battle's load lands (no reset inside an effect).
+  const [loadedVerdicts, setLoadedVerdicts] = useState<{
+    setId: string;
+    verdicts: DecisionVerdicts;
+  } | null>(null);
+  const verdicts: DecisionVerdicts =
+    setId && loadedVerdicts?.setId === setId ? loadedVerdicts.verdicts : {};
+  const setVerdicts = (next: DecisionVerdicts) => {
+    if (setId) setLoadedVerdicts({ setId, verdicts: next });
+  };
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingName, setSavingName] = useState<string | null>(null);
   const [verdictError, setVerdictError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!setId) {
-      setVerdicts({});
-      return;
-    }
+    if (!setId) return;
     let cancelled = false;
     loadDecisionVerdicts(setId)
       .then((loaded) => {
-        if (!cancelled) setVerdicts(loaded);
+        if (!cancelled) setLoadedVerdicts({ setId, verdicts: loaded });
       })
       .catch((error) => {
         console.error("[decision-verdicts] load failed", error);
@@ -172,63 +182,60 @@ export function DecisionComparisonTable() {
     };
   }, [setId]);
 
-  const commitVerdict = useCallback(
-    async (questionName: string) => {
-      if (!setId) return;
-      const draft = drafts[questionName] ?? "";
-      if (draft.trim() === (verdicts[questionName]?.answer ?? "")) return;
-      setSavingName(questionName);
-      setVerdictError(null);
-      try {
-        const next = await saveDecisionVerdict(setId, questionName, draft);
-        setVerdicts(next);
-        // The same truth labels every column's answer in the decision review
-        // store (platform.judge_verdict), so a battle verdict feeds each
-        // answering agent version's calibration.
-        if (draft.trim()) {
-          const conversationIds = answersByColumn
-            .filter((c) => c.view?.answers.some((a) => a.name === questionName))
-            .map(
-              (c) =>
-                columns.find((col) => col.columnId === c.columnId)
-                  ?.conversationId,
-            )
-            .filter((id): id is string => Boolean(id));
-          if (conversationIds.length > 0) {
-            try {
-              const labeled = await labelConversations(
-                conversationIds,
-                questionName,
-                draft,
-              );
-              const skipped = Object.values(labeled.skipped ?? {});
-              if (skipped.length > 0) {
-                setVerdictError(
-                  `Saved on the comparison, but not recorded for calibration on ${skipped.length} column(s): ${skipped[0]}`,
-                );
-              }
-            } catch (labelError) {
-              console.error(
-                "[decision-verdicts] calibration label failed",
-                labelError,
-              );
+  const commitVerdict = async (questionName: string) => {
+    if (!setId) return;
+    const draft = drafts[questionName] ?? "";
+    if (draft.trim() === (verdicts[questionName]?.answer ?? "")) return;
+    setSavingName(questionName);
+    setVerdictError(null);
+    try {
+      const next = await saveDecisionVerdict(setId, questionName, draft);
+      setVerdicts(next);
+      // The same truth labels every column's answer in the decision review
+      // store (platform.judge_verdict), so a battle verdict feeds each
+      // answering agent version's calibration.
+      if (draft.trim()) {
+        const conversationIds = answersByColumn
+          .filter((c) => c.view?.answers.some((a) => a.name === questionName))
+          .map(
+            (c) =>
+              columns.find((col) => col.columnId === c.columnId)
+                ?.conversationId,
+          )
+          .filter((id): id is string => Boolean(id));
+        if (conversationIds.length > 0) {
+          try {
+            const labeled = await labelConversations(
+              conversationIds,
+              questionName,
+              draft,
+            );
+            const skipped = Object.values(labeled.skipped ?? {});
+            if (skipped.length > 0) {
               setVerdictError(
-                "Saved on the comparison, but not recorded for calibration — label it from Review answers instead.",
+                `Saved on the comparison, but not recorded for calibration on ${skipped.length} column(s): ${skipped[0]}`,
               );
             }
+          } catch (labelError) {
+            console.error(
+              "[decision-verdicts] calibration label failed",
+              labelError,
+            );
+            setVerdictError(
+              "Saved on the comparison, but not recorded for calibration — label it from Review answers instead.",
+            );
           }
         }
-      } catch (error) {
-        console.error("[decision-verdicts] save failed", error);
-        setVerdictError(
-          "That verdict was not saved. It is still in the box — try again, or copy it out before leaving.",
-        );
-      } finally {
-        setSavingName(null);
       }
-    },
-    [setId, drafts, verdicts, answersByColumn, columns],
-  );
+    } catch (error) {
+      console.error("[decision-verdicts] save failed", error);
+      setVerdictError(
+        "That verdict was not saved. It is still in the box — try again, or copy it out before leaving.",
+      );
+    } finally {
+      setSavingName(null);
+    }
+  };
 
   if (answering.length === 0) {
     return (
@@ -245,7 +252,9 @@ export function DecisionComparisonTable() {
   const decisionsGrid = {
     headers: ["Question", ...answering.map((c) => c.label), "Delta", "Verdict"],
     rows: questionNames.map((name) => {
-      const answers = answering.map((c) => c.view?.answers.find((a) => a.name === name));
+      const answers = answering.map((c) =>
+        c.view?.answers.find((a) => a.name === name),
+      );
       const shown = answers.map((a) => (a ? formatAnswerHeadline(a) : ""));
       const probabilities = answers
         .map((a) => (a ? answerProbability(a) : null))
@@ -266,7 +275,7 @@ export function DecisionComparisonTable() {
     <div className="flex flex-col gap-2 p-2">
       <div className="flex items-center justify-end gap-2">
         <BattleTableTools
-          name="Decisions"
+          name={battleName ? `${battleName} — Decisions` : "Decisions"}
           grid={decisionsGrid}
           aiContext="Each column's answer to every decision question, how far apart they are, and the verdict recorded as true."
         />

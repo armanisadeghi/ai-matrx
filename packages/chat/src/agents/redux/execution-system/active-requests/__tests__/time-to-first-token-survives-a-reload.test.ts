@@ -5,7 +5,8 @@
  * showed "—". The server now stamps it on each turn
  * (`user_request.metadata.ttft_ms`); a reloaded request carries it as
  * `timing_stats.first_token_seconds`, the same key a live completion uses,
- * and `requestTtftMs` reads either — the browser's own number first.
+ * and `requestTtftMs` reads it — the server's number first (the same for
+ * every column and stable across reloads), the browser's only as a fallback.
  */
 import reducer, {
   hydrateRequestsFromObservability,
@@ -48,8 +49,15 @@ describe("time to first token after a reload", () => {
     expect(requestTtftMs(hydrate(null))).toBeNull();
   });
 
-  it("prefers the browser's own measurement when this tab watched the run", () => {
+  it("prefers the server's measurement over the browser's, so it does not change on reload", () => {
     const req = hydrate(1830);
+    expect(
+      requestTtftMs({ ...req, clientMetrics: { ...(req.clientMetrics ?? {}), ttftMs: 2100 } } as typeof req),
+    ).toBe(1830);
+  });
+
+  it("falls back to the browser's measurement for a turn the server did not time", () => {
+    const req = hydrate(null);
     expect(
       requestTtftMs({ ...req, clientMetrics: { ...(req.clientMetrics ?? {}), ttftMs: 2100 } } as typeof req),
     ).toBe(2100);

@@ -16,26 +16,58 @@ import type {
   MetricSection,
 } from "./runsComparisonData";
 
-/** Each column's place on one row; null when it has no value or the row has no direction. */
+/**
+ * Each column's place on one row; null when it has no value or the row has no
+ * direction. Values that READ the same are tied: "51s" and "51s" share a
+ * place even when the raw numbers differ in a decimal nobody can see — a
+ * person must never see a tie split into 1st and 3rd. All-equal rows (as
+ * shown) are not a comparison and get no places.
+ */
 export function rankRow(
   row: MetricRow,
   stats: ColumnStats[],
+  costUnit: CostUnit,
 ): Record<string, number | null> {
   const out: Record<string, number | null> = {};
   for (const s of stats) out[s.columnId] = null;
   if (row.direction === "none") return out;
   const values = stats
     .map((s) => ({ id: s.columnId, v: row.pick(s) }))
-    .filter((x): x is { id: string; v: number } => x.v != null);
-  // One value, or every column equal, is not a comparison: no places.
-  if (values.length < 2 || values.every((x) => x.v === values[0].v)) return out;
+    .filter((x): x is { id: string; v: number } => x.v != null)
+    .map((x) => ({ ...x, shown: row.format(x.v, costUnit) }));
+  if (values.length < 2 || values.every((x) => x.shown === values[0].shown)) {
+    return out;
+  }
   const sorted = [...values].sort((a, b) =>
     row.direction === "lower" ? a.v - b.v : b.v - a.v,
   );
   sorted.forEach((x, i) => {
     const prev = sorted[i - 1];
-    out[x.id] = prev && prev.v === x.v ? (out[prev.id] ?? i + 1) : i + 1;
+    out[x.id] = prev && prev.shown === x.shown ? (out[prev.id] ?? i + 1) : i + 1;
   });
+  return out;
+}
+
+export type Highlight = "best" | "worst" | null;
+
+/**
+ * Green and red come FROM the places, so they can never disagree: every
+ * column in first place is best, every column in last place is worst.
+ */
+export function rowHighlights(
+  row: MetricRow,
+  stats: ColumnStats[],
+  costUnit: CostUnit,
+): Record<string, Highlight> {
+  const places = rankRow(row, stats, costUnit);
+  const ranked = Object.values(places).filter((p): p is number => p != null);
+  const out: Record<string, Highlight> = {};
+  if (ranked.length === 0) return out;
+  const last = Math.max(...ranked);
+  for (const [id, place] of Object.entries(places)) {
+    if (place === 1) out[id] = "best";
+    else if (place != null && place === last) out[id] = "worst";
+  }
   return out;
 }
 
@@ -88,7 +120,7 @@ export function computeRanking(
     );
   const leaders: CategoryLeader[] = [];
   for (const row of rows) {
-    const places = rankRow(row, stats);
+    const places = rankRow(row, stats, costUnit);
     let firstValue: number | null = null;
     const names: string[] = [];
     for (const s of stats) {

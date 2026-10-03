@@ -21,16 +21,30 @@ import { markdownToHtml } from "@ai-matrx/print/markdown";
 import type { RootState } from "@/lib/redux/store";
 import { buildBattleSnapshot, type BattleSnapshot } from "../shared/battleSnapshot";
 import {
-  computeRowHighlights,
   selectVisibleRunsComparison,
   type ColumnStats,
   type MetricSection,
 } from "./runsComparisonData";
-import { computeRanking, ordinal, rankRow, type RunsRanking } from "./runsRanking";
+import {
+  computeRanking,
+  ordinal,
+  rankRow,
+  rowHighlights,
+  type RunsRanking,
+} from "./runsRanking";
 import { gridMarkdown, mdCell, type Grid } from "../shared/tableGrid";
 
 
-/** One metric section as plain rows (values as shown, no decoration). */
+/** Rows of a section that hold at least one value. */
+export function rowsWithData(section: MetricSection, stats: ColumnStats[]) {
+  return section.rows.filter((row) => stats.some((s) => row.pick(s) != null));
+}
+
+/**
+ * One metric section as people read it — for Copy and Copy for AI: each
+ * value as shown with its place, e.g. "72,000 (1st)", so the comparison
+ * travels with the numbers.
+ */
 export function sectionGrid(
   section: MetricSection,
   stats: ColumnStats[],
@@ -38,39 +52,64 @@ export function sectionGrid(
 ): Grid {
   return {
     headers: ["Metric", ...stats.map((s) => s.agentName)],
-    rows: section.rows
-      .filter((row) => stats.some((s) => row.pick(s) != null))
-      .map((row) => [
+    rows: rowsWithData(section, stats).map((row) => {
+      const places = rankRow(row, stats, costUnit);
+      return [
         row.label,
-        ...stats.map((s) => row.format(row.pick(s), costUnit)),
-      ]),
+        ...stats.map((s) => {
+          const shown = row.format(row.pick(s), costUnit);
+          const place = places[s.columnId];
+          return place != null ? `${shown} (${ordinal(place)})` : shown;
+        }),
+      ];
+    }),
   };
+}
+
+/** A raw number without floating-point noise (0.07377600000000001 → 0.073776). */
+function cleanNumber(v: number): string {
+  return String(Number(v.toPrecision(10)));
 }
 
 /**
  * One metric section as DATA — what Save to a table, CSV, JSON and Sheets
- * carry: one row per column, one column per metric, raw numbers with the
- * unit in the header ("Cost (USD)"), so the saved table sorts, sums and
- * charts. The display grid above is the same numbers as people read them.
+ * carry: one row per column, one column per metric (raw number, unit in the
+ * header, "Cost (USD)") plus that metric's place where it is ranked, so the
+ * saved table sorts, sums, charts and still says who won.
  */
-export function sectionDataGrid(section: MetricSection, stats: ColumnStats[]): Grid {
-  const rows = section.rows.filter((row) => stats.some((s) => row.pick(s) != null));
+export function sectionDataGrid(
+  section: MetricSection,
+  stats: ColumnStats[],
+  costUnit: CostUnit,
+): Grid {
+  const rows = rowsWithData(section, stats);
+  const placesByRow = rows.map((row) => rankRow(row, stats, costUnit));
+  const ranked = placesByRow.map((places) =>
+    Object.values(places).some((p) => p != null),
+  );
+  const headers = ["Column"];
+  rows.forEach((row, i) => {
+    headers.push(
+      row.unit && !row.label.toLowerCase().includes(row.unit.toLowerCase())
+        ? `${row.label} (${row.unit})`
+        : row.label,
+    );
+    if (ranked[i]) headers.push(`${row.label} place`);
+  });
   return {
-    headers: [
-      "Column",
-      ...rows.map((row) =>
-        row.unit && !row.label.toLowerCase().includes(row.unit.toLowerCase())
-          ? `${row.label} (${row.unit})`
-          : row.label,
-      ),
-    ],
-    rows: stats.map((s) => [
-      s.agentName,
-      ...rows.map((row) => {
+    headers,
+    rows: stats.map((s) => {
+      const cells = [s.agentName];
+      rows.forEach((row, i) => {
         const v = row.pick(s);
-        return v == null ? "" : String(v);
-      }),
-    ]),
+        cells.push(v == null ? "" : cleanNumber(v));
+        if (ranked[i]) {
+          const place = placesByRow[i][s.columnId];
+          cells.push(place != null ? String(place) : "");
+        }
+      });
+      return cells;
+    }),
   };
 }
 
@@ -107,14 +146,14 @@ export function sectionMarkdown(
   stats: ColumnStats[],
   costUnit: CostUnit,
 ): string {
-  const rows = section.rows.filter((row) => stats.some((s) => row.pick(s) != null));
+  const rows = rowsWithData(section, stats);
   if (rows.length === 0) return "";
   const out = [
     `| Metric | ${stats.map((s) => mdCell(s.agentName)).join(" | ")} |`,
     `|---|${stats.map(() => "---:").join("|")}|`,
   ];
   for (const row of rows) {
-    const places = rankRow(row, stats);
+    const places = rankRow(row, stats, costUnit);
     const cells = stats.map((s) => {
       const text = mdCell(row.format(row.pick(s), costUnit));
       const place = places[s.columnId];
@@ -237,6 +276,7 @@ const REPORT_CSS = `
   .rc .legend { font-size: 11px; color: #6b7280; margin: 4px 0 0; }
   .rc .answer { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; margin: 8px 0 14px; break-inside: avoid-page; }
   .rc .answer h3 { margin: 0 0 6px; font-size: 14px; }
+  .rc .vars { margin: 4px 0 0 18px; font-size: 12px; }
 `;
 
 function placeBadge(place: number | null): string {
@@ -246,13 +286,13 @@ function placeBadge(place: number | null): string {
 }
 
 function sectionHtml(section: MetricSection, stats: ColumnStats[], costUnit: CostUnit): string {
-  const rows = section.rows.filter((row) => stats.some((s) => row.pick(s) != null));
+  const rows = rowsWithData(section, stats);
   if (rows.length === 0) return "";
   const head = `<tr><th>Metric</th>${stats.map((s) => `<th>${esc(s.agentName)}</th>`).join("")}</tr>`;
   const body = rows
     .map((row) => {
-      const places = rankRow(row, stats);
-      const highlights = computeRowHighlights(row, stats);
+      const places = rankRow(row, stats, costUnit);
+      const highlights = rowHighlights(row, stats, costUnit);
       const cells = stats
         .map((s) => {
           const hl = highlights[s.columnId];
@@ -301,16 +341,29 @@ export function runsReportHtml(state: RootState, costUnit: CostUnit): {
     `<p class="legend">Green is the best value in a row, red the worst; the badge is each column's place on that metric.</p>`,
   ];
   if (snap?.shared_request) {
+    const vars = Object.entries(snap.shared_request.variables);
     parts.push(
       `<h2>Request</h2>`,
       markdownToHtml(snap.shared_request.message || "_(no typed message)_"),
+      vars.length > 0
+        ? `<ul class="vars">${vars
+            .map(
+              ([k, v]) =>
+                `<li><b>${esc(k)}:</b> ${esc(typeof v === "string" ? v : JSON.stringify(v))}</li>`,
+            )
+            .join("")}</ul>`
+        : "",
     );
   }
   if (snap && snap.columns.length > 0) {
     parts.push(`<h2>Answers</h2>`);
     for (const c of snap.columns) {
       parts.push(
-        `<div class="answer"><h3>${esc(c.label)}</h3>${markdownToHtml(
+        `<div class="answer"><h3>${esc(c.label)}</h3>${
+          c.own_request
+            ? `<p class="rc-sub"><b>Request:</b> ${esc(c.own_request.message || "(none)")}</p>`
+            : ""
+        }${markdownToHtml(
           c.answer || (c.error ? `**Error:** ${c.error}` : "_No answer yet._"),
         )}</div>`,
       );

@@ -121,22 +121,23 @@ export function getUserRequestResult(
 }
 
 /**
- * Time to first token for one request, in ms. The browser's own measurement
- * when this tab watched the run; otherwise the server's
- * (`timing_stats.first_token_seconds`), which a live completion carries and a
- * reloaded run restores from `user_request.metadata.ttft_ms` — so the number
- * survives a reload. The server's runs slightly lower (no network hop).
+ * Time to first token for one request, in ms. The SERVER's measurement first
+ * (`timing_stats.first_token_seconds`: a live completion carries it and a
+ * reloaded run restores it from `user_request.metadata.ttft_ms`), so every
+ * column of a comparison is measured the same way and the number does not
+ * change on reload. The browser's own measurement only for a run the server
+ * did not time (turns stored before 2026-10-02).
  */
 export function requestTtftMs(request: ActiveRequest | undefined): number | null {
   if (!request) return null;
-  if (request.clientMetrics?.ttftMs != null) return request.clientMetrics.ttftMs;
   const timing = getUserRequestResult(request)?.timing_stats as
     | { first_token_seconds?: unknown }
     | undefined;
   const seconds = timing?.first_token_seconds;
-  return typeof seconds === "number" && Number.isFinite(seconds)
-    ? Math.round(seconds * 1000)
-    : null;
+  if (typeof seconds === "number" && Number.isFinite(seconds)) {
+    return Math.round(seconds * 1000);
+  }
+  return request.clientMetrics?.ttftMs ?? null;
 }
 
 export interface MutableTotals {

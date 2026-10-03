@@ -19,14 +19,21 @@ import { BattleTableTools as TableTools } from "../shared/BattleTableTools";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { selectBlindActive } from "../redux/selectors";
+import { selectMountedBattleName } from "../shared/activeBattleColumns";
 import {
-  computeRowHighlights,
   selectVisibleRunsComparison,
   type ColumnStats,
   type MetricSection,
 } from "./runsComparisonData";
-import { computeRanking, ordinal, rankRow, type RunsRanking } from "./runsRanking";
 import {
+  computeRanking,
+  ordinal,
+  rankRow,
+  rowHighlights,
+  type RunsRanking,
+} from "./runsRanking";
+import {
+  rowsWithData,
   sectionDataGrid,
   sectionGrid,
   standingsDataGrid,
@@ -38,8 +45,17 @@ export function RunsComparisonTable() {
   const blindActive = useAppSelector(selectBlindActive);
   const { unit: costUnit } = useCostDisplay();
 
+  const battleName = useAppSelector(selectMountedBattleName);
+
   if (stats.length === 0) return null;
   const ranking = computeRanking(stats, sections, costUnit);
+  // A saved table is named after its battle, never a bare "Summary".
+  const tableName = (section: string) =>
+    battleName ? `${battleName} — ${section}` : `Runs comparison — ${section}`;
+  // Sections nobody has data for yet are named in one line, not drawn as
+  // tables of dashes — the window matches what prints and publishes.
+  const withData = sections.filter((sec) => rowsWithData(sec, stats).length > 0);
+  const empty = sections.filter((sec) => rowsWithData(sec, stats).length === 0);
 
   return (
     <div className="space-y-3 p-3">
@@ -52,10 +68,21 @@ export function RunsComparisonTable() {
           </span>
         </div>
       )}
-      <StandingsCard ranking={ranking} />
-      {sections.map((section) => (
-        <SectionTable key={section.title} section={section} stats={stats} />
+      <StandingsCard ranking={ranking} name={tableName("Standings")} />
+      {withData.map((section) => (
+        <SectionTable
+          key={section.title}
+          section={section}
+          stats={stats}
+          name={tableName(section.title)}
+        />
       ))}
+      {empty.length > 0 && (
+        <p className="text-[10px] text-muted-foreground px-1">
+          {/* read-gate-exempt: these sections are computed from this session's runs in the store, not a read */}
+          No data yet: {empty.map((sec) => sec.title).join(", ")}
+        </p>
+      )}
     </div>
   );
 }
@@ -90,7 +117,7 @@ function PlaceBadge({ place }: { place: number | null }) {
   );
 }
 
-function StandingsCard({ ranking }: { ranking: RunsRanking }) {
+function StandingsCard({ ranking, name }: { ranking: RunsRanking; name: string }) {
   if (!ranking.standings.some((s) => s.ranked > 0)) return null;
   const grid = standingsGrid(ranking);
   return (
@@ -101,7 +128,7 @@ function StandingsCard({ ranking }: { ranking: RunsRanking }) {
           Standings
         </span>
         <TableTools
-          name="Standings"
+          name={name}
           grid={grid}
           data={standingsDataGrid(ranking)}
           aiContext="Each column's overall place, first places and average place across your scores, tokens, cost and speed."
@@ -170,9 +197,11 @@ function StandingsCard({ ranking }: { ranking: RunsRanking }) {
 function SectionTable({
   section,
   stats,
+  name,
 }: {
   section: MetricSection;
   stats: ColumnStats[];
+  name: string;
 }) {
   const { unit: costUnit } = useCostDisplay();
   const grid = sectionGrid(section, stats, costUnit);
@@ -183,9 +212,9 @@ function SectionTable({
           {section.title}
         </span>
         <TableTools
-          name={section.title}
+          name={name}
           grid={grid}
-          data={sectionDataGrid(section, stats)}
+          data={sectionDataGrid(section, stats, costUnit)}
           aiContext={`The "${section.title}" metrics for each column of an Agent Battle, side by side.`}
         />
       </div>
@@ -226,8 +255,8 @@ function SectionTable({
           </thead>
           <tbody>
             {section.rows.map((row) => {
-              const highlights = computeRowHighlights(row, stats);
-              const places = rankRow(row, stats);
+              const highlights = rowHighlights(row, stats, costUnit);
+              const places = rankRow(row, stats, costUnit);
               return (
                 <tr
                   key={row.label}

@@ -230,6 +230,46 @@ export const selectMountedBattleSetId = createSelector(
   },
 );
 
+/** The saved battle's name for the mode on screen (null before its first save). */
+export const selectMountedBattleName = createSelector(
+  [
+    selectMountedMode,
+    selectOpen,
+    selectSettings,
+    selectModel,
+    selectTuning,
+    selectSystemPrompt,
+    selectTools,
+    selectRequestMod,
+    selectVariations,
+    selectConversation,
+  ],
+  (mounted, open, settings, model, tuning, sp, tools, rm, variations, conversation) => {
+    switch (mounted) {
+      case "open":
+        return open.activeSetName;
+      case "settings":
+        return settings.activeSetName;
+      case "model":
+        return model.activeSetName;
+      case "tuning":
+        return tuning.activeSetName;
+      case "system-prompt":
+        return sp.activeSetName;
+      case "tools":
+        return tools.activeSetName;
+      case "request-mod":
+        return rm.activeSetName;
+      case "variations":
+        return variations.activeSetName;
+      case "conversation":
+        return conversation.activeSetName;
+      default:
+        return null;
+    }
+  },
+);
+
 /**
  * Every conversation the battle page runs ITSELF: each column of the mode on
  * screen, and every locked-axis mode's shared composer (its request is copied

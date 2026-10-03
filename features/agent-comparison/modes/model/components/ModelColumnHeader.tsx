@@ -24,6 +24,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { selectModelColumnTitle } from "../columnTitle";
+import { selectActiveBattleColumns } from "../../../shared/activeBattleColumns";
 import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   resetOverride,
@@ -74,8 +75,12 @@ export function ModelColumnHeader({
     selectInstanceOverrideState(column.conversationId),
   );
   // Named after its model, read live (columnTitle.ts), unless the person named it.
-  const title = useAppSelector((state) =>
-    selectModelColumnTitle(state, column),
+  // The same name the runs table, exports and reports use — two columns on
+  // one model read "X" and "X (2)" everywhere.
+  const title = useAppSelector(
+    (state) =>
+      selectActiveBattleColumns(state).find((c) => c.columnId === column.columnId)
+        ?.label ?? selectModelColumnTitle(state, column),
   );
   const overrides = (overrideState?.overrides ?? {}) as Record<string, unknown>;
   const baseModel =
