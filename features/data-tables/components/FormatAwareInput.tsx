@@ -147,6 +147,7 @@ export function FormatAwareInput({
     case "textarea":
       return (
         <ProTextarea
+          auxiliaryControlsTabIndex={-1}
           id={id}
           value={text}
           rows={5}

@@ -367,6 +367,7 @@ export default function EditRowModal({
         return (
           <div className="relative">
             <ProTextarea
+              auxiliaryControlsTabIndex={-1}
               id={field.field_name}
               value={stringValue}
               onChange={(e) =>

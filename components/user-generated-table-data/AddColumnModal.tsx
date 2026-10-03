@@ -16,6 +16,7 @@ import { addTableColumn } from '@/features/data-tables/service';
 import { sanitizeFieldName } from '@/features/data-tables/field-name-key';
 import { setFieldFormat } from '@/features/data-tables/service';
 import { FormulaExpressionEditor } from '@/features/data-tables/components/FormulaExpressionEditor';
+import { whatTheColumnStillNeeds } from '@/features/data-tables/column-still-needs';
 import { isServiceFailure } from '@/features/data-tables/types';
 import { columnNameProblem, columnNameToKeep } from '@/features/data-tables/column-name-taken';
 import { offListChoiceWords, readCellWord, takesOtherWords } from '@/features/data-tables/cell-word';
@@ -128,8 +129,26 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
     setError(null);
   };
 
+  /**
+   * WHAT THIS COLUMN STILL NEEDS, SAID BESIDE THE BUTTON — AND THE BUTTON WAITS FOR IT (grids review
+   * 3). Adopted from the record grids' column panel (`@ai-matrx/records-ui` FieldEditor's `missing`):
+   * a Relation with no table picked did nothing on Add, with no message; a Formula with no formula was
+   * accepted and made an empty column. The store still has the last word, shown above as before.
+   */
+  const missing = whatTheColumnStillNeeds({
+    name: displayName,
+    nameProblem: nameTaken,
+    format,
+    ...(relationTargets !== undefined ? { relationTargets } : {}),
+    defaultProblem: isComputedFormat ? null : defaultProblem,
+    defaultAsked: Boolean(defaultAsk),
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // A declaration this dialog already knows is incomplete is never sent (Enter in a field submits
+    // too): the sentence beside the button says what is missing.
+    if (missing) return;
     const nameProblem = columnNameProblem(displayName, siblingFields);
     if (nameProblem) {
       setError(nameProblem);
@@ -327,11 +346,21 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
           </>
           )}
           
-          <DialogFooter>
+          <DialogFooter className="items-center gap-2">
+            {missing && displayName.trim() !== '' ? (
+              <p id="add-column-missing" className="mr-auto text-xs text-muted-foreground" data-add-column-missing="">
+                {missing}
+              </p>
+            ) : null}
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              disabled={loading || missing !== null}
+              title={missing ?? undefined}
+              {...(missing ? { 'aria-describedby': 'add-column-missing' } : {})}
+            >
               {loading ? 'Adding...' : 'Add Column'}
             </Button>
           </DialogFooter>

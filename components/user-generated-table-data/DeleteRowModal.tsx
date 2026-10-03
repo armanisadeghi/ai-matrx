@@ -26,6 +26,13 @@ interface DeleteRowModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /**
+   * The row went to the archive. When given, the caller owns the way back — it records the step on
+   * its ONE undo stack (Cmd-Z, the toolbar Undo and the notice's Undo are the same step; grids review
+   * 3: the toolbar Undo did not bring a deleted row back) and raises the notice. Without it this
+   * dialog raises its own.
+   */
+  onArchived?: (rowId: string, named: string) => void;
 }
 
 export default function DeleteRowModal({
@@ -35,6 +42,7 @@ export default function DeleteRowModal({
   isOpen,
   onClose,
   onSuccess,
+  onArchived,
 }: DeleteRowModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +67,10 @@ export default function DeleteRowModal({
       // archive; the only way back used to be Trash, two pages away. Undo restores it in place.
       const archivedId = rowId;
       const named = rowLabel ? `"${rowLabel}"` : "The row";
+      if (onArchived) {
+        onArchived(archivedId, named);
+        return;
+      }
       notify.success(`${named} was archived`, {
         description: "It is in this table's archive and in Trash. Undo puts it back here.",
         duration: 10000,

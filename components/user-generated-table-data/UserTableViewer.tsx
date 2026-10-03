@@ -176,8 +176,12 @@ import {
   setDefaultSort,
   setRowOrdering,
   setTableStyle,
+  addTableRow,
+  deleteRow,
+  restoreArchivedRow,
   upsertCell,
 } from "@/features/data-tables/service";
+import { useInlineNewRow } from "@/features/data-tables/hooks/useInlineNewRow";
 import {
   CELL_TINT_CLASS,
   ROW_TINT_CLASS,
@@ -3394,6 +3398,93 @@ const UserTableViewer = ({
   // Destructured: the compiler reads `grid.containerRef` (a property load) as a ref read in render.
   const { containerRef: gridContainerRef, selectColumn: gridSelectColumn, refocusGrid: gridRefocus } = grid;
 
+  /**
+   * "+ ROW" AND THE "Add row" LINE ADD THE ROW IN THE GRID, FIRST CELL EDITING (grids review 3: the
+   * form they opened focused Cancel and tabbed through voice buttons, and fast-typed values were
+   * lost). Keys typed while the store makes the row are held and land in order (`useInlineNewRow`).
+   * The row form stays — the phone's Add Row — and is fixed too.
+   */
+  const inlineNewRow = useInlineNewRow({
+    containerRef: gridContainerRef,
+    create: async () => {
+      const defaults: Record<string, unknown> = {};
+      for (const field of fields) {
+        if (isFormulaField(field.field_name)) continue;
+        if (field.default_value !== null && field.default_value !== undefined) defaults[field.field_name] = field.default_value;
+      }
+      const made = await addTableRow({ tableId, data: defaults });
+      return made.success && made.rowId ? { ok: true, rowId: made.rowId } : { ok: false, why: made.error ?? "The store did not say why." };
+    },
+    reload: async () => {
+      setAllSortedData(null);
+      await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+    },
+    shownRowIds: () => shownNow().map((row) => row.id),
+    begin: (rowId, seed) => {
+      const first = viewFields.find((field) => !isFormulaField(field.field_name));
+      if (!first) return false;
+      grid.beginEdit({ rowId, fieldName: first.field_name }, seed === "" ? undefined : seed);
+      return true;
+    },
+    focusGrid: () => gridRefocus(),
+    onRefused: (why) => toast({ title: "The row was not added", description: why, variant: "destructive" }),
+    onNotShown: () =>
+      toast({
+        title: "Row added",
+        description: "It is not in this view: the search, a filter, the sort or the page puts it elsewhere. Clear them to see it.",
+      }),
+  });
+
+  /**
+   * A ROW ARCHIVED BY DELETE IS ONE STEP ON THE ONE UNDO STACK (grids review 3: the toolbar Undo did
+   * not bring the row back). Cmd-Z, the toolbar Undo and the notice's Undo all restore it through the
+   * store's restore door; Redo archives it again. The notice stays ten seconds, the platform's
+   * notice-with-an-action length.
+   */
+  const recordRowArchived = (rowId: string, named: string) => {
+    const reload = () => loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+    const handle = cellUndo.recordStep(
+      {
+        undo: async () => {
+          const back = await restoreArchivedRow({ tableId, rowId });
+          if (isServiceFailure(back)) {
+            notify.error(`${named} could not be put back: ${back.error}`, {
+              description: "It is still in Trash, where Restore brings it back.",
+            });
+            return false;
+          }
+          notify.success(`${named} is back`);
+          await reload();
+          return true;
+        },
+        redo: async () => {
+          const gone = await deleteRow({ tableId, rowId });
+          if (isServiceFailure(gone)) {
+            notify.error(`${named} could not be archived again: ${gone.error}`);
+            return false;
+          }
+          notify.success(`${named} was archived again`);
+          await reload();
+          return true;
+        },
+      },
+      `Delete ${named}`,
+    );
+    notify.success(`${named} was archived`, {
+      description: "It is in this table's archive and in Trash. Undo puts it back here.",
+      duration: 10000,
+      action: { label: "Undo", onClick: () => void cellUndo.undoThis(handle) },
+    });
+  };
+
+  const addRowInline = () => {
+    if (isReadOnly) {
+      showReadOnlyToast();
+      return;
+    }
+    void inlineNewRow.start();
+  };
+
   // ─── The ONE right-click menu for the grid ──────────────────────────────
   //
   // Single-instance delegation (context-menu-v3): one `NonEditableContextMenu`
@@ -3490,6 +3581,8 @@ const UserTableViewer = ({
   const steady = useSteadyHandlers({
     // The grid's own surface, for the toolbar's ⋯ (read when it opens, never while drawing).
     getGridSurface: () => gridContainerRef.current,
+    addRowInline,
+    recordRowArchived,
     dropColumn,
     beginColumnResize,
     loadTableData,
@@ -3810,7 +3903,7 @@ const UserTableViewer = ({
       readOnly: isReadOnly,
       readOnlyReason: readOnlyReason,
       on: {
-        add: () => setShowAddRowModal(true),
+        add: () => addRowInline(),
         highlight: (rowId, color) =>
           void steady.writeStylePath(stylePath.row(rowId), color),
         edit: (rowId) => {
@@ -4884,6 +4977,8 @@ const UserTableViewer = ({
           setShowAddColumnModal(show);
         }}
         setShowAddRowModal={setShowAddRowModal}
+        onAddRowInline={steady.addRowInline}
+        onRowArchived={steady.recordRowArchived}
         // The SAME map the grid's cells are handed — one resolution of the
         // relation words for the whole screen, so the row modal cannot show a
         // different name (or a raw id) from the cell it was opened from.
@@ -5540,7 +5635,7 @@ const UserTableViewer = ({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowAddRowModal(true)}
+                        onClick={addRowInline}
                       >
                         <Plus className="mr-1 h-3.5 w-3.5" />
                         Add the first row
@@ -5561,7 +5656,8 @@ const UserTableViewer = ({
                 <TableCell colSpan={viewFields.length + 3} className="p-0">
                   <button
                     type="button"
-                    onClick={() => setShowAddRowModal(true)}
+                    onClick={addRowInline}
+                    disabled={inlineNewRow.adding}
                     className="flex h-7 w-full items-center gap-1.5 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                   >
                     <Plus className="h-3.5 w-3.5" />
