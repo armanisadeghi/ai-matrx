@@ -34,7 +34,7 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { cn } from "@/lib/utils";
 import type { CrmQueryContext } from "../../types";
 import type { SavedView } from "../../saved-views/types";
-import type { SavedViewCodec } from "../../saved-views/service";
+import type { SavedViewCodec, SavedViewSection } from "../../saved-views/service";
 import {
   createSavedView,
   deleteSavedView,
@@ -49,6 +49,15 @@ import {
  * the compare/describe functions. The bar itself never knows what a definition
  * means — that stays in each list's `saved-views`/`views` module.
  */
+type SectionedView<TDef> = SavedView<TDef> & { section: SavedViewSection };
+
+/** The bar's sections, in order — inline labels inside its one row, never a row of their own. */
+const SECTIONS: { id: SavedViewSection; label: string }[] = [
+  { id: "mine", label: "Mine" },
+  { id: "shared", label: "Shared with me" },
+  { id: "orgs", label: "Organization" },
+];
+
 export interface SavedViewBarProps<TDef> {
   ctx: CrmQueryContext | null;
   codec: SavedViewCodec<TDef>;
@@ -97,7 +106,7 @@ export function SavedViewBar<TDef>({
   autoOpenViewId,
   className,
 }: SavedViewBarProps<TDef>) {
-  const [views, setViews] = useState<SavedView<TDef>[]>([]);
+  const [views, setViews] = useState<SectionedView<TDef>[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<unknown>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -178,7 +187,7 @@ export function SavedViewBar<TDef>({
       visibility: shared ? "internal" : "personal",
       codec,
     });
-    setViews((prev) => [created, ...prev]);
+    setViews((prev) => [{ ...created, section: "mine" }, ...prev]);
     onActiveViewIdChange(created.id);
     onActiveViewChange?.({ id: created.id, name: created.name });
     recordToast.success(
@@ -336,7 +345,22 @@ export function SavedViewBar<TDef>({
           None yet — filter the list, then save it as a view your team can work.
         </span>
       ) : (
-        views.map((view) => {
+        SECTIONS.flatMap(({ id: sectionId, label }) => {
+          const inSection = views.filter((v) => v.section === sectionId);
+          if (inSection.length === 0) return [];
+          // A label only when the bar holds more than one section; one section needs no name.
+          const labelled = new Set(views.map((v) => v.section)).size > 1;
+          return [
+            labelled ? (
+              <span
+                key={`section-${sectionId}`}
+                data-saved-view-section={sectionId}
+                className="ml-1 text-[11px] text-muted-foreground first:ml-0"
+              >
+                {label}
+              </span>
+            ) : null,
+            ...inSection.map((view) => {
           const isActive = view.id === activeViewId;
           return (
             <span
@@ -371,6 +395,8 @@ export function SavedViewBar<TDef>({
               </ItemMenu>
             </span>
           );
+            }),
+          ];
         })
       )}
 

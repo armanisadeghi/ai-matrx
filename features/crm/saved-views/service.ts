@@ -8,14 +8,15 @@
 // on this multiplexed table has ever done — so a CRM view can no longer be reached from another
 // surface's code path by id alone.
 //
-// THE VIEW LAW: the list read declares its scope explicitly — views I created
-// OR views in one of my organizations. It is a work console (like the outreach
-// list console), not a browse surface, so the scope is one blended work scope
-// rather than a tab strip. Sharing is the platform `visibility` tier and
+// THE VIEW LAW: the list read declares its scope through the lane reader
+// (`public.saved_view_list_lanes`): Mine, Shared with me, Organization. The bar
+// shows them as sections of its one row, never a tab strip of its own. Sharing is the platform `visibility` tier and
 // nothing invented: `personal` = mine alone, `internal` = the whole org sees
 // (and can edit) it, which is exactly what `iam.has_access` already confers.
 
 import { supabase } from "@/utils/supabase/client";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
+import type { LaneRow } from "@/lib/entity-list/laneRows";
 import type { CrmQueryContext } from "../types";
 import type {
   SavedView,
@@ -67,32 +68,49 @@ function hydrate<TDef>(row: SavedViewRow, codec: SavedViewCodec<TDef>): SavedVie
   return { ...row, definition: codec.parse(row.definition) };
 }
 
+/** Where a view sits for the person reading it — the sections of the views bar. */
+export type SavedViewSection = "mine" | "shared" | "orgs";
+
 /**
- * Every smart view this user can work: created by me OR living in one of my
- * organizations (declared scope — see the file header). Most-recently-used
- * first, so the bar orders itself around how the floor actually works.
+ * Every smart view this user can work, in the lanes `public.saved_view_list_lanes`
+ * declares for this surface (SECURITY INVOKER — row security stays the ceiling):
+ * Mine, Shared with me (an explicit grant to me or one of my organizations), and
+ * Organization (other people's views in my organizations, as each row's Shown to
+ * allows). Each view carries its section: Mine wins, then Shared, then Organization.
+ * Most-recently-used first, so the bar orders itself around how the floor works.
  */
 export async function fetchSavedViews<TDef>(
-  ctx: CrmQueryContext,
+  _ctx: CrmQueryContext,
   codec: SavedViewCodec<TDef>,
-): Promise<SavedView<TDef>[]> {
-  let q = savedViewDb()
+): Promise<Array<SavedView<TDef> & { section: SavedViewSection }>> {
+  const { data: lanes, error: laneError } = await readListRpc<LaneRow>(
+    "saved_view_list_lanes",
+    { p_surface_key: surfaceKeyFor(codec.listKey), p_org_id: null },
+    { order: ["lane", "id"] },
+  );
+  if (laneError) throw pgError(laneError);
+  const section = new Map<string, SavedViewSection>();
+  const rank: Record<SavedViewSection, number> = { mine: 0, shared: 1, orgs: 2 };
+  for (const row of lanes ?? []) {
+    if (row.lane !== "mine" && row.lane !== "shared" && row.lane !== "orgs") continue;
+    const prev = section.get(row.id);
+    if (!prev || rank[row.lane] < rank[prev]) section.set(row.id, row.lane);
+  }
+  if (section.size === 0) return [];
+  const { data, error } = await savedViewDb()
     .from("saved_view")
     .select("*")
-    .eq("surface_key", surfaceKeyFor(codec.listKey))
+    .in("id", [...section.keys()])
     .is("deleted_at", null)
     .order("last_used_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .order("id", { ascending: true })
     .limit(100);
-  q = ctx.orgIds.length
-    ? q.or(
-        `created_by.eq.${ctx.userId},organization_id.in.(${ctx.orgIds.join(",")})`,
-      )
-    : q.eq("created_by", ctx.userId);
-  const { data, error } = await q;
   if (error) throw pgError(error);
-  return (data ?? []).map((row) => hydrate(row, codec));
+  return (data ?? []).map((row) => ({
+    ...hydrate(row, codec),
+    section: section.get(row.id) ?? "orgs",
+  }));
 }
 
 /** One view by id — the enrollment path's read (a queue must know its query). */
