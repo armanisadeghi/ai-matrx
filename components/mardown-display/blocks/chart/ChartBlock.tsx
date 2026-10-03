@@ -23,6 +23,8 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 import { parseChartSpec, type ChartSpec } from "./chart-spec";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
+import { chartPaneLayout } from "@/components/mardown-display/blocks/canvas-adaptive";
 
 const CHART_TYPE_LABEL: Record<string, string> = {
   bar: "Bar chart",
@@ -55,6 +57,10 @@ export const ChartBlock: React.FC<ChartBlockProps> = ({ content = "", isStreamAc
   const [showSource, setShowSource] = useState(false);
 
   const title = spec?.title ?? (spec ? CHART_TYPE_LABEL[spec.type] ?? "Chart" : "Chart");
+  // In a canvas pane the plot takes the pane's shape: taller with the legend
+  // below when narrow, bar charts turn sideways in a portrait pane. Outside the
+  // canvas (`null`) the fixed 340px card is unchanged.
+  const paneLayout = chartPaneLayout(useCanvasPresentation(), spec?.type ?? "");
 
   const handleCopy = async () => {
     try {
@@ -104,8 +110,13 @@ export const ChartBlock: React.FC<ChartBlockProps> = ({ content = "", isStreamAc
         ) : error ? (
           <ChartError error={error} source={source} show={showSource} onToggle={() => setShowSource((v) => !v)} />
         ) : spec ? (
-          <div className="h-[340px] w-full">
-            <ChartCanvas spec={spec} />
+          <div
+            className={paneLayout ? "w-full" : "h-[340px] w-full"}
+            style={paneLayout ? { height: paneLayout.height } : undefined}
+            data-chart-legend={paneLayout?.legend ?? "default"}
+            data-chart-bars={paneLayout?.horizontalBars ? "horizontal" : "vertical"}
+          >
+            <ChartCanvas spec={spec} paneLayout={paneLayout} />
           </div>
         ) : null}
       </div>

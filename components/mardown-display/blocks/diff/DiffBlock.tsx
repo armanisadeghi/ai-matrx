@@ -24,12 +24,16 @@ import { cn } from "@/lib/utils";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { soleFence } from "@/lib/markdown/code-ranges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
+import { diffIsSplit } from "@/components/mardown-display/blocks/canvas-adaptive";
 
 interface DiffSpec {
   title?: string;
   oldValue: string;
   newValue: string;
   split: boolean;
+  /** The author wrote `split` themselves — the pane's shape never overrides it. */
+  splitExplicit: boolean;
 }
 
 const DiffCanvas = dynamic(() => import("./DiffCanvas"), {
@@ -72,6 +76,7 @@ function parseDiff(raw: string): DiffSpec | { error: string } {
     oldValue,
     newValue,
     split: o.split !== false,
+    splitExplicit: typeof o.split === "boolean",
   };
 }
 
@@ -103,7 +108,16 @@ const DiffSpecBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActive 
   const error = parsed && "error" in parsed ? parsed.error : null;
   const [copied, setCopied] = useState(false);
   const [split, setSplit] = useState<boolean | null>(null);
-  const effectiveSplit = split ?? spec?.split ?? true;
+  // Side by side in a wide canvas pane, one column in a narrow one; the
+  // person's toggle and an author's explicit `split` always win, and outside
+  // the canvas the authored default is unchanged.
+  const presentation = useCanvasPresentation();
+  const effectiveSplit = diffIsSplit({
+    presentation,
+    personChoice: split,
+    authored: spec?.split ?? true,
+    authoredExplicitly: spec?.splitExplicit ?? false,
+  });
 
   const handleCopy = async () => {
     try {
@@ -158,7 +172,9 @@ const DiffSpecBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActive 
             <ErrorAlchemyMenu error={error} />
           </div>
         ) : spec ? (
-          <DiffCanvas oldValue={spec.oldValue} newValue={spec.newValue} split={effectiveSplit} />
+          <div data-diff-view={effectiveSplit ? "split" : "unified"}>
+            <DiffCanvas oldValue={spec.oldValue} newValue={spec.newValue} split={effectiveSplit} />
+          </div>
         ) : null}
       </div>
     </div>

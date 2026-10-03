@@ -100,6 +100,10 @@ import {
 import { preferredFlowDirection } from "@ai-matrx/canvas";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import {
+  diagramScrollPans,
+  portraitWidthFitViewport,
+} from "@/components/mardown-display/blocks/canvas-adaptive";
+import {
   materializeDiagramDefaults,
   type DiagramData,
   type DiagramEdge,
@@ -1669,8 +1673,25 @@ const DiagramFlow: React.FC<{
       // BOTH dimensions is unaffected — its height-based zoom is just as
       // small as its width-based one, so this never re-clips the large
       // diagrams the width/height floor above was built to keep whole.
+      // A portrait CANVAS pane is different: the person is looking at the
+      // diagram as the page, with room to scroll down. Fit its WIDTH, start
+      // at the top, and let them scroll the rest (wheel/trackpad pan there —
+      // see `diagramScrollPans`). Fitting the whole graph shrinks every label
+      // past reading; filling the height forces sideways panning.
+      const portraitFit = portraitWidthFitViewport({
+        presentation: canvasPresentation,
+        bounds,
+        width: measuredWidth,
+        height: measuredHeight,
+        minZoom: fitMinZoom,
+        maxZoom: 2,
+        padding: fitPadding,
+        containedZoom: contained.zoom,
+      });
       const isNarrowPhoneViewport = measuredWidth > 0 && measuredWidth < 640;
-      if (isNarrowPhoneViewport) {
+      if (portraitFit) {
+        viewport = portraitFit;
+      } else if (isNarrowPhoneViewport && !diagramScrollPans(canvasPresentation)) {
         const heightZoom = Math.min(
           2,
           Math.max(
@@ -1701,6 +1722,7 @@ const DiagramFlow: React.FC<{
     nodes,
     getNodes,
     setViewport,
+    canvasPresentation,
   ]);
 
   // ── Layout helpers ──
@@ -1922,6 +1944,7 @@ const DiagramFlow: React.FC<{
       minZoom={workspace ? 0.05 : 0.5}
       maxZoom={2}
       fitView={false}
+      panOnScroll={!editing && diagramScrollPans(canvasPresentation)}
       proOptions={{ hideAttribution: true }}
       className={`bg-gray-50 dark:bg-gray-900 ${workspace && editing ? "!w-[calc(100%-min(320px,48vw))] !overflow-visible" : ""} ${onNodeClick || editing ? "[&_.react-flow__node]:cursor-pointer" : ""}`}
     >

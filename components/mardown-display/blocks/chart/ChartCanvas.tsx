@@ -35,21 +35,39 @@ import {
 
 import { CHART_PALETTE, type ChartSpec } from "./chart-spec";
 import { pieSliceLabel } from "./labels";
+import type { ChartPaneLayout } from "../canvas-adaptive";
 
 const AXIS = { fontSize: 12, stroke: "var(--muted-foreground)" };
 const GRID_STROKE = "var(--border)";
 
-export default function ChartCanvas({ spec }: { spec: ChartSpec }) {
+export default function ChartCanvas({
+  spec,
+  paneLayout = null,
+}: {
+  spec: ChartSpec;
+  /** The canvas pane's layout; `null` (chat, fullscreen) keeps the defaults. */
+  paneLayout?: ChartPaneLayout | null;
+}) {
   const showLegend = spec.series.length > 1 || spec.type === "pie";
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      {render(spec, showLegend)}
+      {render(spec, showLegend, paneLayout)}
     </ResponsiveContainer>
   );
 }
 
-function render(spec: ChartSpec, showLegend: boolean): React.ReactElement {
+function legendFor(paneLayout: ChartPaneLayout | null) {
+  if (paneLayout?.legend === "right") {
+    return <Legend wrapperStyle={{ fontSize: 12 }} layout="vertical" verticalAlign="middle" align="right" />;
+  }
+  if (paneLayout?.legend === "bottom") {
+    return <Legend wrapperStyle={{ fontSize: 12 }} layout="horizontal" verticalAlign="bottom" align="center" />;
+  }
+  return <Legend wrapperStyle={{ fontSize: 12 }} />;
+}
+
+function render(spec: ChartSpec, showLegend: boolean, paneLayout: ChartPaneLayout | null): React.ReactElement {
   const common = { data: spec.data, margin: { top: 8, right: 16, bottom: 8, left: 0 } };
   const axes = (
     <>
@@ -65,7 +83,7 @@ function render(spec: ChartSpec, showLegend: boolean): React.ReactElement {
           color: "var(--popover-foreground)",
         }}
       />
-      {showLegend && <Legend wrapperStyle={{ fontSize: 12 }} />}
+      {showLegend && legendFor(paneLayout)}
     </>
   );
 
@@ -122,7 +140,7 @@ function render(spec: ChartSpec, showLegend: boolean): React.ReactElement {
               color: "var(--popover-foreground)",
             }}
           />
-          {showLegend && <Legend wrapperStyle={{ fontSize: 12 }} />}
+          {showLegend && legendFor(paneLayout)}
           <Pie
             data={spec.data}
             dataKey={valueKey}
@@ -144,6 +162,30 @@ function render(spec: ChartSpec, showLegend: boolean): React.ReactElement {
     }
     case "bar":
     default:
+      if (paneLayout?.horizontalBars) {
+        // Recharts' layout="vertical" stacks the categories down the left and
+        // grows each bar to the right.
+        return (
+          <BarChart {...common} layout="vertical" margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} horizontal={false} />
+            <XAxis type="number" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID_STROKE }} />
+            <YAxis type="category" dataKey={spec.xKey} tick={AXIS} tickLine={false} axisLine={false} width={96} />
+            <Tooltip
+              contentStyle={{
+                background: "var(--popover)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                fontSize: 12,
+                color: "var(--popover-foreground)",
+              }}
+            />
+            {showLegend && legendFor(paneLayout)}
+            {spec.series.map((s) => (
+              <Bar key={s.key} dataKey={s.key} name={s.label} fill={s.color} radius={[0, 3, 3, 0]} stackId={spec.stacked ? "1" : undefined} />
+            ))}
+          </BarChart>
+        );
+      }
       return (
         <BarChart {...common}>
           {axes}

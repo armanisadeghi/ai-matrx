@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { cn } from "@/styles/themes/utils";
 import { Copy, Check } from "lucide-react";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
+import { treeWrapsLines } from "@/components/mardown-display/blocks/canvas-adaptive";
 
 interface TreeBlockProps {
   content: string;
@@ -114,6 +116,9 @@ const DEPTH_COLORS = [
 const TreeBlock: React.FC<TreeBlockProps> = ({ content, className }) => {
   const [copied, setCopied] = useState(false);
   const lines = parseTreeLines(content);
+  // A portrait canvas pane grows the tree downward: long lines wrap under
+  // their own branch instead of pushing the pane into sideways scrolling.
+  const wrap = treeWrapsLines(useCanvasPresentation());
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -143,7 +148,13 @@ const TreeBlock: React.FC<TreeBlockProps> = ({ content, className }) => {
           )}
         </button>
       </div>
-      <div className="px-4 py-3 font-mono text-sm leading-relaxed overflow-x-auto">
+      <div
+        data-tree-wrap={wrap ? "wrap" : "scroll"}
+        className={cn(
+          "px-4 py-3 font-mono text-sm leading-relaxed",
+          wrap ? "overflow-x-hidden" : "overflow-x-auto",
+        )}
+      >
         {lines.map((line, idx) => {
           if (!line.text.trim()) {
             return <div key={idx} className="h-2" />;
@@ -172,7 +183,12 @@ const TreeBlock: React.FC<TreeBlockProps> = ({ content, className }) => {
           return (
             <div
               key={idx}
-              className="whitespace-pre hover:bg-muted/20 rounded-sm transition-colors"
+              className={cn(
+                "hover:bg-muted/20 rounded-sm transition-colors",
+                wrap
+                  ? "whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+                  : "whitespace-pre",
+              )}
             >
               <span className={cn("select-none", depthColor)}>{prefix}</span>
               {arrowMatch ? (

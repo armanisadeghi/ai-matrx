@@ -11,7 +11,7 @@
 
 import React, { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Check, Copy, MapPin, TriangleAlert } from "lucide-react";
+import { Check, Copy, List, MapPin, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Skeleton } from "@ai-matrx/design-system";
@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import type { MapMarker } from "./MapCanvas";
 import { soleFence } from "@/lib/markdown/code-ranges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
+import { mapPlacesList } from "@/components/mardown-display/blocks/canvas-adaptive";
 
 interface MapSpec {
   title?: string;
@@ -48,7 +50,8 @@ function parseMap(raw: string): MapSpec | { error: string } {
   let s = raw.trim();
   // A wrapping fence by THE one code-range rule.
   const fenced = soleFence(s);
-  if (fenced && ["", "json", "map"].includes(fenced.lang.toLowerCase())) s = fenced.body.trim();
+  if (fenced && ["", "json", "map"].includes(fenced.lang.toLowerCase()))
+    s = fenced.body.trim();
   let obj: unknown;
   try {
     obj = JSON.parse(s);
@@ -128,6 +131,17 @@ export const MapBlock: React.FC<MapBlockProps> = ({
   const spec = parsed && !("error" in parsed) ? parsed : null;
   const error = parsed && "error" in parsed ? parsed.error : null;
   const [copied, setCopied] = useState(false);
+  // In a canvas pane the map carries its list of places: beside it in a wide
+  // pane, behind a toggle in a narrow one. Outside the canvas: map only.
+  const placesList = mapPlacesList(useCanvasPresentation());
+  const [listOpen, setListOpen] = useState(false);
+  const [focus, setFocus] = useState<{
+    lat: number;
+    lng: number;
+    seq: number;
+  } | null>(null);
+  const showList =
+    placesList === "side" || (placesList === "toggle" && listOpen);
 
   const handleCopy = async () => {
     try {
@@ -164,21 +178,38 @@ export const MapBlock: React.FC<MapBlockProps> = ({
             </span>
           )}
         </div>
-        {!isStreamActive && spec && (
-          <button
-            type="button"
-            aria-label={copied ? "Copied" : "Copy source"}
-            title={copied ? "Copied" : "Copy source"}
-            onClick={handleCopy}
-            className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
-        )}
+        <div className="flex shrink-0 items-center gap-0.5">
+          {!isStreamActive && spec && placesList === "toggle" && (
+            <button
+              type="button"
+              aria-label={listOpen ? "Hide places" : "Show places"}
+              aria-pressed={listOpen}
+              title={listOpen ? "Hide places" : "Show places"}
+              onClick={() => setListOpen((v) => !v)}
+              className={cn(
+                "rounded p-1.5 transition-colors hover:bg-primary/10 hover:text-primary",
+                listOpen ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              <List className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {!isStreamActive && spec && (
+            <button
+              type="button"
+              aria-label={copied ? "Copied" : "Copy source"}
+              title={copied ? "Copied" : "Copy source"}
+              onClick={handleCopy}
+              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
       <div className="p-3">
         {isStreamActive ? (
@@ -190,12 +221,66 @@ export const MapBlock: React.FC<MapBlockProps> = ({
             <ErrorAlchemyMenu error={error} />
           </div>
         ) : spec ? (
-          <div className="h-72 w-full overflow-hidden rounded-md border border-border">
-            <MapCanvas
-              markers={spec.markers}
-              center={spec.center}
-              zoom={spec.zoom}
-            />
+          <div
+            data-map-places={placesList ?? "none"}
+            className={cn(
+              "flex w-full gap-2",
+              placesList === "side" ? "flex-row" : "flex-col",
+            )}
+          >
+            <div
+              className={cn(
+                "w-full min-w-0 flex-1 overflow-hidden rounded-md border border-border",
+                placesList ? "h-96" : "h-72",
+              )}
+            >
+              <MapCanvas
+                markers={spec.markers}
+                center={spec.center}
+                zoom={spec.zoom}
+                focus={focus}
+              />
+            </div>
+            {showList && (
+              <ol
+                aria-label="Places"
+                className={cn(
+                  "overflow-y-auto rounded-md border border-border bg-background/60 p-1",
+                  placesList === "side"
+                    ? "h-96 w-60 shrink-0"
+                    : "max-h-56 w-full",
+                )}
+              >
+                {spec.markers.map((m, i) => (
+                  <li key={i}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFocus({
+                          lat: m.lat,
+                          lng: m.lng,
+                          seq: i + Date.now(),
+                        })
+                      }
+                      className="flex w-full min-w-0 items-start gap-2 rounded px-2 py-1.5 text-left hover:bg-muted"
+                    >
+                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm text-foreground">
+                          {m.label ??
+                            `${m.lat.toFixed(3)}, ${m.lng.toFixed(3)}`}
+                        </span>
+                        {m.description && (
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {m.description}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
         ) : null}
       </div>

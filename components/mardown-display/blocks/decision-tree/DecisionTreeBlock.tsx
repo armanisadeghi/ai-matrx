@@ -32,6 +32,8 @@ import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifact
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
+import { decisionBranchesSideBySide } from "@/components/mardown-display/blocks/canvas-adaptive";
 
 export type DecisionNode = Omit<
   DecisionNodeKind,
@@ -342,6 +344,11 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
       ? "text-green-700 dark:text-green-400 border-green-300 dark:border-green-700 bg-green-50/90 dark:bg-green-950/50"
       : "text-red-700 dark:text-red-400 border-red-300 dark:border-red-700 bg-red-50/90 dark:bg-red-950/50";
 
+  // The full tree grows top to bottom in a portrait canvas pane (and outside
+  // the canvas); a wide pane puts each question's Yes and No side by side for
+  // the first two levels, where columns are still wide enough to read.
+  const branchesSideBySide = decisionBranchesSideBySide(useCanvasPresentation());
+
   const renderTreeNode = (node: DecisionNode, depth = 0) => {
     if (!node) return null;
 
@@ -505,7 +512,18 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
         </div>
 
         {hasChildren && (showFullTree ? isExpanded : isActive) && (
-          <div className="mt-1.5 space-y-2">
+          <div
+            data-decision-branches={
+              showFullTree && branchesSideBySide && depth < 2
+                ? "side-by-side"
+                : "stacked"
+            }
+            className={
+              showFullTree && branchesSideBySide && depth < 2
+                ? "mt-1.5 grid grid-cols-2 items-start gap-2"
+                : "mt-1.5 space-y-2"
+            }
+          >
             {showFullTree ? (
               <>
                 {node.yes && (

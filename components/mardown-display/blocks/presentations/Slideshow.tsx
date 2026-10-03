@@ -25,6 +25,9 @@ import {
 
 import { SlideView, type SlideData, type SlideTheme, type SlideVariant } from "./SlideView";
 import { deckFontFamily, PRESET_LIST, presetTheme, resolveDeckTheme } from "./presets";
+import { ScaledSlide } from "./ScaledSlide";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
+import { slideThumbnailPlacement } from "../canvas-adaptive";
 
 // Lazy load PresentationExportMenu to avoid loading GoogleAPIProvider on initial render
 const PresentationExportMenu = lazy(() => import("./PresentationExportMenu"));
@@ -85,6 +88,11 @@ const Slideshow = (
   const [direction, setDirection] = useState("next");
   const [isFullScreen, setIsFullScreen] = useState(false);
   const slideContainerRef = useRef<HTMLDivElement>(null);
+  // In a canvas pane the slide scales to fit the pane (aspect kept) with a
+  // strip of thumbnails below a portrait pane or beside a wide one. Outside
+  // the canvas, and in full screen, the card layout is unchanged.
+  const canvasThumbs = slideThumbnailPlacement(useCanvasPresentation());
+  const inCanvasLayout = canvasThumbs !== null && !isFullScreen;
   const { open: openCanvas } = useCanvas();
   const { openArtifact } = useOpenArtifactInCanvas();
 
@@ -169,10 +177,10 @@ const Slideshow = (
       )}
 
       <div
-        className={`w-full border border-border ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "rounded-2xl overflow-hidden shadow-xl border-border"}`}
+        className={`w-full border border-border ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : inCanvasLayout ? "h-full overflow-hidden" : "rounded-2xl overflow-hidden shadow-xl border-border"}`}
       >
         <div
-          className={`bg-textured ${isFullScreen ? "h-full w-full max-w-7xl max-h-[95dvh] rounded-2xl overflow-hidden" : "w-full"} flex flex-col`}
+          className={`bg-textured ${isFullScreen ? "h-full w-full max-w-7xl max-h-[95dvh] rounded-2xl overflow-hidden" : inCanvasLayout ? "h-full w-full" : "w-full"} flex flex-col`}
         >
           {/* Header with Controls */}
           <div className="flex-shrink-0 px-3 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
@@ -289,6 +297,47 @@ const Slideshow = (
           </div>
 
           {/* Main Slide Area */}
+          {inCanvasLayout ? (
+            <div
+              data-slide-thumbnails={canvasThumbs}
+              className={`flex min-h-0 flex-1 ${canvasThumbs === "side" ? "flex-row" : "flex-col"}`}
+            >
+              {canvasThumbs === "side" && (
+                <SlideThumbnails
+                  slides={slides}
+                  theme={effectiveTheme}
+                  variant={variant}
+                  current={currentSlide}
+                  onPick={goToSlide}
+                  placement="side"
+                />
+              )}
+              <div
+                ref={slideContainerRef}
+                className="relative min-h-0 min-w-0 flex-1 bg-textured p-2"
+              >
+                <ScaledSlide className="h-full w-full">
+                  <div
+                    key={currentSlide}
+                    className="h-full w-full animate-fadeIn"
+                    style={{ fontFamily: deckFontFamily(effectiveTheme.font) }}
+                  >
+                    <SlideView slide={slide} theme={effectiveTheme} variant={variant} fullScreen={false} />
+                  </div>
+                </ScaledSlide>
+              </div>
+              {canvasThumbs === "below" && (
+                <SlideThumbnails
+                  slides={slides}
+                  theme={effectiveTheme}
+                  variant={variant}
+                  current={currentSlide}
+                  onPick={goToSlide}
+                  placement="below"
+                />
+              )}
+            </div>
+          ) : (
           <div
             ref={slideContainerRef}
             className={`flex-1 flex items-center justify-center relative overflow-hidden bg-textured ${isFullScreen ? "py-5 px-2 min-h-[600px]" : "py-3 px-2 min-h-[350px]"}`}
@@ -307,6 +356,8 @@ const Slideshow = (
               </div>
             </div>
           </div>
+
+          )}
 
           {/* Bottom Navigation Bar with Arrow Buttons */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-gray-50 dark:bg-gray-800">
@@ -374,3 +425,53 @@ const Slideshow = (
 };
 
 export default Slideshow;
+
+/** The deck's slides as small scaled previews: a row below a portrait pane, a column beside a wide one. */
+function SlideThumbnails({
+  slides,
+  theme,
+  variant,
+  current,
+  onPick,
+  placement,
+}: {
+  slides: SlideData[];
+  theme: SlideTheme;
+  variant: SlideVariant;
+  current: number;
+  onPick: (index: number) => void;
+  placement: "below" | "side";
+}) {
+  return (
+    <div
+      aria-label="Slides"
+      className={
+        placement === "side"
+          ? "flex w-36 shrink-0 flex-col gap-2 overflow-y-auto border-r border-border bg-muted/30 p-2"
+          : "flex shrink-0 flex-row gap-2 overflow-x-auto border-t border-border bg-muted/30 p-2"
+      }
+    >
+      {slides.map((s, index) => (
+        <button
+          key={index}
+          type="button"
+          onClick={() => onPick(index)}
+          aria-label={`Go to slide ${index + 1}`}
+          aria-current={index === current ? "true" : undefined}
+          className={`relative shrink-0 overflow-hidden rounded-md border-2 transition-colors ${
+            placement === "side" ? "w-full" : "w-28"
+          } ${index === current ? "border-primary" : "border-transparent hover:border-border"}`}
+        >
+          <ScaledSlide className="pointer-events-none aspect-video w-full">
+            <div className="h-full w-full" style={{ fontFamily: deckFontFamily(theme.font) }}>
+              <SlideView slide={s} theme={theme} variant={variant} fullScreen={false} />
+            </div>
+          </ScaledSlide>
+          <span className="absolute bottom-0.5 left-1 rounded bg-background/80 px-1 text-[10px] tabular-nums text-muted-foreground">
+            {index + 1}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}

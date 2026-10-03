@@ -86,6 +86,11 @@ import { CodeModePane } from "../code/CodeModePane";
 import { OutlineModePane } from "../outline/OutlineModePane";
 import { VisualModePane } from "../visual/VisualModePane";
 import { ViewModePane } from "../view/ViewModePane";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
+import {
+  canvasFlow,
+  mermaidSourceForFlow,
+} from "@/components/mardown-display/blocks/canvas-adaptive";
 import { AgentEditRail } from "./AgentEditRail";
 import { registerMermaidEditor } from "./editor-bridge";
 import { useMermaidArtifactSave } from "./useMermaidArtifactSave";
@@ -142,6 +147,14 @@ export default function MermaidWorkbench({
     look: options.look,
     layout: options.layout,
   };
+
+  // In a canvas pane a flowchart that declares NO direction is drawn top to
+  // bottom in a portrait pane and left to right in a wide one. An author's
+  // explicit direction is never changed, and the stored source never is.
+  const drawnSource = mermaidSourceForFlow(
+    state.source,
+    canvasFlow(useCanvasPresentation()),
+  );
 
   const catalog = getCatalogEntry(state.diagramType);
   const TypeIcon = catalog.icon;
@@ -752,11 +765,11 @@ export default function MermaidWorkbench({
           <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
             <div className="min-h-0 flex-1">
               {state.mode === "view" && (
-                <ViewModePane source={state.source} options={renderOptions} />
+                <ViewModePane source={drawnSource} options={renderOptions} />
               )}
               {state.mode === "visual" && (
                 <VisualModePane
-                  source={state.source}
+                  source={drawnSource}
                   options={renderOptions}
                   doc={doc}
                   selection={state.selection}

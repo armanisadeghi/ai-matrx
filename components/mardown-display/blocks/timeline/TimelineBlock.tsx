@@ -27,6 +27,8 @@ import { convertTimelineToTasks } from "@/features/tasks/utils/importConverters"
 import BlockHeaderWrapper from "@/components/mardown-display/blocks/common/BlockHeaderWrapper";
 import IconButton from "@/components/official/IconButton";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
+import { timelineAxis } from "@/components/mardown-display/blocks/canvas-adaptive";
 
 interface TimelinePeriod {
   period: string;
@@ -63,6 +65,9 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
   blockIndex,
 }) => {
   const [timeline, setTimeline] = useState<TimelineData>(initialTimeline);
+  // In a wide canvas pane the periods run left to right as columns; in a
+  // portrait pane (and everywhere outside the canvas) top to bottom.
+  const axis = timelineAxis(useCanvasPresentation());
   const blockContentRef = useRef<HTMLDivElement>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const handlePrint = useCallback(async () => {
@@ -335,13 +340,26 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ]}
       >
         {/* Timeline periods */}
-        <div ref={blockContentRef} className="space-y-4 sm:space-y-6 min-w-0">
+        <div
+          ref={blockContentRef}
+          data-timeline-axis={axis}
+          className={
+            axis === "horizontal"
+              ? "flex min-w-0 items-start gap-4 overflow-x-auto pb-2"
+              : "space-y-4 sm:space-y-6 min-w-0"
+          }
+        >
           {filteredPeriods.map((period, periodIndex) => {
             const isCollapsed = collapsedPeriods.has(period.period);
             const isCompleted = isPeriodCompleted(period);
 
             return (
-              <div key={periodIndex} className="relative">
+              <div
+                key={periodIndex}
+                className={
+                  axis === "horizontal" ? "relative w-72 shrink-0" : "relative"
+                }
+              >
                 {/* Period header */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 min-w-0">
                   <button

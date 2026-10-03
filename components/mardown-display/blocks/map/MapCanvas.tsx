@@ -44,14 +44,39 @@ function FitBounds({ markers, hasExplicitCenter }: { markers: MapMarker[]; hasEx
   return null;
 }
 
+/** Fly to the place a person picked from the list beside the map. */
+function FocusMarker({ focus }: { focus: { lat: number; lng: number; seq: number } | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!focus) return;
+    map.flyTo([focus.lat, focus.lng], Math.max(map.getZoom(), 13), { duration: 0.6 });
+  }, [map, focus]);
+  return null;
+}
+
+/** Leaflet measures its box once; a pane that resizes (list toggled, canvas split) re-measures. */
+function InvalidateOnResize() {
+  const map = useMap();
+  useEffect(() => {
+    const el = map.getContainer();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => map.invalidateSize());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [map]);
+  return null;
+}
+
 export default function MapCanvas({
   markers,
   center,
   zoom,
+  focus = null,
 }: {
   markers: MapMarker[];
   center?: [number, number];
   zoom?: number;
+  focus?: { lat: number; lng: number; seq: number } | null;
 }) {
   const initialCenter: [number, number] = center ?? (markers[0] ? [markers[0].lat, markers[0].lng] : [20, 0]);
   return (
@@ -72,6 +97,8 @@ export default function MapCanvas({
         </Marker>
       ))}
       <FitBounds markers={markers} hasExplicitCenter={!!center} />
+      <FocusMarker focus={focus} />
+      <InvalidateOnResize />
     </MapContainer>
   );
 }
