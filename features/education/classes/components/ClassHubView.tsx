@@ -15,7 +15,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   GraduationCap,
-  Plus,
   ChevronLeft,
   Pencil,
   Archive,
@@ -62,7 +61,7 @@ import {
   type ClassHubView,
 } from "@/features/surfaces/manifests/education-class.manifest";
 import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
-import { AddClassContentSheet } from "./AddClassContentSheet";
+import { ClassStudyContent } from "./ClassStudyContent";
 import { AccessModeBadge } from "./AccessModeBadge";
 import { ClassAccessPanel } from "./ClassAccessPanel";
 import { ClassRosterPanel } from "./ClassRosterPanel";
@@ -244,7 +243,6 @@ function ClassHubBody({
     void progress.reload();
   }, [assignmentCount, progress]);
   const [editOpen, setEditOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
   const today = todayIso();
 
   const isOwner = access.state?.isOwner ?? true;
@@ -278,7 +276,7 @@ function ClassHubBody({
     const ok = await confirm({
       title: `Archive ${cls.name}?`,
       description:
-        "It moves out of My Classes into Archived classes. Your decks, quizzes, notes, and media are NOT affected — you can restore this class anytime.",
+        "It moves to Archived classes. Your decks, quizzes, notes and media stay — restore it anytime.",
       confirmLabel: "Archive class",
       variant: "destructive",
     });
@@ -541,67 +539,14 @@ function ClassHubBody({
           assignment appears as a column. */}
       <ClassProgressPanel classId={cls.id} progress={progress} />
 
-      {/* Study content */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-foreground">
-            Study content
-            {!content.error && content.totalCount > 0 && (
-              <span className="ml-1.5 text-muted-foreground">
-                ({content.totalCount})
-              </span>
-            )}
-          </h2>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1.5 text-xs"
-            onClick={() => setAddOpen(true)}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add content
-          </Button>
-        </div>
-
-        {content.loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-          </div>
-        ) : content.error ? (
-          <ReadFailure
-            error={content.error}
-            what="this class's study content"
-            onRetry={() => void content.reload()}
-            className="m-0"
-          />
-        ) : content.totalCount === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Nothing tagged to this class yet. Tag a deck, quiz, note, or upload
-              — or generate new material while this class is your active scope.
-            </p>
-            <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Add study content
-            </Button>
-          </div>
-        ) : (
-          <ContentGroups content={content} />
-        )}
-      </section>
+      {/* Study content — keeps taking sources, filed by class and by unit. */}
+      <ClassStudyContent cls={cls} content={content} />
 
       <ClassFormDialog
         open={editOpen}
         onOpenChange={setEditOpen}
         initial={cls}
         onSubmit={handleEdit}
-      />
-      <AddClassContentSheet
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        className={cls.name}
-        content={content}
       />
       </div>
     </SurfaceRuntimeProvider>

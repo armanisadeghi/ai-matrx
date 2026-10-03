@@ -29,6 +29,31 @@ export const CLASS_SCOPE_TYPE_SEED = {
 } as const;
 
 /**
+ * A PART of a class (a unit, lesson or section) is a scope under a per-org
+ * "Unit" scope type, resolved by THIS slug (never by label — the person may
+ * rename the type to "Lessons" or "Modules" in the generic scopes UI).
+ */
+export const CLASS_PART_SCOPE_TYPE_SLUG = "class-part";
+
+/** Seed labels/appearance for the auto-created part scope type. */
+export const CLASS_PART_SCOPE_TYPE_SEED = {
+  labelSingular: "Unit",
+  labelPlural: "Units",
+  icon: "layers",
+  color: "#6366f1",
+  description: "Units, lessons and sections inside a class.",
+} as const;
+
+/**
+ * The `platform.associations` role on the part → class edge
+ * (source = the part scope, target = the class scope; registry pair
+ * `scope → scope`, Data Doctrine R7: a tree is a self-relation, never a
+ * `parent_scope_id` column). Content in a part carries TWO plain edges:
+ * content → part and content → class, so the class view always lists it.
+ */
+export const CLASS_PART_EDGE_ROLE = "part_of" as const;
+
+/**
  * The education content tokens a class hub surfaces, in display order. Each is
  * a registered platform.entity_types token that can be tagged to the class
  * scope. Anything else tagged to the class falls into an "Other" group.

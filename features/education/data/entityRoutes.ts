@@ -11,6 +11,7 @@
 // and only a token with no registered route anywhere resolves linkless.
 
 import {
+  AudioLines,
   Layers,
   ListChecks,
   Headphones,
@@ -74,7 +75,22 @@ const ROUTES: Record<string, EducationEntityRoute> = {
     // `/files/f/<id>` the platform entity registry declares).
     href: (id) => `/files/f/${id}`,
   },
+  // Sources added to a class (pasted text, web pages, captions, recordings)
+  // sit with its files; their doors are the platform registry's own.
+  processed_document: sourceMaterialRoute("processed_document", "Source", FileText),
+  transcript: sourceMaterialRoute("transcript", "Transcript", AudioLines),
 };
+
+/** A non-education source token, grouped with the class's source materials. */
+function sourceMaterialRoute(token: string, label: string, Icon: LucideIcon): EducationEntityRoute {
+  return {
+    group: "Source materials",
+    label,
+    Icon,
+    // Read the registry at call time, never at module load (import order).
+    href: (id) => tryGetEntityInfo(token)?.hrefFor?.(id) ?? null,
+  };
+}
 
 /**
  * Unknown-token fallback: resolve the canonical route from the platform entity

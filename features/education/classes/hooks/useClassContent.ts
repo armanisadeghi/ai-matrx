@@ -10,9 +10,10 @@
 
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
-import type { EntityTypeToken } from "@ai-matrx/associations";
+import { isEntityTypeToken, type EntityTypeToken } from "@ai-matrx/associations";
 import { educationEntityRoute } from "@/features/education/data/entityRoutes";
-import { ASSIGNMENT_EDGE_ROLE, CLASS_CONTENT_TOKENS } from "../constants";
+import { CLASS_CONTENT_TOKENS } from "../constants";
+import { classContentLinks, classPartIds, titleHintFromEdgeLabel } from "../classParts";
 import type { ClassContentItem } from "../types";
 
 export interface ClassContentGroup {
@@ -30,6 +31,10 @@ export interface UseClassContentReturn {
   detach: ReturnType<typeof useContainerLinks>["detach"];
   /** Attached ids keyed `${token}:${id}` (for the picker's attached state). */
   attachedKeys: Set<string>;
+  /** The class's parts (units, lessons, sections) — sources of its `part_of` edges. */
+  partIds: string[];
+  /** The class container's link store (parts attach/detach through it). */
+  links: ReturnType<typeof useContainerLinks>;
   reload: () => Promise<void>;
 }
 
@@ -43,17 +48,26 @@ export function useClassContent(
     orgId,
   });
 
-  // Flatten every incoming edge across the education content tokens. Each
-  // ContainerLink already carries its `token`. Assignment edges (role='assignment')
-  // are a DIFFERENT concern (the teacher-tools assignments surface reads them via
-  // the edu_class_assignments RPC) — exclude them so an assigned deck doesn't
-  // double-list here as plain tagged content.
-  const rows = CLASS_CONTENT_TOKENS.flatMap((token) => links.linksFor(token)).filter(
-    (r) => r.role !== ASSIGNMENT_EDGE_ROLE,
-  );
+  // Every incoming edge, whatever its token: a class keeps taking sources after
+  // it is made (web pages, transcripts, files, notes…), and a source the
+  // education map does not curate still lists (it opens through the platform
+  // registry's door). Assignment edges (role='assignment') are a DIFFERENT
+  // concern (the assignments panel reads them via edu_class_assignments) and the
+  // class's own parts are `scope` sources — `classContentLinks` drops both.
+  const allLinks = links.presentTokens
+    .filter(isEntityTypeToken)
+    .flatMap((token) => links.linksFor(token));
+  // Education's own tokens first, in their display order; every other source after.
+  const rank = (token: string) => {
+    const i = CLASS_CONTENT_TOKENS.indexOf(token as EntityTypeToken);
+    return i === -1 ? CLASS_CONTENT_TOKENS.length : i;
+  };
+  const rows = classContentLinks(allLinks).sort((a, b) => rank(a.token) - rank(b.token));
+  const partIds = classPartIds(allLinks);
 
+  const hint = (r: (typeof rows)[number]) => titleHintFromEdgeLabel(r.token, r.label);
   const { titleFor, loading: titlesLoading } = useEntityTitles(
-    rows.map((r) => ({ token: r.token, id: r.resourceId, label: r.label })),
+    rows.map((r) => ({ token: r.token, id: r.resourceId, label: hint(r) })),
   );
 
   const items: ClassContentItem[] = rows.map((r) => {
@@ -62,14 +76,14 @@ export function useClassContent(
       edgeId: r.edgeId,
       token: r.token,
       entityId: r.resourceId,
-      title: titleFor({ token: r.token, id: r.resourceId, label: r.label }),
+      title: titleFor({ token: r.token, id: r.resourceId, label: hint(r) }),
       href: route.href(r.resourceId),
       Icon: route.Icon,
       group: route.group,
     };
   });
 
-  // Group in the token display order (CLASS_CONTENT_TOKENS drives the order).
+  // Group in the token display order (rows are sorted by CLASS_CONTENT_TOKENS rank).
   const groupOrder: string[] = [];
   const byGroup = new Map<string, ClassContentItem[]>();
   for (const item of items) {
@@ -101,6 +115,8 @@ export function useClassContent(
     attach: links.attach,
     detach: links.detach,
     attachedKeys,
+    partIds,
+    links,
     reload: links.reload,
   };
 }

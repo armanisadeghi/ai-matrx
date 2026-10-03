@@ -18,6 +18,8 @@ This is the "massive win" from the spec: a class hub is **not a new data model**
 | **Class metadata** (teacher, term, period, **exam dates**) | the scope's **`settings` JSONB** | Parsed/serialized in `settings.ts`. No columns, no table. |
 | **Content ↔ class** | a **`platform.associations`** edge `source=(token,id) → target=('scope', classId)` | The exact scope-tag edge. Written by `EntityScopeTagger` / the association picker; read as the class scope's INCOMING edges. |
 | **Hub aggregation** | `useContainerLinks({ containerType: 'scope', containerId })` + `useEntityTitles` | The same edge War Room / org-home cards read. Grouped + routed by `data/entityRoutes.ts`. |
+| **A part of a class** (unit, lesson, section) | a **scope** under the per-org **"Unit" scope type** (`slug='class-part'`, label renameable) + a `scope → scope` edge **role `part_of`** (part → class) | Data Doctrine R7: a tree is a self-relation, never `parent_scope_id` (dead, 0 rows). Registry rows `scope→scope` + its record-store twin `scope→record`, both `container_side='none'` (a part conveys no access). `classParts.ts` + `hooks/useClassParts.ts`. |
+| **Content ↔ part** | a plain `content → part scope` edge, written BESIDE the `content → class` edge | So the class view always lists everything; a part is a filter (`?unit=<id>`). Removing from a part archives only that edge; removing from the class archives the class edge and every part edge for it (`assoc_remove` tombstones — archive, never destroy). |
 | **Access gating** | scope RLS + per-item `useAccess` | A non-owner resolves the class scope to nothing (RLS) → not-found; tagged items they can't access don't resolve. No bespoke gate. |
 | **Access mode** (open/closed/paid) | the scope's **`settings.access_mode`** | `open`/`closed`/`paid`. Read/written via `settings.ts` + the `edu_class_set_access` RPC. Missing → `closed` (private personal classes). |
 | **Roster** (owner + students) | **`iam.memberships`** on the class scope (`container_type='scope'`) | `role` = `owner`/`member`; `status` = `active`/`pending`/`entitled`. NO new roster table. |
@@ -149,6 +151,26 @@ These filled genuine open product questions. **Flagged for Arman** — reasonabl
 - **Class-filtered views inside each tool's list page** (spec IN-scope reach): the tagging + hub read loop is complete; per-tool list filters are the natural next increment.
 
 ## Change log
+
+- **2026-10-02 (keep adding + parts of a class)** — After a class exists the owner keeps adding to it
+  and files things into its parts. `ClassStudyContent` replaces the hub's inline "Study content":
+  **Add sources** (`AddClassSourcesDialog` — THE Source input, Use existing + Add new, no `attachTo`)
+  files every picked Source under the class (and the selected unit) through `content.attach` /
+  `associationsService`; **Add content** (the association picker) does the same for decks, quizzes,
+  notes, media; a row of unit chips (All · Unit 1 · … · + Unit, rename/remove in the selected
+  unit's menu; `?unit=<id>` so each unit has a link); every row has a units menu (file into / out
+  of parts) and a remove button (archive). `useClassContent` now lists EVERY incoming token (a web
+  page or transcript added as a source used to vanish — only five education tokens were read) and
+  never shows a registry edge label ("about") as a title (`titleHintFromEdgeLabel`). DB: two
+  `platform.association_types` rows (`scope→scope`, `scope→record`), proven on the clone then
+  applied live 2026-10-02; `@ai-matrx/associations` 0.13.137 carries them. Test:
+  `__tests__/classParts.test.ts` (13). Verified on the clone preview as admin@admin.com, 1440 and
+  375: two units created, a paste + web page + transcript + file added into Unit 1, a deck into
+  Unit 2 via Add content, filed across units, taken out of a unit, removed from the class, renamed.
+  Known gaps: the server landing door cannot file a Source against a scope (aidream `b9cf9424d7`
+  dropped the `context.scopes` model → `UnknownEntityType('scope')`), so the dialog files
+  client-side; members (students) do not see units yet — part scopes are not covered by the
+  class-membership read branch.
 
 - **2026-09-28 (cross-org assignment: card-membership edges now honor the assignment grant)** —
   Fixed the narrow gap flagged in the entry just below ("a deck attached from a DIFFERENT
