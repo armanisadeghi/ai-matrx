@@ -18,12 +18,11 @@ export function WorkflowsListHeader() {
       left={
         <div className="flex min-w-0 items-center gap-2 pl-1">
           <WorkflowIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <h1 className="min-w-0 truncate text-sm font-semibold text-foreground">Workflows</h1>
-          {/* The "waiting on you" inbox (census #38), where people already look.
-              Renders NOTHING at zero — a permanent "0 waiting" chip trains people
-              to stop seeing the control, which costs exactly the parked runs it
-              exists to surface. */}
-          <WaitingBadge />
+          <h1 className="shrink-0 text-sm font-semibold text-foreground">Workflows</h1>
+          {/* THE DOOR LAW: the workflow agents door. It draws nothing in the row
+              (disclosure lives in the shell's Agents menu), so it sits outside
+              the folding actions — an empty "…" row is a dead end. */}
+          <MandateDoorLink feature="workflow" label="Workflow agents" />
         </div>
       }
       right={
@@ -39,9 +38,6 @@ export function WorkflowsListHeader() {
               Runs
             </Link>
           </Button>
-          {/* THE DOOR LAW: the Masterwork Studio is where a workflow is authored,
-              and it is the only other place this record lives. */}
-          <MandateDoorLink feature="workflow" label="Workflow agents" />
           <Button
             asChild
             variant="ghost"
@@ -53,6 +49,12 @@ export function WorkflowsListHeader() {
               <span className="sm:hidden">Build</span>
             </Link>
           </Button>
+          {/* The "waiting on you" inbox (census #38), where people already look.
+              Renders NOTHING at zero — a permanent "0 waiting" chip trains people
+              to stop seeing the control, which costs exactly the parked runs it
+              exists to surface. Last = the primary: Runs and Masterworks fold
+              into "…" before it leaves the row. */}
+          <WaitingBadge />
         </>
       }
     />
