@@ -3675,9 +3675,10 @@ export type Database = {
         }[]
       }
       jsonb_num: { Args: { n: number }; Returns: Json }
-      model_message_flag_profile:
-        | { Args: { p_model_id: string }; Returns: Json }
-        | { Args: { p_model_id: string; p_offering_id: string }; Returns: Json }
+      model_message_flag_profile: {
+        Args: { p_model_id: string }
+        Returns: Json
+      }
       offering_admin_columns: {
         Args: never
         Returns: {
@@ -3685,29 +3686,17 @@ export type Database = {
           pricing: Json
         }[]
       }
-      offering_capabilities:
-        | {
-            Args: { p_model_ids?: string[] }
-            Returns: {
-              is_decision_model: boolean
-              model_id: string
-              multi_speaker: Json
-              offering_id: string
-              reference_roles: Json
-              supports_prefill: boolean
-            }[]
-          }
-        | {
-            Args: { p_model_ids: string[]; p_offering_ids: string[] }
-            Returns: {
-              is_decision_model: boolean
-              model_id: string
-              multi_speaker: Json
-              offering_id: string
-              reference_roles: Json
-              supports_prefill: boolean
-            }[]
-          }
+      offering_capabilities: {
+        Args: { p_model_ids?: string[] }
+        Returns: {
+          is_decision_model: boolean
+          model_id: string
+          multi_speaker: Json
+          offering_id: string
+          reference_roles: Json
+          supports_prefill: boolean
+        }[]
+      }
       resolve_model_config:
         | { Args: { p_model_id: string }; Returns: Json }
         | { Args: { p_model_id: string; p_offering_id: string }; Returns: Json }
@@ -30851,6 +30840,14 @@ export type Database = {
         Returns: Json
       }
       _first_words: { Args: { p_data: Json }; Returns: string }
+      _form_look: {
+        Args: { p_organization_id: string; p_presentation: Json }
+        Returns: Json
+      }
+      _form_look_judge: {
+        Args: { p_organization_id: string; p_presentation: Json }
+        Returns: Json
+      }
       _form_questions_asked: {
         Args: { p_organization_id: string; p_questions: Json; p_values: Json }
         Returns: {
@@ -31192,6 +31189,10 @@ export type Database = {
       }
       _record_shown_to_ctx: {
         Args: { p_organization_ids: string[]; p_table_id: string }
+        Returns: Json
+      }
+      _relation_names_resolve: {
+        Args: { p_names: string[]; p_organization_id: string; p_target: string }
         Returns: Json
       }
       _row_control_columns: { Args: never; Returns: Json }
@@ -32307,6 +32308,19 @@ export type Database = {
           rule_version: number
           value: Json
         }[]
+      }
+      confidential_anchor: { Args: { p_id: string }; Returns: string }
+      confidential_answer: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_user: string
+        }
+        Returns: boolean
+      }
+      confidential_names: {
+        Args: { p_organization_id: string; p_user: string; p_value: Json }
+        Returns: boolean
       }
       containment_chain: {
         Args: { p_organization_id: string; p_record_id: string }
@@ -34152,6 +34166,16 @@ export type Database = {
         }[]
       }
       list_portals_everywhere: { Args: { p_archived?: string }; Returns: Json }
+      listed_predicate_sql: {
+        Args: {
+          p_alias?: string
+          p_organization_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_table_id: string
+          p_user: string
+        }
+        Returns: string
+      }
       lookup_value: {
         Args: {
           p_field_data: Json
@@ -35527,6 +35551,15 @@ export type Database = {
         }
         Returns: string
       }
+      relation_name_key: { Args: { p_text: string }; Returns: string }
+      relation_names_match: {
+        Args: {
+          p_names: string[]
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
       relation_own: {
         Args: {
           p_organization_id: string
@@ -35875,6 +35908,15 @@ export type Database = {
         Returns: string[]
       }
       sensitivity_rank: { Args: { p_sensitivity: string }; Returns: number }
+      set_table_confidential_arman_explicitly_approved: {
+        Args: {
+          p_approved_on: string
+          p_arman_words: string
+          p_readers: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
       share_access: {
         Args: { p_organization_id: string; p_subject_id: string }
         Returns: {
