@@ -163,6 +163,11 @@ export interface ScopeNarrowOption {
 export interface EntityScopeCounts {
   /** True server-side total per scope kind. Absent kinds are unsupported. */
   byKind: Partial<Record<ListScopeKind, number>>;
+  /**
+   * The service names no lane counts for this question (an open-ended list the store pages
+   * without a count — `EntityListPage.hasMore`). The tabs draw no number at all, never `0`.
+   */
+  uncounted?: boolean;
   /** Narrowing options per scope kind, in server order. */
   narrow: Partial<Record<ListScopeKind, ScopeNarrowOption[]>>;
   /**

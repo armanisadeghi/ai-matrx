@@ -381,7 +381,7 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
     }
   };
   // No count is made here (see above); the organization filter lists its choices without numbers.
-  const NO_COUNTS: EntityScopeCounts = { byKind: {}, narrow: {} };
+  const NO_COUNTS: EntityScopeCounts = { byKind: {}, narrow: {}, uncounted: true };
   const NO_FACETS: EntityFacets = { byKind: {} };
   const openEnded = (query: EntityListQuery) => query.archived === "archived" || query.archived === "all";
 

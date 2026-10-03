@@ -58,7 +58,7 @@ function config(): EntityListConfig<Row> {
   return {
     surfaceKey: `open-ended-${Math.random().toString(36).slice(2)}`,
     entityLabel: { singular: "table", plural: "tables" },
-    scopes: ["all"],
+    scopes: ["all", "mine"],
     sourceFeature: "udt",
     service: {
       fetchPage: async (query: { page: number }, sort: { pageSize: number }) => {
@@ -69,7 +69,7 @@ function config(): EntityListConfig<Row> {
         }));
         return { rows, total: start + rows.length, hasMore: start + rows.length < SIZE };
       },
-      fetchCounts: async () => ({ byKind: {}, narrow: {} }),
+      fetchCounts: async () => ({ byKind: {}, narrow: {}, uncounted: true }),
       fetchFacets: async () => EMPTY_FACETS,
     },
     columns: [
@@ -122,6 +122,12 @@ it("draws the first page with no count and a working Next", async () => {
   expect(text).toContain("1-25");
   expect(text).not.toMatch(/of\s*25\b/);
   expect(nextButton()?.hasAttribute("disabled")).toBe(false);
+});
+
+it("the lane tabs say no number the store did not give", () => {
+  const tabs = container.querySelector('[role="tablist"][aria-label="List scope"]')?.textContent ?? "";
+  expect(tabs).toContain("Mine");
+  expect(tabs).not.toMatch(/\d/);
 });
 
 it("offers no Next after the store says the list ended", async () => {

@@ -221,7 +221,7 @@ describe("W4 — the Archived filter pages like the store pages it", () => {
   it("no lane count or facet is made by reading the whole archive", async () => {
     const readArchived = storeArchive(1300);
     const service = homeService(readArchived);
-    expect(await service.fetchCounts(query("archived"))).toEqual({ byKind: {}, narrow: {} });
+    expect(await service.fetchCounts(query("archived"))).toEqual({ byKind: {}, narrow: {}, uncounted: true });
     expect(await service.fetchFacets(query("archived"))).toEqual({ byKind: {} });
     expect(readArchived).not.toHaveBeenCalled();
   });
