@@ -75,10 +75,20 @@ export async function printDocumentPdfPages(pdfUrl: string): Promise<void> {
   win.document.close();
   await Promise.all(
     Array.from(win.document.images, (img) =>
-      img.complete ? Promise.resolve() : new Promise<void>((r) => img.addEventListener("load", () => r(), { once: true })),
+      img.complete
+        ? Promise.resolve()
+        : new Promise<void>((resolve, reject) => {
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => reject(new Error("A page could not be prepared for printing.")), { once: true });
+          }),
     ),
-  );
-  win.addEventListener("afterprint", () => setTimeout(cleanup, 0), { once: true });
+  ).catch((err: unknown) => {
+    cleanup();
+    throw err;
+  });
+  // Mobile print() returns before the system sheet has read the frame, and
+  // afterprint may fire early, so the frame outlives it.
+  win.addEventListener("afterprint", () => setTimeout(cleanup, 60_000), { once: true });
   win.focus();
   win.print();
 }
