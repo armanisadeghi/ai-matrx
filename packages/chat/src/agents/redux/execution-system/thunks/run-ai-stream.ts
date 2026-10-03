@@ -84,6 +84,7 @@ import {
   setRequestServerId,
   failPendingToolLifecycle,
 } from "../active-requests/active-requests.slice";
+import { pageIsLeaving } from "../utils/page-leaving";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import {
@@ -212,6 +213,13 @@ export function shouldCaptureStreamFailure(error: unknown): boolean {
   // the canonical durable-operation reconnect. Filing the trigger itself as a
   // red system_error turns successful self-healing into a production incident.
   if (error instanceof Error && error.name === "HeartbeatTimeoutError") {
+    return false;
+  }
+  // The browser cancels the live stream as a reloading / navigating page
+  // goes. That is the person leaving, not a failure — the server finishes the
+  // turn and the next page rejoins it (real test 2026-10-03: "1 error" after
+  // a reload). The same drop while the page stays is still captured.
+  if (isStreamTransportLost(error) && pageIsLeaving()) {
     return false;
   }
   return !(
