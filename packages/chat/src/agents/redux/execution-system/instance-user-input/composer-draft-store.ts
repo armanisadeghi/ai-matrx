@@ -216,7 +216,16 @@ export function registerComposerDraftAlias(
   const holders = aliasHolders.get(key) ?? new Set<string>();
   holders.add(conversationId);
   aliasHolders.set(key, holders);
-  if (isAliasShared(key)) removeAt(key);
+  if (isAliasShared(key)) {
+    removeAt(key);
+    removeAt(remarksAliasKey(key));
+    return;
+  }
+  // Remarks staged before the alias existed (a "New chat about this" passage
+  // lands as the room mounts) are mirrored now, so a reload that re-mints the
+  // conversation id still finds them.
+  const staged = readRemarksAt(composerRemarksKey(conversationId));
+  if (staged && !staged.sent && staged.items.length) writeRemarksAt(remarksAliasKey(key), staged);
 }
 
 export function unregisterComposerDraftAlias(conversationId: string): void {
@@ -238,6 +247,7 @@ export function releaseComposerDraftAlias(conversationId: string): void {
   dropAliasHolder(conversationId);
   if (!key || shared) return;
   if (readAt(key)?.sent) removeAt(key);
+  if (readRemarksAt(remarksAliasKey(key))?.sent) removeAt(remarksAliasKey(key));
 }
 
 function keysFor(conversationId: string): string[] {
@@ -376,12 +386,9 @@ export function markComposerDraftSent(conversationId: string): void {
   };
   for (const key of keysFor(conversationId)) writeAt(key, tombstone);
   // The staged remarks went with the message: the same tombstone covers them.
-  writeRemarksAt(composerRemarksKey(conversationId), {
-    items: [],
-    at: Date.now(),
-    gen,
-    sent: true,
-  });
+  for (const key of remarksKeysFor(conversationId)) {
+    writeRemarksAt(key, { items: [], at: Date.now(), gen, sent: true });
+  }
 }
 
 /** Drop the records entirely (instance destroyed / explicit clear). */
@@ -442,9 +449,24 @@ export function isComposerDraftTokenLive(token: ComposerDraftToken): boolean {
 // conversation, written under the same submit GENERATION and laid to rest by
 // the same tombstone (`markComposerDraftSent`). It has its own key so an empty
 // text box (which clears the text record) never takes the remarks with it.
-// Conversation key only — a remark always names a real conversation.
+// Mirrored to the surface alias exactly like the text draft (same rules: only
+// while the conversation has no turns, never when the alias is shared), so the
+// remarks a fresh /chat/new room was opened with survive a reload that
+// re-mints its conversation id.
 
 const REMARKS_PREFIX = `${PREFIX}remarks.`;
+
+/** The remarks record mirrored under a surface alias (`aliasKey` = composerDraftAliasKey(alias)). */
+function remarksAliasKey(aliasKey: string): string {
+  return `${REMARKS_PREFIX}alias.${aliasKey}`;
+}
+
+function remarksKeysFor(conversationId: string): string[] {
+  const alias = aliases.get(conversationId);
+  return alias && !isAliasShared(alias)
+    ? [composerRemarksKey(conversationId), remarksAliasKey(alias)]
+    : [composerRemarksKey(conversationId)];
+}
 
 export type ComposerRemarksRecord = {
   /** The staged remarks, as `remarks.ts` stores them (validated on read by its caller). */
@@ -511,7 +533,9 @@ export function writeComposerRemarks(
   const live = readRemarksAt(key);
   if (items.length === 0) {
     if (live?.sent) return true;
-    removeAt(key);
+    for (const k of remarksKeysFor(conversationId)) {
+      if (!readRemarksAt(k)?.sent) removeAt(k);
+    }
     return true;
   }
   // A newer generation in storage = another tab sent since this one last did.
@@ -519,7 +543,10 @@ export function writeComposerRemarks(
     generations.set(conversationId, live.gen);
     return false;
   }
-  return writeRemarksAt(key, { items: [...items], o: ownerId, at: Date.now(), gen });
+  const record = { items: [...items], o: ownerId, at: Date.now(), gen };
+  let ok = true;
+  for (const k of remarksKeysFor(conversationId)) ok = writeRemarksAt(k, record) && ok;
+  return ok;
 }
 
 /**
@@ -529,16 +556,26 @@ export function writeComposerRemarks(
 export function readComposerRemarks(
   conversationId: string,
   ownerId: string | null = null,
+  alias?: string,
 ): unknown[] | null {
-  const record = readRemarksAt(composerRemarksKey(conversationId));
-  if (!record || record.sent) return null;
-  if ((record.o ?? null) !== ownerId) return null;
-  return record.items.length ? record.items : null;
+  const candidates = [composerRemarksKey(conversationId)];
+  if (alias && !isAliasShared(composerDraftAliasKey(alias))) {
+    candidates.push(remarksAliasKey(composerDraftAliasKey(alias)));
+  }
+  for (const key of candidates) {
+    const record = readRemarksAt(key);
+    // The conversation's own tombstone is final; an alias is only a fallback.
+    if (record?.sent && key === candidates[0]) return null;
+    if (!record || record.sent) continue;
+    if ((record.o ?? null) !== ownerId) continue;
+    if (record.items.length) return record.items;
+  }
+  return null;
 }
 
 /** Drop the remarks record (conversation destroyed). */
 export function clearComposerRemarks(conversationId: string): void {
-  removeAt(composerRemarksKey(conversationId));
+  for (const key of remarksKeysFor(conversationId)) removeAt(key);
 }
 
 /** Test seam ONLY — drops the in-memory generations, aliases and sweep flag, as a reload would. */

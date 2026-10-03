@@ -11,10 +11,10 @@ import { readComposerRemarks } from "./composer-draft-store";
 import { isDraftRestoreEnabled } from "./composer-draft.middleware";
 import { readStoredRemarks, restageRemarks } from "../instance-resources/remarks";
 
-export function restoreComposerRemarks(conversationId: string, ownerId: string | null) {
+export function restoreComposerRemarks(conversationId: string, ownerId: string | null, alias?: string) {
   return (dispatch: ChatDispatch, getState: () => ChatRootState): number => {
     if (!isDraftRestoreEnabled(getState())) return 0;
-    const stored = readStoredRemarks(readComposerRemarks(conversationId, ownerId));
+    const stored = readStoredRemarks(readComposerRemarks(conversationId, ownerId, alias));
     if (stored.length === 0) return 0;
     return dispatch(restageRemarks(conversationId, stored));
   };

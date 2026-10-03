@@ -122,7 +122,7 @@ export function useComposerDraftRestore(
     setStorageAvailable(isComposerDraftStorageAvailable());
     if (!enabled) return;
     // Staged remarks (comments, choices, edits…) come back as their chips.
-    dispatch(restoreComposerRemarks(conversationId, ownerId));
+    dispatch(restoreComposerRemarks(conversationId, ownerId, liveAlias));
     const token = peekComposerDraft(conversationId, liveAlias, ownerId);
     if (!token) return;
     // Compare-and-apply — the thunk refuses the token if a send, another tab or
