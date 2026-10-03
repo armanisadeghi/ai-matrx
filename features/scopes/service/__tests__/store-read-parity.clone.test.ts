@@ -53,6 +53,29 @@
  * (every reference label the store names is renamed), type-order (the store answers each organization's
  * scope types reversed). Each must go RED on test 2, naming the planted class.
  * PARITY_SEATS=member (or admin) runs one seat.
+ *
+ * COMPARED AGAINST THE RULED BEHAVIOUR, NOT THE OLD PATH (lane SCOPES-ON-THE-STORE, chair rulings of
+ * 2026-10-02 13:20 PT, and the O7 classes judged store-right in
+ * common-docs/projects/data-doctrine-adoption/v6/scopes-evidence/scopes-o7-value-diffs.md). Where the
+ * ruling says the store is right, the store's answer is held to the ruled rule — each a narrow match
+ * (one field, one condition, its evidence beside it), never a field ignored:
+ *   - ruling 2: a value's `version` is the version a PERSON made. Both paths now answer that (the old
+ *     row counts person writes; custom.context_values answers the source's old_version) — compared exactly.
+ *   - ruling 3: `fetch_hint` is one of the store's three words; the old read now names "lazy" as
+ *     "on_demand" (scopesService withStoreFetchHints) — compared exactly.
+ *   - ruling 4: `archived_scope_count` is what the data home's archive (custom.read_records_archived)
+ *     shows THIS seat for that type — the oracle is that door, asked here per type (`ruled-archived-count`).
+ *   - ruling 1: a system write must never drop a reference to an archived scope — the OLD path is right.
+ *     The one reference already dropped on the clone (RULING_1_PENDING) is named and counted apart
+ *     (`ruled-pending-restore`); any other dropped reference is a real difference.
+ *   - O7 #6/#7/#8 (`ruled-label`): a reference item's LABEL where ids, types and order are equal and the
+ *     store's label is the live one — the old fence carried none, a workbook's "Imported from <name>.<ext>",
+ *     or the store's read-mask redaction of a record the seat may not open. Any other label change is real.
+ *   - O7 #11 (`cleared-cell`): an old current row whose every value column is NULL (a cleared cell) that
+ *     the store keeps no key for — the missing row and the list length it accounts for, nothing else.
+ *   - O7 #5 (`fence-spelling`): unchanged (above).
+ * The plants still bite through every one: value-text changes plain text (no rule touches it),
+ * fence-label renames every label to "Planted Name" (none of the three label conditions holds).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -257,7 +280,70 @@ const SORT_ORDER_LISTS = new Set(["scope_types", "items"]);
 /** The lists no screen draws in their own order: every reader joins values to items by context_item_id. */
 const UNORDERED_LISTS = new Set(["values"]);
 
-type DiffKind = "value" | "clock" | "bookkeeping" | "fence-spelling" | "screen-order" | "value-list-order" | "absent-vs-null";
+type DiffKind =
+  | "value" | "clock" | "bookkeeping" | "fence-spelling" | "screen-order" | "value-list-order" | "absent-vs-null"
+  | "ruled-label" | "cleared-cell" | "ruled-archived-count" | "ruled-pending-restore";
+
+/**
+ * RULING 1's ONE KNOWN DROP (clone, 2026-10-02): Castellano & Reyes' "Workers' Compensation" scope
+ * (5f7a90b5…), team_members (old value ab9a65bb…), lost Nadia Brandt (726ac9e6…, archived 2026-09-28
+ * 19:50:11Z) to the copy's correction (src s5, 19:55:10Z). The old path is right; the store's data
+ * still lacks her, and the mover fix (aidream 05174769f1) keeps a held archived reference but cannot
+ * put back one already dropped. Matched only as: the same type, the store's items are the old items
+ * with exactly this one id removed. Anything else missing from a reference is a real difference.
+ */
+const RULING_1_PENDING = new Set(["726ac9e6-8430-4174-9fb2-72c41559172a"]);
+
+/** O7 #8: the store's read mask names a record the seat may not open in these words (custom.read_mask). */
+const REDACTED_LABEL = "A record you have not been given access to";
+
+/** O7 #11: the columns an old value row holds its value in — all NULL is a cleared cell. */
+const OLD_VALUE_COLUMNS = [
+  "value_text", "value_number", "value_boolean", "value_json", "value_date",
+  "value_document_url", "value_timestamp", "value_time", "value_reference_id",
+];
+function clearedOldCell(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const o = e as Record<string, unknown>;
+  return typeof o.context_item_id === "string" && OLD_VALUE_COLUMNS.every((k) => o[k] == null);
+}
+
+/**
+ * Two reference fences that differ in meaning: does the difference fall under a ruled class?
+ * `ruled-pending-restore` (ruling 1's known drop) or `ruled-label` (O7 #6/#7/#8), else null (real).
+ */
+function ruledFenceKind(fa: string, fb: string): DiffKind | null {
+  const a = JSON.parse(fa) as { type: string; items: Array<Record<string, unknown>> };
+  const b = JSON.parse(fb) as { type: string; items: Array<Record<string, unknown>> };
+  if (a.type !== b.type) return null;
+  const idOf = (it: Record<string, unknown>) => String(it.id ?? it.file_id ?? it.table_id ?? "").toLowerCase();
+  // Ruling 1: exactly the known archived target missing, every other item identical.
+  const dropped = a.items.filter((it) => !b.items.some((x) => idOf(x) === idOf(it)));
+  if (dropped.length > 0) {
+    const kept = a.items.filter((it) => !dropped.includes(it));
+    const same = kept.length === b.items.length && kept.every((it, i) => JSON.stringify(it) === JSON.stringify(b.items[i]));
+    return same && dropped.every((it) => RULING_1_PENDING.has(idOf(it))) ? "ruled-pending-restore" : null;
+  }
+  if (a.items.length !== b.items.length) return null;
+  let labelled = false;
+  for (let i = 0; i < a.items.length; i += 1) {
+    const x = a.items[i]!;
+    const y = b.items[i]!;
+    const rest = (o: Record<string, unknown>) => JSON.stringify(Object.fromEntries(Object.entries(o).filter(([k]) => k !== "label")));
+    if (rest(x) !== rest(y)) return null;
+    const la = typeof x.label === "string" ? x.label : "";
+    const lb = typeof y.label === "string" ? y.label : "";
+    if (la === lb) continue;
+    const imported = /^Imported from (.+?)(\.[A-Za-z0-9]{1,5})?$/.exec(la);
+    const ok =
+      (la === "" && lb !== "") || // #6: the old fence named the id only; the store names it live
+      lb === REDACTED_LABEL || // #8: the store's mask redacts a record this seat may not open
+      (imported !== null && imported[1] === lb); // #7: a workbook's import caption → its live name
+    if (!ok) return null;
+    labelled = true;
+  }
+  return labelled ? "ruled-label" : null;
+}
 type Diff = { reader: string; arg: string; path: string; old: unknown; store: unknown; kind: DiffKind; clock: boolean };
 type Stats = { leaves: number; valueCells: number };
 
@@ -292,13 +378,17 @@ function diff(reader: string, arg: string, a: unknown, b: unknown, p: string, ou
   }
   const key = p.split(".").pop()?.replace(/\[[^\]]+\]$/, "") ?? "";
   if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) {
-      push(out, { reader, arg, path: `${p}.length`, old: a.length, store: b.length, kind: "value" });
-    }
     // Align lists of rows by id where they have one, so an order difference is named as such.
     const ids = (x: unknown[]) => x.map((e) => (e && typeof e === "object" && "id" in (e as object) ? String((e as { id: unknown }).id) : null));
     const ai = ids(a);
     const bi = ids(b);
+    if (a.length !== b.length) {
+      // O7 #11: the length is accounted for only when the old-only rows are exactly the cleared cells.
+      const bset = new Set(bi);
+      const oldOnly = a.filter((_, i) => ai[i] !== null && !bset.has(ai[i]));
+      const cleared = key === "values" && b.length < a.length && oldOnly.length === a.length - b.length && oldOnly.every(clearedOldCell);
+      push(out, { reader, arg, path: `${p}.length`, old: a.length, store: b.length, kind: cleared ? "cleared-cell" : "value" });
+    }
     if (ai.every((x) => x) && bi.every((x) => x)) {
       if (ai.join() !== bi.join() && [...ai].sort().join() === [...bi].sort().join()) {
         // The order a screen shows: a value list not at all; a sort_order list must come from the
@@ -328,7 +418,7 @@ function diff(reader: string, arg: string, a: unknown, b: unknown, p: string, ou
       const bm = new Map(b.map((e, i) => [bi[i]!, e]));
       const am = new Map(a.map((e, i) => [ai[i]!, e]));
       for (const [id, e] of am) {
-        if (!bm.has(id)) push(out, { reader, arg, path: `${p}[${id}]`, old: summary(e), store: "(missing)", kind: "value" });
+        if (!bm.has(id)) push(out, { reader, arg, path: `${p}[${id}]`, old: summary(e), store: "(missing)", kind: key === "values" && clearedOldCell(e) ? "cleared-cell" : "value" });
         else diff(reader, arg, e, bm.get(id), `${p}[${id}]`, out, stats);
       }
       for (const [id, e] of bm) if (!am.has(id)) push(out, { reader, arg, path: `${p}[${id}]`, old: "(missing)", store: summary(e), kind: "value" });
@@ -354,7 +444,7 @@ function diff(reader: string, arg: string, a: unknown, b: unknown, p: string, ou
     if (fa !== null && fb !== null) {
       if (fa === fb) kind = "fence-spelling";
       else {
-        push(out, { reader, arg, path: p, old: JSON.parse(fa), store: JSON.parse(fb), kind: "value" });
+        push(out, { reader, arg, path: p, old: JSON.parse(fa), store: JSON.parse(fb), kind: ruledFenceKind(fa, fb) ?? "value" });
         return;
       }
     }
@@ -468,6 +558,20 @@ describeClone("the store read path equals the old path on the clone", () => {
         }
       }
       await run("listContextItemsForTypes", "all", () => scopesService.listContextItemsForTypes(allTypes));
+
+      // RULING 4: archived_scope_count is held to the data home's archive for THIS seat — the oracle is
+      // custom.read_records_archived itself, asked per type, never the door under test.
+      const orgIdByName = new Map(oldOrgs.map((o) => [o.name, o.id]));
+      for (const d of diffs) {
+        const m = /\[([0-9a-f-]{36})\]\.archived_scope_count$/.exec(d.path);
+        if (d.kind !== "value" || d.reader !== "listArchivedScopeTypes" || !m) continue;
+        const orgId = orgIdByName.get(d.arg);
+        if (!orgId) continue;
+        const { data: rows, error: e } = await client
+          .schema("custom")
+          .rpc("read_records_archived", { p_organization_id: orgId, p_table_id: m[1], p_lane: "org", p_by_id: false, p_limit: 1000, p_offset: 0 });
+        if (!e && Array.isArray(rows) && rows.length === d.store) d.kind = "ruled-archived-count";
+      }
 
       // Only a real difference counts as `value`; every other kind is counted apart, never failed.
       const byReader: Record<string, { value: number; clock: number }> = {};
