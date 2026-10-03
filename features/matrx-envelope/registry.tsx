@@ -83,6 +83,10 @@ const PlanNodePatchRenderer = dynamic(
     import("@/features/matrx-envelope/directives/planTree/PlanNodePatchRenderer"),
   { ssr: false, loading: () => null },
 );
+const CommentReplyRenderer = dynamic(
+  () => import("@/features/matrx-envelope/directives/commentReply/CommentReplyRenderer"),
+  { ssr: false, loading: () => null },
+);
 // ── Built-in renderers ───────────────────────────────────────────────────────
 
 /** Per-reference-type chip icon. Falls back to a generic link glyph. */
@@ -311,6 +315,10 @@ const ContextGroomRenderer: DirectiveRenderer = ({ directive }) => {
 };
 
 registerDirectiveRenderer("action", ContextGroomRenderer, "context_groom");
+
+// The agent's reply into a remark's comment thread: a one-line receipt per
+// reply, never the reply text (that lives only in the thread).
+registerDirectiveRenderer("action", CommentReplyRenderer, "comment_reply");
 
 // Content Planning (plan schema) — applied server-side by aidream's
 // services/content_plan directives; these cards are receipts that resolve to

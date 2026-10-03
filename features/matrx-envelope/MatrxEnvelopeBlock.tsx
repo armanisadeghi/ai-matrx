@@ -33,6 +33,7 @@ import {
 } from "@ai-matrx/content-ir-react";
 
 import { matrxDirectiveHost } from "@/features/matrx-envelope/directiveHost";
+import { DirectiveFenceProvider } from "@/features/matrx-envelope/directiveFence";
 // Side-effect import: the host-specific renderer registrations must have run
 // before `DirectiveRender` consults the registry.
 import "@/features/matrx-envelope/registry";
@@ -61,11 +62,13 @@ const MatrxEnvelopeBlock: React.FC<MatrxEnvelopeBlockProps> = ({
   conversationId,
 }) => (
   <DirectiveHostProvider host={matrxDirectiveHost}>
-    <DirectiveRender
-      content={content}
-      streaming={streaming}
-      conversationId={conversationId ?? null}
-    />
+    <DirectiveFenceProvider value={{ streaming, conversationId: conversationId ?? null }}>
+      <DirectiveRender
+        content={content}
+        streaming={streaming}
+        conversationId={conversationId ?? null}
+      />
+    </DirectiveFenceProvider>
   </DirectiveHostProvider>
 );
 

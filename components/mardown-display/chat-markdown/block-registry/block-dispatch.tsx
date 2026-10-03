@@ -1504,6 +1504,7 @@ const PROTOCOL_BLOCK_DISPATCH = {
         message={(sd.message as string) ?? ""}
         resourceKind={sd.resource_kind as string | undefined}
         resourceIds={sd.resource_ids as string[] | undefined}
+        thread={sd.thread}
       />
     );
   },

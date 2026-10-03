@@ -1207,6 +1207,12 @@ export async function processStream({
                         resource_ids: [],
                       }
                     : null;
+          // A receipt that names a comment thread (comment_reply) carries the
+          // thread to open; copied through as the server sent it.
+          const thread = receipt ? (d as { thread?: unknown }).thread : undefined;
+          if (receipt && thread && typeof thread === "object") {
+            (receipt as typeof receipt & { thread?: unknown }).thread = thread;
+          }
           if (receipt) {
             const blockId = `directive_receipt_${totalEvents}`;
             dataRenderBlockId = blockId;

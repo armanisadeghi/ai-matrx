@@ -1,6 +1,8 @@
 "use client";
 import React from "react";
-import { AlertTriangle, Check, CircleSlash, Clock, RotateCcw } from "lucide-react";
+import { AlertTriangle, Check, CircleSlash, Clock, MessagesSquare, RotateCcw } from "lucide-react";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { openCommentThread } from "@/features/rich-document/annotations/canvas/commentThreadKind";
 
 /**
  * DirectiveReceiptBlock — what the directive actually DID, in a sentence.
@@ -49,6 +51,55 @@ export interface DirectiveReceiptBlockProps {
   /** Carried for linking/diagnostics — NEVER counted into a sentence. */
   resourceKind?: string;
   resourceIds?: string[];
+  /** A `comment_reply` receipt's thread, as the server sent it: the line opens it. */
+  thread?: unknown;
+}
+
+/** The agent's reply into a comment thread (`directive_v1_action_comment_reply`). */
+const COMMENT_REPLY_SLUG = /_action_comment_reply$/;
+
+interface ThreadLink {
+  entity: string;
+  id: string;
+  rootId: string | null;
+}
+
+function readThreadLink(value: unknown): ThreadLink | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const entity = v.entity_type ?? v.entity;
+  const id = v.entity_id ?? v.id;
+  const root = v.root_id ?? v.comment_id;
+  if (typeof entity !== "string" || !entity || typeof id !== "string" || !id) return null;
+  return { entity, id, rootId: typeof root === "string" && root ? root : null };
+}
+
+/**
+ * The comment-reply receipt: ONE line — the server's sentence ("Replied in
+ * thread" / why it failed) and the door to the thread in the canvas. The
+ * reply's own words are in the thread, never here.
+ */
+function CommentReplyReceipt({ directive, outcome, message, thread }: DirectiveReceiptBlockProps) {
+  const canvas = useOptionalCanvas();
+  const style = OUTCOME_STYLE[outcome] ?? OUTCOME_STYLE.applied;
+  const failed = outcome === "failed" || outcome === "blocked";
+  const link = readThreadLink(thread);
+  const Icon = failed ? style.Icon : MessagesSquare;
+  return (
+    <div className="my-1 flex min-w-0 items-center gap-1.5 text-xs" data-directive={directive} data-outcome={outcome}>
+      <Icon className={`h-3.5 w-3.5 shrink-0 ${failed ? style.tone : "text-muted-foreground"}`} />
+      <span className={`min-w-0 truncate ${failed ? "text-foreground" : "text-muted-foreground"}`}>{message}</span>
+      {link && !failed ? (
+        <button
+          type="button"
+          className="shrink-0 text-primary hover:underline"
+          onClick={() => openCommentThread(canvas, { entity: link.entity, id: link.id, title: "Comments", focus: link.rootId })}
+        >
+          Open thread
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 const OUTCOME_STYLE: Record<
@@ -66,13 +117,9 @@ const OUTCOME_STYLE: Record<
   blocked: { Icon: CircleSlash, tone: "text-destructive", label: "Not applied" },
 };
 
-const DirectiveReceiptBlock: React.FC<DirectiveReceiptBlockProps> = ({
-  directive,
-  outcome,
-  message,
-  resourceKind,
-  resourceIds,
-}) => {
+const DirectiveReceiptBlock: React.FC<DirectiveReceiptBlockProps> = (props) => {
+  const { directive, outcome, message, resourceKind, resourceIds } = props;
+  if (COMMENT_REPLY_SLUG.test(directive)) return <CommentReplyReceipt {...props} />;
   const style = OUTCOME_STYLE[outcome] ?? OUTCOME_STYLE.applied;
   const { Icon } = style;
 
