@@ -81,6 +81,8 @@ import ValueResultBlock from "@/components/mardown-display/blocks/result-kinds/V
 import GoogleWorkspaceResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
 import GoogleMarketingResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
 import PlatformRecordBlock from "@/components/mardown-display/blocks/result-kinds/PlatformRecordBlock";
+import RelationBlock from "@/components/mardown-display/blocks/result-kinds/RelationBlock";
+import PickListBlock from "@/components/mardown-display/blocks/result-kinds/PickListBlock";
 import {
   SeoRulingKeywordBlock,
   SeoRulingExampleBlock,
@@ -597,6 +599,8 @@ export type FeSynthesizedBlockType =
   | "google_workspace_result"
   | "google_marketing_result"
   | "platform_record"
+  | "relation"
+  | "pick_list"
   | "seo_ruling_keyword"
   | "seo_ruling_example"
   | "seo_ruling_dimension"
@@ -799,6 +803,8 @@ export type ShapeBlockType =
   | "google_workspace_result"
   | "google_marketing_result"
   | "platform_record"
+  | "relation"
+  | "pick_list"
   | "seo_ruling_keyword"
   | "seo_ruling_example"
   | "seo_ruling_dimension"
@@ -2929,6 +2935,16 @@ const SHAPE_BLOCK_DISPATCH = {
       content={block.content}
       metadata={block.metadata}
     />
+  ),
+
+  // KINDS-GLUE wave 4.1: a `relation` is one chip that opens through its token's own door, and a
+  // `pick_list` draws its Pick list's records as choices. Reached via applyIrKindRoute (compiled
+  // bridges in features/content-ir/kinds/record-primitives.ts).
+  relation: ({ block, index }) => (
+    <RelationBlock key={index} content={block.content} metadata={block.metadata} />
+  ),
+  pick_list: ({ block, index }) => (
+    <PickListBlock key={index} content={block.content} metadata={block.metadata} />
   ),
 
   // The `markdown` kind route (features/content-ir/react/kind-route.ts

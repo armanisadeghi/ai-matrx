@@ -58,6 +58,7 @@ import { itemPresentationMarkdownFromValue } from "../kinds/item-presentation";
 import { MERMAID_DIAGRAM_KIND_DEFINITION } from "../kinds/mermaid-diagram";
 import { SCRAPER_PAGE_KIND_DEFINITIONS } from "../kinds/scraper-page";
 import { TASK_LIST_KIND_DEFINITIONS } from "../kinds/task-list";
+import { RECORD_PRIMITIVE_KIND_DEFINITIONS } from "../kinds/record-primitives";
 import { MAP_TOPIC_PROPOSAL_KIND_DEFINITIONS } from "../kinds/map-topic-proposal";
 import { PR_PLAY_MENU_KIND_DEFINITIONS } from "../kinds/pr-play-menu";
 import { MEDIA_LIST_KIND_DEFINITIONS } from "../kinds/media-list";
@@ -123,6 +124,9 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   MERMAID_DIAGRAM_KIND_DEFINITION,
   ...SCRAPER_PAGE_KIND_DEFINITIONS,
   ...TASK_LIST_KIND_DEFINITIONS,
+  // KINDS-GLUE wave 4.1 (chair V1/V2): `relation` (alias `platform_record`) and `pick_list`.
+  // Python-owned models: aidream/aidream/kinds/record_primitives.py.
+  ...RECORD_PRIMITIVE_KIND_DEFINITIONS,
   // Topical map: the tree the map author proposes (Lane G, R12). One compiled
   // component, `MapTopicProposalBlock`, over the shared `TopicTree`.
   ...MAP_TOPIC_PROPOSAL_KIND_DEFINITIONS,
