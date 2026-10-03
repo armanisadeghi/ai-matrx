@@ -132,3 +132,50 @@ it("moves focus into a submenu hover already opened when ArrowRight is pressed",
   expect(sub!.contains(document.activeElement)).toBe(true);
   expect(document.activeElement?.textContent?.trim()).toBe("Dashboard");
 });
+
+// THE SUBMENU STAYS WHILE YOU USE IT (owner, 2026-10-03: "the inner education
+// menu closes before you can use it"). Every leaf row scheduled the open
+// submenu's close on hover — including the rows INSIDE that submenu, so
+// pointing at any of them closed it 320ms later. PROVEN FAILING BEFORE
+// PASSING: pass `inSubmenu = false` for submenu rows → this test RED.
+it("keeps a submenu open while the pointer moves over its own items", () => {
+  openFlyout();
+  hoverOpen("Home");
+  const sub = submenu();
+  expect(sub).not.toBeNull();
+  // The pointer crosses from the row into the submenu, then onto an item in it.
+  act(() => {
+    sub!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+  });
+  act(() => {
+    link("Launchpad").dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+  });
+  act(() => {
+    jest.advanceTimersByTime(1000);
+  });
+  expect(submenu()).not.toBeNull();
+});
+
+// A tall submenu clamps upward, so the pointer's diagonal path from its row
+// crosses open screen. Leaving the row for empty space must not close it before
+// the pointer can arrive. PROVEN FAILING BEFORE PASSING: use SUB_CLOSE_DELAY
+// (320ms) for the row's leave → this test RED at 500ms.
+it("waits for a diagonal path across open screen into the submenu", () => {
+  openFlyout();
+  hoverOpen("Home");
+  expect(submenu()).not.toBeNull();
+  act(() => {
+    subRow("Home").dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body }));
+  });
+  act(() => {
+    jest.advanceTimersByTime(500);
+  });
+  expect(submenu()).not.toBeNull();
+  act(() => {
+    submenu()!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true, relatedTarget: document.body }));
+  });
+  act(() => {
+    jest.advanceTimersByTime(1500);
+  });
+  expect(submenu()).not.toBeNull();
+});

@@ -64,6 +64,13 @@ const CLOSE_DELAY = 240;
 const SUB_OPEN_DELAY = 140;
 /** …and lingers long enough for the pointer to cross into it. */
 const SUB_CLOSE_DELAY = 320;
+/**
+ * While a submenu is open, leaving a menu for empty space waits this long: a
+ * tall submenu clamps upward, so the pointer's diagonal path from its row
+ * crosses open screen before it lands (owner, 2026-10-03: the Education menu
+ * "closes before you can use it"). Entering either menu cancels the wait.
+ */
+const SUB_LEAVE_GRACE = 700;
 const VIEWPORT_MARGIN = 8;
 
 function childKey(child: ShellNavChild): string {
@@ -232,15 +239,18 @@ export default function NavFlyoutGroup({
     [openSub, subKey, subPinned],
   );
 
-  const scheduleSubClose = useCallback(() => {
+  const scheduleSubClose = useCallback((delay: number = SUB_CLOSE_DELAY) => {
     if (subOpenTimer.current) {
       clearTimeout(subOpenTimer.current);
       subOpenTimer.current = null;
     }
     if (subPinned) return;
     if (subCloseTimer.current) clearTimeout(subCloseTimer.current);
-    subCloseTimer.current = setTimeout(() => setSubKey(null), SUB_CLOSE_DELAY);
+    subCloseTimer.current = setTimeout(() => setSubKey(null), delay);
   }, [subPinned]);
+
+  /** Leaving a menu for open screen while a submenu is up: the long grace. */
+  const scheduleSubLeave = useCallback(() => scheduleSubClose(SUB_LEAVE_GRACE), [scheduleSubClose]);
 
   const cancelSubClose = useCallback(() => {
     if (subOpenTimer.current) {
@@ -266,8 +276,9 @@ export default function NavFlyoutGroup({
       clearTimeout(openTimer.current);
       openTimer.current = null;
     }
-    closeTimer.current = setTimeout(() => setOpen(false), CLOSE_DELAY);
-  }, []);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpen(false), subKey ? SUB_LEAVE_GRACE : CLOSE_DELAY);
+  }, [subKey]);
 
   const cancelClose = useCallback(() => {
     if (closeTimer.current) {
@@ -469,7 +480,11 @@ export default function NavFlyoutGroup({
   // Action entries trigger an overlay/window in place instead of navigating —
   // render a button, run the handler, and close the flyout. (Falls back to a
   // plain Link for navigation entries and action entries without a handler.)
-  const renderChild = (child: ShellNavChild, activeHref?: string) => {
+  // `inSubmenu`: a row INSIDE an open submenu must never schedule that same
+  // submenu's close — only a sibling row in the parent menu does (pointing at
+  // anything in the Education submenu used to close it 320ms later).
+  const renderChild = (child: ShellNavChild, activeHref?: string, inSubmenu = false) => {
+    const closeSubOnEnter = subKey && !inSubmenu ? () => scheduleSubClose() : undefined;
     const panelHandler = child.panelAction
       ? navPanelActions[child.panelAction]
       : undefined;
@@ -528,7 +543,7 @@ export default function NavFlyoutGroup({
           rel="noopener noreferrer"
           role="menuitem"
           className="shell-nav-flyout-item"
-          onMouseEnter={subKey ? scheduleSubClose : undefined}
+          onMouseEnter={closeSubOnEnter}
           onClick={closeAll}
         >
           <span className="shell-nav-icon">
@@ -551,7 +566,7 @@ export default function NavFlyoutGroup({
         role="menuitem"
         className="shell-nav-flyout-item"
         data-active={child.href === activeHref ? "true" : undefined}
-        onMouseEnter={subKey ? scheduleSubClose : undefined}
+        onMouseEnter={closeSubOnEnter}
         onClick={closeAll}
       >
         <span className="shell-nav-icon">
@@ -577,7 +592,7 @@ export default function NavFlyoutGroup({
         data-sub-key={key}
         className="relative"
         onMouseEnter={() => scheduleSubOpen(key)}
-        onMouseLeave={scheduleSubClose}
+        onMouseLeave={scheduleSubLeave}
       >
         <AppLink
           href={child.href}
@@ -638,7 +653,7 @@ export default function NavFlyoutGroup({
             {section.items.map((child) =>
               allowSubAreas && navChildHasSubmenu(child)
                 ? renderSubAreaRow(child)
-                : renderChild(child, activeHref),
+                : renderChild(child, activeHref, !allowSubAreas),
             )}
           </div>
         ))}
@@ -651,7 +666,7 @@ export default function NavFlyoutGroup({
                 aria-orientation="horizontal"
               />
             )}
-            {panels.map((child) => renderChild(child, activeHref))}
+            {panels.map((child) => renderChild(child, activeHref, !allowSubAreas))}
           </>
         )}
         {actions.length > 0 && (
@@ -663,7 +678,7 @@ export default function NavFlyoutGroup({
                 aria-orientation="horizontal"
               />
             )}
-            {actions.map((child) => renderChild(child, activeHref))}
+            {actions.map((child) => renderChild(child, activeHref, !allowSubAreas))}
           </>
         )}
       </>
@@ -762,7 +777,7 @@ export default function NavFlyoutGroup({
               cancelSubClose();
             }}
             onMouseLeave={() => {
-              scheduleSubClose();
+              scheduleSubLeave();
               scheduleClose();
             }}
             onKeyDown={onSubKeyDown}
