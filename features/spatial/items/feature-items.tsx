@@ -32,6 +32,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
+import { useAutoFocus } from "@/lib/dom/useAutoFocus";
 // Task
 import TaskEditor from "@/features/tasks/components/TaskEditor";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
@@ -364,6 +365,10 @@ function WarRoomDraftBody({ onSource }: ItemBodyProps) {
   const dispatch = useAppDispatch();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  // An agent may place this tile, and a tile mounts again on wake: never over
+  // a field the person is typing in (lib/dom/focus-guard).
+  const nameRef = useRef<HTMLInputElement | null>(null);
+  useAutoFocus(nameRef);
   const create = async () => {
     if (busy) return;
     setBusy(true);
@@ -386,7 +391,7 @@ function WarRoomDraftBody({ onSource }: ItemBodyProps) {
       </label>
       <Input
         id="board-new-war-room"
-        autoFocus
+        ref={nameRef}
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Q4 launch"

@@ -166,7 +166,9 @@ it.each([
  * Leg 4 — the composer's own textarea (AgentTextarea) defaults `autoFocus` on
  * and re-focuses on every conversation change, 100ms after mount. Rendering it
  * needs the whole execution store, so its focus call is held at the source:
- * every `.focus(` in it passes `preventScroll: true`.
+ * every `.focus(` in it passes `preventScroll: true`, and every automatic
+ * focus goes through `focusUnlessTypingElsewhere` with its default options —
+ * which never scroll (checked on the helper itself below).
  */
 it("the composer textarea focuses without scrolling the page", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -175,7 +177,19 @@ it("the composer textarea focuses without scrolling the page", () => {
     require.resolve("../../smart-input/AgentTextarea"),
     "utf8",
   );
-  const calls = source.match(/\.focus\([^)]*\)/g) ?? [];
-  expect(calls.length).toBeGreaterThan(0);
-  for (const call of calls) expect(call).toContain("preventScroll: true");
+  const direct = source.match(/\.focus\([^)]*\)/g) ?? [];
+  const guarded = source.match(/focusUnlessTypingElsewhere\([^)]*\)/g) ?? [];
+  expect(direct.length + guarded.length).toBeGreaterThan(0);
+  for (const call of direct) expect(call).toContain("preventScroll: true");
+  // One argument: the helper's own options, never a scrolling override.
+  for (const call of guarded) expect(call).not.toContain(",");
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { focusUnlessTypingElsewhere } = require("@/lib/dom/focus-guard") as typeof import("@/lib/dom/focus-guard");
+  const field = document.createElement("textarea");
+  document.body.appendChild(field);
+  const spy = jest.spyOn(field, "focus");
+  focusUnlessTypingElsewhere(field);
+  expect(spy).toHaveBeenCalledWith({ preventScroll: true });
+  field.remove();
 });
