@@ -31,6 +31,7 @@ import {
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SyncedBadge } from "@/features/unified-data/connect-database/SyncedBadge";
 import { DATE_FILTER_OPTIONS, Muted, TextCell, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
 import type { RecordCountStore } from "./dataHomeRecordCounts";
 import { ACCESS_WHY, ACCESS_WORD, dataHomeKindWord, type DataHomeAccess, type DataHomeRow } from "./dataHomeRows";
@@ -89,6 +90,7 @@ function DataHomeNameLine({ row }: { row: DataHomeRow }) {
         {row.name}
       </span>
       {row.foundation ? <FoundationBadge /> : null}
+      {row.syncedFrom ? <SyncedBadge provider={row.syncedFrom} /> : null}
       {row.parentName ? (
         <span className="truncate text-xs text-muted-foreground" title={`in ${row.parentName}`}>
           in {row.parentName}

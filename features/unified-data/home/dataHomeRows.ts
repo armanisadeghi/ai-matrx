@@ -76,6 +76,11 @@ export interface DataHomeRow {
    */
   foundation: boolean;
   /**
+   * Lane VISION-REACH wave 3: where the table syncs from (`custom.data_home`'s `synced_from`, the
+   * provider of its `sync_source`: `postgres`, `google_sheets`), null for a table of our own.
+   */
+  syncedFrom: string | null;
+  /**
    * Set only on a row the SERVER search found and the instant title search did not (a Field, a
    * description): where it matched, for the "Matched in" line. Absent on every other row.
    */
@@ -137,6 +142,12 @@ export const ACCESS_WHY: Record<DataHomeAccess, string> = {
 };
 
 /** Is this Tables-listing row one the app keeps (a value set, a checklist's steps …)? The package's rule. */
+/** The door's `synced_from` (custom.data_home, VISION-REACH wave 3); the package type predates it. */
+function syncedFromOf(table: DataHomeTableRow): string | null {
+  const value = (table as DataHomeTableRow & { synced_from?: unknown }).synced_from;
+  return typeof value === "string" && value ? value : null;
+}
+
 export function keptTableRow(table: DataHomeTableRow): boolean {
   return isKeptTable({ id: table.table_id, name: table.table_name, kind: table.kind, kept_by_the_app: table.kept_by_the_app });
 }
@@ -180,6 +191,8 @@ function toRow(
     // Only the Tables listing's own row is the table; a form or dashboard ON a kept table is not kept.
     keptByTheApp: fromTablesListing && table !== undefined && item.id === table.table_id && keptTableRow(table),
     foundation: fromTablesListing && table !== undefined && item.id === table.table_id && table.foundation === true,
+    syncedFrom:
+      fromTablesListing && table !== undefined && item.id === table.table_id ? syncedFromOf(table) : null,
   };
 }
 

@@ -41,6 +41,7 @@ export function row(partial: Partial<DataHomeRow> & { name: string }): DataHomeR
     trouble: null,
     keptByTheApp: false,
     foundation: false,
+    syncedFrom: null,
   };
   return { ...base, ...partial, id: partial.id ?? `${partial.kind ?? "table"}:${partial.organizationId ?? org.id}:row-${n}` };
 }

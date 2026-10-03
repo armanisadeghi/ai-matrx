@@ -15,7 +15,8 @@
 
 import { useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Building2 } from "lucide-react";
+import Link from "next/link";
+import { Building2, Database } from "lucide-react";
 import { RecordsMount, TablesHome, personActor } from "@ai-matrx/records-ui";
 
 import { Button } from "@/components/ui/button";
@@ -120,7 +121,18 @@ export function NewTableDialog({ what, onClose }: { what: "create" | "examples" 
           <DialogTitle className="text-base font-medium">
             {what === "examples" ? "Start from an example" : "New table"}
           </DialogTitle>
-          <SavesTo />
+          <div className="flex flex-wrap items-center gap-1">
+            {/* An outside Postgres table as a Synced table (lane VISION-REACH wave 3). */}
+            {what === "create" ? (
+              <Button asChild size="sm" variant="ghost" className="gap-1.5 text-muted-foreground" data-connect-database-entry="">
+                <Link href="/data-v2/connect" onClick={onClose}>
+                  <Database className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Connect a database
+                </Link>
+              </Button>
+            ) : null}
+            <SavesTo />
+          </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto" data-new-table-dialog={what ?? ""}>
           {what ? <NewTableBody what={what} /> : null}

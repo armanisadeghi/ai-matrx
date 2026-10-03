@@ -16,6 +16,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTable } from "@ai-matrx/records/react";
+import { SyncedTableBar } from "@/features/unified-data/connect-database/SyncedTableBar";
 import type { PageView } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
 
@@ -93,6 +94,8 @@ function TableRouteHeader({
           {/* A write the store held for a person, decided from here as well as from the chat.
               Absent unless something is waiting. */}
           <HeldWritesOnTable key="held" tableId={tableId} organizationId={organizationId} />
+          {/* Synced from outside: the chip and Refresh (lane VISION-REACH wave 3). Absent otherwise. */}
+          <SyncedTableBar key="synced" tableId={tableId} organizationId={organizationId} />
           {/* ONE copy/export on this page (merged-grid review 2, D6: two identical buttons, header and
               toolbar): the table's own, in its toolbar's copy/export menu. The page capture below is
               still registered, so agents and "Copy full context" read it. */}
