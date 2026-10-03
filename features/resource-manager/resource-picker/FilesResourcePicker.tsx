@@ -85,6 +85,7 @@ import {
   PickerSearchField,
   PickerSectionLabel,
   PickerView,
+  PickerSelect,
   ResourcePickerSubViewHeader,
 } from "./ResourcePickerSubViewHeader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -673,8 +674,11 @@ const FILE_FILTER_OPTIONS: ReadonlyArray<{ value: FileFilter; label: string }> =
     { value: "other", label: "Other" },
   ];
 
-const SELECT_CLASS =
-  "h-9 min-w-0 rounded-lg border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary/40 pointer-coarse:h-11";
+const FILE_SORT_OPTIONS: readonly { value: FileSort; label: string }[] = [
+  { value: "updated", label: "Recent" },
+  { value: "name", label: "Name" },
+  { value: "size", label: "Size" },
+];
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -1076,34 +1080,20 @@ export function FilesResourcePicker({
       />
 
       <div className="flex shrink-0 items-center gap-1.5 border-b border-border p-1.5">
-        <label className="sr-only" htmlFor="cloud-files-filter">
-          File type
-        </label>
-        <select
-          id="cloud-files-filter"
+        <PickerSelect
+          label="File type"
           value={fileFilter}
-          onChange={(event) => setFileFilter(event.target.value as FileFilter)}
-          className={cn(SELECT_CLASS, "flex-1")}
-        >
-          {FILE_FILTER_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <label className="sr-only" htmlFor="cloud-files-sort">
-          Sort files
-        </label>
-        <select
-          id="cloud-files-sort"
+          onChange={setFileFilter}
+          options={FILE_FILTER_OPTIONS}
+          className="flex-1"
+        />
+        <PickerSelect
+          label="Sort files"
           value={fileSort}
-          onChange={(event) => setFileSort(event.target.value as FileSort)}
-          className={cn(SELECT_CLASS, "w-24 shrink-0")}
-        >
-          <option value="updated">Recent</option>
-          <option value="name">Name</option>
-          <option value="size">Size</option>
-        </select>
+          onChange={setFileSort}
+          options={FILE_SORT_OPTIONS}
+          className="w-28 shrink-0"
+        />
         <ShowSystemFilesToggle className="h-9 w-9 rounded-lg pointer-coarse:h-11 pointer-coarse:w-11 [&>svg]:h-4 [&>svg]:w-4" />
         <div
           role="radiogroup"

@@ -14,7 +14,7 @@
  */
 
 import { createContext, forwardRef, useContext, useEffect, type ComponentType, type CSSProperties, type KeyboardEventHandler, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Link2, Loader2, Search, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Link2, Loader2, Search, X } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 /**
@@ -137,6 +137,44 @@ export const PickerSearchField = forwardRef<
     </div>
   );
 });
+
+/**
+ * A compact dropdown for a view's filter row (file type, sort). Native
+ * select for the platform's own picker on phones; our chevron sits inside
+ * the box with room to breathe (the native arrow hugged the right edge).
+ */
+export function PickerSelect<V extends string>({
+  value,
+  onChange,
+  options,
+  label,
+  className,
+}: {
+  value: V;
+  onChange: (value: V) => void;
+  options: readonly { value: V; label: string }[];
+  /** Accessible name. */
+  label: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("relative min-w-0", className)}>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value as V)}
+        className="h-9 w-full min-w-0 appearance-none truncate rounded-lg border border-border bg-background pl-2.5 pr-8 text-sm text-foreground outline-none focus:border-primary/40 pointer-coarse:h-11"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    </div>
+  );
+}
 
 /** The scroll area under the header — owns the view's only scroll. */
 export function PickerViewBody({ children, className }: { children: ReactNode; className?: string }) {

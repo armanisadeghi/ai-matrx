@@ -430,12 +430,13 @@ function uploadErrorMessage(err: unknown): string {
 }
 
 /**
- * The tiles `FileAcquisitionActions` renders inline, sized to the picker's
- * scale: one compact row, text-xs labels (child selectors out-rank the
- * tiles' own single-class utilities).
+ * The tiles `FileAcquisitionActions` renders inline, drawn as ordinary
+ * buttons (Arman, 2026-10-03: "just make them normal"): two by two, icon
+ * beside a text-sm label, 36px tall (child selectors out-rank the tiles' own
+ * single-class utilities).
  */
 const ACQUISITION_TILES_CLASS =
-  "gap-1 [&>button]:min-h-11 [&>button]:gap-0.5 [&>button]:rounded-lg [&>button]:border-border/70 [&>button]:px-1 [&>button]:py-1 [&>button]:text-xs [&>button]:font-normal";
+  "gap-1.5 sm:grid-cols-2 [&>button]:h-9 [&>button]:min-h-0 [&>button]:flex-row [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:bg-background [&>button]:px-3 [&>button]:py-0 [&>button]:text-sm [&>button]:font-normal pointer-coarse:[&>button]:h-11";
 
 export function InlineUploadArea({
   onSelect,
@@ -756,7 +757,7 @@ export function InlineUploadArea({
         onDragLeave={handleDragLeave}
         title={dropLabel(accept)}
         className={cn(
-          "rounded-lg border border-dashed p-1 transition-colors",
+          "rounded-lg border border-dashed p-1.5 transition-colors",
           isDragging
             ? "border-primary bg-primary/5 text-primary"
             : "border-border hover:border-muted-foreground/40",
