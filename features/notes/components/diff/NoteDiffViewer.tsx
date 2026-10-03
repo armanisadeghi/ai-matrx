@@ -55,7 +55,10 @@ function buildNoteAdapterRegistry() {
   registry.register("folder_id", { ...TextFieldAdapter, label: "Folder ID" });
   registry.register("tags", { ...TagsFieldAdapter, label: "Tags" });
   registry.register("shown_to", { ...TextFieldAdapter, label: "Shown to" });
-  registry.register("published_to_web", { ...TextFieldAdapter, label: "Published to the web" });
+  registry.register("published_to_web", {
+    ...TextFieldAdapter,
+    label: "Published to the web",
+  });
   registry.register("metadata", { ...JsonObjectAdapter, label: "Metadata" });
   registry.register("organization_id", {
     ...TextFieldAdapter,
@@ -116,7 +119,8 @@ export function NoteDiffViewer({
   // The view follows the container until the person picks one in the toolbar.
   const [pickedView, setPickedView] = useState<TextDiffView | null>(null);
   const [contentRef, { width: contentWidth }] = useMeasure<HTMLDivElement>();
-  const narrow = (contentWidth ?? 0) > 0 && (contentWidth ?? 0) < SPLIT_MIN_WIDTH_PX;
+  const narrow =
+    (contentWidth ?? 0) > 0 && (contentWidth ?? 0) < SPLIT_MIN_WIDTH_PX;
   const contentView: TextDiffView = pickedView ?? (narrow ? "inline" : "split");
   const adapters = useMemo(() => buildNoteAdapterRegistry(), []);
 
@@ -129,7 +133,9 @@ export function NoteDiffViewer({
     // column. Fields the snapshot never had are not changes — counting them
     // printed "+13 added" over a Content tab that (correctly) said "No changes".
     const comparableNew = Object.fromEntries(
-      Object.entries(newNote as Record<string, unknown>).filter(([key]) => key in oldNote),
+      Object.entries(newNote as Record<string, unknown>).filter(
+        ([key]) => key in oldNote,
+      ),
     );
     const result = computeDiff(
       oldNote as Record<string, unknown>,
@@ -186,23 +192,27 @@ export function NoteDiffViewer({
         </div>
 
         <TabsContent
-          ref={contentRef}
           value="content"
           className="mt-0 min-h-0 flex-1 overflow-hidden"
-          data-diff-layout={contentView === "split" ? "split" : "stacked"}
         >
-          <TextDiff
-            original={oldContent}
-            modified={newContent}
-            originalLabel={oldLabel}
-            modifiedLabel={newLabel}
-            view={contentView}
-            onViewChange={setPickedView}
-            showToolbar
-            wrap
-            className="h-full"
-            diffOptions={{ wordLevel: true, granularity: "word" }}
-          />
+          <div
+            ref={contentRef}
+            className="h-full min-h-0"
+            data-diff-layout={contentView === "split" ? "split" : "stacked"}
+          >
+            <TextDiff
+              original={oldContent}
+              modified={newContent}
+              originalLabel={oldLabel}
+              modifiedLabel={newLabel}
+              view={contentView}
+              onViewChange={setPickedView}
+              showToolbar
+              wrap
+              className="h-full"
+              diffOptions={{ wordLevel: true, granularity: "word" }}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent
