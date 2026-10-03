@@ -215,6 +215,69 @@ describe("same-named records in the record search", () => {
     for (const row of out) expect(row.secondary!.length).toBeLessThanOrEqual(60);
   });
 
+  // G10A review (2026-10-02, nightly clone): "Timecard approval — Elias
+  // Navarro · Oak Street Studio · Completed · Created Aug 29, 5:29 PM" three
+  // times, word for word — seeded inside one minute. The ladder climbs to the
+  // second, then to the last edit, then to a quiet ordinal; never a raw id.
+  describe("the ladder past the minute", () => {
+    const title = "Timecard approval — Elias Navarro";
+    const three = (updated: string[]) =>
+      [61, 62, 63].map((n, i) => ({ id: id(n), title, updatedAt: updated[i]! }));
+    const sameFacts = (rows: Array<{ id: string }>) =>
+      new Map<string, RecordFact>(rows.map((r) => [r.id, { organizationId: ORG_A, fact: "Completed" }]));
+    const noRawId = (line: string | null) =>
+      expect(line ?? "").not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}|[0-9a-f]{12}/);
+
+    it("rows created in the same minute are told apart by the second", () => {
+      const rows = three(Array(3).fill("2026-09-30T12:00:00Z"));
+      const out = recordRows(rows, sameFacts(rows), () => null, NOW, new Map([
+        [id(61), "2026-08-29T17:29:05Z"],
+        [id(62), "2026-08-29T17:29:31Z"],
+        [id(63), "2026-08-29T17:29:48Z"],
+      ]));
+      expect(new Set(out.map((r) => r.secondary)).size).toBe(3);
+      for (const r of out) {
+        expect(r.secondary).toMatch(/Created .*:\d\d:\d\d/);
+        expect(r.secondary!.length).toBeLessThanOrEqual(60);
+        noRawId(r.secondary);
+      }
+    });
+
+    it("rows created in the same second are told apart by their last edit", () => {
+      const rows = three(["2026-09-30T12:00:01Z", "2026-09-30T12:00:02Z", "2026-09-30T12:00:03Z"]);
+      const created = new Map(rows.map((r) => [r.id, "2026-08-29T17:29:05Z"]));
+      const out = recordRows(rows, sameFacts(rows), () => null, NOW, created);
+      expect(new Set(out.map((r) => r.secondary)).size).toBe(3);
+      for (const r of out) {
+        expect(r.secondary).toContain("Edited ");
+        noRawId(r.secondary);
+      }
+    });
+
+    it("rows identical in everything a person can read get a quiet ordinal", () => {
+      const rows = three(Array(3).fill("2026-09-30T12:00:00Z"));
+      const created = new Map(rows.map((r) => [r.id, "2026-08-29T17:29:05Z"]));
+      const out = recordRows(rows, sameFacts(rows), () => null, NOW, created);
+      expect(out.map((r) => r.secondary?.split(" · ").pop())).toEqual(["1 of 3", "2 of 3", "3 of 3"]);
+      for (const r of out) {
+        expect(r.secondary!.length).toBeLessThanOrEqual(60);
+        noRawId(r.secondary);
+      }
+    });
+
+    it("a type with no created time still never shows identical rows", () => {
+      const rows = three(Array(3).fill("2026-09-30T12:00:00Z"));
+      const out = recordRows(rows, sameFacts(rows), () => null, NOW, new Map());
+      expect(new Set(out.map((r) => r.secondary)).size).toBe(3);
+    });
+
+    it("while the created times are still being read, nothing climbs yet", () => {
+      const rows = three(Array(3).fill("2026-09-30T12:00:00Z"));
+      const out = recordRows(rows, sameFacts(rows), () => null, NOW, null);
+      expect(new Set(out.map((r) => r.secondary)).size).toBe(1);
+    });
+  });
+
   it("a title wraps to two lines instead of cutting off its last words", async () => {
     items.current = [{ id: id(51), title: "Clean the treatment room before the patient (checkout)", updatedAt: null }];
     facts.current = new Map();

@@ -41,10 +41,11 @@ import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   collidingRowIds,
   composeRecordSecondaryLine,
-  createdLabel,
   fetchRecordCreatedAt,
   fetchRecordFacts,
+  stampLabel,
   type RecordFact,
+  type StampPrecision,
 } from "@/features/scopes/service/recordFacts";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { ReferenceItem } from "@ai-matrx/agents/envelope";
@@ -368,8 +369,9 @@ function RecentRecordSearch({
   );
   const organizationName = useOrganizationNames();
   const now = Date.now();
-  const firstPass = recordRows(list.items, facts, organizationName, now);
-  // Rows that still read the same get the next fact: when each was created.
+  // `null`: the plain lines, before any rung of the ladder.
+  const firstPass = recordRows(list.items, facts, organizationName, now, null);
+  // Rows that still read the same climb the ladder, starting with when each was created.
   const created = useRecordCreatedAt(token, collidingRowIds(firstPass));
   const rows = recordRows(list.items, facts, organizationName, now, created);
   return (
@@ -407,16 +409,19 @@ function RecentRecordSearch({
  * than one — a single-organization list repeats nothing), one fact that tells
  * same-named records apart, and when it changed. ≤60 characters.
  *
- * Rows whose title AND line still collide trade the edit date (the same for
- * all of them) for when each was created — with the time when two share a
- * day (G8B review). `created` holds `created_at` for those rows only.
+ * Rows whose title AND line still collide climb THE LADDER, one rung at a
+ * time and only while they still collide (G8B, G10A reviews): when each was
+ * created — the day, then the minute, then the second — then the last edit to
+ * the second, and when nothing a person can read differs, a quiet "1 of 3".
+ * Never a raw id. `created` holds `created_at` for the colliding rows; `null`
+ * means it is still being read, so nothing climbs yet (no flicker).
  */
 export function recordRows(
   items: ReadonlyArray<{ id: string; title: string; updatedAt: string | null }>,
   facts: ReadonlyMap<string, RecordFact>,
   organizationName: (id: string) => string | null,
   now: number,
-  created: ReadonlyMap<string, string> = new Map(),
+  created: ReadonlyMap<string, string> | null = new Map(),
 ): Array<{ id: string; title: string; secondary: string | null }> {
   const organizations = new Set(
     items
@@ -435,52 +440,96 @@ export function recordRows(
       edited: candidateSecondaryLine(item.updatedAt, now),
     };
   };
-  const rows = items.map((item) => ({
+  const firstPass = items.map((item) => ({
     id: item.id,
     title: item.title,
     secondary: composeRecordSecondaryLine(parts(item)),
   }));
-  const colliding = new Set(collidingRowIds(rows));
-  if (colliding.size === 0 || created.size === 0) return rows;
-  // A day shared by two colliding rows needs the time to tell them apart.
-  const dayOf = (iso: string) => iso.slice(0, 10);
-  const daysSeen = new Map<string, number>();
-  for (const id of colliding) {
-    const iso = created.get(id);
-    if (iso) daysSeen.set(dayOf(iso), (daysSeen.get(dayOf(iso)) ?? 0) + 1);
+  if (created === null || collidingRowIds(firstPass).length === 0) return firstPass;
+
+  // Rung n → the date the line carries. A rung with nothing to say (no
+  // created_at on this table) falls back to the rung below it.
+  const rung = (item: (typeof items)[number], level: number): string | null => {
+    const iso = created.get(item.id);
+    if (level === LADDER_TOP && item.updatedAt) {
+      return stampLabel("Edited", item.updatedAt, "second", now);
+    }
+    if (!iso) return null;
+    return stampLabel("Created", iso, LADDER_PRECISION[level - 1]!, now);
+  };
+  const levels = new Map<string, number>();
+  const lineAt = (item: (typeof items)[number], ordinal?: string) => {
+    let date: string | null = null;
+    for (let level = levels.get(item.id) ?? 0; level > 0 && !date; level -= 1) {
+      date = rung(item, level);
+    }
+    const base = parts(item);
+    const edited = date ?? base.edited;
+    return composeRecordSecondaryLine({
+      ...base,
+      edited: ordinal ? [edited, ordinal].filter(Boolean).join(" · ") : edited,
+    });
+  };
+  let rows = firstPass;
+  for (let pass = 0; pass < LADDER_TOP; pass += 1) {
+    const colliding = collidingRowIds(rows);
+    if (colliding.length === 0) return rows;
+    for (const id of colliding) {
+      levels.set(id, Math.min(LADDER_TOP, (levels.get(id) ?? 0) + 1));
+    }
+    rows = items.map((item) => ({ id: item.id, title: item.title, secondary: lineAt(item) }));
   }
-  return rows.map((row, index) => {
-    const iso = colliding.has(row.id) ? created.get(row.id) : undefined;
-    if (!iso) return row;
-    const label = createdLabel(iso, (daysSeen.get(dayOf(iso)) ?? 0) > 1, now);
-    if (!label) return row;
-    return {
-      ...row,
-      secondary: composeRecordSecondaryLine({ ...parts(items[index]!), edited: label }),
-    };
+
+  // Identical in every way a person can read: say which one it is in the list.
+  const still = new Set(collidingRowIds(rows));
+  if (still.size === 0) return rows;
+  const groups = new Map<string, string[]>();
+  for (const row of rows) {
+    if (!still.has(row.id)) continue;
+    const key = `${row.title.trim().toLowerCase()}\u0000${row.secondary ?? ""}`;
+    groups.set(key, [...(groups.get(key) ?? []), row.id]);
+  }
+  const ordinalOf = new Map<string, string>();
+  for (const ids of groups.values()) {
+    ids.forEach((id, i) => ordinalOf.set(id, `${i + 1} of ${ids.length}`));
+  }
+  return items.map((item, index) => {
+    const ordinal = ordinalOf.get(item.id);
+    return ordinal
+      ? { id: item.id, title: item.title, secondary: lineAt(item, ordinal) }
+      : rows[index]!;
   });
 }
 
-/** When the colliding rows were created; re-read when that set changes. */
+/** Rungs 1–3 are when the record was created; rung 4 is its last edit. */
+const LADDER_PRECISION: readonly StampPrecision[] = ["day", "minute", "second"];
+const LADDER_TOP = LADDER_PRECISION.length + 1;
+
+/**
+ * When the colliding rows were created; re-read when that set changes. `null`
+ * until the read for the current set has answered.
+ */
 function useRecordCreatedAt(
   token: string,
   ids: string[],
-): ReadonlyMap<string, string> {
+): ReadonlyMap<string, string> | null {
   const idsKey = ids.join(",");
-  const [created, setCreated] = useState<ReadonlyMap<string, string>>(
-    () => new Map(),
-  );
+  const [state, setState] = useState<{
+    key: string;
+    created: ReadonlyMap<string, string>;
+  }>(() => ({ key: "", created: new Map() }));
   useEffect(() => {
     if (!idsKey) return;
     let cancelled = false;
     void fetchRecordCreatedAt(token, idsKey.split(",")).then((next) => {
-      if (!cancelled) setCreated(next);
+      if (!cancelled) setState({ key: idsKey, created: next });
     });
     return () => {
       cancelled = true;
     };
   }, [token, idsKey]);
-  return created;
+  if (!idsKey) return new Map();
+  return state.key === idsKey ? state.created : null;
 }
 
 /** A note's first words usually repeat its title; never say it twice. */

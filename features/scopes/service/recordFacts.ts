@@ -187,6 +187,14 @@ export function composeRecordSecondaryLine(parts: {
 // identical — same title, same organization, same status, same edit day. When
 // the title AND the secondary line collide, the line's date becomes WHEN THE
 // RECORD WAS CREATED (with the time when two share a day). Never a raw id.
+//
+// G10A review (2026-10-02): three "Timecard approval — Elias Navarro / Oak
+// Street Studio · Completed · Created Aug 29, 5:29 PM" rows were STILL
+// identical — seeded in the same minute. The ladder now climbs one rung at a
+// time, only for rows that still collide: created day → minute → second →
+// the last edit to the second → and, when nothing a person can read differs,
+// a quiet "1 of 3". The ladder itself lives in `recordRows`
+// (ReferenceTypeAdder.tsx).
 // `created_at` is part of the platform base contract; it is read in its own
 // small query, only for colliding rows, so a table without it costs nothing.
 
@@ -204,8 +212,19 @@ export function collidingRowIds(
   return [...groups.values()].filter((ids) => ids.length > 1).flat();
 }
 
-/** "Created Aug 28" — or "Created Aug 28, 4:05 AM" when the day alone is not enough. */
-export function createdLabel(iso: string, withTime: boolean, now: number): string | null {
+/** How finely a timestamp is told: the day, the minute, or the second. */
+export type StampPrecision = "day" | "minute" | "second";
+
+/**
+ * "Created Aug 28" · "Created Aug 28, 4:05 AM" · "Created Aug 28, 4:05:20 AM" —
+ * as fine as it has to be to tell two rows apart, and no finer.
+ */
+export function stampLabel(
+  verb: "Created" | "Edited",
+  iso: string,
+  precision: StampPrecision,
+  now: number,
+): string | null {
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return null;
   const sameYear = at.getFullYear() === new Date(now).getFullYear();
@@ -214,9 +233,18 @@ export function createdLabel(iso: string, withTime: boolean, now: number): strin
     day: "numeric",
     ...(sameYear ? {} : { year: "numeric" }),
   });
-  if (!withTime) return `Created ${day}`;
-  const time = at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-  return `Created ${day}, ${time}`;
+  if (precision === "day") return `${verb} ${day}`;
+  const time = at.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    ...(precision === "second" ? { second: "2-digit" } : {}),
+  });
+  return `${verb} ${day}, ${time}`;
+}
+
+/** "Created Aug 28" — or "Created Aug 28, 4:05 AM" when the day alone is not enough. */
+export function createdLabel(iso: string, withTime: boolean, now: number): string | null {
+  return stampLabel("Created", iso, withTime ? "minute" : "day", now);
 }
 
 /** `created_at` for the given rows, keyed by id. Never throws. */
