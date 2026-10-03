@@ -1,4 +1,4 @@
--- chair-step: this GRANTs EXECUTE on THREE new functions — custom.table_duplicate(uuid, boolean, text, uuid), custom.table_duplicate_continue(uuid) and custom.table_copies_in_progress() — to `authenticated`, after declaring each in platform.client_callable_door (signed-in callers only; anon gains nothing), and REVOKEs PUBLIC's implicit EXECUTE on the nine new internal helpers it adds. It REPLACES nine peer bodies, each declared below with the body it was written against: custom.has_visibility and custom.visible_set (the one ladder and the one row-set every door is built on: a table still being copied, and its rows, answer no / nothing to anyone but its maker, via the new custom._copy_in_progress_hides), custom.table_kept_out_of_lists (a copy being made joins the kept-out set), custom.tables_at_home (a copy being made is in no Home list but its maker's), custom.assert_may_know_table, custom.assert_client_may_open and custom.assert_client_may_change (each asks custom._copy_in_progress_guard: a table still being copied answers only its maker), custom._field_reads_what_it_reads (no cycle walk for a column the copy writes) and custom.trg_associations_bump_visibility (no per-row organization version bump while a copy is written; one bump at handover). No table, column, trigger or policy is touched; the only rows written are the door-register rows. No strong lock: CREATE FUNCTION and INSERTs into the register. The schema-wide door-reopen sweep is held off for this transaction only (see "THE SWEEP" below).
+-- chair-step: this GRANTs EXECUTE on THREE new functions — custom.table_duplicate(uuid, boolean, text, uuid), custom.table_duplicate_continue(uuid) and custom.table_copies_in_progress() — to `authenticated`, after declaring each in platform.client_callable_door (signed-in callers only; anon gains nothing), and REVOKEs PUBLIC's implicit EXECUTE on the nine new internal helpers it adds. It REPLACES ten peer bodies, each declared below with the body it was written against: custom._ctx_answer (its store facts only to a caller who may open that row: another person's "only me" row and a half copy's rows answer store null), custom.has_visibility and custom.visible_set (the one ladder and the one row-set every door is built on: a table still being copied, and its rows, answer no / nothing to anyone but its maker, via the new custom._copy_in_progress_hides), custom.table_kept_out_of_lists (a copy being made joins the kept-out set), custom.tables_at_home (a copy being made is in no Home list but its maker's), custom.assert_may_know_table, custom.assert_client_may_open and custom.assert_client_may_change (each asks custom._copy_in_progress_guard: a table still being copied answers only its maker), custom._field_reads_what_it_reads (no cycle walk for a column the copy writes) and custom.trg_associations_bump_visibility (no per-row organization version bump while a copy is written; one bump at handover). No table, column, trigger or policy is touched; the only rows written are the door-register rows. No strong lock: CREATE FUNCTION and INSERTs into the register. The schema-wide door-reopen sweep is held off for this transaction only (see "THE SWEEP" below).
 -- lock: custom
 -- lane: TABLE-ACTIONS
 -- based-on: custom.table_kept_out_of_lists(text) 36607167b69fb78a08c5777621ef8d6802ef88cda2622c10ee94188c070f1865
@@ -10,8 +10,30 @@
 -- based-on: custom.tables_at_home(uuid, uuid[]) ac36784874b016f818478a4aa79515c093ff18897625e9489d4336a8db245648
 -- based-on: custom.has_visibility(uuid, text, uuid, permission_level) a62d4e0e3499c9c104702b7cabaa0ce6e311173c32e6672f9affe53643acbf00
 -- based-on: custom.visible_set(uuid, uuid, uuid, permission_level) 216e1e14c3e4e4368dd1b3a7cab69577f14fb0c903465f0ef0849be0528edf61
+-- based-on: custom._ctx_answer(uuid, uuid, jsonb) abdb58c9b01849050f7bc75d00768f32c9602d10f31b477606ef3f90f2633578
 --
 -- The inverse is `migrations/inverse/tableactions_a_table_can_be_duplicated_down.sql`.
+--
+-- APPLY ORDER (lane manager's ruling, round 4). The archive sublane's files
+--   tableactions_a_the_archived_tables_list_asks_only_the_organizations_on_its_page.sql,
+--   tableactions_b_the_last_pass_of_a_table_archive_is_chunked_too.sql,
+--   tableactions_c_a_table_comes_back_in_passes_too.sql,
+--   tableactions_d_an_archived_table_says_who_made_it.sql,
+--   tableactions_e_the_archive_sorts_by_its_column.sql
+-- apply FIRST, then this file. None of their bodies is one this file replaces (they replace
+-- custom.table_archive, custom.table_restore, custom._record_field_validation, custom.validate_values,
+-- public._trash_store_restore, custom.archived_tables_everywhere and custom.read_records_archived;
+-- this file replaces none of those), so every -- based-on: line here is production's own body and
+-- stays true after theirs; the order was rehearsed on the clone (theirs present, then this file).
+-- ONE KNOWN CROSSING: scopesrefusals_the_scope_doors_refuse_in_plain_words.sql (not yet applied
+-- anywhere) also replaces custom._ctx_answer from the same production body. Whichever lands second
+-- is refused by its based-on line — never a silent revert — and is rebased onto the other: this
+-- file's change to that body is the one store-facts condition marked TABLE-ACTIONS.
+--
+-- KNOWN LOW-SENSITIVITY GAP (lane manager's ruling): custom.record_row_controls (decided by the iam
+-- kernel, which is fingerprint-locked and not touched here) and custom.work_approval_approvers
+-- (custom.effective_level per member) still tell a member that a half copy exists and who holds a
+-- grant on it; nothing of its rows or columns. That member sees the table at handover anyway.
 --
 -- THE USE CASE. Cedar Ridge Physical Therapy keeps a "Referral Intake Queue": who referred each
 -- patient, the referral date, visits authorized, an intake status choice list, a link to the
@@ -741,6 +763,40 @@ begin
                         and r.deleted_at is null
                         and not (r.visibility = any (o_true_visibility)));
   return;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom._ctx_answer(p_org uuid, p_id uuid, p_row jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+begin
+  -- WHO IS ASKING, DECIDED (VERIFIER-27): the store's one ladder, as every door into custom does. A
+  -- caller who may not reach the organization learns nothing about it, not even which system writes it.
+  if p_org is null then
+    return jsonb_build_object('ok', true, 'writer', 'old', 'row', p_row, 'store', null);
+  end if;
+  perform custom.assert_client_may_reach(p_org, 'custom._ctx_answer');
+  return (
+  -- The store row's facts are answered only to a member of its organization (or the server) WHO
+  -- MAY OPEN THAT ROW (TABLE-ACTIONS): the same open-check every other row door asks
+  -- (custom._where_id_may_open -> custom.assert_client_may_open -> the one ladder), so another
+  -- person's "only me" row, or a row of a table still being copied, answers store: null, the same
+  -- as a row that is not there. A caller who can see the row gets exactly what it got before.
+    select jsonb_build_object(
+      'ok', true,
+      'writer', custom.context_writer(p_org),
+      'row', p_row,
+      'store', (select jsonb_build_object('id', r.id, 'table_id', r.table_id, 'data_class', r.data_class,
+                                          'version', r.version, 'archived', r.deleted_at is not null)
+                  from custom.record r
+                 where r.organization_id = p_org and r.id = p_id
+                   and (auth.uid() is null
+                        or (iam.is_org_member(auth.uid(), p_org)
+                            and custom._where_id_may_open(p_org, r.id, 'viewer'::public.permission_level)))))
+  );
 end;
 $function$;
 
