@@ -1,4 +1,3 @@
--- draft: lane 9 builder, clone proof pending
 -- chair-step: it REPLACES the bodies of two lane-9 scope read doors, custom.context_values and
 --   custom.context_archived_types (signatures, SECURITY DEFINER, search_path and grants unchanged).
 --   context_values answers `version` as the version a PERSON sees (the current source's old_version;
