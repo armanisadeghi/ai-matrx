@@ -17,9 +17,6 @@
 import { type ComponentType, type ReactNode } from "react";
 import {
   Paperclip,
-  Wrench,
-  Plug,
-  Lightbulb,
   Box,
   AppWindow,
   Cpu,
@@ -39,6 +36,7 @@ import { CHAT_CONTEXT_MENU_PROPS } from "../../chat/agent-context/buildChatConte
 import { buildRunControlsApplicationScope } from "../../chat/agent-context/buildChatRunConfiguration";
 
 import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { flattenResourcePickerItems } from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
 import { RunToolPicker } from "./RunToolPicker";
 import { RunSkillPicker } from "./RunSkillPicker";
@@ -119,10 +117,18 @@ const CREATOR_TAB: RunControlsTabDef = {
   label: "Creator",
   icon: Crown,
 };
+function pickerTab(id: "tools" | "connections" | "skills"): RunControlsTabDef {
+  const item = flattenResourcePickerItems().find((i) => i.id === id);
+  if (!item) throw new Error(`RunControlsTabPanel: no picker item "${id}"`);
+  return { id, label: item.label, icon: item.icon as RunControlsTabDef["icon"] };
+}
+
 const BASE_TABS: RunControlsTabDef[] = [
-  { id: "tools", label: "Tools", icon: Wrench },
-  { id: "connections", label: "Connections", icon: Plug },
-  { id: "skills", label: "Skills", icon: Lightbulb },
+  // Tools / Connections / Skills are attach-menu doors: label and icon come
+  // from the ONE item list, never typed twice.
+  pickerTab("tools"),
+  pickerTab("connections"),
+  pickerTab("skills"),
   { id: "sandbox", label: "Sandbox", icon: Box },
   { id: "memory", label: "Memory", icon: Brain },
   { id: "settings", label: "Advanced Settings", icon: AppWindow },
