@@ -20,6 +20,17 @@
 -- archived scope types on production. Counting each type's archived scopes through the archive door took
 -- 1.1 s warm (the old body: 0.7 s); the count door answers every type in one statement without rendering a row.
 
+-- The count door must be live first: a plpgsql body binds its callees late, so without this check the
+-- file would apply cleanly and every archived list would then fail at its first call.
+DO $$
+begin
+  if to_regprocedure('custom.count_records_archived(uuid, uuid[], text)') is null then
+    raise exception 'scopesflip_a: custom.count_records_archived is not live here; apply CHAIR-DOORS-3A first'
+      using errcode = '55000';
+  end if;
+end;
+$$;
+
 CREATE OR REPLACE FUNCTION custom.context_archived_types(p_organization_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql

@@ -14,7 +14,7 @@
 -- based-on: public.list_scope_type_items(uuid) d277475a3a2c1a8f6ae2dd325dd9b2ed31b8ff3f6473a42ac6034e5433c7c737
 -- based-on: public.list_scope_types(uuid) d2e80c40f431e9816f87762ca155c6cddbdb7fd766fb62992734fb8fcf7418b8
 -- based-on: public.resolve_full_context(uuid, text, uuid, uuid[], text[]) e1d3db7de5501bcb31b60cf9f8918802adcad434f9abbf23999b6959b4c500a1
--- lock: public
+-- lock: custom
 --
 -- Order: after scopesflip_a (the archived count in one call) and CHAIR-DOORS-3A are live; before
 -- platform.knob_archive('custom', 'scope_readers_read_the_store', …) and the web deletion of the knob-off branches.
