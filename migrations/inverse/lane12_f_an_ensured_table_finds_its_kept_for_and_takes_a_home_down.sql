@@ -1,7 +1,7 @@
 -- chair-step: the inverse of lane12_f_an_ensured_table_finds_its_kept_for_and_takes_a_home.sql. It restores the body of custom.table_ensure(uuid, jsonb) exactly as lane12_c_an_ensured_table_says_what_differs_from_its_spec.sql wrote it: a slug is matched alone again (kept_for ignored) and a named Home is ignored (a new Home is made, and home_id is stored on the table as before). Same signature, grants and security; nothing else is touched.
 -- lane: PLATFORM-APP-DATA (v6 lane 12)
 -- lock: custom
--- based-on: custom.table_ensure(uuid, jsonb) 7a04e42c9c3b2178c520ee985652d0900581f559e2bb0af7fba5ed6d0e079846
+-- based-on: custom.table_ensure(uuid, jsonb) 8f70b9d1e2d209c70285a5e9f230c22f971b6cf40d03d822d6bdab155dc40970
 
 set local lock_timeout = '2s';
 
