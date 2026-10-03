@@ -233,6 +233,9 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
         <iframe
           src={url ?? undefined}
           title={title}
+          // The title is the frame's accessible name, not a hover tooltip:
+          // opt out of the design system's title→tooltip lift so it stays.
+          data-native-title=""
           data-html-app-frame=""
           className={cn("block h-full w-full border-0 bg-white", className)}
           sandbox={pageSandbox(url, APP_SANDBOX)}

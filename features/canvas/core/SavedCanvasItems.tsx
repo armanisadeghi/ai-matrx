@@ -41,10 +41,10 @@ import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsServic
  */
 /**
  * Columns follow the PANE, not the viewport (a container query on the list):
- * one column under ~420px of pane, two up to ~900px, three past that.
+ * one column up to ~480px of pane, two up to ~900px, three past that.
  */
 export const SAVED_GRID_CLASS =
-  "grid grid-cols-1 gap-4 @[24rem]/saved-grid:grid-cols-2 @[54rem]/saved-grid:grid-cols-3";
+  "grid grid-cols-1 gap-4 @[28rem]/saved-grid:grid-cols-2 @[54rem]/saved-grid:grid-cols-3";
 
 export function SavedCanvasItems() {
   const { openItem } = useOpenCanvasItem();

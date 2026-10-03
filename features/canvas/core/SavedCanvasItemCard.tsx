@@ -41,7 +41,7 @@ import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsServic
 /** Container-query classes — exported so the layout contract is testable. */
 export const SAVED_CARD_LAYOUT = {
   card: "@container/saved-card",
-  header: "flex flex-col items-start gap-1.5 @[14rem]/saved-card:flex-row @[14rem]/saved-card:items-start @[14rem]/saved-card:gap-2",
+  header: "flex flex-col items-stretch gap-1.5 @[14rem]/saved-card:flex-row @[14rem]/saved-card:items-start @[14rem]/saved-card:gap-2",
   openLabel: "hidden @[13.5rem]/saved-card:inline",
   inlineActions: "hidden items-center gap-1.5 @[11rem]/saved-card:flex",
   overflowMenu: "@[11rem]/saved-card:hidden",
@@ -126,7 +126,7 @@ export function SavedCanvasItemCard({
         ) : (
           <h3
             title={title}
-            className="line-clamp-2 min-w-0 flex-1 cursor-pointer break-words font-medium text-foreground hover:text-primary"
+            className="line-clamp-2 min-w-0 cursor-pointer break-words font-medium text-foreground [overflow-wrap:anywhere] hover:text-primary @[14rem]/saved-card:flex-1"
             onClick={onStartEdit}
           >
             {title}
@@ -135,7 +135,7 @@ export function SavedCanvasItemCard({
         <Badge
           title={typeLabel}
           className={cn(
-            "min-w-0 max-w-full shrink-0 overflow-hidden @[14rem]/saved-card:max-w-[45%]",
+            "min-w-0 max-w-full shrink-0 self-start overflow-hidden @[14rem]/saved-card:max-w-[45%]",
             typeBadgeColor(item.type),
           )}
         >
