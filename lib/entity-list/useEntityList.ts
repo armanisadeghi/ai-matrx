@@ -467,10 +467,13 @@ export function useEntityList<TRow>({
   // rows stay under the box's spinner until the newer answer replaces them. A search that arrives
   // any other way (Back, a link) was never typed here, so it still holds the skeleton.
   const searchWasTyped = typedSearch !== null && typedSearch === query.search;
+  // A FAILED answer ends the exception: the failure is about the typed text, so the old rows must
+  // not sit under its banner as if they answered it.
   const rowsAnswerThisQuestion =
     rowsAnswer === null ||
     rowsAnswer === liveQuestion ||
-    ((searchWasTyped || typingRecently()) &&
+    (error === null &&
+      (searchWasTyped || typingRecently()) &&
       rowsAnswer === questionOf(query, JSON.parse(rowsAnswer).search));
 
   useEffect(() => {

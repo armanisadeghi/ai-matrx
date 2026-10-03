@@ -37,11 +37,13 @@ const ALL_AGENTS = ["research-assistant", "seo-analyst", "meeting-notes", "data-
   (id) => ({ id }),
 );
 const pending = new Map<string, () => void>();
+const failing = new Map<string, () => void>();
 
 const service = {
   fetchPage: (query: EntityListQuery) => {
     if (!query.search) return Promise.resolve({ rows: ALL_AGENTS, total: 4 });
-    return new Promise<{ rows: Row[]; total: number }>((resolve) => {
+    return new Promise<{ rows: Row[]; total: number }>((resolve, reject) => {
+      failing.set(query.search, () => reject(new Error("canceling statement due to statement timeout")));
       pending.set(query.search, () => {
         const rows = ALL_AGENTS.filter((row) => row.id.includes(query.search));
         resolve({ rows, total: rows.length });
@@ -73,6 +75,7 @@ describe("typing into a list whose server answers slowly", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     pending.clear();
+    failing.clear();
     window.history.replaceState(null, "", "/agents/all");
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -132,5 +135,31 @@ describe("typing into a list whose server answers slowly", () => {
     });
     expect(list?.rows.map((row) => row.id)).toEqual(["research-assistant", "seo-analyst", "data-analyst"]);
     expect(list?.isFetching).toBe(false);
+  });
+  it("drops the previous rows when the typed search's answer fails", async () => {
+    store = makeStore();
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <Probe />
+        </Provider>,
+      );
+    });
+    expect(list?.rows).toHaveLength(4);
+    await act(async () => {
+      list?.setSearch("email");
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(400);
+    });
+    expect(list?.rows).toHaveLength(4);
+
+    await act(async () => {
+      failing.get("email")?.();
+    });
+    // The banner speaks for "email"; rows from the unfiltered list must not sit under it.
+    expect(list?.error).not.toBeNull();
+    expect(list?.rows).toEqual([]);
+    expect(list?.isLoading).toBe(false);
   });
 });
