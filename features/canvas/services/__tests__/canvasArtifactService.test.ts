@@ -63,3 +63,39 @@ describe("canvasArtifactService chat upserts", () => {
     expect(result?.conversation_id).toBe(serverConversationId);
   });
 });
+
+describe("canvasArtifactService.readVersionHistory — owner rows only", () => {
+  beforeEach(() => rpc.mockReset());
+
+  const OWNER = "00000000-0000-4000-8000-0000000000aa";
+  const STRANGER = "00000000-0000-4000-8000-0000000000bb";
+  const chain = [
+    { id: "root", user_id: OWNER, parent_canvas_id: null, version: 1 },
+    { id: "v2", user_id: OWNER, parent_canvas_id: "root", version: 2 },
+    // Another person inserted their own (public) row into this chain.
+    { id: "planted", user_id: STRANGER, parent_canvas_id: "root", version: 999 },
+  ];
+
+  it("drops a row another person planted in the chain, from any entry id", async () => {
+    rpc.mockResolvedValue({ data: chain, error: null });
+    for (const entry of ["root", "v2", "planted"]) {
+      const rows = await canvasArtifactService.readVersionHistory(entry);
+      expect(rows.map((r) => r.id)).toEqual(["root", "v2"]);
+    }
+    expect(rpc).toHaveBeenCalledWith("cx_canvas_get_version_history", { p_canvas_id: "root" });
+  });
+
+  it("every chain reader through getVersionHistory sees the owner's newest version, never the planted one", async () => {
+    rpc.mockResolvedValue({ data: chain, error: null });
+    const rows = await canvasArtifactService.getVersionHistory("root");
+    const latest = rows.reduce((a, b) => (b.version > a.version ? b : a));
+    expect(latest.id).toBe("v2");
+  });
+
+  it("keeps the chain as read when the rows carry no owner (nothing to compare)", async () => {
+    const anon = chain.map(({ user_id: _u, ...rest }) => rest);
+    rpc.mockResolvedValue({ data: anon, error: null });
+    const rows = await canvasArtifactService.readVersionHistory("root");
+    expect(rows).toHaveLength(3);
+  });
+});

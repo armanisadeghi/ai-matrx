@@ -21,6 +21,7 @@ import {
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import type { Database } from "@/types/database.types";
 import type { ArtifactSourceRef } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
+import { chainOwnerRowsOnly } from "./versionChainOwner";
 
 // ---------------------------------------------------------------------------
 // canvasType → cx_artifact artifact_type enum map
@@ -814,7 +815,11 @@ export const canvasArtifactService = {
       },
     );
     if (error) throw error;
-    return (data ?? []) as CanvasArtifactRow[];
+    // Owner rows only: a row another person planted in this chain is not a
+    // version of the item (versionChainOwner.ts). Every chain reader — history
+    // UI, unbind, the mermaid workbench, write handlers, context sync — comes
+    // through this one door.
+    return chainOwnerRowsOnly((data ?? []) as CanvasArtifactRow[], canvasId);
   },
 
   async getVersionHistory(canvasId: string): Promise<CanvasArtifactRow[]> {
