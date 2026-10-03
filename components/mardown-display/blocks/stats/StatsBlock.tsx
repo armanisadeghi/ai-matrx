@@ -17,6 +17,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { soleFence } from "@/lib/markdown/code-ranges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useCanvasFit } from "../canvas-fit";
 
 interface StatItem {
   label: string;
@@ -83,7 +84,11 @@ export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamAc
   const error = parsed && "error" in parsed ? parsed.error : null;
   const [copied, setCopied] = useState(false);
 
-  const cols = spec ? Math.min(spec.stats.length, 4) : 3;
+  // In a narrow canvas pane the tiles stack in ONE column; a tight pane caps at
+  // two. Outside the canvas (fit "outside") the grid is unchanged.
+  const fit = useCanvasFit();
+  const maxCols = fit === "narrow" ? 1 : fit === "tight" ? 2 : 4;
+  const cols = spec ? Math.min(spec.stats.length, maxCols) : Math.min(3, maxCols);
 
   const handleCopy = async () => {
     try {
@@ -117,7 +122,7 @@ export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamAc
       </div>
       <div className="p-3">
         {isStreamActive ? (
-          <div className="grid grid-cols-3 gap-3" aria-busy="true">
+          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }} aria-busy="true">
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-20 w-full" />
             ))}
@@ -129,7 +134,7 @@ export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamAc
             <ErrorAlchemyMenu error={error} />
           </div>
         ) : spec ? (
-          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+          <div className="grid gap-3" data-canvas-fit={fit} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
             {spec.stats.map((s, i) => {
               const t = s.trend ? TREND[s.trend] : null;
               return (

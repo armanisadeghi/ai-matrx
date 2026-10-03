@@ -55,6 +55,7 @@ import { useQuizPersistence } from "@/hooks/useQuizPersistence";
 import { parseQuizJSON, type RawQuizJSON } from "./quiz-parser";
 import { InlineLatexRenderer } from "@/features/math/components/InlineLatexRenderer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useCanvasFit } from "../canvas-fit";
 
 // Legacy type for backwards compatibility
 export type Question = OriginalQuestion;
@@ -246,6 +247,11 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  // A narrow canvas pane: options stack one per row (the viewport `md:` split
+  // cannot see the pane), the controls tighten and the result actions stack.
+  // Focus mode still opens ONLY when the person asks. Outside the canvas
+  // nothing changes.
+  const narrowPane = useCanvasFit() === "narrow";
   const [questionStartTime, setQuestionStartTime] = useState<number>(
     Date.now(),
   );
@@ -713,7 +719,11 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
       </div>
 
       {/* Options Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+      <div
+        className={`grid grid-cols-1 mb-4 ${narrowPane ? "gap-2" : "gap-3 md:grid-cols-2"}`}
+        data-testid="quiz-options"
+        data-canvas-fit={narrowPane ? "narrow" : undefined}
+      >
         {currentQuestion.options.map((option, index) => (
           <div
             key={index}
@@ -779,11 +789,11 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
 
   // Navigation buttons (shared)
   const renderNavButtons = () => (
-    <div className="flex justify-between items-center gap-3">
+    <div className={`flex justify-between items-center ${narrowPane ? "gap-2" : "gap-3"}`}>
       <button
         onClick={handlePrevious}
         disabled={currentQuestionIndex === 0}
-        className={`rounded-lg font-semibold transition-all duration-200 flex-1 ${isFullScreen ? "px-4 py-3 text-base" : "px-3 py-2 text-sm"} ${
+        className={`rounded-lg font-semibold transition-all duration-200 flex-1 ${isFullScreen ? "px-4 py-3 text-base" : narrowPane ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"} ${
           currentQuestionIndex === 0
             ? "bg-gray-400 dark:bg-gray-700 cursor-not-allowed text-gray-200 dark:text-gray-500"
             : "bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md transform hover:scale-105"
@@ -795,14 +805,14 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
       {currentQuestionIndex === quizState.randomizedQuestions.length - 1 ? (
         <button
           onClick={handleNext}
-          className={`rounded-lg font-semibold bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 flex-1 ${isFullScreen ? "px-4 py-3 text-base" : "px-3 py-2 text-sm"}`}
+          className={`rounded-lg font-semibold bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 flex-1 ${isFullScreen ? "px-4 py-3 text-base" : narrowPane ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
         >
           View Results →
         </button>
       ) : (
         <button
           onClick={handleNext}
-          className={`rounded-lg font-semibold bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 flex-1 ${isFullScreen ? "px-4 py-3 text-base" : "px-3 py-2 text-sm"}`}
+          className={`rounded-lg font-semibold bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 flex-1 ${isFullScreen ? "px-4 py-3 text-base" : narrowPane ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
         >
           Next →
         </button>
@@ -896,7 +906,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
             )}
 
             <div className="flex flex-col gap-2">
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className={`flex flex-col gap-2 ${narrowPane ? "" : "sm:flex-row"}`}>
                 <button
                   onClick={handleReviewAnswers}
                   className="flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200"
@@ -914,7 +924,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
 
               {quizState.mode !== "retake" &&
                 (hasIncorrectAnswers || hasSkippedQuestions) && (
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className={`flex flex-col gap-2 ${narrowPane ? "" : "sm:flex-row"}`}>
                     {hasIncorrectAnswers && (
                       <button
                         onClick={handleRetakeMissed}
@@ -936,7 +946,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
                   </div>
                 )}
 
-              <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-border">
+              <div className={`flex flex-col gap-2 pt-2 border-t border-border ${narrowPane ? "" : "sm:flex-row"}`}>
                 <button
                   onClick={handleDownloadQuiz}
                   className="flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-1"
@@ -1073,7 +1083,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
         controls={headerControls}
         initialOpen={true}
       >
-        <div className="p-3">
+        <div className={narrowPane ? "p-2" : "p-3"}>
           {showResults && results ? (
             renderResults()
           ) : (

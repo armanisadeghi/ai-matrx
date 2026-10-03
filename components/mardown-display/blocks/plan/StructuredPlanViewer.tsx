@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { cn } from "@/lib/utils";
+import { useCanvasFit } from "../canvas-fit";
 import {
   ChevronRight,
   ChevronDown,
@@ -33,6 +35,9 @@ const StructuredPlanViewer: React.FC<StructuredPlanViewerProps> = ({
     wordCount: 0 
   });
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  // A narrow canvas pane: tighter card padding and the counts wrap instead of
+  // running off the edge. Outside the canvas nothing changes.
+  const narrow = useCanvasFit() === "narrow";
 
   // Calculate stats from content
   useEffect(() => {
@@ -70,7 +75,7 @@ const StructuredPlanViewer: React.FC<StructuredPlanViewerProps> = ({
   return (
     <TooltipProvider>
       <Card className="w-full bg-transparent border-none">
-        <CardHeader className="pb-2">
+        <CardHeader className={cn("pb-2", narrow && "px-3 pt-3")} data-canvas-fit={narrow ? "narrow" : undefined}>
           {!hideTitle && (
             <CardTitle>
               <div className="flex justify-between items-center">
@@ -96,7 +101,7 @@ const StructuredPlanViewer: React.FC<StructuredPlanViewerProps> = ({
           )}
           
           <div className="flex justify-between items-center mt-2">
-            <div className="flex gap-4 text-xs text-muted-foreground">
+            <div className={cn("flex text-xs text-muted-foreground", narrow ? "flex-wrap gap-x-3 gap-y-1" : "gap-4")}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center">
@@ -132,7 +137,7 @@ const StructuredPlanViewer: React.FC<StructuredPlanViewerProps> = ({
           <Separator className="my-2" />
         </CardHeader>
         
-        <CardContent className="pt-2">
+        <CardContent className={cn("pt-2", narrow && "px-3 pb-3")}>
           <div className="structured-plan-content">
             <BasicMarkdownContent imagePolicy="inherit" content={content} />
           </div>

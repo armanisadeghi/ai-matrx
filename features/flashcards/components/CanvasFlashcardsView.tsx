@@ -37,6 +37,7 @@ import { flashcardSetHref } from "../routes";
 import { Button } from "@/components/ui/button";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useCanvasFit } from "@/components/mardown-display/blocks/canvas-fit";
 
 /** The canonical link system this view studies. Legacy sets carry a different one. */
 const FC_SET_SYSTEM = "fc_set";
@@ -121,6 +122,9 @@ export function CanvasFlashcardsView({
   } = useFlashcardStudy({ setId: linkedSetId });
 
   const isMobile = useIsMobile();
+  // A narrow canvas pane: the card spans the pane, the header wraps and its
+  // links go icon-only. The full-screen deck still opens ONLY on request.
+  const narrow = useCanvasFit() === "narrow";
   // The phone deck is a full-screen overlay; inside a canvas pane it would
   // cover the canvas and every remount would re-open it. It opens only when
   // the person asks for it.
@@ -266,8 +270,20 @@ export function CanvasFlashcardsView({
       {debugStrip}
 
       {/* Progress header */}
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-card/50 px-3 py-2">
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-3 border-b border-border bg-card/50 py-2",
+          narrow ? "flex-wrap gap-y-1 px-2" : "px-3",
+        )}
+        data-testid="canvas-flashcards-header"
+        data-canvas-fit={narrow ? "narrow" : undefined}
+      >
+        <div
+          className={cn(
+            "flex items-center text-xs text-muted-foreground",
+            narrow ? "flex-wrap gap-x-2 gap-y-0.5" : "gap-3",
+          )}
+        >
           <div className="flex items-center gap-1">
             <BookOpen className="h-3.5 w-3.5" />
             <span>
@@ -307,9 +323,13 @@ export function CanvasFlashcardsView({
             size="sm"
             className="h-7 px-2 text-xs"
           >
-            <Link href={flashcardSetHref({ id: linkedSetId })}>
+            <Link
+              href={flashcardSetHref({ id: linkedSetId })}
+              aria-label="Open in Flashcards"
+              title="Open in Flashcards"
+            >
               <Library className="h-3.5 w-3.5" />
-              Open in Flashcards
+              {narrow ? null : "Open in Flashcards"}
             </Link>
           </Button>
         </div>
@@ -330,7 +350,7 @@ export function CanvasFlashcardsView({
           player (self-grades on completion); cloze/basic flip via FlashcardItem
           with occluded/revealed faces (studyFaces — never raw `{{c1::…}}`
           markup). Both funnel grading through the study spine. */}
-      <div className="p-3">
+      <div className={narrow ? "p-2" : "p-3"}>
         {asCardKind(current.card_kind) === CARD_KIND.matching ? (
           <div className="mx-auto max-w-2xl">
             <MatchingCardPlayer
@@ -362,7 +382,12 @@ export function CanvasFlashcardsView({
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-2 px-3 pb-3">
+      <div
+        className={cn(
+          "flex items-center justify-between",
+          narrow ? "gap-1 px-2 pb-2" : "gap-2 px-3 pb-3",
+        )}
+      >
         <Button
           variant="ghost"
           size="sm"

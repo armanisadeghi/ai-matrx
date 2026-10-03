@@ -27,6 +27,7 @@ import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifact
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
+import { useCanvasFit } from "../canvas-fit";
 
 interface Ingredient {
   amount: string;
@@ -89,6 +90,10 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     () => new Set(initialState?.completedSteps ?? []),
   );
   const [isFullScreen, setIsFullScreen] = useState(false);
+  // A narrow canvas pane: the quick stats wrap to two per row (four in 360px
+  // leaves no room for a value), and ingredients sit above the steps. Outside
+  // the canvas the fit is "outside" and the layout is unchanged.
+  const narrowPane = useCanvasFit() === "narrow";
   const [servingMultiplier, setServingMultiplier] = useState(
     () => initialState?.servingMultiplier ?? 1,
   );
@@ -357,7 +362,10 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                 </div>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-4 gap-1.5">
+                <div
+                  className={`grid gap-1.5 ${narrowPane ? "grid-cols-2" : "grid-cols-4"}`}
+                  data-testid="recipe-quick-stats"
+                >
                   {STAT_ITEMS.map((item) => {
                     const { key, label, icon: StatIcon } = item;
                     const suffix = "suffix" in item ? item.suffix : "";
@@ -388,7 +396,9 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
               </div>
 
               {/* Main Content Grid — container query: stack until the block is wide enough */}
-              <div className="grid grid-cols-1 @[550px]:grid-cols-2 gap-3">
+              <div
+                className={`grid grid-cols-1 gap-3 ${narrowPane ? "" : "@[550px]:grid-cols-2"}`}
+              >
                 {/* Ingredients Section */}
                 <div className="space-y-2">
                   <div className="bg-textured rounded-xl p-2 shadow-md border-border">

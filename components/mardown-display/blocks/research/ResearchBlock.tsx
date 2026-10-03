@@ -38,6 +38,8 @@ import { useCanvas } from '@/features/canvas/hooks/useCanvas';
 import { useOpenArtifactInCanvas } from '@/features/canvas/hooks/useOpenArtifactInCanvas';
 import { isMaterializedArtifactId } from '@/features/canvas/artifact-types/artifactId';
 import { getArtifactDef } from '@/features/canvas/artifact-types/artifact-type-registry';
+import { cn } from '@/lib/utils';
+import { useCanvasFit } from '../canvas-fit';
 
 interface UnrecognizedSection {
   id: string;
@@ -126,6 +128,14 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
   blockIndex,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  // In the canvas the PANE sets the columns, not the viewport: the content is a
+  // size container and every md:/lg: split reads the container instead, so a
+  // 360px pane on a wide screen gets one column. Outside the canvas the
+  // viewport breakpoints are unchanged.
+  const canvasFit = useCanvasFit();
+  const inCanvas = canvasFit !== 'outside';
+  const narrow = canvasFit === 'narrow';
+  const at = (viewport: string, container: string) => (inCanvas ? container : viewport);
   const blockContentRef = useRef<HTMLDivElement>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const handlePrint = useCallback(async () => {
@@ -258,17 +268,20 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
 
           {/* Scrollable Content */}
           <div className={isFullScreen ? 'flex-1 overflow-y-auto' : ''}>
-            <div className="p-6 space-y-6">
+            <div
+              className={cn(narrow ? 'p-3 space-y-4' : 'p-6 space-y-6', inCanvas && '@container')}
+              data-canvas-fit={inCanvas ? canvasFit : undefined}
+            >
 
               {/* Header Section */}
-              <div className="bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40 rounded-2xl p-6 shadow-lg border-2 border-emerald-200 dark:border-emerald-800/50">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
-                  <div className="flex items-start gap-4">
+              <div className={cn('bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40 rounded-2xl shadow-lg border-2 border-emerald-200 dark:border-emerald-800/50', narrow ? 'p-3' : 'p-6')}>
+                <div className={cn('flex flex-col gap-4', narrow ? 'mb-4' : 'mb-6', at('lg:flex-row lg:items-start lg:justify-between', '@5xl:flex-row @5xl:items-start @5xl:justify-between'))}>
+                  <div className={cn('flex items-start', narrow ? 'gap-3' : 'gap-4')}>
                     <div className="p-3 bg-emerald-500 dark:bg-emerald-600 rounded-xl shadow-md">
                       <BookOpen className="h-8 w-8 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h1 className={cn('font-bold text-gray-900 dark:text-gray-100 mb-2 break-words', narrow ? 'text-xl' : 'text-3xl')}>
                         {research.title}
                       </h1>
                       {research.overview && (
@@ -280,7 +293,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
                   </div>
 
                   {!isFullScreen && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={handleOpenCanvas}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
@@ -308,7 +321,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
 
                 {/* Research Metadata */}
                 {(research.researchScope || research.keyFocusAreas || research.analysisPeriod) && (
-                  <div className="grid md:grid-cols-3 gap-4 mb-4">
+                  <div className={cn('grid gap-4 mb-4', at('md:grid-cols-3', '@3xl:grid-cols-3'))}>
                     {research.researchScope && (
                       <div className="bg-textured/50 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800/50">
                         <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-1">
@@ -555,7 +568,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
                         <BarChart3 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                         Convergent Themes
                       </h2>
-                      <div className="grid md:grid-cols-2 gap-4">
+                      <div className={cn('grid gap-4', at('md:grid-cols-2', '@3xl:grid-cols-2'))}>
                         {research.convergentThemes.map((theme, index) => (
                           <div key={index} className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800/50">
                             <h3 className="font-semibold text-purple-900 dark:text-purple-200 mb-2">{theme.theme}</h3>
@@ -567,7 +580,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
                   )}
 
                   {/* Future Outlook */}
-                  <div className="grid lg:grid-cols-3 gap-6">
+                  <div className={cn('grid gap-6', at('lg:grid-cols-3', '@5xl:grid-cols-3'))}>
                     {research.shortTermOutlook.length > 0 && (
                       <div className="bg-textured rounded-xl p-6 shadow-lg border-border">
                         <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
@@ -708,7 +721,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
                       <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       Parsing Statistics
                     </h2>
-                    <div className="grid md:grid-cols-4 gap-4">
+                    <div className={cn('grid gap-4', at('md:grid-cols-4', '@3xl:grid-cols-4'))}>
                       <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 text-center">
                         <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{research.parsingStats.totalLines}</div>
                         <div className="text-sm text-blue-700 dark:text-blue-300">Total Lines</div>

@@ -41,7 +41,12 @@ import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewe
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "../../themes";
 import { TableSaveToMenu } from "../../tables/TableSaveToMenu";
-import { phoneStackCellProps, useTableViewer } from "../../tables/table-viewer";
+import {
+  CANVAS_STACK_CARDS,
+  phoneStackCellProps,
+  useTableViewer,
+} from "../../tables/table-viewer";
+import { useCanvasFit } from "../canvas-fit";
 import { ChartThisButton, TableChartPanel } from "../chart/TableChart";
 import { tableActionRowClass, useTableActionTitles } from "../../tables/table-action-row";
 import { TableEditToolbar } from "../../tables/editing/TableEditToolbar";
@@ -304,6 +309,10 @@ const StreamingTableRendererCore: React.FC<
 }) => {
   const toast = useToastManager();
   const isMobile = useIsMobile();
+  // In the canvas the PANE decides, not the viewport: a narrow pane reads as
+  // the card list, a tight one pins the first column. Outside the canvas the
+  // fit is "outside" and nothing below changes.
+  const canvasFit = useCanvasFit();
   // A signed-out visitor gets only the actions that work for her (view, chart,
   // copy, download) — never a write that answers 401 (tables/table-viewer.ts).
   const { canWrite } = useTableViewer();
@@ -691,6 +700,14 @@ const StreamingTableRendererCore: React.FC<
   // On a phone the table reads as the PHONE-STACK card list — except while
   // editing, which needs the grid.
   const phoneStack = isMobile && !isEditingEnabled;
+  // A narrow canvas pane on a desktop viewport: the same card list, applied by
+  // class because the phone-stack media query cannot see the pane.
+  const canvasStack = canvasFit === "narrow" && !isMobile && !isEditingEnabled;
+  const stacked = phoneStack || canvasStack;
+  // A tight (not narrow, not full screen) pane keeps the grid and pins the
+  // first column so each row stays identifiable while scrolling sideways.
+  const pinFirstColumn =
+    canvasFit === "tight" && !isMobile && !isEditingEnabled;
   const isEditingHeader = editMode === "header";
   const editingBorderStyle =
     "overflow-x-auto rounded-xl border-3 border-dashed border-red-500";
@@ -755,19 +772,21 @@ const StreamingTableRendererCore: React.FC<
               isEditingEnabled && "border-dashed border-red-500 border-2",
               isMobile && "-mx-1",
               phoneStack && "phone-stack",
+              canvasStack && CANVAS_STACK_CARDS,
             )}
           >
             <table
               className={cn(
                 "divide-y divide-border",
-                isMobile && !phoneStack ? "min-w-max w-full" : phoneStack ? "w-full" : "min-w-full",
+                isMobile && !phoneStack ? "min-w-max w-full" : stacked ? "w-full" : "min-w-full",
               )}
               style={{ fontSize: `${fontSize}px` }}
+              data-canvas-fit={canvasFit === "outside" ? undefined : canvasFit}
               onDoubleClick={canWrite ? handleTableDoubleClick : undefined}
             >
               {/* Header */}
               <thead className={tableTheme.header} onClick={handleHeaderClick}>
-                <tr>
+                <tr className={cn(pinFirstColumn && "[background-color:inherit]")}>
                   {/* Row-actions gutter (edit mode only) */}
                   {isEditingEnabled && (
                     <th className="w-5 p-0" aria-hidden="true" />
@@ -784,6 +803,9 @@ const StreamingTableRendererCore: React.FC<
                           tableTheme.headerText,
                           isMobile && "whitespace-nowrap",
                           isEditingEnabled && "group/col",
+                          pinFirstColumn &&
+                            index === 0 &&
+                            "sticky left-0 z-[1] [background-color:inherit] border-r border-border",
                         )}
                       >
                         <div
@@ -887,13 +909,16 @@ const StreamingTableRendererCore: React.FC<
                           data-cell="body"
                           data-cell-row={rowIndex}
                           data-cell-col={colIndex}
-                          {...(phoneStack ? phoneStackCellProps(headers, colIndex) : {})}
+                          {...(stacked ? phoneStackCellProps(headers, colIndex) : {})}
                           className={cn(
                             cellPaddingClass,
                             "text-foreground",
                             isMobile && !phoneStack
                               ? "whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis"
                               : "whitespace-normal",
+                            pinFirstColumn &&
+                              colIndex === 0 &&
+                              "sticky left-0 z-[1] bg-background border-r border-border min-w-[7rem] max-w-[12rem]",
                           )}
                         >
                           {editMode === rowIndex ? (

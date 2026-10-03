@@ -37,6 +37,7 @@ import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifact
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
+import { useCanvasFit } from "../canvas-fit";
 
 export type ComparisonCriterion = Omit<
   ComparisonCriterionKind,
@@ -328,6 +329,10 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
 
     return indices;
   }, [comparison, sortBy, sortDirection, itemScores]);
+
+  // A narrow canvas pane shows one item per card instead of side-by-side
+  // columns. Outside the canvas this is always false — the table is unchanged.
+  const asCards = useCanvasFit() === "narrow";
 
   // Filter items based on search query
   const filteredIndices = useMemo(() => {
@@ -751,7 +756,99 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                 </div>
               </div>
 
-              {/* Table */}
+              {asCards ? (
+                <div data-testid="comparison-cards" className="space-y-2">
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <ArrowUpDown className="h-3 w-3 flex-shrink-0" />
+                    <span className="flex-shrink-0">Sort</span>
+                    <select
+                      value={sortBy ? `${sortBy}|${sortDirection ?? "asc"}` : ""}
+                      onChange={(e) => {
+                        const [col, dir] = e.target.value.split("|");
+                        if (!col) applySort(null, null);
+                        else applySort(col, dir === "desc" ? "desc" : "asc");
+                      }}
+                      className="min-w-0 flex-1 rounded-md border border-border bg-background px-1.5 py-1 text-xs text-foreground"
+                    >
+                      <option value="">Original order</option>
+                      <option value="name|asc">Item A–Z</option>
+                      <option value="name|desc">Item Z–A</option>
+                      <option value="score|desc">Score, high first</option>
+                      {comparison.criteria
+                        .filter((c) => !hiddenColumns.has(c.name))
+                        .flatMap((c) => [
+                          <option key={`${c.name}-asc`} value={`${c.name}|asc`}>
+                            {c.name}, ascending
+                          </option>,
+                          <option key={`${c.name}-desc`} value={`${c.name}|desc`}>
+                            {c.name}, descending
+                          </option>,
+                        ])}
+                    </select>
+                  </label>
+                  {filteredIndices.map((itemIndex) => {
+                    const item = comparison.items[itemIndex];
+                    const isWinner = itemIndex === winners.winner;
+                    const isRunnerUp = itemIndex === winners.runnerUp;
+                    const isThird = itemIndex === winners.third;
+                    return (
+                      <div
+                        key={itemIndex}
+                        className={`rounded-lg border p-2 ${
+                          isWinner
+                            ? "border-yellow-300 bg-yellow-50/80 dark:border-yellow-800 dark:bg-yellow-950/20"
+                            : isThird
+                              ? "border-orange-300 bg-orange-50/80 dark:border-orange-800 dark:bg-orange-950/20"
+                              : "border-border bg-background/50"
+                        }`}
+                      >
+                        <div className="mb-1.5 flex items-center gap-1.5 min-w-0">
+                          {isWinner && (
+                            <Crown className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
+                          )}
+                          {isRunnerUp && (
+                            <Medal className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                          )}
+                          {isThird && (
+                            <Award className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
+                          )}
+                          <span className="min-w-0 flex-1 text-sm font-semibold text-foreground break-words">
+                            {item}
+                          </span>
+                          {showScores && (
+                            <span className="flex-shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-foreground">
+                              {itemScores[item]}%
+                            </span>
+                          )}
+                        </div>
+                        <dl className="divide-y divide-border">
+                          {comparison.criteria.map(
+                            (criterion) =>
+                              !hiddenColumns.has(criterion.name) && (
+                                <div
+                                  key={criterion.name}
+                                  className="flex items-center justify-between gap-3 py-1"
+                                >
+                                  <dt className="min-w-0 text-xs text-muted-foreground break-words">
+                                    {criterion.name}
+                                  </dt>
+                                  <dd className="min-w-0 text-right break-words">
+                                    {renderCellValue(
+                                      criterion,
+                                      criterion.values[itemIndex],
+                                      itemIndex,
+                                    )}
+                                  </dd>
+                                </div>
+                              ),
+                          )}
+                        </dl>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+              /* Table */
               <div className="rounded-lg border border-border bg-background/50 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
@@ -894,6 +991,7 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                   </table>
                 </div>
               </div>
+              )}
             </div>
           </div>
         </div>

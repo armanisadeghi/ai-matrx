@@ -43,6 +43,8 @@ import {
 } from "lucide-react";
 import { parseMarkdownChecklist } from "./tasklist-parser";
 import ImportTasksModal from "@/features/tasks/components/ImportTasksModal";
+import { cn } from "@/lib/utils";
+import { useCanvasFit } from "../canvas-fit";
 
 // Define TypeScript types for our components and data structures
 export type CheckboxStateType = Record<string, boolean>;
@@ -84,6 +86,10 @@ const TaskChecklist = ({
   const [checkboxState, setCheckboxState] =
     useState<CheckboxStateType>(initialState);
   const [hideCompleted, setHideCompleted] = useState(false);
+  // A narrow canvas pane: the counts and the switch wrap into a compact
+  // toolbar, the card drops its wide padding and subtasks indent less.
+  // Outside the canvas nothing changes.
+  const narrow = useCanvasFit() === "narrow";
   const [saveSuccess, setSaveSuccess] = useState(false);
   const initialStateRef = useRef<CheckboxStateType>({});
   const initialChecklistRef = useRef<TaskItemType[]>([]);
@@ -401,7 +407,7 @@ const TaskChecklist = ({
           <div
             key={checkboxId}
             data-task-id={item.id}
-            className={`bg-transparent dark:bg-transparent mb-2 ${depth > 0 ? "ml-8" : ""}`}
+            className={`bg-transparent dark:bg-transparent mb-2 ${depth > 0 ? (narrow ? "ml-5" : "ml-8") : ""}`}
           >
             <div className="flex items-start gap-3 group/task-row relative">
               <Checkbox
@@ -562,17 +568,29 @@ const TaskChecklist = ({
   return (
     <TooltipProvider>
       <Card className="w-full bg-transparent border-none p-0">
-        <CardHeader className="pb-2">
-          <div className="space-y-4 mt-2">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
+        <CardHeader className={cn("pb-2", narrow && "px-2 pt-2")}>
+          <div className={cn("mt-2", narrow ? "space-y-2" : "space-y-4")}>
+            <div
+              className={cn(
+                "flex items-center justify-between",
+                narrow && "flex-wrap gap-x-3 gap-y-1",
+              )}
+              data-testid="task-checklist-toolbar"
+              data-canvas-fit={narrow ? "narrow" : undefined}
+            >
+              <div className={cn("text-muted-foreground", narrow ? "text-xs" : "text-sm")}>
                 Main: {progress.completedTasks} of {progress.totalTasks}
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className={cn("text-muted-foreground", narrow ? "text-xs" : "text-sm")}>
                 All: {progress.completedItems} of {progress.totalItems} (
                 {progress.totalPercentage}%)
               </div>
-              <div className="flex justify-end items-center space-x-2 text-sm text-muted-foreground">
+              <div
+                className={cn(
+                  "flex justify-end items-center space-x-2 text-muted-foreground",
+                  narrow ? "ml-auto text-xs" : "text-sm",
+                )}
+              >
                 <span>Hide completed</span>
                 <Switch
                   checked={hideCompleted}
@@ -584,7 +602,7 @@ const TaskChecklist = ({
           </div>
         </CardHeader>
 
-        <CardContent className="pt-4 space-y-4 relative">
+        <CardContent className={cn("pt-4 space-y-4 relative", narrow && "px-2 pb-2")}>
           <NonEditableContextMenu
             sourceFeature="tasks"
             resolveContextOnOpen={(target) => {
