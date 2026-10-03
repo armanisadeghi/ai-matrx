@@ -1,6 +1,6 @@
 -- chair-step: the inverse of scopesw2w_a_tag_set_refuses_a_scope_it_cannot_tag.sql — restores the body of custom.context_tags_set as it stood on production and the clone 2026-10-03 03:50Z (pg_get_functiondef md5 22ba936512abc891012a238f20c0ce33), in which an unknown scope id is dropped and the call answers ok:true.
 -- lane: SCOPES-ON-THE-STORE
--- based-on: custom.context_tags_set(text, uuid, uuid[]) BASED_ON_PLACEHOLDER
+-- based-on: custom.context_tags_set(text, uuid, uuid[]) 7683519edce25c199fde8556b2f1c6faebbba827b02be11707287c5f630f77b6
 -- lock: custom
 
 CREATE OR REPLACE FUNCTION custom.context_tags_set(p_entity_type text, p_entity_id uuid, p_scope_ids uuid[])

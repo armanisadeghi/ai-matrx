@@ -71,6 +71,8 @@ begin
                  where om.user_id = (f->>'admin_uid')::uuid and s.id = (f->>'alex_tag')::uuid) then
     raise exception 'scopesw2w: precondition — the named scopes or memberships are not as this suite expects on this copy';
   end if;
+  -- The fixtures are a system write, and say which system (provenance stamp on platform.associations).
+  perform set_config('app.actor_system', 'campaign-suite scopesw2w', true);
   insert into projects.projects (id, name, organization_id, created_by, description)
   values ((f->>'p_test')::uuid, 'Post-op ACL return-to-sport protocol review', (f->>'cedar')::uuid, (f->>'test_uid')::uuid,
           'Quarterly review of the ACL return-to-sport criteria used by the outpatient orthopedics team.'),
