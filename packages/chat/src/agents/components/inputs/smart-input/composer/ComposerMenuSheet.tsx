@@ -58,7 +58,7 @@ export function ComposerMenuSheet({
     <BottomSheet
       open={open}
       onOpenChange={setOpen}
-      size={top ? "full" : "adaptive"}
+      size={top && top.fit !== "content" ? "full" : "adaptive"}
       surface="solid"
       contentClassName="bg-muted dark:bg-background"
     >

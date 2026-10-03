@@ -48,6 +48,8 @@ export const ComposerMenuPresentationContext =
 export interface ComposerSheetPage {
   title: string;
   render: () => ReactNode;
+  /** `content` = the sheet sizes to the page (a link box); default fills. */
+  fit?: "fill" | "content";
 }
 export const ComposerSheetNavContext = createContext<{
   push: (page: ComposerSheetPage) => void;
@@ -408,6 +410,9 @@ export function ComposerSubmenu({
         onClick={() =>
           sheetNav.push({
             title: typeof row.label === "string" ? row.label : "",
+            // A panel with no fixed height on desktop is content-sized on the
+            // phone too — one sizing decision, both presentations.
+            fit: panelClassName && !/(^|\s)h-\[/.test(panelClassName) ? "content" : "fill",
             render: () => (typeof children === "function" ? children(sheetNav.pop) : children),
           })
         }

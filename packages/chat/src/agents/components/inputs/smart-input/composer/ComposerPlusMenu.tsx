@@ -117,6 +117,12 @@ import { RunInputCapabilities } from "../../../run-controls/RunInputCapabilities
 import { RunToolPicker } from "../RunToolPicker";
 import { RunSkillPicker } from "../RunSkillPicker";
 
+/** A link box sizes to its content (Notion's embed popover), growing as a
+ *  preview arrives, up to the screen. */
+const LINK_PANEL = "w-[420px] p-0";
+/** A short list that drills in place: sized to the list, then to the view. */
+const CONTENT_PANEL = LINK_PANEL;
+
 /** Picker cascades need a definite height for their internal scroll chains;
  *  the available-height cap keeps the bottom on screen. */
 const PICKER_PANEL =
@@ -217,12 +223,12 @@ export function ComposerPlusMenu({
         <ComposerSubmenu row={{ icon: FolderOpen, label: "Add files or photos" }} panelClassName={PICKER_PANEL}>
           {(closeCascade) => picker("files", closeCascade)}
         </ComposerSubmenu>
-        <ComposerSubmenu row={{ icon: Link2, label: "Add a link" }} panelClassName={PICKER_PANEL}>
+        <ComposerSubmenu row={{ icon: Link2, label: "Add a link" }} panelClassName={LINK_PANEL}>
           {(closeCascade) => picker("webpage", closeCascade)}
         </ComposerSubmenu>
         <ComposerSubmenu
           row={{ icon: Boxes, label: "From your workspace" }}
-          panelClassName={PICKER_PANEL}
+          panelClassName={CONTENT_PANEL}
           drillInPlace
         >
           <div className="flex flex-col p-1.5">
