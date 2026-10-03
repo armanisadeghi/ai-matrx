@@ -5,7 +5,7 @@
  */
 
 import { buildKindCatalog, type KindCatalogEntry } from "../registry/kind-catalog";
-import type { BlockSchemaEntry } from "../registry/schema-source-flexible-data";
+import type { BlockSchemaEntry } from "../registry/schema-source-kind-tables";
 import type { KindDefinition } from "@ai-matrx/content-ir";
 
 /** Narrowing map read — a missing entry fails the test loudly. */

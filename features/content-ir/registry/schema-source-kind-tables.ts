@@ -1,28 +1,74 @@
 /**
- * content_ir-backed schema source — the CANONICAL replacement for
- * schema-source-flexible-data. Reads `content_ir.kind_definition` (+ its
- * `content_ir.kind_edge` ref graph) and reconstructs the `KindSchema` the
- * parser/emitter consume, via the round-trip-proven `storageToKindSchema`.
+ * content_ir-backed schema source — THE kind schema source. Reads
+ * `content_ir.kind_definition` (+ its `content_ir.kind_edge` ref graph) and
+ * reconstructs the `KindSchema` the parser/emitter consume, via the
+ * round-trip-proven `storageToKindSchema`; canonical samples come from
+ * `content_ir.kind_example`.
  *
- * The only place content_ir schema reads may live (the lint-enforced chokepoint
- * that flexible-data was). Edges reference children by `child_definition_id`
- * (canonical FK), so reconstruction resolves those ids back to kind slugs.
+ * The only place content_ir schema reads may live (the lint-enforced
+ * chokepoint). Edges reference children by `child_definition_id` (canonical
+ * FK), so reconstruction resolves those ids back to kind slugs.
  *
- * NOT yet wired into `kindRegistry` — the cutover (repointing the registry from
- * flexible-data to here) happens after the one-time data migration populates
- * the tables and parity is verified.
+ * The old `platform.flexible_data` "Block Schemas" / "Sample Block Data" store
+ * is retired (lane PLATFORM-APP-DATA, 2026-10-02): every one of its 26 kinds
+ * and 5 samples lives here, newer. Nothing reads it — guard
+ * `pnpm check:no-old-flexible-store`.
  */
 
 import type { Database, Json } from "@/types/database.types";
-import type { KindSchema } from "@ai-matrx/content-ir";
+import { KIND_KEY, type FieldSchema, type KindSchema } from "@ai-matrx/content-ir";
 import {
   kindSchemaFromJsonSchema,
   storageToKindSchema,
   type KindEdgeSpec,
   type StoredFieldElement,
 } from "@ai-matrx/content-ir";
-import type { BlockSchemaEntry, BlockSchemaRegistry } from "./schema-source-flexible-data";
 import { readAllRows } from "@ai-matrx/data/db";
+
+export type BlockSchemaEntry = {
+  id: string;
+  label: string;
+  slug: string;
+  fields: Record<string, FieldSchema>;
+  /** Dual-gate render-trust verdict (`kind_definition.is_active`). */
+  isActive?: boolean;
+  /**
+   * Generated-contract family from `kind_definition.metadata.family`
+   * (`agent_io` / `tool_io` / `action_io` / `workflow_io` / display families).
+   * Null/undefined = plain display kind.
+   */
+  family?: string | null;
+  /**
+   * Loading-library slug from `kind_definition.metadata.loading_component`
+   * (which hardcoded loading component to show while an instance streams).
+   * Null/undefined = generic default.
+   */
+  loadingComponent?: string | null;
+  /**
+   * The materialized `kind_definition.emitted_json_schema` — the STRUCTURAL
+   * authority, and the only schema a python-owned kind has.
+   *
+   * `fields` is reconstructed from `data[]` + `kind_edge`, which python-owned
+   * kinds leave NULL whenever their schema is too nested for aidream's
+   * all-or-nothing `fields_from_json_schema` (FOUND_DEFECTS D156). Those rows
+   * are NOT schema-less; they are only field-declaration-less, and consumers
+   * that need a JSON Schema (agent output binding, structural validation) must
+   * read this instead of inferring "no fields" as "no contract". Carried
+   * VERBATIM — never round-tripped through `fields`, which is lossy on exactly
+   * the nested schemas that need it.
+   */
+  emittedJsonSchema?: unknown;
+  /**
+   * `kind_definition.is_contract_artifact` — a machine-minted per-agent /
+   * per-tool I/O contract row, not a reusable shape a human would ever choose.
+   */
+  isContractArtifact?: boolean;
+};
+
+export type BlockSchemaRegistry = {
+  schemas: Record<string, KindSchema>;
+  entries: BlockSchemaEntry[];
+};
 
 async function getSupabase() {
   const { supabase } = await import("@/utils/supabase/client");
@@ -434,6 +480,71 @@ export async function listKindSchemasFromTables(): Promise<BlockSchemaRegistry> 
   }
 
   return reconstructKindRegistry(defRows, edgeRows);
+}
+
+/** One canonical `content_ir.kind_example` instance, ready to paste into a stream. */
+export type KindSample = {
+  /** The kind_example id. */
+  id: string;
+  /** The kind's label (the example's own label is usually "Canonical example"). */
+  label: string;
+  /** The kind slug — the `__kind` the instance carries. */
+  slug: string;
+  /** Pretty-printed JSON of `data`. */
+  content: string;
+  data: Record<string, unknown>;
+};
+
+/**
+ * Every live kind's CANONICAL example (`kind_example.is_canonical`), labelled by
+ * its kind and sorted by label. An example whose data is not an object carrying
+ * its `__kind` is skipped — it cannot be streamed as an instance of the kind.
+ */
+export async function listCanonicalKindSamples(): Promise<KindSample[]> {
+  const supabase = await getSupabase();
+  type ExampleRow = {
+    id: string;
+    data: Json;
+    kind_definition: { kind: string; label: string; deleted_at: string | null } | null;
+  };
+  let rows: ExampleRow[];
+  try {
+    rows = await readAllRows<ExampleRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("content_ir")
+          .from("kind_example")
+          .select("id, data, kind_definition:kind_definition_id(kind, label, deleted_at)", {
+            count: "exact",
+          })
+          .eq("is_canonical", true)
+          .is("deleted_at", null)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content_ir.kind_example" },
+    );
+  } catch (error) {
+    throw new KindTablesError(
+      `Failed to list kind_example: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  const samples: KindSample[] = [];
+  for (const row of rows) {
+    const def = row.kind_definition;
+    if (!def || def.deleted_at) continue;
+    const data = row.data;
+    if (!data || typeof data !== "object" || Array.isArray(data)) continue;
+    if ((data as Record<string, unknown>)[KIND_KEY] !== def.kind) continue;
+    samples.push({
+      id: row.id,
+      label: def.label,
+      slug: def.kind,
+      data: data as Record<string, unknown>,
+      content: JSON.stringify(data, null, 2),
+    });
+  }
+  return samples.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 /** Cold-tier result: the schema plus the render-relevant definition metadata. */

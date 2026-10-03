@@ -1,7 +1,8 @@
 "use client";
 
+import nextDynamic from "next/dynamic";
 import { useMemo, useState, type ReactNode } from "react";
-import { ChevronDown, Loader2, Save, Zap } from "lucide-react";
+import { ChevronDown, Shapes, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,17 +13,11 @@ import {
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  BLOCK_SCHEMAS_CATEGORY_ID,
-  createFlexibleData,
-  FlexibleDataError,
-  type BlockSchemaEntry,
-} from "@/features/content-ir/registry/schema-source-flexible-data";
+import type { BlockSchemaEntry } from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { KindSchema } from "@ai-matrx/content-ir";
+import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 import {
-  fieldsToDbPayload,
+  normalizeAiSchemaInput,
   runSchemaConversion,
   validateBlockSchemaSavePlan,
   type ConversionProblem,
@@ -32,6 +27,14 @@ import {
   type SchemaConversionResult,
 } from "@ai-matrx/content-ir";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+
+// The ONE kind-creation path (content_ir definitions → edges → canonical example,
+// disposition chosen per kind). Heavy (ajv + converter + planner) — loaded on open.
+const CreateShapeDialog = nextDynamic(
+  () =>
+    import("@/features/agents/components/schema-proposal/CreateShapeDialog"),
+  { ssr: false, loading: () => null },
+);
 
 type PanelId = "input" | "blockSchemas" | "agentSchema";
 
@@ -163,12 +166,13 @@ export function SchemaConvertTab({
   blockSchemaEntries: BlockSchemaEntry[];
   onSaved: () => void;
 }) {
-  const organizationId = useAppSelector(selectOrganizationId);
   const [inputText, setInputText] = useState("{}");
   const [conversion, setConversion] = useState<
     (SchemaConversionResult & { parseErrors: string[] }) | null
   >(null);
-  const [saving, setSaving] = useState(false);
+  /** The converted schema as the proposal envelope Create Shape takes. */
+  const [proposal, setProposal] = useState<OutputSchema | null>(null);
+  const [shapeDialogOpen, setShapeDialogOpen] = useState(false);
   const [openPanel, setOpenPanel] = useState<PanelId>("input");
   const [droppedOpen, setDroppedOpen] = useState(false);
 
@@ -194,6 +198,18 @@ export function SchemaConvertTab({
     }
 
     setConversion(runSchemaConversion(parsed, existingSchemas));
+    const normalized = normalizeAiSchemaInput(parsed);
+    setProposal(
+      normalized.name && normalized.rootSchema
+        ? ({
+            name: normalized.name,
+            // MATRX-EXCEPTION: the converter's JsonSchemaNode and the agents
+            // feature's JsonSchema are the same JSON at runtime — re-typed once.
+            schema: normalized.rootSchema as unknown as OutputSchema["schema"],
+            strict: normalized.strict ?? false,
+          } satisfies OutputSchema)
+        : null,
+    );
     setOpenPanel("blockSchemas");
   };
 
@@ -216,46 +232,17 @@ export function SchemaConvertTab({
     );
   }, [conversion, blockSchemaEntries, hasConversionErrors]);
 
-  const canSave = !!organizationId && savePlan.canSave;
+  const canCreate =
+    !!proposal &&
+    !!conversion &&
+    conversion.parseErrors.length === 0 &&
+    !hasConversionErrors &&
+    conversion.blockSchemas.length > 0;
 
-  const handleSave = async () => {
-    if (!organizationId) {
-      toast.error("Active organization is required.");
-      return;
-    }
-    if (!savePlan.canSave) {
-      toast.error(savePlan.errors[0] ?? "Cannot save block schemas.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const toSave = savePlan.entries.filter((e) => e.willSave);
-      for (const entry of toSave) {
-        await createFlexibleData({
-          categoryId: BLOCK_SCHEMAS_CATEGORY_ID,
-          organizationId,
-          label: entry.draft.label,
-          slug: entry.draft.slug.trim(),
-          data: fieldsToDbPayload(entry.draft.fields),
-        });
-      }
-
-      toast.success(
-        `Saved ${toSave.length} block schema${toSave.length === 1 ? "" : "s"}.`,
-      );
-      onSaved();
-    } catch (error) {
-      toast.error(
-        error instanceof FlexibleDataError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : "Failed to save schema.",
-      );
-    } finally {
-      setSaving(false);
-    }
+  const handleShapeDialogChange = (open: boolean) => {
+    setShapeDialogOpen(open);
+    // A created Shape lands in content_ir — reload the registry the demo reads.
+    if (!open) onSaved();
   };
 
   return (
@@ -400,25 +387,24 @@ export function SchemaConvertTab({
             ))}
           </ul>
         )}
-        {!organizationId && (
-          <p className="text-[10px] text-destructive">
-            No active organization — select an org before saving.
-          </p>
-        )}
         <Button
           size="sm"
           className="w-full"
-          disabled={!canSave || saving}
-          onClick={() => void handleSave()}
+          disabled={!canCreate}
+          onClick={() => setShapeDialogOpen(true)}
         >
-          {saving ? (
-            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-          ) : (
-            <Save className="mr-1.5 size-3.5" />
-          )}
-          Save {savePlan.newCount > 0 ? `${savePlan.newCount} ` : ""}to DB
+          <Shapes className="mr-1.5 size-3.5" />
+          Create Shape
         </Button>
       </div>
+
+      {shapeDialogOpen && proposal && (
+        <CreateShapeDialog
+          open={shapeDialogOpen}
+          onOpenChange={handleShapeDialogChange}
+          schema={proposal}
+        />
+      )}
     </div>
   );
 }

@@ -42,14 +42,12 @@ import {
   type ValidationReport,
 } from "./validation-report";
 import {
-  BLOCK_SCHEMAS_CATEGORY_ID,
-  FlexibleDataError,
-  listBlockSamples,
-  listBlockSchemas,
-  SAMPLE_BLOCK_DATA_CATEGORY_ID,
-  type BlockSample,
+  listCanonicalKindSamples,
+  listKindSchemasFromTables,
   type BlockSchemaEntry,
-} from "@/features/content-ir/registry/schema-source-flexible-data";
+  type BlockSchemaRegistry,
+  type KindSample,
+} from "@/features/content-ir/registry/schema-source-kind-tables";
 import { SchemaConvertTab } from "./SchemaConvertTab";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -71,6 +69,21 @@ const DEFAULT_STREAM_SETTINGS = {
   minChunkSize: 1,
   maxChunkSize: 12,
 };
+
+/**
+ * The kind registry from content_ir: every live kind's schema feeds the parser;
+ * the pickers list only reusable kinds (machine-minted per-agent / per-tool
+ * contract rows are left out), sorted by label.
+ */
+async function loadKindRegistry(): Promise<BlockSchemaRegistry> {
+  const registry = await listKindSchemasFromTables();
+  return {
+    schemas: registry.schemas,
+    entries: registry.entries
+      .filter((entry) => !entry.isContractArtifact)
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  };
+}
 
 /** Nesting depth = how many array items deep (root = 0, cards[0] = 1, …). */
 function kindDepth(path: Array<string | number>): number {
@@ -636,7 +649,7 @@ function SettingField({
 }
 
 export default function JsonBlockDetectorPage() {
-  const [samples, setSamples] = useState<BlockSample[]>([]);
+  const [samples, setSamples] = useState<KindSample[]>([]);
   const [samplesLoading, setSamplesLoading] = useState(true);
   const [samplesError, setSamplesError] = useState<string | null>(null);
   const [selectedSampleId, setSelectedSampleId] = useState("");
@@ -658,7 +671,7 @@ export default function JsonBlockDetectorPage() {
   const runCounterRef = useRef(0);
 
   const reloadBlockSchemas = async () => {
-    const registry = await listBlockSchemas(BLOCK_SCHEMAS_CATEGORY_ID);
+    const registry = await loadKindRegistry();
     setSchemas(registry.schemas);
     setBlockSchemaEntries(registry.entries);
   };
@@ -673,8 +686,8 @@ export default function JsonBlockDetectorPage() {
       setSamplesError(null);
 
       const [schemaResult, sampleResult] = await Promise.allSettled([
-        listBlockSchemas(BLOCK_SCHEMAS_CATEGORY_ID),
-        listBlockSamples(SAMPLE_BLOCK_DATA_CATEGORY_ID),
+        loadKindRegistry(),
+        listCanonicalKindSamples(),
       ]);
 
       if (cancelled) return;
@@ -691,16 +704,20 @@ export default function JsonBlockDetectorPage() {
         setSchemas(null);
         setBlockSchemaEntries([]);
         setSchemasError(
-          error instanceof FlexibleDataError
-            ? error.message
-            : error instanceof Error
-              ? error.message
-              : "Failed to load block schemas.",
+          error instanceof Error ? error.message : "Failed to load block schemas.",
         );
       }
 
       if (sampleResult.status === "fulfilled") {
-        const loadedSamples = sampleResult.value;
+        // Only samples of kinds the pickers list (a contract row's example is noise here).
+        const listed = new Set(
+          schemaResult.status === "fulfilled"
+            ? schemaResult.value.entries.map((entry) => entry.slug)
+            : [],
+        );
+        const loadedSamples = sampleResult.value.filter((sample) =>
+          listed.has(sample.slug),
+        );
         setSamples(loadedSamples);
         const first = loadedSamples[0];
         if (first) {
@@ -711,11 +728,7 @@ export default function JsonBlockDetectorPage() {
         const error = sampleResult.reason;
         setSamples([]);
         setSamplesError(
-          error instanceof FlexibleDataError
-            ? error.message
-            : error instanceof Error
-              ? error.message
-              : "Failed to load sample block data.",
+          error instanceof Error ? error.message : "Failed to load sample block data.",
         );
       }
 

@@ -100,7 +100,6 @@ describe("every browser path that creates a kind runs the disposition refusal", 
     expect(files).toEqual(
       expect.arrayContaining([
         "features/agents/components/schema-proposal/create-shape.ts",
-        "scripts/migrate-content-ir-kinds.ts",
       ]),
     );
   });

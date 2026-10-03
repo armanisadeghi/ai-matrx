@@ -14,7 +14,7 @@
 import type { FieldSchema, KindSchema } from "@ai-matrx/content-ir";
 import { formatBlockLabel } from "@ai-matrx/content-ir";
 import { collectReferencedKinds } from "@ai-matrx/content-ir";
-import type { BlockSchemaEntry } from "./schema-source-flexible-data";
+import type { BlockSchemaEntry } from "./schema-source-kind-tables";
 import { listKindSchemasFromTables } from "./schema-source-kind-tables";
 // ORDER MATTERS: kind-registry must load BEFORE system-kinds here. The
 // system-kinds module chain (kinds/* bridges → region-envelope-memo) imports
@@ -113,7 +113,7 @@ function emptyFacets(): KindCatalogFacets {
 }
 
 /**
- * Pure merge: registry definitions + flexible_data Block Schemas rows →
+ * Pure merge: registry definitions + content_ir.kind_definition rows →
  * sorted catalog with the uses / used-by reference graph. DB fields override
  * compiled fields (same precedence as the registry's warm load); compiled
  * facets always survive.
@@ -198,7 +198,7 @@ export function buildKindCatalog(
 
 /**
  * Every kind the platform knows: live registry definitions merged with the
- * flexible_data Block Schemas rows. One list fetch; throws FlexibleDataError
+ * content_ir.kind_definition rows. One list fetch; throws KindTablesError
  * when the DB is unreachable (callers may fall back to listCompiledKinds).
  */
 export async function listAllKinds(): Promise<KindCatalogEntry[]> {

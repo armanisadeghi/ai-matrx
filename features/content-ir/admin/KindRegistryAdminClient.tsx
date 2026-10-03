@@ -5,7 +5,7 @@
  * /administration/utilities/kind-registry (super-admin gated by the (admin) layout).
  *
  * Browse/search every kind the platform knows (compiled system kinds +
- * flexible_data Block Schemas rows, merged by `listAllKinds`), inspect
+ * content_ir.kind_definition rows, merged by `listAllKinds`), inspect
  * fields + facets + the uses / used-by reference graph, and EXPORT a
  * provider-ready JSON Schema for any kind — referenced kinds resolve into
  * `$defs` automatically via `kindSchemaToJsonSchema`. Sized by its parent
@@ -361,8 +361,7 @@ export default function KindRegistryAdminClient() {
       {loadError && (
         <div className="flex items-center gap-2 border-b border-amber-300 bg-amber-50 px-4 py-1.5 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
           <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-          flexible_data Block Schemas unavailable — showing compiled system
-          kinds only. {loadError}
+          Kind registry unavailable — showing compiled kinds only. {loadError}
           <ErrorAlchemyMenu error={loadError} />
         </div>
       )}
