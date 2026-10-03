@@ -10,7 +10,8 @@ import { AllChangesView } from "@ai-matrx/diff/react";
 import { ChangesOnlyView } from "@ai-matrx/diff/react";
 import { SummaryView } from "@ai-matrx/diff/react";
 import { RawJsonView } from "@ai-matrx/diff/react";
-import { TextDiff } from "@ai-matrx/diff/react";
+import { TextDiff, type TextDiffView } from "@ai-matrx/diff/react";
+import { useMeasure } from "@ai-matrx/kit/hooks";
 import {
   TextFieldAdapter,
   TagsFieldAdapter,
@@ -33,6 +34,14 @@ interface NoteDiffViewerProps {
   defaultTab?: NoteDiffTab;
   className?: string;
 }
+
+/**
+ * Below this container width two side-by-side columns cut words mid-line
+ * ("separat"), so the Content diff stacks (one column, old above new). A
+ * container query, not a viewport one: a 360px canvas pane on a wide monitor
+ * is just as narrow as a phone.
+ */
+const SPLIT_MIN_WIDTH_PX = 560;
 
 export type NoteDiffTab =
   "content" | "all" | "changes-only" | "summary" | "raw-json";
@@ -104,6 +113,11 @@ export function NoteDiffViewer({
   className,
 }: NoteDiffViewerProps) {
   const [tab, setTab] = useState<NoteDiffTab>(defaultTab);
+  // The view follows the container until the person picks one in the toolbar.
+  const [pickedView, setPickedView] = useState<TextDiffView | null>(null);
+  const [contentRef, { width: contentWidth }] = useMeasure<HTMLDivElement>();
+  const narrow = (contentWidth ?? 0) > 0 && (contentWidth ?? 0) < SPLIT_MIN_WIDTH_PX;
+  const contentView: TextDiffView = pickedView ?? (narrow ? "inline" : "split");
   const adapters = useMemo(() => buildNoteAdapterRegistry(), []);
 
   const oldContent = typeof oldNote.content === "string" ? oldNote.content : "";
@@ -172,15 +186,18 @@ export function NoteDiffViewer({
         </div>
 
         <TabsContent
+          ref={contentRef}
           value="content"
           className="mt-0 min-h-0 flex-1 overflow-hidden"
+          data-diff-layout={contentView === "split" ? "split" : "stacked"}
         >
           <TextDiff
             original={oldContent}
             modified={newContent}
             originalLabel={oldLabel}
             modifiedLabel={newLabel}
-            defaultView="split"
+            view={contentView}
+            onViewChange={setPickedView}
             showToolbar
             wrap
             className="h-full"
