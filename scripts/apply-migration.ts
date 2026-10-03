@@ -4862,6 +4862,7 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
     }
   }
   const lane = valueOf("--lane");
+  if (lane) process.env.MATRX_LANE = lane; // every connection below carries the lane (lib/lane.mjs)
   const reason = valueOf("--reason");
   /** The up-file must be the bytes the target's ledger says ran — a round trip through other bytes is fiction. */
   const upRefusal = async (client: pg.Client): Promise<string | null> => {
@@ -5412,6 +5413,7 @@ async function main(): Promise<number> {
   };
   const sourceArg = valueOf("--source");
   const lane = valueOf("--lane");
+  if (lane) process.env.MATRX_LANE = lane; // every connection below carries the lane (lib/lane.mjs)
   if (sourceArg !== null && sourceArg !== CAMPAIGN_SOURCE) {
     console.error(
       `${TAG.fail}--source ${sourceArg} is not a source this runner knows. The ONE value is ` +

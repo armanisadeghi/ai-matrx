@@ -100,6 +100,7 @@ import { functionsTouched, openProductionReadOnly, parityCompare } from "./lib/c
 import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
 import { sqlStatements, stripComments } from "./lib/sql-split";
 import { legDidNothing, rule27Legs } from "./lib/rule27-legs";
+import { laneName } from "./lib/lane.mjs";
 import { parseChairStepConfirmations } from "./lib/chair-step";
 import { takeBuildLock, releaseBuildLock, startLockHeartbeat, type LockQuery } from "./lib/build-lock";
 import {
@@ -215,10 +216,10 @@ async function measure(
   sql: string,
   statementTimeout: string,
 ): Promise<{ statements: StatementMeasurement[]; totalMs: number; failedAt: number | null }> {
-  const appName = `db:rehearse ${label} ${createHash("sha256")
-    .update(`${label}${Date.now()}${Math.random()}`)
-    .digest("hex")
-    .slice(0, 10)}`;
+  const hash = createHash("sha256").update(`${label}${Date.now()}${Math.random()}`).digest("hex").slice(0, 10);
+  const head = `${laneName()}:db:rehearse `;
+  // lane first, hash last: Postgres cuts application_name at 63 bytes and the hash is what the census matches on.
+  const appName = `${head}${label.slice(0, Math.max(0, 63 - head.length - hash.length - 1))} ${hash}`;
   const worker = await connectDirect({ ...env }, "db:rehearse (measure)", undefined, { migrationRunner: true });
   const sampler = await connectDirect({ ...env }, "db:rehearse (pg_locks sampler)", undefined, { migrationRunner: true });
   // THE ONE SPLITTER (scripts/lib/sql-split.ts, D351): each statement's bytes exactly as written.
@@ -694,6 +695,7 @@ async function main(): Promise<number> {
 
   const statementTimeout = valueOf(argv, "--statement-timeout") ?? "10min";
   const lane = valueOf(argv, "--lane");
+  if (lane) process.env.MATRX_LANE = lane; // db:rehearse and the db:apply it spawns carry the lane (lib/lane.mjs)
   const source = valueOf(argv, "--source");
   const inverseArg = valueOf(argv, "--inverse");
   const chairConfirmations = parseChairStepConfirmations(argv);

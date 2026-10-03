@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import type { NoticeMessage } from "pg-protocol/dist/messages.js";
 import type { QueryFn } from "./gate-db";
+import { laneApp } from "./lane.mjs";
 import { governProduction, isProductionTarget } from "./production-guard";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -119,7 +120,7 @@ export async function connectDirect(
     password: env.password,
     database: env.database,
     ssl: { rejectUnauthorized: false },
-    application_name: applicationName,
+    application_name: laneApp(applicationName),
     connectionTimeoutMillis: 15_000,
   });
   if (onNotice) client.on("notice", onNotice);
