@@ -10,9 +10,10 @@
  *     (`initialView` + `onExitInitialView`), so every attach behaviour — the
  *     durable file edges, Google's context directive, conversation references
  *     as context entries, URL auto-detection — is the SAME code;
- *   - Tools is THE Tools surface (`RunToolPicker`): on desktop a click opens
- *     it in Chat Options on its Tools tab; on the phone sheet it is a page;
- *   - Skills is the run picker (`SkillsResourcePicker` in `ResourcePickerMenu`);
+ *   - Tools / Skills are THE run-pick surfaces (`RunToolPicker` /
+ *     `RunSkillPicker`, one shared `RunPicksSurface`): on desktop a click
+ *     opens them roomy in Chat Options on their tab; on the phone sheet each
+ *     is a full page;
  *   - Connectors is `ComposerConnectorsPanel` (every connector: on/off per
  *     chat, reconnect, choose repositories/files, browse all) + Google files;
  *   - Environment is `ComputeLensBar` + the cloud browser opener;
@@ -114,6 +115,7 @@ import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
 import { RunConfigOverrides } from "../../../run-controls/RunConfigOverrides";
 import { RunInputCapabilities } from "../../../run-controls/RunInputCapabilities";
 import { RunToolPicker } from "../RunToolPicker";
+import { RunSkillPicker } from "../RunSkillPicker";
 
 /** Picker cascades need a definite height for their internal scroll chains;
  *  the available-height cap keeps the bottom on screen. */
@@ -265,12 +267,21 @@ export function ComposerPlusMenu({
           <ComposerMenuDivider />
         ) : null}
         {shows("plus.skills") ? (
-          <ComposerSubmenu
-            row={{ icon: Lightbulb, label: "Skills", badge: counts.skills }}
-            panelClassName={PICKER_PANEL}
-          >
-            {(closeCascade) => picker("skills", closeCascade)}
-          </ComposerSubmenu>
+          presentation === "sheet" ? (
+            <ComposerSubmenu row={{ icon: Lightbulb, label: "Skills", badge: counts.skills }}>
+              <RunSkillPicker conversationId={conversationId} />
+            </ComposerSubmenu>
+          ) : (
+            <ComposerMenuRow
+              icon={Lightbulb}
+              label="Skills"
+              badge={counts.skills}
+              onClick={() => {
+                close();
+                openRunControlsWindow({ conversationId, initialTab: "skills" });
+              }}
+            />
+          )
         ) : null}
         {shows("plus.tools") ? (
           presentation === "sheet" ? (

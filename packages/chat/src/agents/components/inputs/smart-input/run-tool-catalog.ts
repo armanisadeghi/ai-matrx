@@ -1,6 +1,6 @@
 /**
- * Pure catalog shaping for THE Tools surface (RunToolPicker): category labels
- * and the grouped, sorted "Add tools" list.
+ * Pure catalog shaping for the run-pick surfaces (RunToolPicker,
+ * RunSkillPicker): group labels and the grouped, sorted "Add" list.
  */
 
 import type { DatabaseTool } from "@host/utils/supabase/tools-service";
@@ -21,18 +21,20 @@ export interface ToolCatalogGroup<T extends CatalogTool = DatabaseTool> {
 }
 
 /**
- * The catalog as category groups, alphabetical, "Other" (no category) last;
- * tools inside a group sorted by their display name.
+ * Any run-pick catalog (tools, skills) as groups: alphabetical by label,
+ * "Other" (no group) last; items inside a group sorted by display name.
  */
-export function groupToolCatalog<T extends CatalogTool>(
-  tools: readonly T[],
-): ToolCatalogGroup<T>[] {
+export function groupCatalog<T>(
+  items: readonly T[],
+  groupOf: (item: T) => string | null | undefined,
+  nameOf: (item: T) => string,
+): { label: string; items: T[] }[] {
   const byLabel = new Map<string, T[]>();
-  for (const tool of tools) {
-    const label = toolCategoryLabel(tool.category);
+  for (const item of items) {
+    const label = toolCategoryLabel(groupOf(item));
     const bucket = byLabel.get(label);
-    if (bucket) bucket.push(tool);
-    else byLabel.set(label, [tool]);
+    if (bucket) bucket.push(item);
+    else byLabel.set(label, [item]);
   }
   return [...byLabel.entries()]
     .sort(([a], [b]) => {
@@ -42,8 +44,17 @@ export function groupToolCatalog<T extends CatalogTool>(
     })
     .map(([label, group]) => ({
       label,
-      tools: [...group].sort((a, b) =>
-        getToolDisplayName(a.name).localeCompare(getToolDisplayName(b.name)),
-      ),
+      items: [...group].sort((a, b) => nameOf(a).localeCompare(nameOf(b))),
     }));
+}
+
+/** The tool catalog grouped by category, sorted by the name a person reads. */
+export function groupToolCatalog<T extends CatalogTool>(
+  tools: readonly T[],
+): ToolCatalogGroup<T>[] {
+  return groupCatalog(
+    tools,
+    (t) => t.category,
+    (t) => getToolDisplayName(t.name),
+  ).map((g) => ({ label: g.label, tools: g.items }));
 }

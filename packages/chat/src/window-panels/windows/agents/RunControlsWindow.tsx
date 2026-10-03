@@ -62,6 +62,7 @@ function RunControlsWindowInner({
     return wanted ? wanted.id : rc.defaultTab;
   });
   const activeTab = rc.resolveTab(tab);
+  const roomy = initialTab === "tools" || initialTab === "skills";
 
   const attachResource = useAttachResource(conversationId);
   const detachResource = useDetachResource(conversationId);
@@ -125,14 +126,14 @@ function RunControlsWindowInner({
       // Chat options should complement the conversation, not obscure it. Keep
       // a compact, comfortably inset starting rect on the left; users can
       // still drag, resize, snap, maximize, or pop it out as usual.
-      // Opened on Tools (the composer's + › Tools) it starts roomy: the
-      // Tools surface goes two-column (agent's tools | catalog) from 42rem.
+      // Opened on Tools or Skills (the composer's + menu) it starts roomy:
+      // the run-pick surface goes two-column (agent's | catalog) from 42rem.
       initialRect={
-        initialTab === "tools"
+        roomy
           ? { x: 72, y: 56, width: 980, height: 680 }
           : { x: 72, y: 56, width: 480, height: 640 }
       }
-      height={initialTab === "tools" ? 680 : 640}
+      height={roomy ? 680 : 640}
       minWidth={380}
       minHeight={420}
       sidebarDefaultSize={148}

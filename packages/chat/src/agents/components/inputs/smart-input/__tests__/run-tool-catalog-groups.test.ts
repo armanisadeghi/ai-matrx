@@ -9,7 +9,7 @@ jest.mock("../../../../../tool-call-visualization/registry/registry", () => ({
     (name ?? "Tool").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
 }));
 
-import { groupToolCatalog, toolCategoryLabel } from "../run-tool-catalog";
+import { groupCatalog, groupToolCatalog, toolCategoryLabel } from "../run-tool-catalog";
 
 describe("toolCategoryLabel", () => {
   it("turns a slug into a label and names the missing category", () => {
@@ -48,5 +48,20 @@ describe("groupToolCatalog", () => {
 
   it("is empty for an empty catalog", () => {
     expect(groupToolCatalog([])).toEqual([]);
+  });
+});
+
+describe("groupCatalog (skills use it by type)", () => {
+  it("groups any item by a key with Other last, sorted by the given name", () => {
+    const skills = [
+      { label: "Weekly report", skillType: "workflow" },
+      { label: "Table block", skillType: "render_block" },
+      { label: "Brand voice", skillType: "convention" },
+      { label: "Ad hoc", skillType: "" },
+      { label: "Daily standup", skillType: "workflow" },
+    ];
+    const groups = groupCatalog(skills, (s) => s.skillType, (s) => s.label);
+    expect(groups.map((g) => g.label)).toEqual(["Convention", "Render block", "Workflow", "Other"]);
+    expect(groups[2].items.map((s) => s.label)).toEqual(["Daily standup", "Weekly report"]);
   });
 });

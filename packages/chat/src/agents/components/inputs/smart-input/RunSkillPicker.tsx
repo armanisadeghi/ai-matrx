@@ -1,41 +1,28 @@
 "use client";
 
 /**
- * RunSkillPicker — the Smart Input's Skills tab. Two stacked sections:
+ * RunSkillPicker — THE Skills surface for one conversation, on the shared
+ * two-list `RunPicksSurface` (the same layout RunToolPicker uses):
  *
- *   1. "This agent's skills" — the agent's REAL configured skill tiers, read
- *      live from the agentDefinition slice. Read-only here; edited in the
- *      Agent Builder via the Agent Skills window. Rendered as ONE collapsible
- *      header row (count + disabled state always visible) so the actionable
- *      add-list below gets the space.
- *
- *   2. "Add skills to this run" — additive registry picks stored on
- *      `builderAdvancedSettings.addedSkills`, folded into the request's
- *      `skill_config` by `buildSkillConfigForRequest`. Per-conversation,
- *      ephemeral, on TOP of the agent's own tiers (merged into `included`).
+ *   1. This agent's skills — the agent's REAL configured skill tiers
+ *      (included / listed / forbidden), read live from the agentDefinition
+ *      slice. Read-only here; edited in the Agent Builder's Agent Skills
+ *      window. Above them, the skills added for this run, each removable.
+ *   2. Add skills — the registry, grouped by type, searchable; one click adds
+ *      to (or removes from) `builderAdvancedSettings.addedSkills`, folded into
+ *      the request's `skill_config.included` by `buildSkillConfigForRequest`
+ *      on TOP of the agent's own tiers. A skill the agent already lists or
+ *      forbids stays addable (adding promotes it to included for this run).
  *      Same state the Quickset ShapeChipsRow toggles — keep them consistent.
  */
 
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
 import { readOf } from "@host/components/read-state/ReadGate";
-import { useEffect, useState } from "react";
-import {
-  Search,
-  X,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Lightbulb,
-  CheckCircle2,
-  ListOrdered,
-  EyeOff,
-} from "lucide-react";
+import { useEffect } from "react";
+import { Lightbulb, CheckCircle2, ListOrdered, EyeOff } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
-import { ProInput } from "@host/components/official/ProInput";
-import { cn } from "@ai-matrx/design-system";
+import { PickerEmpty } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
 import {
   selectAgentError,
@@ -50,6 +37,15 @@ import { useSkills } from "@host/features/skills/hooks/useSkills";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import type { SkillRow } from "@host/features/skills/types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import {
+  RunPicksSurface,
+  PicksLine,
+  PicksNote,
+  PicksNotice,
+  PicksSkeletons,
+  type PicksCatalogItem,
+} from "./RunPicksSurface";
+import { groupCatalog, toolCategoryLabel } from "./run-tool-catalog";
 
 type AgentSkillTier = "included" | "listed" | "forbidden";
 
@@ -71,21 +67,19 @@ const TIER_META: Record<
   AgentSkillTier,
   { icon: typeof ListOrdered; label: string }
 > = {
-  included: { icon: CheckCircle2, label: "included" },
-  listed: { icon: ListOrdered, label: "listed" },
-  forbidden: { icon: EyeOff, label: "forbidden" },
+  included: { icon: CheckCircle2, label: "Included" },
+  listed: { icon: ListOrdered, label: "Listed" },
+  forbidden: { icon: EyeOff, label: "Forbidden" },
 };
 
-export function RunSkillPicker({
-  conversationId,
-  onBack,
-}: {
-  conversationId: string;
-  /** Inside the attach menu: Back sits beside the search box (no title row). */
-  onBack?: () => void;
-}) {
+export function RunSkillPicker({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
-  const { skills, loading, error: skillsError, reload: reloadSkills } = useSkills();
+  const {
+    skills,
+    loading,
+    error: skillsError,
+    reload: reloadSkills,
+  } = useSkills();
 
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
   const agentSkillConfig = useAppSelector((s) =>
@@ -103,11 +97,6 @@ export function RunSkillPicker({
     DEFAULT_BUILDER_ADVANCED_SETTINGS;
   const addedList = settings.addedSkills ?? [];
   const added = new Set(addedList);
-  const [search, setSearch] = useState("");
-  const [expandedSkillId, setExpandedSkillId] = useState<string | null>(null);
-  // The agent's configured tiers are read-only reference — collapsed by
-  // default so the actionable add-list owns the vertical space.
-  const [agentSectionOpen, setAgentSectionOpen] = useState(false);
 
   useEffect(() => {
     if (agentId && !agentReady) {
@@ -122,306 +111,135 @@ export function RunSkillPicker({
         changes: { addedSkills: next },
       }),
     );
-
   const toggle = (id: string) =>
     setAdded(
       added.has(id) ? addedList.filter((s) => s !== id) : [...addedList, id],
     );
 
-  const skillMap = new Map((skills ?? []).map((s) => [s.id, s]));
+  const list = skills ?? [];
+  const skillMap = new Map(list.map((s) => [s.id, s]));
   const config = agentSkillConfig ?? {
     included: [],
     listed: [],
     forbidden: [],
     disabled: false,
   };
-
   const configuredIds = [
     ...config.included,
     ...config.listed,
     ...config.forbidden,
   ];
   const agentSkillCount = configuredIds.length;
-
-  const visible = !search.trim()
-    ? [
-        ...skills.filter((s) => added.has(s.id)),
-        ...skills.filter((s) => !added.has(s.id)),
-      ]
-    : filterAndSortBySearch(skills, search, [
-        { get: (s) => s.label, weight: "title" },
-        { get: (s) => s.description, weight: "body" },
-        { get: (s) => s.skillType, weight: "tag" },
-        { get: (s) => s.skillId, weight: "tag" },
-      ]);
-
   const agentLoading = !!agentId && !agentReady;
   const skillsDisabled = config.disabled;
 
-  // One-row header: (Back +) search + added-count chip with inline clear.
-  const searchRow = (
-    <div
-      className="flex shrink-0 items-center gap-1.5 border-b border-border p-1.5"
-      title="Add skills to this run — merged into included on top of the agent's tiers."
-    >
-      {onBack ? (
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Back"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground pointer-coarse:h-11 pointer-coarse:w-11"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-      ) : null}
-      <ProInput
-        enableCleanup={false}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search skills to add…"
-        startIcon={<Search className="h-4 w-4" />}
-        clearable
-        onClear={() => setSearch("")}
-        enableVoice={false}
-        wrapperClassName="min-w-0 flex-1"
-        className="h-9 text-sm pointer-coarse:h-11"
-      />
-      {added.size > 0 && (
-        <span className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 pl-2.5 pr-1 text-xs font-medium text-primary">
-          {added.size} added
-          <button
-            type="button"
-            onClick={() => setAdded([])}
-            title="Clear all added skills"
-            aria-label="Clear all added skills"
-            className="flex h-5 w-5 items-center justify-center rounded-full transition-colors hover:bg-primary/20"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </span>
-      )}
+  const toItem = (skill: SkillRow): PicksCatalogItem => {
+    const tier = tierForSkill(skill.id, config);
+    return {
+      id: skill.id,
+      label: skill.label,
+      secondary: skill.description || undefined,
+      title: skill.description || undefined,
+      note: tier ? TIER_META[tier].label : undefined,
+    };
+  };
+  const groups = groupCatalog(
+    list,
+    (s) => s.skillType,
+    (s) => s.label,
+  ).map((g) => ({ label: g.label, items: g.items.map(toItem) }));
+  const searchCatalog = (query: string) =>
+    filterAndSortBySearch(list, query, [
+      { get: (s) => s.label, weight: "title" },
+      { get: (s) => s.description, weight: "body" },
+      { get: (s) => s.skillType, weight: "tag" },
+      { get: (s) => s.skillId, weight: "tag" },
+    ]).map(toItem);
+
+  const agentSection = !agentId ? (
+    <PickerEmpty>No agent on this chat</PickerEmpty>
+  ) : agentReadError ? (
+    <ReadFailure
+      error={agentReadError}
+      what="this agent's skills"
+      size="compact"
+      className="m-1.5"
+      onRetry={() => void dispatch(fetchAgentExecutionFull(agentId))}
+    />
+  ) : agentLoading ? (
+    <PicksSkeletons />
+  ) : agentSkillCount === 0 ? (
+    <PicksNote>No preset skills</PicksNote>
+  ) : (
+    <div className="flex flex-col">
+      {configuredIds.map((id) => {
+        const skill = skillMap.get(id);
+        const tier = tierForSkill(id, config);
+        const meta = tier ? TIER_META[tier] : null;
+        return (
+          <PicksLine
+            key={id}
+            icon={meta?.icon ?? Lightbulb}
+            label={
+              <EntityRef
+                token="skill"
+                id={id}
+                name={skill?.label ?? skill?.skillId ?? id}
+                showIcon={false}
+                fill
+                className="min-w-0 text-sm text-foreground"
+              />
+            }
+            detail={meta?.label}
+            title={skill?.description || undefined}
+          />
+        );
+      })}
     </div>
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {onBack && searchRow}
-      {/* ── Section 1: the agent's REAL configured skills (collapsible) ── */}
-      <div className="shrink-0 border-b border-border">
-        <button
-          type="button"
-          onClick={() => setAgentSectionOpen((o) => !o)}
-          aria-expanded={agentSectionOpen}
-          className="flex h-9 w-full items-center gap-2 px-2.5 text-left transition-colors hover:bg-accent/50 pointer-coarse:h-11"
-        >
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform",
-              agentSectionOpen && "rotate-90",
-            )}
-          />
-          <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            This agent&apos;s skills
-          </span>
-          <span className="text-xs tabular-nums text-muted-foreground/80">
-            <UntrustedCount
-              read={readOf({ isLoading: agentLoading, error: agentReadError })}
-              value={agentSkillCount}
-              label="This agent's skills"
-            />
-          </span>
-          {skillsDisabled && (
-            <span
-              title="Skills are disabled for this agent — nothing is injected at run time unless you add skills below."
-              className="ml-auto flex shrink-0 items-center gap-1 text-xs text-amber-600 dark:text-amber-400"
-            >
-              <EyeOff className="h-3.5 w-3.5" />
-              disabled
-            </span>
-          )}
-        </button>
-
-        {agentSectionOpen && (
-          <div className="max-h-48 overflow-y-auto px-2.5 pb-2">
-            {agentReadError ? (
-              <p className="py-1 text-xs text-destructive">
-                Couldn&apos;t read this agent&apos;s skills: {agentReadError}
-                <ErrorAlchemyMenu error={agentReadError} />
-              </p>
-            ) : agentLoading ? (
-              <p className="py-1 text-xs text-muted-foreground">
-                Loading the agent&apos;s skills…
-              </p>
-            ) : skillsDisabled ? (
-              <p className="py-1 text-xs text-amber-600 dark:text-amber-400">
-                Skills are disabled for this agent — nothing is injected at run
-                time unless you add skills below.
-              </p>
-            ) : agentSkillCount === 0 ? (
-              <p className="py-1 text-xs text-muted-foreground">
-                No preset skills; others are searchable at run time
-              </p>
-            ) : (
-              <div className="flex flex-col gap-0.5">
-                {configuredIds.map((id) => {
-                  const skill = skillMap.get(id);
-                  const tier = tierForSkill(id, config);
-                  const meta = tier ? TIER_META[tier] : null;
-                  const TierIcon = meta?.icon ?? Lightbulb;
-                  return (
-                    <div
-                      key={id}
-                      className="flex items-baseline gap-2 rounded-md bg-muted/40 px-2 py-1 text-sm"
-                    >
-                      <span className="self-center text-muted-foreground">
-                        <TierIcon className="h-3.5 w-3.5" />
-                      </span>
-                      <EntityRef
-                        token="skill"
-                        id={id}
-                        name={skill?.label ?? skill?.skillId ?? id}
-                        showIcon={false}
-                        fill
-                        className="min-w-0 flex-1 font-medium text-foreground"
-                      />
-                      {meta && (
-                        <span className="shrink-0 text-xs text-muted-foreground/60">
-                          {meta.label}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── Section 2: add skills to THIS run ─────────────────────────── */}
-      {!onBack && searchRow}
-
-      {/* min-h-0: a flex child's default min-height:auto floors it at content
-          height, so without it this list grows past the panel and never
-          scrolls (the whole surface just gets clipped). */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
-        {loading && skills.length === 0 ? (
-          <p className="px-3 py-3 text-sm text-muted-foreground">
-            Loading skills…
-          </p>
-        ) : skillsError && skills.length === 0 ? (
+    <RunPicksSurface
+      noun="skills"
+      icon={Lightbulb}
+      notice={
+        skillsDisabled ? (
+          <PicksNotice icon={EyeOff}>Skills are off for this agent</PicksNotice>
+        ) : null
+      }
+      agentCount={
+        <UntrustedCount
+          read={readOf({ isLoading: agentLoading, error: agentReadError })}
+          value={agentSkillCount}
+          label="This agent's skills"
+        />
+      }
+      agentSection={agentSection}
+      added={addedList.map((id) => {
+        const skill = skillMap.get(id);
+        return {
+          id,
+          label: skill?.label ?? id,
+          secondary: skill ? toolCategoryLabel(skill.skillType) : undefined,
+        };
+      })}
+      onToggle={toggle}
+      onClear={() => setAdded([])}
+      catalogSize={list.length}
+      groups={groups}
+      searchCatalog={searchCatalog}
+      catalogState={
+        loading && list.length === 0 ? (
+          <PicksSkeletons />
+        ) : skillsError && list.length === 0 ? (
           <ReadFailure
             error={skillsError}
             what="the skills"
             className="m-2"
             onRetry={() => void reloadSkills()}
           />
-        ) : visible.length === 0 ? (
-          <p className="px-3 py-3 text-sm text-muted-foreground">
-            {search ? `No skills match "${search}"` : "No skills available."}
-          </p>
-        ) : (
-          visible.map((skill) => (
-            <SkillRowItem
-              key={skill.id}
-              skill={skill}
-              selected={added.has(skill.id)}
-              expanded={expandedSkillId === skill.id}
-              agentTier={tierForSkill(skill.id, config)}
-              onToggle={() => toggle(skill.id)}
-              onToggleExpand={() =>
-                setExpandedSkillId((cur) =>
-                  cur === skill.id ? null : skill.id,
-                )
-              }
-            />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SkillRowItem({
-  skill,
-  selected,
-  expanded,
-  agentTier,
-  onToggle,
-  onToggleExpand,
-}: {
-  skill: SkillRow;
-  selected: boolean;
-  expanded: boolean;
-  agentTier: AgentSkillTier | null;
-  onToggle: () => void;
-  onToggleExpand: () => void;
-}) {
-  return (
-    <div className={cn("rounded-lg", selected && "bg-primary/5")}>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-pressed={selected}
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.target !== e.currentTarget) return;
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onToggle();
-          }
-        }}
-        className="flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 text-left transition-colors hover:bg-accent pointer-coarse:h-11"
-      >
-        <span
-          className={cn(
-            "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
-            selected
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-muted-foreground/40",
-          )}
-        >
-          {selected && <Check className="h-3 w-3" />}
-        </span>
-        <EntityRef
-          token="skill"
-          id={skill.id}
-          name={skill.label}
-          showIcon={false}
-          fill
-          className="min-w-0 flex-1 text-sm text-foreground"
-        />
-        {agentTier && !selected && (
-          <span className="shrink-0 text-xs text-muted-foreground/60">
-            agent:{agentTier}
-          </span>
-        )}
-        {skill.description && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleExpand();
-            }}
-            aria-expanded={expanded}
-            aria-label={expanded ? "Hide description" : "Show description"}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 transition-transform",
-                expanded && "rotate-180",
-              )}
-            />
-          </button>
-        )}
-      </div>
-      {expanded && skill.description && (
-        <p className="px-2 pb-2 pl-[2.125rem] text-xs leading-snug text-muted-foreground">
-          {skill.description}
-        </p>
-      )}
-    </div>
+        ) : undefined
+      }
+    />
   );
 }
