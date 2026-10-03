@@ -1,4 +1,4 @@
--- draft: SCOPES-READ-SWITCH-VALIDATE rehearsed on the dev clone only; this lane makes no production change — the production apply is the scope-cutover owner's, with the web read switch.
+-- draft: SUPERSEDED (CHAIR-STORE-PERF 2026-10-03): production's custom.context_values already answers the `files` map (record id → file id) this file adds — the same arm reached production through scopesreadstree_a_file_reference_names_the_file.sql (ledgered 2026-09-30 01:57Z) and the later context_values bodies; its based-on (6c96b931…) is two bodies behind. Kept as the lane's record; never apply.
 -- target: branch,production
 -- additive: yes
 -- guard: custom/scope_readers_read_the_store
