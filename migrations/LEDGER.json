@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T16:05:07.892Z",
+  "generated_at": "2026-10-03T19:01:38.221Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -433,6 +433,12 @@
       "filename": "chair_pb_a_view_or_a_page_gets_a_public_address.sql",
       "checksum": "3ddbf5902647dcd9830b029960834f6d6d527b3702ea1676026bccf668e03607",
       "applied_at": "2026-10-02 19:02:32.416309+00"
+    },
+    "migrations/campaign/chair_tf_one_template_family_one_install_door.sql": {
+      "source": "matrx-frontend",
+      "filename": "chair_tf_one_template_family_one_install_door.sql",
+      "checksum": "79444d546bf9917ba9b8477afc60707d955bfeedd824976ebcfb742e7faf3c63",
+      "applied_at": "2026-10-03 18:58:14.526765+00"
     },
     "migrations/campaign/chairaccess_a_a_member_adds_a_field_to_an_outputs_table.sql": {
       "source": "matrx-frontend",
@@ -3692,6 +3698,48 @@
       "checksum": "918d83706359c72b68786161d1a8fcd1e0101f61220c210d188562100d21e00d",
       "applied_at": "2026-09-18 19:31:28.569906+00"
     },
+    "migrations/campaign/lane12_a_record_is_written_or_updated_by_its_key.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane12_a_record_is_written_or_updated_by_its_key.sql",
+      "checksum": "edb9c0ad8c09d9c56b597e647348c824ce1b5d4dce28cfdae298de76bc91539f",
+      "applied_at": "2026-10-03 18:58:45.917243+00"
+    },
+    "migrations/campaign/lane12_c_an_ensured_table_says_what_differs_from_its_spec.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane12_c_an_ensured_table_says_what_differs_from_its_spec.sql",
+      "checksum": "af9d61136c55d57958d77ef8850c72a3d40ce7c001015dc59129ef8e306acfb0",
+      "applied_at": "2026-10-03 19:01:10.710892+00"
+    },
+    "migrations/campaign/lane12_d_an_expected_version_of_nothing_is_a_stale_write.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane12_d_an_expected_version_of_nothing_is_a_stale_write.sql",
+      "checksum": "07185d80e38446ba99b6bfb95144f06c10713cc13c927943dabc1b54970b34b8",
+      "applied_at": "2026-10-03 19:01:19.973006+00"
+    },
+    "migrations/campaign/lane12_f_an_ensured_table_finds_its_kept_for_and_takes_a_home.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane12_f_an_ensured_table_finds_its_kept_for_and_takes_a_home.sql",
+      "checksum": "abbf1e27ed50b630bf066b7e3f0c8f264fe868c4b7aee2977d8b904c55935e3f",
+      "applied_at": "2026-10-03 19:01:28.8654+00"
+    },
+    "migrations/campaign/lane12_one_table_is_found_by_its_slug.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane12_one_table_is_found_by_its_slug.sql",
+      "checksum": "840711fea68ead988fc5e20486cbab913a50eebe922bd317fa1f03ec8094ff4e",
+      "applied_at": "2026-10-03 18:58:27.620431+00"
+    },
+    "migrations/campaign/lane12_the_new_table_and_record_doors_can_be_reached.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane12_the_new_table_and_record_doors_can_be_reached.sql",
+      "checksum": "b7820797844abba914a6bb6dfd2f0b6a8f4dcb34f9c69b32deaa2ce98cd5aa38",
+      "applied_at": "2026-10-03 19:01:36.912749+00"
+    },
+    "migrations/campaign/lane12_two_first_saves_make_one_table.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane12_two_first_saves_make_one_table.sql",
+      "checksum": "89e34b500c0f460bd649a02ebb5f257a94cf1f0d7a03badd424a14e81c23ccfe",
+      "applied_at": "2026-10-03 18:58:36.380843+00"
+    },
     "migrations/campaign/lane7sec_a_standard_rows_fields_follow_the_field_rule.sql": {
       "source": "matrx-frontend",
       "filename": "lane7sec_a_standard_rows_fields_follow_the_field_rule.sql",
@@ -3716,11 +3764,29 @@
       "checksum": "d13f23bfd0f646dfd264fbc3f51df593105fdb113a37199f3c0851742366d826",
       "applied_at": "2026-10-03 11:26:54.030322+00"
     },
+    "migrations/campaign/lane7w2_b_one_read_of_a_tables_fields_across_organizations.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7w2_b_one_read_of_a_tables_fields_across_organizations.sql",
+      "checksum": "48e76f20b130d904589dec11376ee38447bd3e7de3181efc04f933fe8bcc1362",
+      "applied_at": "2026-10-03 18:59:47.176022+00"
+    },
     "migrations/campaign/lane7w2_c_a_grouped_list_has_its_own_ceiling.sql": {
       "source": "matrx-frontend",
       "filename": "lane7w2_c_a_grouped_list_has_its_own_ceiling.sql",
       "checksum": "181dbf02ee13cb23dfc41b677550ab0d53774e45dcd57eea219891b32e44172c",
       "applied_at": "2026-10-03 05:08:43.852675+00"
+    },
+    "migrations/campaign/lane7w3a_the_table_api_reaches_crm_people.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7w3a_the_table_api_reaches_crm_people.sql",
+      "checksum": "a6f3a74481c7f78246dbd3f6cf08263c6510a24cb41a04cd2d07977154d4ad65",
+      "applied_at": "2026-10-03 18:59:06.261169+00"
+    },
+    "migrations/campaign/lane7w5_a_record_names_its_own_organization.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7w5_a_record_names_its_own_organization.sql",
+      "checksum": "95be6e36bf44f036894892867c26fe8599e213f133bfe3daa25e0595e37e72fb",
+      "applied_at": "2026-10-03 18:58:54.720982+00"
     },
     "migrations/campaign/leakt10_a_home_of_a_table_is_not_the_whole_table.sql": {
       "source": "matrx-frontend",
@@ -4699,6 +4765,12 @@
       "filename": "refkeep_an_archived_record_keeps_every_reference_to_it.sql",
       "checksum": "0f87ba74eb2a0ccc5781a207e53896bc6bf0d9ab1c4d303c9f78a984be7cbb96",
       "applied_at": "2026-10-01 09:48:32.14446+00"
+    },
+    "migrations/campaign/refkeep_b_a_reference_says_its_record_is_archived.sql": {
+      "source": "matrx-frontend",
+      "filename": "refkeep_b_a_reference_says_its_record_is_archived.sql",
+      "checksum": "e960e21d45a0261f6880be21255d5af76d3ddec9bc91f0d21c8a51d38ea85daa",
+      "applied_at": "2026-10-03 18:59:56.682086+00"
     },
     "migrations/campaign/refkeep_c_a_record_pointing_at_an_archived_one_stays_editable.sql": {
       "source": "campaign",
@@ -6554,11 +6626,29 @@
       "checksum": "9dda7d291e0458735fc0fbcb44e9ec60a496688e5c7d7ec6d1e590593dd784c9",
       "applied_at": "2026-10-03 12:47:26.214214+00"
     },
+    "migrations/campaign/tableactions_b_the_last_pass_of_a_table_archive_is_chunked_too.sql": {
+      "source": "matrx-frontend",
+      "filename": "tableactions_b_the_last_pass_of_a_table_archive_is_chunked_too.sql",
+      "checksum": "915f041281e28e905be5522b452f7504f329e07a0283887beb370bbfaaf78b0f",
+      "applied_at": "2026-10-03 19:00:06.94321+00"
+    },
+    "migrations/campaign/tableactions_c_a_table_comes_back_in_passes_too.sql": {
+      "source": "matrx-frontend",
+      "filename": "tableactions_c_a_table_comes_back_in_passes_too.sql",
+      "checksum": "2f1ee1fdcf8cb79ba7493a08650944879d42e5aac8446dd660a0ed38c96905a2",
+      "applied_at": "2026-10-03 19:00:16.893181+00"
+    },
     "migrations/campaign/tableactions_d_an_archived_table_says_who_made_it.sql": {
       "source": "matrx-frontend",
       "filename": "tableactions_d_an_archived_table_says_who_made_it.sql",
       "checksum": "d409ee737a7af6970d05a9256a30857e2dc83aa5048e83fda94902821e584996",
       "applied_at": "2026-10-03 13:50:37.687793+00"
+    },
+    "migrations/campaign/tableactions_e_the_archive_sorts_by_its_column.sql": {
+      "source": "matrx-frontend",
+      "filename": "tableactions_e_the_archive_sorts_by_its_column.sql",
+      "checksum": "8d02b7517d7250304c1916612673e71e0ff4e0c3dc4053d641db49b2876c4f0f",
+      "applied_at": "2026-10-03 19:00:28.21495+00"
     },
     "migrations/campaign/tableapi1_a_person_can_hold_a_key_that_is_them.sql": {
       "source": "matrx-frontend",
