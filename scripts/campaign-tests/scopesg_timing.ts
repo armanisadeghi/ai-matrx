@@ -13,7 +13,8 @@
  *
  * HOW IT TIMES. Every call is its OWN read-only transaction and its own statement (an agent turn is one: the
  * store's statement memos live one statement, so a loop inside one statement would share them and flatter the
- * new side). Server side: clock_timestamp() - statement_timestamp() after the answer is materialized. Sides are
+ * new side). Server side: clock_timestamp() - statement_timestamp() once the answer is materialized and before it
+ * is hashed (the new answer is ~5x the old one's size; hashing it inside the clock would charge that to the door). Sides are
  * interleaved per (rep, type) in a rotating order, so the clone's load swings land on every side alike.
  *
  * ON THE CLONE (the default) three bodies are timed beside the old hand-off, each a session-temporary copy
@@ -67,12 +68,21 @@ function bodyFrom(file: string, name: string): string {
 }
 
 /** The floor: the after body with its own work cut out — only the store doors it calls are left. */
-function floorFrom(after: string): string {
+function floorFrom(afterBody: string): string {
+  let after = afterBody;
   const read = "      continue;\n    end;\n";
   const labels = "  -- ── SCOPE LABELS";
   if (after.split(read).length !== 2 || after.split(labels).length !== 2) {
     throw new Error("NOT MEASURED: the floor's two cut points are not each in the after body exactly once");
   }
+  // the per-organization prefetch of Table ids and versions is this body's own work too
+  const pre = "  for p in select (e.value ->> 'organization_id')::uuid as org, array_agg(e.key::uuid) as ids";
+  const preAt = after.indexOf(pre);
+  const preEnd = preAt < 0 ? -1 : after.indexOf("\n  end loop;\n", preAt);
+  if (preAt < 0 || after.indexOf(pre, preAt + 1) >= 0 || preEnd < 0) {
+    throw new Error("NOT MEASURED: the floor's prefetch cut point is not in the after body exactly once");
+  }
+  after = after.slice(0, preAt) + "  -- FLOOR: no prefetch\n" + after.slice(preEnd + "\n  end loop;\n".length);
   return after
     .replace("CREATE OR REPLACE FUNCTION pg_temp.sg_after(", "CREATE OR REPLACE FUNCTION pg_temp.sg_floor(")
     .replace(read, read + "    continue;  -- FLOOR: the record has been read; nothing of this body's own work follows\n")
@@ -162,16 +172,20 @@ async function main() {
               if (s.fn === null) {
                 await client.query("set local role none");
                 r = await client.query(
-                  `select md5(j::text) as h, (extract(epoch from clock_timestamp() - statement_timestamp()) * 1000)::float8 as ms
-                     from (select public.resolve_full_context($1::uuid, 'conversation', $2::uuid, $3::uuid[], '{}'::text[]) as j offset 0) x`,
+                  `select md5(j::text) as h, ms
+                     from (select j, (extract(epoch from clock_timestamp() - statement_timestamp()) * 1000)::float8 as ms
+                             from (select public.resolve_full_context($1::uuid, 'conversation', $2::uuid, $3::uuid[], '{}'::text[]) as j offset 0) x
+                           offset 0) y`,
                   [uid, CTX, types[t].scope_ids],
                 );
               } else {
                 await client.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: uid, role: "authenticated" })]);
                 await client.query("set local role authenticated");
                 r = await client.query(
-                  `select md5((j - 'resolved_at')::text) as h, (extract(epoch from clock_timestamp() - statement_timestamp()) * 1000)::float8 as ms
-                     from (select ${s.fn}('conversation', $1::uuid, $2::uuid[], $3::uuid[], '{}'::text[]) as j offset 0) x`,
+                  `select md5((j - 'resolved_at')::text) as h, ms
+                     from (select j, (extract(epoch from clock_timestamp() - statement_timestamp()) * 1000)::float8 as ms
+                             from (select ${s.fn}('conversation', $1::uuid, $2::uuid[], $3::uuid[], '{}'::text[]) as j offset 0) x
+                           offset 0) y`,
                   [CTX, types[t].scope_ids, [types[t].type_id]],
                 );
               }

@@ -1,6 +1,6 @@
 -- chair-step: inverse of migrations/campaign/scopesg_the_agent_handoff_reads_each_tables_fields_by_its_own_key.sql — puts back the custom.resolve_context body it replaced (signature, grants unchanged).
 -- lane: SCOPES-ON-THE-STORE
--- based-on: custom.resolve_context(text, uuid, uuid[], uuid[], text[]) 155c57847c7b6aa75b61ae9a42502667fb5a42bdf67ba843932e4dcdd7b4ae8e
+-- based-on: custom.resolve_context(text, uuid, uuid[], uuid[], text[]) 57c73e8a1ea04b6854ab5d082f8e4ea9af8412176eac8bf51bfc9934866116b7
 -- lock: custom
 
 CREATE OR REPLACE FUNCTION custom.resolve_context(p_entity_type text, p_entity_id uuid, p_record_ids uuid[] DEFAULT NULL::uuid[], p_table_ids uuid[] DEFAULT NULL::uuid[], p_system_item_refs text[] DEFAULT NULL::text[])

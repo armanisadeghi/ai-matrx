@@ -90,6 +90,10 @@ declare
   v_f_data      jsonb[] := array[]::jsonb[];
   v_fkernel     uuid    := custom.field_kernel_id();
   p             record;
+  -- SCOPES-G: every candidate record's Table id and version stamps, read once per organization by
+  -- the row's own key (organization_id, id) before the loop, instead of one read per record in it.
+  v_pre         jsonb := '{}'::jsonb;
+  v_pre_row     jsonb;
 begin
   if v_me is null then
     raise exception 'custom.resolve_context resolves context for a person, and nobody is signed in.'
@@ -178,6 +182,20 @@ begin
   v_wheres := custom._where_ids_open_with(
                 (select array_agg((e ->> 'record_id')::uuid) from jsonb_array_elements(v_cands) e),
                 auth.uid(), v_levels);
+  for p in select (e.value ->> 'organization_id')::uuid as org, array_agg(e.key::uuid) as ids
+             from jsonb_each(coalesce(v_wheres, '{}'::jsonb)) e
+            where e.value ->> 'kind' = 'record' and e.value ->> 'organization_id' is not null
+            group by 1 loop
+    -- a key the row does not carry is left out (never a JSON null), so `-> 'v'` is SQL NULL exactly
+    -- when `x.data -> '_values'` was
+    select v_pre || coalesce(jsonb_object_agg(x.id::text, jsonb_build_object('t', x.table_id)
+             || case when x.data ? '_values'   then jsonb_build_object('v', x.data -> '_values')   else '{}'::jsonb end
+             || case when x.data ? '_derived'  then jsonb_build_object('d', x.data -> '_derived')  else '{}'::jsonb end
+             || case when x.data ? '_computed' then jsonb_build_object('c', x.data -> '_computed') else '{}'::jsonb end), '{}'::jsonb)
+      into v_pre
+      from custom.record x
+     where x.organization_id = p.org and x.id = any (p.ids);
+  end loop;
   for c in select value from jsonb_array_elements(v_cands) loop
     v_rec := (c ->> 'record_id')::uuid;
     v_via := c ->> 'via';
@@ -217,19 +235,21 @@ begin
 
     -- STORE-READ-PERF-3: the record's Table is looked up once per Table, not once per record.
     -- SCOPES-HANDOFF-BUDGET: the record's Table id and THE TRIPLE (below) in one read of its row.
-    select x.table_id,
+    -- SCOPES-G: from the row read before the loop by its key (organization, id) — the same row
+    -- this read used to fetch here once per record; a record not found there has no Table id and
+    -- no versions, exactly as the per-record read answered no row.
+    v_pre_row := case when (v_where ->> 'organization_id')::uuid = v_org then v_pre -> (v_rec::text) end;
+    v_tid := (v_pre_row ->> 't')::uuid;
+    v_versions := case when v_pre_row is null then null else
            (select coalesce(jsonb_object_agg(k.key, jsonb_build_object(
-                     'value_version', coalesce((x.data -> '_values' -> k.key ->> 'ver')::integer, 1),
-                     'written_at', coalesce((x.data -> '_values' -> k.key ->> 'at')::timestamptz,
-                                            (x.data -> '_derived' -> k.key ->> 'at')::timestamptz,
-                                            (x.data -> '_computed' -> k.key ->> 'at')::timestamptz))),
+                     'value_version', coalesce((v_pre_row -> 'v' -> k.key ->> 'ver')::integer, 1),
+                     'written_at', coalesce((v_pre_row -> 'v' -> k.key ->> 'at')::timestamptz,
+                                            (v_pre_row -> 'd' -> k.key ->> 'at')::timestamptz,
+                                            (v_pre_row -> 'c' -> k.key ->> 'at')::timestamptz))),
                    '{}'::jsonb)
               from (select j.key from jsonb_object_keys(v_doc) j(key) where left(j.key, 1) <> '_'
                     union
-                    select j.key from jsonb_object_keys(coalesce(x.data -> '_values', '{}'::jsonb)) j(key)) k)
-      into v_tid, v_versions
-      from custom.record x
-     where x.organization_id = v_org and x.id = v_rec;
+                    select j.key from jsonb_object_keys(coalesce(v_pre_row -> 'v', '{}'::jsonb)) j(key)) k) end;
     v_versions := coalesce(v_versions, '{}'::jsonb);
     v_tbl := case when v_tid is not null then v_tcache -> (v_tid::text) end;
     if v_tbl is null then
