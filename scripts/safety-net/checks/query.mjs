@@ -12,7 +12,7 @@ export default [
     kind: "cmd",
     cmd: "uv",
     args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/query_correctness.py"],
-    items: ["Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09", "Q10", "Q11", "Q12", "Q13", "Q14", "Q15"],
+    items: ["Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09", "Q10", "Q11", "Q12", "Q13", "Q14", "Q15", "Q17", "Q18"],
     targets: ["live", "clone"],
     stepsJson: "query-correctness.json",
     timeoutMs: 10 * 60 * 1000,

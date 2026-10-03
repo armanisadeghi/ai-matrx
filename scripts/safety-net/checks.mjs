@@ -166,6 +166,8 @@ export const ITEMS = {
   Q14: "Query — REST v1 answers the questions exactly with a personal key",
   Q15: "Query — the AI Matrx MCP answers the questions exactly",
   Q16: "Query — an \"Only me\" row is listed and counted for nobody else, every door (plain / confidential / restricted table)",
+  Q17: "Query — a related row named by its name is measured (never a silent 0), tool / REST / MCP",
+  Q18: "Query — groups of a relation column carry each related row's name, tool / REST",
   // Public form (lane MAKE-HOME W5, guard G4): a stranger's form fits a phone and its answer boxes fill the column
   F01: "Public form at 390 — no sideways scroll, every answer box ≥ 80% of the column, title and box on one edge",
   F02: "Public form at 1280 — every answer box ≥ 80% of the column, title and box on one edge",

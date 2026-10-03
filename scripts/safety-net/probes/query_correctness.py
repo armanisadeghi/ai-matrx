@@ -54,6 +54,12 @@ AND FIVE MORE (VISION-REACH W2 verifier findings, 2026-10-02):
   Q15 the AI Matrx MCP `tables` tool, action `aggregate`, with the same key: Q1–Q11 exactly.
   REST/MCP go to SN_QC_SERVER (default: the target's server), so a build without the door is red there.
 
+AND TWO MORE (VISION-REACH W2 B1, 2026-10-03):
+  Q17 a related row named by its NAME — `match {"Patient": "Daniel Reyes"}`: 80, tool + REST + MCP. Red before:
+      a relation cell stores an id, the name was compared with ids, and every door answered a silent 0.
+  Q18 groups of a relation column carry each related row's `name` (tool buckets, REST groups) — before, the
+      model read each patient back (4 more calls) to say who the top patients were.
+
 SELF-TEST (planted breaks, in memory, never on disk): query_correctness_selftest.py beside this file runs
 this probe three times — sound with pages of 5 (all PASS), a one-page total (Q04 RED), a dropped filter
 (Q03/Q05/Q06 RED). Green since VISION-REACH W2 (2026-10-02), when the door learned to measure a formula
@@ -243,10 +249,11 @@ def item_id(q: str) -> str:
 
 
 ITEM_IDS = [item_id(q) for q in TRUTH]
-EXTRA_IDS = ["Q11", "Q12", "Q13", "Q14", "Q15"]
+EXTRA_IDS = ["Q11", "Q12", "Q13", "Q14", "Q15", "Q17", "Q18"]
 ALL_IDS = ITEM_IDS + EXTRA_IDS
 API_SERVER = os.environ.get("SN_QC_SERVER", SERVER).rstrip("/")
 TRUTH_Q11 = 130  # Daniel 40+40, Hannah 25+25 — named by their patient ids, not by the physician
+TRUTH_Q17 = 80  # Daniel Reyes's visits, the patient NAMED (not his id): 40 + 40. Red before 2026-10-03: 0.
 
 
 def _assert_truth_matches_seed() -> None:
@@ -445,7 +452,7 @@ async def _ask_all(member: Seat, fx: dict) -> dict:
                                        is_authenticated=True, organization_id=ORG, token=member.jwt))
     out: dict = {}
     try:
-        for q, args in {**ask_args(fx), "Q11": q11_args(fx)}.items():
+        for q, args in {**ask_args(fx), "Q11": q11_args(fx), "Q17": q17_args(fx)}.items():
             try:
                 res = await records(dict(args), _Ctx())
             except Exception as e:  # noqa: BLE001 — a tool that RAISES (the related_to TypeError) is a red, said
@@ -497,6 +504,13 @@ def same(q: str, got, want) -> bool:
 
 
 # ── REST v1 AND THE MCP — the same questions, by column NAME, with test@test.com's own personal key ─────────
+def q17_args(fx: dict) -> dict:
+    """Q17: a relation condition given the related row's NAME — a relation cell stores an id, so before
+    2026-10-03 the name was compared with ids and every door answered a silent 0 (tool, REST and MCP)."""
+    return {"action": "record_aggregate", "table_id": fx["visits"], "measure": "sum", "field_key": "Copay",
+            "match": {"Patient": "Daniel Reyes"}}
+
+
 def q11_args(fx: dict) -> dict:
     return {"action": "record_aggregate", "table_id": fx["visits"], "measure": "sum", "field_key": "Copay",
             "related_to": [fx["patient_ids"]["daniel"], fx["patient_ids"]["hannah"]]}
@@ -505,7 +519,7 @@ def q11_args(fx: dict) -> dict:
 def rest_args(fx: dict) -> dict:
     """Each question as `POST /v1/tables/<id>/aggregate` asks it (AggregateRequest: names, never keys)."""
     out: dict = {}
-    for q, a in {**ask_args(fx), "Q11": q11_args(fx)}.items():
+    for q, a in {**ask_args(fx), "Q11": q11_args(fx), "Q17": q17_args(fx)}.items():
         body = {"measure": a.get("measure", "count")}
         for src, dst in (("field_key", "column"), ("group_by", "group_by"), ("match", "where"), ("as_of", "as_of"),
                          ("order", "order"), ("limit", "limit"), ("related_to", "related_to"), ("bucket", "bucket")):
@@ -687,6 +701,15 @@ def main() -> int:
         ok12 = out10.get("truncated") is True and (out10.get("groups_total") == 6 if exact else exact is False)
         step(["Q12"], "Q12 the top-5 list of 6 patients says it is cut (tool)", ok12,
              f"truncated {out10.get('truncated')} groups_total {out10.get('groups_total')} exact {exact} shown {out10.get('groups_shown')}")
+        ask17 = ask_value("Q17", ask["Q17"], fx)
+        step(["Q17"], "Q17 the copay of the visits of the patient NAMED Daniel Reyes (tool) — a name, never a silent 0",
+             same("Q17", ask17, TRUTH_Q17), f"truth {TRUTH_Q17} | ask {json.dumps(ask17, default=str)}")
+        # Q18 — groups of a relation column carry the related row's NAME (the model needed four more calls to
+        # say the patients' names before 2026-10-03). The top-5 list's names, in order, are TRUTH['Q10']'s.
+        out10_all = ((ask["Q10"].get("output") or {}).get("buckets") or []) if ask["Q10"]["success"] else []
+        names18 = [b.get("name") for b in out10_all]
+        step(["Q18"], "Q18 the top-5 patients come back with each patient's name (tool)",
+             names18 == [n for n, _ in TRUTH["Q10"]], f"truth {[n for n, _ in TRUTH['Q10']]} | tool {names18}")
         ok13, said13 = rollup_door_refuses(member, fx)
         step(["Q13"], "Q13 the roll-up door, rooted at patients, refuses rather than answering 0", ok13, said13)
         # Q14 / Q15 — REST v1 and the MCP with test@test.com's own personal key.
@@ -695,18 +718,21 @@ def main() -> int:
             if not key:
                 step(["Q14", "Q15"], "personal key for test@test.com", False, "iam.personal_api_key_create refused")
             else:
-                truth = {**TRUTH, "Q11": TRUTH_Q11}
+                truth = {**TRUTH, "Q11": TRUTH_Q11, "Q17": TRUTH_Q17}
                 rest = rest_answers(key, fx)
                 bad = {q: api_value(q, b, fx) for q, (st, b) in rest.items() if not same(q, api_value(q, b, fx), truth[q])}
                 cut = rest["Q10"][1] if isinstance(rest["Q10"][1], dict) else {}
-                step(["Q14", "Q12"], "Q14 REST v1 /v1/tables/<id>/aggregate with a personal key: Q1–Q11 exact, Q10 says it is cut",
+                rest_names = [g.get("name") for g in (cut.get("groups") or [])]
+                step(["Q18"], "Q18 REST v1: the top-5 groups carry each patient's name", rest_names == [n for n, _ in TRUTH["Q10"]],
+                     f"truth {[n for n, _ in TRUTH['Q10']]} | REST {rest_names}")
+                step(["Q14", "Q12", "Q17"], "Q14 REST v1 /v1/tables/<id>/aggregate with a personal key: Q1–Q11 and Q17 exact, Q10 says it is cut",
                      not bad and cut.get("truncated") is True,
                      f"server {API_SERVER} | wrong {json.dumps(bad, default=str, ensure_ascii=False)[:500]} | Q10 truncated "
                      f"{cut.get('truncated')} total {cut.get('groups_total')} | statuses {sorted({st for st, _ in rest.values()})}")
                 try:
                     mcp = asyncio.run(mcp_answers(key, fx))
                     bad = {q: api_value(q, b, fx) for q, b in mcp.items() if not same(q, api_value(q, b, fx), truth[q])}
-                    step(["Q15"], "Q15 the AI Matrx MCP tables.aggregate with the same key: Q1–Q11 exact", not bad,
+                    step(["Q15", "Q17"], "Q15 the AI Matrx MCP tables.aggregate with the same key: Q1–Q11 and Q17 exact", not bad,
                          f"server {API_SERVER} | wrong {json.dumps(bad, default=str, ensure_ascii=False)[:500]}")
                 except Exception as e:  # noqa: BLE001 — an unreachable MCP is a red, said
                     step(["Q15"], "Q15 the AI Matrx MCP tables.aggregate", False, f"{type(e).__name__}: {str(e)[:300]}")
