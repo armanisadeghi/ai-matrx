@@ -1348,7 +1348,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           </div>
 
           {/* The organization's own fields on this page (lane 7 W5 — the record view of web_page). */}
-          <EntityCustomFields entityToken="web_page" recordId={page.id} />
+          <EntityCustomFields entityToken="web_page" recordId={page.id} organizationId={page.organization_id} />
 
           {/* Every paired row owns one compact disclosure in Studio. Nested
               card disclosures stay open there, so the two lanes can never be

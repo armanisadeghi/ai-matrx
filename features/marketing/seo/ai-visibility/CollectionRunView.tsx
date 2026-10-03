@@ -87,7 +87,7 @@ export function CollectionRunView({ run }: { run: CollectionRunViewRun }) {
             </p>
           </section>
         )}
-        <EntityCustomFields entityToken="seo_collection_run" recordId={run.id} />
+        <EntityCustomFields entityToken="seo_collection_run" recordId={run.id} organizationId={run.organization_id} />
       </div>
     </main>
   );

@@ -34,7 +34,7 @@ export default async function AgentViewPage({
       <PageHeader>
         <AgentHeader agentId={id} agentName={agent.name} />
       </PageHeader>
-      <AgentViewContent agentId={id} recordSections={<EntityCustomFields entityToken="agent" recordId={id} />} />
+      <AgentViewContent agentId={id} recordSections={<EntityCustomFields entityToken="agent" recordId={id} organizationId={agent.organizationId} />} />
     </>
   );
 }

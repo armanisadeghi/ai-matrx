@@ -69,6 +69,18 @@ interface Loaded {
   error: string | null;
 }
 
+type AcrossAnswer =
+  | {
+      ok: true;
+      data: {
+        fields: (Record<string, unknown> & { id: string; options?: Record<string, { label: string; retired?: boolean }> | null })[];
+        unavailable: { organization_id?: string; reason?: string | null }[];
+      };
+    }
+  | { ok: false; error: { code?: string; message: string } };
+type AcrossDoor = (args: { token: string; organization_ids: string[] }) => Promise<AcrossAnswer>;
+let warnedClientLacksAcross = false;
+
 async function loadFields(
   token: string,
   organizationIds: readonly string[],
@@ -78,11 +90,21 @@ async function loadFields(
   const dataSource = recordsDataSource(createClient());
   // ONE READ ACROSS EVERY ORGANIZATION THE LIST SPANS: `custom.entity_fields_across` answers the
   // Fields and their choices together and names any organization it may not reach.
-  const across = await createRecordsClient({
-    dataSource,
-    actor: personActor(userId),
-    organizationId: organizationIds[0],
-  }).entityFieldsAcross({ token, organization_ids: [...organizationIds] });
+  const client = createRecordsClient({ dataSource, actor: personActor(userId), organizationId: organizationIds[0] });
+  // 🚨 THE INSTALLED CLIENT MAY PREDATE THE DOOR (@ai-matrx/records 0.61.1 has no `entityFieldsAcross`;
+  // it arrives in 0.63). Calling a missing method threw, and every list's custom columns failed. Until
+  // the package lands, read once per organization — said once in the console, never silently.
+  const acrossDoor = (client as unknown as { entityFieldsAcross?: AcrossDoor }).entityFieldsAcross;
+  if (typeof acrossDoor !== "function") {
+    if (!warnedClientLacksAcross) {
+      warnedClientLacksAcross = true;
+      console.warn(
+        "[standard-field-columns] the installed @ai-matrx/records client has no entityFieldsAcross; reading Fields once per organization until it is updated.",
+      );
+    }
+    return loadFieldsPerOrganization(token, organizationIds, userId, dataSource);
+  }
+  const across = await acrossDoor.call(client, { token, organization_ids: [...organizationIds] });
   if (across.ok) {
     const definitions: StandardFieldDefinition[] = [];
     const optionsByField = new Map<string, StandardFieldOption[]>();

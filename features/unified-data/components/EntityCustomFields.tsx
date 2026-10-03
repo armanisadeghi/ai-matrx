@@ -73,6 +73,13 @@ export interface EntityCustomFieldsProps {
    * shows no section that does not apply. A standard record that cannot show fields still says why.
    */
   absentWhenNotApplicable?: boolean;
+  /**
+   * The row's organization as the PAGE already holds it (`row.organization_id`). Used ONLY while the
+   * store door `custom.entity_record_home` is not on the database (it ships with the chair's apply):
+   * the section falls back to it and says so once in the console. With neither, the section says it
+   * could not read the record. Never the active organization.
+   */
+  organizationId?: string | null;
   /** The heading. Defaults to the section's own. */
   title?: string;
   className?: string;
@@ -85,7 +92,21 @@ type RecordHome =
   | { state: "error" };
 
 /** The row's organization, asked as the person. Never the active organization. */
-function useRecordHome(token: string, recordId: string): { home: RecordHome; retry: () => void } {
+/** PostgREST / Postgres say the function is not on this database. */
+function doorIsAbsent(error: { message: string; sqlstate?: string | undefined }): boolean {
+  return (
+    error.sqlstate === "PGRST202" ||
+    error.sqlstate === "42883" ||
+    /could not find the function|does not exist/i.test(error.message)
+  );
+}
+let announcedFallback = false;
+
+function useRecordHome(
+  token: string,
+  recordId: string,
+  pageOrganizationId: string | null,
+): { home: RecordHome; retry: () => void } {
   const [home, setHome] = useState<RecordHome>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -95,6 +116,16 @@ function useRecordHome(token: string, recordId: string): { home: RecordHome; ret
       (answer) => {
         if (!live) return;
         if (!answer.ok) {
+          if (doorIsAbsent(answer.error) && pageOrganizationId) {
+            if (!announcedFallback) {
+              announcedFallback = true;
+              console.warn(
+                "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); using the organization the page holds for the record.",
+              );
+            }
+            setHome({ state: "home", organizationId: pageOrganizationId });
+            return;
+          }
           console.error("[EntityCustomFields] custom.entity_record_home failed", { token, recordId, error: answer.error });
           setHome({ state: "error" });
         } else if (answer.data.organization_id) setHome({ state: "home", organizationId: answer.data.organization_id });
@@ -114,7 +145,7 @@ function useRecordHome(token: string, recordId: string): { home: RecordHome; ret
     return () => {
       live = false;
     };
-  }, [token, recordId, attempt]);
+  }, [token, recordId, attempt, pageOrganizationId]);
   return { home, retry: () => setAttempt((n) => n + 1) };
 }
 
@@ -149,8 +180,9 @@ export function EntityCustomFields({
   title,
   className,
   absentWhenNotApplicable,
+  organizationId: pageOrganizationId,
 }: EntityCustomFieldsProps) {
-  const { home, retry: retryHome } = useRecordHome(entityToken, recordId);
+  const { home, retry: retryHome } = useRecordHome(entityToken, recordId, pageOrganizationId ?? null);
   // T1.2 (Doctrine R8): a person who may not change this table makes her own, in the ONE New table
   // dialog both data homes open (features/make/MakeMount.tsx), right here on the record page.
   const [makingTable, setMakingTable] = useState(false);

@@ -546,7 +546,7 @@ export function MeetingDetail({
             />
           ) : null}
           {/* The organization's own fields on this meeting (lane 7 W5). */}
-          {section === "details" ? <EntityCustomFields entityToken="meet_meeting" recordId={meeting.id} className="mt-6" /> : null}
+          {section === "details" ? <EntityCustomFields entityToken="meet_meeting" recordId={meeting.id} organizationId={meeting.organizationId} className="mt-6" /> : null}
 
           {section === "guests" ? (
             <MeetingGuests

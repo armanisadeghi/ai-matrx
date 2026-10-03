@@ -746,7 +746,7 @@ export function TaskEditorBody({
           </section>
 
           {/* The organization's own fields on this task (lane 7 W5) — page and window alike. */}
-          <EntityCustomFields entityToken="task" recordId={taskId} />
+          <EntityCustomFields entityToken="task" recordId={taskId} organizationId={orgId} />
 
           {/* Attachments — notes, files, messages, conversations, chat blocks */}
           <section>

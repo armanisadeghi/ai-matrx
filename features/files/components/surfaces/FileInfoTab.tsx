@@ -269,7 +269,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
           ) : null}
 
           {/* The organization's own fields on this file (lane 7 W5). Real files only. */}
-          {file.source.kind === "real" ? <EntityCustomFields entityToken="file" recordId={fileId} /> : null}
+          {file.source.kind === "real" ? <EntityCustomFields entityToken="file" recordId={fileId} organizationId={file.organizationId} /> : null}
 
           {/*
            * Knowledge status — visible only for real (non-virtual) files.

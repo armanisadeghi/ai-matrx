@@ -330,7 +330,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
 
       {/* ── The organization's own fields on this note (lane 7 W5) ───── */}
       <div className="px-1">
-        <EntityCustomFields entityToken="note" recordId={noteId} />
+        <EntityCustomFields entityToken="note" recordId={noteId} organizationId={note?.organization_id} />
       </div>
 
       {/* ── Sharing — who can see this note, and why ──────────────────── */}

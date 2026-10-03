@@ -93,7 +93,7 @@ export default async function MarketingPropertyPage({
       </section>
 
       <div className="mx-auto mt-4 max-w-3xl">
-        <EntityCustomFields entityToken="web_property" recordId={property.id} />
+        <EntityCustomFields entityToken="web_property" recordId={property.id} organizationId={property.organization_id} />
       </div>
     </main>
   );

@@ -580,7 +580,7 @@ export function ProjectRecordWorkspace({
           </Card>
 
           {/* The organization's own fields on this project (lane 7 W5). */}
-          <EntityCustomFields entityToken="project" recordId={project.id} />
+          <EntityCustomFields entityToken="project" recordId={project.id} organizationId={project.organizationId} />
 
           {/* Details & all FK references (a useful audit summary, collapsible) */}
           <details className="group">
