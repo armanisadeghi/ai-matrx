@@ -369,8 +369,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   studio_session: {
     Icon: Mic,
-    // Plain words (A5-P): a person made a recording, not an "audio session".
-    labelPlural: "Recordings",
+    // Name comes from the registry label ("Transcript Studio session", Arman 2026-10-03).
     hrefFor: (id) => `/transcripts/studio?session=${encodeURIComponent(id)}`,
   },
   // ─── Code (canonical `code.*` entities — attachable to orgs, war rooms, etc.) ─
