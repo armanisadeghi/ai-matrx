@@ -1,7 +1,7 @@
 -- chair-step: the inverse of scopesw2w_a_scope_type_under_a_type_keeps_its_parent_in_the_store.sql — restores the bodies of custom._ctx_store_type and custom.scope_type_row_of as they stood on the clone 2026-10-03 04:07Z.
 -- lane: SCOPES-ON-THE-STORE
--- based-on: custom._ctx_store_type(uuid, uuid, jsonb) PLACEHOLDER_A
--- based-on: custom.scope_type_row_of(custom.record) PLACEHOLDER_B
+-- based-on: custom._ctx_store_type(uuid, uuid, jsonb) fbbd7e9c78135b60160d7e8ac0cac81a60f4cb435b6517a32c0fd3d6091e2e28
+-- based-on: custom.scope_type_row_of(custom.record) 9d93a0a1ec67380f1cf1d937a330ec47cf2c3cdb36821e98352e273ee1d56c6b
 -- lock: custom
 
 CREATE OR REPLACE FUNCTION custom._ctx_store_type(p_org uuid, p_type uuid, p_spec jsonb)
