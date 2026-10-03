@@ -1,4 +1,3 @@
--- draft: lane9-scopes-g clone proof (green suite, rule 27, timing) not yet run
 -- chair-step: it REPLACES the body of one lane-9 door, custom.resolve_context (signature, SECURITY DEFINER, search_path, plan_cache_mode and grants unchanged). Same answer, byte for byte, for every seat: the Fields of the admitted records are read once per (organization, Table) by that pair's own key instead of one join against every Field of every organization; the System items a turn names are worked out once, and a turn naming none reads none; an empty list of active Tables asks nothing. No other function, no table, index, policy, grant, door row or data row is touched.
 -- lane: SCOPES-ON-THE-STORE
 -- based-on: custom.resolve_context(text, uuid, uuid[], uuid[], text[]) 82d167440cb2eb5fa38340aad5f27b5325308f5c2724d1f413700a0e949edf3b
