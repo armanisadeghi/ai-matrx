@@ -220,7 +220,8 @@ const BUDGET_WORD =
 
 // ─── where it runs ───────────────────────────────────────────────────────────
 //
-// THE NIGHTLY CLONE BY DEFAULT (2026-09-28). Measured on live that day: ~23,800 statements, still
+// LIVE BY DEFAULT since the owner ruling of 2026-10-03; the self-test's planted doors (DDL) run on
+// the clone. History (2026-09-28, when it defaulted to the clone): Measured on live that day: ~23,800 statements, still
 // running at 20 minutes, 3 statements cancelled at its own 6 s probe ceiling. A door-by-door sweep of
 // ~460 doors is a census, and the property it proves (a door returns only what its caller may read)
 // is a property of the function bodies and policies, which the clone carries from last night's
@@ -239,7 +240,7 @@ async function openClient(): Promise<pg.Client> {
   if (!checkDb) {
     checkDb = await openCheckDb({
       gate: POPULATION === "signed-in" ? "check:door-rows:wide" : "check:door-rows",
-      defaultTarget: "clone",
+      defaultTarget: SELF_TEST ? "clone" : "production",
       argv: ARGV,
     });
     return checkDb.client;

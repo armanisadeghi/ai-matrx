@@ -16,7 +16,9 @@
  * Neither was a bad line of SQL. Both were a door added later than the rule, which is a
  * class, so the rule is a QUERY over the live catalog and this is the guard that runs it.
  *
- * WHERE IT RUNS (2026-09-27): THE NIGHTLY CLONE, BY DEFAULT. Censuses 12 and 13 ask the one
+ * WHERE IT RUNS: LIVE, BY DEFAULT (owner ruling 2026-10-03); the self-test's plants (DDL) run on the
+ * clone, and a census past the live ceiling is named NOT MEASURED. History (2026-09-27, when it
+ * defaulted to the clone): Censuses 12 and 13 ask the one
  * ladder for every (member, record) pair and ran 4-10 minutes on live, many times a day, while
  * the live machine was running out of memory (common-docs/systems/architecture/database/projects/database-workload-safety/
  * incidents/2026-09-27-per-connection-memory.md). The clone is production's own data, quarantined,
@@ -988,12 +990,12 @@ async function main(): Promise<void> {
   // single-flight lock, not a shorter clock. The ceiling is CENSUS_BUDGET (9 min), deliberately
   // UNDER the database's 10-minute transaction_timeout — see GATE_DB_LIMITS.transactionTimeoutMs.
   //
-  // WHERE (2026-09-27): the clone by default, live only with `--target production` and then at the
-  // live ceiling — see the header. openCheckDb prints the [TARGET] line and proves the clone is
+  // WHERE: live by default (owner ruling 2026-10-03), at the live ceiling; the self-test on the
+  // clone — see the header. openCheckDb prints the [TARGET] line and proves the clone is
   // the clone (connection ref + quarantine facts) before a census runs.
   const checkDb = await openCheckDb({
     gate: "check:store-doors-decide",
-    defaultTarget: "clone",
+    defaultTarget: process.argv.includes("--self-test") ? "clone" : "production",
     statementTimeoutMs: CENSUS_BUDGET_MS,
     statementTimeoutReason:
       "census 13 asks the one ladder for every (member, record) pair: 37-108 s on the clone, longer on live under load",

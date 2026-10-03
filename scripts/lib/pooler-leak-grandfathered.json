@@ -5,7 +5,6 @@
     "scripts/check-anon-column-surface.ts": 1,
     "scripts/check-anon-write-surface.ts": 1,
     "scripts/check-definer-class.ts": 1,
-    "scripts/check-heavy-checks-target-the-clone.ts": 1,
     "scripts/check-mandate-fallback-pin.ts": 3,
     "scripts/check-offering-availability-round-trip.ts": 1,
     "scripts/check-offering-resolver-equivalence.ts": 1,

@@ -1,21 +1,17 @@
 /**
- * WHERE A CHECK RUNS: THE NIGHTLY CLONE BY DEFAULT, LIVE ONLY WHEN ASKED AND ONLY BOUNDED.
+ * WHERE A CHECK RUNS: LIVE, BOUNDED — THE NIGHTLY CLONE ONLY FOR REHEARSAL.
  *
- * WHY (2026-09-27, common-docs/projects/database-workload-safety/incidents/2026-09-27-per-connection-memory.md).
- * The live database kept running out of memory: every warm connection costs it ~66 MB, and our
- * own verification work held connections for minutes — `check:store-doors-decide` alone ran
- * `custom.shared_only_disagreements(null)` for 4-10 minutes on live, many times a day, as
- * `postgres` through the pooler. A census, an equivalence sweep or a benchmark reads production's
- * data just as well on the nightly clone (a physical restore of production, quarantined), and
- * costs live nothing there. So:
+ * Owner ruling (Arman, 2026-10-03): checks and tests run on the LIVE database; the nightly clone is
+ * ONLY for rehearsing destructive migrations and jobs that lock for 10+ minutes. So:
  *
- *   - a heavy check calls `openCheckDb({ gate, defaultTarget: "clone" })` and runs on the clone
- *     unless the command line says `--target production`;
- *   - on production the gate ceiling is the live ceiling (30 s, `GATE_DB_LIMITS.liveStatementTimeoutMs`)
- *     and asking for more is refused before a socket opens (`gate-db.ts`);
+ *   - a check calls `openCheckDb({ gate, defaultTarget: "production" })` and runs on live, every
+ *     statement capped at the live ceiling (30 s, `GATE_DB_LIMITS.liveStatementTimeoutMs`); asking
+ *     for more is refused before a socket opens (`gate-db.ts`);
+ *   - a part that does DDL (a self-test's planted body, a temp table — refused on live by
+ *     `production-guard.ts`) names `defaultTarget: "clone"` for that run, or the command says
+ *     `--target clone`;
  *   - EVERY run prints one `[TARGET]` line naming the database it ran against and, on the clone,
- *     when the clone was promoted — the clone is a day old and may trail live by a few
- *     migrations, and a clone result must never be read as a live one.
+ *     when the clone was promoted — a clone result must never be read as a live one.
  *
  * THE CLONE'S IDENTITY is the one `pnpm db:apply --target clone` uses (`migration-target.ts`),
  * reused, not copied: the connection comes from `CLONE_DATABASE_URL` or CLONE-REF plus the
@@ -68,9 +64,10 @@ export function parseCheckTarget(
   const value = arg === "--target" ? (argv[i + 1] ?? "") : arg.slice("--target=".length);
   if (!(CHECK_TARGETS as readonly string[]).includes(value)) {
     throw new CheckTargetRefusal(
-      `--target ${value || "(nothing)"} is not a check target. Valid: --target clone (the nightly ` +
-        "dev clone, the default for heavy checks) | --target production (live, every statement " +
-        `capped at ${formatDurationMs(GATE_DB_LIMITS.liveStatementTimeoutMs, { style: "compact" })}).`,
+      `--target ${value || "(nothing)"} is not a check target. Valid: --target production (live, the ` +
+        "default; every statement " +
+        `capped at ${formatDurationMs(GATE_DB_LIMITS.liveStatementTimeoutMs, { style: "compact" })}) | ` +
+        "--target clone (the nightly dev clone, for DDL rehearsal only).",
       "check-target-unknown",
     );
   }
@@ -167,12 +164,13 @@ function repoRoot(): string {
 /** Resolve where this run goes and its credentials. Refuses; never falls back to the other target. */
 export function resolveCheckDb(opts: {
   readonly argv?: readonly string[];
-  readonly defaultTarget: CheckTarget;
+  /** Absent means live ("production"); "clone" only for a DDL rehearsal run. */
+  readonly defaultTarget?: CheckTarget;
   readonly root?: string;
 }): ResolvedCheckDb {
   const argv = opts.argv ?? process.argv.slice(2);
   const root = opts.root ?? repoRoot();
-  const { target, explicit } = parseCheckTarget(argv, opts.defaultTarget);
+  const { target, explicit } = parseCheckTarget(argv, opts.defaultTarget ?? "production");
   if (target === "clone") {
     const ref = loadCloneRef(root, cloneRefOverride(argv));
     const env = loadCloneDbEnv(root, ref);
@@ -213,7 +211,8 @@ export interface CheckDb {
  */
 export async function openCheckDb(opts: {
   readonly gate: string;
-  readonly defaultTarget: CheckTarget;
+  /** Absent means live ("production"); "clone" only for a DDL rehearsal run. */
+  readonly defaultTarget?: CheckTarget;
   readonly argv?: readonly string[];
   readonly statementTimeoutMs?: number;
   readonly statementTimeoutReason?: string;
@@ -261,7 +260,8 @@ export async function openCheckDb(opts: {
  */
 export async function connectCheckDirect(opts: {
   readonly gate: string;
-  readonly defaultTarget: CheckTarget;
+  /** Absent means live ("production"); "clone" only for a DDL rehearsal run. */
+  readonly defaultTarget?: CheckTarget;
   readonly argv?: readonly string[];
   readonly log?: (line: string) => void;
 }): Promise<{ readonly client: pg.Client; readonly target: CheckTarget; readonly banner: string }> {

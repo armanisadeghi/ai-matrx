@@ -16,7 +16,7 @@
  * schemas) with scripts/lib/all-orgs-paging.ts and fails on any body that reaches the caller's
  * organizations and passes `<limit> + <offset>` as a call argument.
  *
- *   pnpm check:all-orgs-paging                       # the clone (default); --target production for live
+ *   pnpm check:all-orgs-paging                       # live (default); the self-test plants on the clone
  *   pnpm check:all-orgs-paging:self-test             # proves it goes RED on the real old bodies
  *
  * UNMEASURED IS NOT PASSED: no database is a failure.
@@ -93,7 +93,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const checkDb = await openCheckDb({ gate: "check:all-orgs-paging", defaultTarget: "clone" }).catch((error: unknown) => {
+  const checkDb = await openCheckDb({ gate: "check:all-orgs-paging", defaultTarget: process.argv.includes("--self-test") ? "clone" : "production" }).catch((error: unknown) => {
     fail(`DATABASE PULL FAILED - this check is UNMEASURED, which is a failure, not a pass.\n${String(error)}`);
   });
   const client = checkDb.client;

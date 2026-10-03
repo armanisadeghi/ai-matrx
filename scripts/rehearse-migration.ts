@@ -1046,8 +1046,7 @@ async function main(): Promise<number> {
   // clone holds the file's new body and production the old, so the gate failed every body-replacing
   // file until it had already shipped. A difference is allowed exactly when production still holds
   // the up's `-- based-on:` body (pending), and a based-on production no longer holds fails by name.
-  // Proof: pnpm check:clone-parity:self-test (RED-3/GREEN-3/RED-4) and
-  // scripts/__tests__/clone-parity-based-on.test.ts.
+  // Proof: scripts/__tests__/clone-parity-based-on.test.ts.
   {
     const names = [...new Set([...functionsTouched(upSql), ...functionsTouched(downSql)])].sort();
     if (names.length === 0) {

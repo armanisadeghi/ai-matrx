@@ -82,10 +82,10 @@ interface Snapshot {
 }
 
 async function connect(): Promise<Client> {
-  // WHERE (2026-09-27): a heavy check - it runs on the nightly clone unless the command says
-  // `--target production`, and then every statement is capped at the live ceiling
+  // WHERE: LIVE by default since the owner ruling of 2026-10-03 (tests and checks on live; the clone only for DDL rehearsal),
+  // every statement capped at the live ceiling; `--target clone` reads the nightly clone
   // (scripts/lib/check-target.ts). The [TARGET] line says which database answered.
-  const { client, target } = await connectCheckDirect({ gate: "check-offering-availability-round-trip", defaultTarget: "clone" }).catch(
+  const { client, target } = await connectCheckDirect({ gate: "check-offering-availability-round-trip", defaultTarget: "production" }).catch(
     (err: unknown) => {
       console.error(
         `${C.r}DATABASE PULL FAILED${C.x} check-offering-availability-round-trip could not be MEASURED: ${err instanceof Error ? err.message : String(err)}`,

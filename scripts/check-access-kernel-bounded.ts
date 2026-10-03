@@ -52,8 +52,8 @@
  * assertion to fail with `57014` (statement timeout) or `54001` (stack depth). Then it rolls back.
  * `--self-test=dd263` installs the older pre-DD-263 body from `dd263-pre-fix-kernel.sql` instead,
  * which fails the same assertion with 54001. A guard that cannot be shown failing is not a guard.
- * It REFUSES to run against production (it replaces a function, however briefly); by default the
- * whole guard runs on the nightly clone (2026-09-27, scripts/lib/check-target.ts), where it may.
+ * It REFUSES to run against production (it replaces a function, however briefly); the self-test
+ * runs on the nightly clone, the guard itself on live (owner ruling 2026-10-03).
  *
  *   pnpm check:access-kernel-bounded            # loud, non-blocking (exit 0)
  *   pnpm check:access-kernel-bounded:strict     # exit 1 on any failed assertion
@@ -142,13 +142,13 @@ async function connect(): Promise<{ client: pg.Client; isProduction: boolean; wh
     await client.connect();
     return { client, isProduction, where: new URL(OVERRIDE_URL).host };
   }
-  // WHERE (2026-09-27): it PLANTS a ten-node ring and asks the kernel about it inside a
-  // rolled-back transaction with a 120 s clock - rehearsal work, so it runs on the nightly clone
-  // unless the command says `--target production` (then guarded, at the live ceiling).
+  // WHERE: LIVE by default since the owner ruling of 2026-10-03 (tests and checks on live; the clone only for DDL rehearsal).
+  // It plants a ten-node ring (rows, no DDL) inside a rolled-back transaction, guarded at the live
+  // ceiling; the self-test (DDL) runs on the nightly clone.
   // scripts/lib/check-target.ts.
   let opened: Awaited<ReturnType<typeof connectCheckDirect>>;
   try {
-    opened = await connectCheckDirect({ gate: "check-access-kernel-bounded", defaultTarget: "clone" });
+    opened = await connectCheckDirect({ gate: "check-access-kernel-bounded", defaultTarget: SELF_TEST ? "clone" : "production" });
   } catch (e) {
     console.log(
       `${C.yellow}check:access-kernel-bounded: no database to measure (${e instanceof Error ? e.message : String(e)}) - skipping.${C.reset}`,

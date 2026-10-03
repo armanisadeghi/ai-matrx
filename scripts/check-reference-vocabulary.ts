@@ -27,8 +27,8 @@
  *     line hides the very gap it claims), or a `PRODUCTS` line for an id the data home dropped;
  *   - more `UNMEASURED` exclusions than `UNMEASURED_BASELINE` (it only shrinks).
  *
- *   pnpm check:reference-vocabulary                       the clone (the nightly copy) by default
- *   pnpm check:reference-vocabulary --target production   live, read only, one statement
+ *   pnpm check:reference-vocabulary                       live (the default), read only, one statement
+ *   pnpm check:reference-vocabulary --target clone        the nightly copy
  *   pnpm check:reference-vocabulary --self-test           planted in memory: every RED, then GREEN
  */
 import { readFileSync } from "node:fs";
@@ -229,7 +229,7 @@ function selfTest(): number {
 async function main(argv: string[]): Promise<number> {
   if (argv.includes("--self-test")) return selfTest();
   const { openCheckDb } = await import("./lib/check-target");
-  const db = await openCheckDb({ gate: "check:reference-vocabulary", defaultTarget: "clone", argv });
+  const db = await openCheckDb({ gate: "check:reference-vocabulary", defaultTarget: "production", argv });
   let row: { modules: string[]; kinds: string[] };
   try {
     await db.client.query("begin read only");

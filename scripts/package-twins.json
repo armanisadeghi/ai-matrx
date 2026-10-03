@@ -387,10 +387,6 @@
         {
           "file": "utils/supabase/walkCap.ts",
           "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: `Retrying in ${KNOB_TTL_MS / 1000}s` and `ago()` become formatDurationMs(ms, { style: \"compact\" }) (+ \" ago\"). A debt, not an exemption."
-        },
-        {
-          "file": "scripts/check-heavy-checks-target-the-clone.ts",
-          "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: the two `${t.ms / 1000}s` findings become formatDurationMs(t.ms, { style: \"compact\" }). A debt, not an exemption."
         }
       ]
     },

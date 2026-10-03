@@ -88,10 +88,10 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
 let RUN_TARGET: CheckTarget = "clone";
 
 async function connect(): Promise<Client> {
-  // WHERE (2026-09-27): a heavy check - it runs on the nightly clone unless the command says
-  // `--target production`, and then every statement is capped at the live ceiling
+  // WHERE: LIVE by default since the owner ruling of 2026-10-03 (tests and checks on live; the clone only for DDL rehearsal);
+  // the self-test's temp tables are DDL and run on the clone. Live is capped at the live ceiling
   // (scripts/lib/check-target.ts). The [TARGET] line says which database answered.
-  const { client, target } = await connectCheckDirect({ gate: "check-offering-resolver-equivalence", defaultTarget: "clone" }).catch(
+  const { client, target } = await connectCheckDirect({ gate: "check-offering-resolver-equivalence", defaultTarget: process.argv.includes("--self-test") ? "clone" : "production" }).catch(
     (err: unknown) => {
       console.error(
         `${C.r}DATABASE PULL FAILED${C.x} check-offering-resolver-equivalence could not be MEASURED: ${err instanceof Error ? err.message : String(err)}`,

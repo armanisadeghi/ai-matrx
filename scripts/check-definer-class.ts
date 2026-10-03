@@ -281,12 +281,11 @@ async function selfTest(db: Client): Promise<number> {
 
 async function main(): Promise<number> {
   console.log(`${C.b}THE DEFINER CLASS GUARD${C.x} ${C.d}(DD-137c / VISIBILITY-BY-CLASS §3.4 — borrowed rights do not decide what a class means)${C.x}`);
-  // WHERE (2026-09-27): the call-graph walk reads every definer body in the catalog, which builds
-  // catalog caches on the backend that serves it - heavy, so it runs on the nightly clone unless the
-  // command says `--target production` (then at the live ceiling). scripts/lib/check-target.ts.
+  // WHERE: LIVE by default since the owner ruling of 2026-10-03 (tests and checks on live; the clone only for DDL rehearsal).
+  // The self-test plants a schema (DDL) and runs on the clone. scripts/lib/check-target.ts.
   let opened: Awaited<ReturnType<typeof connectCheckDirect>>;
   try {
-    opened = await connectCheckDirect({ gate: "check-definer-class", defaultTarget: "clone" });
+    opened = await connectCheckDirect({ gate: "check-definer-class", defaultTarget: SELF_TEST ? "clone" : "production" });
   } catch (e) {
     console.log(`  ${C.r}✗${C.x} UNMEASURED — ${e instanceof Error ? e.message : String(e)}. This is a FAILURE, not a pass.`);
     return 1;

@@ -3,8 +3,9 @@
 // WHERE A CHECK RUNS (scripts/lib/check-target.ts), proven without a database: the target flag,
 // the CLONE-REF pointer (including `promoted`), the connection half of the clone's identity
 // (production presented as the clone is refused), the server half (the quarantine facts), the
-// [TARGET] line, and the live gate ceiling in scripts/lib/gate-db.ts. The live half — that a run
-// on the clone leaves nothing on live — was measured on 2026-09-28 (see the lane report).
+// [TARGET] line, and the live gate ceiling in scripts/lib/gate-db.ts. Since the owner ruling of
+// 2026-10-03 a check with no `--target` and no `defaultTarget` runs on LIVE; the clone is named only
+// for a DDL rehearsal run.
 
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -63,6 +64,40 @@ describe("parseCheckTarget", () => {
     expect(() => parseCheckTarget(["--target", "branch"], "clone")).toThrow(CheckTargetRefusal);
     expect(() => parseCheckTarget(["--target"], "clone")).toThrow(/not a check target/);
     expect(() => parseCheckTarget(["--target=live"], "clone")).toThrow(CheckTargetRefusal);
+  });
+});
+
+describe("the default target is live (owner ruling 2026-10-03)", () => {
+  function liveRoot(): string {
+    const root = mkdtempSync(join(tmpdir(), "check-target-live-"));
+    writeFileSync(
+      join(root, ".env"),
+      [
+        "SUPABASE_MATRIX_HOST=aws-0-us-east-1.pooler.supabase.com",
+        "SUPABASE_MATRIX_PORT=6543",
+        `SUPABASE_MATRIX_USER=postgres.${PROD}`,
+        "SUPABASE_MATRIX_PASSWORD=never-used",
+        "SUPABASE_MATRIX_DATABASE_NAME=postgres",
+      ].join("\n"),
+    );
+    return root;
+  }
+  it("no --target and no defaultTarget resolves the live database, never the clone", () => {
+    const saved = Object.fromEntries(["SUPABASE_MATRIX_USER", "SUPABASE_MATRIX_HOST", "AIDREAM_DIR"].map((k) => [k, process.env[k]]));
+    try {
+      delete process.env.SUPABASE_MATRIX_USER;
+      delete process.env.SUPABASE_MATRIX_HOST;
+      process.env.AIDREAM_DIR = "/nonexistent-aidream";
+      const got = resolveCheckDb({ argv: [], root: liveRoot() });
+      expect(got.target).toBe("production");
+      expect(got.explicit).toBe(false);
+      expect(got.env.user).toBe(`postgres.${PROD}`);
+    } finally {
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
   });
 });
 
