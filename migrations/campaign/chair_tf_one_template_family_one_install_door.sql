@@ -1,3 +1,4 @@
+-- chair-step: this file CREATES the one template family — two new tables (custom.template, custom.template_install), their helpers and four client doors (template_declare, templates, template_install, template_uninstall) with door rows — and the REVOKEs are only on the tables and helper functions this same file creates (closing PUBLIC/anon/authenticated on new objects, the closed-schema rule). No existing table, column, policy, grant or data row is touched. It is non-additive only in the sense of new tables (a lock on nothing live) and is a window item applied with Arman watching.
 -- CHAIR (Unified Data System v6) — THE ONE TEMPLATE FAMILY: one catalogue, one install door.
 --
 -- THE USE CASE. Marisol Teague manages Linden Hollow Family Medicine. On the gallery she picks
