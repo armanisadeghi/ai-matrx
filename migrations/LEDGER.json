@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T09:12:07.063Z",
+  "generated_at": "2026-10-03T11:12:23.997Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -524,6 +524,12 @@
       "checksum": "8154b6b8f6f4cb4bd4453622783a45ff4af6beb94fda08f121b2c1fc369c506b",
       "applied_at": "2026-10-03 08:40:05.398498+00"
     },
+    "migrations/campaign/chairdoors3a_b_a_moved_pointer_at_an_archived_record_stands.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3a_b_a_moved_pointer_at_an_archived_record_stands.sql",
+      "checksum": "22e4de9bdae85925f01e897431e31a939112cefdc8a4633ae2aa35d2e5593fb4",
+      "applied_at": "2026-10-03 09:29:58.13597+00"
+    },
     "migrations/campaign/chairdoors3a_c_the_add_rung_is_read_off_the_table_and_the_home.sql": {
       "source": "matrx-frontend",
       "filename": "chairdoors3a_c_the_add_rung_is_read_off_the_table_and_the_home.sql",
@@ -535,6 +541,12 @@
       "filename": "chairdoors3a_d_a_table_says_its_column_source_and_platform_keys.sql",
       "checksum": "8de17fa53356c674837ae68e26caf9227ef628ee66c99d6d815f2d2086f44ef2",
       "applied_at": "2026-10-03 08:40:37.060635+00"
+    },
+    "migrations/campaign/chairdoors3a_e_a_confidential_tables_maker_can_be_only_a_reader.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3a_e_a_confidential_tables_maker_can_be_only_a_reader.sql",
+      "checksum": "dac2d3676b3e31bb48886e6fc565aa4e1baa226885ee9c57597a1036bcab505f",
+      "applied_at": "2026-10-03 09:30:24.18032+00"
     },
     "migrations/campaign/chairdoors3b_a_a_signed_in_person_never_writes_the_other_workflow_ledgers.sql": {
       "source": "matrx-frontend",
@@ -565,6 +577,12 @@
       "filename": "chairdoors3b_e_an_organizations_tables_become_a_template_spec.sql",
       "checksum": "78667b5dc144070f58d5aebe5002f8b3cf16a32228ed7cbcccbce9e3bd079ddc",
       "applied_at": "2026-10-03 08:24:00.408907+00"
+    },
+    "migrations/campaign/chairdoors3b_f_a_workflow_is_edited_by_its_owner_or_an_admin.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3b_f_a_workflow_is_edited_by_its_owner_or_an_admin.sql",
+      "checksum": "0ac239ab5e89da0f6b915af8105010a39d2160aa0bd4fb96953bbb94f4f58f97",
+      "applied_at": "2026-10-03 11:12:18.727713+00"
     },
     "migrations/campaign/chairrc_a_record_changed_carries_its_change.sql": {
       "source": "matrx-frontend",
