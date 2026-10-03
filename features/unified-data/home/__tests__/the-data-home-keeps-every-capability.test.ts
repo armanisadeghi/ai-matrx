@@ -190,7 +190,7 @@ describe("census items that are wiring", () => {
   it("14 · the archive is the list's Archived filter, and each archived table restores", () => {
     expect(list).toContain("supportsArchived: true");
     expect(list).toContain("readArchived:");
-    expect(read("useDataHomeRowMenus.tsx")).toContain("recordRestore(");
+    expect(read("useDataHomeRowMenus.tsx")).toContain("restoreTableIn(");
   });
 
   it("17 · flat by default: no config, knob or default sets a group-by (acceptance 5)", () => {
