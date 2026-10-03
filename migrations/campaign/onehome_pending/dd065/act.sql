@@ -1,0 +1,1 @@
+select pid, state, usename, application_name, now()-xact_start xact_age, wait_event_type, left(query,100) q from pg_stat_activity where xact_start is not null and pid<>pg_backend_pid() order by xact_start limit 15

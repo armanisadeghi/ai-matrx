@@ -1,0 +1,354 @@
+diff --git a/app/services/records_sync/FEATURE.md b/app/services/records_sync/FEATURE.md
+index e769199833..c60cc98dc6 100644
+--- a/app/services/records_sync/FEATURE.md
++++ b/app/services/records_sync/FEATURE.md
+@@ -27,15 +27,14 @@ replay of that key returns the SAME record id and increments
+ `custom.anon_replay.replays`, so a crash between the write and the
+ acknowledgement cannot duplicate a record.
+ 
+-## The switch
++## Reachability
+ 
+-Every cycle asks whether the store is on for the organization before anything
+-else. `custom.store_is_open` is not EXECUTE-granted to `authenticated`, so the
+-client reads the same knob the door reads —
+-`platform.knob_resolve('custom','system_enabled', org)` — and treats an
+-unreadable switch as CLOSED. Closed means the feature is ABSENT and says so
+-with a remedy (`RecordsMirrorUnavailable`, HTTP 409 on `/records/mirror/sync`);
+-it never half-works and never writes nowhere.
++Every organization keeps its data in the record store since the final switch
++(2026-10-01), so the cycle no longer asks `custom.store_is_open` first (retired
++2026-10-03). A cycle whose first read cannot reach the store says why with a
++remedy (`RecordsMirrorUnavailable`, HTTP 409 on `/records/mirror/sync`): offline,
++or the `custom` doors are not on the client wire. It never half-works and never
++writes nowhere.
+ 
+ ## Ordering and safety
+ 
+@@ -55,8 +54,7 @@ transport is a seam so the wire can change without the engine knowing.
+ 
+ ## Wire status (2026-09-18, proven over HTTP)
+ 
+-`custom` is exposed to PostgREST on the main database and `custom.store_is_open`
+-is EXECUTE-granted to `authenticated` (landed by the W6-EXT lane), so the
++`custom` is exposed to PostgREST on the main database, so the
+ SHIPPED transport works end to end: the live proof in
+ `tests/parity/test_records_mirror_live.py` drives this engine over HTTPS with
+ the admin account's JWT and `Content-Profile: custom`, and every door it calls
+@@ -64,9 +62,3 @@ answers. The only non-HTTP step in that test is reading the `custom.anon_replay`
+ ledger for its assertion — no client may read that table, by design — and it is
+ optional.
+ 
+-## The switch door
+-
+-The gate asks `custom.store_is_open(org)`. If a database has not taken that
+-grant, the client falls back — with an ERROR log naming the refusal — to the
+-knob that door reads, `platform.knob_resolve('custom','system_enabled', org)`,
+-which is `store_is_open`'s whole body. A switch it cannot read at all is CLOSED.
+diff --git a/app/services/records_sync/__init__.py b/app/services/records_sync/__init__.py
+index bd40683888..a201fdfe4a 100644
+--- a/app/services/records_sync/__init__.py
++++ b/app/services/records_sync/__init__.py
+@@ -3,9 +3,9 @@
+ ONE custom Table's records live in the local SQLite mirror
+ (``custom_record_mirror``) and sync both ways through the store's own doors:
+ ``custom.read_records`` down, ``custom.anon_capture`` (client-minted key,
+-idempotent) and ``custom.record_update`` up.  The whole path is gated on the
+-campaign switch — when the store is off for the organization the feature is
+-absent and says so with a remedy.
++idempotent) and ``custom.record_update`` up.  When the store cannot be reached
++(offline, or the wire does not carry the doors) the feature is absent and says
++so with a remedy.
+ 
+ See app/services/records_sync/FEATURE.md.
+ """
+diff --git a/app/services/records_sync/client.py b/app/services/records_sync/client.py
+index d26a0c0277..9b6b86955e 100644
+--- a/app/services/records_sync/client.py
++++ b/app/services/records_sync/client.py
+@@ -189,48 +189,6 @@ class CustomStoreClient:
+     def available(self) -> bool:
+         return self._transport is not self._http or self._http.available
+ 
+-    # -- the switch ----------------------------------------------------
+-
+-    async def store_is_open(self, organization_id: str) -> bool:
+-        """Is the record store switched on for this organization?
+-
+-        ``custom.store_is_open(org)`` is the store's own switch door and is what
+-        this asks (it is EXECUTE-granted to ``authenticated`` and declared in
+-        ``platform.client_callable_door`` since 2026-09-18).
+-
+-        If a database has not taken that grant yet the door answers 42501, and
+-        this falls back — LOUDLY, never silently — to the knob the door itself
+-        reads, ``platform.knob_resolve('custom','system_enabled', org)``, which
+-        is the whole body of ``store_is_open``. A switch this client cannot read
+-        at all is CLOSED, never open.
+-        """
+-        try:
+-            value = await self._transport.call(
+-                "custom", "store_is_open", {"p_organization_id": organization_id}
+-            )
+-        except RecordsStoreError as exc:
+-            if not exc.is_door_refused:
+-                raise
+-            logger.error(
+-                "[records_sync] custom.store_is_open is not callable here (%s) — reading the "
+-                "knob it reads instead: platform.knob_resolve('custom','system_enabled')",
+-                exc.code or exc.status_code,
+-            )
+-            value = await self._transport.call(
+-                "platform",
+-                "knob_resolve",
+-                {
+-                    "p_feature": "custom",
+-                    "p_key": "system_enabled",
+-                    "p_organization_id": organization_id,
+-                },
+-            )
+-        if isinstance(value, bool):
+-            return value
+-        if isinstance(value, str):
+-            return value.lower() == "true"
+-        return False
+-
+     # -- reads (ONLY through the read doors) ---------------------------
+ 
+     async def read_records(
+diff --git a/app/services/records_sync/engine.py b/app/services/records_sync/engine.py
+index f52b877f0f..214fa19acb 100644
+--- a/app/services/records_sync/engine.py
++++ b/app/services/records_sync/engine.py
+@@ -12,8 +12,8 @@ swallow — with the three differences the record store's contract forces:
+   returns the SAME record id and increments ``custom.anon_replay.replays``, so
+   draining an outbox twice — the normal consequence of a crash between the
+   write and the acknowledgement — cannot duplicate a record.
+-* **The whole path is gated on the campaign switch.**  When the store is off
+-  for this organization the feature is ABSENT and says so with a remedy
++* **Unreachable is absent and loud.**  Offline, or a wire that does not carry
++  the ``custom`` doors, makes the feature ABSENT and says so with a remedy
+   (law 4).  It never half-works and never quietly writes nowhere.
+ 
+ The read door does not offer a "changed since" cursor — it offers
+@@ -42,11 +42,6 @@ _PAGE_SIZE = 200
+ _MAX_ATTEMPTS = 5
+ _QUEUE_ENTITY = "custom.record"
+ 
+-REMEDY_STORE_CLOSED = (
+-    "The custom record store is switched off for this organization, so the desktop "
+-    "records mirror is not available. Turn on the 'custom / system_enabled' setting "
+-    "for this organization and sync again."
+-)
+ REMEDY_OFFLINE = (
+     "This device cannot reach AI Matrx right now. Your records are safe in the local "
+     "mirror and everything you wrote is queued — it syncs by itself on reconnect."
+@@ -82,7 +77,6 @@ class RecordsSyncEngine:
+         self._device = f"matrx-local/{_platform.node()}"
+         self._lock = asyncio.Lock()
+         self._last_cycle: dict[str, Any] = {}
+-        self._gate: dict[str, Any] = {"checked_at": None, "open": None, "reason": None}
+ 
+     # ------------------------------------------------------------------
+     # Configuration
+@@ -128,41 +122,33 @@ class RecordsSyncEngine:
+         return True
+ 
+     # ------------------------------------------------------------------
+-    # The switch — law 4: absent and loud, never dead and never degraded
++    # Reachability — law 4: absent and loud, never dead and never degraded
+     # ------------------------------------------------------------------
++    # Every organization keeps its data in the record store since the final switch
++    # (2026-10-01), so the cycle no longer asks ``custom.store_is_open`` first (retired
++    # 2026-10-03). What that ask also did — tell an offline device or a closed wire apart
++    # from a fault — is said by the cycle's own first read instead.
+ 
+-    async def assert_store_open(self) -> None:
++    def _assert_organization(self) -> None:
+         if not self._organization_id:
+             raise RecordsMirrorUnavailable(
+                 "No organization selected for the records mirror",
+                 "Choose the organization whose records this device should mirror.",
+             )
+-        try:
+-            is_open = await self._client.store_is_open(self._organization_id)
+-        except RecordsStoreError as exc:
+-            if exc.is_transport:
+-                self._gate = {"checked_at": _now(), "open": None, "reason": "offline"}
+-                logger.error("[records_sync] store unreachable (offline): %s", exc)
+-                raise RecordsMirrorUnavailable(
+-                    "This device is offline, so the store's switch cannot be read", REMEDY_OFFLINE
+-                ) from exc
+-            if exc.is_unreachable_schema:
+-                self._gate = {"checked_at": _now(), "open": False, "reason": "wire-closed"}
+-                logger.error("[records_sync] store doors unreachable: %s", exc)
+-                raise RecordsMirrorUnavailable(
+-                    "The record store's doors are not on the client wire", REMEDY_STORE_UNREACHABLE
+-                ) from exc
+-            raise
+-        self._gate = {"checked_at": _now(), "open": bool(is_open), "reason": None if is_open else "switch-off"}
+-        if not is_open:
+-            logger.error(
+-                "[records_sync] store CLOSED for organization %s — mirror unavailable",
+-                self._organization_id,
++
++    @staticmethod
++    def _unavailable(exc: RecordsStoreError) -> RecordsMirrorUnavailable | None:
++        if exc.is_transport:
++            logger.error("[records_sync] store unreachable (offline): %s", exc)
++            return RecordsMirrorUnavailable(
++                "This device is offline, so the record store cannot be reached", REMEDY_OFFLINE
+             )
+-            raise RecordsMirrorUnavailable(
+-                "The custom record store is switched off for this organization",
+-                REMEDY_STORE_CLOSED,
++        if exc.is_unreachable_schema:
++            logger.error("[records_sync] store doors unreachable: %s", exc)
++            return RecordsMirrorUnavailable(
++                "The record store's doors are not on the client wire", REMEDY_STORE_UNREACHABLE
+             )
++        return None
+ 
+     # ------------------------------------------------------------------
+     # Local authoring — works with the platform unreachable
+@@ -246,11 +232,17 @@ class RecordsSyncEngine:
+                 "Sign in to AI Matrx on this device and sync again.",
+             )
+         async with self._lock:
+-            await self.assert_store_open()
++            self._assert_organization()
+             # PULL FIRST, exactly as chat does: learn the store's newer rows
+             # before offering ours, so a device that was offline for a week
+             # cannot blindly overwrite a week of other people's edits.
+-            pulled = await self._pull()
++            try:
++                pulled = await self._pull()
++            except RecordsStoreError as exc:
++                unavailable = self._unavailable(exc)
++                if unavailable is None:
++                    raise
++                raise unavailable from exc
+             pushed = await self._push()
+         summary = {"pulled": pulled, "pushed": pushed, "at": _now()}
+         self._last_cycle = summary
+@@ -301,6 +293,10 @@ class RecordsSyncEngine:
+                     entity, {"resume_offset": offset}, status="error", error=str(exc)
+                 )
+                 logger.error("[records_sync] pull custom.%s failed: %s", table_id, exc)
++                if exc.is_transport or exc.is_unreachable_schema:
++                    # The wire itself is down, not this Table: the cycle stops here, before
++                    # the push touches the queue, and says why (sync_cycle).
++                    raise
+                 result[table_id] = {
+                     "applied": applied,
+                     "kept_local": skipped,
+@@ -513,7 +509,6 @@ class RecordsSyncEngine:
+             "configured": self.is_configured,
+             "organization_id": self._organization_id,
+             "tables": self._table_ids,
+-            "switch": self._gate,
+             "mirrored_records": mirrored["n"] if mirrored else 0,
+             "pending": pending["n"] if pending else 0,
+             "dead_letters": dead["n"] if dead else 0,
+diff --git a/tests/characterization/test_records_mirror_characterization.py b/tests/characterization/test_records_mirror_characterization.py
+index eb84603ad2..fcdd4fecdc 100644
+--- a/tests/characterization/test_records_mirror_characterization.py
++++ b/tests/characterization/test_records_mirror_characterization.py
+@@ -1,5 +1,5 @@
+-"""Characterization: the custom-record mirror — switch gate, pull, offline
+-capture, idempotent replay, and durable conflicts.
++"""Characterization: the custom-record mirror — pull, offline capture,
++idempotent replay, and durable conflicts.
+ 
+ Everything runs against a REAL SQLite database in tmp_path (real migrations).
+ The store is a faithful in-memory stand-in for the doors: it enforces the two
+@@ -33,9 +33,7 @@ USER = "87a6e699-3622-4869-8843-d0867456c0dd"
+ class FakeStore:
+     """The doors, in memory, with the two behaviours that matter."""
+ 
+-    def __init__(self, *, switch_on: bool = True, switch_door_granted: bool = True) -> None:
+-        self.switch_on = switch_on
+-        self.switch_door_granted = switch_door_granted
++    def __init__(self) -> None:
+         self.records: dict[str, dict[str, Any]] = {}
+         self.replays: dict[str, dict[str, Any]] = {}
+         self.offline = False
+@@ -50,16 +48,6 @@ class FakeStore:
+ 
+     # -- doors ---------------------------------------------------------
+ 
+-    def _store_is_open(self, args: dict[str, Any]) -> Any:
+-        if not self.switch_door_granted:
+-            raise RecordsStoreError(
+-                "store_is_open", 403, "permission denied for function store_is_open", code="42501"
+-            )
+-        return self.switch_on
+-
+-    def _knob_resolve(self, args: dict[str, Any]) -> Any:
+-        return self.switch_on
+-
+     def _read_records(self, args: dict[str, Any]) -> list[dict[str, Any]]:
+         rows = [
+             {"id": rid, "document": dict(rec["document"]), "level": "admin"}
+@@ -111,14 +99,13 @@ class FakeStore:
+         return rec["version"]
+ 
+ 
+-def _run(tmp_path: Path, scenario: Callable[[LocalDatabase, FakeStore, RecordsSyncEngine], Awaitable[None]],
+-         *, switch_on: bool = True) -> None:
++def _run(tmp_path: Path, scenario: Callable[[LocalDatabase, FakeStore, RecordsSyncEngine], Awaitable[None]]) -> None:
+     async def _main() -> None:
+         db = LocalDatabase(tmp_path / "matrx.db")
+         await db.connect()
+         old = database_module._instance
+         database_module._instance = db
+-        store = FakeStore(switch_on=switch_on)
++        store = FakeStore()
+         engine = RecordsSyncEngine(CustomStoreClient(transport=store))
+         engine.configure(user_id=USER, jwt=None, organization_id=ORG, table_ids=[TABLE], transport=store)
+         try:
+@@ -130,30 +117,15 @@ def _run(tmp_path: Path, scenario: Callable[[LocalDatabase, FakeStore, RecordsSy
+     asyncio.run(_main())
+ 
+ 
+-def test_switch_off_makes_the_feature_absent_and_loud(tmp_path: Path) -> None:
+-    """Law 4: closed is announced with a remedy — never a quiet empty sync."""
+-
+-    async def scenario(db: LocalDatabase, store: FakeStore, engine: RecordsSyncEngine) -> None:
+-        with pytest.raises(RecordsMirrorUnavailable) as caught:
+-            await engine.sync_cycle()
+-        assert "switched off" in caught.value.reason
+-        assert "system_enabled" in caught.value.remedy
+-        # Nothing was read or written behind the closed switch.
+-        assert store.calls == ["custom.store_is_open"]
+-        status = await engine.get_status()
+-        assert status["switch"]["open"] is False
+-
+-    _run(tmp_path, scenario, switch_on=False)
+-
+-
+-def test_an_ungranted_switch_door_falls_back_to_the_knob_it_reads(tmp_path: Path) -> None:
+-    """A database that has not taken the grant still gets an honest answer."""
++def test_the_cycle_never_asks_a_store_switch(tmp_path: Path) -> None:
++    """Every organization keeps its data in the store (final switch, 2026-10-01): the
++    cycle's first call is the read door, never ``custom.store_is_open``."""
+ 
+     async def scenario(db: LocalDatabase, store: FakeStore, engine: RecordsSyncEngine) -> None:
+-        store.switch_door_granted = False
+         await engine.sync_cycle()
+-        assert store.calls[:2] == ["custom.store_is_open", "platform.knob_resolve"]
+-        assert (await engine.get_status())["switch"]["open"] is True
++        assert store.calls and store.calls[0] == "custom.read_records", store.calls
++        assert "custom.store_is_open" not in store.calls
++        assert "switch" not in await engine.get_status()
+ 
+     _run(tmp_path, scenario)
+ 
+@@ -198,7 +170,7 @@ def test_reconnect_drains_once_and_a_replay_never_duplicates(tmp_path: Path) ->
+         store.offline = True
+         local_id = await engine.create_record(TABLE, {"title": "captured offline"})
+         with pytest.raises(RecordsMirrorUnavailable) as offline:
+-            # Offline the switch itself cannot be read, so the cycle refuses —
++            # Offline the store cannot be read, so the cycle refuses —
+             # loudly, with the remedy, and with the queue untouched.
+             await engine.sync_cycle()
+         assert "offline" in offline.value.reason

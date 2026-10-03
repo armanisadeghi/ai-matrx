@@ -1,0 +1,277 @@
+--- a/src/lib/supabase/queries.ts
++++ b/src/lib/supabase/queries.ts
+@@ -1326,7 +1326,7 @@
+   created_at: z.string(),
+   updated_at: z.string(),
+   /** Tombstone — deletes propagate as soft-deletes so other machines can apply them. */
+-  is_deleted: z.boolean().default(false),
++  deleted_at: z.string().nullable().default(null),
+ });
+ export type WbxGuidanceRow = z.infer<typeof WbxGuidanceRowSchema>;
+ 
+@@ -1397,7 +1397,7 @@
+         updated_at: p.updated_at,
+         // An intentional save revives a tombstoned row — the user actively
+         // edited it on this machine, which outranks an older delete.
+-        is_deleted: false,
++        deleted_at: null,
+       },
+       { onConflict: 'id' },
+     );
+@@ -1417,7 +1417,7 @@
+   const { error } = await c
+     .schema(EXTEND_SCHEMA)
+     .from('wbx_guidance')
+-    .update({ is_deleted: true, updated_at: new Date().toISOString() })
++    .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+     .eq('id', id);
+   if (error) {
+     if (/relation .* does not exist/i.test(error.message)) return false;
+@@ -1433,7 +1433,7 @@
+   const { data, error } = await c
+     .schema(EXTEND_SCHEMA)
+     .from('wbx_guidance')
+-    .select('id, domain, kind, caption, origin_url, data, created_at, updated_at, is_deleted')
++    .select('id, domain, kind, caption, origin_url, data, created_at, updated_at, deleted_at')
+     .order('updated_at', { ascending: false });
+   if (error) {
+     if (/relation .* does not exist/i.test(error.message)) return [];
+@@ -1473,7 +1473,7 @@
+   created_at: z.string(),
+   updated_at: z.string(),
+   /** Tombstone — deletes propagate as soft-deletes so other machines can apply them. */
+-  is_deleted: z.boolean().default(false),
++  deleted_at: z.string().nullable().default(null),
+ });
+ export type WbxDemoRow = z.infer<typeof WbxDemoRowSchema>;
+ 
+@@ -1490,7 +1490,7 @@
+ }
+ 
+ const DEMO_ROW_COLUMNS =
+-  'demo_key, name, description, start_url, step_count, parameter_names, body, created_at, updated_at, is_deleted';
++  'demo_key, name, description, start_url, step_count, parameter_names, body, created_at, updated_at, deleted_at';
+ 
+ /**
+  * Upsert one demo row keyed by its client id. Actor attribution is stamped
+@@ -1522,7 +1522,7 @@
+         body: p.body ?? {},
+         // An intentional save revives a tombstoned row — the user actively
+         // re-recorded/edited it here, which outranks an older delete.
+-        is_deleted: false,
++        deleted_at: null,
+       },
+       { onConflict: 'demo_key' },
+     );
+@@ -1540,7 +1540,7 @@
+   const { error } = await c
+     .schema(EXTEND_SCHEMA)
+     .from('wbx_demo')
+-    .update({ is_deleted: true })
++    .update({ deleted_at: new Date().toISOString() })
+     .eq('demo_key', id);
+   if (error) {
+     if (/relation .* does not exist/i.test(error.message)) return false;
+--- a/src/lib/highlights/queries.ts
++++ b/src/lib/highlights/queries.ts
+@@ -34,7 +34,7 @@
+ 
+ const LIST_COLUMNS =
+   'id, created_by, conversation_id, mode, url, domain, page_title, color, text, anchor, created_at, updated_at';
+-const FULL_COLUMNS = `${LIST_COLUMNS}, metadata, is_deleted`;
++const FULL_COLUMNS = `${LIST_COLUMNS}, metadata, deleted_at`;
+ 
+ function parseList(rows: unknown[] | null): HighlightListItem[] {
+   const out: HighlightListItem[] = [];
+@@ -55,7 +55,7 @@
+     .schema('extend')
+     .from(TABLE)
+     .select(LIST_COLUMNS)
+-    .eq('is_deleted', false)
++    .is('deleted_at', null)
+     .order('updated_at', { ascending: false })
+     .limit(limit);
+   if (error) {
+@@ -73,7 +73,7 @@
+     .from(TABLE)
+     .select(LIST_COLUMNS)
+     .eq('url', url)
+-    .eq('is_deleted', false)
++    .is('deleted_at', null)
+     .order('created_at', { ascending: false });
+   if (error) {
+     console.warn('[highlights] listHighlightsForUrl error', error.message);
+@@ -90,7 +90,7 @@
+     .from(TABLE)
+     .select(LIST_COLUMNS)
+     .eq('domain', domain)
+-    .eq('is_deleted', false)
++    .is('deleted_at', null)
+     .order('created_at', { ascending: false });
+   if (error) {
+     console.warn('[highlights] listHighlightsForDomain error', error.message);
+@@ -109,7 +109,7 @@
+     .from(TABLE)
+     .select(LIST_COLUMNS)
+     .eq('conversation_id', conversationId)
+-    .eq('is_deleted', false)
++    .is('deleted_at', null)
+     .order('created_at', { ascending: false });
+   if (error) {
+     console.warn('[highlights] listHighlightsForConversation error', error.message);
+@@ -143,7 +143,7 @@
+     .from(TABLE)
+     .select(FULL_COLUMNS)
+     .in('id', ids)
+-    .eq('is_deleted', false);
++    .is('deleted_at', null);
+   if (error) {
+     console.warn('[highlights] getHighlightsByIds error', error.message);
+     return [];
+@@ -215,7 +215,7 @@
+     anchor: input.anchor ?? {},
+     // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
+     metadata: input.metadata ?? {},
+-    is_deleted: false,
++    deleted_at: null,
+   };
+   const { data, error } = await c
+     .schema('extend')
+@@ -278,7 +278,7 @@
+   const { data, error } = await c
+     .schema('extend')
+     .from(TABLE)
+-    .update({ is_deleted: true, updated_at: new Date().toISOString() })
++    .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+     .eq('id', id)
+     .select('id');
+   if (error || !data || data.length === 0) failDbCall(site, error);
+@@ -307,7 +307,7 @@
+     .from(TABLE)
+     .select('id')
+     .eq('url', url)
+-    .eq('is_deleted', false);
++    .is('deleted_at', null);
+   if (readError) failDbCall({ ...site, operation: 'select' }, readError);
+   if (!existing || existing.length === 0) return 0;
+ 
+@@ -315,7 +315,7 @@
+   const { data, error } = await c
+     .schema('extend')
+     .from(TABLE)
+-    .update({ is_deleted: true, updated_at: new Date().toISOString() })
++    .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+     .in('id', ids)
+     .select('id');
+   if (error || !data || data.length < ids.length) failDbCall(site, error);
+--- a/src/lib/highlights/types.ts
++++ b/src/lib/highlights/types.ts
+@@ -65,7 +65,7 @@
+   text: z.string().nullable(),
+   anchor: HighlightAnchorSchema,
+   metadata: z.record(z.string(), z.unknown()),
+-  is_deleted: z.boolean(),
++  deleted_at: z.string().nullable(),
+   created_at: z.string(),
+   updated_at: z.string(),
+ });
+@@ -75,7 +75,7 @@
+ /** Lighter shape for list rendering (omits metadata / soft-delete flag). */
+ export const HighlightListItemSchema = HighlightSchema.omit({
+   metadata: true,
+-  is_deleted: true,
++  deleted_at: true,
+ });
+ 
+ export type HighlightListItem = z.infer<typeof HighlightListItemSchema>;
+--- a/src/lib/demos/cloud-sync.ts
++++ b/src/lib/demos/cloud-sync.ts
+@@ -129,7 +129,7 @@
+   const { getDemo, saveDemo, deleteDemo } = await import('@/lib/demos/storage');
+   let merged = 0;
+   for (const row of rows) {
+-    if (row.is_deleted) {
++    if (row.deleted_at) {
+       // Tombstone application. The column timestamp is the only clock we have
+       // for a delete (nothing writes a body on delete), so compare against it.
+       const local = await getDemo(row.demo_key);
+@@ -166,7 +166,7 @@
+   try {
+     const { fetchDemoRow } = await import('@/lib/supabase/queries');
+     const row = await fetchDemoRow(id);
+-    if (!row || row.is_deleted) return null;
++    if (!row || row.deleted_at) return null;
+     const demo = rowToDemo(row);
+     if (!demo) return null;
+     await saveDemo(demo, { sync: false });
+--- a/src/lib/guidance/cloud-sync.ts
++++ b/src/lib/guidance/cloud-sync.ts
+@@ -191,7 +191,7 @@
+   for (const row of rows) {
+     // Tombstone application: a cloud delete that's newer than our local
+     // copy removes it here too (deletes used to be invisible to hydrate).
+-    if (row.is_deleted) {
++    if (row.deleted_at) {
+       const localOfDeleted = await getGuidanceItem(row.id);
+       if (localOfDeleted && new Date(row.updated_at).getTime() >= localOfDeleted.updated_at) {
+         await deleteGuidanceItem(row.id, { sync: false });
+--- a/tests/unit/demo-cloud-sync.test.ts
++++ b/tests/unit/demo-cloud-sync.test.ts
+@@ -92,7 +92,7 @@
+     // Server clock — deliberately unrelated to the client timestamps in `body`.
+     created_at: '2026-08-09T10:00:02.000Z',
+     updated_at: '2026-08-09T11:30:04.000Z',
+-    is_deleted: false,
++    deleted_at: null,
+     ...over,
+   };
+ }
+@@ -209,7 +209,7 @@
+ 
+     await saveDemo(makeDemo(), { sync: false });
+     cloudRows = [
+-      rowFor(makeDemo(), { is_deleted: true, updated_at: new Date(UPDATED + 5_000).toISOString() }),
++      rowFor(makeDemo(), { deleted_at: new Date(UPDATED + 5_000).toISOString(), updated_at: new Date(UPDATED + 5_000).toISOString() }),
+     ];
+ 
+     expect(await hydrateDemosFromCloud()).toEqual({ merged: 1, ok: true });
+@@ -234,7 +234,7 @@
+   it('returns null for an unknown id and for a tombstoned one', async () => {
+     const { getDemoOrHydrate } = await import('@/lib/demos/cloud-sync');
+     expect(await getDemoOrHydrate('demo_nope')).toBeNull();
+-    cloudRows = [rowFor(makeDemo(), { is_deleted: true })];
++    cloudRows = [rowFor(makeDemo(), { deleted_at: '2026-08-09T12:00:00.000Z' })];
+     expect(await getDemoOrHydrate('demo_login')).toBeNull();
+   });
+ 
+--- a/tests/unit/guidance-cloud-sync.test.ts
++++ b/tests/unit/guidance-cloud-sync.test.ts
+@@ -24,7 +24,7 @@
+     data: p.data,
+     created_at: p.created_at,
+     updated_at: p.updated_at,
+-    is_deleted: false,
++    deleted_at: null,
+   };
+ }
+ 
+@@ -119,7 +119,7 @@
+       data: {},
+       created_at: new Date(CREATED).toISOString(),
+       updated_at: new Date(UPDATED).toISOString(),
+-      is_deleted: false,
++      deleted_at: null,
+     };
+     expect(rowToItem(row)).toBeNull();
+   });
+--- a/src/lib/destructive/operations.ts
++++ b/src/lib/destructive/operations.ts
+@@ -263,7 +263,7 @@
+  * KNOWN LIMIT OF THE DISCOVERY SCAN, stated rather than hidden: it recognises
+  * a removal by its PRIMITIVE — a Supabase `.delete()`, a chrome.storage or
+  * localStorage removal, the vault's HTTP DELETE. Two shapes it cannot see are
+- * a soft delete (an UPDATE that sets `is_deleted`) and a store that overwrites
++ * a soft delete (an UPDATE that sets `deleted_at`) and a store that overwrites
+  * its key with an empty list. Both exist here (`deleteHighlight`,
+  * `useRecordingsStore.clear`) and both are registered ABOVE by hand, so the
+  * call-site guard covers them; what the discovery scan cannot do is force a

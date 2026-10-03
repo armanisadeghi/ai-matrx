@@ -1,0 +1,82 @@
+--- a/db/models/legal.py
++++ b/db/models/legal.py
+@@ -30,7 +30,6 @@
+     user_id = ForeignKey(to_model='Users', to_column='id', to_schema='auth', )
+     organization_id = ForeignKey(to_model='Organizations', to_column='id', to_schema='iam', null=False)
+     project_id = ForeignKey(to_model='Projects', to_column='id', to_schema='projects', )
+-    is_public = BooleanField(default=False)
+     tags = TextArrayField(null=False, default=[])
+     updated_at = DateTimeField(null=False)
+     p_s_date = DateField()
+--- a/db/models/education.py
++++ b/db/models/education.py
+@@ -913,7 +913,6 @@
+ 
+ class StudyStructuredSection(MatrxEntity):
+     id = UUIDField(primary_key=True, null=False)
+-    owner_id = ForeignKey(to_model='Users', to_column='id', to_schema='iam', null=False)
+     organization_id = ForeignKey(to_model='Organizations', to_column='id', to_schema='iam', null=False)
+     project_id = UUIDField()
+     topic = TextField(null=False)
+@@ -1106,7 +1105,7 @@
+ 
+ class StudySourceChunk(MatrxEntity):
+     id = UUIDField(primary_key=True, null=False)
+-    owner_id = ForeignKey(to_model='Users', to_column='id', to_schema='iam', null=False)
++    created_by = ForeignKey(to_model='Users', to_column='id', to_schema='iam', null=False)
+     structured_section_id = ForeignKey(to_model=StudyStructuredSection, to_column='id', to_schema='education', )
+     content = TextField(null=False)
+     content_hash = TextField(null=False)
+--- a/db/managers/education/study_structured_section.py
++++ b/db/managers/education/study_structured_section.py
+@@ -183,12 +183,6 @@
+     async def get_study_structured_sections_with_study_source_chunk(self) -> list[Any]:
+         return await self.get_items_with_related('study_source_chunk')
+ 
+-    async def load_study_structured_sections_by_owner_id(self, owner_id: Any) -> list[Any]:
+-        return await self.load_items(owner_id=owner_id)
+-
+-    async def filter_study_structured_sections_by_owner_id(self, owner_id: Any) -> list[Any]:
+-        return await self.filter_items(owner_id=owner_id)
+-
+     async def load_study_structured_sections_by_organization_id(self, organization_id: Any) -> list[Any]:
+         return await self.load_items(organization_id=organization_id)
+ 
+--- a/db/managers/education/study_source_chunk.py
++++ b/db/managers/education/study_source_chunk.py
+@@ -177,11 +177,11 @@
+     async def get_study_source_chunks_with_study_structured_section(self) -> list[Any]:
+         return await self.get_items_with_related('study_structured_section')
+ 
+-    async def load_study_source_chunks_by_owner_id(self, owner_id: Any) -> list[Any]:
+-        return await self.load_items(owner_id=owner_id)
++    async def load_study_source_chunks_by_created_by(self, created_by: Any) -> list[Any]:
++        return await self.load_items(created_by=created_by)
+ 
+-    async def filter_study_source_chunks_by_owner_id(self, owner_id: Any) -> list[Any]:
+-        return await self.filter_items(owner_id=owner_id)
++    async def filter_study_source_chunks_by_created_by(self, created_by: Any) -> list[Any]:
++        return await self.filter_items(created_by=created_by)
+ 
+     async def load_study_source_chunks_by_structured_section_id(self, structured_section_id: Any) -> list[Any]:
+         return await self.load_items(structured_section_id=structured_section_id)
+--- a/db/helpers/auto_config_education.py
++++ b/db/helpers/auto_config_education.py
+@@ -62,7 +62,7 @@
+ study_streak_auto_config = {'models_module_path': 'db.models.education', 'model_pascal': 'StudyStreak', 'model_name': 'study_streak', 'model_name_plural': 'study_streaks', 'model_name_snake': 'study_streak', 'relations': ['iam.users', 'iam.organizations'], 'filter_fields': ['user_id', 'organization_id', 'rest_weekdays', 'frozen_dates', 'created_by', 'updated_by'], 'include_core_relations': True, 'include_active_relations': False, 'include_filter_fields': True, 'include_active_methods': False, 'include_or_not_methods': False, 'include_to_dict_methods': False, 'include_to_dict_relations': False, 'm2m_relations': None, 'view_prefetch': []}
+ 
+ 
+-study_structured_section_auto_config = {'models_module_path': 'db.models.education', 'model_pascal': 'StudyStructuredSection', 'model_name': 'study_structured_section', 'model_name_plural': 'study_structured_sections', 'model_name_snake': 'study_structured_section', 'relations': ['iam.users', 'iam.organizations', 'study_source_chunk'], 'filter_fields': ['owner_id', 'organization_id', 'created_by', 'updated_by'], 'include_core_relations': True, 'include_active_relations': False, 'include_filter_fields': True, 'include_active_methods': False, 'include_or_not_methods': False, 'include_to_dict_methods': False, 'include_to_dict_relations': False, 'm2m_relations': None, 'view_prefetch': []}
++study_structured_section_auto_config = {'models_module_path': 'db.models.education', 'model_pascal': 'StudyStructuredSection', 'model_name': 'study_structured_section', 'model_name_plural': 'study_structured_sections', 'model_name_snake': 'study_structured_section', 'relations': ['iam.users', 'iam.organizations', 'study_source_chunk'], 'filter_fields': ['organization_id', 'created_by', 'updated_by'], 'include_core_relations': True, 'include_active_relations': False, 'include_filter_fields': True, 'include_active_methods': False, 'include_or_not_methods': False, 'include_to_dict_methods': False, 'include_to_dict_relations': False, 'm2m_relations': None, 'view_prefetch': []}
+ 
+ 
+ assessment_item_auto_config = {'models_module_path': 'db.models.education', 'model_pascal': 'AssessmentItem', 'model_name': 'assessment_item', 'model_name_plural': 'assessment_items', 'model_name_snake': 'assessment_item', 'relations': ['assessment', 'auth.users', 'iam.users', 'iam.organizations'], 'filter_fields': ['organization_id', 'created_by', 'updated_by', 'assessment_id'], 'include_core_relations': True, 'include_active_relations': False, 'include_filter_fields': True, 'include_active_methods': False, 'include_or_not_methods': False, 'include_to_dict_methods': False, 'include_to_dict_relations': False, 'm2m_relations': None, 'view_prefetch': []}
+@@ -77,7 +77,7 @@
+ study_session_auto_config = {'models_module_path': 'db.models.education', 'model_pascal': 'StudySession', 'model_name': 'study_session', 'model_name_plural': 'study_sessions', 'model_name_snake': 'study_session', 'relations': ['auth.users', 'iam.users', 'iam.organizations', 'fc_set', 'assessment_result', 'study_attempt'], 'filter_fields': ['organization_id', 'created_by', 'updated_by', 'source_set_id', 'shown_to'], 'include_core_relations': True, 'include_active_relations': False, 'include_filter_fields': True, 'include_active_methods': False, 'include_or_not_methods': False, 'include_to_dict_methods': False, 'include_to_dict_relations': False, 'm2m_relations': None, 'view_prefetch': []}
+ 
+ 
+-study_source_chunk_auto_config = {'models_module_path': 'db.models.education', 'model_pascal': 'StudySourceChunk', 'model_name': 'study_source_chunk', 'model_name_plural': 'study_source_chunks', 'model_name_snake': 'study_source_chunk', 'relations': ['iam.users', 'study_structured_section'], 'filter_fields': ['owner_id', 'structured_section_id'], 'include_core_relations': True, 'include_active_relations': False, 'include_filter_fields': True, 'include_active_methods': False, 'include_or_not_methods': False, 'include_to_dict_methods': False, 'include_to_dict_relations': False, 'm2m_relations': None, 'view_prefetch': []}
++study_source_chunk_auto_config = {'models_module_path': 'db.models.education', 'model_pascal': 'StudySourceChunk', 'model_name': 'study_source_chunk', 'model_name_plural': 'study_source_chunks', 'model_name_snake': 'study_source_chunk', 'relations': ['iam.users', 'study_structured_section'], 'filter_fields': ['created_by', 'structured_section_id'], 'include_core_relations': True, 'include_active_relations': False, 'include_filter_fields': True, 'include_active_methods': False, 'include_or_not_methods': False, 'include_to_dict_methods': False, 'include_to_dict_relations': False, 'm2m_relations': None, 'view_prefetch': []}
+ 
+ 
+ assessment_result_auto_config = {'models_module_path': 'db.models.education', 'model_pascal': 'AssessmentResult', 'model_name': 'assessment_result', 'model_name_plural': 'assessment_results', 'model_name_snake': 'assessment_result', 'relations': ['assessment', 'auth.users', 'iam.users', 'iam.organizations', 'study_session'], 'filter_fields': ['organization_id', 'created_by', 'updated_by', 'assessment_id', 'session_id'], 'include_core_relations': True, 'include_active_relations': False, 'include_filter_fields': True, 'include_active_methods': False, 'include_or_not_methods': False, 'include_to_dict_methods': False, 'include_to_dict_relations': False, 'm2m_relations': None, 'view_prefetch': []}
