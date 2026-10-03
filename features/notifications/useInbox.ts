@@ -184,7 +184,10 @@ export function useInboxCounts(): InboxCounts {
     staleTime: 15_000,
   });
 
-  const approvalCount = approvals.unknown ? null : approvals.count;
+  // The record store's waiting changes are in BOTH numbers — `/approvals` lists them and
+  // `custom.inbox_counts` counts them — so the approvals share leaves them out here and each
+  // waiting change adds one to the bell, not two.
+  const approvalCount = approvals.unknown ? null : approvals.count - approvals.storeCount;
   const work =
     workWaiting.isError || workWaiting.data === undefined
       ? null

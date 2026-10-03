@@ -30,7 +30,7 @@
 export const APPROVALS_EMPTY_TITLE = "Nothing is waiting on you";
 
 export const APPROVALS_EMPTY_BODY =
-  "No proposals yet. When an agent proposes a change to one of your Google Docs or Sheets, a new one in your Drive, or importing a Google contact or task into your records, it waits here until you decide.";
+  "When an agent asks to change one of your tables, Google Docs or Sheets, it waits here until you decide.";
 
 /**
  * What the empty state says when a deep link points at a row that IS waiting,

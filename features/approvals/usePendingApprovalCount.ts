@@ -26,6 +26,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { countPendingProposals } from "./data";
+import { countStoreApprovals } from "./store-door";
 import { mountedApprovalKinds } from "./rendered";
 import { APPROVAL_KINDS } from "./registry";
 // 🚨 `PENDING_APPROVALS_QUERY_KEY` and `invalidateApprovals` now live in
@@ -44,6 +45,12 @@ export { PENDING_APPROVALS_QUERY_KEY, invalidateApprovals };
 export function usePendingApprovalCount(): {
   count: number;
   unknown: boolean;
+  /**
+   * The record store's share of `count` — the `custom.work_inbox` decisions the `store_change`
+   * kind lists. The bell also counts them through `custom.inbox_counts`, so its sum subtracts
+   * this to count each waiting change once.
+   */
+  storeCount: number;
 } {
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
@@ -65,8 +72,20 @@ export function usePendingApprovalCount(): {
     // "0" would be a claim nobody verified.
     retry: 1,
   });
+  // THE STORE'S SHARE, counted by the same read and the same filter the `store_change` kind
+  // lists with (`./store-door`), across every organization the person belongs to.
+  const store = useQuery({
+    queryKey: [...PENDING_APPROVALS_QUERY_KEY, "store", userId],
+    queryFn: () => countStoreApprovals(userId ?? ""),
+    enabled: Boolean(userId),
+    staleTime: 60_000,
+    retry: 1,
+  });
+  const unknown =
+    query.isError || query.data === undefined || store.isError || store.data === undefined;
   return {
-    count: query.data ?? 0,
-    unknown: query.isError || query.data === undefined,
+    count: (query.data ?? 0) + (store.data ?? 0),
+    unknown,
+    storeCount: store.data ?? 0,
   };
 }

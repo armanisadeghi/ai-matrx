@@ -116,7 +116,7 @@ jest.mock("../useInbox", () => ({
   useWorkWaiting: () => ({ data: [{ organization_id: "o1", organization_name: "Acme", waiting: 4, snoozed: 1, overdue: 0 }], isLoading: false, isError: false }),
   belongsIn: () => true,
 }));
-jest.mock("@/features/approvals/usePendingApprovalCount", () => ({ usePendingApprovalCount: () => ({ count: 2, unknown: false }) }));
+jest.mock("@/features/approvals/usePendingApprovalCount", () => ({ usePendingApprovalCount: () => ({ count: 2, unknown: false, storeCount: 0 }) }));
 jest.mock("@/features/workflow-runtime/discovery/useWaitingRuns", () => ({ useWaitingRuns: () => ({ rows: [{}], loading: false, error: null, refresh: () => undefined }) }));
 jest.mock("@/features/assists/service", () => ({ queryAssists: () => Promise.resolve({ rows: [], total: 3, unreadable: 0 }) }));
 jest.mock("@/features/tasks/services/taskUserStateService", () => ({ listMyTaskUserStates: () => Promise.resolve([]) }));
