@@ -1,3 +1,79 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      pnpm-lock.yaml
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at pnpm-lock.yaml
+  Both grew from the same COMMON version: commit e0d0bf08db, 2026-10-03 10:17.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-03 10:53  8b0db19f6a  "feat(chat): staged remarks ride the next message as ONE input_remarks part"
+  GITHUB:
+    2026-10-03 10:24  b1e0f59570  "chore: reconcile generated DB types and package updates"
+  LOCAL's latest change is 29m AFTER GITHUB's latest change.
+
+SIZE: common version 25236 lines, LOCAL 25236 lines, GITHUB 25236 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 41 lines and removed 41 lines.
+  GITHUB added 28 lines and removed 28 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 23 of the 28 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | version: 0.66.1(react@19.3.0)
+      | '@ai-matrx/records@0.66.1':
+      | resolution: {integrity: sha512-o+kyCiFKG6zFG2T9m6qw04tDhAavba+p/diGmtgUMx10/uOq5yPGVcFY8zw2s8vXozIF4cUuy+UkmjuMAQSsFw==}
+      | '@ai-matrx/records': 0.66.1(react@19.3.0)
+      | '@ai-matrx/records@0.66.1(react@19.3.0)':
+  GITHUB has 23 of the 41 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | version: 0.43.10(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)
+      | version: 0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@
+      | version: 0.66.2(react@19.3.0)
+      | '@ai-matrx/agents@0.43.10':
+      | resolution: {integrity: sha512-RwLy6jPhg8gVUS4NcgIcKQvEurtfiieFJSEdfd+8TlmeudSPphb+4/wVk7n9/Q2OI33XzphbffIq4Axnr2ZGsw==}
+      | '@ai-matrx/associations@0.13.139':
+      | resolution: {integrity: sha512-5YKM4hrKgY28Gud/IblaU1APryFD+h+rLEePZeWQB0RA2ED3kgoAGezC4IaBJlMuGrFslhypnhugjZo54Lovvg==}
+      | '@ai-matrx/records@0.66.2':
+      | resolution: {integrity: sha512-qxd3rnbeEW2QMIP0O4+WBfajvrQDZTPI53sCyhpXTRAczLL36xbcsrM9zU9f1vzeUaSMDNmM7GTJv2/CsAHoIA==}
+      | '@ai-matrx/agents@0.43.10(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/reac
+      | '@ai-matrx/associations': 0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@
+      | '@ai-matrx/associations@0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19
+      | '@ai-matrx/associations': 0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@
+      | '@ai-matrx/associations': 0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@
+      | '@ai-matrx/agents': 0.43.10(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/re
+      | ... and 3 more
+    Lines LOCAL deliberately REMOVED that GITHUB still has: 13
+      | version: 0.43.9(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(
+      | version: 0.13.138(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@
+      | '@ai-matrx/agents@0.43.9':
+      | resolution: {integrity: sha512-uEEO4hwa4FzX2rHdRP7NRU9Xs0PHKEHgrMM78TyDgLCkp+cY18O/BecnpmZJ+/UXh9bW2UzKCKv8FWcFDbe4Uw==}
+      | '@ai-matrx/associations@0.13.138':
+      | resolution: {integrity: sha512-MqEOsINQgOzBRWXu/NK5iLYdxGERIaNMj0nVzIN+etyLelvP/LaNiGQWu08ZdrEQDuVYSc0S16KqStyX03BdsA==}
+      | '@ai-matrx/agents@0.43.9(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react
+      | '@ai-matrx/associations': 0.13.138(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@
+      | '@ai-matrx/associations@0.13.138(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19
+      | '@ai-matrx/associations': 0.13.138(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 4fafbff634bb:'pnpm-lock.yaml') <(git show 849d47b69485:'pnpm-lock.yaml')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 849d47b69485:'pnpm-lock.yaml'
+  GITHUB: git show 4fafbff634bb:'pnpm-lock.yaml'
+
+---------------- LOCAL VERSION BELOW ----------------
 lockfileVersion: '9.0'
 
 settings:
@@ -34,13 +110,13 @@ importers:
     dependencies:
       '@ai-matrx/agents':
         specifier: latest
-        version: 0.43.9(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+        version: 0.43.10(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/alchemy':
         specifier: latest
         version: 0.8.60(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/associations':
         specifier: latest
-        version: 0.13.138(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+        version: 0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/browser-audio':
         specifier: latest
         version: 0.4.4(react@19.3.0)
@@ -97,7 +173,7 @@ importers:
         version: 0.8.7(react@19.3.0)
       '@ai-matrx/records':
         specifier: latest
-        version: 0.66.1(react@19.3.0)
+        version: 0.66.2(react@19.3.0)
       '@ai-matrx/records-ui':
         specifier: latest
         version: 0.95.4(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@dnd-kit/sortable@10.0.0(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))(@dnd-kit/utilities@3.2.2(react@19.3.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -1013,8 +1089,8 @@ importers:
 
 packages:
 
-  '@ai-matrx/agents@0.43.9':
-    resolution: {integrity: sha512-uEEO4hwa4FzX2rHdRP7NRU9Xs0PHKEHgrMM78TyDgLCkp+cY18O/BecnpmZJ+/UXh9bW2UzKCKv8FWcFDbe4Uw==}
+  '@ai-matrx/agents@0.43.10':
+    resolution: {integrity: sha512-RwLy6jPhg8gVUS4NcgIcKQvEurtfiieFJSEdfd+8TlmeudSPphb+4/wVk7n9/Q2OI33XzphbffIq4Axnr2ZGsw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -1040,8 +1116,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/associations@0.13.138':
-    resolution: {integrity: sha512-MqEOsINQgOzBRWXu/NK5iLYdxGERIaNMj0nVzIN+etyLelvP/LaNiGQWu08ZdrEQDuVYSc0S16KqStyX03BdsA==}
+  '@ai-matrx/associations@0.13.139':
+    resolution: {integrity: sha512-5YKM4hrKgY28Gud/IblaU1APryFD+h+rLEePZeWQB0RA2ED3kgoAGezC4IaBJlMuGrFslhypnhugjZo54Lovvg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -1225,8 +1301,8 @@ packages:
       react-dom: '>=18.0.0'
       recharts: '>=3.0.0'
 
-  '@ai-matrx/records@0.66.1':
-    resolution: {integrity: sha512-o+kyCiFKG6zFG2T9m6qw04tDhAavba+p/diGmtgUMx10/uOq5yPGVcFY8zw2s8vXozIF4cUuy+UkmjuMAQSsFw==}
+  '@ai-matrx/records@0.66.2':
+    resolution: {integrity: sha512-qxd3rnbeEW2QMIP0O4+WBfajvrQDZTPI53sCyhpXTRAczLL36xbcsrM9zU9f1vzeUaSMDNmM7GTJv2/CsAHoIA==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -11764,9 +11840,9 @@ packages:
 
 snapshots:
 
-  '@ai-matrx/agents@0.43.9(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
+  '@ai-matrx/agents@0.43.10(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
-      '@ai-matrx/associations': 0.13.138(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+      '@ai-matrx/associations': 0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/content-ir': 0.20.1
       '@ai-matrx/data': 0.18.37(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(react@19.3.0)
       '@ai-matrx/design-system': 0.59.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -11794,7 +11870,7 @@ snapshots:
       - recharts
       - supports-color
 
-  '@ai-matrx/associations@0.13.138(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
+  '@ai-matrx/associations@0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
       '@ai-matrx/design-system': 0.59.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
@@ -11912,7 +11988,7 @@ snapshots:
 
   '@ai-matrx/detail@0.1.69(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
-      '@ai-matrx/associations': 0.13.138(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+      '@ai-matrx/associations': 0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/design-system': 0.59.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
     optionalDependencies:
@@ -11949,7 +12025,7 @@ snapshots:
 
   '@ai-matrx/media@0.7.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(next@16.4.0-canary.39(@babel/core@8.0.6)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@26.6.3)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
-      '@ai-matrx/associations': 0.13.138(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+      '@ai-matrx/associations': 0.13.139(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/design-system': 0.59.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
       react: 19.3.0
@@ -11964,7 +12040,7 @@ snapshots:
 
   '@ai-matrx/meet@0.7.79(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/dom-mediacapture-record@1.0.22)(@types/dom-mediacapture-transform@0.1.12)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
-      '@ai-matrx/agents': 0.43.9(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+      '@ai-matrx/agents': 0.43.10(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/design-system': 0.59.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
       '@ai-matrx/messaging': 0.15.82(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -11987,7 +12063,7 @@ snapshots:
 
   '@ai-matrx/messaging@0.15.82(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
-      '@ai-matrx/agents': 0.43.9(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+      '@ai-matrx/agents': 0.43.10(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/design-system': 0.59.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
       '@ai-matrx/realtime': 0.8.7(react@19.3.0)
@@ -12052,7 +12128,7 @@ snapshots:
       '@ai-matrx/design-system': 0.59.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
       '@ai-matrx/print': 0.8.68(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/records': 0.66.1(react@19.3.0)
+      '@ai-matrx/records': 0.66.2(react@19.3.0)
       '@dnd-kit/core': 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
       '@dnd-kit/utilities': 3.2.2(react@19.3.0)
@@ -12064,7 +12140,7 @@ snapshots:
       - '@types/react-dom'
       - supports-color
 
-  '@ai-matrx/records@0.66.1(react@19.3.0)':
+  '@ai-matrx/records@0.66.2(react@19.3.0)':
     dependencies:
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
     optionalDependencies:
