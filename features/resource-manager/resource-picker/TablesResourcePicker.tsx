@@ -31,7 +31,7 @@ import {
 import { getTableMetadata, getTablePage, listTablesEverywhere } from "@/features/data-tables/service";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { isServiceFailure } from "@/features/data-tables/types";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // Types
 type UserTable = UserTableListRow;
@@ -71,6 +71,10 @@ export function TablesResourcePicker({
   const [tables, setTables] = useState<UserTable[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Bumped by "Try again" on the list read.
+  const [listAttempt, setListAttempt] = useState(0);
+  // A failed row/column read is about THAT pick — it never replaces the picker.
+  const [detailsError, setDetailsError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Selection state
@@ -91,6 +95,7 @@ export function TablesResourcePicker({
 
   // Load user tables
   useEffect(() => {
+    let alive = true;
     async function loadTables() {
       try {
         setLoading(true);
@@ -100,22 +105,27 @@ export function TablesResourcePicker({
         const listed = await listTablesEverywhere();
         if (!listed.success) throw new Error(listed.error);
         const rows: unknown[] = listed.data.map((t) => ({ ...t, description: t.description ?? undefined }));
+        if (!alive) return;
         setTables(rows.filter(isUserTableListRow));
       } catch (err) {
         console.error("Error fetching tables:", err);
-        setError("Failed to load your tables");
+        if (alive) setError(err instanceof Error ? err.message : String(err));
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     }
 
     void loadTables();
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [listAttempt]);
 
-  // Load table details (fields and rows)
-  const loadTableDetails = async (table: UserTable) => {
+  // Load table details (fields and rows). True when they loaded.
+  const loadTableDetails = async (table: UserTable): Promise<boolean> => {
     try {
       setLoadingDetails(true);
+      setDetailsError(null);
 
       // Column schema only — the rows this picker previews are fetched
       // separately below, so there is no reason to materialize the dataset.
@@ -130,9 +140,11 @@ export function TablesResourcePicker({
       const page = await getTablePage({ tableId: table.id, limit: 100, offset: 0 });
       if (isServiceFailure(page)) throw new Error(page.error);
       setRows(page.data.rows);
+      return true;
     } catch (err) {
       console.error("Error loading table details:", err);
-      setError("Failed to load table details");
+      setDetailsError(err instanceof Error ? err.message : String(err));
+      return false;
     } finally {
       setLoadingDetails(false);
     }
@@ -200,6 +212,7 @@ export function TablesResourcePicker({
 
   // Handle table selection (navigate to options view)
   const handleTableSelect = (table: UserTable) => {
+    setDetailsError(null);
     setSelectedTable(table);
     setViewMode("table-options");
     setSearchQuery("");
@@ -222,8 +235,9 @@ export function TablesResourcePicker({
       return;
     }
 
-    // Load details for other types
-    await loadTableDetails(selectedTable);
+    // Load details for other types. A failed read stays on the options with
+    // the reason and a retry — never an empty "No rows" list.
+    if (!(await loadTableDetails(selectedTable))) return;
 
     if (type === "row") {
       setViewMode("rows");
@@ -279,6 +293,7 @@ export function TablesResourcePicker({
 
   // Handle back navigation
   const handleBackNavigation = () => {
+    setDetailsError(null);
     if (viewMode === "table-options") {
       setViewMode("tables");
       setSelectedTable(null);
@@ -333,10 +348,11 @@ export function TablesResourcePicker({
     if (loading) return spinner;
     if (error) {
       return (
-        <div className="px-3 py-10 text-center text-sm text-destructive">
-          {error}
-          <ErrorAlchemyMenu error={error} />
-        </div>
+        <ReadFailure
+          error={error}
+          what="your tables"
+          onRetry={() => setListAttempt((n) => n + 1)}
+        />
       );
     }
 
@@ -392,6 +408,13 @@ export function TablesResourcePicker({
               onClick={() => void handleSelectionTypeSelect(type)}
             />
           ))}
+          {detailsError && selectionType ? (
+            <ReadFailure
+              error={detailsError}
+              what={`the ${selectionType === "column" ? "columns" : "rows"} of ${selectedTable.table_name}`}
+              onRetry={() => void handleSelectionTypeSelect(selectionType)}
+            />
+          ) : null}
         </div>
       );
     }
