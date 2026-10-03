@@ -1,3 +1,4 @@
+-- draft: VIEWS-AND-FIELDS FDT-2 held by verifier V16 (2026-10-03): formula-reference inlining is exponential — add memoized typing + ~500-node budget, re-verify, then remove this line
 -- target: branch,production
 -- additive: yes
 --   ADDS one function, `custom._fxp_inline_formulas(jsonb, jsonb, text[])` (IMMUTABLE, invoker,
