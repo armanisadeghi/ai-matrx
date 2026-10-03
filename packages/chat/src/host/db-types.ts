@@ -3732,7 +3732,7 @@ export type ChatDatabase = {
       canvas_comment_likes: {
         Row: {
           comment_id: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -3746,7 +3746,7 @@ export type ChatDatabase = {
         }
         Insert: {
           comment_id: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -3760,7 +3760,7 @@ export type ChatDatabase = {
         }
         Update: {
           comment_id?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -3787,7 +3787,7 @@ export type ChatDatabase = {
           avatar_url: string | null
           canvas_id: string
           content: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -3801,7 +3801,7 @@ export type ChatDatabase = {
           organization_id: string
           parent_comment_id: string | null
           reply_count: number | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string | null
           username: string
@@ -3811,7 +3811,7 @@ export type ChatDatabase = {
           avatar_url?: string | null
           canvas_id: string
           content: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -3825,7 +3825,7 @@ export type ChatDatabase = {
           organization_id: string
           parent_comment_id?: string | null
           reply_count?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           username: string
@@ -3835,7 +3835,7 @@ export type ChatDatabase = {
           avatar_url?: string | null
           canvas_id?: string
           content?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -3849,7 +3849,7 @@ export type ChatDatabase = {
           organization_id?: string
           parent_comment_id?: string | null
           reply_count?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           username?: string
@@ -3934,7 +3934,7 @@ export type ChatDatabase = {
           content: Json
           content_hash: string | null
           conversation_id: string | null
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -3963,7 +3963,7 @@ export type ChatDatabase = {
           task_id: string | null
           title: string | null
           type: string
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string
           version: number
@@ -3974,7 +3974,7 @@ export type ChatDatabase = {
           content: Json
           content_hash?: string | null
           conversation_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -4003,7 +4003,7 @@ export type ChatDatabase = {
           task_id?: string | null
           title?: string | null
           type: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id: string
           version?: number
@@ -4014,7 +4014,7 @@ export type ChatDatabase = {
           content?: Json
           content_hash?: string | null
           conversation_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -4043,7 +4043,7 @@ export type ChatDatabase = {
           task_id?: string | null
           title?: string | null
           type?: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string
           version?: number
@@ -4062,7 +4062,7 @@ export type ChatDatabase = {
       canvas_likes: {
         Row: {
           canvas_id: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -4076,7 +4076,7 @@ export type ChatDatabase = {
         }
         Insert: {
           canvas_id: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -4090,7 +4090,7 @@ export type ChatDatabase = {
         }
         Update: {
           canvas_id?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -4272,7 +4272,7 @@ export type ChatDatabase = {
           categories: string[] | null
           comment_count: number | null
           completion_rate: number | null
-          created_at: string | null
+          created_at: string
           created_by: string | null
           creator_display_name: string | null
           creator_username: string | null
@@ -4306,7 +4306,7 @@ export type ChatDatabase = {
           title: string
           total_attempts: number | null
           trending_score: number | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           version: number
           version_number: number | null
@@ -4321,7 +4321,7 @@ export type ChatDatabase = {
           categories?: string[] | null
           comment_count?: number | null
           completion_rate?: number | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           creator_display_name?: string | null
           creator_username?: string | null
@@ -4355,7 +4355,7 @@ export type ChatDatabase = {
           title: string
           total_attempts?: number | null
           trending_score?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           version_number?: number | null
@@ -4370,7 +4370,7 @@ export type ChatDatabase = {
           categories?: string[] | null
           comment_count?: number | null
           completion_rate?: number | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           creator_display_name?: string | null
           creator_username?: string | null
@@ -4404,7 +4404,7 @@ export type ChatDatabase = {
           title?: string
           total_attempts?: number | null
           trending_score?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           version_number?: number | null
@@ -33676,6 +33676,13 @@ export type ChatDatabase = {
         Args: { p_org_id: string; p_type_id?: string }
         Returns: Json
       }
+      get_scope_trees: {
+        Args: { p_org_ids: string[]; p_type_id?: string }
+        Returns: {
+          answer: Json
+          org_id: string
+        }[]
+      }
       get_share_capabilities: {
         Args: { p_resource_type: string }
         Returns: Json
@@ -43892,7 +43899,7 @@ export type ChatDatabase = {
       }
       heatmap_saves: {
         Row: {
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           data: Json
@@ -43906,7 +43913,7 @@ export type ChatDatabase = {
           published_to_web_by: string | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           title: string
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string | null
           version: number
@@ -43914,7 +43921,7 @@ export type ChatDatabase = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           data: Json
@@ -43928,7 +43935,7 @@ export type ChatDatabase = {
           published_to_web_by?: string | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
@@ -43936,7 +43943,7 @@ export type ChatDatabase = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           data?: Json
@@ -43950,7 +43957,7 @@ export type ChatDatabase = {
           published_to_web_by?: string | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
