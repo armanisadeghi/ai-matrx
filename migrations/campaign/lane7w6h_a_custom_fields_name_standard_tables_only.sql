@@ -1,7 +1,8 @@
 -- chair-step: replaces six live function bodies (CREATE OR REPLACE) and DROPS TWO FOREIGN KEYS.
--- LOCK: each `ALTER TABLE platform.custom_field_definition DROP CONSTRAINT …_fkey` takes ACCESS EXCLUSIVE on
+-- STRONG LOCK NAMED: each `ALTER TABLE platform.custom_field_definition DROP CONSTRAINT …_fkey` takes ACCESS EXCLUSIVE on
 --   platform.custom_field_definition AND on platform.custom_entity_definition (the referenced table) for the
 --   instant of the drop; both tables are empty on production (0 rows) and read by no client door; lock_timeout 3s.
+-- lock: platform
 -- No grant change, no table created. Its inverse puts the six bodies back byte for byte and re-adds the two
 -- foreign keys (SHARE ROW EXCLUSIVE on both tables, empty).
 -- ORDER (production): independent of lane 7's READY files — r2 -> w2_a -> 5b2 -> 4a a, b, c replace none of
