@@ -4,12 +4,13 @@
  * ContainerResourceSheet — lists the resources of one kind that belong to a
  * container (project or task) by FK, with peek + open. Read-only association
  * view (FK ownership is set on the resource itself, not here). Reused by the
- * project workspace and the task editor.
+ * project workspace and the task editor. Shown as ONE canvas tab per container
+ * (`CanvasPagePanel`) that follows the kind picked.
  */
 
 import React from "react";
 import { Loader2, Search } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { Input } from "@ai-matrx/design-system";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { supabase } from "@/utils/supabase/client";
@@ -32,12 +33,15 @@ export function ContainerResourceSheet({
   entry,
   column,
   value,
+  openRequest,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry: OrgResourceEntry | null;
   column: ContainerColumn;
   value: string;
+  /** Moves on every pick, so the same kind picked again brings its tab forward. */
+  openRequest?: number;
 }) {
   const [items, setItems] = React.useState<Item[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -102,7 +106,7 @@ export function ContainerResourceSheet({
     };
   }, [open, entry, column, value, reloadKey]);
 
-  if (!entry) return null;
+  if (!open || !entry) return null;
   const Icon = entry.icon;
   const token = entry.token;
   /**
@@ -134,21 +138,18 @@ export function ContainerResourceSheet({
 
   return (
     <>
-      <MatrxDynamicPanelHost
-        open={open}
-        onOpenChange={onOpenChange}
-        title={
+      <CanvasPagePanel
+        panelKey={`container-resources:${column}:${value}`}
+        title={entry.labelPlural}
+        titleNode={
           <span className="inline-flex items-center gap-2">
             <Icon className="h-4 w-4 text-muted-foreground" />
             {entry.labelPlural}
           </span>
         }
-        description={`${entry.labelPlural} associated with this ${column === "project_id" ? "project" : "task"}.`}
-        expandButtonLabel={entry.labelPlural}
-        initialFocus
-        position="right"
-        defaultSize={34}
-        contentClassName="flex min-h-0 flex-1 flex-col p-0"
+        description={`Linked to this ${column === "project_id" ? "project" : "task"}`}
+        onClose={() => onOpenChange(false)}
+        openRequest={openRequest}
       >
         <div className="px-5 py-3 border-b border-border">
           <div className="relative">
@@ -216,7 +217,7 @@ export function ContainerResourceSheet({
             </ul>
           )}
         </div>
-      </MatrxDynamicPanelHost>
+      </CanvasPagePanel>
     </>
   );
 }

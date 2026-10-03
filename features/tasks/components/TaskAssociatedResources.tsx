@@ -30,6 +30,7 @@ export function TaskAssociatedResources({ taskId }: { taskId: string }) {
   const [sheetEntry, setSheetEntry] = React.useState<OrgResourceEntry | null>(
     null,
   );
+  const [sheetRequest, setSheetRequest] = React.useState(0);
 
   const total = Object.entries(counts).reduce<number>(
     (sum, [k, c]) =>
@@ -77,7 +78,10 @@ export function TaskAssociatedResources({ taskId }: { taskId: string }) {
               entries={entries}
               counts={counts}
               loading={loading}
-              onOpen={(entry) => setSheetEntry(entry)}
+              onOpen={(entry) => {
+                setSheetEntry(entry);
+                setSheetRequest((n) => n + 1);
+              }}
             />
           );
         })}
@@ -89,6 +93,7 @@ export function TaskAssociatedResources({ taskId }: { taskId: string }) {
         entry={sheetEntry}
         column="task_id"
         value={taskId}
+        openRequest={sheetRequest}
       />
     </section>
   );
