@@ -95,6 +95,7 @@ export function ReferenceTypeAdder({
         scopeId={scopeId}
         allowedScopeTypeIds={allowedScopeTypeIds}
         onPickMany={onPickMany}
+        fill={fill}
       />
     );
   }
@@ -183,10 +184,12 @@ function ScopeTypeAdder({
   scopeId,
   allowedScopeTypeIds,
   onPickMany,
+  fill,
 }: {
   scopeId: string;
   allowedScopeTypeIds: string[] | null;
   onPickMany: (items: ReferenceItem[]) => void;
+  fill: boolean;
 }) {
   const dispatch = useAppDispatch();
   const [search, setSearch] = useState("");
