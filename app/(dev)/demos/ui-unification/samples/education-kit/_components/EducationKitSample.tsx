@@ -576,7 +576,7 @@ export function EducationKitSample() {
       {/* Provenance + the kit's actions: one row, every button the 28px control. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <ReplacesLine href={realHref} className="min-w-0 flex-1" />
-        <div className="uc-row -mr-[3px] justify-end">
+        <div className="uc-row -mr-[3px] justify-end max-sm:-ml-[3px] max-sm:justify-start">
           {studyNotes ? (
             <Link href={artifactActionHref(studyNotes)} className="uc-btn uc-btn-outline">
               <NotebookPen aria-hidden />

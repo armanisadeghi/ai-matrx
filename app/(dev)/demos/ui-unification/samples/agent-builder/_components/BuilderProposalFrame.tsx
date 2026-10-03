@@ -14,7 +14,7 @@
  *   (not just CSS) are listed but not previewed.
  */
 
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { ChevronDown, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SampleScale } from "../../_components/kit";
@@ -25,29 +25,35 @@ interface Proposal {
   previewed: boolean;
 }
 
-/** One line each. `previewed` = the Preview toggle shows it on this page. */
+/** One line each, measured on the real builder (2026-10-03, 1440px).
+ *  `previewed` = the Preview toggle shows it on this page as scoped CSS.
+ *  Already true today, so not proposed: every enabled control has the pointer
+ *  cursor and disabled ones show not-allowed (the cursor law holds). */
 const PROPOSALS: Proposal[] = [
-  { text: "Cursor law: pointer on every enabled control, not-allowed on disabled ones.", previewed: true },
-  { text: "One control: the panel toolbars' buttons and selects paint at 28px.", previewed: true },
-  { text: "Capsule shape on text buttons and selects (16px glyphs, matched inset).", previewed: true },
-  { text: "Section headings at 13px/600; helper lines 12px; meta 11px.", previewed: true },
-  { text: "Glass only floats: solid panel toolbars use transparent tap buttons.", previewed: false },
+  { text: "\"Add\" and \"Batch add\" grow from 24px to the 28px control, 13px label.", previewed: true },
+  { text: "Capsule corners on text buttons and the model select (today 6px).", previewed: true },
+  { text: "Message toolbar glyph buttons (20–24px) become one 28px circle.", previewed: true },
+  { text: "Tool chips' remove ✕ gets a real hit area (today 12×12px).", previewed: true },
+  { text: "Tools row: a \"+N\" chip when chips overflow (10 of 13 are clipped).", previewed: false },
+  { text: "Header is solid: the name, mode and version groups drop their glass.", previewed: false },
   { text: "Header: sitewide crumbs (Agents › agent › Build) with sibling menus.", previewed: false },
-  { text: "Row actions sit left of status chips and reserve no empty slot.", previewed: false },
-  { text: "Loading: skeletons shaped like each panel, never a centered spinner.", previewed: false },
+  { text: "Test-chat bar: 44/32/20px buttons settle on the one 28px control.", previewed: false },
 ];
 
 /* Scoped to the preview wrapper only. Unlayered, so it wins over the builder's
    Tailwind utilities without touching a builder file. Kept deliberately
-   narrow: controls and type, never layout. */
+   narrow — controls only, never layout — and keyed to the classes and names
+   the builder renders today (read off the live page, 2026-10-03). */
+const P = "[data-uk-builder-preview]";
 const PREVIEW_CSS = `
-[data-uk-builder-preview] :is(button, a[href], [role=button], [role=tab], [role=switch], [role=checkbox], [role=radio], [role=menuitem], [role=combobox], summary, select, label[for]):not(:disabled):not([aria-disabled=true]) { cursor: pointer; }
-[data-uk-builder-preview] :is(button, [role=button], [role=tab], select, input, textarea):is(:disabled, [aria-disabled=true]) { cursor: not-allowed; }
-[data-uk-builder-preview] :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, [contenteditable=true]):not(:disabled) { cursor: text; }
-[data-uk-builder-preview] :is(button, [role=combobox])[class*="h-8"], [data-uk-builder-preview] :is(button, [role=combobox])[class*="h-9"], [data-uk-builder-preview] :is(button, [role=combobox])[class*="h-10"] {
-  height: 1.75rem; min-height: 0; border-radius: 9999px; font-size: 0.8125rem; }
-[data-uk-builder-preview] :is(button, [role=combobox])[class*="h-8"] svg, [data-uk-builder-preview] :is(button, [role=combobox])[class*="h-9"] svg, [data-uk-builder-preview] :is(button, [role=combobox])[class*="h-10"] svg { width: 1rem; height: 1rem; }
-[data-uk-builder-preview] :is(h2, h3)[class*="text-sm"], [data-uk-builder-preview] :is(h2, h3)[class*="text-base"] { font-size: 0.8125rem; font-weight: 600; }
+${P} button.px-2\\.5.py-1.text-xs.rounded-md { height: 1.75rem; padding-block: 0; padding-inline: 0.5rem 0.625rem; border-radius: 9999px; font-size: 0.8125rem; gap: 0.375rem; }
+${P} button.px-2\\.5.py-1.text-xs.rounded-md svg { width: 1rem; height: 1rem; }
+${P} button.h-7.rounded-md { border-radius: 9999px; padding-inline: 0.625rem; }
+${P} :is(button[aria-label="Copy message"], button[aria-label="Clear message"], button[aria-label="Delete message"], button[aria-label="Optimize with AI"], button[aria-label="Cache from here"], button[aria-label="Example"], button[aria-label^="View mode"]) {
+  height: 1.75rem; min-width: 1.75rem; border-radius: 9999px; }
+${P} :is(button[aria-label="Copy message"], button[aria-label="Clear message"], button[aria-label="Delete message"], button[aria-label="Optimize with AI"], button[aria-label="Cache from here"], button[aria-label="Example"], button[aria-label^="View mode"]) svg { width: 1rem; height: 1rem; }
+${P} button[aria-label^="Remove "] { position: relative; }
+${P} button[aria-label^="Remove "]::after { content: ""; position: absolute; inset: -8px; }
 `;
 
 export function BuilderProposalFrame({ realHref, children }: { realHref: string; children: ReactNode }) {
@@ -121,7 +127,15 @@ export function BuilderProposalFrame({ realHref, children }: { realHref: string;
         </div>
       </SampleScale>
       {preview ? <style dangerouslySetInnerHTML={{ __html: PREVIEW_CSS }} /> : null}
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-uk-builder-preview={preview ? "" : undefined}>
+      {/* The real route lets the builder run UNDER the shell header and clear
+          it with "padding-top: var(--shell-header-h)"; the demos layout has
+          already cleared the header, so the variable is zeroed for this subtree
+          only — the builder then sits exactly as it does on its own route. */}
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+        style={{ "--shell-header-h": "0px" } as CSSProperties}
+        data-uk-builder-preview={preview ? "" : undefined}
+      >
         {children}
       </div>
     </div>
