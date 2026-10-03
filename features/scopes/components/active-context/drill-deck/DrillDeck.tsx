@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import {
   Briefcase,
   ChevronLeft,
@@ -9,7 +9,10 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PickerSearchField } from "@/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
+import {
+  PickerBackOverrideContext,
+  PickerSearchField,
+} from "@/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import {
   columnShowsSearch,
   filterColumnRows,
@@ -338,6 +341,21 @@ export function DrillDeckCore({
     u.treeStatus === "error" ||
     (deck.t === "scope" && itemsQ.status === "error");
   const canGoBack = stack.length > 1 || Boolean(onBack);
+  const goBack = () => {
+    if (stack.length === 1) {
+      onBack?.();
+      return;
+    }
+    setStack((current) => current.slice(0, -1));
+    setCreating(false);
+  };
+  // Inside the phone sheet the sheet's nav bar owns Back: hand ours over.
+  const registerBack = useContext(PickerBackOverrideContext);
+  useEffect(() => {
+    if (!registerBack) return;
+    registerBack(canGoBack ? goBack : null);
+    return () => registerBack(null);
+  });
 
   return (
     <div
@@ -347,22 +365,15 @@ export function DrillDeckCore({
       )}
     >
       <div className="flex shrink-0 items-center gap-1.5 border-b border-border p-1.5">
-        <button
+        {registerBack ? null : <button
           type="button"
           disabled={!canGoBack}
-          onClick={() => {
-            if (stack.length === 1) {
-              onBack?.();
-              return;
-            }
-            setStack((current) => current.slice(0, -1));
-            setCreating(false);
-          }}
+          onClick={goBack}
           aria-label={stack.length === 1 ? "Back to resource types" : "Back"}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 pointer-coarse:h-11 pointer-coarse:w-11"
         >
           <ChevronLeft className="h-5 w-5" />
-        </button>
+        </button>}
         {/* Search sits beside Back (the attach-menu inside-view shape); a
             short column with nothing to search shows its title instead. */}
         {!loading && !errored && (columnShowsSearch(rows.length) || query) ? (
