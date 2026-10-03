@@ -2,7 +2,7 @@
 
 **Status:** `scaffolded` — the surfaces are built; **no SQL RPC in this lane exists yet**
 **Tier:** `2` · **Lane:** L3 / register item **HRB-015** · **Last updated:** `2026-08-27`
-**Behaviour spec:** `../../../../../common-docs/projects/hr-domain/specs/SPEC-TIME.md` §2.7, §7 —
+**Behaviour spec:** `../../../../../common-docs/systems/human-resources/projects/hr-domain/specs/SPEC-TIME.md` §2.7, §7 —
 *that* document says what these screens do; this file says how the code is arranged and what a
 change here must not break.
 

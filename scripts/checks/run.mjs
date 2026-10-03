@@ -30,7 +30,7 @@
  *   hidden. Each item finding also carries its work `unit` and, when the check
  *   can tell, the `basis` of a known item (accepted | debt); a run that printed
  *   the end-of-scan marker is listed in the header's `scan_complete`.
- *   Protocol: common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md.
+ *   Protocol: common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md.
  * - A ROW'S ID IS DECLARED, NEVER DERIVED (F8). scripts/checks/row-classes.json
  *   names each row's id against its command (and label); a relabelled row keeps
  *   its id and its findings. A row nobody declared runs as `undeclared-<slug>`
@@ -147,7 +147,7 @@ export function loadRowClasses(path = ROW_CLASSES_PATH) {
 }
 
 // Where the live-db rows went when the release stopped running them (P0, 2026-09-25).
-const LIVE_DB_HOME = "common-docs/projects/checks-run-in-the-app/REGISTER.md § Moved off the release path (P0) — back on the scheduled clone tick in P3; run one by hand with --only <id>";
+const LIVE_DB_HOME = "common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md § Moved off the release path (P0) — back on the scheduled clone tick in P3; run one by hand with --only <id>";
 
 const LONG_ROWS = /pnpm test$|type-check|kind-sandbox|jest|whole jest/i;
 

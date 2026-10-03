@@ -16,7 +16,7 @@
  *
  * And the writer could not defend itself: the trigger is BEFORE, so it overwrites
  * `new.fallback_mandate_key` AFTER the writer set it in the same statement. There
- * is no application-side fix. (R11, common-docs/projects/agent-change-impact/
+ * is no application-side fix. (R11, common-docs/systems/intelligence/mandates/projects/agent-change-impact/
  * REGISTER.md.)
  *
  * WHY IT CONSTRUCTS THE CONDITION INSTEAD OF READING PRODUCTION

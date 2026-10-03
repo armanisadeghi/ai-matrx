@@ -76,7 +76,7 @@ test("the JS engine reproduces every golden case in accept-corpus.json byte for 
   }
 });
 
-// ── MARK-OK-VERIFY (common-docs/projects/checks-run-in-the-app/MARK-OK-VERIFY.md) ────────────────
+// ── MARK-OK-VERIFY (common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md) ────────────────
 
 const DETECTOR = { kind: "detector-allowlist", file: "a.json", detectors: ["d1"] };
 const P = (key, reason = "why") => ({ key, reason, by: "Ada", date: "2026-09-26" });

@@ -56,7 +56,7 @@
  *
  * COMPARED AGAINST THE RULED BEHAVIOUR, NOT THE OLD PATH (lane SCOPES-ON-THE-STORE, chair rulings of
  * 2026-10-02 13:20 PT, and the O7 classes judged store-right in
- * common-docs/projects/data-doctrine-adoption/v6/scopes-evidence/scopes-o7-value-diffs.md). Where the
+ * common-docs/projects/data-doctrine-adoption/REGISTER.md). Where the
  * ruling says the store is right, the store's answer is held to the ruled rule — each a narrow match
  * (one field, one condition, its evidence beside it), never a field ignored:
  *   - ruling 2: a value's `version` is the version a PERSON made. Both paths now answer that (the old

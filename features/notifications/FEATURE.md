@@ -4,7 +4,7 @@
 platform sends lands in `communication.notification` (the canonical spine,
 aidream `services/notifications/`, `in_app` channel: *the row IS the
 delivery*); this feature is the reader. One bell in the header, one panel,
-one route. Cross-repo truth: `../../../common-docs/projects/notification-system/HANDOFF.md`
+one route. Cross-repo truth: `../../../common-docs/systems/communications/notifications/projects/notification-system/HANDOFF.md`
 (program) and `../../../common-docs/systems/communications/STATE.md` (verified state).
 
 Arman's rulings that shape it (2026-08-20): *"a system-wide, canonical
@@ -84,11 +84,11 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 
 - **2026-10-02** — An absent triage door is no longer filed RED on every load (`/board` captured `PGRST202 communication.my_inbox_summary` while the inbox ran on its fallback). Doors with a working pre-triage fallback go through `allowAbsentDoor` (`lib/diagnostics/supabaseErrorCapture.ts`); Done/Snooze against an absent door and every other error still capture; the stand-in announces itself once per page in the console with the remedy. Guard: `__tests__/absent-door-is-not-an-incident.test.ts` (red on the old reader).
 
-- **2026-10-01** — Notifications UI redo (owner rulings 1–4, `common-docs/projects/notifications-ui-redo/RESEARCH.md`). `InboxPanel` deleted; `BellPanel`, `InboxWorkspace`, `NoticeRow`, `NoticeDetail`, `HiddenElsewhere`, the notice-source registry and four windows built; every open is a window or a new tab (guard red→green); triage migration applied and rehearsed (up/inverse/up) on the clone only. Verified on the clone preview as admin@admin.com at 1440 and 375, dark and light. Independent review (6 HIGH) fixed the same day: per-action undo, Enter never hijacked, live fallback offers no unread/undo it cannot do, (time, id) paging, unsafe links open nothing, waiting runs open in a new tab, the guard now opens every menu and scans the whole folder (mutation shown red).
+- **2026-10-01** — Notifications UI redo (owner rulings 1–4, `common-docs/systems/communications/notifications/FEATURE.md`). `InboxPanel` deleted; `BellPanel`, `InboxWorkspace`, `NoticeRow`, `NoticeDetail`, `HiddenElsewhere`, the notice-source registry and four windows built; every open is a window or a new tab (guard red→green); triage migration applied and rehearsed (up/inverse/up) on the clone only. Verified on the clone preview as admin@admin.com at 1440 and 375, dark and light. Independent review (6 HIGH) fixed the same day: per-action undo, Enter never hijacked, live fallback offers no unread/undo it cannot do, (time, id) paging, unsafe links open nothing, waiting runs open in a new tab, the guard now opens every menu and scans the whole folder (mutation shown red).
 
 - **2026-09-30** — Mandate Candidates F1: `?panels=` notice links open their window in place;
   every linked row gets Open in new tab; unknown window keys fall back loudly. Proven on the clone
-  preview as admin@admin.com (evidence: `common-docs/projects/mandate-candidates/lanes/F1.md`).
+  preview as admin@admin.com (evidence: `common-docs/systems/intelligence/mandates/projects/mandate-candidates/REGISTER.md`).
 
 - **2026-09-29** — `custom.inbox_counts` rewritten set-based (follow-up 6). Proven identical on the
   nightly clone for all 1,398 users + 176 explicit (user, organization) calls + 8 rolled-back

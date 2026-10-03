@@ -39,7 +39,7 @@ const DATED_READ_ERROR_TOAST_ID = "dated-changes-read-error";
  * whatever its date. That keeps both rulings: "always gets my attention" (Arman) and "no permanent
  * global alert months before the date" (the 2026-09-28 rule, features/admin/attention/FEATURE.md).
  * The attention dock shows the same items on every page and polls, so a refusal at midnight shows
- * without a reload. Design: common-docs/projects/checks-run-in-the-app/DATED-CHANGES-DESIGN.md.
+ * without a reload. Design: common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md.
  */
 function readDismissed(key: string): boolean {
   try {

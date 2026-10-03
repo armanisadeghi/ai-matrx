@@ -4,7 +4,7 @@
  * PageResearchWindow — "Run research for this page", as a compact window.
  *
  * Arman's per-page research direction (2026-08-24,
- * `common-docs/projects/content-engine/STATE.md` §2.14):
+ * `common-docs/projects/content-engine/REGISTER.md` §2.14):
  *
  * > "So the option needs to be to attach it to any research report or to
  * > trigger a new one… we do need a window panel style UI… take the

@@ -7,7 +7,7 @@
 # the live instance is the class of Sunday night's lock incident. The way the suites come back is
 # against the nightly clone — a full copy of production's data with cron, pg_net, wrappers and the
 # platform scheduler quarantined, where a heavy job hurts nobody
-# (common-docs/projects/database-workload-safety/DEV-CLONE-AND-BACKUP.md).
+# (common-docs/systems/architecture/database/projects/database-workload-safety/PLAN.md).
 #
 # 🚨 SO THIS SCRIPT HAS NO PRODUCTION MODE AND NO WAY TO ACQUIRE ONE. `night_assert_target clone`
 # is the only target it ever asks for; a production connection string handed to it in any variable

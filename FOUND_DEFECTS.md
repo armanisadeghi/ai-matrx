@@ -133,7 +133,7 @@ Owner: shell.
 
 ### D348 — "Stop sandbox" sits beside "Delete" in the sandbox list and stops a running sandbox with no confirmation (2026-09-23)
 
-On `/sandbox` the row's action icons are packed together, and the stop icon acts at once: a verification agent aiming for Delete hit Stop and shut down admin@admin.com's running default sandbox (`sbx-7b560ae80b61`, persisted volume, nothing lost). Stopping a running sandbox ends whatever is running inside it, so under the destructive/expensive click law it should name that consequence first, and the stop and delete controls need space or a menu between them. Found by the data-tables session while verifying `common-docs/projects/ai-reachable-everywhere/REGISTER.md` ARE-009. Files: `app/(core)/sandbox/page.tsx`.
+On `/sandbox` the row's action icons are packed together, and the stop icon acts at once: a verification agent aiming for Delete hit Stop and shut down admin@admin.com's running default sandbox (`sbx-7b560ae80b61`, persisted volume, nothing lost). Stopping a running sandbox ends whatever is running inside it, so under the destructive/expensive click law it should name that consequence first, and the stop and delete controls need space or a menu between them. Found by the data-tables session while verifying `common-docs/systems/platform/ui-shell/projects/ai-reachable-everywhere/REGISTER.md` ARE-009. Files: `app/(core)/sandbox/page.tsx`.
 
 ### D347 — Ten draft podcast articles are readable anonymously on the public web (2026-09-23)
 
@@ -359,7 +359,7 @@ is). Owner: integrations (users.*).
 
 ### D333 — Four Media Source Catalog endpoints are published in the contract but were never built, and the frontend called all four (2026-09-18)
 
-**Status:** open (frontend half fixed; the server half is aidream's) · **Priority:** P2 — one of them was a visible, user-reachable control · **Repo:** aidream (`aidream/api/routers/media_catalog.py`) + `common-docs/projects/media-source-catalog/API-CONTRACT.md`
+**Status:** open (frontend half fixed; the server half is aidream's) · **Priority:** P2 — one of them was a visible, user-reachable control · **Repo:** aidream (`aidream/api/routers/media_catalog.py`) + `common-docs/systems/media/media-source-catalog/API-CONTRACT.md`
 
 `pnpm sync-types:live` on 2026-09-18 replaced `features/source-library/contract-paths.ts` with the
 real generated contract and showed that four endpoints the client called do not exist on the server
@@ -1122,7 +1122,7 @@ matching `_stamp_org_default` / `inherit_org_from_parent`; re-verified 2026-09-1
 | `scan`, `reference`, `observation` | yes | **none** |
 
 All seven are NOT NULL with no column default. Under
-`../common-docs/projects/no-db-assigned-org/PLAN.md` (owner ruling: the database refuses an
+`../common-docs/systems/architecture/database/projects/no-db-assigned-org/PLAN.md` (owner ruling: the database refuses an
 absent org and never chooses one; "a trigger or column default filling the org" and "a release
 guard treating an automatic org backstop as healthy" are defects), **`scan`, `reference` and
 `observation` are the correct shape** — an org-forgetting write refusing is the intended outcome.
@@ -1313,7 +1313,7 @@ instead of by the live database — the backlog is a sample of recent DDL, never
 population.
 
 **None of the 240 is a defect for lacking a backstop.** Under
-`../common-docs/projects/no-db-assigned-org/PLAN.md` (owner ruling: the database refuses an
+`../common-docs/systems/architecture/database/projects/no-db-assigned-org/PLAN.md` (owner ruling: the database refuses an
 absent org and never chooses one; "a trigger or column default filling the org" and "a release
 guard treating an automatic org backstop as healthy" are defects), NOT NULL with no trigger and
 no default is the **target shape**. D262's org-keyed identity carve-out (`iam.system_orgs`,
@@ -2003,7 +2003,7 @@ All seven have `organization_id` **NOT NULL, no column default, and no `_stamp_o
 **The scope guards are not backstops.** Each of those five `validate_*` functions was read live
 (`pg_proc.prosrc`): none assigns `NEW.organization_id`. They REJECT a mismatched scope; they never
 supply a missing one — which is correct. A caller that omits `organization_id` hits the NOT NULL
-and is refused: the outcome `../common-docs/projects/no-db-assigned-org/PLAN.md` requires (owner
+and is refused: the outcome `../common-docs/systems/architecture/database/projects/no-db-assigned-org/PLAN.md` requires (owner
 ruling: the database never chooses an org; a trigger filling it is a defect). The defect, where one
 exists, is that caller.
 
@@ -2905,7 +2905,7 @@ REST API directly (`:420` create, `:776` batchUpdate); `PresentationExportMenu.t
 the scope is absent from `lib/googleScopes.ts` (which declares itself the one registry) and from the
 backend mirror `aidream/services/google_integrations/scopes.py`; and Presentations is explicitly
 listed under **"Not allowed by this approval"** in
-`common-docs/projects/google-oauth-verification/PRODUCTION-ROLLOUT.md`. It is also a per-feature
+`common-docs/systems/integrations/google/FEATURE.md`. It is also a per-feature
 Google client, the exact pattern the canonical connection exists to replace.
 
 **VERIFIED 2026-08-18 — the scope is NOT on the production client, so this export is already dead
@@ -2939,7 +2939,7 @@ un-gating it is one line once the scope is approved. PDF/HTML/PowerPoint are ful
 **Still open, and only Arman can start it:** (b) a `google.slides` provider-access campaign, after
 which the export should be rebuilt on the CANONICAL connection + a first-party tool rather than the
 hand-rolled per-feature OAuth path it uses today. The current ruling is tracked in
-`/Users/armanisadeghi/code/common-docs/projects/google-oauth-verification/READ-ONLY-SWEEP.md`:
+`/Users/armanisadeghi/code/common-docs/systems/integrations/google/FEATURE.md`:
 selected Slides use the existing `drive.file` grant and do not start a broad Slides-scope campaign.
 
 ### D211 — org/project invitation email templates interpolate unescaped user text into HTML (2026-08-18)
@@ -3792,7 +3792,7 @@ The 4-day platform freeze is fixed and re-verified live 2026-08-15 (28 partition
 deleted; the sole survivor WF-10 (site→vertical binding) shipped 2026-08-19 as the real FK
 `web.site.plan_profile_id`. Remaining factory work is in
 [docs/handoffs/website-factory-vision.md](docs/handoffs/website-factory-vision.md) and
-`../common-docs/projects/content-engine/STATE.md` §4.3.
+`../common-docs/projects/content-engine/REGISTER.md` §4.3.
 
 ### D119 — RESOLVED 2026-08-14: the EDIT/FULL boundary is now enforced on columns, not just statements
 

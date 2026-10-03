@@ -95,7 +95,7 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   the repo, a python import of aidream) is `live-db` and the manifest says
   UNCERTAIN. `--skip-live-db` leaves out every `live-db` row — and every row
   the manifest does not know (the safe side) — and prints ONE line: how many,
-  and that they live in `common-docs/projects/checks-run-in-the-app/REGISTER.md`
+  and that they live in `common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md`
   § "Moved off the release path (P0)" until the scheduled clone tick (P3); the
   JSON header gains `skipped_live_db: [...]` (not in `ran`, so the dispatcher
   resolves nothing for them). The same class drives the DB-slot throttle: only
@@ -107,7 +107,7 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   `:self-test` (red on a mismatched manifest, green on the real one) — in CI
   (`marker-law` job) and as rows of `run-release-gates.sh`.
 - **Heavy checks run on the clone** (2026-09-27, incident
-  `common-docs/projects/database-workload-safety/incidents/2026-09-27-per-connection-memory.md`:
+  `common-docs/systems/architecture/database/projects/database-workload-safety/PLAN.md`:
   every warm live connection costs ~66 MB and our own censuses held them for
   minutes). A check that scans, censuses, sweeps for equivalence, plants
   fixtures or wants more than 30 s opens its database through
@@ -148,7 +148,7 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   aidream's `scripts/checks/dispatch_fixer.py`, which launched CLI agents with
   approvals bypassed (the 2026-09-21 incident-2 cause). Findings now reach
   agents through the in-app path in
-  `common-docs/projects/checks-run-in-the-app/PLAN.md`;
+  `common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md`;
   `test:release-fail-forward` fails if a release calls the dispatcher again.
 
 ## Commands
@@ -236,14 +236,14 @@ push — are the ship path.
   agent-list-reads, docs-twins, `db:apply --self-test`); guard
   `check:self-tests-stay-out-of-tree` + self-test added as release-gate rows
   (repo-only). Census + notes:
-  `common-docs/projects/checks-run-in-the-app/BACKLOG-L7b-selftests.md`.
+  `common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md`.
 
 - 2026-09-25 — Declared row classes (`row-classes.json` + `row-classes.mjs` +
   `row-classes.signals.json`), `run.mjs --skip-live-db` (passed by
   `release.sh`'s after phase), `--list` shows the class, `DB_ROWS` deleted,
   guard `check:release-row-classes` + self-test (CI + release gates). 149 rows:
   56 live-db moved off the release path, 3 clone-db, 90 repo-only. Plan:
-  `common-docs/projects/checks-run-in-the-app/` P0 (F12).
+  `common-docs/systems/architecture/observability/projects/checks-run-in-the-app/` P0 (F12).
 
 - 2026-09-20 — Rewritten to the ship-path doctrine (this file created).
   `scripts/checks/run.mjs`, `scripts/test-release-ship-path.sh` added;

@@ -3,7 +3,7 @@ status: active
 updated: 2026-09-14
 repos: [matrx-frontend, aidream, matrx-local, matrx-claude-plugin, matrx-codex-plugin, matrx-cursor-plugin, matrx-vscode, matrx-sandbox, common-docs]
 vision:
-  - /Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md
+  - /Users/armanisadeghi/code/common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md
   - /Users/armanisadeghi/code/common-docs/projects/coding-agent-bridge/PLAN.md
   - /Users/armanisadeghi/code/common-docs/systems/coding/coding-session-bridge/FEATURE.md
   - /Users/armanisadeghi/code/common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md
@@ -68,7 +68,7 @@ last 7 days**. `chat.coding_session_entry` holds **1,534,926 rows** (Claude 1,13
 ## Resources
 
 - **Vision/contract (read FIRST):** `common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md`
-  + `FEATURE.md`; product plan `common-docs/projects/ai-work-hub/PLAN.md`.
+  + `FEATURE.md`; product plan `common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md`.
 - **Backend:** aidream `aidream/services/coding_session_bridge/` (favorites now via
   `platform.user_entity_state` — `378aa5f9f`). **Frontend:** `features/ai-work/` (browser→Mac
   relay `features/ai-work/lib/matrxLocalRuntime.ts` — v2 rpc envelopes on Broadcast channel

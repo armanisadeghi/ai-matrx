@@ -883,7 +883,7 @@ if $STRICT; then
         "Complete-list reads PostgREST silently caps at 1000|pnpm check:unbounded-reads"
         # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
         # settings screen that accepts a value the system does not honour
-        # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans
+        # (common-docs/systems/account/settings/projects/unified-settings-platform/PLAN.md). Orphans
         # and ladder-ui carry a real tracked backlog (registry rows seeded ahead
         # of their consumers; sub-org rungs the universal UI does not address
         # yet), so they are advisory in both lanes; unregistered + env-toggles
@@ -1506,7 +1506,7 @@ else
         "Complete-list reads PostgREST silently caps at 1000|pnpm check:unbounded-reads"
         # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
         # settings screen that accepts a value the system does not honour
-        # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans
+        # (common-docs/systems/account/settings/projects/unified-settings-platform/PLAN.md). Orphans
         # and ladder-ui carry a real tracked backlog (registry rows seeded ahead
         # of their consumers; sub-org rungs the universal UI does not address
         # yet), so they are advisory in both lanes; unregistered + env-toggles

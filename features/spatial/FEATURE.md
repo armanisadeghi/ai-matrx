@@ -3,7 +3,7 @@
 > **Status:** proof of concept, live at `/demos/spatial` (demos build). Working name only — "desk" is
 > retired vocabulary and "Canvas" is the side-sheet artifact host (`features/canvas`); the product
 > name goes to Arman before this leaves demos. Project plan and research:
-> `../common-docs/projects/spatial-view/PLAN.md`.
+> `../common-docs/systems/workspace/boards/projects/spatial-view/PLAN.md`.
 
 **What it is:** an infinite, pannable, zoomable plane where many live AI results (streaming
 prose, structured kinds, images, generated HTML, pipelines) sit as tiles at their natural size.

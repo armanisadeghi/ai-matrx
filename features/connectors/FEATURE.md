@@ -10,7 +10,7 @@
 
 **The connector primitive** — the generic card, consent dialog, per-capability
 health rows and settings panel that every provider is offered through, with
-Google as the first provider config (`common-docs/projects/google-native/PLAN.md`
+Google as the first provider config (`common-docs/systems/integrations/google/FEATURE.md`
 §2, §5.2, §5.3). The shared integrations directory is the complete catalog of
 external systems a person can attach to their account: **Discover** renders
 compact featured and category cards, with search and filters; **Yours** renders
@@ -701,7 +701,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   `undefined`).
 
 - `2026-09-17` — F-30, two of the four VERIFY-B1-B2-R4 findings against the
-  Google import panels (`common-docs/projects/google-native/VERIFY-B1-B2-R4.md`
+  Google import panels (`common-docs/systems/integrations/google/FEATURE.md`
   D9/V9, V8). **D9's residual, closed:** `GoogleContactsImportPanel.tsx`'s
   ambiguity list (the screen where a person chooses between two customer
   records for one Google contact) printed the raw `matched_by` key verbatim —
@@ -801,7 +801,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   and `marketing/google/__tests__/credential-failure-codes-are-the-servers-codes.test.ts`.
 
 - `2026-09-17` — F-20: **two machine values and one impossible number, out of the
-  import reviews** (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` D9 and
+  import reviews** (`common-docs/systems/integrations/google/FEATURE.md` D9 and
   break K; each reproduced RED first in
   `features/connectors/import/human-sentences.test.ts`). The Contacts review said
   `Will update Ada (matched by external_id:google_contacts)` — a column name and a
@@ -817,7 +817,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   agrees.
 
 - `2026-09-17` — **Six client honesty defects from the third hostile round**
-  (lane F-19, from `common-docs/projects/google-native/VERIFY-U-P2-R3.md`), each
+  (lane F-19, from `common-docs/systems/integrations/google/FEATURE.md`), each
   reproduced RED on head before the fix:
   - **N9** — `marketing/google/health.ts` returned `last_error` verbatim as a
     `needs_attention` connection's reason, `googleAccount` copied it into
@@ -859,7 +859,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   function" — its query mock stopped at `abortSignal` while the read ends
   `.returns<ConnectionRow[]>()`, so the projection guard proved nothing.
 - `2026-09-17` — **The import panels tell the truth about where a value came
-  from** (lane F-13, from `common-docs/projects/google-native/VERIFY-B1-B2.md`
+  from** (lane F-13, from `common-docs/systems/integrations/google/FEATURE.md`
   B2/B3/B4/D9, plus the contract lane B-7 shipped the same day). One shared
   `field-labels.ts` turns every field key into words with a verb that agrees, so
   the Tasks panel no longer prints "due_date, description was edited here", and
@@ -877,7 +877,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 - `2026-09-17` — **A dead credential is a renewal of everything the account
   holds, and the press always answers with the truth** (lane F-12, from
-  `common-docs/projects/google-native/VERIFY-U-P2-R2.md` — the second
+  `common-docs/systems/integrations/google/FEATURE.md` — the second
   zero-authorship attack on this primitive). Five frontend findings, each fixed
   in the ONE derivation and pinned red-then-green:
   - **N2 (the worst).** An account whose credential is dead (`usable: false` —
@@ -1006,7 +1006,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
     list is read back from `call_health.py` and must match).
 
 - `2026-09-17` — **The zero-authorship verification REOPENED this, and seven of
-  its eight defects are closed here** (`common-docs/projects/google-native/
+  its eight defects are closed here** (`common-docs/systems/integrations/google/FEATURE.md/
   VERIFY-U-P2.md`). The one that stays open is per-product *last successful
   call* and *last refusal*: the hub still records one `last_verified_at` and one
   `last_error` per connection and no per-capability call log, so a product row
@@ -1076,7 +1076,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   catalog — and a person met none of it: Settings showed three status-only cards
   and chat showed a rotating "you could connect these" line. This is the first
   moment and the machinery under it, built generic because ~80 connectors follow
-  (`common-docs/projects/google-native/PLAN.md` §2, §5.2, §5.3): a provider
+  (`common-docs/systems/integrations/google/FEATURE.md` §2, §5.2, §5.3): a provider
   declares its products, sentences, grant bundles, capability keys and attachable
   types in `provider-config.ts`, and the card, the "Choose what to connect"
   dialog, the per-capability health rows and the settings panel render whatever

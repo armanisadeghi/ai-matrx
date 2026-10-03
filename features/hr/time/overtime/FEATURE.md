@@ -2,7 +2,7 @@
 
 **Status:** `scaffolded` — the surfaces are built; **no SQL RPC in this lane exists yet**
 **Tier:** `2` · **Lane:** L3 / register item **HRB-015** (D24a) · **Last updated:** `2026-08-26`
-**Behaviour spec:** `../../../../../common-docs/projects/hr-domain/specs/SPEC-TIME.md` §4.4–§4.6
+**Behaviour spec:** `../../../../../common-docs/systems/human-resources/projects/hr-domain/specs/SPEC-TIME.md` §4.4–§4.6
 
 ## What this is
 

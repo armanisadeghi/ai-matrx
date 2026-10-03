@@ -28,9 +28,9 @@ timestamp: 2026-09-14T00:00:00Z
 expertise, teach it to AI Matrx exactly the way a non-technical Expert would, run it on real cases
 until the platform stops or breaks, fix the platform (never the trial), and continue — and who
 report **what improved in the system**, not what happened to the run. The why, in his words, is
-`common-docs/projects/expert-book-challenge/PROGRAM.md` — read it once before your first trial.
+`common-docs/systems/masterwork/VISION.md` — read it once before your first trial.
 **The architecture mandate every trial serves is his brief
-`common-docs/projects/expert-book-challenge/MANDATE.md` (authority: owner, 2026-09-12):** capture the
+`common-docs/systems/masterwork/VISION.md` (authority: owner, 2026-09-12):** capture the
 tacit and the controversial across modalities, atomize with provenance, keep schools of thought and
 dissent navigable, treat "weirdness" as the asset.
 Night 1's full evidence trail is the sibling `REGISTER.md`; read its walls table before choosing
@@ -66,7 +66,7 @@ edit either learned nothing or lost it.
 in full before your first trial and whenever a rule here seems to conflict with it — CORE.md wins,
 and this skill gets fixed. The checks below still apply on top of it.
 
-🚨 Read `common-docs/projects/expert-book-challenge/MANDATE.md` (Arman, 2026-09-12, `authority: owner`)
+🚨 Read `common-docs/systems/masterwork/VISION.md` (Arman, 2026-09-12, `authority: owner`)
 before choosing a subject, and answer its seven checks in your register before you build: which acquisition
 **modality** you add; whether the knowledge is genuinely **tacit** (if the expert could have written it down,
 you are working on the cheap half); whether the output is **executable** (rubrics, checklists, if-then rules,

@@ -2,7 +2,7 @@
 status: active
 updated: 2026-08-08
 repos: [matrx-frontend, aidream]
-vision: [/Users/armanisadeghi/code/common-docs/projects/google-oauth-verification/PLAN.md]
+vision: [/Users/armanisadeghi/code/common-docs/systems/integrations/google/FEATURE.md]
 ---
 
 # First-party Google product build — Connected Accounts, Picker + drive.file tools, reviewed gmail.send
@@ -24,7 +24,7 @@ this done the right way").
 > mind we want to do this in a way that ALL users will be able to use it, not just me."
 
 Ground truth for scope strategy, reviewer wording, and gating:
-`/Users/armanisadeghi/code/common-docs/projects/google-oauth-verification/PLAN.md`.
+`/Users/armanisadeghi/code/common-docs/systems/integrations/google/FEATURE.md`.
 Strategy summary (do not re-litigate): `drive.file` + Google Picker for user-selected
 Docs/Sheets (non-sensitive, no security assessment); `gmail.send` with explicit user review
 of recipient/subject/body (sensitive, ordinary verification); NO restricted scopes
@@ -63,7 +63,7 @@ Search Console immediately afterward.
   frontend `lib/googleScopes.ts`, backend mirror
   `aidream/services/google_integrations/scopes.py`. Scope strings live in those two
   files and nowhere else; the governing contract is
-  `common-docs/projects/google-oauth-verification/PLAN.md`.
+  `common-docs/systems/integrations/google/FEATURE.md`.
 - Agent tool patterns in aidream: `aidream/tools/` + tool registration via
   `tool.definition`; injection funnel `aidream/services/tooling/tool_merge.py` (nothing
   there needs changing). Tool output contract + size caps: matrx-ai

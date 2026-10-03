@@ -278,7 +278,7 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
   an attachment that grounds nothing. The
   page's values carry through: the topic is named `"{page label} — page
 research"` and keyword #1 is the page's target query; at most ONE more is
-  allowed (Arman, `common-docs/projects/content-engine/STATE.md` §2.14). The
+  allowed (Arman, `common-docs/projects/content-engine/REGISTER.md` §2.14). The
   new topic is attached to the plan node through the one association write
   (`useContainerLinks.attach`) BEFORE the run starts, so a dead run still
   leaves the page pointing at real research, and the run streams into the

@@ -20,7 +20,7 @@ mechanism, and forks with no recommendation. He runs ~20 parallel sessions.
 
 Synthesized from that pattern with real repo paths: the owning session is extending
 `matrx-frontend/features/sharing` with "Share by text" (brief
-`common-docs/projects/communications-platform/P3-share-by-text.md`). A planning pass left a raw,
+`common-docs/projects/communications-platform/README.md`). A planning pass left a raw,
 unordered ledger of **12 candidate open decisions**, seeded so that each one has a known correct
 disposition:
 

@@ -1,5 +1,5 @@
 {
-  "description": "Screens allowed to force a BLOCKING dialog, build one straight on Radix, or host content in a BLOCKING Sheet. Every entry needs a reason; a stale entry fails the guard. Register: common-docs/projects/ai-reachable-everywhere/REGISTER.md (ARE-008).",
+  "description": "Screens allowed to force a BLOCKING dialog, build one straight on Radix, or host content in a BLOCKING Sheet. Every entry needs a reason; a stale entry fails the guard. Register: common-docs/systems/platform/ui-shell/projects/ai-reachable-everywhere/REGISTER.md (ARE-008).",
   "entries": [
     {
       "file": "components/rich-editor/RichEditorImpl.tsx",

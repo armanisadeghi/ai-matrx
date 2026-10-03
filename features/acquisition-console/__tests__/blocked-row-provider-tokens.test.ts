@@ -1,7 +1,7 @@
 /**
  * 🚨 A RAW PROVIDER TOKEN NEVER REACHES THE "WHAT HAPPENED" CELL.
  *
- * cold-walk-13 friction (common-docs/projects/masterwork-methods-census/
+ * cold-walk-13 friction (common-docs/systems/masterwork/STATE.md/
  * jobs-bar-2026-09-16/cold-walk-13/README.md): "Raw provider tokens on the
  * acquisition console: `LOGIN_REQUIRED` and `ProxyError` inside otherwise
  * excellent person-facing sentences." — `parseBlockRow` fell back to the raw

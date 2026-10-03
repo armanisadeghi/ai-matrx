@@ -4,7 +4,7 @@ updated: 2026-08-20
 repos: [matrx-frontend]
 scope: tail
 feature: Content Plan
-vision: [/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md]
+vision: [/Users/armanisadeghi/code/common-docs/projects/content-engine/REGISTER.md]
 ---
 
 # Content-plan site map — rebuilt, awaiting Arman's live review

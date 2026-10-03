@@ -952,7 +952,7 @@ export function SetupBridgeSection({
                 Generate a design vision
               </Button>
               <AdminDocHint
-                docPath="common-docs/projects/content-engine/STATE.md §4.3.3 + matrx-frontend/docs/handoffs/website-factory-vision.md (design beyond v1)"
+                docPath="common-docs/projects/content-engine/REGISTER.md §4.3.3 + matrx-frontend/docs/handoffs/website-factory-vision.md (design beyond v1)"
                 note="The design-vision AGENT pass: generated palette/typography/section rationale, not hand-typed direction."
               />
             </div>

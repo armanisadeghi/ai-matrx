@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
  * already lists everything a person has soft-deleted, driven by the same
  * registry, and a second surface for "the same list, plus a wipe date" is
  * exactly the duplication the data-lifecycle project exists to prevent
- * (common-docs/projects/data-lifecycle-platform/{VISION,TRASH}.md).
+ * (common-docs/systems/architecture/database/data-lifecycle/projects/data-lifecycle-platform/PLAN.md/{VISION,TRASH}.md).
  *
  * The route survives only as this redirect, because the weekly digest email
  * takes its link as a value and old mail keeps its URL forever. New links

@@ -1,7 +1,7 @@
 """The one door the HR staging scripts use to get a demo person (junk-data-cleanup, 2026-09-30).
 
 The permanent HR demo personas already exist, tagged `app_metadata.test_fixture` (suite
-`hr-demo`, `expires_at` null), and are named by id in `common-docs/projects/junk-data-cleanup/
+`hr-demo`, `expires_at` null), and are named by id in `common-docs/systems/architecture/database/data-lifecycle/projects/junk-data-cleanup/PLAN.md/
 renames.md`. A staging script therefore LOOKS THEM UP BY ID and reads the mailbox back from the
 auth admin API: no mailbox is ever typed into a script, so the persona's address can change
 without touching a script.

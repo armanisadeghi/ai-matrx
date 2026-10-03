@@ -10,7 +10,7 @@
 
 The Question Desk is where a question an agent filed actually reaches the person who decides it. One interview holds many questions; each is put to ONE respondent, one question filling the screen, and what comes back is a **verdict** plus, when he wrote or spoke one, his **verbatim answer**. A second mode (`review`) serves decisions the desk already made in his name as a triage — batches of ten, one line each, Y/N — he can confirm or overturn.
 
-Cross-repo plan and rulings: `common-docs/projects/question-desk-in-app/PLAN.md` + `REGISTER.md`. The data contract is `aidream/db/migrations/qd_001_decision_interview.sql` — where this doc and that file disagree, the file wins.
+Cross-repo plan and rulings: `common-docs/systems/platform/question-desk/STATE.md` + `REGISTER.md`. The data contract is `aidream/db/migrations/qd_001_decision_interview.sql` — where this doc and that file disagree, the file wins.
 
 ---
 

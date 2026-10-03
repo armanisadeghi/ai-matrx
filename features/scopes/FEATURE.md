@@ -431,7 +431,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   `NEXT_PUBLIC_SCOPES_READ_FROM_STORE`, default OFF): OFF reads the `context.*` tables exactly as before commit
   3ed36176d1, ON reads the store doors. The store doors and adapter stay. Tests: each store suite runs with the
   switch on; its `*.context-tables.test.ts` twin runs the old path with it off. Flip only after member-seat parity on
-  every scope screen and tree speed (common-docs/projects/data-doctrine-adoption/v5/PROGRESS-SCOPES-WEB-REVERT.md).
+  every scope screen and tree speed (common-docs/projects/data-doctrine-adoption/REGISTER.md).
 - 2026-09-29 — **Every web read of the scope system comes from the record store** (lane SCOPES-READS-WEB, SCOPES-CUTOVER-PLAN
   step 2.4). `scopesService.ts` reads through `custom.context_tree` / `context_scopes` / `context_items` / `context_values` /
   `context_archived_types` / `context_system_items` (`service/storeScopeReads.ts`), decoded by the permanent adapter
@@ -521,7 +521,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   now judges declared soft-delete-as-archive entities (`SOFT_DELETE_IS_THE_ARCHIVE`)
   on `deleted_at` under rule 3 — its self-test is RED on the exact pre-fix
   `getScopeTree` read. Report:
-  `common-docs/projects/every-picker-takes-new-input/recon/f6-archived-scope-types.md`.
+  `common-docs/systems/platform/ui-shell/projects/every-picker-takes-new-input/REGISTER.md`.
 - 2026-09-18 — **Conversation scope stamping waits for the conversation row.** A
   first-turn UUID is announced before the server's atomic turn commit makes
   `chat.conversation` readable. `syncConversationScopes` previously called the

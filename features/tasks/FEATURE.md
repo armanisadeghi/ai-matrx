@@ -151,7 +151,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Notifications
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/projects/communications-platform/P1-notifications-actions.md` — read it before changing task assignment or reminder delivery. Locally, the saved task transition writes assignment email and in-app notice intents; `app/api/notifications/task-assigned/route.ts` still owns the action-chip DM, while `app/api/cron/due-date-reminders/route.ts` owns due-date reminders.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/projects/communications-platform/README.md` — read it before changing task assignment or reminder delivery. Locally, the saved task transition writes assignment email and in-app notice intents; `app/api/notifications/task-assigned/route.ts` still owns the action-chip DM, while `app/api/cron/due-date-reminders/route.ts` owns due-date reminders.
 
 Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tasks-world-class.md).
 
@@ -192,7 +192,7 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
   `https://tasks.googleapis.com/tasks/v1/lists/<list>/tasks/<id>` — an identity,
   not a page, measured at **HTTP 401** with a JSON error body, so every imported
   Google task shipped a click into an API error
-  (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` N5). The rule now lives
+  (`common-docs/systems/integrations/google/FEATURE.md` N5). The rule now lives
   in the shared layer (`features/tasks/provenance-door.ts`) rather than as a
   comment in the import panel that never rendered the column: an API host or an
   API-shaped path renders the provenance WITHOUT a door, with the reason on hover

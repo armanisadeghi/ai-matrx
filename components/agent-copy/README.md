@@ -1,6 +1,6 @@
 # agent-copy — frontend adapters for Matrx Alchemy
 
-Matrx Alchemy is the shared content-transfer toolkit. **Alchemy Menu** is its package-owned control. This directory contains only the frontend boundary: identity and live-run wiring, declared surface handles, Sheet delivery, and compatibility exports. Cross-repo status and acceptance live in `/Users/armanisadeghi/code/common-docs/projects/matrx-alchemy/REGISTER.md`.
+Matrx Alchemy is the shared content-transfer toolkit. **Alchemy Menu** is its package-owned control. This directory contains only the frontend boundary: identity and live-run wiring, declared surface handles, Sheet delivery, and compatibility exports. Cross-repo status and acceptance live in `/Users/armanisadeghi/code/common-docs/systems/platform/ui-shell/projects/matrx-alchemy/PLAN.md`.
 
 ## Use the menu
 

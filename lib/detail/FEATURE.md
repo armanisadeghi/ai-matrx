@@ -112,7 +112,7 @@ land here. **The primitive is `@ai-matrx/detail`** (aidream `apps/shared/detail`
 
 - Depends on: `@ai-matrx/associations` (cards, grid, `isEntityTypeToken`), `@ai-matrx/design-system`, host ports from `features/window-panels/detail/`, `lib/scoped-config`.
 - Depended on by: `features/item-presentation` (`useOpenItemPresentation`), the `/detail` and `/demos/detail-primitive` surfaces.
-- Cross-links: [`features/window-panels/FEATURE.md`](../../features/window-panels/FEATURE.md) § The Detail primitive; `common-docs/projects/google-native/PLAN.md` §5.1.
+- Cross-links: [`features/window-panels/FEATURE.md`](../../features/window-panels/FEATURE.md) § The Detail primitive; `common-docs/systems/integrations/google/FEATURE.md` §5.1.
 
 ---
 

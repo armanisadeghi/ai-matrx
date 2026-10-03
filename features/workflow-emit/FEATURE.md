@@ -105,7 +105,7 @@ feed logged a "delivered" line for each, and the payload itself went nowhere.
 
 Recorded as an unfinished-work alarm in
 `common-docs/projects/workflows/STATE.md` and
-`common-docs/projects/universal-live-result-surfaces/AUDIT.md`, and as a known
+`common-docs/systems/platform/ui-shell/projects/universal-live-result-surfaces/PLAN.md`, and as a known
 gap in aidream's archived workflow handoff. All three predicted the vision
 correctly; none of them was wrong about a single detail.
 

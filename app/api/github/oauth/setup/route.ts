@@ -24,7 +24,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
   // Mandatory, fail-closed — mirrors start/route.ts. No known caller of this
   // route passes ?organization_id= today (it has zero references anywhere in
-  // this repo, per common-docs/projects/no-db-assigned-org census); fixed
+  // this repo, per common-docs/systems/architecture/database/projects/no-db-assigned-org/PLAN.md census); fixed
   // anyway rather than leaving a route that would otherwise 400 unhelpfully
   // if it is ever wired up.
   let organizationId: string;

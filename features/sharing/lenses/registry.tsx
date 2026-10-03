@@ -15,7 +15,7 @@
  * social/meta tags). Never add a per-type `switch` on a share surface again.
  *
  * Cross-repo charter: common-docs/systems/account/sharing/VISION.md
- * Plan: common-docs/projects/sharing-experience/PLAN.md
+ * Plan: common-docs/systems/account/sharing/projects/sharing-experience/PLAN.md
  */
 
 import type { ReactNode } from "react";

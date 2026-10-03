@@ -18,7 +18,7 @@
  *
  * WHERE IT RUNS (2026-09-27): THE NIGHTLY CLONE, BY DEFAULT. Censuses 12 and 13 ask the one
  * ladder for every (member, record) pair and ran 4-10 minutes on live, many times a day, while
- * the live machine was running out of memory (common-docs/projects/database-workload-safety/
+ * the live machine was running out of memory (common-docs/systems/architecture/database/projects/database-workload-safety/
  * incidents/2026-09-27-per-connection-memory.md). The clone is production's own data, quarantined,
  * so the verdict is the same verdict. Every run prints one [TARGET] line naming the database and
  * the clone's promotion time; `--target production` runs on live with every statement capped at

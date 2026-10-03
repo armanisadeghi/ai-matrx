@@ -5,7 +5,7 @@
 **Last updated:** `2026-09-30`
 
 > Build map (design control → the existing piece it facelifts):
-> `/Users/armanisadeghi/code/common-docs/projects/ai-matrx-composer/MAP.md`.
+> `/Users/armanisadeghi/code/common-docs/systems/chat/conversations/projects/ai-matrx-composer/MAP.md`.
 > Rulings: Arman's `composer-spec.md` + `composer-spec-amendment-1.md` (the amendment wins) and the
 > design canvas `https://claude.ai/artifact/Gv24abtRNnxW3X41YTLxAb`.
 

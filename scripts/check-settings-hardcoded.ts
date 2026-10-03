@@ -270,7 +270,7 @@ function main(): void {
             "existed when check:settings-hardcoded was written; each one is a setting nobody can " +
             "see or change. They are tolerated so the guard can hold the line against NEW ones, " +
             "and they come off this list as the Unified Settings Platform migrates them " +
-            "(common-docs/projects/unified-settings-platform/REGISTER.md, USP-020).",
+            "(common-docs/systems/account/settings/projects/unified-settings-platform/PLAN.md, USP-020).",
           _how:
             "`pnpm check:settings-hardcoded --write` removes entries that no longer exist. It " +
             "CANNOT add one: a new constant must be registered in platform.feature_knob, or the " +

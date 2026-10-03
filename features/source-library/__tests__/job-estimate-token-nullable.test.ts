@@ -1,7 +1,7 @@
 /**
  * THE `estimate.estimate_token` DEFECT — verify-4, 2026-09-18.
  *
- * `common-docs/projects/media-source-catalog/FIRST-PERSON-TEST.md`
+ * `common-docs/systems/media/media-source-catalog/API-CONTRACT.md`
  * "Independent re-test, verify-4" reproduced this live, twice, on two
  * different libraries (a podcast and a YouTube channel): a transcription Job
  * was created (`201`), then reading it back (`GET /media/jobs/{id}` and

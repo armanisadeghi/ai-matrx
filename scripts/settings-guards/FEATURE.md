@@ -1,7 +1,7 @@
 # Settings guards — the five `check:settings-*` checks
 
 **What they kill:** one defect class, documented with live cases in
-`common-docs/projects/unified-settings-platform/REGISTER.md` § "THE DEFECT CLASS THIS CAMPAIGN
+`common-docs/systems/account/settings/projects/unified-settings-platform/PLAN.md` § "THE DEFECT CLASS THIS CAMPAIGN
 EXISTS TO KILL" — **a settings screen that accepts a value the system does not honor.**
 
 **Shared floor:** `scripts/settings-guards/lib.ts` — the live-registry reader (credential-gated),

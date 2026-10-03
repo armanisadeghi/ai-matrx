@@ -267,7 +267,7 @@ Ship `/work/new` with AI Matrx execution first, then persist the smallest reusab
 Saved Request = an `agent.shortcut` row under the seeded `ai-work-saved-requests` category; rationale + rejected alternatives at the top of `features/ai-work/compose/savedRequests.ts`. Verified live: run streams and completes, save/reopen/re-run round-trips, a Home pick writes a real `conversation → task` edge. Filed D202 (`conversation → project` unregistered — also breaks the shipped inspector's Project picker; Arman's ruling).
 
 **Notes**
-Product contract: `/Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md`. Retired prompt tables are not candidates. This is the foundation consumed by TASK-006.
+Product contract: `/Users/armanisadeghi/code/common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md`. Retired prompt tables are not candidates. This is the foundation consumed by TASK-006.
 
 ### TASK-006: Expose the certified managed Claude runtime in AI Work
 - **Status:** ready — **the LOCAL half shipped 2026-08-17** (matrx-local runtime + `/work/new`
@@ -289,7 +289,7 @@ A normal user starts Claude Code work from `/work/new`, watches streamed updates
 - [ ] Update `features/ai-work/FEATURE.md` and groom `docs/handoffs/coding-agent-bridge-claude-first.md`.
 
 **Notes**
-Backend and production evidence are in the handoff and `common-docs/projects/ai-work-hub/PLAN.md` Lane 5. Never show a generic Resume button.
+Backend and production evidence are in the handoff and `common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md` Lane 5. Never show a generic Resume button.
 
 ### TASK-007: Put installed Claude History reconciliation behind one AI Work action
 - **Status:** ready

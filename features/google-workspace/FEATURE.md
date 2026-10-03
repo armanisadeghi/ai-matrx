@@ -6,7 +6,7 @@
 > Read it before adding any Google capability anywhere.
 
 > **The build plan for making Google native (three planes, primitives, build units):**
-> `/Users/armanisadeghi/code/common-docs/projects/google-native/PLAN.md` (2026-09-17). The screens in
+> `/Users/armanisadeghi/code/common-docs/systems/integrations/google/FEATURE.md` (2026-09-17). The screens in
 > this feature are rebuilt under it; the plumbing here is what it reuses.
 
 ## Purpose
@@ -422,7 +422,7 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 - Marketing scopes are not bundled into the reviewer workflow.
 - The dedicated reviewer route prepopulates Picker with the review-fixture query so unrelated Drive file names do not appear in the verification video. The normal Settings surface remains unfiltered.
 - Every selected Doc or Sheet exposes an **Open in Google** new-tab door so users and reviewers can verify source-account changes without losing the AI Matrx workflow.
-- The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
+- The frontend and backend canonical scope registries must remain aligned with `common-docs/systems/integrations/google/FEATURE.md`.
 
 ## Change log
 
@@ -724,7 +724,7 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 - `2026-09-18` — **F-60: the Doc panel and its strip — plain failures with remedies, actions
   that act in place, and a Google link derived from the file id.** Five findings of
-  `common-docs/projects/google-native/VERIFY-U-W1-U-W2.md` (N7, N8, N9, N12, N14), each fixed
+  `common-docs/systems/integrations/google/FEATURE.md` (N7, N8, N9, N12, N14), each fixed
   at the class and each proven red first: the new suite
   `documents/__tests__/a-refusal-says-what-to-do.test.tsx` failed **12 of 12** against HEAD,
   printing the exact defects — "The Google refresh answered without a usable id.", the strip
@@ -785,7 +785,7 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 - `2026-09-18` — **F-59: the agenda and the event record stop dropping People, stop reading
   frozen rows as fresh, and give the note they create a door.** Seven findings of
-  `common-docs/projects/google-native/VERIFY-U-W1-U-W2.md`, each fixed at the class and proven
+  `common-docs/systems/integrations/google/FEATURE.md`, each fixed at the class and proven
   red first (the four new suites failed 15 tests against `HEAD`, then all 84 in
   `calendar/__tests__` pass):
   * **N3 (HIGH)** — `resolveAttendeePeople` in `record.ts` is now the ONE attendee → People

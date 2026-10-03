@@ -1,6 +1,6 @@
 name: Repo-only checks
 
-# The code-only leg of "checks run in the app" (common-docs/projects/checks-run-in-the-app/PLAN.md,
+# The code-only leg of "checks run in the app" (common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md,
 # decision 4): the release-check rows DECLARED repo-only in scripts/checks/row-classes.json run here
 # on the head of main, and the runner's --json output is uploaded as the artifact `checks-findings`.
 # The app (aidream `platform_checks_ci_pull` system task) pulls the newest successful artifact
@@ -38,7 +38,7 @@ jobs:
       # Full history and tags: self-tests replay a guard's pre-fix copy from git
       # (check:self-tests-stay-out-of-tree reads `<sha>^`), and the patrol delivery check
       # needs a version tag. A depth-1 checkout made both report failure without judging
-      # (2026-09-30, common-docs/projects/checks-run-in-the-app/COORDINATOR.md § Broken checks).
+      # (2026-09-30, common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md § Broken checks).
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

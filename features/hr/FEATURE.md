@@ -11,7 +11,7 @@
 > and their own sub-`FEATURE.md` files beside their code.
 >
 > **The specs are the authority, not this file.** Behaviour rulings live in
-> `../../../common-docs/projects/hr-domain/specs/` — `SPEC-UI-IA.md` (routes, nav,
+> `../../../common-docs/systems/human-resources/projects/hr-domain/specs/` — `SPEC-UI-IA.md` (routes, nav,
 > sensitivity rendering) and `SPEC-EMPLOYEES.md` (universal states, effective-dated
 > editing) govern everything described here.
 

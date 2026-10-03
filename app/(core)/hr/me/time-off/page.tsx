@@ -1,5 +1,5 @@
 // `/hr/me/time-off` — UI-IA route 8, owned by the **Leave & PTO** pillar spec
-// (`common-docs/projects/hr-domain/specs/SPEC-LEAVE.md` §4.1, §5).
+// (`common-docs/systems/human-resources/projects/hr-domain/specs/SPEC-LEAVE.md` §4.1, §5).
 //
 // 🚨 WHAT THIS ROUTE INHERITS AND MUST NOT RE-DERIVE: `MeSurfaceShell` (mounted
 // inside `MyTimeOffSurface`) carries the persona resolution, the employer

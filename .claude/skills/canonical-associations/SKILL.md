@@ -50,7 +50,7 @@ policy `assoc_payload_follows_endpoints` reads `platform.edge_payload_kind.paylo
 which defaults to TRUE for every new kind. Set it false ONLY with a `payload_follows_endpoints_reason`
 saying the payload describes the edge itself. Never copy an endpoint's title or text into `label` or
 `metadata` — those columns are read by every member of the edge's organization; read the title at
-display time instead. Design: `common-docs/projects/rich-content-unification/ASSOCIATION-VISIBILITY.md`.
+display time instead. Design: `common-docs/projects/rich-content-unification/PLAN.md`.
 
 ## The one load-bearing boundary — DO NOT cross it
 

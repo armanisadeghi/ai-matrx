@@ -15,7 +15,7 @@
 
 Agent Connections is the registry surface for what agents can reach — and the home of the one content-block store. The broader external-integrations story (MCP protocol, OAuth, credential storage) belongs to `features/api-integrations/` and `packages/chat/src/agents/services/mcp-oauth/`.
 
-Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md) — read it before building conversation browsing, provider launch, saved requests, skills, associations, or automation for this integration.
+Cross-repo product plan: [`common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md`](/Users/armanisadeghi/code/common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md) — read it before building conversation browsing, provider launch, saved requests, skills, associations, or automation for this integration.
 
 ---
 

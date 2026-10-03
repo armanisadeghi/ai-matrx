@@ -1,8 +1,8 @@
 # features/hr/time — Time & Attendance
 
 **Single source of truth for this feature's client half.** Register item
-[HRB-015](../../../../common-docs/projects/hr-domain/REGISTER.md) (lane L3). Behaviour spec:
-`../../../../common-docs/projects/hr-domain/specs/SPEC-TIME.md` — **that document is the authority
+[HRB-015](../../../../common-docs/systems/human-resources/projects/hr-domain/PLAN.md) (lane L3). Behaviour spec:
+`../../../../common-docs/systems/human-resources/projects/hr-domain/specs/SPEC-TIME.md` — **that document is the authority
 on what these surfaces do; this file is the authority on how the code is arranged and what a change
 here must not break.**
 

@@ -2,7 +2,7 @@
 // once the listing passes node's 1 MiB default — and the check that called it judges NOTHING.
 // That happened to four checks at once on 2026-09-29, when `git ls-files '*.ts' '*.tsx'` reached
 // 1,090,578 bytes (agent-links, agent-submit-content, signout-scope, campaign-entry-points;
-// common-docs/projects/checks-run-in-the-app/COORDINATOR.md § Broken checks).
+// common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md § Broken checks).
 //
 // The one lister is scripts/lib/repo-files.ts (512 MiB buffer, -z, symlink-safe). Any other call
 // that lists files through git must set maxBuffer itself.
