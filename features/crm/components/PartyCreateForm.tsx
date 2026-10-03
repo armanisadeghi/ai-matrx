@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
@@ -135,7 +136,7 @@ export function PartyCreateForm({
       // Fail closed and NAME the remedy — "try again in a moment" told somebody to
       // retry an action that would never start working on its own.
       toast.error(
-        "Choose an organization first — this record has to be filed in one. Pick it from the menu under your avatar.",
+        "Choose an organization first — use the picker above the form.",
       );
       return;
     }
@@ -333,22 +334,47 @@ export function PartyCreateForm({
             the submit now fails closed rather than quietly choosing the personal
             workspace.
           */}
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {orgId ? (
+          {/*
+            With no pinned organization the line IS the control: the shared
+            picker (the same popover the New table dialog uses) opens right
+            here, so nobody is sent to a menu that does not offer it.
+          */}
+          {initialOrgId ? (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>
                 Filing into{" "}
                 <span className="font-medium text-foreground">
-                  {activeOrgName ?? "the selected organization"}
+                  {activeOrgName && initialOrgId === activeOrgId
+                    ? activeOrgName
+                    : "the selected organization"}
                 </span>
               </span>
-            ) : (
-              <span className="text-destructive">
-                No organization selected — choose one from the menu under your
-                avatar before creating a record.
-              </span>
-            )}
-          </p>
+            </p>
+          ) : (
+            <OrganizationPickerPopover
+              align="start"
+              trigger={
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className={cn(
+                    "h-7 max-w-full gap-1.5 px-2 text-xs",
+                    orgId ? "text-muted-foreground" : "text-destructive",
+                  )}
+                  data-crm-filing-into={orgId ? "chosen" : "none"}
+                >
+                  <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span className="truncate">
+                    {orgId
+                      ? `Filing into ${activeOrgName ?? "the selected organization"}`
+                      : "Choose an organization"}
+                  </span>
+                </Button>
+              }
+            />
+          )}
 
           <div className="flex gap-2">
             {kindButton("person", "Person", User)}
