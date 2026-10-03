@@ -89,7 +89,8 @@ type RecordHome =
   | { state: "loading" }
   | { state: "home"; organizationId: string }
   | { state: "refused"; sentence: string; reason: string | null }
-  | { state: "error" };
+  | { state: "error" }
+  | { state: "absent" };
 
 /** The row's organization, asked as the person. Never the active organization. */
 /** PostgREST / Postgres say the function is not on this database. */
@@ -101,6 +102,7 @@ function doorIsAbsent(error: { message: string; sqlstate?: string | undefined })
   );
 }
 let announcedFallback = false;
+let announcedAbsent = false;
 
 function useRecordHome(
   token: string,
@@ -124,6 +126,19 @@ function useRecordHome(
               );
             }
             setHome({ state: "home", organizationId: pageOrganizationId });
+            return;
+          }
+          if (doorIsAbsent(answer.error)) {
+            // No door yet and no page organization (Detail window, /detail, a peek): these surfaces
+            // never had a section before this door, so the section is ABSENT — never a box blaming
+            // the person's record for a door we have not applied.
+            if (!announcedAbsent) {
+              announcedAbsent = true;
+              console.warn(
+                "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); surfaces without a page organization show no custom-fields section until it is.",
+              );
+            }
+            setHome({ state: "absent" });
             return;
           }
           console.error("[EntityCustomFields] custom.entity_record_home failed", { token, recordId, error: answer.error });
@@ -228,6 +243,7 @@ export function EntityCustomFields({
       return isMember ? UNIFIED_DATA_CAMPAIGN.check(organization) : false;
     },
   });
+  if (home.state === "absent") return null;
   if (home.state === "refused" && absentWhenNotApplicable && home.reason === "no_table") return null;
   if (home.state === "refused") {
     return (
