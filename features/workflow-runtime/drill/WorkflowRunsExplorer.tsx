@@ -69,6 +69,7 @@ export function WorkflowRunsExplorer({ lane }: { lane: "platform" | "mine" }) {
   // org-fallback-deliberate: the platform lane reads the platform's own organization by name; the mine lane's is only its calendar
   const calendarOrganization =
     active.organizationState === "ready" && active.organizationId ? active.organizationId : memberships.organizations[0]?.id ?? null;
+  // org-fallback-deliberate: the platform lane reads the platform's own organization by name
   const organizationId = lane === "platform" ? SYSTEM_ORGANIZATION_ID : calendarOrganization;
   if (lane === "mine" && !organizationId) {
     if (memberships.loading) {
