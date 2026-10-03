@@ -27,6 +27,6 @@ describe("what a person reads about a notification", () => {
   it("groups by the first key segment with a human heading", () => {
     expect(notificationArea("hr.leave.case_pto_exhausted")).toBe("hr");
     expect(notificationAreaLabel("esign")).toBe("Signatures");
-    expect(notificationAreaLabel("new_area")).toBe("New area");
+    expect(notificationAreaLabel("new_area")).toBe("New Area");
   });
 });

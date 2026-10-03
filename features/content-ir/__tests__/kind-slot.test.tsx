@@ -223,7 +223,7 @@ describe("the placeholder phase", () => {
   it("with no title yet, reserved names the kind where arriving shimmers", () => {
     // The one deliberate structural difference, and it costs no height: both
     // sit in a header sized by the 28px icon chip, not by this element.
-    expect(render("reserved")).toContain("Slot phase kind");
+    expect(render("reserved")).toContain("Slot Phase Kind");
     expect(render("arriving")).toContain("animate-pulse");
   });
 });

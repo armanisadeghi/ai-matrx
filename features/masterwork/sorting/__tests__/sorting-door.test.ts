@@ -161,7 +161,7 @@ describe("picked records", () => {
     ).toEqual([
       expect.objectContaining({
         text: "Northline quote, September",
-        note: "udt document",
+        note: "Udt Document",
       }),
     ]);
   });

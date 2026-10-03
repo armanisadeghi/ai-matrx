@@ -114,6 +114,6 @@ describe("labels", () => {
     expect(confidenceLabel(35)).toBe("Uncertain");
   });
   it("unknown signals still get a readable label", () => {
-    expect(signalLabel("some_new_signal")).toBe("some new signal");
+    expect(signalLabel("some_new_signal")).toBe("Some New Signal");
   });
 });

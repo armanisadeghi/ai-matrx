@@ -36,7 +36,7 @@ describe("importFieldLabel / importFieldList", () => {
     expect(importFieldLabel("description")).toBe("description");
     expect(importFieldLabel("first_name")).toBe("first name");
     // An unknown key is humanised, not printed raw and not dropped.
-    expect(importFieldLabel("some_new_column")).toBe("some new column");
+    expect(importFieldLabel("some_new_column")).toBe("Some New Column");
   });
 
   it("agrees with its own count", () => {

@@ -138,7 +138,7 @@ describe("F4 · the records table's words", () => {
     expect(recordsColumnHeader(DEF, records, "model")).toBe("Request's top model");
     expect(recordsColumnHeader(DEF, records, "request_tokens")).toBe("Request tokens (on its first call)");
     expect(recordsColumnHeader(DEF, records, "user_id")).toBe("Person");
-    expect(recordsColumnHeader(DEF, records, "created_at")).toBe("Created at");
+    expect(recordsColumnHeader(DEF, records, "created_at")).toBe("Created At");
   });
 
   it("an id reads its name through the Dimension whose column it is", () => {

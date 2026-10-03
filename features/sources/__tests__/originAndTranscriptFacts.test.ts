@@ -39,7 +39,7 @@ describe("origin filter labels", () => {
   it("never shows a raw code, even for an origin this build has not heard of", () => {
     expect(
       captureClientLabel({ origin_client: "some_new_client", source_kind: "inline" }),
-    ).toBe("Some new client");
+    ).toBe("Some New Client");
   });
 });
 

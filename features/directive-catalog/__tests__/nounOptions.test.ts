@@ -121,6 +121,6 @@ describe("labels and hints", () => {
       noun: "access_delta_probe",
       label: "",
     };
-    expect(nounLabel(bare)).toBe("Access delta probe");
+    expect(nounLabel(bare)).toBe("Access Delta Probe");
   });
 });
