@@ -96,7 +96,7 @@ export function AnnotationSidecarProvider({
   /** The person just made or focused an item here (a host opens its Notes & comments dock). */
   onActivity?: () => void;
 }) {
-  const raw = useAnnotationSidecar(live ? source : null);
+  const raw = useAnnotationSidecar(source, { live });
   const api: AnnotationSidecarApi = onActivity
     ? {
         ...raw,

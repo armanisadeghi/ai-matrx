@@ -155,14 +155,27 @@ export interface CommentDraft {
   onWritten?: (commentId: string) => void;
 }
 
-export function useAnnotationSidecar(source: AnnotationSource | null) {
+export function useAnnotationSidecar(
+  source: AnnotationSource | null,
+  { live = true }: {
+    /**
+     * False holds the READS and the live channel only (a chat answer scrolled out of view).
+     * Writes never depend on it: a comment posted in the same tick that wakes the source
+     * (the host flips `live` on activity) is written, never silently dropped.
+     */
+    live?: boolean;
+  } = {},
+) {
   const [drafts, setDrafts] = useState<AnnotationItem[]>([]);
   const [pairsError, setPairsError] = useState<string | null>(null);
+  // Every write reads the source from here, so it is always the source — never the read gate.
   const sourceRef = useRef(source);
   sourceRef.current = source;
 
   // Keyed by the person too: one person's kept answer is never another's.
-  const sourceKey = source ? `${getUserId() ?? "-"}|${sidecarKey(source)}` : null;
+  const writeKey = source ? `${getUserId() ?? "-"}|${sidecarKey(source)}` : null;
+  // Reads, kept state and the live channel follow the read gate.
+  const sourceKey = live ? writeKey : null;
   const kept = useSyncExternalStore(
     subscribeSidecars,
     () => sidecarSnapshot(sourceKey),
@@ -173,7 +186,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
   const error = kept.error ?? pairsError;
   // This tab's own writes, shared by every view of the source, so their echoes are not news.
   const ownLedger = useRef(createEchoLedger());
-  const ledger = { current: sourceKey ? sidecarLedger(sourceKey) : ownLedger.current };
+  const ledger = { current: writeKey ? sidecarLedger(writeKey) : ownLedger.current };
 
   const reload = useCallback(async () => {
     const src = sourceRef.current;
@@ -182,8 +195,11 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
   }, []);
 
   // Mount and wake: read unless the source is already kept (and current).
+  // A new source starts with no drafts; waking the same source keeps a draft written meanwhile.
   useEffect(() => {
     setDrafts([]);
+  }, [writeKey]);
+  useEffect(() => {
     const src = sourceRef.current;
     if (sourceKey && src) void loadSidecar(sourceKey, src, { describe: message });
   }, [sourceKey]);
@@ -526,7 +542,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
 
   // What the association vocabulary lets a reader file on this kind (Highlight / Link absent otherwise).
   const [pairs, setPairs] = useState<{ token: string; highlights: boolean; links: boolean } | null>(null);
-  const token = source?.token ?? null;
+  const token = live ? (source?.token ?? null) : null;
   useEffect(() => {
     if (!token) return;
     let stale = false;
