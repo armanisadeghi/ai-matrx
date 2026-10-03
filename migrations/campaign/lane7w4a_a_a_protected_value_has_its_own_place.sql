@@ -1,6 +1,6 @@
 -- chair-step: NEEDS ARMAN WATCHING (CHAIR-GUIDANCE § What needs Arman watching): this file CREATES TWO
 -- TABLES (custom.entity_protected_value, custom.entity_protected_value_version: every
--- client role revoked; row security off on purpose, see § 2; registered in platform.entity_types as
+-- client role revoked; row security ON — its platform-admin policy takes the sign-in freeze, see § 2; registered in platform.entity_types as
 -- machinery, INSERT) and adds one locked platform knob row (custom/protected_field_rules, INSERT).
 -- No ALTER of an existing table, no strong lock on a live table, no grant to any client role.
 -- Its inverse drops both tables (refused while either holds a row) and the knob row.
@@ -58,11 +58,12 @@ ON CONFLICT (feature, key) DO NOTHING;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- 2. WHERE A PROTECTED VALUE LIVES: beside the row, never in it. No client role holds ANY privilege
--- on it (revoked below): only the SECURITY DEFINER doors read or write it, and each asks the field's
--- rule. Row security is deliberately NOT enabled: enabling it makes platform._admin_read_follows_rls
--- add a platform-admin read policy (an admin lane the field rule forbids), and that policy statement
--- takes Supabase's sign-in freeze (ACCESS EXCLUSIVE on auth.users and 22 more) on production.
--- Its own history: every write, clear and move is a version, read only through the same rule.
+-- on it: only the SECURITY DEFINER doors read or write it, and each asks the field's rule. Row security
+-- is ON (the registry's rule for a machinery table). LOCK NOTE for the chair: enabling it makes
+-- platform._admin_read_follows_rls add a platform-admin read policy, and that policy statement takes
+-- Supabase's sign-in freeze (ACCESS EXCLUSIVE on auth.users and ~22 more, milliseconds, retried by
+-- iam.take_sign_in_freeze for 8 s); on a busy clone it waited out another lane's 30-minute transaction.
+-- The policy grants nothing in practice: authenticated holds no privilege on the table.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS custom.entity_protected_value (
   organization_id uuid        NOT NULL,
@@ -77,6 +78,7 @@ CREATE TABLE IF NOT EXISTS custom.entity_protected_value (
 );
 CREATE INDEX IF NOT EXISTS entity_protected_value_field_idx ON custom.entity_protected_value (field_id);
 CREATE INDEX IF NOT EXISTS entity_protected_value_org_idx ON custom.entity_protected_value (organization_id, table_token);
+ALTER TABLE custom.entity_protected_value ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON custom.entity_protected_value FROM PUBLIC, anon, authenticated, service_role;
 COMMENT ON TABLE custom.entity_protected_value IS
   'LANE7-W4A: the values of protected custom fields of standard rows (custom.field_is_protected). Never in the row''s custom_fields; read and written only through custom.field_access''s rule.';
@@ -97,6 +99,7 @@ CREATE TABLE IF NOT EXISTS custom.entity_protected_value_version (
 );
 CREATE INDEX IF NOT EXISTS entity_protected_value_version_row_idx
   ON custom.entity_protected_value_version (table_token, row_id, field_id, id);
+ALTER TABLE custom.entity_protected_value_version ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON custom.entity_protected_value_version FROM PUBLIC, anon, authenticated, service_role;
 COMMENT ON TABLE custom.entity_protected_value_version IS
   'LANE7-W4A: every version of a protected value (writes, clears, and the copies the protect door moved out of rows and out of history.row_versions). Read only through custom.field_access''s rule.';
@@ -105,7 +108,7 @@ COMMENT ON TABLE custom.entity_protected_value_version IS
 -- owner and SECURITY DEFINER code), the same class as custom.organization_visibility_version.
 INSERT INTO platform.entity_types (token, schema_name, table_name, label, audit_class, audit_class_reason, table_ref)
 SELECT v.token, 'custom', v.tbl, v.label, 'machinery',
-       'machinery: no grant to anon or authenticated and RLS off; schema custom is declared CLOSED, so the table is reachable only by the owner and SECURITY DEFINER code (custom.field_access''s rule decides every read)',
+       'machinery: row security on and no grant to anon or authenticated; schema custom is declared CLOSED, so the table is reachable only by the owner and SECURITY DEFINER code (custom.field_access''s rule decides every read)',
        ('custom.' || v.tbl)::regclass
   FROM (VALUES ('entity_protected_value', 'entity_protected_value', 'Protected field value'),
                ('entity_protected_value_version', 'entity_protected_value_version', 'Protected field value version')) v(token, tbl, label)
