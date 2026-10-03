@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T11:58:34.364Z",
+  "generated_at": "2026-10-03T12:10:49.781Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -440,6 +440,18 @@
       "checksum": "bd774b30bc1718910ec50610aea798944a23f52f2af7888475c0fd8f4ef256a7",
       "applied_at": "2026-10-03 11:49:45.809734+00"
     },
+    "migrations/campaign/chairaccess_b_a_locked_row_shows_its_header.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairaccess_b_a_locked_row_shows_its_header.sql",
+      "checksum": "0bf685d2d9c08a321a5f65f6b7c228753830ca92d3dbbdb9728c7b29215a80f0",
+      "applied_at": "2026-10-03 12:02:13.392504+00"
+    },
+    "migrations/campaign/chairaccess_c_a_reader_field_applies_when_a_rule_is_true.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairaccess_c_a_reader_field_applies_when_a_rule_is_true.sql",
+      "checksum": "17226ff2004ad6204f1914969d69e87f06f0b328de1a0c400e28b2c70c56db9b",
+      "applied_at": "2026-10-03 12:08:46.635255+00"
+    },
     "migrations/campaign/chaircensus13_a_the_census_ceiling_counts_the_pairs_it_will_judge.sql": {
       "source": "matrx-frontend",
       "filename": "chaircensus13_a_the_census_ceiling_counts_the_pairs_it_will_judge.sql",
@@ -601,6 +613,12 @@
       "filename": "chairdoors4_a_a_record_is_found_by_its_name_in_every_table.sql",
       "checksum": "2d5061d7d773dd6759ca5e83843e4635125278d22db0fcd6429a3d7055457f5e",
       "applied_at": "2026-10-03 11:51:47.233755+00"
+    },
+    "migrations/campaign/chairdoors4_b_a_record_change_says_the_door_it_came_through.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors4_b_a_record_change_says_the_door_it_came_through.sql",
+      "checksum": "6b7fd949a486be9c64727c206f24947cd778df28477693c5fe8ca785b1d835ec",
+      "applied_at": "2026-10-03 12:10:46.348271+00"
     },
     "migrations/campaign/chairgrid_a_the_table_list_answers_every_organization_in_one_statement.sql": {
       "source": "matrx-frontend",
