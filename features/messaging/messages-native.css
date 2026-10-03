@@ -392,6 +392,19 @@
   padding-bottom: 7px;
   min-height: 36px;
 }
+/* ON A TOUCH SCREEN THE CONTROLS GET THEIR OWN ROW (2026-10-03). The skin
+   above lays ProTextarea's mic / "…" / send over the text's right end and
+   reserves 132px for them — the size they are with a mouse. On a touch screen
+   they are 44px targets (~180px with the send button), wider than the reserve,
+   and on a 375px phone the field showed "age" of "Message" between the pill
+   and the attach button. Here the field keeps ProTextarea's own reserved
+   bottom row (its `pb-14`, proTextareaControlPlacement.ts): the text has the
+   whole line, the controls sit under it. */
+@media (pointer: coarse) {
+  .messages-native .messages-composer textarea {
+    padding: 11px 13px 56px;
+  }
+}
 .messages-draft-attachments {
   display: flex;
   flex-wrap: wrap;
