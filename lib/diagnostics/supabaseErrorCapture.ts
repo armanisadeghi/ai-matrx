@@ -32,6 +32,10 @@
  */
 
 import { extractErrorMessage } from "@/utils/errors";
+import {
+  cancelledByCaller as callerSignalCancelled,
+  isCallerAbortFailure,
+} from "@/lib/diagnostics/cancelledByCaller";
 import { isTransportFailure } from "@ai-matrx/data/net";
 import {
   captureError,
@@ -156,14 +160,16 @@ function isAbortShaped(failure: unknown): boolean {
 
 /**
  * The caller aborted its own request (not a timeout): the answer is the
- * caller's control flow, never an incident. A timeout signal's reason is a
- * `TimeoutError` — that is a failure and still captures.
+ * caller's control flow, never an incident. Two proofs, either is enough:
+ *  - the answer carries the mark of a NAMED caller abort (`abortByCaller`) —
+ *    holds even where this chain never saw the signal;
+ *  - the signal the caller handed `.abortSignal()` is aborted for a reason
+ *    other than a timeout (the shared rule in cancelledByCaller.ts).
+ * A timeout signal's reason is a `TimeoutError` — that still captures.
  */
 function cancelledByCaller(ctx: ChainContext, failure: unknown): boolean {
-  const signal = ctx.callerSignal;
-  if (!signal?.aborted || !isAbortShaped(failure)) return false;
-  const reasonName = (signal.reason as { name?: unknown } | undefined)?.name;
-  return reasonName !== "TimeoutError";
+  if (isCallerAbortFailure(failure)) return true;
+  return isAbortShaped(failure) && callerSignalCancelled(ctx.callerSignal);
 }
 
 /** Fail open: a filter that throws must never hide a failure. */

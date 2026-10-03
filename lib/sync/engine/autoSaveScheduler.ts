@@ -27,6 +27,7 @@
 
 import type { Store, UnknownAction } from "@reduxjs/toolkit";
 import { extractErrorMessage } from "@/utils/errors";
+import { abortByCaller } from "@/lib/diagnostics/cancelledByCaller";
 // MATRX-EXCEPTION: `Policy<any>` / `AutoSaveConfig<any>` — same invariant-TState
 // reason as lib/sync/registry.ts (partialize: readonly (keyof TState)[] makes
 // TState invariant, so `Policy<unknown>` cannot accept the registry's
@@ -177,7 +178,7 @@ export function createAutoSaveScheduler(
         if (!entry) return;
 
         // Abort any prior in-flight for this record so the latest state wins.
-        entry.inFlightController?.abort();
+        abortByCaller(entry.inFlightController, "superseded by a newer save");
         if (entry.timerHandle) {
             clearTimeout(entry.timerHandle);
             entry.timerHandle = null;
@@ -285,7 +286,7 @@ export function createAutoSaveScheduler(
         const bucket = bucketFor(sliceName);
         const existing = bucket.get(recordId);
         if (existing?.timerHandle) clearTimeout(existing.timerHandle);
-        existing?.inFlightController?.abort();
+        abortByCaller(existing?.inFlightController, "superseded by a newer save");
 
         const next: PendingAutoSave = {
             timerHandle: null,
@@ -351,7 +352,7 @@ export function createAutoSaveScheduler(
         for (const [, bucket] of pending) {
             for (const [, entry] of bucket) {
                 if (entry.timerHandle) clearTimeout(entry.timerHandle);
-                entry.inFlightController?.abort();
+                abortByCaller(entry.inFlightController, "identity changed");
             }
             bucket.clear();
         }
@@ -378,7 +379,7 @@ export function createAutoSaveScheduler(
         for (const [, bucket] of pending) {
             for (const [, entry] of bucket) {
                 if (entry.timerHandle) clearTimeout(entry.timerHandle);
-                entry.inFlightController?.abort();
+                abortByCaller(entry.inFlightController, "sync engine disposed");
             }
             bucket.clear();
         }

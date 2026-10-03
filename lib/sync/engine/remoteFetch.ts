@@ -62,7 +62,8 @@ export async function invokeRemoteFetch(opts: InvokeRemoteFetchOptions): Promise
 
     const startIdentity = getIdentity();
     const controller = new AbortController();
-    const abortOnExternal = () => controller.abort();
+    // Forward the caller's own reason (a timeout stays a timeout).
+    const abortOnExternal = () => controller.abort(externalSignal?.reason);
     if (externalSignal) {
         if (externalSignal.aborted) return;
         externalSignal.addEventListener("abort", abortOnExternal, { once: true });

@@ -454,6 +454,12 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-10-02 — **Caller aborts are named.** `abortByCaller(controller, why)`
+  (`lib/diagnostics/cancelledByCaller.ts`) aborts with an `AbortError` whose
+  message carries `cancelled-by-caller:`; the Supabase capture files nothing
+  for an answer carrying that mark, even where it never saw the signal (the
+  signal rule still covers unnamed caller aborts; a timeout still files). The
+  sync engine and `features/rag/hooks/useLibrary.ts` use it.
 - 2026-10-02 — Two caller-owned outcomes leave the Supabase capture proxy
   unfiled (`supabaseErrorCapture.ts`): (1) a chain whose `.abortSignal(s)` the
   CALLER aborted (supersede/unmount; a `TimeoutError` reason still captures,

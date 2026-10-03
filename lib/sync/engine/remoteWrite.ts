@@ -18,6 +18,7 @@
 
 import type { Store } from "@reduxjs/toolkit";
 import { extractErrorMessage } from "@/utils/errors";
+import { abortByCaller } from "@/lib/diagnostics/cancelledByCaller";
 // STATIC, never `import()`: the notice exists for when the network is gone,
 // and a lazily-loaded chunk cannot load then (live, 2026-09-27: offline, the
 // toast chunk failed ERR_INTERNET_DISCONNECTED and no notice ever showed).
@@ -104,6 +105,13 @@ function toastNotice(): RemoteWriteFailureNotice {
 export interface RemoteWriteScheduler {
     /** Record the latest body for this slice; schedule / reschedule the flush. */
     schedule(sliceName: string, body: unknown): void;
+    /**
+     * A peer tab's broadcast changed the slice. When this tab has a save
+     * WAITING on its debounce, it stores the latest body (so the device copy
+     * never goes back to the pre-broadcast state). Never aborts an in-flight
+     * save and never starts or delays one — the peer saves its own change.
+     */
+    adoptPeerBody(sliceName: string, body: unknown): void;
     /** Flush every pending write immediately (pagehide). */
     flushAll(): Promise<void>;
     /** Flush one slice's pending write now; resolves once it is stored (or refused). */
@@ -235,7 +243,7 @@ export function createRemoteWriteScheduler(
         const holdDeviceLeg = awaitingHydration(policy);
         if (holdDeviceLeg && !policy.config.remote?.write) {
             if (record.timerHandle) clearTimeout(record.timerHandle);
-            record.inFlightController?.abort();
+            abortByCaller(record.inFlightController, "held until the saved state is read");
             pending.delete(sliceName);
             holdForHydration(sliceName);
             return;
@@ -263,7 +271,7 @@ export function createRemoteWriteScheduler(
                 // all). The slice holds the edits itself and asks for one save
                 // when its record loads (`policy.persistAfterLoad`).
                 if (record.timerHandle) clearTimeout(record.timerHandle);
-                record.inFlightController?.abort();
+                abortByCaller(record.inFlightController, "held until the saved record loads");
                 pending.delete(sliceName);
                 logger.warn("persist.held", {
                     sliceName,
@@ -277,7 +285,7 @@ export function createRemoteWriteScheduler(
 
         // Abort any previous in-flight for this slice so the latest body
         // supersedes.
-        record.inFlightController?.abort();
+        abortByCaller(record.inFlightController, "superseded by a newer save");
 
         const controller = new AbortController();
         record.inFlightController = controller;
@@ -468,7 +476,7 @@ export function createRemoteWriteScheduler(
         if (awaitingHydration(policy) && !policy.config.remote?.write) {
             const stale = pending.get(sliceName);
             if (stale?.timerHandle) clearTimeout(stale.timerHandle);
-            stale?.inFlightController?.abort();
+            abortByCaller(stale?.inFlightController, "held until the saved state is read");
             pending.delete(sliceName);
             holdForHydration(sliceName);
             return;
@@ -483,7 +491,7 @@ export function createRemoteWriteScheduler(
         next.body = body;
         // If there's an in-flight write, abort it — the new body is newer.
         if (next.inFlightController) {
-            next.inFlightController.abort();
+            abortByCaller(next.inFlightController, "superseded by a newer save");
             next.inFlightController = null;
         }
         pending.set(sliceName, next);
@@ -506,7 +514,7 @@ export function createRemoteWriteScheduler(
             // the swap: it is saved, merged, once the new identity's read lands.
             const policy = bySlice.get(name);
             if (policy?.config.holdUntilHydrated === true) holdForHydration(name);
-            record.inFlightController?.abort();
+            abortByCaller(record.inFlightController, "identity changed");
             if (record.timerHandle) clearTimeout(record.timerHandle);
             pending.delete(name);
         }
@@ -530,6 +538,10 @@ export function createRemoteWriteScheduler(
 
     const scheduler: RemoteWriteScheduler = {
         schedule,
+        adoptPeerBody(sliceName, body) {
+            const record = pending.get(sliceName);
+            if (record && record.timerHandle !== null) record.body = body;
+        },
         flushAll,
         flushSlice: (sliceName) => flushOne(sliceName),
         onIdentitySwap() {
@@ -563,7 +575,7 @@ export function createRemoteWriteScheduler(
         },
         dispose() {
             for (const record of pending.values()) {
-                record.inFlightController?.abort();
+                abortByCaller(record.inFlightController, "sync engine disposed");
                 if (record.timerHandle) clearTimeout(record.timerHandle);
             }
             pending.clear();

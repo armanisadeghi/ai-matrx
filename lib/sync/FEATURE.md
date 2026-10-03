@@ -31,6 +31,17 @@ hydration errors.
 
 ## Change log
 
+- 2026-10-02 — **A peer tab's broadcast is never saved again here.** An
+  action arriving with `meta.fromBroadcast` no longer schedules a warm-cache
+  save (the peer saves its own change); it only moves `lastPersistedRef` and,
+  when a save of this tab is waiting on its debounce, refreshes that body
+  (`RemoteWriteScheduler.adoptPeerBody`) so the device copy never goes back.
+  The echo re-saved every peer change and aborted this tab's in-flight save on
+  each incoming message (`user_preferences` select/update captured as
+  "signal is aborted without reason"). Every engine abort is now named via
+  `abortByCaller` (`lib/diagnostics/cancelledByCaller.ts`); `remoteFetch`
+  forwards the external signal's reason. Guard:
+  `__tests__/peer-broadcast-never-echo-writes.test.ts`.
 - 2026-10-01 (phone run PB-08 #2) — **Theme follows the device unless the
   person chose.** `theme` initialState and `deserialize` fallback are now
   `"system"` (were `"dark"`, which made boot's `reconcileThemeFromPaintedDom`

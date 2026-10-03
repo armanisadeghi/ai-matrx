@@ -500,6 +500,24 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
           if (sliceState === undefined) continue;
           if (lastPersistedRef.get(policy.config.sliceName) === sliceState)
             continue;
+          // THE ECHO GUARD. A change another tab broadcast is that tab's to
+          // save — it already debounces it to the same device store and the
+          // server. Saving it again here was a second write of the same
+          // change that also aborted this tab's own in-flight save on every
+          // incoming message. The state it produced is the new reference;
+          // this tab's own next edit diffs from its base as before, so
+          // nothing it changed is ever skipped.
+          if (
+            hasMetaFromBroadcast(a) &&
+            getPreset(policy.config.preset).writeStrategy === "debounced"
+          ) {
+            lastPersistedRef.set(policy.config.sliceName, sliceState);
+            remoteWriteScheduler?.adoptPeerBody(
+              policy.config.sliceName,
+              serializeBody(policy, sliceState),
+            );
+            continue;
+          }
           persistPolicy(policy, sliceState);
         }
       } else {
