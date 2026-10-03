@@ -5,6 +5,7 @@ import { Youtube } from "@/components/icons/brand-icons";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/utils/cn";
 import {
   UI_GATE_EDITABLE_KEYS,
   type UiGateEditableKey,
@@ -18,6 +19,12 @@ interface InputCapabilitiesEditorProps {
   onReset?: (key: UiGateEditableKey) => void;
   idPrefix: string;
   title?: string;
+  /**
+   * "settings" (default) = the agent builder's rows with a one-line
+   * description. "menu" = the composer/Chat Options sizing: label + switch
+   * only, 36px rows (44px on touch), text-sm, 28px Reset when overridden.
+   */
+  variant?: "settings" | "menu";
 }
 
 const GATE_META: Record<
@@ -35,7 +42,7 @@ const GATE_META: Record<
     Icon: FileText,
   },
   youtube_videos: {
-    label: "YouTube Videos",
+    label: "YouTube videos",
     description: "Offer the YouTube-URL attachment input in chat.",
     Icon: Youtube,
   },
@@ -49,7 +56,53 @@ export function InputCapabilitiesEditor({
   onReset,
   idPrefix,
   title = "Input Capabilities",
+  variant = "settings",
 }: InputCapabilitiesEditorProps) {
+  if (variant === "menu")
+    return (
+      <div className="border-t border-border px-3 pb-3">
+        <p className="pb-1 pt-3 text-xs font-medium text-muted-foreground">{title}</p>
+        {UI_GATE_EDITABLE_KEYS.map((key) => {
+          const { label, Icon } = GATE_META[key];
+          const overridden = overriddenKeys?.has(key) === true;
+          const switchId = `${idPrefix}-${key}`;
+          return (
+            <div
+              key={key}
+              className={cn(
+                "-mx-1.5 flex min-h-9 items-center gap-2.5 rounded-lg px-1.5 pointer-coarse:min-h-11",
+                overridden && "bg-primary/5",
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <Label
+                htmlFor={switchId}
+                className="min-w-0 flex-1 cursor-pointer truncate text-sm font-normal text-foreground"
+              >
+                {label}
+              </Label>
+              {overridden && onReset ? (
+                <button
+                  type="button"
+                  aria-label={`Reset ${label} to agent default`}
+                  title="Reset override"
+                  onClick={() => onReset(key)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+              ) : null}
+              <Switch
+                id={switchId}
+                checked={values[key] === true}
+                onCheckedChange={(next) => onChange(key, next)}
+                className="shrink-0"
+              />
+            </div>
+          );
+        })}
+      </div>
+    );
   return (
     <div className="border-t pt-2 mt-2">
       <div className="mb-2 text-xs font-semibold text-foreground">{title}</div>

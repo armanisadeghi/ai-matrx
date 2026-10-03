@@ -46,5 +46,7 @@ it("the installed Univer facade still has the method this uses", () => {
 it("no code calls the removed createUniverDoc, and the editor mounts only through the helper", () => {
   const editor = readFileSync(join(__dirname, "..", "components", "DocumentEditor.tsx"), "utf8");
   expect(editor).not.toMatch(/createUniverDoc\s*\?\.\s*\(|\.createUniverDoc\(/);
-  expect(editor.match(/mountUniverDocument\(/g)?.length).toBe(2);
+  // Three doors, all the helper: the first boot, a collaborator's snapshot in
+  // a live view, and one arriving while the editor is kept between views.
+  expect(editor.match(/mountUniverDocument\(/g)?.length).toBe(3);
 });

@@ -28,7 +28,8 @@ INVERSE="$FRONTEND/migrations/inverse/redsuites2_a_new_organizations_first_migra
 # verified by pg_indexes: 29+1 valid -> 0 -> 29+1 valid. An unproven inverse may never
 # accompany an index build on the live database.
 INVERSE_SHA_PROVEN=d3c939651008797af477c5de1c938181459277405127952a4cc1587263c83af9
-LOG=/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/night-2026-09-22.log
+LOG="${NIGHT_LOG_DIR:-$HOME/.matrx/night-logs}/night-2026-09-22.log"  # job logs live outside common-docs (plans only)
+mkdir -p "$(dirname "$LOG")"
 OPEN=0100 CLOSE=0330
 
 [ "$REHEARSE" = "1" ] && LOG="${LOG%.log}-rehearsal.log"

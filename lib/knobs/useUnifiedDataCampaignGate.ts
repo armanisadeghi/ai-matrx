@@ -26,6 +26,7 @@ import type { OrganizationState } from "@/features/organizations/useOrganization
 import {
     UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
     UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE,
+    forgetStoreSwitchAnswers,
     type StoreSwitchAnswer,
 } from "./unifiedDataCampaign";
 
@@ -68,15 +69,23 @@ function normalize(answer: boolean | StoreSwitchAnswer): StoreSwitchAnswer {
     return answer;
 }
 
-/** One kept answer per organization; a failed read is shown but never kept fresh. */
+/**
+ * One kept answer per organization, for the tab's session; a failed read is shown but never kept
+ * fresh. 🚨 NOT RE-ASKED ON A MOUNT OR A WAKE (the remount law, 2026-10-03): with a 30 s freshness,
+ * every board tile that woke after half a minute asked `unified_data_store_on` again. The switch is
+ * set once, for everybody, on the ramp screen, which forgets these answers when it writes
+ * (`forgetUnifiedDataCampaignAnswers`); a stale `on` still cannot write where the switch is off,
+ * because every store door asks the switch itself (`custom.assert_store_door`).
+ */
 const campaignAnswers = createKeptAnswers<StoreSwitchAnswer>({
-    freshMs: 30_000,
+    freshMs: Number.POSITIVE_INFINITY,
     keep: (answer) => answer.state !== "unavailable",
 });
 
-/** Tests only: forget every kept switch answer. */
+/** Forget every kept switch answer (the ramp screen after it writes the switch; tests). */
 export function forgetUnifiedDataCampaignAnswers(): void {
     campaignAnswers.forget();
+    forgetStoreSwitchAnswers();
 }
 
 /**

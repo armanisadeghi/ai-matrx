@@ -1,3 +1,4 @@
+// record-view: transcript
 import { TranscriptRecordPage } from "@/features/knowledge/hub/embeds/TranscriptRecordPage";
 
 /**

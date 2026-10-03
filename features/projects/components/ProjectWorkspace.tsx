@@ -35,12 +35,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
-import { getProject } from "@/features/projects/service";
 import {
   useProjectMembers,
+  useProjectRead,
   useProjectUserRole,
   useUserProjects,
 } from "@/features/projects/hooks";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -49,7 +50,7 @@ import { ProjectReferencesPanel } from "@/features/projects/components/ProjectRe
 import { ProjectDetails } from "@/features/projects/components/ProjectDetails";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import type { Project } from "@/features/projects/types";
-import { getOrganizationBySlugOrId } from "@/features/organizations/service";
+import { useOrganizationLabel } from "@/features/organizations/hooks/useOrganizationLabel";
 import { AssignedScopesDisplay } from "@/features/scopes/components/entity-context/AssignedScopesDisplay";
 import {
   InlineProjectName,
@@ -93,52 +94,35 @@ export function ProjectWorkspace() {
   const params = useParams();
   const projectParam = params.projectId as string;
 
-  const [project, setProject] = React.useState<Project | null>(null);
-  const [resolving, setResolving] = React.useState(true);
-
+  // Both reads live in Redux (`useStoreRead`): a remount of the route renders
+  // the stored project and reads nothing.
+  const isUuid = isUuidShape(projectParam);
+  // Slug fallback (slugs aren't globally unique; take first match).
+  const slugRead = useStoreRead<string | null>(
+    isUuid ? null : `projects.slug:${projectParam}`,
+    async () => {
+      const { data, error: slugError } = await projectsDb(supabase)
+        .from("projects")
+        .select("id")
+        .is("deleted_at", null)
+        .eq("slug", projectParam)
+        .limit(1)
+        .maybeSingle();
+      if (slugError) throw slugError;
+      return (data as { id?: string } | null)?.id ?? null;
+    },
+  );
+  const projectId = isUuid ? projectParam : (slugRead.data ?? undefined);
+  const projectRead = useProjectRead(projectId);
+  const project = projectRead.data ?? null;
   // A failed project read is its own state (RC-B12 r13) — `getProject` used
   // to answer null for a fault, which showed the access gate.
-  const [projectReadError, setProjectReadError] = React.useState<unknown>(null);
-  const [projectReadAttempt, setProjectReadAttempt] = React.useState(0);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setResolving(true);
-      setProjectReadError(null);
-      let resolved: Project | null = null;
-      try {
-        if (isUuidShape(projectParam)) {
-          resolved = await getProject(projectParam);
-        } else {
-          // Slug fallback (slugs aren't globally unique; take first match).
-          const { data, error: slugError } = await projectsDb(supabase)
-            .from("projects")
-            .select("id")
-            .is("deleted_at", null)
-            .eq("slug", projectParam)
-            .limit(1)
-            .maybeSingle();
-          if (slugError) throw slugError;
-          const id = (data as { id?: string } | null)?.id;
-          if (id) resolved = await getProject(id);
-        }
-      } catch (err) {
-        console.error("[project page] project read failed:", err);
-        if (!cancelled) {
-          setProjectReadError(err ?? new Error("The project read failed"));
-          setResolving(false);
-        }
-        return;
-      }
-      if (cancelled) return;
-      setProject(resolved);
-      setResolving(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [projectParam, projectReadAttempt]);
+  const projectReadError = slugRead.error ?? (projectRead.hasData ? null : projectRead.error);
+  const resolving =
+    projectReadError == null &&
+    ((!isUuid && !slugRead.hasData) || (projectId != null && !projectRead.hasData));
+  const retryProjectRead = () =>
+    void (slugRead.error ? slugRead.refresh() : projectRead.refresh());
 
   if (resolving) {
     return (
@@ -163,7 +147,7 @@ export function ProjectWorkspace() {
           <ReadFailure
             error={projectReadError}
             what="this project"
-            onRetry={() => setProjectReadAttempt((n) => n + 1)}
+            onRetry={retryProjectRead}
             size="default"
           />
         </div>
@@ -222,13 +206,14 @@ export function ProjectRecordWorkspace({
   const router = useRouter();
   // Inline edits (name/description/status/priority/dates/org) patch this copy
   // so the workspace IS the edit surface — no trip to a separate page.
-  const [project, setProject] = React.useState<Project>(initialProject);
+  // The copy is the store's (`projects.project:<id>`), so an edit made here is
+  // what a remount, a wake or another view of this project shows.
+  const projectRead = useProjectRead(initialProject.id);
+  const project = projectRead.data ?? initialProject;
   const applyPatch = (patch: Partial<Project>) =>
-    setProject((prev) => ({ ...prev, ...patch }));
-  const [org, setOrg] = React.useState<{
-    name: string;
-    slug: string;
-  } | null>(null);
+    projectRead.setData((prev) => ({ ...(prev ?? initialProject), ...patch }));
+  // Label enrichment only: the organization chip is absent without it.
+  const org = useOrganizationLabel(project.organizationId);
   const [taskCounts, setTaskCounts] = React.useState<{
     open: number;
     done: number;
@@ -236,25 +221,6 @@ export function ProjectRecordWorkspace({
     open: 0,
     done: 0,
   });
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!project.organizationId) {
-        setOrg(null);
-        return;
-      }
-      // Label enrichment only: the organization chip is absent without it.
-      const o = await getOrganizationBySlugOrId(project.organizationId).catch((err: unknown) => {
-        console.error("[ProjectWorkspace] organization label unavailable:", err);
-        return null;
-      });
-      if (!cancelled && o)
-        setOrg({ name: o.name, slug: o.slug });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [project.organizationId]);
 
   const { members } = useProjectMembers(project.id);
   const { role, canManageSettings } = useProjectUserRole(project.id);

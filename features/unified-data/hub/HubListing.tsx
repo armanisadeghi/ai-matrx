@@ -54,8 +54,6 @@ export interface HubListingProps {
   order?: DataHomeOrder | undefined;
   /** The one organization the dropdown chose (DATA-HOME-2): empty sentences name it. */
   inOrganization?: string | null | undefined;
-  /** This organization shows members only what is shared with them. */
-  sharedOnly?: boolean | undefined;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -207,7 +205,6 @@ export function HubListing({
   kind = ALL_KINDS,
   order = "updated",
   inOrganization = null,
-  sharedOnly,
   open,
   onOpenChange,
 }: HubListingProps) {
@@ -246,9 +243,7 @@ export function HubListing({
         <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
           {inOrganization && capability.whatInOrganization
             ? capability.whatInOrganization(inOrganization)
-            : sharedOnly && capability.whatWhenSharedOnly
-              ? capability.whatWhenSharedOnly
-              : capability.what}
+            : capability.what}
         </span>
       </button>
 
@@ -280,9 +275,7 @@ export function HubListing({
                 ? `No ${kindTitle(kind).toLowerCase()}${scope !== "all" ? ` under ${DATA_HOME_SCOPE_TITLE[scope]}` : ""} ${inOrganization ? `in ${inOrganization}` : "in any of your organizations"}.`
                 : scope !== "all"
                 ? emptyInScope(capability.title, scope, inOrganization)
-                : sharedOnly && capability.emptyWhenSharedOnly
-                  ? capability.emptyWhenSharedOnly
-                  : capability.empty}
+                : capability.empty}
             </p>
           ) : grouped ? (
             <ul className="divide-y-0">

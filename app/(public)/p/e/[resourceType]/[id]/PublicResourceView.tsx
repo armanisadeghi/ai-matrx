@@ -15,6 +15,7 @@ import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateTo
 import { PublicHeaderActionsPortal } from "@/components/matrx/PublicHeaderActionsPortal";
 import { PublicFlashcardDeck } from "@/features/flashcards/components/public/PublicFlashcardDeck";
 import { isForkable } from "@/utils/permissions/shareLinks";
+import { RecordFieldsView } from "@/features/sharing/lenses/record-fields-view";
 import type { PublicResource } from "../../loadPublicResource";
 
 /** `reading` for a document body; card faces keep the default density. */
@@ -70,6 +71,12 @@ function renderBody(resource: PublicResource): React.ReactNode {
     case "note":
     case "message_template":
       return <MarkdownRenderer resource={resource} />;
+    case "record":
+      return resource.record ? (
+        <RecordFieldsView record={resource.record} />
+      ) : (
+        <GenericRenderer resource={resource} />
+      );
     default:
       return <GenericRenderer resource={resource} />;
   }

@@ -11,13 +11,13 @@ import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { listOrgParam } from "@/lib/list-scope/types";
 import type { ShapeBrowseRow } from "./types";
 import { readListRpc } from "@/lib/entity-list/readListRpc";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message.",
-  );
+  return postgrestError(error, {
+    action: "loading the shapes",
+    fallback: "Supabase returned an error with no message.",
+  });
 }
 
 function filtersJson(query: EntityListQuery): Json {

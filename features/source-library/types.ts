@@ -1,7 +1,7 @@
 /**
  * Wire types for the Media Source Catalog.
  *
- * SoR: ../../../common-docs/projects/media-source-catalog/API-CONTRACT.md (contract 0.1.0).
+ * SoR: ../../../common-docs/systems/media/media-source-catalog/API-CONTRACT.md (contract 0.1.0).
  * The server lane owns that file; these types are its TypeScript face. When the contract
  * version moves, this file moves with it in the same session — never a local divergence.
  *

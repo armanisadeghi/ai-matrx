@@ -15,6 +15,7 @@ import type { RealtimeManager } from "@ai-matrx/realtime";
 import { defineChannelNamespace } from "@ai-matrx/realtime";
 import { supabase } from "@/utils/supabase/client";
 import { defineWorkingCopyKind } from "@/lib/working-copy/workingCopyKind";
+import { announceWorkingCopyConflict, dismissWorkingCopyConflict } from "@/lib/working-copy/announce";
 import { openShared } from "@/lib/realtime/sharedChannel";
 import { toast } from "@/components/ui/use-toast";
 import { getLatestDocumentSnapshot, saveDocumentSnapshot } from "../document-service";
@@ -98,8 +99,25 @@ export const documentWorkingCopy = defineWorkingCopyKind<DocumentModel>({
     // A collab peer's edits are the host's to write: nothing to show as saved.
     return { savedAt: wrote ? Date.now() : null };
   },
-  onSaveFailed(_id, message) {
-    toast({ title: "Could not save document", description: message, variant: "destructive" });
+  onSaveFailed(_id, message, _reason, failure) {
+    // The primitive retries a transient failure: say it once per streak, and
+    // again when it is final (permission / conflict — the person decides).
+    if (!failure.permanent && failure.attempts > 1) return;
+    toast({
+      title: failure.permanent ? "Could not save document" : "Could not save document — retrying",
+      description: message,
+      variant: "destructive",
+    });
+  },
+  // A collaborator saved over the base of this tab's unsaved edits.
+  onConflict: (id, conflict) => announceWorkingCopyConflict(documentWorkingCopy, id, "Document", conflict),
+  onConflictResolved: (id) => dismissWorkingCopyConflict(documentWorkingCopy, id),
+  async resolveConflict(model, choice, conflict) {
+    // Keep mine: the next save writes this tab's document on top. Take theirs:
+    // every view (and a kept editor) shows the newest stored snapshot.
+    if (choice === "theirs" && model) {
+      await model.onRemoteSnapshot(conflict.theirsRef ?? "", { overUnsaved: true });
+    }
   },
 });
 

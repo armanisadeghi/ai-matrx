@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   Hash,
@@ -122,12 +122,16 @@ function resolveDensity(
 
 function useMetricsBarDensity(
   reserveRightSpace: number,
-): [RefObject<HTMLDivElement | null>, MetricsDensity] {
-  const containerRef = useRef<HTMLDivElement>(null);
+): [(node: HTMLDivElement | null) => void, MetricsDensity] {
+  // A callback ref, not a RefObject: the bar renders nothing until there is
+  // text, and the collapsed and chip layouts are DIFFERENT elements — an effect
+  // that read a ref once observed nothing (or the first node) forever, freezing
+  // the bar on its first answer (the notes footer beside the canvas drew
+  // "44 words 244 chars" out of a 0px box over the copy button).
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
   const [density, setDensity] = useState<MetricsDensity>("full");
 
   useEffect(() => {
-    const element = containerRef.current;
     if (!element) return;
 
     const update = () => {
@@ -138,9 +142,9 @@ function useMetricsBarDensity(
     const observer = new ResizeObserver(update);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [reserveRightSpace]);
+  }, [element, reserveRightSpace]);
 
-  return [containerRef, density];
+  return [setElement, density];
 }
 
 function MetricsDetailList({

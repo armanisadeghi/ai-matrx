@@ -234,7 +234,7 @@ export function EntityScopeTabs({
   const countOf = (kind: ListScopeKind): number | null => {
     const measured = counts.byKind[kind];
     // A count nobody has measured for THE CURRENT filter is nothing — never the previous filter's number.
-    if (countsLoading) return null;
+    if (countsLoading || counts.uncounted) return null;
     return typeof measured === "number" ? measured : 0;
   };
   const withCount = (label: string, n: number | null) => (n === null ? label : `${label} (${n})`);
@@ -320,7 +320,7 @@ export function EntityScopeTabs({
           : undefined;
 
         const measured = narrowed?.count ?? counts.byKind[kind];
-        const count = countsLoading
+        const count = countsLoading || counts.uncounted
           ? null
           : typeof measured === "number"
             ? measured
@@ -387,7 +387,7 @@ export function EntityScopeTabs({
                     All
                   </span>
                   <span className="text-xs tabular-nums text-muted-foreground">
-                    {counts.byKind[kind] ?? 0}
+                    {counts.uncounted ? null : (counts.byKind[kind] ?? 0)}
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

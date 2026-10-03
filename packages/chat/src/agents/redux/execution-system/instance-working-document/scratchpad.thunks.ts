@@ -34,6 +34,8 @@ import {
   setWorkingDocBinding,
   setWorkingDocEnabled,
   setWorkingDocTitle,
+  markActiveScratchpadResolved,
+  markWorkingDocsRestored,
 } from "./instance-working-document.slice";
 import { selectActiveScratchpadId } from "./instance-working-document.selectors";
 import { setConversationDocumentEnabledThunk } from "./instance-working-document.thunks";
@@ -124,6 +126,9 @@ export const hydrateActiveScratchpadThunk = createAsyncThunk<
   "scratchpad/hydrateActive",
   async (args, { dispatch, getState }) => {
     if (activeHydrateInFlight && !args?.force) return activeHydrateInFlight;
+    // Resolved once per session (found, or none yet): a remount or a wake of a
+    // panel reads nothing. `force` re-resolves.
+    if (!args?.force && getState().instanceWorkingDocument.activeScratchpadResolved) return;
     const run = (async () => {
       // A null pointer before the preferences REHYDRATE lands just means "not
       // loaded yet" — adopting-newest then would clobber the user's real
@@ -180,7 +185,9 @@ export const hydrateActiveScratchpadThunk = createAsyncThunk<
         throw err;
       }
     })();
-    activeHydrateInFlight = run.finally(() => {
+    activeHydrateInFlight = run.then(() => {
+      dispatch(markActiveScratchpadResolved());
+    }).finally(() => {
       activeHydrateInFlight = null;
     });
     return activeHydrateInFlight;
@@ -368,6 +375,8 @@ export const hydrateAttachedScratchpadsThunk = createAsyncThunk<
 >(
   "scratchpad/hydrateAttached",
   async ({ conversationId }, { dispatch, getState }) => {
+    // Restored once per conversation; the attach/detach thunks keep it current.
+    if (getState().instanceWorkingDocument.restoredByConversation[conversationId]?.attachedScratch) return;
     let links;
     try {
       links = await listConversationDocuments(conversationId);
@@ -412,7 +421,9 @@ export const hydrateAttachedScratchpadsThunk = createAsyncThunk<
       }),
     );
     dispatch(setAttachedScratchpads({ conversationId, documentIds: resolved }));
-    // The ones that did read are attached; the rest are SAID (RC-B12 r13).
+    // The ones that did read are attached; the rest are SAID (RC-B12 r13) —
+    // and a restore with failures is asked again next time.
+    if (failed === 0) dispatch(markWorkingDocsRestored({ conversationId, part: "attachedScratch" }));
     if (failed > 0) {
       throw new Error(`${failed} attached scratchpad${failed === 1 ? "" : "s"} could not be read`);
     }

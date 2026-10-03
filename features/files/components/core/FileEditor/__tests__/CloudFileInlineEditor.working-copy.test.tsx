@@ -97,9 +97,16 @@ jest.mock("@/lib/toast", () => ({
 
 // ── Monaco: one textarea per view, reporting typing like Monaco's onChange ──
 const views: Array<{ path: string; type: (next: string) => void }> = [];
+const editorOptions: Array<Record<string, unknown>> = [];
 jest.mock("next/dynamic", () => () =>
-  function MonacoStub(props: { value: string; path: string; onChange: (next: string) => void }) {
+  function MonacoStub(props: {
+    value: string;
+    path: string;
+    onChange: (next: string) => void;
+    onEditorMount?: (editor: { updateOptions: (o: Record<string, unknown>) => void }) => void;
+  }) {
     views.push({ path: props.path, type: props.onChange });
+    props.onEditorMount?.({ updateOptions: (o) => editorOptions.push(o) });
     return <textarea readOnly value={props.value} data-testid="editor-view" />;
   },
 );
@@ -330,7 +337,44 @@ it("a new version from elsewhere shows when nothing is unsaved, and never replac
   });
   await settle();
   expect(shown()).toEqual([TYPED]);
-  expect(host.textContent).toContain("Unsaved changes");
-  expect(copyOf(fileId)?.base).toBe("Changed again on the phone");
+  // Changed 2026-10-03: the base used to move to the phone's text here, so
+  // Save wrote TYPED over it unasked. Now it is a conflict the person decides.
+  expect(copyOf(fileId)?.base).toBe("Changed on the office laptop");
+  expect(copyOf(fileId)?.conflict?.theirs).toBe("Changed again on the phone");
+  expect(host.textContent).toContain("Changed elsewhere");
   expect(downloads).toEqual([fileId, fileId, fileId]);
+});
+
+it("unsaved text kept across a reload, typed on an older version, opens as a conflict — never saved over the newer one", async () => {
+  const fileId = newFile();
+  store = makeStore(fileId);
+  await show(<CloudFileInlineEditor fileId={fileId} />);
+  await act(async () => lastView().type(TYPED));
+  failUploads = true;
+  await act(async () => {
+    window.dispatchEvent(new Event("pagehide"));
+  });
+  await settle();
+  await show(null);
+
+  // Before the reload, the office laptop saves version 2.
+  failUploads = false;
+  const LAPTOP = ORIGINAL.replace("# Unit 4B move-in", "# Unit 4B move-in (keys collected)");
+  server.set(fileId, { ...server.get(fileId)!, text: LAPTOP, version: 2 });
+  store = makeStore(fileId);
+  await show(<CloudFileInlineEditor fileId={fileId} />);
+  expect(shown()).toEqual([TYPED]);
+  expect(copyOf(fileId)?.conflict).toMatchObject({ theirs: LAPTOP, theirsVersion: 2 });
+  expect(host.textContent).toContain("Changed elsewhere");
+  // Both edits touch different lines: Merge is offered.
+  expect(host.textContent).toContain("Merge");
+  expect(uploads.filter((u) => u.text === TYPED)).toEqual([]);
+});
+
+it("a prose file in a pane with no control rail wraps its lines", async () => {
+  const fileId = newFile();
+  store = makeStore(fileId);
+  editorOptions.length = 0;
+  await show(<CloudFileInlineEditor fileId={fileId} />);
+  expect(editorOptions.at(-1)).toMatchObject({ wordWrap: "on" });
 });

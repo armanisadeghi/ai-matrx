@@ -144,8 +144,7 @@ function LiveKitAudio({
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
         <span className="min-w-0 flex-1 truncate">
-          {state.currentLabel ||
-            "Writing the script — an audio overview takes a few minutes"}
+          {state.currentLabel || "Writing the script"}
         </span>
         <span className="shrink-0 tabular-nums">{pct}%</span>
       </div>
@@ -164,14 +163,11 @@ function LiveKitAudio({
           title="Listening in as it records"
         />
       )}
-      <p className="text-[11px] text-muted-foreground">
-        {/* Percent alone goes quiet for minutes during the TTS render, and a
-            number that has not moved reads as a hang; time in the current step
-            is something we always know honestly. */}
-        <StepClock key={state.currentLabel} />
-        Keep this open to watch it — if you leave, it keeps running and picks up
-        where it left off on the audio page.
-      </p>
+      {/* Percent alone goes quiet for minutes during the TTS render, and a
+          number that has not moved reads as a hang; time in the current step
+          is something we always know honestly. The run is durable (it keeps
+          going and resumes on the audio page) — that is behaviour, not copy. */}
+      <StepClock key={state.currentLabel} />
     </div>
   );
 }
@@ -192,6 +188,8 @@ function StepClock() {
   const elapsed = Math.max(0, now - startedAt);
   if (elapsed < 15_000) return null;
   return (
-    <>On this step for {formatElapsed(elapsed)} — audio takes the longest. </>
+    <p className="text-[11px] tabular-nums text-muted-foreground">
+      This step · {formatElapsed(elapsed)}
+    </p>
   );
 }

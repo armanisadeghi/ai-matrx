@@ -8,7 +8,6 @@
  * `policy.config.autoSave.recordsKey`.
  *
  * Replaces (Phase 5 deletion target): per-feature middlewares + hooks —
- *   - features/notes/redux/autoSaveMiddleware.ts
  *   - features/code-files/redux/autoSaveMiddleware.ts
  *   - features/agents/hooks/useAgentAutoSave.ts
  *   - features/prompts/hooks/usePromptAutoSave.ts

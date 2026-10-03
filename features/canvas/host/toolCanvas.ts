@@ -21,6 +21,7 @@ import {
   type CanvasKindVisibility,
   type CanvasState,
 } from "@ai-matrx/canvas";
+import { useEffect } from "react";
 import { useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
 import { openCanvasItem } from "./openCanvasItem";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
@@ -58,6 +59,13 @@ export interface ToolToggleInput {
   data: CanvasJson;
   /** What a press does while the tab is in front: close it (default) or put the canvas away. */
   whenVisible?: "close" | "hide";
+  /**
+   * Keep an OPEN tab's title equal to `title` while this toggle is mounted —
+   * for a tab that names its subject ("Document history · Q3 plan"), so a
+   * rename shows in the tab. Off by default: a tool whose body names its own
+   * tab (the scratchpad) keeps that name.
+   */
+  followTitle?: boolean;
 }
 
 /**
@@ -81,6 +89,13 @@ export function useToolToggle(input: ToolToggleInput): { isVisible: boolean; tog
   const canvas = useOptionalCanvas();
   const key = input.key ?? "default";
   const isVisible = useOptionalCanvasState((state) => selectCanvasKindVisibility(state, input.kind, key) === "visible", false);
+  const id = canvasItemId(input.kind, key);
+  const openTitle = useOptionalCanvasState((state) => state.items[id]?.title ?? null, null);
+  const follow = Boolean(input.followTitle);
+  useEffect(() => {
+    if (!follow || !canvas || openTitle === null || !input.title || openTitle === input.title) return;
+    void canvas.update(id, { title: input.title });
+  }, [follow, canvas, id, openTitle, input.title]);
   return { isVisible, toggle: () => void toggleToolInCanvas(canvas, input) };
 }
 
@@ -132,4 +147,28 @@ export function canvasHoldsKind(canvas: CanvasController | null, kind: string): 
 /** `canvasHoldsKind` as a subscription — re-renders only when the answer changes. */
 export function useCanvasHoldsKind(kind: string): boolean {
   return useOptionalCanvasState((state) => holdsKind(state, kind), false);
+}
+
+/**
+ * A tab whose title names its SUBJECT ("Note history · Q3 plan"), kept in step
+ * with that subject's live name. Two history tabs side by side must never both
+ * read "Version history". Writes only when the title actually differs; an
+ * empty title (the subject is not loaded here) writes nothing, so the tab
+ * keeps the name it was opened with.
+ */
+export function useCanvasTabTitle(
+  canvas: CanvasController,
+  item: { readonly id: CanvasItemId; readonly title?: string | null },
+  title: string,
+): void {
+  const current = item.title ?? null;
+  useEffect(() => {
+    if (title && title !== current) void canvas.update(item.id, { title });
+  }, [canvas, item.id, current, title]);
+}
+
+/** "<what> · <subject>", or just "<what>" while the subject has no name. */
+export function subjectTitle(what: string, subject: string | null | undefined): string {
+  const name = subject?.trim();
+  return name ? `${what} · ${name}` : what;
 }

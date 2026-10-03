@@ -28,7 +28,7 @@ for (const f of [".env.local", ".env"]) {
   } catch {}
 }
 const ORIGIN = "http://fix10a-assists.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 mkdirSync(OUT, { recursive: true });
 
 const SEATS = [

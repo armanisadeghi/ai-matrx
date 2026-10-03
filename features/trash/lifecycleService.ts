@@ -13,7 +13,7 @@
 // The notice function is the SAME source of truth the weekly digest email reads
 // (aidream/aidream/services/data_lifecycle/digest.py), so the page can never
 // contradict the email. Cross-repo authority:
-// common-docs/projects/data-lifecycle-platform/{VISION,PLAN}.md.
+// common-docs/systems/architecture/database/data-lifecycle/projects/data-lifecycle-platform/PLAN.md/{VISION,PLAN}.md.
 
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";

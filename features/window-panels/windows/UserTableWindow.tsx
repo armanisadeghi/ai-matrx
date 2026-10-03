@@ -14,7 +14,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   datasetTableEntityRef,
-  buildDatasetTableMenuSection,
+  tableActionSectionsAwayFromPage,
   type DatasetTableMenuRow,
 } from "@/features/data-tables/dataset-table-actions";
 
@@ -49,7 +49,7 @@ function UserTableWindowBody({
   const row: DatasetTableMenuRow | null = tableId
     ? { id: tableId, name: title !== "Table" ? title : null }
     : null;
-  const datasetSection = buildDatasetTableMenuSection({ getRow: () => row });
+  const tableSections = tableActionSectionsAwayFromPage(row);
 
   return (
     <WindowPanel
@@ -70,7 +70,7 @@ function UserTableWindowBody({
         contentSource={{ type: "raw" }}
         entity={datasetTableEntityRef(row) ?? undefined}
         contextData={{ content: tableId ? `Data table: ${title}` : "" }}
-        extraSections={[datasetSection]}
+        extraSections={tableSections}
       >
         <div className="flex min-h-0 flex-1 flex-col">
           {tableId ? (

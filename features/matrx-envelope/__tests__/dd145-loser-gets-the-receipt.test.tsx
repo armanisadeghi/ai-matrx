@@ -29,6 +29,7 @@ import apiConfigReducer from "@/lib/redux/slices/apiConfigSlice";
 import proposedDirectivesReducer, {
   proposeDirective,
 } from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
+import storeReadsReducer from "@/lib/redux/slices/storeReadsSlice";
 
 const SLUG = "directive_v1_action_create_project_with_tasks";
 const CONVERSATION = "44444444-4444-4444-4444-444444444444";
@@ -108,6 +109,7 @@ function mount() {
     reducer: {
       proposedDirectives: proposedDirectivesReducer,
       apiConfig: apiConfigReducer,
+      storeReads: storeReadsReducer,
     },
   });
   store.dispatch(

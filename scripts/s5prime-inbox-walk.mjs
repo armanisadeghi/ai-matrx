@@ -19,7 +19,7 @@ import { signIn, setOrganization, until, sleep } from "./lib/seat-browser.mjs";
 const ORIGIN = "http://s5-prime.localhost:3001";
 const ORG_NAME = "Rincon Plumbing Co";
 const ORG = "6069a466-1445-42df-a64e-cf37ecdc1b99";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-24/s5-prime";
+const OUT = "/tmp/matrx-evidence/2026-09-24/s5-prime";
 mkdirSync(OUT, { recursive: true });
 const withdrawn = new Set(JSON.parse(readFileSync(process.env.WITHDRAWN_IDS, "utf8")));
 const env = Object.fromEntries(

@@ -21,11 +21,18 @@ import type {
   ConvertSource,
   TargetKind,
 } from "./types";
+import type { SectionJournal } from "./sectionJournal";
 
 /** One target's outcome in a fan-out — success carries the result, failure the reason. */
 export type KitTargetOutcome =
   | { targetKind: TargetKind; status: "success"; result: ConvertResult }
-  | { targetKind: TargetKind; status: "error"; error: string };
+  | {
+      targetKind: TargetKind;
+      status: "error";
+      error: string;
+      /** The thrown value itself — its code/status reach the error display, never the sentence. */
+      cause: unknown;
+    };
 
 export interface UseContentConverter {
   /** Convert a source into ONE target. Throws on failure. */
@@ -55,6 +62,8 @@ export interface UseContentConverter {
      * caller that holds one passes it so no target can stop mid-run to ask.
      */
     orgId?: string,
+    /** Each target's section receipt book (`sectionJournal.ts`), when the caller keeps one. */
+    sectionsFor?: (kind: TargetKind) => SectionJournal | undefined,
   ) => Promise<KitTargetOutcome[]>;
 }
 
@@ -79,6 +88,7 @@ export function useContentConverter(): UseContentConverter {
       onRequestId?: (kind: TargetKind, id: string) => void,
       onProgress?: (kind: TargetKind, progress: ConvertProgress) => void,
       resolvedOrgId?: string,
+      sectionsFor?: (kind: TargetKind) => SectionJournal | undefined,
     ): Promise<KitTargetOutcome[]> => {
       const orgId = await ensureOrgId(resolvedOrgId);
       return Promise.all(
@@ -96,6 +106,7 @@ export function useContentConverter(): UseContentConverter {
                 onProgress: onProgress
                   ? (p) => onProgress(targetKind, p)
                   : undefined,
+                sections: sectionsFor?.(targetKind),
               },
             );
             const outcome: KitTargetOutcome = {
@@ -110,6 +121,7 @@ export function useContentConverter(): UseContentConverter {
               targetKind,
               status: "error",
               error: e instanceof Error ? e.message : "Generation failed",
+              cause: e,
             };
             onEach?.(outcome);
             return outcome;

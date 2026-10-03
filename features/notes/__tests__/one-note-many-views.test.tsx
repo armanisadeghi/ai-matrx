@@ -53,6 +53,30 @@ jest.mock("../hooks/useNotesSurfaceScope", () => ({ useNotesSurfaceScope: () => 
 jest.mock("../hooks/useNoteArtifactMaterialization", () => ({ useNoteArtifactMaterialization: () => ({}) }));
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm: jest.fn() }));
 jest.mock("@/lib/toast", () => ({ toast: new Proxy({}, { get: () => jest.fn() }) }));
+// The note's working-copy save is its database write: the stored row takes
+// what was sent, one version up.
+jest.mock("@/utils/supabase/claimsUser", () => ({
+  getClaimsUser: async () => ({ data: { user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } }, error: null }),
+}));
+jest.mock("../service/notesService", () => ({
+  ...jest.requireActual("../service/notesService"),
+  persistNoteUpdate: async (id: string, updates: Record<string, unknown>, options: { expectedVersion: number }) => ({
+    note: {
+      id, organization_id: "11111111-1111-4111-8111-111111111111", label: "New-patient intake",
+      folder_name: null, folder_id: null, tags: [], metadata: {}, published_to_web: false, position: 0,
+      project_id: null, task_id: null, created_at: "", created_by: null, updated_at: "2026-10-03T10:00:00.000Z",
+      updated_by: null, deleted_at: null, content_hash: null, file_path: null, last_device_id: null,
+      custom_fields: {}, sync_version: 0, search_engine_indexed: null, shown_to: null,
+      ...updates,
+      version: options.expectedVersion + 1,
+    },
+    databaseWrite: "saved",
+    succeededFields: [],
+    failedFields: [],
+    safeCauses: {},
+  }),
+}));
+
 
 import React, { act } from "react";
 import { Provider } from "react-redux";
@@ -65,6 +89,7 @@ import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NoteContentEditor } from "../components/NoteContentEditor";
 import { getNoteLiveContent } from "../utils/noteLiveContent";
+import { noteSaveRequestMiddleware } from "../redux/noteSaveRequests";
 import type { Note } from "../types";
 
 enableMapSet();
@@ -96,7 +121,7 @@ function makeStore() {
       userAuth: (state = { id: ACTOR, authReady: true }) => state,
       appContext: appContextReducer,
     },
-    middleware: (gdm) => gdm({ serializableCheck: false, immutableCheck: false }).concat(recordCommits),
+    middleware: (gdm) => gdm({ serializableCheck: false, immutableCheck: false }).concat(recordCommits, noteSaveRequestMiddleware),
   });
   store.dispatch(upsertNoteFromServer({ note: storedNote(), fetchStatus: "full" }));
   return { store, commits };
@@ -167,7 +192,7 @@ describe("one note open in two views", () => {
     }
   });
 
-  it("keeps the words typed in one view when the OTHER view closes mid-debounce", () => {
+  it("keeps the words typed in one view when the OTHER view closes mid-debounce", async () => {
     const { store, commits } = makeStore();
     const tile = mountView(store, "board-tile");
     const panel = mountView(store, "side-panel");
@@ -181,17 +206,20 @@ describe("one note open in two views", () => {
     expect(commits).toEqual([]);
 
     panel.unmount();
-    // The last view leaving commits what it held — once.
+    // The last view leaving commits what it held — once — and saves it.
     expect(commits).toEqual([`${STORED} Patient prefers mornings.`]);
     expect(store.getState().notes.notes[NOTE_ID].content).toBe(`${STORED} Patient prefers mornings.`);
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+    expect(store.getState().notes.notes[NOTE_ID]._dirty).toBe(false);
     expect(getNoteLiveContent(NOTE_ID)).toBeUndefined();
   });
 
-  it("a remounted Write editor still undoes through the note's own history", () => {
+  it("a remounted Write editor still undoes through the note's own history", async () => {
     const { store } = makeStore();
     const first = mountView(store, "board-tile");
     first.type(`${STORED} Bring photo ID.`);
     first.unmount(); // a board tile falls asleep / is closed and undone
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
 
     const again = mountView(store, "board-tile");
     try {

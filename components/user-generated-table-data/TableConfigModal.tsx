@@ -124,6 +124,8 @@ interface TableConfigModalProps {
   sampleRow?: { data: Record<string, unknown> } | null;
   /** Which tab opens first; "fields" by default. */
   defaultTab?: "fields" | "table" | "actions";
+  /** The table page's header ⋯ carries Share (TABLE-ACTIONS item 11): no second Share here. */
+  pageOwnsShare?: boolean;
   /** The rows on screen — the Actions tab previews an action against a real row. */
   rows?: readonly { id: string; data: Record<string, unknown> }[];
   /**
@@ -147,6 +149,7 @@ export default function TableConfigModal({
   rows,
   defaultTab,
   onSuccess,
+  pageOwnsShare = false,
 }: TableConfigModalProps) {
   const [loading, setLoading] = useState(false);
   // Which tab is showing, so the footer speaks for THAT tab's save model
@@ -1259,6 +1262,7 @@ export default function TableConfigModal({
                     : "No changes made"}
             </div>
             <div className="flex shrink-0 flex-wrap justify-end gap-2">
+              {!pageOwnsShare && (
               <ShareButton
                 // A table is shared as the record it is (data seam).
                 resourceType="record"
@@ -1269,6 +1273,7 @@ export default function TableConfigModal({
                 resourceName={tableInfo.table_name}
                 showStatus={false}
               />
+              )}
               {onActionsTab && !hasChanges ? (
                 <Button variant="outline" onClick={onClose}>
                   Close

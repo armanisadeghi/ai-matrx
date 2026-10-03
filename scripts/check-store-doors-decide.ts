@@ -18,7 +18,7 @@
  *
  * WHERE IT RUNS (2026-09-27): THE NIGHTLY CLONE, BY DEFAULT. Censuses 12 and 13 ask the one
  * ladder for every (member, record) pair and ran 4-10 minutes on live, many times a day, while
- * the live machine was running out of memory (common-docs/projects/database-workload-safety/
+ * the live machine was running out of memory (common-docs/systems/architecture/database/projects/database-workload-safety/
  * incidents/2026-09-27-per-connection-memory.md). The clone is production's own data, quarantined,
  * so the verdict is the same verdict. Every run prints one [TARGET] line naming the database and
  * the clone's promotion time; `--target production` runs on live with every statement capped at
@@ -47,7 +47,7 @@
 
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { openCheckDb } from "./lib/check-target";
-import { GATE_DB_LIMITS, type openGateDb, tryGateLock } from "./lib/gate-db";
+import { GATE_DB_LIMITS, type openGateDb } from "./lib/gate-db";
 import { CONTENTION_BACKOFF, censusWithPatience, type Measured } from "./lib/census-with-patience";
 import { hostname } from "node:os";
 import { exitAfterDrain } from "./lib/exit-after-drain";
@@ -447,46 +447,126 @@ const IDENTITY_RENDERING_CENSUS = `
    order by 1`;
 
 /**
- * CENSUS 12 — THE THREE ANSWERS TO ONE QUESTION, IN EVERY `shared_only` ORGANIZATION
- * (2026-09-19, lane SHARED-ONLY).
+ * CENSUS 12 — NO SETTING CHANGES WHO MAY OPEN A RECORD (access ladder, custom data adoption,
+ * 2026-10-03; it replaces the `shared_only` census of 2026-09-19).
  *
- * Censuses 1-9 read the CATALOGUE and census 10 asks two seats about one record. All eleven
- * were green on the day the sixth independent pass found that an organization which chooses
- * "people only see what is shared with them" LOSES SHARING ENTIRELY: the store's own question
- * "can she see this?" answered TRUE, every screen answered "You do not have access to this
- * table", and a whole table shared at Admin opened with zero rows. Nothing about the shape of
- * a door was wrong; three different pieces of the system answered one question differently.
+ * The rule it tested is retired: the organization setting `custom/member_default_visibility`
+ * ("people only see what is shared with them") is archived, and the law says every table starts
+ * at Organization — every member of the owning organization opens its records. What a person
+ * SEES in lists is "Shown to" (the knob `access.shown_to_default/record`, the per-row choice),
+ * which hides and never locks (common-docs/policies/access-ladder.md).
  *
- * `custom.shared_only_disagreements()` is that comparison, over every (member, record) pair in
- * every organization that has said `shared_only`: the ONE LADDER, the READ DOOR's own
- * predicate, and the RLS POLICY TEXT the mirror generates, on the same row. The kind of
- * disagreement is the first word of `why`:
+ * So the question is no longer "do three answers agree inside a shared_only organization" — no
+ * such organization exists — but "does any setting still close a record to a member": for every
+ * row whose Shown to is Only me, and a sample of every organization whose Shown to by default is
+ * Only me, every other active member must open it through the READ DOOR's ladder
+ * (`custom.has_visibility`, which `custom.read_record` decides with). The kernel's answer is
+ * printed beside it; the store's ladder sits above the kernel by design (census 7 keeps that
+ * harmless), so the read door is the authority asked.
  *
- *   doors-disagree      the ladder and the read door differ - always a failure
- *   mirror-admits-more  the policy text admits a row every door refuses - always a failure,
- *                       and exactly what `custom/member_default_visibility` left open in
- *                       `iam.entity_read_expr` until this lane
- *   mirror-admits-less  the doors admit through an arm of the store ladder that sits ABOVE the
- *                       platform kernel the mirror is generated from. Harmless while schema
- *                       `custom` holds no table privilege for any client role - which is
- *                       census 7 - because then no policy built from that text decides
- *                       anything. The moment census 7 finds one, this becomes a failure too,
- *                       and the two censuses are wired together below so that happens by
- *                       itself.
- *   unmeasured          an organization with more pairs than the ceiling - never a pass.
- *
- * Its RED half re-runs the same census with one of two REAL historical states restored:
- * `mirror_forgets_the_knob` (the mirror before this lane) and `door_refuses_the_share` (the
- * screens the sixth pass photographed).
+ * Its RED half builds an organization whose Shown to by default is Only me, with one Only-me row
+ * and a second member, and plants the retired rule back (`iam.member_lane_open` reading the Shown
+ * to setting as a lock) in a transaction it always rolls back. The census must then name that
+ * row, and must not name it without the plant.
  */
-const SHARED_ONLY_CENSUS = (pretend: string | null) =>
-  `select record_id::text as function_name,
-          coalesce(member_id::text, organization_name) as identity_args,
-          why
-     from custom.shared_only_disagreements(${pretend === null ? "null" : `'${pretend}'`})`;
+const NO_SETTING_CENSUS = `
+  with orgs as (
+    select o.id,
+           exists (select 1 from platform.knob_override k
+                    where k.feature = 'access.shown_to_default' and k.key = 'record'
+                      and k.scope_kind = 'organization' and k.organization_id = o.id
+                      and k.value = '"only_me"'::jsonb) as default_only_me
+      from iam.organizations o
+     where o.archived_at is null
+       and custom.store_is_open(o.id)
+  ), rows_asked as (
+    select r.id, r.organization_id, r.created_by, 'its Shown to is Only me' as because
+      from orgs join custom.record r on r.organization_id = orgs.id
+     where r.deleted_at is null and r.shown_to = 'only_me' and r.data_class in ('record', 'table')
+    union
+    select s.id, s.organization_id, s.created_by, 'its organization shows rows to Only me by default'
+      from orgs
+      cross join lateral (select r.id, r.organization_id, r.created_by from custom.record r
+                           where r.organization_id = orgs.id and r.deleted_at is null
+                             and r.data_class in ('record', 'table')
+                           order by r.id limit 50) s
+     where orgs.default_only_me
+  )
+  select ra.id::text as function_name, m.user_id::text as identity_args,
+         'setting-closes-access: a member of this organization cannot open the row (' || ra.because
+         || ') - the read door''s ladder says false, the kernel says '
+         || iam.has_access_for(m.user_id, 'record', ra.id, 'viewer')::text
+         || '. Shown to only decides lists; no setting changes who may open a record.' as why
+    from rows_asked ra
+    join iam.memberships m
+      on m.organization_id = ra.organization_id and m.container_type = 'organization'
+     and m.status = 'active' and m.deleted_at is null
+     and m.user_id is distinct from ra.created_by
+   where custom.confidential_anchor(ra.id) is null
+     and not custom.has_visibility(m.user_id, 'record', ra.id, 'viewer')
+   order by 1, 2`;
 
 /**
- * ONE RUN AT A TIME (2026-09-25). Census 12 and census 13 cost minutes of database time each;
+ * The fixture census 12's RED half needs, whatever the database holds: an organization whose
+ * Shown to by default is Only me, the admin's Table and one Only-me row in it, and test@test.com
+ * as an ordinary member. Built and censused inside a transaction that is always rolled back.
+ */
+const NO_SETTING_ORG = "3ef10000-0000-4a00-8a00-0000000000f1";
+const NO_SETTING_TBL = "3ef10000-0000-4a00-8a00-0000000000f2";
+const NO_SETTING_REC = "3ef10000-0000-4a00-8a00-0000000000f3";
+const NO_SETTING_FIXTURE = () => `
+  select set_config('app.actor_system', 'check_store_doors_decide', true);
+  insert into iam.organizations (id, name, slug, abbreviation, created_by)
+  values ('${NO_SETTING_ORG}', 'STORE DOORS no-setting probe', 'store-doors-no-setting-probe', 'SDN',
+          '${TWO_SEAT_ADMIN}');
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values ('${NO_SETTING_ORG}', 'organization', '${NO_SETTING_ORG}', '${TWO_SEAT_ADMIN}', 'owner', 'active'),
+         ('${NO_SETTING_ORG}', 'organization', '${NO_SETTING_ORG}', '${TWO_SEAT_MEMBER}', 'member', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'system_enabled', 'organization', '${NO_SETTING_ORG}', '${NO_SETTING_ORG}',
+          'true'::jsonb, 'check:store-doors-decide no-setting probe'),
+         ('access.shown_to_default', 'record', 'organization', '${NO_SETTING_ORG}', '${NO_SETTING_ORG}',
+          '"only_me"'::jsonb, 'check:store-doors-decide no-setting probe');
+  insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
+  values ('${NO_SETTING_TBL}', '${NO_SETTING_ORG}', '${TWO_SEAT_KERNEL_ORG}', 'record',
+          jsonb_build_object('name', 'No-setting probe table'), '${TWO_SEAT_ADMIN}'),
+         ('${NO_SETTING_REC}', '${NO_SETTING_ORG}', '${NO_SETTING_TBL}', 'record',
+          jsonb_build_object('title', 'The admin''s Only-me row'), '${TWO_SEAT_ADMIN}');
+  update custom.record set shown_to = 'only_me' where id = '${NO_SETTING_REC}';
+`;
+
+/** The retired rule, put back for the RED half only: the Shown to setting closing the member lane. */
+const NO_SETTING_PLANT = `
+  create or replace function iam.member_lane_open(p_organization_id uuid)
+   returns boolean language sql stable set search_path to 'pg_catalog'
+  as $planted$
+    select p_organization_id is null or not exists (
+      select 1 from platform.knob_override k
+       where k.feature = 'access.shown_to_default' and k.key = 'record'
+         and k.scope_kind = 'organization' and k.organization_id = p_organization_id
+         and k.value = '"only_me"'::jsonb)
+  $planted$;`;
+
+/** Census 12 over the fixture, planted or not; rolled back whatever happens. */
+async function noSettingProbe(
+  client: { query: (sql: string) => Promise<unknown> },
+  planted: boolean,
+): Promise<Row[]> {
+  await client.query("begin");
+  try {
+    await client.query(`set local statement_timeout = '${within(120_000)}'`);
+    await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
+    await client.query(NO_SETTING_FIXTURE());
+    if (planted) await client.query(NO_SETTING_PLANT);
+    const rows = (await client.query(NO_SETTING_CENSUS)) as { rows: Row[] };
+    return rows.rows.filter((r) => r.function_name === NO_SETTING_REC);
+  } finally {
+    await client.query("rollback").catch(() => undefined);
+  }
+}
+
+/**
+ * ONE RUN AT A TIME (2026-09-25). Census 13 costs minutes of database time each;
  * on the day the live database froze, several copies of census 12 were running at once. A
  * transaction-scoped advisory lock on these keys means a second caller skips and says so,
  * instead of stacking a second copy on the server.
@@ -495,11 +575,7 @@ const SHARED_ONLY_CENSUS = (pretend: string | null) =>
 // single-flight OUTCOME file census-with-patience shares between runs is on this machine, and a
 // clone run must never adopt a live run's verdict, or the other way round. Set in main().
 let RUN_TARGET: "clone" | "production" = "clone";
-const sharedOnlyLock = () => `census:custom.shared_only_disagreements@${RUN_TARGET}`;
 const listDoorLock = () => `census:custom.list_door_disagreements@${RUN_TARGET}`;
-
-/** The kinds that are never allowed, whatever else is true. */
-const SHARED_ONLY_NEVER = ["doors-disagree", "mirror-admits-more", "unmeasured"];
 
 /**
  * CENSUS 13 — EVERY LIST-SHAPED DOOR ANSWERS EXACTLY WHAT `custom.read_record` ANSWERS
@@ -514,19 +590,20 @@ const SHARED_ONLY_NEVER = ["doors-disagree", "mirror-admits-more", "unmeasured"]
  * set-based path took a different route to the same question, and a census that reads a
  * PREDICATE never executes the door that uses it.
  *
- * `custom.list_door_disagreements()` CALLS THE DOORS: every organization whose store is open —
- * under BOTH privacy settings — every active member, every Table, `custom.read_record` per row
- * for the truth, and each list-shaped door for its rows. Exhaustive for a Table with more than
- * one Home, sampled otherwise.
+ * `custom.list_door_disagreements()` CALLS THE DOORS: every organization whose store is open,
+ * every active member and every person a record there is shared with (member or not), every
+ * Table, `custom.read_record` per row for the truth, and each list-shaped door for its rows.
+ * Exhaustive for a Table with more than one Home, sampled otherwise.
  *
  * ITS KINDS. `doors-disagree` is always a failure. `unmeasured` is never a pass — it means a
  * door DIED rather than answered (a broken worked-out column used to close a whole Table) or an
  * organization is over the ceiling.
  *
  * NO LIVE ORGANIZATION HAS A MULTI-HOME TABLE, so the live sweep alone would be green about
- * nothing. `t10Probe` BUILDS the shape — one Table in two Homes, one record in each, a member
+ * nothing. `t10Probe` BUILDS the shape — one Table in two Homes, one record in each, a person
  * shared one Home and nothing else — through the product's own doors, runs the census on it
- * under `shared_only` AND `all_records`, and rolls the whole thing back.
+ * with that person OUTSIDE the organization (the only seat the defect can reach since no setting
+ * closes the member lane, access ladder 2026-10-03) AND as a member, and rolls it all back.
  *
  * Its RED half re-runs that fixture with the ONE LINE this lane changed put back
  * (`custom.visible_set`'s whole-Table shortcut asking `custom.reaches_directly` about the Table,
@@ -578,23 +655,27 @@ const T10_PRETEND = "a_home_of_a_table_is_the_whole_table";
 
 /**
  * ONE TABLE, TWO HOMES, ONE SHARE — built through `custom.table_declare`, `custom.home_add`,
- * `custom.record_reparent` and `custom.share_grant`, which is how a person builds it, then
- * censused and rolled back. `visibilityKnob` is the organization's privacy setting; the caller
- * runs it at both.
+ * `custom.record_reparent` and `custom.share_grant` (an outside sharee's grant as a portal writes it), then
+ * censused and rolled back. `seat` is who the share goes to: test@test.com OUTSIDE the
+ * organization (an outside sharee — no member lane, so the share is all she has) or as a MEMBER
+ * (who opens every Organization record anyway). The caller runs both.
  */
-const T10_FIXTURE = (visibilityKnob: string) => `
+type ShareeSeat = "outside" | "member";
+const T10_FIXTURE = (seat: ShareeSeat) => `
   select set_config('app.actor_system', 'check_store_doors_decide', true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
   values ('${T10_ORG}', 'STORE DOORS two-home probe', 'store-doors-two-home-probe', 'SDH',
           '${TWO_SEAT_ADMIN}');
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
-  values ('${T10_ORG}', 'organization', '${T10_ORG}', '${TWO_SEAT_ADMIN}', 'owner', 'active'),
-         ('${T10_ORG}', 'organization', '${T10_ORG}', '${TWO_SEAT_MEMBER}', 'member', 'active');
+  values ('${T10_ORG}', 'organization', '${T10_ORG}', '${TWO_SEAT_ADMIN}', 'owner', 'active')${
+    seat === "member"
+      ? `,
+         ('${T10_ORG}', 'organization', '${T10_ORG}', '${TWO_SEAT_MEMBER}', 'member', 'active')`
+      : ""
+  };
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
   values ('custom', 'system_enabled', 'organization', '${T10_ORG}', '${T10_ORG}',
-          'true'::jsonb, 'check:store-doors-decide two-home probe'),
-         ('custom', 'member_default_visibility', 'organization', '${T10_ORG}', '${T10_ORG}',
-          '"${visibilityKnob}"'::jsonb, 'check:store-doors-decide two-home probe');
+          'true'::jsonb, 'check:store-doors-decide two-home probe');
   do $probe$
   declare
     v_org   constant uuid := '${T10_ORG}';
@@ -631,19 +712,27 @@ const T10_FIXTURE = (visibilityKnob: string) => `
     v_ry := custom.record_write(v_org, v_trisk, jsonb_build_object('title','risk in Y'));
     perform custom.record_reparent(v_org, v_rx, v_hx);
     perform custom.record_reparent(v_org, v_ry, v_hy);
-    -- SHE IS GIVEN PROJECT X AND NOTHING ELSE.
-    perform custom.share_grant(v_org, v_hx, 'user', v_dana, 'viewer'::public.permission_level);
-    perform set_config('role', v_boss, true);
+    -- SHE IS GIVEN PROJECT X AND NOTHING ELSE. A member through the store's own share door; an
+    -- outside sharee as the grant row a portal binding writes (custom._share_write_person), because
+    -- custom.share_grant and the Share dialog seat no non-member outside a portal today (VIS-31).
+    if ${seat === "member" ? "true" : "false"} then
+      perform custom.share_grant(v_org, v_hx, 'user', v_dana, 'viewer'::public.permission_level);
+      perform set_config('role', v_boss, true);
+    else
+      perform set_config('role', v_boss, true);
+      insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, created_by)
+      values ('record', v_hx, v_dana, 'viewer', v_admin);
+    end if;
   end $probe$;
 `;
 
 /**
- * Build the two-Home fixture at one privacy setting, run census 13 over that organization
- * alone, roll back whatever happens, and hand back the rows it named.
+ * Build the two-Home fixture with the share going to one seat, run census 13 over that
+ * organization alone, roll back whatever happens, and hand back the rows it named.
  */
 async function t10Probe(
   client: { query: (sql: string) => Promise<unknown> },
-  visibilityKnob: string,
+  seat: ShareeSeat,
   pretend: string | null,
   exhaustive = false,
 ): Promise<Row[]> {
@@ -651,7 +740,7 @@ async function t10Probe(
   try {
     await client.query(`set local statement_timeout = '${within(300_000)}'`);
     await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
-    await client.query(T10_FIXTURE(visibilityKnob));
+    await client.query(T10_FIXTURE(seat));
     const rows = (await client.query(
       LIST_DOOR_CENSUS(pretend, T10_ORG, exhaustive),
     )) as { rows: Row[] };
@@ -679,13 +768,14 @@ async function t10Probe(
  *
  *   a. A VIEWER CANNOT WRITE - `custom.record_update`, `custom.record_delete` and
  *      `custom.record_write` all refuse, as role `authenticated` carrying her claims.
- *   b. REVOKED CANNOT READ - with the share gone, in an organization that has said membership
- *      alone shows nothing (`custom/member_default_visibility = shared_only`),
- *      `custom.read_record` refuses.
+ *   b. REVOKED CANNOT READ - with the share gone, `custom.read_record` refuses. The colleague
+ *      sits OUTSIDE the organization (access ladder, 2026-10-03): a member opens every
+ *      Organization record whatever is shared, and no setting closes that lane any more, so an
+ *      outside sharee is the one seat whose whole access is the share.
  *
  * And, because a probe that can only pass is not a probe, its RED half (`--self-test`) inverts
  * exactly two real things inside the same rolled-back transaction - the grant is written at
- * `editor` instead of `viewer`, and the organization is left at the shipped `all_records` - and
+ * `editor` instead of `viewer`, and the colleague is made a MEMBER of the organization - and
  * requires both clauses to FAIL. Those are the two states in which the product genuinely does
  * allow the write and the read, so a green answer above is green about something.
  *
@@ -700,19 +790,21 @@ const TWO_SEAT_MEMBER = "4060701e-706a-4c76-b3ca-0bbc69fa5a14";
 /** The kernel Table every store fixture hangs off. */
 const TWO_SEAT_KERNEL_ORG = "11111111-0000-4000-8000-000000000004";
 
-const TWO_SEAT_FIXTURE = (grantLevel: string, visibilityKnob: string) => `
+const TWO_SEAT_FIXTURE = (grantLevel: string, seat: ShareeSeat) => `
   select set_config('app.actor_system', 'check_store_doors_decide', true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
   values ('${TWO_SEAT_ORG}', 'STORE DOORS two-seat probe', 'store-doors-two-seat-probe', 'SDP',
           '${TWO_SEAT_ADMIN}');
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
-  values ('${TWO_SEAT_ORG}', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ADMIN}', 'owner', 'active'),
-         ('${TWO_SEAT_ORG}', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_MEMBER}', 'member', 'active');
+  values ('${TWO_SEAT_ORG}', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ADMIN}', 'owner', 'active')${
+    seat === "member"
+      ? `,
+         ('${TWO_SEAT_ORG}', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_MEMBER}', 'member', 'active')`
+      : ""
+  };
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
   values ('custom', 'system_enabled', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ORG}',
-          'true'::jsonb, 'check:store-doors-decide two-seat probe'),
-         ('custom', 'member_default_visibility', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ORG}',
-          '"${visibilityKnob}"'::jsonb, 'check:store-doors-decide two-seat probe');
+          'true'::jsonb, 'check:store-doors-decide two-seat probe');
   insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
   values ('${TWO_SEAT_TBL}', '${TWO_SEAT_ORG}', '${TWO_SEAT_KERNEL_ORG}', 'record',
           jsonb_build_object('name', 'Two-seat probe table'), '${TWO_SEAT_ADMIN}'),
@@ -748,12 +840,12 @@ interface TwoSeatResult {
 
 /**
  * Run the probe inside ONE transaction and roll it back, whatever happens. `grantLevel` and
- * `visibilityKnob` are what the self-test inverts.
+ * `seat` are what the self-test inverts.
  */
 async function twoSeatProbe(
   client: { query: (sql: string) => Promise<unknown> },
   grantLevel: string,
-  visibilityKnob: string,
+  seat: ShareeSeat,
 ): Promise<TwoSeatResult> {
   const wroteAnyway: string[] = [];
   let readAfterRevoke = false;
@@ -761,7 +853,7 @@ async function twoSeatProbe(
   try {
     await client.query(`set local statement_timeout = '${within(120_000)}'`);
     await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
-    await client.query(TWO_SEAT_FIXTURE(grantLevel, visibilityKnob));
+    await client.query(TWO_SEAT_FIXTURE(grantLevel, seat));
 
     for (const [name, sql] of TWO_SEAT_WRITE_CLAUSES) {
       await client.query("savepoint probe");
@@ -890,9 +982,8 @@ async function main(): Promise<void> {
   const since = (mark: number) => formatDurationMs(Date.now() - mark, { style: "compact" });
 
 
-  // THE GATE DATABASE HELPER (2026-09-25). Its ceiling is raised BY NAME: census 12
-  // (`custom.shared_only_disagreements`) measured 30 s on the clone and 53-338 s on live, and
-  // census 13 (`custom.list_door_disagreements`) 37-108 s; each asks the one ladder for every
+  // THE GATE DATABASE HELPER (2026-09-25). Its ceiling is raised BY NAME: census 13
+  // (`custom.list_door_disagreements`) measured 37-108 s; it asks the one ladder for every
   // (member, record) pair, so it is a census by nature. What stops it stacking is the
   // single-flight lock, not a shorter clock. The ceiling is CENSUS_BUDGET (9 min), deliberately
   // UNDER the database's 10-minute transaction_timeout — see GATE_DB_LIMITS.transactionTimeoutMs.
@@ -905,7 +996,7 @@ async function main(): Promise<void> {
     defaultTarget: "clone",
     statementTimeoutMs: CENSUS_BUDGET_MS,
     statementTimeoutReason:
-      "censuses 12 and 13 ask the one ladder for every (member, record) pair: 30 s on the clone, 53-338 s on live under load",
+      "census 13 asks the one ladder for every (member, record) pair: 37-108 s on the clone, longer on live under load",
   }).catch((error: unknown) => {
     fail(
       "DATABASE PULL FAILED - this check is UNMEASURED, which is a failure, not a pass.\n" +
@@ -1050,11 +1141,11 @@ async function main(): Promise<void> {
           "including all five that must be. It can go red.",
       );
       // CENSUS 10, THE RED HALF. The same probe with exactly two real things inverted: the
-      // grant is written at EDITOR rather than viewer, and the organization is left at the
-      // shipped `all_records` rather than `shared_only`. Both clauses must then FAIL - those
-      // are the two states in which the product really does allow the write and the read, so
-      // if they do not fail, the probe is not driving the doors it claims to drive.
-      const redProbe = await twoSeatProbe(client, "editor", "all_records");
+      // grant is written at EDITOR rather than viewer, and the colleague is a MEMBER of the
+      // organization rather than an outside sharee. Both clauses must then FAIL - those are the
+      // two states in which the product really does allow the write and the read, so if they
+      // do not fail, the probe is not driving the doors it claims to drive.
+      const redProbe = await twoSeatProbe(client, "editor", "member");
       const missedWrites = TWO_SEAT_WRITE_CLAUSES.map(([n]) => n).filter(
         (n) => !redProbe.wroteAnyway.includes(n),
       );
@@ -1068,13 +1159,13 @@ async function main(): Promise<void> {
       }
       if (!redProbe.readAfterRevoke) {
         fail(
-          "SELF-TEST FAILED - with the organization left at the shipped `all_records`, a member " +
-            "with no share at all was still refused the read. Either the member lane is gone " +
-            "entirely, or the probe is not calling custom.read_record.",
+          "SELF-TEST FAILED - a MEMBER of the organization with no share at all was refused the " +
+            "read of an Organization record. Either the member lane is gone (every table starts " +
+            "at Organization), or the probe is not calling custom.read_record.",
         );
       }
       console.log(
-        "[ OK ] self-test - inverting the grant to editor and the organization to all_records, " +
+        "[ OK ] self-test - inverting the grant to editor and the colleague to a member, " +
           `the two-seat probe sees all ${redProbe.wroteAnyway.length} write door(s) take the ` +
           "write and the read go through. It can go red.",
       );
@@ -1096,49 +1187,31 @@ async function main(): Promise<void> {
           `SECURITY INVOKER census names ${redInvoker.length} function(s). It can go red.`,
       );
 
-      // CENSUS 12, THE RED HALF. The two states this really was in, each of which must produce
-      // the kind of disagreement it caused: the RLS mirror before it learned
-      // `custom/member_default_visibility`, and the screens the sixth pass photographed.
-      for (const [pretend, kind, what] of [
-        [
-          "mirror_forgets_the_knob",
-          "mirror-admits-more",
-          "with `custom/member_default_visibility` taken back out of iam.entity_read_expr, the " +
-            "policy text admits nobody the doors refuse",
-        ],
-        [
-          "door_refuses_the_share",
-          "doors-disagree",
-          "with the read door refusing every row, it still agrees with the one ladder",
-        ],
-      ] as const) {
-        await client.query("begin");
-        let redShared: Row[];
-        try {
-          await client.query(`set local statement_timeout = '${censusBudget()}'`);
-          if (!(await tryGateLock(client, sharedOnlyLock()))) {
-            fail(
-              `SELF-TEST NOT MEASURED - another run is computing census 12 right now (advisory lock ` +
-                `"matrx-gate:${sharedOnlyLock()}"). A second copy is not started; re-run when it finishes.`,
-            );
-          }
-          redShared = (await client.query<Row>(SHARED_ONLY_CENSUS(pretend))).rows;
-        } finally {
-          await client.query("rollback").catch(() => undefined);
-        }
-        const rows = redShared.filter((r) => r.why?.startsWith(kind));
-        if (rows.length === 0) {
-          fail(
-            `SELF-TEST FAILED - ${what}. Either every shared_only organization on this database ` +
-              "has no member with anything shared, or the census is not comparing what it says it " +
-              "compares - and then its zero above proves nothing.",
-          );
-        }
-        console.log(
-          `[ OK ] self-test - ${pretend}: the shared_only census names ${rows.length} ` +
-            `${kind} row(s). It can go red.`,
+      // CENSUS 12, THE RED HALF. An organization whose Shown to by default is Only me, one
+      // Only-me row and a second member: without the plant the member opens the row (so the
+      // census must NOT name it), and with the retired rule planted back - the Shown to setting
+      // closing the member lane - she cannot (so it MUST). Both inside rolled-back transactions.
+      const unplanted = await noSettingProbe(client, false);
+      if (unplanted.length > 0) {
+        fail(
+          "SELF-TEST FAILED - in the no-setting fixture, with nothing planted, a member of the " +
+            "organization could not open an Only-me row: " + (unplanted[0]?.why ?? "") + ". Then a " +
+            "setting closes access on this database today, or the fixture is not the shape it says.",
         );
       }
+      const plantedRows = await noSettingProbe(client, true);
+      if (plantedRows.length === 0) {
+        fail(
+          "SELF-TEST FAILED - with the retired rule planted back (iam.member_lane_open reading the " +
+            "Shown to setting as a lock), census 12 did not name the fixture's Only-me row. Either " +
+            "the census does not ask the read door's ladder, or the fixture never reaches it - and " +
+            "then its zero proves nothing.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - with the Shown to setting planted back as a lock, census 12 names the ` +
+          `fixture's Only-me row (${plantedRows.length} pair); without the plant it names none. It can go red.`,
+      );
 
       // CENSUS 13, THE RED HALF. The two-Home fixture with the ONE LINE this lane changed put
       // back: `custom.visible_set`'s whole-Table shortcut asking `custom.reaches_directly` about
@@ -1146,13 +1219,13 @@ async function main(): Promise<void> {
       // then gets Project Y's records out of every list door while `custom.read_record` refuses
       // her. If this names nothing, the fixture is not the shape the defect lived in and the
       // zero above is zero about nothing.
-      const redStrict = (await t10Probe(client, "shared_only", T10_PRETEND)).filter((r) =>
+      const redStrict = (await t10Probe(client, "outside", T10_PRETEND)).filter((r) =>
         r.why?.startsWith("doors-disagree"),
       );
       if (redStrict.length === 0) {
         fail(
           "SELF-TEST FAILED - with a Home of a Table read as the whole Table again, the list-door " +
-            "census named no disagreement under `shared_only` in a fixture built exactly as " +
+            "census named no disagreement for an outside sharee in a fixture built exactly as " +
             "acceptance test 10 describes it: one Table, two Homes, one record in each, the " +
             "colleague shared ONE Home and nothing else. Either the fixture no longer builds that " +
             "shape, or the census is not calling the doors - and then its zero above proves nothing.",
@@ -1160,30 +1233,28 @@ async function main(): Promise<void> {
       }
       console.log(
         `[ OK ] self-test - a Home read as the whole Table: the list-door census names ` +
-          `${redStrict.length} doors-disagree row(s) under shared_only. It can go red.`,
+          `${redStrict.length} doors-disagree row(s) for an outside sharee. It can go red.`,
       );
 
-      // AND IT IS RED ONLY WHERE THE DEFECT CAN EXIST. Under `all_records` the organization's
-      // own membership default already admits every row at or above `internal` to every member,
-      // so the whole-Table shortcut has nothing left to hand over and `custom.read_record` opens
-      // the other Home's row too - the doors agree, wrongly-written line or not. Asserting that
-      // pins the REASON the red above is red, so a future change that makes `all_records` leak
-      // cannot hide behind "that setting never showed it". The GREEN half still runs both.
-      const redOpen = (await t10Probe(client, "all_records", T10_PRETEND)).filter((r) =>
+      // AND IT IS RED ONLY WHERE THE DEFECT CAN EXIST. A MEMBER already opens every
+      // Organization record, so the whole-Table shortcut has nothing left to hand over and
+      // `custom.read_record` opens the other Home's row too - the doors agree, wrongly-written
+      // line or not. Asserting that pins the REASON the red above is red. The GREEN half still
+      // runs both seats.
+      const redOpen = (await t10Probe(client, "member", T10_PRETEND)).filter((r) =>
         r.why?.startsWith("doors-disagree"),
       );
       if (redOpen.length > 0) {
         fail(
-          "SELF-TEST FAILED - under `all_records`, where every member already reaches every row " +
-            `at or above internal, the old line produced ${redOpen.length} disagreement(s). Then ` +
-            "the member lane is no longer admitting what it is documented to admit, and the " +
-            "shared_only clause above is measuring something other than the Home-as-whole-Table " +
-            "defect.",
+          "SELF-TEST FAILED - with the colleague a member, who already reaches every Organization " +
+            `row, the old line produced ${redOpen.length} disagreement(s). Then the member lane is ` +
+            "no longer admitting what the law says it admits, and the outside-sharee clause above " +
+            "is measuring something other than the Home-as-whole-Table defect.",
         );
       }
       console.log(
-        "[ OK ] self-test - under all_records the same old line produces no disagreement, which " +
-          "is why the strict setting is where this defect lives.",
+        "[ OK ] self-test - for a member the same old line produces no disagreement, which is " +
+          "why an outside sharee is where this defect lives.",
       );
 
       // CENSUS 16's RED HALF — a kernel body PLANTED, in a transaction that is always
@@ -1464,7 +1535,7 @@ async function main(): Promise<void> {
       "declared client doors that write a record without asking the store's switch",
       rowsOf(DECLARED_SWITCH_CENSUS(true)),
     );
-    const tablePrivileges = await measure(
+    await measure(
       "census 7 - table privileges",
       "client roles holding a TABLE privilege in schema custom",
       rowsOf(TABLE_PRIVILEGE_CENSUS),
@@ -1502,7 +1573,7 @@ async function main(): Promise<void> {
       "census 10 - two seats",
       "doors that took a write from somebody shared at viewer, or showed a revoked person the record",
       async () => {
-        const probe = await twoSeatProbe(client, "viewer", "shared_only");
+        const probe = await twoSeatProbe(client, "viewer", "outside");
         return [
           ...probe.wroteAnyway.map((name) => ({
             function_name: name.replace(/^custom\./, ""),
@@ -1514,8 +1585,8 @@ async function main(): Promise<void> {
             ? [{
                 function_name: "read_record",
                 identity_args: "share revoked",
-                why: "the share was revoked and the record still opened for her, in an organization "
-                  + "whose custom/member_default_visibility is shared_only - a revoke that does not "
+                why: "the share was revoked and the record still opened for her, a person outside "
+                  + "the organization whose only way in was that share - a revoke that does not "
                   + "take effect on the next call is not a revoke",
               }]
             : []),
@@ -1563,50 +1634,19 @@ async function main(): Promise<void> {
       true,
     );
 
-    // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
-    // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
-    // together rather than one of them excusing the other in prose. It and census 13 run LAST:
-    // they are the two that cost minutes, and everything cheap has already printed its verdict
-    // by the time they start.
-    // 🚨 IT SAYS ITS OWN CLOCK, INSIDE A TRANSACTION (censusWithPatience): this connection
-    // reaches the database through the TRANSACTION pooler, where only `set local` inside an
-    // explicit transaction is guaranteed to govern the statement.
     const who = (n: string) => `store-doors ${n}#${process.pid}@${hostname()}`;
+    // CENSUS 12 — no setting changes who may open a record: every Only-me row, and a sample of
+    // every organization whose Shown to by default is Only me, opens for every other member.
     await measure(
-      "census 12 - the three answers in every shared_only organization",
-      "shared_only organizations where the one ladder, the read door and the RLS policy text do not agree",
-      async () => {
-        const census12 = await censusWithPatience<Row>(
-          client,
-          "census 12 (the three answers in every shared_only organization)",
-          SHARED_ONLY_CENSUS(null),
-          censusBudget(),
-          CONTENTION_BACKOFF,
-          sharedOnlyLock(),
-          { whoAmI: who("census 12") },
-        );
-        if (census12.unmeasured) return census12;
-        const mirrorNarrower = census12.rows.filter((r) => r.why?.startsWith("mirror-admits-less"));
-        const privileged = tablePrivileges === null || tablePrivileges.length > 0;
-        if (mirrorNarrower.length > 0 && !privileged) {
-          console.log(
-            `[INFO] ${mirrorNarrower.length} row(s) the store's doors admit through an arm above the ` +
-              "platform kernel the RLS mirror is generated from. Not a failure: census 7 is empty, so " +
-              "no policy built from that text decides a read. It becomes a failure the moment it is not.",
-          );
-        }
-        return census12.rows.filter(
-          (r) =>
-            SHARED_ONLY_NEVER.some((kind) => r.why?.startsWith(kind)) ||
-            (privileged && r.why?.startsWith("mirror-admits-less")),
-        );
-      },
+      "census 12 - no setting changes who may open a record",
+      "(member, record) pairs a Shown to setting closes to a member of the organization",
+      rowsOf(NO_SETTING_CENSUS),
     );
 
     // CENSUS 13 — every list-shaped door against `custom.read_record`, per (member, record),
-    // live, in every organization the store is open in, under BOTH privacy settings. Then the
-    // shape no live organization has: one Table in two Homes, built through the product's own
-    // doors, censused at each setting, rolled back. Three verdicts, each printed as it lands.
+    // live, in every organization the store is open in. Then the shape no live organization
+    // has: one Table in two Homes, built through the product's own doors, censused with the
+    // share going to an outside sharee and to a member, rolled back. Three verdicts.
     const listTitle = "(member, record) pairs a list-shaped door answers differently from custom.read_record";
     await measure(
       `census 13 - every list-shaped door against custom.read_record${exhaustive ? " (--exhaustive: the doors themselves, every row)" : ""}`,
@@ -1624,15 +1664,15 @@ async function main(): Promise<void> {
       true,
     );
     await measure(
-      "census 13 - the two-Home fixture under shared_only",
-      `${listTitle} (two-Home fixture, shared_only)`,
-      () => t10Probe(client, "shared_only", null, exhaustive),
+      "census 13 - the two-Home fixture, outside sharee",
+      `${listTitle} (two-Home fixture, outside sharee)`,
+      () => t10Probe(client, "outside", null, exhaustive),
       true,
     );
     await measure(
-      "census 13 - the two-Home fixture under all_records",
-      `${listTitle} (two-Home fixture, all_records)`,
-      () => t10Probe(client, "all_records", null, exhaustive),
+      "census 13 - the two-Home fixture, member",
+      `${listTitle} (two-Home fixture, member)`,
+      () => t10Probe(client, "member", null, exhaustive),
       true,
     );
 

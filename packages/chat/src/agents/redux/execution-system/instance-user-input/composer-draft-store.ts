@@ -16,9 +16,21 @@
 // every composer already writes, so /chat, the Scout interview room, the
 // Conductor, agent run and every embedded agent conversation inherit it.
 //
-// SCOPE: `sessionStorage`, per browser tab, same as the dialog draft keeper in
-// `@ai-matrx/kit/drafts (useTextDraft)` (whose TTL this reuses). A crash net, never a
-// synced store: a draft is not a message and never reaches the server.
+// SCOPE: `localStorage`, this browser, per signed-in person (the record carries
+// its owner and is never offered to anyone else — the rule `@ai-matrx/kit/drafts`
+// `LocalDraft` was written under). TTL is the kit's `DRAFT_TTL_MS`; expired
+// records are swept on first touch per page. A crash net, never a synced store:
+// a draft is not a message and never reaches the server.
+//
+// It was `sessionStorage` until 2026-10-03, which only survives a reload of the
+// SAME browser tab. Everything around the composer outlives that — the canvas
+// remembers its Quick Chat tab in `localStorage`, the conversation is in the
+// database — so a reload that came back in a fresh tab context (a restored
+// session, a tab the browser discarded, a reopened window) brought the chat
+// back with an empty box. The draft was the one thing that did not survive.
+// Measured live 2026-10-03 on Quick Chat as admin@admin.com. Cross-tab is safe
+// by construction: the submit generation below already refuses a write from a
+// tab that has not seen the latest send.
 //
 // ── TWO KEYS, BECAUSE A ROOM CAN CHANGE ITS MIND ABOUT ITS ID ───────────────
 //
@@ -44,8 +56,8 @@
 // conversation has no messages, and RELEASES it at the handoff (first turn),
 // after which the conversation id is real, stable and the only key. Nothing
 // with messages ever writes an alias record, so the worst an alias can hold is
-// an unsent draft from an unstarted composer on that same surface, in this
-// same tab. (Known narrow edge, accepted: opening an EMPTY existing
+// an unsent draft from an unstarted composer on that same surface, by this
+// same person. (Known narrow edge, accepted: opening an EMPTY existing
 // conversation on the same surface can adopt such a draft. It is the person's
 // own unsent text, it is announced on screen, and it is never auto-sent.)
 //
@@ -83,6 +95,8 @@ export const COMPOSER_DRAFT_MIN_CHARS = 2;
 export type ComposerDraftRecord = {
   /** The draft text. Empty on a tombstone. */
   v: string;
+  /** The user id it was typed as (null = signed out). Offered to no one else. */
+  o?: string | null;
   /** Written-at epoch ms — drives the TTL. */
   at: number;
   /** Submit generation this record was written under. */
@@ -103,18 +117,49 @@ export type ComposerDraftToken = {
   conversationGen: number;
 };
 
+let swept = false;
+
 function storage(): Storage | null {
   try {
     if (typeof window === "undefined") return null;
-    const s = window.sessionStorage;
+    const s = window.localStorage;
     // Touch it: a blocked store throws here rather than at the first write.
     const probe = `${PREFIX}__probe`;
     s.setItem(probe, "1");
     s.removeItem(probe);
+    if (!swept) {
+      swept = true;
+      sweepExpired(s);
+    }
     return s;
   } catch {
     return null;
   }
+}
+
+/**
+ * `localStorage` never ends with the tab, and every fresh conversation id is a
+ * new key — so expired records are dropped once per page instead of only when
+ * that exact conversation is read again.
+ */
+function sweepExpired(s: Storage): void {
+  const now = Date.now();
+  const doomed: string[] = [];
+  for (let i = 0; i < s.length; i += 1) {
+    const key = s.key(i);
+    if (!key || !key.startsWith(PREFIX)) continue;
+    try {
+      const parsed = JSON.parse(s.getItem(key) ?? "null") as
+        | Partial<ComposerDraftRecord>
+        | null;
+      if (typeof parsed?.at !== "number" || now - parsed.at > DRAFT_TTL_MS) {
+        doomed.push(key);
+      }
+    } catch {
+      doomed.push(key);
+    }
+  }
+  for (const key of doomed) s.removeItem(key);
 }
 
 /** False when the browser refuses storage — the composer must SAY drafts are off. */
@@ -221,6 +266,7 @@ function readAt(key: string): ComposerDraftRecord | null {
     }
     return {
       v: parsed.v,
+      o: typeof parsed.o === "string" ? parsed.o : null,
       at: parsed.at,
       gen: parsed.gen,
       sent: parsed.sent === true,
@@ -279,6 +325,7 @@ function bumpGeneration(conversationId: string): number {
 export function writeComposerDraft(
   conversationId: string,
   value: string,
+  ownerId: string | null = null,
 ): boolean {
   if (!isComposerDraftStorageAvailable()) return false;
   const gen = currentGeneration(conversationId);
@@ -296,7 +343,12 @@ export function writeComposerDraft(
     clearComposerDraft(conversationId);
     return true;
   }
-  const record: ComposerDraftRecord = { v: value, at: Date.now(), gen };
+  const record: ComposerDraftRecord = {
+    v: value,
+    o: ownerId,
+    at: Date.now(),
+    gen,
+  };
   let ok = true;
   for (const key of keysFor(conversationId)) {
     ok = writeAt(key, record) && ok;
@@ -334,6 +386,7 @@ export function clearComposerDraft(conversationId: string): void {
 export function peekComposerDraft(
   conversationId: string,
   alias?: string,
+  ownerId: string | null = null,
 ): ComposerDraftToken | null {
   const conversationGen = currentGeneration(conversationId);
   const candidates = [composerDraftKey(conversationId)];
@@ -343,6 +396,8 @@ export function peekComposerDraft(
   for (const key of candidates) {
     const record = readAt(key);
     if (!record || record.sent) continue;
+    // Another person's unsent text on this browser is never theirs to see.
+    if ((record.o ?? null) !== ownerId) continue;
     if (record.v.length < COMPOSER_DRAFT_MIN_CHARS) continue;
     return {
       conversationId,
@@ -368,8 +423,9 @@ export function isComposerDraftTokenLive(token: ComposerDraftToken): boolean {
   return record.gen === token.gen && record.v === token.value;
 }
 
-/** Test seam ONLY — drops the in-memory generations and aliases, as a reload would. */
+/** Test seam ONLY — drops the in-memory generations, aliases and sweep flag, as a reload would. */
 export function __resetComposerDraftGenerationsForTest(): void {
+  swept = false;
   generations.clear();
   aliases.clear();
   aliasHolders.clear();

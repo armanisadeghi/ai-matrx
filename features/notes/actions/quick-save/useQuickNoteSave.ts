@@ -86,7 +86,7 @@ export function useQuickNoteSave({
     // the sidebar; re-dispatching on it here made every failure a retry loop
     // (error → fetch → error …) with no cap.
     if (listStatus === "idle") {
-      dispatch(fetchNotesList());
+      dispatch(fetchNotesList({ ifIdle: true }));
     }
   }, [listStatus, dispatch]);
 

@@ -49,7 +49,8 @@ import {
  */
 
 const SELECT_COLUMNS =
-  "id,name,slug,description,source,rules,version,status,published_to_web,created_by,organization_id,created_at,updated_at";
+  // custom_fields: the list's custom-field columns (lane 7 W5) read them.
+  "id,name,slug,description,source,rules,version,status,published_to_web,created_by,organization_id,created_at,updated_at,custom_fields";
 
 const SORTABLE = new Set([
   "name",

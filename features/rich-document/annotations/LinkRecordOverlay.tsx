@@ -1,3 +1,4 @@
+// record-view: none — a picker that links a passage to a record; it shows no record
 // features/rich-document/annotations/LinkRecordOverlay.tsx
 //
 // "Link a record…" on ANY record the right-click menu targets (menu-model's `link-record` verb,
@@ -13,6 +14,7 @@ import { attachedKey } from "@ai-matrx/associations/react";
 import { toast } from "@/components/ui/use-toast";
 import { LinkRecordPickerSheet } from "./LinkRecordSheet";
 import { linkRecord, listEdgeItems } from "./service";
+import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 import type { AnnotationSource } from "./types";
 
 export interface LinkRecordTarget {
@@ -56,6 +58,11 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
         try {
           await linkRecord({ source: asSource(target), token, id, anchor: null });
           setAttached((prev) => new Set(prev).add(attachedKey(token, id)));
+          // Both ends' Linked sections read the store cache — refresh them (linkRecord writes
+          // through the service, which does not touch the cache).
+          const store = getAssociationsStore();
+          void store.load(target.token, target.id, { force: true });
+          void store.load(token, id, { force: true });
           toast({ title: "Linked", description: title || undefined });
           return true;
         } catch (e) {

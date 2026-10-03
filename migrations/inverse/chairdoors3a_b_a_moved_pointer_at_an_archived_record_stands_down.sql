@@ -1,6 +1,6 @@
 -- chair-step: undo chairdoors3a_b_a_moved_pointer_at_an_archived_record_stands.sql - restores the body of custom.validate_values exactly as it was (a pointer at an archived record stands only where the row being changed already holds it). Nothing else is touched.
 -- lane: CHAIR-DOORS-3A
--- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) INVBASEDON
+-- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 6e9fcd3b9a0df8f00630aae02a38eb947a6ddf8c6e5d176a3f23a7f8d141cbac
 
 CREATE OR REPLACE FUNCTION custom.validate_values(p_organization_id uuid, p_fields custom.record[], p_values jsonb, p_record_type text DEFAULT NULL::text)
  RETURNS void

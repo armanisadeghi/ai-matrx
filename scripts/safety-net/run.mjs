@@ -123,7 +123,7 @@ const ORIGIN = opt("origin") ?? (TARGET === "live" ? "https://www.aimatrx.com" :
 const MANAGE = TARGET === "live" ? "https://manage.aimatrx.com" : ORIGIN;
 const hhmm = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Los_Angeles" }).replace(":", "");
 const LABEL = opt("label") ?? (PLANT ? `plant-${PLANT}` : "run");
-const OUT = resolve(opt("out") ?? join(CODE, `common-docs/operations/for-arman/2026-10-01/safety-net/${TARGET}-${hhmm}-${LABEL}`));
+const OUT = resolve(opt("out") ?? join("/tmp/matrx-evidence", `2026-10-01/safety-net/${TARGET}-${hhmm}-${LABEL}`));
 mkdirSync(join(OUT, "logs"), { recursive: true });
 mkdirSync(join(OUT, "shots"), { recursive: true });
 

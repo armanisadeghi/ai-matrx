@@ -164,6 +164,26 @@ export function seenRowVersion(rowId: string): Promise<number | null> {
   return versions.seen(rowId);
 }
 
+/**
+ * THIS BROWSER'S OWN WRITES TO ONE RECORD GO ONE AFTER ANOTHER (grids review 3, found on the re-walk).
+ * Measured on the clone: "+ Row", then Title, Tab, Asset Tag, Tab… typed fast — the Title's update
+ * (expected version 1 → 2) was still in flight when the Asset Tag's left, also against version 1, and
+ * the store refused it PT409 "Changed by someone else". The someone else was the same person, one
+ * cell to the left. Each update of a record now waits for this browser's previous update of that
+ * record to land, then is sent against the version that write raised — a colleague's change is
+ * still refused exactly as before.
+ */
+const ownWrites = new Map<string, Promise<unknown>>();
+function afterOwnWrites<T>(rowId: string, write: () => Promise<T>): Promise<T> {
+  const before = ownWrites.get(rowId) ?? Promise.resolve();
+  const next = before.catch(() => undefined).then(write);
+  ownWrites.set(rowId, next);
+  void next.finally(() => {
+    if (ownWrites.get(rowId) === next) ownWrites.delete(rowId);
+  });
+  return next;
+}
+
 /** The version a write is sent against: the caller's own (an undo's), else the one the rows were drawn at. */
 async function versionFor(rowId: string, own: number | null | undefined): Promise<number | null> {
   return own !== undefined ? own : versions.seen(rowId);
@@ -797,10 +817,12 @@ export async function upsertCell(
   // the grid patches its page from this answer (`patchLocalCell`). It is sent against the version
   // the row was drawn at; a colleague's change since is refused ("Changed by someone else").
   const client = clientFor(home);
-  const written = await updateRecordAt(client, { record_id: args.rowId, patch, version: await versionFor(args.rowId, args.expectedVersion) });
-  if (!written.ok) return refused(written.error);
-  versions.wrote(client, args.rowId, written.data);
-  return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, { [args.fieldName]: args.value }, written.data) };
+  return afterOwnWrites(args.rowId, async () => {
+    const written = await updateRecordAt(client, { record_id: args.rowId, patch, version: await versionFor(args.rowId, args.expectedVersion) });
+    if (!written.ok) return refused(written.error);
+    versions.wrote(client, args.rowId, written.data);
+    return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, { [args.fieldName]: args.value }, written.data) } as ServiceResult<DatasetRow>;
+  });
 }
 
 /**
@@ -816,14 +838,16 @@ export async function upsertCellAddingChoice(
   const columns = await columnsOf(home, args.tableId);
   if (!columns.success) return columns;
   const patch = toStoreDocument(columns.data, { [args.fieldName]: args.value });
-  const seen = await versionFor(args.rowId, args.expectedVersion);
-  if (seen === null) return refused(versionUnread());
-  // The grid's column name IS the store's key (the mover kept it), so the choices are named by it.
-  const written = await recordUpdateAddingChoices(home, args.rowId, { ...patch, _op_id: mintOpId() }, { [args.fieldName]: args.add }, seen);
-  invalidateRecordStoreTable(args.tableId);
-  if (!written.ok) return refused(written.error);
-  versions.wrote(clientFor(home), args.rowId, written.data);
-  return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, { [args.fieldName]: args.value }, written.data) };
+  return afterOwnWrites(args.rowId, async () => {
+    const seen = await versionFor(args.rowId, args.expectedVersion);
+    if (seen === null) return refused(versionUnread());
+    // The grid's column name IS the store's key (the mover kept it), so the choices are named by it.
+    const written = await recordUpdateAddingChoices(home, args.rowId, { ...patch, _op_id: mintOpId() }, { [args.fieldName]: args.add }, seen);
+    invalidateRecordStoreTable(args.tableId);
+    if (!written.ok) return refused(written.error);
+    versions.wrote(clientFor(home), args.rowId, written.data);
+    return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, { [args.fieldName]: args.value }, written.data) } as ServiceResult<DatasetRow>;
+  });
 }
 
 /**
@@ -886,14 +910,17 @@ export async function upsertRow(
     if (!made.ok) return refused(made.error);
     return { success: true, data: asDatasetRow(args.tableId, home, made.data, args.data) };
   }
-  const written = await updateRecordAt(client, {
-    record_id: args.rowId,
-    patch: toStoreDocument(columns.data, replacing(columns.data, args.data)),
-    version: await versionFor(args.rowId, args.expectedVersion),
+  const rowId = args.rowId;
+  return afterOwnWrites(rowId, async () => {
+    const written = await updateRecordAt(client, {
+      record_id: rowId,
+      patch: toStoreDocument(columns.data, replacing(columns.data, args.data)),
+      version: await versionFor(rowId, args.expectedVersion),
+    });
+    if (!written.ok) return refused(written.error);
+    versions.wrote(client, rowId, written.data);
+    return { success: true, data: asDatasetRow(args.tableId, home, rowId, args.data, written.data) } as ServiceResult<DatasetRow>;
   });
-  if (!written.ok) return refused(written.error);
-  versions.wrote(client, args.rowId, written.data);
-  return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, args.data, written.data) };
 }
 
 /** Archive one row — `record_delete` is soft and reversible within the Table's retention. */

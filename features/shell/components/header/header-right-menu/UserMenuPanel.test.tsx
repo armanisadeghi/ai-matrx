@@ -1,7 +1,7 @@
 /**
  * 🚨 DARK MODE IS NEVER FILED UNDER ADMIN.
  *
- * cold-walk-13 friction (common-docs/projects/masterwork-methods-census/
+ * cold-walk-13 friction (common-docs/systems/masterwork/STATE.md/
  * jobs-bar-2026-09-16/cold-walk-13/README.md): "Dark Mode still sits under a
  * menu section headed ADMIN" — a person-level preference living inside the
  * admin-only accordion tells every non-admin (and every admin reading it)

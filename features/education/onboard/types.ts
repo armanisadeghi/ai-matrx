@@ -25,6 +25,8 @@ export interface NormalizedIngest {
     sourceCount: number;
     /** Every stand-in announces itself: a Source left out, a raw fallback. */
     notes: string[];
+    /** Each Source's own name, in pick order — what the kit namer reads beside the text. */
+    sourceTitles?: string[];
   };
 }
 
@@ -63,6 +65,8 @@ export interface KitTargetState {
   stillGenerating?: boolean;
   /** Populated on error. */
   error?: string;
+  /** The thrown value behind `error` — its code reaches the error display, never the sentence. */
+  errorCause?: unknown;
   /** Live streaming request id (for token-level preview), when available. */
   requestId?: string;
   /** Epoch ms this target started running — powers the honest elapsed clock. */

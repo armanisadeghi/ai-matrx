@@ -53,7 +53,7 @@ the platform was missing and did not know it was missing.
 >    authority refuses it as `address_unverified`. Register and current prices:
 >    `common-docs/projects/outreach-system/VENDOR-ACCOUNTS.md`.
 > 5. **`gmail.readonly`** — RULED 2026-08-15: it lands after the current Google verification round
->    closes, as its own campaign (queued in `common-docs/projects/google-oauth-verification/PLAN.md`).
+>    closes, as its own campaign (queued in `common-docs/systems/integrations/google/FEATURE.md`).
 >    Until it does, the cadence **refuses to run un-listened** rather than sending blind. That is the
 >    designed failure, not a defect.
 >
@@ -895,7 +895,7 @@ those, and a provider id offered as `In-Reply-To` raises rather than shipping a 
 nothing.
 ✅ **RULED BY ARMAN 2026-08-15: `gmail.readonly` is added AFTER the current Google verification
 round closes, as its own focused campaign** (queued in
-`common-docs/projects/google-oauth-verification/PLAN.md` — status header, frozen scope table,
+`common-docs/systems/integrations/google/FEATURE.md` — status header, frozen scope table,
 § "Later restricted access", execution row 12; ruling in
 `common-docs/projects/outreach-system/DECISION_LOG.md` D-W1-10). **Until it lands, outreach
 cannot send at all** — the runner refuses to run un-listened. That is the designed failure, not

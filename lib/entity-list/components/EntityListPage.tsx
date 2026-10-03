@@ -717,11 +717,13 @@ export function EntityListPage<TRow>({
       ? {
           title: isNarrowed
             ? `No live ${plural} match`
-            : archivedCount === 1
-              ? `The only ${singular} here is archived`
-              : `All ${archivedCount} ${plural} are archived`,
+            : probe.state === "known" && probe.more
+              ? `Every ${singular} here is archived`
+              : archivedCount === 1
+                ? `The only ${singular} here is archived`
+                : `All ${archivedCount} ${plural} are archived`,
           description: isNarrowed
-            ? `Nothing live matched your current search and filters — but ${archivedCount} archived ${archivedNoun} did. Widen them, or open the archived ${archivedNoun}.`
+            ? `Nothing live matched your current search and filters — but ${probe.state === "known" && probe.more ? "archived" : archivedCount} ${probe.state === "known" && probe.more ? plural : `archived ${archivedNoun}`} did. Widen them, or open the archived ${archivedNoun}.`
             : `Nothing is missing and nothing was deleted: every ${singular} in this view has been archived. Open them to restore one, or start a new one.`,
           action: (
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -1481,6 +1483,7 @@ export function EntityListPage<TRow>({
             // read-gate-exempt: totalUnknown below tells the table the read failed, and it prints no row count then
             total={list.total}
             totalUnknown={Boolean(list.error)}
+            {...(list.hasMore !== undefined ? { hasMore: list.hasMore } : {})}
             page={list.query.page}
             pageSize={pageSize}
             sort={effectiveSort.sort}
@@ -1579,6 +1582,7 @@ export function EntityListPage<TRow>({
           <LoadMoreFooter
             loaded={list.rows.length}
             total={list.total}
+            hasMore={list.hasMore}
             read={{ status: list.error ? "error" : list.isLoading ? "loading" : "ready", error: list.error }}
             page={list.query.page}
             pageSize={prefs.pageSize}
@@ -1669,9 +1673,12 @@ function LoadMoreFooter({
   page,
   pageSize,
   onPage,
+  hasMore,
 }: {
   loaded: number;
   total: number;
+  /** An open-ended list: no "of N", and Next follows this. */
+  hasMore?: boolean | undefined;
   /** The list read behind `total` — a failed read shows "—", never a count. */
   read: CountRead;
   page: number;
@@ -1679,11 +1686,19 @@ function LoadMoreFooter({
   onPage: (page: number) => void;
 }) {
   const shownThrough = (page - 1) * pageSize + loaded;
-  if (total === 0) return null;
+  const openEnded = hasMore !== undefined;
+  if (total === 0 && !openEnded) return null;
+  if (openEnded && loaded === 0 && page <= 1) return null;
   return (
     <div className="flex items-center justify-center gap-3 pt-4 text-xs text-muted-foreground">
       <span className="tabular-nums">
-        {shownThrough} of <UntrustedCount value={total} read={read} label="Total" />
+        {openEnded ? (
+          `${((page - 1) * pageSize + 1).toLocaleString()}-${shownThrough.toLocaleString()}`
+        ) : (
+          <>
+            {shownThrough} of <UntrustedCount value={total} read={read} label="Total" />
+          </>
+        )}
       </span>
       <div className="flex items-center gap-1">
         <Button
@@ -1697,7 +1712,7 @@ function LoadMoreFooter({
         <Button
           size="sm"
           variant="outline"
-          disabled={shownThrough >= total}
+          disabled={openEnded ? !hasMore : shownThrough >= total}
           onClick={() => onPage(page + 1)}
         >
           Next

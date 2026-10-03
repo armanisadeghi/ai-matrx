@@ -6,6 +6,8 @@
  * - no "Intelligence" row, or an AI row left outside it → red.
  * - more than four own rows at the top level → red.
  * - any resolved row reachable neither at the top nor one submenu down (lost) → red.
+ * - a thing that brings its own Export still offering the page-text PDF/Word/HTML rows → red;
+ *   dropping those rows for a thing WITHOUT its own Export (nothing else would save it) → red.
  */
 jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 jest.mock("@/components/icons/domain-icons", () => ({ INTELLIGENCE_ICON: () => null, AGENT_ICON: () => null }));
@@ -14,7 +16,7 @@ import { createClickTarget, type Action, type ActionCategory, type ResolvedActio
 import { clickedKind, proposedArrangement, OWN_ROWS_MAX, STRIP_MAX } from "../proposed-arrangement";
 
 const row = (id: string, label: string, category: ActionCategory, extra: Partial<Action> = {}): ResolvedAction => ({
-  action: { id, label, category, run: () => undefined, ...extra },
+  action: { id, label, category, run: () => undefined, eligible: () => ({ status: "available" }), ...extra } as Action,
   eligibility: { status: "available" },
 });
 const sub = (id: string, label: string, category: ActionCategory) => row(id, label, category, { expand: async () => [] });
@@ -26,6 +28,10 @@ const universal = (): ResolvedAction[] => [
   row("cm:select-all", "Select All", "edit"),
   sub("cm:copy-as", "Copy as", "clipboard"),
   sub("cm:export", "Export", "save"),
+  row("download-pdf", "Download PDF", "export"),
+  row("download-docx", "Download Word", "export"),
+  row("download-html", "Download HTML", "export"),
+  row("save-as-pdf", "Save as PDF Document", "save"),
   row("cm:attach", "Attach To", "share"),
   sub("cm:placement:ai-action", "AI Actions", "ai"),
   sub("cm:placement:bound-agent", "Agents", "ai"),
@@ -115,11 +121,25 @@ describe("the proposed right-click menu", () => {
     expect(proposedArrangement(thing, [row("cm:copy", "Copy", "clipboard")], { noun: "table" }).some((r) => r.action.id === "proposed:intelligence")).toBe(true);
   });
 
+  const PAGE_TEXT_FILES = ["cm:export", "download-pdf", "download-docx", "download-html", "save-as-pdf"];
+
+  it("a thing with its own Export offers only that Export, never the page-text files", async () => {
+    const ids = await reachable(proposedArrangement(thing, thingRows(), { noun: "table" }));
+    expect(PAGE_TEXT_FILES.filter((id) => ids.has(id))).toEqual([]);
+    expect(ids.has("cm:x:export")).toBe(true);
+  });
+
+  it("a thing without its own Export keeps the page-text files", async () => {
+    const quiz = [...universal(), row("cm:x:open", "Open", "edit"), row("cm:x:archive", "Archive quiz", "edit")];
+    const ids = await reachable(proposedArrangement(thing, quiz, { noun: "quiz" }));
+    expect(PAGE_TEXT_FILES.filter((id) => !ids.has(id))).toEqual([]);
+  });
+
   it.each([
-    ["a thing", thing, thingRows],
-    ["editable text", editable, editableRows],
-  ] as const)("loses nothing on %s", async (_name, target, rows) => {
+    ["a thing", thing, thingRows, PAGE_TEXT_FILES],
+    ["editable text", editable, editableRows, []],
+  ] as const)("loses nothing on %s but the files its own Export replaces", async (_name, target, rows, replaced) => {
     const ids = await reachable(proposedArrangement(target, rows(), { noun: "x" }));
-    expect(rows().map((r) => r.action.id).filter((id) => !ids.has(id))).toEqual([]);
+    expect(rows().map((r) => r.action.id).filter((id) => !ids.has(id))).toEqual([...replaced]);
   });
 });

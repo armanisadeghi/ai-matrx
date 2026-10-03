@@ -2,7 +2,6 @@ import { createClient } from "@/utils/supabase/server";
 import { ChatRoomClient } from "@ai-matrx/chat/agents/components/chat/ChatRoomClient";
 import { ChatRunHeader } from "@ai-matrx/chat/agents/components/chat/ChatRunHeader";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 
 interface DirectAgentChatPageProps {
   params: Promise<{ agentId: string }>;
@@ -44,13 +43,11 @@ export default async function DirectAgentChatPage({
   ]);
   return (
     <>
-      <PageHeader>
-        <ChatRunHeader
-          activeAgentId={agentId}
-          initialAgentName={agentName ?? undefined}
-          composerMode={{ initialMode }}
-        />
-      </PageHeader>
+      <ChatRunHeader
+        activeAgentId={agentId}
+        initialAgentName={agentName ?? undefined}
+        composerMode={{ initialMode }}
+      />
       {/* The agent's own organization has nothing to do with where the chat
           lands — the conversation belongs to the person's working
           organization, so no switch-organization offer (Arman, 2026-09-26). */}

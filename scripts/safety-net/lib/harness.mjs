@@ -66,7 +66,7 @@ export const ORIGIN =
   process.env.SN_ORIGIN ?? (TARGET === "live" ? "https://www.aimatrx.com" : "http://safety-net.localhost:3001");
 export const MANAGE_ORIGIN =
   process.env.SN_MANAGE_ORIGIN ?? (TARGET === "live" ? "https://manage.aimatrx.com" : ORIGIN);
-export const OUT = process.env.SN_OUT ?? join(REPO, "..", "common-docs/operations/for-arman/2026-10-01/safety-net/adhoc");
+export const OUT = process.env.SN_OUT ?? join("/tmp/matrx-evidence/2026-10-01/safety-net/adhoc");
 /** A short stamp that marks every fixture this run makes, e.g. "Oct 1 0214". */
 export const STAMP =
   process.env.SN_STAMP ??

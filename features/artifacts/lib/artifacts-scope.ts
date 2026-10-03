@@ -70,7 +70,8 @@ export function buildArtifactListScope(input: {
  * publisher). `null` = not loaded or no canvas content.
  */
 export interface ArtifactContentSnapshot {
-  canvasItemId: string;
+  /** Null when the content is not a canvas row (an HTML page's own record). */
+  canvasItemId: string | null;
   canvasType: string;
   data: unknown;
 }
@@ -104,7 +105,7 @@ export function buildArtifactDetailScope(input: {
     return createArtifactsScope({
       artifact_load_state: loadState,
       ...(loadState === "canvas_item" && content
-        ? { artifact_canvas_item_id: content.canvasItemId, ...contentFields }
+        ? { artifact_canvas_item_id: content.canvasItemId ?? undefined, ...contentFields }
         : {}),
     });
   }

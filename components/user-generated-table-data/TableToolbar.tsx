@@ -88,6 +88,11 @@ interface TableToolbarProps {
   showDeleteModal: boolean;
   showAddColumnModal: boolean;
   showAddRowModal: boolean;
+  /**
+   * "+ Row" adds the row IN THE GRID with its first cell editing (grids review 3). Without it, and
+   * from the phone's actions sheet, "+ Row" opens the row form.
+   */
+  onAddRowInline?: () => void;
   showTableConfigModal: boolean;
   /** Which tab Table settings opens on. */
   configTab?: "fields" | "table" | "actions";
@@ -119,6 +124,8 @@ interface TableToolbarProps {
   // Success callbacks
   onEditSuccess?: () => void;
   onDeleteSuccess?: () => void;
+  /** A row was archived from the delete dialog — the grid records it on its undo stack (DeleteRowModal). */
+  onRowArchived?: (rowId: string, named: string) => void;
 
   // Cell cleanup. `cleanCellValue` / `isCellValueDirty` are the single-value
   // helpers the row editor uses; `cleanupControl` is the bulk control itself,
@@ -196,6 +203,7 @@ export default function TableToolbar({
   showDeleteModal,
   showAddColumnModal,
   showAddRowModal,
+  onAddRowInline,
   showTableConfigModal,
   configTab,
   showReferenceOverlay,
@@ -218,6 +226,7 @@ export default function TableToolbar({
   // Success callbacks
   onEditSuccess: onEditSuccessProp,
   onDeleteSuccess: onDeleteSuccessProp,
+  onRowArchived,
 
   // Cell cleanup
   cleanCellValue,
@@ -356,7 +365,7 @@ export default function TableToolbar({
               </Button>
               <Button
                 size="sm"
-                onClick={() => setShowAddRowModal(true)}
+                onClick={() => (onAddRowInline ? onAddRowInline() : setShowAddRowModal(true))}
                 className="whitespace-nowrap"
                 title="Add a row"
               >
@@ -648,6 +657,7 @@ export default function TableToolbar({
             isOpen={showDeleteModal}
             onClose={() => setShowDeleteModal(false)}
             onSuccess={onDeleteSuccess}
+            {...(onRowArchived ? { onArchived: onRowArchived } : {})}
           />
           <TableConfigModal
             tableId={tableId}
@@ -660,6 +670,7 @@ export default function TableToolbar({
             sampleRow={sampleRow ?? null}
             rows={rows}
             defaultTab={configTab}
+            pageOwnsShare={pageOwnsShareAndExport}
           />
           <RowOrderingModal
             isOpen={showRowOrderingModal}

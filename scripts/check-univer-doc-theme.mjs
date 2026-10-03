@@ -42,6 +42,17 @@
  *    OWN `ColorKit` (imported here from `@univerjs/core` — the real vendor
  *    code that threw, not a description of it) and satisfies the page/frame
  *    luminance invariant.
+ * D. Every theme TOKEN Univer's shipped docs renderer paints (`"gray.0"` page,
+ *    `"gray.100"` desk, `"gray.900"` ink — Univer 1.0 writes its own fills as
+ *    tokens) reaches the canvas as a colour Univer's ColorKit accepts, through
+ *    the resolver the editor installs. THE BLACK PAGE, 2026-10-03: the editor's
+ *    `DumbCanvasColorService` handed the canvas `"gray.0"`, the canvas ignored
+ *    it and kept its default black, and every document page was 0,0,0,255.
+ * E. Every render-manager member `useUniverDocSurfaceTheme` reaches through
+ *    its optional, structural `manager?.x?.(…)` calls exists in the shipped
+ *    `@univerjs/engine-render`. Univer 1.0 renamed `getRenderById` to
+ *    `getRenderUnitById`; the optional call quietly returned nothing and the
+ *    host's colours never reached a single document (same day).
  *
  * Usage:
  *   pnpm check:univer-doc-theme             # sweep + the colour engine check
@@ -52,7 +63,8 @@
 
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
+import { createRequire } from "node:module";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
 
@@ -165,6 +177,87 @@ export async function findColorEngineViolations(colorsByMode) {
   return violations;
 }
 
+// ─── D. Univer's own theme tokens, driven through the REAL ThemeService ─────
+
+/** Every `"palette.shade"` literal the shipped docs renderer can paint. */
+function shippedUniverTokens(paletteNames) {
+  const fromRoot = createRequire(join(ROOT, "package.json"));
+  const fromPreset = createRequire(fromRoot.resolve("@univerjs/preset-docs-core"));
+  const bundles = [
+    fromRoot.resolve("@univerjs/engine-render"),
+    fromPreset.resolve("@univerjs/docs-ui"),
+  ];
+  const tokens = new Set();
+  for (const bundle of bundles) {
+    const text = readFileSync(bundle, "utf8");
+    for (const [, token] of text.matchAll(/"([a-zA-Z]+\.[0-9]{1,3})"/g)) {
+      if (paletteNames.has(token.split(".")[0])) tokens.add(token);
+    }
+  }
+  return [...tokens].sort();
+}
+
+/**
+ * @param resolveColor  the editor's resolver, `(color, lookup) => string`
+ * @returns {Promise<string[]>} every token that would reach the canvas unpainted
+ */
+export async function findTokenResolutionViolations(resolveColor) {
+  const { ThemeService, ColorKit } = await import("@univerjs/core");
+  const themeService = new ThemeService();
+  const tokens = shippedUniverTokens(new Set(Object.keys(themeService.getCurrentTheme())));
+  const violations = [];
+  if (tokens.length === 0) {
+    violations.push("found no theme tokens in Univer's docs renderer bundles — the scan is broken, so nothing was measured");
+  }
+  for (const token of tokens) {
+    const painted = resolveColor(token, (t) => themeService.getColorFromTheme(t));
+    let valid = false;
+    try {
+      valid = painted !== token && new ColorKit(painted).isValid;
+    } catch {
+      valid = false;
+    }
+    if (!valid) {
+      violations.push(
+        `token "${token}" reaches the canvas as "${painted}" — a canvas ignores a fillStyle it cannot parse and keeps its default BLACK (the 2026-10-03 black page)`,
+      );
+    }
+  }
+  return violations;
+}
+
+/** Rule D's static half: the colour service installed may not be the pass-through one. */
+export function findDumbColorService(source) {
+  return /useClass\s*:\s*DumbCanvasColorService/.test(source)
+    ? ["installs DumbCanvasColorService, which hands Univer 1.0's theme tokens (\"gray.0\") to the canvas unresolved — the page paints black"]
+    : [];
+}
+
+/** Rule E: what the hook calls on the render manager must exist in Univer. */
+export function findMissingRenderManagerMembers(hookSource, engineRenderBundle) {
+  const used = new Set(
+    [...hookSource.matchAll(/\bmanager\?\.([\w$]+)\?\./g)].map((m) => m[1]),
+  );
+  const violations = [];
+  for (const name of used) {
+    const escaped = name.replace(/\$/g, "\\$");
+    const defined =
+      new RegExp(`\\n\\t${escaped}\\(`).test(engineRenderBundle) ||
+      engineRenderBundle.includes(`"${name}"`);
+    if (!defined) {
+      violations.push(
+        `calls manager?.${name}?.(…) but the shipped @univerjs/engine-render RenderManagerService has no "${name}" — the optional call returns nothing and the document keeps Univer's colours`,
+      );
+    }
+  }
+  return violations;
+}
+
+function engineRenderEsBundle() {
+  const cjs = createRequire(join(ROOT, "package.json")).resolve("@univerjs/engine-render");
+  return readFileSync(join(dirname(dirname(cjs)), "es", "index.js"), "utf8");
+}
+
 function trackedFiles() {
   const out = execFileSync("git", ["ls-files", "--", "*.ts", "*.tsx"], {
     cwd: ROOT,
@@ -239,7 +332,39 @@ async function selfTest() {
     dark: univerDocSurfaceColors("dark", () => ""),
   });
 
+  // 5. THE BLACK PAGE. The pass-through service must be caught both by the
+  //    source rule and by the real-Univer token check; the resolver the editor
+  //    installs today must be clean.
+  const { resolveUniverCanvasColor } = await import(
+    "../features/data-tables/univer-theme-token-color.ts"
+  );
+  const dumbTokens = await findTokenResolutionViolations((color) => color);
+  const liveTokens = await findTokenResolutionViolations(resolveUniverCanvasColor);
+  const dumbSource = findDumbColorService(
+    "injector.replace([ICanvasColorService, { useClass: DumbCanvasColorService }]);",
+  );
+
+  // 6. THE RENAMED LOOKUP. Univer 0.x's `getRenderById` must be caught; the
+  //    hook as it stands must be clean.
+  const bundle = engineRenderEsBundle();
+  const hookFile = "features/data-tables/hooks/useUniverDocSurfaceTheme.ts";
+  const oldLookup = findMissingRenderManagerMembers(
+    "paint(manager?.getRenderById?.(unitId) ?? null);",
+    bundle,
+  );
+  const liveLookup = findMissingRenderManagerMembers(
+    readFileSync(resolve(ROOT, hookFile), "utf8"),
+    bundle,
+  );
+
   const checks = {
+    "Univer 0.x's getRenderById is caught as missing from engine-render": oldLookup.length === 1,
+    "the surface-theme hook reaches only members engine-render ships": liveLookup.length === 0,
+    "the pass-through colour service is caught on Univer's real tokens": dumbTokens.some((v) =>
+      v.includes('"gray.0"'),
+    ),
+    "the pass-through colour service is caught in source": dumbSource.length === 1,
+    "the editor's token resolver paints every shipped Univer token": liveTokens.length === 0,
     "walk-18 editor flagged for the missing hook": walk18.some(
       (f) => f.kind === "univer-document-without-theme",
     ),
@@ -264,7 +389,7 @@ async function selfTest() {
   if (failed.length) {
     console.error("check-univer-doc-theme self-test FAILED");
     for (const [name] of failed) console.error(`  ✗ ${name}`);
-    console.error({ walk18, walk19, plantedColors, blackPage, liveColors });
+    console.error({ walk18, walk19, plantedColors, blackPage, liveColors, dumbTokens: dumbTokens.slice(0, 5), liveTokens, oldLookup, liveLookup });
     process.exit(3);
   }
   for (const name of Object.keys(checks)) console.log(`  ✓ ${name}`);
@@ -305,9 +430,29 @@ for (const violation of colorViolations) {
   console.log(`features/data-tables/univer-doc-surface-theme.ts  ${violation}`);
 }
 
+const { resolveUniverCanvasColor } = await import(
+  "../features/data-tables/univer-theme-token-color.ts"
+);
+const canvasColorsFile = "features/data-tables/univer-doc-canvas-colors.ts";
+for (const violation of [
+  ...findDumbColorService(readFileSync(resolve(ROOT, canvasColorsFile), "utf8")),
+  ...(await findTokenResolutionViolations(resolveUniverCanvasColor)),
+]) {
+  total++;
+  console.log(`${canvasColorsFile}  ${violation}`);
+}
+const surfaceHookFile = "features/data-tables/hooks/useUniverDocSurfaceTheme.ts";
+for (const violation of findMissingRenderManagerMembers(
+  readFileSync(resolve(ROOT, surfaceHookFile), "utf8"),
+  engineRenderEsBundle(),
+)) {
+  total++;
+  console.log(`${surfaceHookFile}  ${violation}`);
+}
+
 if (total === 0) {
   console.log(
-    `check-univer-doc-theme: ${documentSurfaces} Univer document surface(s), every one of them stating its page and frame colours through ${REQUIRED_HOOK} and rendering them verbatim through ${REQUIRED_VERBATIM}; both themes' colours survive Univer's own ColorKit.`,
+    `check-univer-doc-theme: ${documentSurfaces} Univer document surface(s), every one of them stating its page and frame colours through ${REQUIRED_HOOK} and rendering them verbatim through ${REQUIRED_VERBATIM}; both themes' colours survive Univer's own ColorKit; every theme token Univer's docs renderer paints resolves to a colour.`,
   );
   process.exit(0);
 }

@@ -23,6 +23,14 @@
  *  - SIDE EFFECTS, ONCE. The snapshot realtime channel, the collab room, and
  *    the pagehide / visibility / beforeunload flush are opened once per
  *    document and closed once.
+ *  - THE EDITOR ITSELF, KEPT. Univer keeps its undo / redo history inside the
+ *    editor instance, so rebuilding the editor on a remount threw the history
+ *    away. When the last view leaves, its editor (a Univer instance with its
+ *    own DOM host) is parked here — off the page, alive — and the next view of
+ *    the document RE-ATTACHES that same instance to its own container instead
+ *    of booting a new one (`parkEditor` / `takeParkedEditor`). Undo and redo
+ *    therefore work across hide / show, a remount and a removed tile undone,
+ *    for as long as the record's session is warm; `close()` disposes it.
  */
 
 import type { ICommandInfo, IDocumentData } from "@univerjs/core";
@@ -84,6 +92,22 @@ export interface DocumentAwareness {
   selfUid: string;
 }
 
+/**
+ * An editor instance kept alive between views of the document: its DOM host
+ * (re-parented into the next view's container) and the instance behind it,
+ * whose undo history survives because the instance does. Opaque to the model
+ * apart from what it calls.
+ */
+export interface ParkedDocumentEditor<T = unknown> {
+  /** The element the editor renders into; the next view appends it to its container. */
+  element: HTMLElement;
+  instance: T;
+  /** Replace the whole document (a collaborator's snapshot arrived while parked). */
+  remount: (snapshot: DocumentSnapshotData) => void;
+  /** Throw the instance away (the record's session closed). */
+  dispose: () => void;
+}
+
 export type DocumentCollabFactory = (
   commandService: CommandServiceLike,
   onAwareness: (awareness: DocumentAwareness) => void,
@@ -110,6 +134,8 @@ export class DocumentModel {
   private readonly awarenessListeners = new Set<() => void>();
   private realtimeClose: (() => void) | null = null;
   private pageClose: (() => void) | null = null;
+  /** The last view's editor, alive and off the page until a view takes it back. */
+  private parked: ParkedDocumentEditor | null = null;
 
   constructor(handle: WorkingCopyHandle, deps: DocumentModelDeps) {
     this.documentId = handle.id;
@@ -145,7 +171,10 @@ export class DocumentModel {
     if (!this.loading) {
       this.loading = this.deps.loadLatest(this.documentId).then(
         (row) => {
-          if (row) this.knownSnapshots.add(row.id);
+          if (row) {
+            this.knownSnapshots.add(row.id);
+            this.savedFingerprint = contentFingerprint(row.snapshot);
+          }
           // A document never saved opens as ONE empty document for every view
           // (one unit id), so their edits replay into each other.
           if (!this.stored) this.stored = row ? row.snapshot : createEmpty();
@@ -167,6 +196,17 @@ export class DocumentModel {
       this.onViewMutation(id, info, options),
     );
     this.views.set(id, { id, port, dispose: () => subscription.dispose() });
+    // Nothing unsaved: what this view mounted IS the saved version (Univer and
+    // the snapshot repair may restate it — page geometry, defaults — without
+    // anyone changing a word). That is the baseline a save compares against.
+    if (!this.handle.hasPending()) {
+      try {
+        const mounted = port.snapshot();
+        if (mounted) this.savedFingerprint = contentFingerprint(mounted);
+      } catch (error) {
+        console.warn(`[document-model] could not read ${this.documentId}'s mounted document`, error);
+      }
+    }
     let detached = false;
     return () => {
       if (detached) return;
@@ -187,6 +227,26 @@ export class DocumentModel {
       this.views.delete(id);
       if (this.lastEditedView === id) this.lastEditedView = null;
     };
+  }
+
+  /**
+   * The last view of the document is leaving: keep its editor (and Univer's
+   * undo history inside it) for the next view. Call AFTER the view's
+   * `attachView` detach. Refused — the caller disposes its editor — while
+   * another view is still attached (it carries the document) or one is
+   * already kept.
+   */
+  parkEditor(editor: ParkedDocumentEditor): boolean {
+    if (this.closed || this.views.size > 0 || this.parked) return false;
+    this.parked = editor;
+    return true;
+  }
+
+  /** The kept editor, handed to the view that mounts next (null when none is kept). */
+  takeParkedEditor(): ParkedDocumentEditor | null {
+    const editor = this.parked;
+    this.parked = null;
+    return editor;
   }
 
   private onViewMutation(
@@ -233,6 +293,12 @@ export class DocumentModel {
   }
 
   private saving = false;
+  /**
+   * The content of the version the server holds (loaded or last written). A
+   * save of the same content is no save: attaching, detaching, waking or a
+   * flush of an unchanged document never writes a snapshot row.
+   */
+  private savedFingerprint: string | null = null;
 
   /**
    * Write the body as it is now. Returns false when this tab is a collab peer
@@ -243,11 +309,14 @@ export class DocumentModel {
     const snapshot = this.latest();
     if (!snapshot) throw new Error("There is no open document to save.");
     if (this.collab && !this.collab.isHost() && reason !== "manual") return false;
+    const fingerprint = contentFingerprint(snapshot);
+    if (reason !== "manual" && fingerprint === this.savedFingerprint) return false;
     const origin = reason === "manual" ? "manual" : "autosave";
     this.saving = true;
     try {
       const { id } = await this.deps.save({ documentId: this.documentId, snapshot, origin });
       this.knownSnapshots.add(id);
+      this.savedFingerprint = fingerprint;
     } finally {
       this.saving = false;
     }
@@ -272,24 +341,29 @@ export class DocumentModel {
     this.realtimeClose = open((snapshotId) => void this.onRemoteSnapshot(snapshotId));
   }
 
-  /** A snapshot was committed (here or elsewhere): show a foreign one in every view, unless we have unsaved edits. */
-  async onRemoteSnapshot(snapshotId: string): Promise<void> {
+  /**
+   * A snapshot was committed (here or elsewhere): show a foreign one in every
+   * view. Over unsaved edits it is a CONFLICT — the working copy holds it and
+   * no save runs (one would overwrite the collaborator's snapshot) until the
+   * person chooses; `overUnsaved` is "Take theirs" (`./documentModels.ts`).
+   */
+  async onRemoteSnapshot(snapshotId: string, { overUnsaved = false }: { overUnsaved?: boolean } = {}): Promise<void> {
     if (this.collab) return; // the room is the live channel; snapshots are checkpoints
     if (this.knownSnapshots.has(snapshotId)) return; // ours, or already shown
     if (this.saving) return; // our own save's echo, ahead of its response
-    if (this.hasUnsaved()) {
-      console.warn(
-        `[document-model] ${this.documentId} changed elsewhere while this tab has unsaved edits — keeping this tab's edits; the next save writes them`,
-      );
+    if (this.hasUnsaved() && !overUnsaved) {
+      this.handle.conflict({ ref: snapshotId });
       return;
     }
     const row = await this.deps.loadLatest(this.documentId);
-    if (!row || this.hasUnsaved() || this.knownSnapshots.has(row.id)) return;
+    if (!row || (this.hasUnsaved() && !overUnsaved) || this.knownSnapshots.has(row.id)) return;
     this.knownSnapshots.add(row.id);
+    this.savedFingerprint = contentFingerprint(row.snapshot);
     this.stored = row.snapshot;
     this.relaying = true;
     try {
       for (const view of this.views.values()) view.port.remount(row.snapshot);
+      this.parked?.remount(row.snapshot);
     } finally {
       this.relaying = false;
     }
@@ -375,12 +449,33 @@ export class DocumentModel {
     this.awareness = null;
   }
 
+  private closed = false;
+
   close(): void {
+    this.closed = true;
+    const parked = this.parked;
+    this.parked = null;
+    if (parked) {
+      try {
+        parked.dispose();
+      } catch (error) {
+        console.warn(`[document-model] could not dispose ${this.documentId}'s kept editor`, error);
+      }
+    }
     this.realtimeClose?.();
     this.realtimeClose = null;
     this.pageClose?.();
     this.pageClose = null;
   }
+}
+
+/**
+ * What a snapshot STORES, as a comparable string: everything but the unit id
+ * and Univer's revision counter (both move without the content moving).
+ */
+function contentFingerprint(snapshot: DocumentSnapshotData): string {
+  const { id: _id, rev: _rev, ...content } = snapshot as DocumentSnapshotData & { rev?: unknown };
+  return JSON.stringify(content);
 }
 
 /** Mutations that change what a snapshot stores (never scroll / selection) — the editors' one dirty filter. */

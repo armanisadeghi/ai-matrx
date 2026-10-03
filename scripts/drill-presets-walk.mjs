@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://drillpresets.localhost:3001";
-const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-presets";
+const SHOTS = process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-30/drill-presets";
 mkdirSync(SHOTS, { recursive: true });
 const CALL_VIEWS = ["cx_by_model", "cx_by_provider", "cx_by_day", "cx_by_origin", "cx_cost_share", "cx_latency", "reconcile_calls"];
 const EXECUTION_VIEWS = ["by_conversation", "by_session", "costliest_requests", "reconcile_ledger"];

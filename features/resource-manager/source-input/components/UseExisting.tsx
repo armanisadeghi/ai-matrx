@@ -50,7 +50,8 @@ import {
   type RecordStoreKind,
 } from "@/features/resource-manager/source-input/recordStoreKinds";
 import { MiddleTruncate } from "@/components/official/MiddleTruncate";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { describeFailure } from "@/lib/failure/transport";
 import { ReadGate, type ReadStatus } from "@/components/read-state/ReadGate";
 import { useKindItemStages } from "@/features/resource-manager/source-input/itemStage";
 import { cn } from "@/utils/cn";
@@ -415,13 +416,20 @@ function Rows({
     );
   if (list.error)
     return (
-      <p role="alert" className="flex items-center gap-2 py-2 text-sm text-destructive">
-        {list.error.message}
-        <ErrorAlchemyMenu error={list.error.message} operation="List what you have" />
-        <button type="button" className="underline" onClick={list.reload}>
-          Try again
-        </button>
-      </p>
+      <ErrorNotice
+        size="inline"
+        // The engine's words ("canceling statement due to statement timeout
+        // (57014)") never reach the screen — the failure gets its sentence.
+        message={describeFailure(list.error, { action: "listing what you have", read: true }).sentence}
+        error={list.error}
+        operation="List what you have"
+        className="py-2 text-sm"
+        actions={
+          <button type="button" className="underline" onClick={list.reload}>
+            Try again
+          </button>
+        }
+      />
     );
   if (list.items.length === 0) return <p className="py-3 text-center text-sm text-muted-foreground">No matches</p>;
   const more = (limit !== undefined && list.items.length > limit) || (limit === undefined && list.hasMore);

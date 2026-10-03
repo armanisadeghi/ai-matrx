@@ -54,6 +54,8 @@ import { NoteEditorCore, isRichEditorMode, type EditorMode } from "./NoteEditorC
 import type { RichEditorController } from "@/components/rich-editor/RichEditor";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useNoteWorkingCopy } from "../hooks/useNoteWorkingCopy";
+import { noteWorkingCopy } from "../utils/noteLiveContent";
+import { useKeptTextSelection } from "@/lib/working-copy/useKeptTextSelection";
 import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesSurfaceRuntime";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { toast } from "@/lib/toast";
@@ -80,14 +82,6 @@ const NoteOutlinePanel = dynamic(
   { ssr: false },
 );
 
-const NoteConflictWindow = dynamic(
-  () =>
-    import("@/features/notes/components/NoteConflictWindow").then((mod) => ({
-      default: mod.NoteConflictWindow,
-    })),
-  { ssr: false },
-);
-
 import { useNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -100,9 +94,8 @@ import { noteIdentityContentSource } from "../richDocumentSource";
 import { RECORD_MENU_ATTR } from "@/features/context-menu-v3/record-menu-registry";
 import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
-import { useNoteConflictChoreography } from "../hooks/useNoteConflictChoreography";
+import { NoteWorkingCopyAlert } from "./NoteWorkingCopyAlert";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
 
 interface NoteContentEditorProps {
@@ -209,14 +202,6 @@ export function NoteContentEditor({
 
   const conflictActorId = useAppSelector((state) => state.userAuth.id);
 
-  const editorMountedRef = useRef(true);
-  useEffect(() => {
-    editorMountedRef.current = true;
-    return () => {
-      editorMountedRef.current = false;
-    };
-  }, []);
-
   // ── The body this editor shows is the NOTE'S working copy — one per note,
   // shared by every view of it (a board tile, the side panel, a split pane),
   // committed to Redux once per debounce. Never component state: a second
@@ -224,6 +209,13 @@ export function NoteContentEditor({
   const workingCopy = useNoteWorkingCopy(noteId, reduxContent);
   const localContent = workingCopy.content;
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // The caret the person left in the plain / split textarea comes back on a
+  // remount (a board tile removed and undone, a pane re-opened) — kept per note.
+  useKeptTextSelection(
+    noteWorkingCopy.key(noteId),
+    textareaRef,
+    Boolean(noteExists) && bodyLoaded && !richMode,
+  );
   // The record's last value this view saw — only to tell an outside change
   // (realtime, undo) from this note's own commit, for the recent-change flash.
   const lastReduxRef = useRef(reduxContent);
@@ -239,25 +231,6 @@ export function NoteContentEditor({
   useEffect(() => {
     localContentRef.current = localContent;
   }, [localContent]);
-
-  // THE ONE conflict choreography — the same hook the phone editor consumes.
-  const adoptResolvedContent = useCallback((content: string) => {
-    workingCopy.reset(content);
-    localContentRef.current = content;
-    lastReduxRef.current = content;
-  }, [workingCopy]);
-  const conflict = useNoteConflictChoreography({
-    noteId,
-    record: noteExists,
-    noteTitle: noteLabel,
-    localContent,
-    editableContentSource,
-    editorMountedRef,
-    noteIdRef,
-    localContentRef,
-    adoptResolvedContent,
-  });
-  const { conflictDecision, conflictError } = conflict;
 
   // ── Reset generation — bumps ONLY on note switch, so the rich editor
   // subtree remounts only when we navigate between different notes.
@@ -293,7 +266,6 @@ export function NoteContentEditor({
   const [renderedNoteId, setRenderedNoteId] = useState(noteId);
   if (noteId !== renderedNoteId) {
     setRenderedNoteId(noteId);
-    conflict.resetForNoteSwitch();
     setResetGen((n) => n + 1);
     // The recent-change flash is per-note — its range is meaningless once
     // we've swapped to a different document.
@@ -674,23 +646,9 @@ export function NoteContentEditor({
       isEditable={!readOnly}
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-      {conflictError && !conflictDecision && <ErrorNotice size="inline" className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm" message={conflictError} />}
-      {conflict.reviewOutcomes.map((outcome) => (
-        <div key={outcome.requestId} className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
-          <span>Reviewed save outcome: {outcome.result.status}. The original reviewed package remains available for inspection.</span>
-          <button type="button" className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium" onClick={() => conflict.acknowledgeOutcome(outcome)}>Dismiss</button>
-        </div>
-      ))}
-      {/* Conflict resolution window */}
-      {conflict.dismissedReviewAvailable && (
-        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
-          <span>Your unsaved conflict review is still available.</span>
-          <button type="button" onClick={conflict.reopenConflict} className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium text-amber-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:text-amber-100">Reopen conflict review</button>
-        </div>
-      )}
-      {conflict.conflictWindowProps != null && (
-        <NoteConflictWindow {...conflict.conflictWindowProps} />
-      )}
+      {/* The note's working copy: a stored row that moved under unsaved
+          words (Keep mine / Take theirs / Merge), or a save that failed for good. */}
+      <NoteWorkingCopyAlert noteId={noteId} className="shrink-0" />
 
       {/* Artifact refs rendered in the preview get their unbind path from
           this provider (null while read-only / access loading — the Detach

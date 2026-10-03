@@ -12,7 +12,10 @@
  * for the read-side that consumes the resolved payload on every chat turn.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
+import { ensureStoreRead } from "@/lib/redux/slices/storeReadsSlice";
 import { getUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
 
@@ -27,7 +30,6 @@ const COMPUTE_TARGETS_CHANGED = "matrx:compute-targets-changed";
 
 /** Refresh mounted pickers after a successful sandbox mutation. */
 export function notifyComputeTargetsChanged(): void {
-  generation += 1;
   window.dispatchEvent(new Event(COMPUTE_TARGETS_CHANGED));
 }
 
@@ -46,86 +48,58 @@ interface UseComputeTargetsResult {
 }
 
 /**
- * ONE request per refresh, however many pickers are mounted. Every instance
- * listens for window focus, so a page with the chat composer, the sandbox
- * panel and a verified binding fired five or six identical GETs per focus
- * (Vercel, 2026-10-03). Refreshes share the request in flight unless it
- * predates a change: a change notice or an explicit refetch moves
- * `generation`, so the first refresh after it asks again and the rest share
- * that newer request.
+ * The list lives in Redux (`useStoreRead`, key `sandbox.compute-targets`): the
+ * first picker reads it, every other picker and every remount or wake renders
+ * the stored list and reads nothing. A change notice re-reads (queued behind a
+ * read already running, which may predate the change); a window focus re-reads
+ * once however many pickers are mounted (it joins a read already running).
  */
-let generation = 0;
-let inflight: { generation: number; request: Promise<ComputeTargetListResponse> } | null = null;
+const COMPUTE_TARGETS_KEY = "sandbox.compute-targets";
 
-function loadComputeTargets(): Promise<ComputeTargetListResponse> {
-  if (inflight && inflight.generation === generation) return inflight.request;
-  const request = (async () => {
-    // Signed out: nobody owns a compute target — an empty list, never a
-    // request the route refuses with 401. The session read covers the boot
-    // race where the store has no id yet.
-    if (!getUserId()) {
-      const { data } = await supabase.auth
-        .getSession()
-        .catch(() => ({ data: { session: null } }));
-      if (!data.session) return { targets: [], max_sandboxes: 0, sandbox_count: 0 };
-    }
-    const resp = await fetch("/api/compute-targets");
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      throw new Error(body || `HTTP ${resp.status}`);
-    }
-    return (await resp.json()) as ComputeTargetListResponse;
-  })();
-  inflight = { generation, request };
-  const settled = () => {
-    if (inflight?.request === request) inflight = null;
-  };
-  void request.then(settled, settled);
-  return request;
+async function loadComputeTargets(): Promise<ComputeTargetListResponse> {
+  // Signed out: nobody owns a compute target — an empty list, never a
+  // request the route refuses with 401. The session read covers the boot
+  // race where the store has no id yet.
+  if (!getUserId()) {
+    const { data } = await supabase.auth
+      .getSession()
+      .catch(() => ({ data: { session: null } }));
+    if (!data.session) return { targets: [], max_sandboxes: 0, sandbox_count: 0 };
+  }
+  const resp = await fetch("/api/compute-targets");
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => "");
+    throw new Error(body || `HTTP ${resp.status}`);
+  }
+  return (await resp.json()) as ComputeTargetListResponse;
 }
 
 export function useComputeTargets(): UseComputeTargetsResult {
-  const [data, setData] = useState<ComputeTargetListResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fetchIdRef = useRef(0);
-
-  const load = useCallback(async () => {
-    const myId = ++fetchIdRef.current;
-    setLoading(true);
-    setError(null);
-    try {
-      const json = await loadComputeTargets();
-      if (myId !== fetchIdRef.current) return;
-      setData(json);
-    } catch (err) {
-      if (myId !== fetchIdRef.current) return;
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      if (myId === fetchIdRef.current) setLoading(false);
-    }
-  }, []);
-
-  /** An explicit refetch never reuses a request that started before it. */
-  const refetch = useCallback(async () => {
-    generation += 1;
-    await load();
-  }, [load]);
+  const dispatch = useAppDispatch();
+  const read = useStoreRead<ComputeTargetListResponse>(COMPUTE_TARGETS_KEY, loadComputeTargets);
 
   useEffect(() => {
-    const refresh = () => {
-      void load();
+    const onChange = () => {
+      void dispatch(ensureStoreRead(COMPUTE_TARGETS_KEY, loadComputeTargets, { force: true }));
     };
-    refresh();
-    window.addEventListener(COMPUTE_TARGETS_CHANGED, refresh);
-    window.addEventListener("focus", refresh);
+    const onFocus = () => {
+      void dispatch(ensureStoreRead(COMPUTE_TARGETS_KEY, loadComputeTargets, { force: true, joinRunning: true }));
+    };
+    window.addEventListener(COMPUTE_TARGETS_CHANGED, onChange);
+    window.addEventListener("focus", onFocus);
     return () => {
-      window.removeEventListener(COMPUTE_TARGETS_CHANGED, refresh);
-      window.removeEventListener("focus", refresh);
+      window.removeEventListener(COMPUTE_TARGETS_CHANGED, onChange);
+      window.removeEventListener("focus", onFocus);
     };
-  }, [load]);
+  }, [dispatch]);
 
-  return { data, loading, error, refetch };
+  return {
+    data: read.data ?? null,
+    loading: read.isLoading,
+    error: read.error,
+    /** An explicit refetch never reuses a request that started before it. */
+    refetch: read.refresh,
+  };
 }
 
 export interface SandboxBindingPayload {

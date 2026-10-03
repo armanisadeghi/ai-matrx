@@ -14,6 +14,7 @@ import {
   firstUserText,
   readSharedConversation,
 } from "@/features/sharing/lenses/conversation-transcript";
+import { readSharedRecordChildren } from "@/features/sharing/lenses/record-fields";
 
 export interface ShareLensMeta {
   title: string;
@@ -129,8 +130,19 @@ function conversationMeta(result: ResolvedShareToken): ShareLensMeta | null {
   };
 }
 
+/** One table row (access ladder T-40) — titled the way its page is, never by a withheld field. */
+function recordMeta(result: ResolvedShareToken): ShareLensMeta | null {
+  const record = readSharedRecordChildren(result.children);
+  if (!record) return null;
+  return {
+    title: record.title,
+    description: `A ${record.labelSingular.toLowerCase()} from ${record.tableName}, shared with you on AI Matrx.`,
+  };
+}
+
 const SHARE_LENS_META: Record<string, ShareLensMetaResolver> = {
   conversation: conversationMeta,
+  record: recordMeta,
   seo_collection_run: aiVisibilityMeta,
   content_ir_kind_instance: kindInstanceMeta,
   file: fileMeta,

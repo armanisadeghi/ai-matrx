@@ -606,6 +606,8 @@ export interface ChatRouteHeaderProps {
   /** Contextual actions, lowest priority first. */
   right?: ReactNode;
   fallback?: boolean;
+  /** Keep the center in the row on a phone (default: the ⋮ sheet). */
+  centerOnPhone?: "sheet" | "row";
 }
 
 export interface ChatIconButtonProps {

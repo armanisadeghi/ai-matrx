@@ -15,6 +15,13 @@ export type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 export interface ResourceDetails {
   title: string;
   url: string;
+  /** Site-relative address of the same place, for the in-app "shared with you" card. */
+  path?: string;
+}
+
+/** Who the share is for, when the address depends on it (a table row: inside or outside its org). */
+export interface ShareRecipient {
+  isMemberOf: (organizationId: string) => Promise<boolean>;
 }
 
 /**
@@ -24,6 +31,7 @@ export async function getResourceDetails(
   supabase: SupabaseServerClient,
   resourceType: string,
   resourceId: string,
+  recipient?: ShareRecipient,
 ): Promise<ResourceDetails | null> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
 
@@ -100,12 +108,19 @@ export async function getResourceDetails(
       case "dataset":
       case "record": {
         const inStore = await sharedStoreItem(supabase, resourceId);
-        return inStore
-          ? {
-              title: inStore.title,
-              url: await linkCarriesItsOrganization(`${siteUrl}${inStore.path}`, inStore.organizationId),
-            }
-          : null;
+        if (!inStore) return null;
+        // ACCESS LADDER T-40: a ROW shared with a person outside its organization opens at the
+        // row's own page, /p/e/record/<id> — the table screen inside the organization would refuse
+        // them. A member (or an unknown recipient) gets the row in its table, as before.
+        if (inStore.kind === "record" && recipient && !(await recipient.isMemberOf(inStore.organizationId))) {
+          const path = `/p/e/record/${resourceId}`;
+          return { title: inStore.title, url: `${siteUrl}${path}`, path };
+        }
+        return {
+          title: inStore.title,
+          url: await linkCarriesItsOrganization(`${siteUrl}${inStore.path}`, inStore.organizationId),
+          path: inStore.path,
+        };
       }
 
       // A MEETING INVITATION (features/meet invite panel). The link is the meeting's own
@@ -168,7 +183,7 @@ export async function getResourceDetails(
 async function sharedStoreItem(
   supabase: SupabaseServerClient,
   id: string,
-): Promise<{ title: string; path: string; organizationId: string } | null> {
+): Promise<{ title: string; path: string; organizationId: string; kind: string } | null> {
   const custom = supabase.schema("custom" as never) as unknown as {
     rpc: (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
   };
@@ -178,7 +193,7 @@ async function sharedStoreItem(
   if (where.kind !== "table" && where.kind !== "record") {
     // A dashboard, a digest, a form …: the store's own page for it, named by what it is.
     const what = (where.kind ?? "item").replace(/_/g, " ");
-    return { title: `A shared ${what}`, path: where.path, organizationId: where.organization_id };
+    return { title: `A shared ${what}`, path: where.path, organizationId: where.organization_id, kind: where.kind ?? "item" };
   }
 
   const kernel = await custom.rpc("table_kernel_id");
@@ -198,5 +213,6 @@ async function sharedStoreItem(
     title: where.kind === "table" ? tableName : `A row in ${tableName}`,
     path: where.path,
     organizationId: where.organization_id,
+    kind: where.kind,
   };
 }

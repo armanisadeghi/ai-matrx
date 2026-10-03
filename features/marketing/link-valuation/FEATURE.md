@@ -9,7 +9,7 @@ prices what it is worth paying and who may authorise that spend.
 Converted from Arman's "Backlink Checker" Google Sheet (18 tabs, 6 functional) via a technical PRD
 extracted in 2026-08. It is the first of a series of spreadsheet-system conversions; the prompt that
 produces those PRDs is
-[`common-docs/projects/spreadsheet-systems/EXTRACTION_PROMPT.md`](/Users/armanisadeghi/code/common-docs/projects/spreadsheet-systems/EXTRACTION_PROMPT.md).
+[`common-docs/systems/masterwork/distillation/SPREADSHEET-EXTRACTION-PROMPT.md`](/Users/armanisadeghi/code/common-docs/systems/masterwork/distillation/SPREADSHEET-EXTRACTION-PROMPT.md).
 
 ---
 

@@ -1,14 +1,12 @@
 /**
- * THE BOOT ASKS FOR THE SKELETON, BEHIND THE READ SWITCH (lane SCOPES-TREE-PAGED).
- *   - switch OFF: ensureScopeSkeleton is the whole tree, exactly as before (one getScopeTree(), whole);
- *   - switch ON: the skeleton (getScopeTree({ shape: "skeleton" })), kept beside the whole tree, so a
+ * THE BOOT ASKS FOR THE SKELETON (lane SCOPES-TREE-PAGED).
+ *   - the skeleton (getScopeTree({ shape: "skeleton" })), kept beside the whole tree, so a
  *     reader of the whole tree still sees nothing until every scope is in;
  *   - a type's page lands in its type in the skeleton.
  */
 import { configureStore } from "@reduxjs/toolkit";
 import reducer from "@/features/scopes/redux/scopesSlice";
 import { ensureScopeSkeleton, ensureTypeScopes } from "@/features/scopes/redux/thunks/ensureScopeSkeleton";
-import { __setScopesReadFromStoreForTests } from "@/features/scopes/service/scopesReadKnob";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import * as reads from "@/features/scopes/service/storeScopeReads";
 
@@ -31,22 +29,10 @@ const store = () => configureStore({ reducer: { scopesTree: reducer } });
 const getScopeTree = scopesService.getScopeTree as jest.Mock;
 
 afterEach(() => {
-  __setScopesReadFromStoreForTests(null);
   jest.clearAllMocks();
 });
 
-it("switch OFF: the skeleton is the whole tree, read exactly as before", async () => {
-  __setScopesReadFromStoreForTests(false);
-  getScopeTree.mockResolvedValue({ ok: true, data: { ...skeleton, organizations: [{ ...skeleton.organizations[0], scope_types: [{ ...skeleton.organizations[0].scope_types[0], scopes: [dana] }] }] } });
-  const s = store();
-  await s.dispatch(ensureScopeSkeleton() as never);
-  expect(getScopeTree).toHaveBeenCalledTimes(1);
-  expect(getScopeTree.mock.calls[0][0]).toBeUndefined();
-  expect(s.getState().scopesTree.treeStatus).toBe("ready");
-});
-
-it("switch ON: the skeleton lands beside the whole tree, and a type's page lands in it", async () => {
-  __setScopesReadFromStoreForTests(true);
+it("the skeleton lands beside the whole tree, and a type's page lands in it", async () => {
   getScopeTree.mockResolvedValue({ ok: true, data: skeleton });
   (reads.readTypeScopesPage as jest.Mock).mockResolvedValue({ ok: true, data: { scopes: [dana], total: 1, nextOffset: null } });
   const s = store();

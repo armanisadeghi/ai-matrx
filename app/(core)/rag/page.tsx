@@ -1,3 +1,4 @@
+// record-view: none — the RAG home
 /**
  * /knowledge — Knowledge home.
  *

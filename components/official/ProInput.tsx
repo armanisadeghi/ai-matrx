@@ -587,8 +587,12 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
             padding, so they never cover text. The menu stays visible while its popover is open so
             it can't vanish mid-interaction. Transparent tap buttons sit flush
             inside the h-9 field without glass borders touching the input edge. */}
+        {/* A GLASS PLANE (tap-target placement rule 1): the cluster rides
+            over the field's own scrolling text, so its glass buttons
+            legitimately float — the guard reads the marker. */}
         <div
           ref={clusterRef}
+          data-matrx-glass-plane
           className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center z-10"
         >
           <div

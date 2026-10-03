@@ -10,7 +10,7 @@
 
 AI Work is the user-facing front door for finding, continuing, and organizing AI work without knowing which lower-level subsystem owns it. It composes live platform capabilities; it does not create a second conversation store, association system, scheduler, or provider bridge.
 
-Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md) — read it before adding compose, saved requests, imports, provider execution, or automation routes.
+Cross-repo product plan: [`common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md`](/Users/armanisadeghi/code/common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md) — read it before adding compose, saved requests, imports, provider execution, or automation routes.
 
 ---
 

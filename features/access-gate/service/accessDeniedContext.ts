@@ -11,6 +11,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { deriveStatus, type AccessReadOutcome } from "./deriveStatus";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
@@ -227,6 +228,14 @@ export async function fetchAccessDeniedContext(
     }
 
     const supabase = createClient();
+    // A SIGNED-OUT visitor: the resolver is closed to `anon` on purpose (it would say whose a thing
+    // is), so asking only failed and the page read "We couldn't work out what happened". The honest
+    // answer is the one a stranger gets — sign in first (found verifying access ladder T-40 on
+    // /p/e/record/<id>; every public-lane type shared it).
+    const { data: claims } = await getClaimsUser(supabase);
+    if (!claims.user) {
+      return { ...unknownContext(token), status: "anonymous", disclosure: "anonymous" };
+    }
     const { data, error } = await supabase.rpc("access_denied_context", {
       p_type: token,
       p_id: id,

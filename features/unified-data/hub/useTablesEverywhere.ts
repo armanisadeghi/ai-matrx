@@ -32,6 +32,23 @@ function sharedSeam() {
   return seam;
 }
 
+// ONE READ FOR THE PICKERS THAT MOUNT TOGETHER. A run form mounts a name label for every Table
+// variable at once; each used to send its own `custom.data_home_tables()` for the same complete list.
+// Mounts while a read is IN FLIGHT share it; once it answers, the next mount reads afresh (a table
+// made a moment ago is never missing), and "Try again" (`reload`) always reads afresh.
+let inFlight: ReturnType<typeof dataHomeTables> | null = null;
+function sharedRead(fresh: boolean): ReturnType<typeof dataHomeTables> {
+  if (fresh || !inFlight) {
+    const read = dataHomeTables(sharedSeam(), null);
+    inFlight = read;
+    void read.finally(() => {
+      if (inFlight === read) inFlight = null;
+    });
+    return read;
+  }
+  return inFlight;
+}
+
 export interface TablesEverywhere {
   loading: boolean;
   error: DoorFailure | null;
@@ -48,7 +65,7 @@ export function useTablesEverywhere(): TablesEverywhere {
 
   useEffect(() => {
     let alive = true;
-    void dataHomeTables(sharedSeam(), null).then((answered) => {
+    void sharedRead(attempt > 0).then((answered) => {
       if (!alive) return;
       setState(
         answered.ok

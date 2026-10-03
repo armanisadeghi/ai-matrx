@@ -12,9 +12,12 @@
  *
  * `taskService.getSubtasks` throws on failure (it used to return `[]`, which
  * every list then drew as "No subtasks yet").
+ *
+ * Read ONCE per task (`useStoreRead`, key `tasks.subtasks:<id>`): a remount or
+ * a wake renders the slice and reads nothing; `retry` is the deliberate re-read.
  */
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useRead } from "@/components/read-state/useRead";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { upsertTaskWithLevel } from "@/features/agent-context/redux/tasksSlice";
 import * as taskService from "@/features/tasks/services/taskService";
 
@@ -23,7 +26,8 @@ export function useSubtasksRead(
   organizationId?: string | null,
 ) {
   const dispatch = useAppDispatch();
-  const read = useRead(
+  const read = useStoreRead(
+    taskId ? `tasks.subtasks:${taskId}` : null,
     async () => {
       const rows = await taskService.getSubtasks(taskId as string);
       for (const row of rows) {
@@ -50,10 +54,9 @@ export function useSubtasksRead(
           }),
         );
       }
-      return rows.length;
+      // The rows are the tasks slice's; this read keeps only that it answered.
+      return null;
     },
-    [taskId ?? null, organizationId ?? null],
-    { enabled: Boolean(taskId) },
   );
-  return { status: read.status, error: read.error, retry: read.retry };
+  return { status: read.status, error: read.error, retry: () => void read.refresh() };
 }

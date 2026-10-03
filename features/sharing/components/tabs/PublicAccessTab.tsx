@@ -36,7 +36,8 @@ export function anyoneReachWords(
   typeLabel: string,
   reach: { publicPage: boolean; noLoginLink: boolean },
 ): string {
-  if (reach.publicPage) return `Open to everyone — anyone can view this ${typeLabel}, no sign-in.`;
+  // The law's words for Published to the web (common-docs/policies/access-ladder.md, Words table).
+  if (reach.publicPage) return `Anyone, signed in or not, opens this ${typeLabel} at its address as a viewer.`;
   return (
     `Everyone signed in to AI Matrx can find and view this ${typeLabel}.` +
     (reach.noLoginLink

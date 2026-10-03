@@ -106,19 +106,6 @@ export interface HubCapability {
   /** What a person DOES when there are none. An empty list that says nothing reads as broken. */
   empty: string;
   /**
-   * The sentence instead, when this organization shows a member only what is
-   * shared with them (`custom/member_default_visibility = shared_only`). "No
-   * tables yet. Make one below" is false there: the tables exist, and none has
-   * been shared with this person (VERIFIER-16, the member in admin's Workspace).
-   */
-  emptyWhenSharedOnly?: string | undefined;
-  /**
-   * The heading sentence instead, for that same member. The count beside the title is what SHE
-   * can open, so "everything this organization keeps" beside it is false (VERIFIER-17 H3: "Tables
-   * 1 — Everything this organization keeps records in" over an organization keeping 26).
-   */
-  whatWhenSharedOnly?: string | undefined;
-  /**
    * The heading sentence when the data home's organization dropdown names ONE organization
    * (DATA-HOME-2): "in every organization you belong to" beside that organization's own count is
    * false.
@@ -232,30 +219,6 @@ function failed(error: { message?: string; hint?: string } | undefined, door: st
   };
 }
 
-/**
- * DOES THE SHARED-ONLY SENTENCE SPEAK TO THIS PERSON? (UI-FIX-19, VERIFIER-19 #8)
- *
- * `shared_only` closes the organization-member lane only (`iam.member_lane_open`): the owner's and
- * the admins' own lanes still reach every table, so the owner of admin's Workspace was told
- * "This organization shows each member only what is shared with them" beside a count that was
- * every table. The sentence is for a member who is not an owner or admin. An owner or admin — and
- * anyone whose role is not known yet — reads the ordinary sentence, "The tables you can open in
- * this organization", which is true of every seat.
- */
-export function seesOnlyWhatIsShared(
-  memberVisibility: unknown,
-  role: string | null | undefined,
-): boolean {
-  if (memberVisibility !== "shared_only") return false;
-  if (!role) return false;
-  return role !== "owner" && role !== "admin";
-}
-
-/** The Tables sentence for a member who sees only what is shared with them. */
-export const SHARED_ONLY_EMPTY =
-  "In this organization you see only the tables someone has shared with you, and none has been " +
-  "shared with you yet. Ask whoever keeps the table you need to share it with you — or make your own below.";
-
 // ── the declarations ────────────────────────────────────────────────────────
 
 export const HUB_CAPABILITIES: readonly HubCapability[] = [
@@ -266,10 +229,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     what: "Every table you can open, in every organization you belong to — yours and the ones the app keeps.",
     whatInOrganization: (organizationName) =>
       `Every table you can open in ${organizationName} — yours and the ones the app keeps.`,
-    whatWhenSharedOnly:
-      "The tables shared with you here. This organization shows each member only what is shared with them.",
     empty: "No tables yet. Press New table above, or start from an example.",
-    emptyWhenSharedOnly: SHARED_ONLY_EMPTY,
     door: "custom.read_records over the Table kernel",
     changedByKind: "structure",
     async read(ctx) {

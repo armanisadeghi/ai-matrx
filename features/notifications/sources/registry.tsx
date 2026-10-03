@@ -208,7 +208,7 @@ function NoIndicator() {
 
 /**
  * THE REGISTRY. Order is display order. Census of what tells, asks or reminds:
- * common-docs/projects/notifications-ui-redo/RESEARCH.md §3.8.
+ * common-docs/systems/communications/notifications/FEATURE.md §3.8.
  */
 export const NOTICE_SOURCES: readonly NoticeSource[] = [
   {

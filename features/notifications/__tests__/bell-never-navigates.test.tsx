@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  *
  * OWNER RULING 4 (2026-10-01) — THE BELL NEVER MOVES THE PAGE.
- * common-docs/projects/notifications-ui-redo/RESEARCH.md §0a, §3.9.
+ * common-docs/systems/communications/notifications/FEATURE.md §0a, §3.9.
  *
  * Use case: a person is half-way through a form and opens the bell. Whatever they
  * click in it — a notice of any link kind, a source in All places, the footer —

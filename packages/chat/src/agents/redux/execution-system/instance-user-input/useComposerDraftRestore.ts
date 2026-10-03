@@ -25,6 +25,7 @@ import {
   flushComposerDraftWrite,
   isDraftRestoreEnabled,
 } from "./composer-draft.middleware";
+import { selectUserId } from "../../../../host/identity";
 import {
   selectUserInputEntryExists,
   selectUserInputText,
@@ -77,6 +78,9 @@ export function useComposerDraftRestore(
         0) > 0,
   );
   const liveAlias = hasMessages ? undefined : alias;
+  // A draft is offered back only to the person who typed it — localStorage
+  // outlives a sign-out, and a surface alias is shared by everyone on it.
+  const ownerId = useAppSelector(selectUserId);
 
   const [restoredValue, setRestoredValue] = useState<string | null>(null);
   const [storageAvailable, setStorageAvailable] = useState(true);
@@ -102,25 +106,28 @@ export function useComposerDraftRestore(
   }, [conversationId, liveAlias]);
 
   useEffect(() => {
-    // Once per conversation id per mount. A second pass could only re-restore
-    // something the user has since deleted on purpose.
-    if (attemptedRef.current === conversationId) return;
+    // Once per conversation id (and signed-in person) per mount. A second pass
+    // could only re-restore something the user has since deleted on purpose.
+    // The person is part of the key so an identity that lands a beat after the
+    // composer still gets its own draft (an occupied box is never overwritten).
+    const attemptKey = `${conversationId}|${ownerId ?? ""}`;
+    if (attemptedRef.current === attemptKey) return;
     // Do NOT mark attempted while the entry is missing — createInstanceFull
     // will land, this effect re-runs, and then we apply. Marking now would
     // skip the real restore forever.
     if (!entryReady) return;
-    attemptedRef.current = conversationId;
+    attemptedRef.current = attemptKey;
     setRestoredValue(null);
     setStorageAvailable(isComposerDraftStorageAvailable());
     if (!enabled) return;
-    const token = peekComposerDraft(conversationId, liveAlias);
+    const token = peekComposerDraft(conversationId, liveAlias, ownerId);
     if (!token) return;
     // Compare-and-apply — the thunk refuses the token if a send, another tab or
     // a destroy moved underneath it. See restore-composer-draft.thunk.ts.
     if (dispatch(applyComposerDraft(token)) === "restored") {
       setRestoredValue(token.value);
     }
-  }, [conversationId, liveAlias, dispatch, enabled, entryReady]);
+  }, [conversationId, liveAlias, dispatch, enabled, entryReady, ownerId]);
 
   // The notice belongs to the restored text and nothing else: the moment the
   // person edits it, it has stopped being news.

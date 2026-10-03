@@ -15,7 +15,7 @@ read [`features/capture-camera/FEATURE.md`](../capture-camera/FEATURE.md) before
 `@ai-matrx/capture` 0.3.x — one hold-shutter, right rail + chevron, expanding serial entry, the
 library drawer as the ONE media door; same engine and write rules; a candidate chrome alongside
 v2, same approval gate). Project brief + contracts:
-`/Users/armanisadeghi/code/common-docs/projects/ebay-store-management/BUILD.md` (W4) +
+`/Users/armanisadeghi/code/common-docs/systems/commerce/ebay/projects/ebay-store-management/PLAN.md` (W4) +
 `PROTOTYPE-CONCEPTS.md` (the concepts are REQUIREMENTS; the prototype's storage is not).
 
 ## What it is

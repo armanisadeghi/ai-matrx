@@ -80,6 +80,26 @@ import { isUnsetChoice } from "../../redux/execution-system/instance-model-overr
 import type { LLMParams } from "../../types/agent-api-types";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { InfoHint } from "@host/components/official/InfoHint";
+
+/**
+ * Sentence case for catalogue labels ("Feature Flags" → "Feature flags")
+ * that leaves acronyms and brand casing alone ("Top P", "YouTube", "URLs").
+ */
+export function sentenceCaseLabel(label: string): string {
+  return label
+    .split(" ")
+    .map((word, i) =>
+      i > 0 && word.length > 1 && /^[A-Z][a-z]+$/.test(word)
+        ? word.toLowerCase()
+        : word,
+    )
+    .join(" ");
+}
+
+/** The 28px icon button every per-row action in the menu sizing uses. */
+const ROW_ICON_BUTTON =
+  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40";
 
 const OVERRIDE_COLUMNS = [
   { key: "setting", label: "Setting" },
@@ -148,7 +168,7 @@ export const DEFAULT_MODEL_EMPTY_CHOICE_LABEL = "Use the agent's own model";
 export const CONVERSATION_OVERRIDE_WORDS: RunConfigOverridesWords = {
   heading: "Advanced settings",
   scopeNote:
-    "Overrides apply to this conversation only. Resetting a value returns it to the agent default.",
+    "Changes apply to this conversation only, and Reset returns a value to the agent default.",
   noModelNote: "No model resolved for this conversation yet.",
   baselineSourceLabel: "Agent",
   baselineDefaultLabel: "Agent default",
@@ -378,21 +398,30 @@ export function RunConfigOverrides({
           <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
-      <div className="flex w-full items-center justify-between px-3 pb-1 pt-2">
-        <span
-          className={
-            structured
-              ? "text-sm font-semibold text-foreground"
-              : "text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
-          }
-        >
-          {structured ? "Model parameter overrides" : w.heading}
-        </span>
-        <span className="text-xs text-foreground">
-          {/* read-gate-exempt: settings the person overrode in this run form, not rows fetched from a read */}
-          Overrides: {overriddenCount}
-        </span>
-      </div>
+      {structured ? (
+        <div className="flex w-full items-center justify-between px-3 pb-1 pt-2">
+          <span className="text-sm font-semibold text-foreground">
+            Model parameter overrides
+          </span>
+          <span className="text-xs text-foreground">
+            {/* read-gate-exempt: settings the person overrode in this run form, not rows fetched from a read */}
+            Overrides: {overriddenCount}
+          </span>
+        </div>
+      ) : (
+        <div className="flex w-full items-center gap-1.5 px-3 pb-1 pt-3">
+          <span className="text-xs font-medium text-muted-foreground">
+            {w.heading}
+          </span>
+          <InfoHint text={w.scopeNote} label={`About ${w.heading}`} />
+          {overriddenCount > 0 ? (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {/* read-gate-exempt: settings the person overrode in this run form, not rows fetched from a read */}
+              {overriddenCount} changed
+            </span>
+          ) : null}
+        </div>
+      )}
 
       <Tabs value={editorTab} onValueChange={setEditorTab}>
         {structured && (
@@ -402,7 +431,13 @@ export function RunConfigOverrides({
           </TabsList>
         )}
         <TabsContent value="controls" className="mt-0">
-          <div className="flex flex-col gap-2.5 px-3 pb-3">
+          <div
+            className={
+              structured
+                ? "flex flex-col gap-2.5 px-3 pb-3"
+                : "flex flex-col gap-1 px-3 pb-3"
+            }
+          >
             {structured && (
               <OverrideRows structured label="Model">
                 <ConfigurationTableRow
@@ -454,14 +489,14 @@ export function RunConfigOverrides({
               </OverrideRows>
             )}
             {orphanedKeys.length > 0 && (
-              <div className="flex flex-col gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
-                <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                  <AlertTriangle className="h-3 w-3" />
+              <div className="flex flex-col gap-0.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
+                <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
                   Not supported by the selected model
                 </span>
                 {orphanedKeys.map((key) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <span className="flex-1 truncate text-[11px] text-muted-foreground">
+                  <div key={key} className="flex min-h-9 items-center gap-2">
+                    <span className="flex-1 truncate text-sm text-muted-foreground">
                       {humanizeIdentifier(key)}
                     </span>
                     <button
@@ -470,10 +505,11 @@ export function RunConfigOverrides({
                       onClick={() =>
                         dispatch(resetOverride({ conversationId, key }))
                       }
+                      aria-label={`Reset ${humanizeIdentifier(key)}`}
                       title="Reset override"
-                      className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                      className={ROW_ICON_BUTTON}
                     >
-                      <RotateCcw className="h-3 w-3" />
+                      <RotateCcw className="h-4 w-4" />
                     </button>
                   </div>
                 ))}
@@ -481,11 +517,11 @@ export function RunConfigOverrides({
             )}
 
             {rowsLoading ? (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="py-2 text-sm text-muted-foreground">
                 Loading model settings…
               </p>
             ) : groups.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="py-2 text-sm text-muted-foreground">
                 {structured
                   ? effectiveModelId
                     ? "Adjustable parameters: None"
@@ -496,12 +532,22 @@ export function RunConfigOverrides({
               </p>
             ) : (
               groups.map((group) => (
-                <div key={group.id} className="flex flex-col gap-2">
-                  {group.label && (
-                    <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-                      {group.label}
-                    </p>
-                  )}
+                <div
+                  key={group.id}
+                  className={
+                    structured ? "flex flex-col gap-2" : "flex flex-col"
+                  }
+                >
+                  {group.label &&
+                    (structured ? (
+                      <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                        {group.label}
+                      </p>
+                    ) : (
+                      <p className="pb-1 pt-3 text-xs font-medium text-muted-foreground">
+                        {sentenceCaseLabel(group.label)}
+                      </p>
+                    ))}
                   <OverrideRows
                     structured={structured}
                     label={group.label || "Model parameters"}
@@ -554,11 +600,7 @@ export function RunConfigOverrides({
 
             {structured ? (
               <FieldHelp label="Override scope">{w.scopeNote}</FieldHelp>
-            ) : (
-              <p className="text-[10px] leading-snug text-muted-foreground">
-                {w.scopeNote}
-              </p>
-            )}
+            ) : null}
           </div>
         </TabsContent>
         {structured && (
@@ -651,6 +693,7 @@ function OverrideRow({
   onClear: () => void;
 }) {
   const touched = isOverridden || isRemoved;
+  // The structured (table) rows' clear control.
   const clearButton = (
     <button
       type="button"
@@ -659,12 +702,9 @@ function OverrideRow({
       aria-label={`Clear ${row.label} to not set`}
       title="Clear to not set"
       data-testid={`run-override-clear-${row.key}`}
-      className={cn(
-        "shrink-0 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40",
-        structured ? "rounded p-2" : "",
-      )}
+      className="shrink-0 rounded p-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
     >
-      <CircleSlash className={structured ? "size-3.5" : "h-3 w-3"} />
+      <CircleSlash className="size-3.5" />
     </button>
   );
   // buildSettingsRows only returns rows for keys the model declares a
@@ -721,52 +761,92 @@ function OverrideRow({
         }}
       />
     );
+  // Menu sizing (the composer's Model panel, the Chat Options Model tab):
+  // 36px rows (44px on touch), text-sm labels, Reset only when overridden.
+  // A slider row stacks — the slider needs the width a label column eats.
+  const stacked =
+    (row.control.type === "number" || row.control.type === "integer") &&
+    row.control.min !== undefined &&
+    row.control.max !== undefined;
+  const label = (
+    <Label
+      htmlFor={`run-override-${row.key}`}
+      className={cn(
+        "min-w-0 text-sm font-normal",
+        stacked ? "flex-1" : "w-36 shrink-0",
+        isOverridden ? "text-foreground" : "text-foreground/80",
+      )}
+      title={humanizeIdentifier(row.key)}
+    >
+      <span className="truncate">{sentenceCaseLabel(row.label)}</span>
+      {isRemoved && (
+        <span className="ml-1.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+          {removedLabel}
+        </span>
+      )}
+    </Label>
+  );
+  const actions = (
+    <>
+      <button
+        type="button"
+        onClick={onClear}
+        disabled={disabled || isRemoved}
+        aria-label={`Clear ${row.label} to not set`}
+        title="Clear to not set"
+        data-testid={`run-override-clear-${row.key}`}
+        className={ROW_ICON_BUTTON}
+      >
+        <CircleSlash className="h-4 w-4" />
+      </button>
+      {touched ? (
+        <button
+          type="button"
+          onClick={onReset}
+          disabled={disabled}
+          aria-label={`Reset ${row.label}`}
+          title="Reset override"
+          className={ROW_ICON_BUTTON}
+        >
+          <RotateCcw className="h-4 w-4" />
+        </button>
+      ) : null}
+    </>
+  );
+  const control = (
+    <SettingControlInput
+      size="comfortable"
+      settingKey={row.key}
+      control={row.control}
+      value={value}
+      onChange={onChange}
+      disabled={disabled || isRemoved}
+      id={`run-override-${row.key}`}
+    />
+  );
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-sm",
-        isOverridden && "-mx-1 border-l-2 border-primary/60 bg-primary/5 px-1",
+        "-mx-1.5 rounded-lg px-1.5",
+        stacked ? "flex flex-col pb-1.5" : "flex min-h-9 items-center gap-2 pointer-coarse:min-h-11",
+        isOverridden && "bg-primary/5",
       )}
     >
-      <Label
-        className={cn(
-          "w-28 shrink-0 text-[11px]",
-          isOverridden ? "text-foreground" : "text-muted-foreground",
-        )}
-        title={humanizeIdentifier(row.key)}
-      >
-        {row.label}
-        {isRemoved && (
-          <span className="ml-1 rounded bg-amber-500/15 px-1 text-[9px] font-semibold text-amber-600 dark:text-amber-400">
-            {removedLabel}
-          </span>
-        )}
-      </Label>
-      <div className="min-w-0 flex-1">
-        <SettingControlInput
-          settingKey={row.key}
-          control={row.control}
-          value={value}
-          onChange={onChange}
-          disabled={disabled || isRemoved}
-          id={`run-override-${row.key}`}
-        />
-      </div>
-      {clearButton}
-      <button
-        type="button"
-        onClick={onReset}
-        disabled={disabled}
-        title="Reset override"
-        className={cn(
-          "shrink-0 text-muted-foreground transition-colors hover:text-foreground",
-          touched ? "opacity-100" : "pointer-events-none opacity-0",
-        )}
-        aria-hidden={!touched}
-        tabIndex={touched ? 0 : -1}
-      >
-        <RotateCcw className="h-3 w-3" />
-      </button>
+      {stacked ? (
+        <>
+          <div className="flex min-h-9 items-center gap-2 pointer-coarse:min-h-11">
+            {label}
+            {actions}
+          </div>
+          {control}
+        </>
+      ) : (
+        <>
+          {label}
+          <div className="min-w-0 flex-1">{control}</div>
+          {actions}
+        </>
+      )}
     </div>
   );
 }

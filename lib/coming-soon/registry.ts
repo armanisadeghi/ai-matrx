@@ -991,7 +991,7 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     // account-deletion endpoint) that fill it. Until those land, the Connect
     // button is an honest tracked promise, not a dead click.
     blockedBy:
-      "W6's eBay OAuth routes (authorize + callback) are in flight on the aidream side (common-docs/projects/ebay-store-management/BUILD.md).",
+      "W6's eBay OAuth routes (authorize + callback) are in flight on the aidream side (common-docs/systems/commerce/ebay/projects/ebay-store-management/PLAN.md).",
     surfaces: ["/commerce/stores/connect — Connect eBay store"],
   },
   "mandates.fix-output-mismatch-with-ai": {

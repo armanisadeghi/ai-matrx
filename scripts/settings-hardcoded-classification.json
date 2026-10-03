@@ -1196,18 +1196,6 @@
       "reason": "Debounce before a note-body search query leaves the browser; a standard input debounce."
     },
     {
-      "file": "matrx-frontend/features/notes/redux/autoSaveMiddleware.ts",
-      "name": "RETRY_BASE_DELAY_MS",
-      "kind": "algorithmic",
-      "reason": "Starting delay of an exponential retry/backoff loop for failed note autosaves; retry plumbing, not a business setting."
-    },
-    {
-      "file": "matrx-frontend/features/notes/redux/autoSaveMiddleware.ts",
-      "name": "RETRY_MAX_DELAY_MS",
-      "kind": "algorithmic",
-      "reason": "Ceiling of the same exponential retry/backoff loop; paired retry plumbing."
-    },
-    {
       "file": "matrx-frontend/features/notes/redux/realtimeMiddleware.ts",
       "name": "ATTEMPT_POLL_MS",
       "kind": "operational-timeout",

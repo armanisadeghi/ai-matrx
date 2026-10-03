@@ -26,7 +26,35 @@ export interface KnowledgeCommand {
   icon?: LucideIcon;
   /** Extra words that should find this command. */
   keywords?: string[];
+  /** The command's own key chord, shown on its row (display only; the page answers the keys). */
+  shortcut?: string;
+  /** Present: shown, not runnable, with this one line. */
+  disabledReason?: string;
   run: () => void;
+}
+
+// ── COMMANDS ON THIS PAGE ─────────────────────────────────────────────────────────────────────
+//
+// A page (the table page, a focused Data home row) offers its own object's verbs here, so ⌘K finds
+// "Archive table" and "Share…" beside the launcher — Linear's command parity, in the ONE bar. A page
+// registers a SOURCE, read when the bar opens (the object and its rights at that moment), never a
+// stale snapshot. Same lifetime pattern as `registerActiveAttachTarget`.
+
+type PageCommandSource = () => readonly KnowledgeCommand[];
+const pageSources: PageCommandSource[] = [];
+
+/** Offer this page's commands to ⌘K. Returns the unregister function. */
+export function registerPageCommands(source: PageCommandSource): () => void {
+  pageSources.push(source);
+  return () => {
+    const i = pageSources.lastIndexOf(source);
+    if (i >= 0) pageSources.splice(i, 1);
+  };
+}
+
+/** Every command the mounted pages offer right now, newest page first. */
+export function pageCommands(): KnowledgeCommand[] {
+  return [...pageSources].reverse().flatMap((source) => [...source()]);
 }
 
 export interface LauncherAudience {

@@ -8,6 +8,10 @@ import type {
   PublicFlashcard,
   PublicFlashcardSetPayload,
 } from "@/features/flashcards/data/publicDeck";
+import {
+  readSharedRecord,
+  type SharedRecord,
+} from "@/features/sharing/lenses/record-fields";
 
 /**
  * Server loader for the indexable public viewer (`/p/e/[resourceType]/[id]`).
@@ -34,6 +38,8 @@ export interface PublicResource {
   row: Record<string, unknown>;
   /** Ordered cards when the type is a flashcard set. */
   cards?: PublicFlashcard[];
+  /** One table row's fields (access ladder T-40), as the database projected them. */
+  record?: SharedRecord;
 }
 
 /** Minimal dynamic-schema read surface (registry resolves table names at runtime). */
@@ -80,6 +86,29 @@ export async function loadPublicResource(
       description: firstString(r.set, ["description"]),
       row: r.set,
       cards: r.cards ?? [],
+    };
+  }
+
+  // One table row (access ladder T-40): published to the web opens for anyone, signed in or not;
+  // otherwise the signed-in person the one check admits (a person share) opens it at their rung.
+  // `public.record_public_view` decides both and projects the fields; anything else is not found.
+  if (entry.resourceType === "record") {
+    const { data, error } = await supabase.rpc("record_public_view", { p_record_id: id });
+    if (error) {
+      console.error("[loadPublicResource] record_public_view:", error.message);
+      return null;
+    }
+    const payload = data as { success?: boolean; record?: unknown } | null;
+    const record = payload?.success ? readSharedRecord(payload.record) : null;
+    if (!record) return null;
+    return {
+      resourceType: "record",
+      resourceId: id,
+      displayLabel: record.labelSingular,
+      title: record.title,
+      description: `A ${record.labelSingular.toLowerCase()} from ${record.tableName}.`,
+      row: {},
+      record,
     };
   }
 

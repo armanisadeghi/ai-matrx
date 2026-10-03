@@ -53,12 +53,9 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { __setScopesReadFromStoreForTests } from "@/features/scopes/service/scopesReadKnob";
 
 // THE STORE READ PATH (read switch ON, lane SCOPES-WEB-REVERT): these assertions are the store
 // doors' contract; the switch is OFF in the app until member-seat parity holds.
-beforeAll(() => __setScopesReadFromStoreForTests(true));
-afterAll(() => __setScopesReadFromStoreForTests(null));
 
 beforeEach(() => {
   calls.length = 0;

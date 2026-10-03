@@ -117,6 +117,13 @@ export async function runAgentExtraction(
     surfaceKey: opts.surfaceKey,
     sourceFeature: opts.sourceFeature,
     variables: opts.variables,
+    // ENGINEERED INPUTS ONLY. Every converter hands its agent the material as
+    // `variables`; the page it runs on is never context. Without this opt-out
+    // the launcher adopted the mounted surface (/education/start's kit form,
+    // its picked files as documents with tools): the namer read the whole
+    // 150k-character kit through 14 tool calls and every section call carried
+    // the page — slower, dearer, and never asked for (2026-10-03).
+    surfaceName: null,
     organizationId: opts.organizationId ?? null,
     displayMode: opts.live === false ? "background" : "direct",
     // A background section run is fired by this code, once per section, not

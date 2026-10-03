@@ -87,6 +87,7 @@ import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-displa
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useTaskEditorControllerCtx } from "./TaskEditorControllerContext";
 import { SectionHeader, PropertyRow } from "./editorPrimitives";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
 // Canonical on-page labels (THE NAMING LAW) — byte-identical to the manifest.
 const L = surfaceValueLabels(tasksManifest);
@@ -747,6 +748,9 @@ export function TaskEditorBody({
 
           {/* The organization's own fields on this task (lane 7 W5) — page and window alike. */}
           <EntityCustomFields entityToken="task" recordId={taskId} organizationId={task?.organization_id ?? null} />
+
+          {/* Everything linked to this task, both ways (W1.4). */}
+          <LinkedRecordsSection token="task" id={taskId} title={task.title ?? ""} />
 
           {/* Attachments — notes, files, messages, conversations, chat blocks */}
           <section>

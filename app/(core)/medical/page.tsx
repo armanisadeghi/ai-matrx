@@ -1,3 +1,4 @@
+// record-view: none — a landing page
 // app/(core)/medical/page.tsx — the Medical front door (module-landing-pages).
 //
 // One route, two audiences, decided server-side:

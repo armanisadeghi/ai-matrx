@@ -15,7 +15,7 @@ experience a human has and how quickly and easily we can do things."*
 
 ## The contract is the truth, and it lives in one place
 
-`../../../common-docs/projects/media-source-catalog/API-CONTRACT.md` (version
+`../../../common-docs/systems/media/media-source-catalog/API-CONTRACT.md` (version
 `0.1.0`). The server lane owns it. This feature is its client half:
 
 | File | What it is |
@@ -153,7 +153,7 @@ pnpm test:library-table-reachable                   # real-Chromium layout, 1440
 
 Live, signed in as `admin@admin.com` via `pnpm dev-login /libraries`. Screenshots
 at 1440 and 390 in both themes live in
-`../../../common-docs/projects/media-source-catalog/screen/`.
+`../../../common-docs/systems/media/media-source-catalog`.
 
 ## THE VOCABULARY RULE
 
@@ -207,7 +207,7 @@ nothing moves; the claim is gone. The day the server publishes a word count,
   publishes `visibility`, `adapter` and `q`, `browse/service.ts` sends two of
   them, and FastAPI drops an undeclared parameter without a word — 200, whole
   unfiltered list. So the search box does not narrow (measured on screen,
-  `common-docs/projects/acquisition-frontier/acquisition-console/screens/v1/`),
+  `common-docs/systems/knowledge/ingestion/STATE.md`),
   the four lane tabs serve the same rows, and D10's per-lane counts are four
   IDENTICAL totals rather than four zeros. It is the surviving sibling of the
   class aidream already closed on `GET /media/libraries/{id}/videos`. Nothing in
@@ -275,7 +275,7 @@ nothing moves; the claim is gone. The day the server publishes a word count,
   param sentence and Start-button casing were fixed to read them as a person
   would say them, following the same pattern the bridge lane used for
   `agent_id` ("Which agent") in aidream `82dd7c48c5`. Full walk:
-  `common-docs/projects/masterwork-methods-census/jobs-bar-2026-09-16/cold-walk-12/README.md`.
+  `common-docs/systems/masterwork/STATE.md`.
 
 - `2026-09-19` — **The Library episode table is reachable again at 1440x900**
   (D4, cold-walk-12). `LibraryMetricsHeader`'s stat tiles plus its two fixed

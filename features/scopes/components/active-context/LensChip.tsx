@@ -108,6 +108,8 @@ export function LensChip({
         "inline-flex h-7 min-w-0 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card px-2.5 text-xs text-foreground hover:bg-muted",
         // Icon-only on a phone (below): a round 28px button that never shrinks away.
         nodes.length === 0 && "max-[480px]:w-7 max-[480px]:shrink-0 max-[480px]:justify-center max-[480px]:px-0",
+        // The same fold inside a narrow composer meta row (container query).
+        nodes.length === 0 && "@max-[20rem]/composer-meta:w-7 @max-[20rem]/composer-meta:shrink-0 @max-[20rem]/composer-meta:justify-center @max-[20rem]/composer-meta:px-0",
         className,
       )}
     >
@@ -116,7 +118,7 @@ export function LensChip({
           <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           {/* A phone header has no room for the words: the chip goes
               icon-only (named by its aria-label), never a clipped "Se". */}
-          <span className="min-w-0 truncate text-muted-foreground max-[480px]:hidden">Set scopes</span>
+          <span className="min-w-0 truncate text-muted-foreground max-[480px]:hidden @max-[20rem]/composer-meta:hidden">Set scopes</span>
         </>
       ) : (
         <>

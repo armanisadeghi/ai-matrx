@@ -60,7 +60,6 @@ import {
   ChevronRight,
   Paintbrush,
   Plus,
-  Download,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
@@ -176,8 +175,12 @@ import {
   setDefaultSort,
   setRowOrdering,
   setTableStyle,
+  addTableRow,
+  deleteRow,
+  restoreArchivedRow,
   upsertCell,
 } from "@/features/data-tables/service";
+import { useInlineNewRow } from "@/features/data-tables/hooks/useInlineNewRow";
 import {
   CELL_TINT_CLASS,
   ROW_TINT_CLASS,
@@ -240,8 +243,8 @@ import {
   type GridMenuTarget,
 } from "@/features/data-tables/grid-context-menu";
 import {
-  buildDatasetTableMenuSection,
   datasetTableEntityRef,
+  tableActionSectionsAwayFromPage,
 } from "@/features/data-tables/dataset-table-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { OpenSurfaceMenuButton } from "@/features/context-menu-v3/components/OpenSurfaceMenuButton";
@@ -510,11 +513,11 @@ interface UserTableViewerProps {
    */
   emitSurfaceScope?: boolean;
   /**
-   * THE PAGE AROUND THE GRID OWNS SHARE AND EXPORT (the /data-v2 table page's chrome, for
-   * every layout — ruling 2026-09-23). The grid's own Share and export controls are absent,
-   * and its right-click export items become one "Export this table…" that opens the page's.
+   * THE PAGE AROUND THE GRID OWNS THE TABLE'S MENU (the /data-v2 table page's chrome, for
+   * every layout — ruling 2026-09-23; TABLE-ACTIONS item 11). The grid's own Share, export,
+   * ⋯ and table sections are absent: the page's header ⋯ is the table's one menu.
    */
-  pageOwnsShareAndExport?: { openExport: () => void };
+  pageOwnsShareAndExport?: boolean;
   /**
    * THE TABLE PAGE'S ONE TOOLBAR ROW (lane TABLE-PAGE-CHROME; records-ui `HostLayout.render`'s
    * `toolbarSlot`). Given, the Sheet draws its toolbar — Column, Row, Paste, search, Columns,
@@ -2472,6 +2475,10 @@ const UserTableViewer = ({
   // The rows on screen NOW (after filters, sort and the page), read when an edit settles (lane
   // DATA-V2-BASICS: an edit keeps the view true).
   const shownNow = useLatest(displayRows);
+  // Whether a cell is open / a new row is taking keys, read by the view's settling (set below, where
+  // the grid and the inline row exist).
+  const sheetEditingNow = useSlot(false);
+  const sheetAddingRowNow = useSlot(false);
   const formulaErrors = computedPage.errors;
   // Formula AND system columns (Created / Last modified time): everything the
   // table fills in itself, which every write path below must skip.
@@ -2615,6 +2622,15 @@ const UserTableViewer = ({
   });
 
   const settleTheView = useEffectEvent(async () => {
+    // NEVER MOVE A ROW OUT FROM UNDER SOMEONE TYPING (grids review 3; Airtable holds a sorted row in
+    // place until you leave it). Measured on the clone: "+ Row", then fast Tab-typing on a table sorted
+    // by Title — the Title's re-sort re-read the page 250 ms later, mid-row, and every value after it
+    // was lost. While a cell is open or a new row is taking its keys, the view waits and settles after.
+    if (sheetEditingNow.get() || sheetAddingRowNow.get()) {
+      // Ask again in a quarter second: the same edits, re-armed (the effect below waits on them).
+      setViewEdits((prev) => prev.slice());
+      return;
+    }
     const edited: EditedCell[] = viewEdits.map(({ rowId, fieldName }) => ({ rowId, fieldName }));
     const labelOf = new Map(viewEdits.map((cell) => [cell.rowId, cell.label] as const));
     const mine = viewEdits.some((cell) => cell.mine);
@@ -3394,6 +3410,96 @@ const UserTableViewer = ({
   // Destructured: the compiler reads `grid.containerRef` (a property load) as a ref read in render.
   const { containerRef: gridContainerRef, selectColumn: gridSelectColumn, refocusGrid: gridRefocus } = grid;
 
+  /**
+   * "+ ROW" AND THE "Add row" LINE ADD THE ROW IN THE GRID, FIRST CELL EDITING (grids review 3: the
+   * form they opened focused Cancel and tabbed through voice buttons, and fast-typed values were
+   * lost). Keys typed while the store makes the row are held and land in order (`useInlineNewRow`).
+   * The row form stays — the phone's Add Row — and is fixed too.
+   */
+  const inlineNewRow = useInlineNewRow({
+    containerRef: gridContainerRef,
+    create: async () => {
+      const defaults: Record<string, unknown> = {};
+      for (const field of fields) {
+        if (isFormulaField(field.field_name)) continue;
+        if (field.default_value !== null && field.default_value !== undefined) defaults[field.field_name] = field.default_value;
+      }
+      const made = await addTableRow({ tableId, data: defaults });
+      return made.success && made.rowId ? { ok: true, rowId: made.rowId } : { ok: false, why: made.error ?? "The store did not say why." };
+    },
+    reload: async () => {
+      setAllSortedData(null);
+      await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+    },
+    shownRowIds: () => shownNow().map((row) => row.id),
+    begin: (rowId, seed) => {
+      const first = viewFields.find((field) => !isFormulaField(field.field_name));
+      if (!first) return false;
+      grid.beginEdit({ rowId, fieldName: first.field_name }, seed === "" ? undefined : seed);
+      return true;
+    },
+    focusGrid: () => gridRefocus(),
+    onRefused: (why) => toast({ title: "The row was not added", description: why, variant: "destructive" }),
+    onNotShown: () =>
+      toast({
+        title: "Row added",
+        description: "It is not in this view: the search, a filter, the sort or the page puts it elsewhere. Clear them to see it.",
+      }),
+  });
+
+  /**
+   * A ROW ARCHIVED BY DELETE IS ONE STEP ON THE ONE UNDO STACK (grids review 3: the toolbar Undo did
+   * not bring the row back). Cmd-Z, the toolbar Undo and the notice's Undo all restore it through the
+   * store's restore door; Redo archives it again. The notice stays ten seconds, the platform's
+   * notice-with-an-action length.
+   */
+  const recordRowArchived = (rowId: string, named: string) => {
+    const reload = () => loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+    const handle = cellUndo.recordStep(
+      {
+        undo: async () => {
+          const back = await restoreArchivedRow({ tableId, rowId });
+          if (isServiceFailure(back)) {
+            notify.error(`${named} could not be put back: ${back.error}`, {
+              description: "It is still in Trash, where Restore brings it back.",
+            });
+            return false;
+          }
+          notify.success(`${named} is back`);
+          await reload();
+          return true;
+        },
+        redo: async () => {
+          const gone = await deleteRow({ tableId, rowId });
+          if (isServiceFailure(gone)) {
+            notify.error(`${named} could not be archived again: ${gone.error}`);
+            return false;
+          }
+          notify.success(`${named} was archived again`);
+          await reload();
+          return true;
+        },
+      },
+      `Delete ${named}`,
+    );
+    notify.success(`${named} was archived`, {
+      description: "It is in this table's archive and in Trash. Undo puts it back here.",
+      duration: 10000,
+      action: { label: "Undo", onClick: () => void cellUndo.undoThis(handle) },
+    });
+  };
+
+  sheetEditingNow.set(grid.editing !== null);
+  sheetAddingRowNow.set(inlineNewRow.adding);
+
+  const addRowInline = () => {
+    if (isReadOnly) {
+      showReadOnlyToast();
+      return;
+    }
+    void inlineNewRow.start();
+  };
+
   // ─── The ONE right-click menu for the grid ──────────────────────────────
   //
   // Single-instance delegation (context-menu-v3): one `NonEditableContextMenu`
@@ -3490,6 +3596,8 @@ const UserTableViewer = ({
   const steady = useSteadyHandlers({
     // The grid's own surface, for the toolbar's ⋯ (read when it opens, never while drawing).
     getGridSurface: () => gridContainerRef.current,
+    addRowInline,
+    recordRowArchived,
     dropColumn,
     beginColumnResize,
     loadTableData,
@@ -3810,7 +3918,7 @@ const UserTableViewer = ({
       readOnly: isReadOnly,
       readOnlyReason: readOnlyReason,
       on: {
-        add: () => setShowAddRowModal(true),
+        add: () => addRowInline(),
         highlight: (rowId, color) =>
           void steady.writeStylePath(stylePath.row(rowId), color),
         edit: (rowId) => {
@@ -3940,45 +4048,30 @@ const UserTableViewer = ({
         : gridMenuTargetKind === "column"
           ? [gridColumnSection]
           : []),
-    buildDatasetTableMenuSection({
-      label: tableInfo.table_name ? `Table · ${tableInfo.table_name}` : "Table",
-      getRow: () => ({ id: tableId, name: tableInfo.table_name ?? null }),
-      // Table-wide doors sit ONLY here, never in a column's section.
-      extraItems: isReadOnly
-        ? []
-        : [
-            {
-              kind: "item" as const,
-              id: "grid-table-colors",
-              label: "Table colors…",
-              icon: Paintbrush,
-              onSelect: () => setShowColorsDialog(true),
-            },
-          ],
-      unavailable: {
-        // On the route itself the door leads to where the user already is.
-        "dataset-open-workspace":
-          emitSurfaceScope && "Already open in the Data Workspace",
-      },
-    }),
+    // THE TABLE'S ONE MENU (lane TABLE-ACTIONS item 11): on the table page the header ⋯ is the
+    // only table menu, so the grid adds no table section there. Away from the page the grid's
+    // right-click carries the table's one action list (`tableActions`, never a list of its own).
     ...(pageOwnsShareAndExport
-      ? [
+      ? []
+      : tableActionSectionsAwayFromPage({ id: tableId, name: tableInfo.table_name ?? null })),
+    // The Sheet's own display door — not a table action, so it stays with the grid.
+    ...(isReadOnly
+      ? []
+      : [
           {
-            id: "page-export",
-            label: "Export",
+            id: "sheet-display",
+            label: "Sheet",
             items: [
               {
                 kind: "item" as const,
-                id: "page-export-open",
-                label: "Export this table…",
-                description: "CSV, XLSX, or copy and transform, from the page",
-                icon: Download,
-                onSelect: () => pageOwnsShareAndExport.openExport(),
+                id: "grid-table-colors",
+                label: "Table colors…",
+                icon: Paintbrush,
+                onSelect: () => setShowColorsDialog(true),
               },
             ],
           },
-        ]
-      : []),
+        ]),
   ];
 
   /** The table page's one toolbar row is where the Sheet's toolbar goes, when there is one. */
@@ -4796,7 +4889,9 @@ const UserTableViewer = ({
       onApply={steady.applyCleanupPatches}
     />
   );
-  const sheetMoreActions = <SheetMoreActions getSurface={steady.getGridSurface} />;
+  // On the table page the header ⋯ is the table's one menu (TABLE-ACTIONS item 11, T3.2): no
+  // second ⋯ here. Elsewhere the ⋯ opens the grid's menu, which carries the table's action list.
+  const sheetMoreActions = pageOwnsShareAndExport ? null : <SheetMoreActions getSurface={steady.getGridSurface} />;
 
   // EVERYTHING THE COLUMN-HEADER ROW SHOWS (lane RENDER-3): a Sheet render that moved none of these
   // redraws no header — a cell write moves the rows, and the headers read no row.
@@ -4843,7 +4938,7 @@ const UserTableViewer = ({
       <SheetToolbar
         inPageRow={inPageRow}
         {...(inPageRow && sheetSortState ? { sortState: sheetSortState } : {})}
-        pageOwnsShareAndExport={Boolean(pageOwnsShareAndExport)}
+        pageOwnsShareAndExport={pageOwnsShareAndExport === true}
         tableId={tableId}
         tableInfo={tableInfo}
         fields={fields}
@@ -4884,6 +4979,8 @@ const UserTableViewer = ({
           setShowAddColumnModal(show);
         }}
         setShowAddRowModal={setShowAddRowModal}
+        onAddRowInline={steady.addRowInline}
+        onRowArchived={steady.recordRowArchived}
         // The SAME map the grid's cells are handed — one resolution of the
         // relation words for the whole screen, so the row modal cannot show a
         // different name (or a raw id) from the cell it was opened from.
@@ -5540,7 +5637,7 @@ const UserTableViewer = ({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowAddRowModal(true)}
+                        onClick={addRowInline}
                       >
                         <Plus className="mr-1 h-3.5 w-3.5" />
                         Add the first row
@@ -5561,7 +5658,8 @@ const UserTableViewer = ({
                 <TableCell colSpan={viewFields.length + 3} className="p-0">
                   <button
                     type="button"
-                    onClick={() => setShowAddRowModal(true)}
+                    onClick={addRowInline}
+                    disabled={inlineNewRow.adding}
                     className="flex h-7 w-full items-center gap-1.5 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                   >
                     <Plus className="h-3.5 w-3.5" />

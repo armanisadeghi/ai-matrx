@@ -19,7 +19,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
 const PART = process.env.PART ?? "app";
-const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-explorer";
+const SHOTS = process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-30/drill-explorer";
 mkdirSync(SHOTS, { recursive: true });
 const out = { part: PART, started: new Date().toISOString(), steps: [], console_errors: [], frictions: [] };
 const friction = (what) => {

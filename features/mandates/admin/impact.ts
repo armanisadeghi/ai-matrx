@@ -12,7 +12,7 @@
 // rows a BATCH may carry (R17: a blocked row is a per-row door, never a batch
 // member).
 //
-// Contract: common-docs/projects/agent-change-impact/CONTRACT.md (frozen, with
+// Contract: common-docs/systems/intelligence/mandates/projects/agent-change-impact/HANDOFF.md (frozen, with
 // Amendments 1–3 — `global` principals, `tracks_latest`, the envelope, the
 // unknown-agent sentence). The WRITE half (`/mandates/impact/advance` and
 // `/mandates/impact/revert`, I3) is called from here too: every advance sends

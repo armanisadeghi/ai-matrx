@@ -70,6 +70,24 @@ describe("bulk archive goes through custom.table_archive, table by table", () =>
     expect(outcome).toEqual({ status: "refused", target: parts, records: 0, message: "4 records left." });
   });
 
+  // Break caught: treating a pass that archived only what is built on the table (archived 0,
+  // built_on_archived > 0 — TABLE-ACTIONS 2026-10-03) as a stall, so a table with forms never finishes.
+  it.each([
+    { builtOn: 3, records: 2, firstBuiltOn: 0 },
+    { builtOn: 1, records: 0, firstBuiltOn: 2 },
+  ])("carries on through a pass that archived only $builtOn thing(s) built on the table", async ({ builtOn, records, firstBuiltOn }) => {
+    const { door, calls } = recordingDoor({
+      "t-parts": [
+        { ok: true, data: { table_id: "t-parts", archived: records, built_on_archived: firstBuiltOn, remaining: 0, done: false, message: "records gone." } },
+        { ok: true, data: { table_id: "t-parts", archived: 0, built_on_archived: builtOn, remaining: 0, done: false, message: "forms going." } },
+        { ok: true, data: { table_id: "t-parts", archived: 0, built_on_archived: 0, remaining: 0, done: true, table_archived: true } },
+      ],
+    });
+    const [outcome] = await archiveTables([parts], door);
+    expect(outcome).toEqual({ status: "archived", target: parts, records });
+    expect(calls).toHaveLength(3);
+  });
+
   it("a door that throws is a refusal with its sentence, not a crash of the whole run", async () => {
     const door: TableArchiveDoor = async (args) => {
       if (args.p_table_id === "t-parts") throw new Error("Failed to fetch");

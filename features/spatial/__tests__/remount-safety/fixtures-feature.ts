@@ -64,7 +64,7 @@ export const taskRow = {
   title: "Schedule the painter for Unit 4B",
   updated_by: PERSON.id,
   version: 2,
-  visibility: "organization",
+  visibility: "internal",
 } satisfies Row<"projects", "tasks">;
 
 export const projectRow = {
@@ -87,13 +87,25 @@ export const projectRow = {
   target_date: "2026-11-28",
   updated_by: PERSON.id,
   version: 4,
-  visibility: "organization",
+  visibility: "internal",
 } satisfies Row<"projects", "projects">;
 
 /** The reads every record page shares: where the record lives, its comments, its counts. */
 function seedRecordDoors(): void {
   // features/unified-data/hub/doors.ts `RecordHomeAnswer`
   seedRpc("entity_record_home", { organization_id: ORGANIZATION.id });
+  // features/unified-data/hub/doors.ts `entityRecordReadable` — the custom-fields
+  // section's own first read (a SECURITY INVOKER read); no custom values yet.
+  seedRpc("entity_record_read", {});
+  // migrations/campaign/entityfields_the_add_control_is_absent_or_honest.sql —
+  // the person owns the organization, so they may add a column.
+  seedRpc("entity_field_rights", (args: unknown) => ({
+    token: (args as { p_token?: string }).p_token ?? null,
+    label: (args as { p_token?: string }).p_token === "project" ? "Projects" : "Tasks",
+    may_declare: true,
+    reason: null,
+    may_fill_in: true,
+  }));
   // features/rich-document/annotations/service.ts — no comment threads yet.
   seedRpc("cmt_list", []);
 }
@@ -191,7 +203,7 @@ export const topicRow = {
   updated_by: PERSON.id,
   version: 3,
   videos_per_keyword: 0,
-  visibility: "organization",
+  visibility: "internal",
 } satisfies Row<"research", "rs_topic">;
 
 export const REPORT_TEXT = "Oregon caps 2027 increases at 9.5%; a 90-day written notice is required.";
@@ -253,7 +265,7 @@ export const warRoomRow = {
   title: "Fall lease-up",
   updated_by: PERSON.id,
   version: 6,
-  visibility: "organization",
+  visibility: "internal",
 } satisfies Row<"projects", "war_rooms">;
 
 export function seedWarRoom(): void {
@@ -300,11 +312,11 @@ export const runRow = {
   thread_id: "run-thread-4b-turnover",
   updated_by: PERSON.id,
   version: 1,
-  visibility: "organization",
+  visibility: "internal",
 } satisfies Row<"workflow", "run">;
 
 const definitionRow = {
-  card_visibility: "organization",
+  card_visibility: "internal",
   category: "operations",
   channels: {},
   compiled_at: null,
@@ -348,7 +360,7 @@ const definitionRow = {
   variables: {},
   version: 2,
   viewport: {},
-  visibility: "organization",
+  visibility: "internal",
 } satisfies Row<"workflow", "definition">;
 
 export function seedWorkflowRun(): void {
@@ -422,10 +434,12 @@ export const meetingRow = {
   title: "Owner sync — Unit 4B turnover",
   updated_by: PERSON.id,
   version: 1,
-  visibility: "organization",
+  visibility: "internal",
 } satisfies Row<"communication", "meet_meetings">;
 
 export function seedMeeting(): void {
+  // The meeting's home carries the record page's own reads (its custom-fields section).
+  seedRecordDoors();
   seed("communication.meet_meetings", [meetingRow]);
   seed("communication.meet_invitees", []);
   seedRpc("meet_meeting_occurrences", []);
@@ -450,12 +464,12 @@ export const documentRow = {
   project_id: PROJECT_ID,
   ...PUBLISH,
   shown_to: null,
-  source: "user_created",
+  source: "created",
   task_id: null,
   updated_by: PERSON.id,
   user_id: PERSON.id,
   version: 5,
-  visibility: "organization",
+  visibility: "internal",
 } satisfies Row<"workbench", "udt_documents">;
 
 export const DOCUMENT_TEXT = "Section 4. Rent is $1,925 per month, due on the 1st.";
@@ -487,3 +501,37 @@ export function seedDocument(): void {
   // utils/permissions/shareLinks.ts `getShareCapabilities`
   seedRpc("get_share_capabilities", { publish_lane: "published_to_web", public_state_kind: null, public_state_column: null });
 }
+
+// ── Data table and record (the record store, `custom.*`) ─────────────────────
+
+export const TABLE_ID = "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f";
+export const DATA_RECORD_ID = "0d1e2f3a-4b5c-4d6e-8f7a-8b9c0d1e2f3a";
+
+export function seedDataTable(): void {
+  // features/unified-data/objectOrganization.ts `WhereIdOpens`
+  seedRpc("where_id_opens", (args: Record<string, unknown> | undefined) => {
+    const id = String((args as { p_id?: string } | undefined)?.p_id);
+    if (id === TABLE_ID) return { kind: "table", organization_id: ORGANIZATION.id, path: `/data-v2/${TABLE_ID}`, live: true, resolved_id: id };
+    if (id === DATA_RECORD_ID)
+      return { kind: "record", organization_id: ORGANIZATION.id, path: `/data-v2/${TABLE_ID}?record=${id}`, live: true, resolved_id: id };
+    return null;
+  });
+  // features/unified-data/hub/doors.ts — nothing shared with this person from elsewhere.
+  seedRpc("tables_shared_with_me", []);
+  // features/unified-data/tableCopyEvaluation.ts — not a test copy.
+  seedRpc("table_copy_evaluation_state", { found: true, test_copy: false });
+  // The records client's row actions for the table (none declared).
+  seedRpc("row_actions", []);
+  // features/data-tables/data-source/record-store-grid.ts — no row actions declared.
+  seedRpc("record_change_actions", { entity_type: "record", table_id: TABLE_ID, actions: [] });
+}
+
+/**
+ * The record store's grid and peek (`@ai-matrx/records-ui` `TablePage` / `Peek`)
+ * and its store hooks (`@ai-matrx/records/react`) stand in at the package
+ * boundary — the grid is the package's own engine. Each stand-in counts its
+ * mounts: a wake that unmounts the grid (what the gates did) shows as a mount.
+ */
+export const recordsEngine = { gridMounts: 0, peekMounts: 0 };
+export const RENT_ROLL = { id: TABLE_ID, name: "Rent roll", title_field: "unit" };
+export const UNIT_4B_ROW = { id: DATA_RECORD_ID, unit: "Unit 4B", rent: 1925, tenant: "Priya Raman" };

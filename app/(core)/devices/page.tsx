@@ -1,3 +1,4 @@
+// record-view: none — a list of connected computers
 import { createClient } from "@/utils/supabase/server";
 import { DeviceList } from "@/features/files/devices/console/DeviceList";
 import { fetchConsoleDevices } from "@/features/files/devices/console/devices-query";

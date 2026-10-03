@@ -38,7 +38,26 @@ jest.mock("@ai-matrx/records-ui", () => ({
 }));
 jest.mock("@/features/unified-data/hub/doors", () => ({
   entityRecordHome: async () => ({ ok: true, data: { organization_id: CEDAR_RIDGE } }),
+  entityRecordReadable: async () => ({ ok: true, data: null }),
 }));
+// The section's own reads are kept in Redux by record (`useStoreRead`); this page's cases are about
+// what the answers SAY, so a plain one-read stand-in carries them (the read-once law has its own
+// test: entity-custom-fields-reads-once.test.tsx).
+jest.mock("@/lib/redux/store-reads/useStoreRead", () => {
+  const { useEffect, useState } = jest.requireActual("react") as typeof import("react");
+  return {
+    useStoreRead: (key: string | null, read: () => Promise<unknown>) => {
+      const [answer, setAnswer] = useState<{ data?: unknown; failed?: boolean } | null>(null);
+      useEffect(() => {
+        if (!key) return;
+        void read().then((data) => setAnswer({ data }), () => setAnswer({ failed: true }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [key]);
+      const status = !key ? "ready" : !answer ? "loading" : answer.failed ? "error" : "ready";
+      return { data: answer?.data, status, hasData: !!answer && !answer.failed, refresh: async () => {} };
+    },
+  };
+});
 jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
   UNIFIED_DATA_CAMPAIGN: {
     check: async () => switchAnswer,

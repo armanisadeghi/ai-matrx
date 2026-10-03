@@ -34,7 +34,7 @@ const PORT = process.env.WALK_PORT ?? "3001";
 const PUBLIC_ORIGIN = `http://${process.env.WALK_HOST ?? "agent-builds.localhost"}:${PORT}`;
 /** The viewer's own host — its cookie jar is its own (see the header). */
 const VIEWER_ORIGIN = `http://${process.env.WALK_VIEWER_HOST ?? "close-refusal.localhost"}:${PORT}`;
-const OUT = process.env.WALK_OUT ?? resolve(process.cwd(), "../common-docs/operations/for-arman/2026-09-21");
+const OUT = process.env.WALK_OUT ?? resolve("/tmp/matrx-evidence/2026-09-21");
 mkdirSync(OUT, { recursive: true });
 
 const FORM_URL = `${PUBLIC_ORIGIN}/f/690c349e-87ae-4daa-8fe5-c43b08a4367f`;

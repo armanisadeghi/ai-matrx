@@ -1,3 +1,4 @@
+// record-view: none — a component showcase
 import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import MessagesShowcase from "@/features/messaging/demo/MessagesShowcase";

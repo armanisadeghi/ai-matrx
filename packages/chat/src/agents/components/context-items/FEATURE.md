@@ -70,6 +70,7 @@ Only the Body mounts `useWorkingDocument`; title actions + history read the shar
 
 ## Change log
 
+- `2026-10-03` — **A new chat's version history is empty, never "access denied".** A new chat reserves its working document's id before any row exists; `WorkingDocumentVersionHistory` asked `version_list` for that id and the RPC's `iam.has_access` (no row → no access) refused it, printed raw in red. The history now reads only once `selectWorkingDocMaterialized` is true and shows "No versions yet" until then. The RPC itself is right for written documents — no database change. Guard: `working-document/__tests__/a-new-document-has-no-history-to-refuse.test.tsx` (red without the gate).
 - `2026-10-02` — **The drawer is a canvas tab.** `ContextItemDrawer` (docked `MatrxDynamicPanelHost`) + `useContextItemDrawer` are deleted; `ContextItemViewer` is the body of kind `context-items` (host: `features/canvas/host/conversation/contextItemsKind.tsx`), one tab per chip host, prev/next in the tab. Chips carry `aria-pressed`. Guards: `features/canvas/__tests__/context-items-open-in-the-canvas.test.tsx`, `__tests__/attachment-interaction.test.tsx`.
 
 - `2026-08-29` — Submitted media attachments now preserve known file identity fields as hydration

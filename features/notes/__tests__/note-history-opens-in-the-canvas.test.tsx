@@ -23,6 +23,7 @@ import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { CanvasHostProvider } from "@/features/canvas/host/CanvasHostProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NOTE_HISTORY_KIND, useNoteHistoryTab } from "../canvas/noteHistoryKind";
+import { upsertNoteFromServer } from "../redux/slice";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 Element.prototype.scrollIntoView ??= function scrollIntoView() {};
@@ -91,7 +92,7 @@ it("every notes host opens the canvas tab — none mounts its own history panel"
   ]) {
     expect(read(file)).toContain("useNoteHistoryTab(");
   }
-  expect(read("features/notes/components/NoteTabItem.tsx")).toContain("useToolOpener(noteHistoryInput)");
+  expect(read("features/notes/components/NoteTabItem.tsx")).toMatch(/useToolOpener\(\(id: string\) => noteHistoryInput\(id, note\?\.label\)\)/);
   for (const file of [
     "features/notes/components/NotesView.tsx",
     "features/notes/components/NoteWorkspace.tsx",
@@ -101,5 +102,68 @@ it("every notes host opens the canvas tab — none mounts its own history panel"
   ]) {
     const source = read(file);
     expect(source).not.toMatch(/NoteVersionHistory\b|NoteHistoryPane|InstanceHistoryOpen/);
+  }
+});
+
+it("the history tab names its note — two history tabs never both read \"Version history\"", async () => {
+  const store = configureStore({
+    reducer: createSlimRootReducer(),
+    middleware: (getDefault) => getDefault({ serializableCheck: false, immutableCheck: false }),
+  });
+  store.dispatch(
+    upsertNoteFromServer({
+      note: { id: "n-1", label: "Q3 plan", organization_id: "org-1" },
+      fetchStatus: "list",
+    }),
+  );
+  const seen: { tab: { isVisible: boolean; toggle: () => void } | null } = { tab: null };
+  function Versions() {
+    seen.tab = useNoteHistoryTab("n-1");
+    return null;
+  }
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  act(() => {
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <Provider store={store}>
+          <TooltipProvider>
+            <CanvasHostProvider>
+              <CanvasColumn />
+              <Versions />
+            </CanvasHostProvider>
+          </TooltipProvider>
+        </Provider>
+      </QueryClientProvider>,
+    );
+  });
+  const id = `${NOTE_HISTORY_KIND}::n-1`;
+  act(() => seen.tab?.toggle());
+  await flush();
+  expect(store.getState().canvasHost.items[id]?.title).toBe("Note history · Q3 plan");
+
+  // A rename reaches the open tab.
+  store.dispatch(
+    upsertNoteFromServer({
+      note: { id: "n-1", label: "Q4 plan", organization_id: "org-1" },
+      fetchStatus: "list",
+    }),
+  );
+  await flush();
+  expect(store.getState().canvasHost.items[id]?.title).toBe("Note history · Q4 plan");
+  act(() => root.unmount());
+  container.remove();
+});
+
+it("every Versions and Outline tap button shows pressed through the system's pressed state", () => {
+  const repo = join(__dirname, "..", "..", "..");
+  for (const file of ["features/notes/components/NotesView.tsx", "features/notes/components/NoteRecordTools.tsx"]) {
+    const source = readFileSync(join(repo, file), "utf8");
+    // A className tint on a group tap button is not a pressed state (no
+    // aria-pressed, overridden by the group's glyph colour) — RED before.
+    expect(source).not.toContain('className={history.isVisible ? "text-primary" : undefined}');
+    expect(source).not.toContain('className={outlineOpen ? "text-primary" : undefined}');
+    expect(source).toContain("pressed={history.isVisible}");
   }
 });

@@ -17,10 +17,10 @@ agents and edited nothing; they wrote the dispatches and adjudication they would
 
 - **Source:** the HR Domain execution program as it stood at common-docs `e2449837` (2026-08-25 23:37,
   *"pre-G1 amendment fleet complete"*), two minutes before build kickoff `595a6a6d` opened the Item
-  Register HRB-001..032. Snapshot extracted with `git archive e2449837 projects/hr-domain
+  Register HRB-001..032. Snapshot extracted with `git archive e2449837 systems/human-resources/projects/hr-domain/PLAN.md
   systems/human-resources` into a scratch dir; scenario agents were told not to read the live
   directories or git history.
-- **Plan under attack:** `projects/hr-domain/EXECUTION.md` (§7 = D15 independent-verification law) +
+- **Plan under attack:** `systems/human-resources/projects/hr-domain/PLAN.md` (§7 = D15 independent-verification law) +
   `readiness/` + `specs/` (19 specs). Vision: `systems/human-resources/VISION.md`, `PLAN.md`,
   `FEATURE-TREE.md`. Rulings: `DECISIONS.md` (both). Stakes row: *register → build mode* → 2 reviewers,
   REGRET + BUILDABILITY, `standard`.
@@ -32,7 +32,7 @@ agents and edited nothing; they wrote the dispatches and adjudication they would
   requires verification on live data — with no machinery making the stand-in announce itself or proving
   a verification environment is un-mocked (no governing runtime knob, no visible mock indicator, no
   pre-verification environment check, no removal/cutover gate). Found 2026-08-26 by the G2 verifier
-  (`1cf5bfa7`, `projects/hr-domain/readiness/G2-VERIFICATION-2026-08-26.md`): the shared preview server
+  (`1cf5bfa7`, `systems/human-resources/projects/hr-domain/PLAN.md`): the shared preview server
   had the flag at `1`, so every "proven in the browser" claim for L3 and L13 (incl. "mock-walk 383/0")
   proved the fixture. The governance knob `hr.contracts.mock_mode_enabled` was added only in `f717ccae`.
 - **Known later-found gap (secondary, not required for the objective check):** no item owns the

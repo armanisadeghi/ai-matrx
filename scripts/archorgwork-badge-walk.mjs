@@ -15,7 +15,7 @@ import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
 const ORIGIN = "http://archived-org-work.localhost:3001";
 const IRONCLAD = "719980a1-75f1-410f-88aa-0223f38f2872";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-24/archived-org-work";
+const OUT = "/tmp/matrx-evidence/2026-09-24/archived-org-work";
 mkdirSync(OUT, { recursive: true });
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")

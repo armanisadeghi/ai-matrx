@@ -68,6 +68,7 @@ jest.mock("@/utils/permissions/orgModeration", () => ({ listOrgShareGrants: asyn
 import { ORG_RESOURCE_CATALOGUE } from "../../resource-catalogue";
 import { useOrgSharedItems } from "../useOrgSharedItems";
 import { useContainerInventory } from "../useContainerInventory";
+import { storeReadsWrapper } from "@/test-utils/store-reads";
 
 const LISTS = ORG_RESOURCE_CATALOGUE.find((e) => e.key === "structured_list") ?? null;
 
@@ -99,8 +100,14 @@ beforeEach(async () => {
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
+  // A fresh store per test: each test is a first visit to the organization.
+  const Store = storeReadsWrapper();
   await act(async () => {
-    root.render(<Probe />);
+    root.render(
+      <Store>
+        <Probe />
+      </Store>,
+    );
   });
   for (let i = 0; i < 20 && seen.loading; i += 1) {
     // eslint-disable-next-line no-await-in-loop

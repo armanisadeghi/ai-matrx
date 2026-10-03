@@ -22,6 +22,9 @@ import { Button } from "@/components/ui/button";
 import { readOf } from "@/components/read-state/ReadGate";
 import { useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
 import { useMeetingById } from "@/features/meet/hooks/useMeetingById";
+import { useMeetingLive } from "@/features/meet/hooks/useMeetingLive";
+import { meetingSaved } from "@/features/meet/redux/meetingsSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { MeetingSurfaceHost, MEETING_SURFACE_NAME } from "@/features/meet/agent-surface/MeetingSurfaceHost";
 import { MeetingPartBody, useIsInMeetingRoom } from "@/features/meet/components/board/MeetingNotesBodies";
 import type { NodeSource } from "../board/document";
@@ -55,13 +58,25 @@ function MeetingPartItemBody({ source }: ItemBodyProps) {
 function MeetingPartSurface({ source, children }: { source: NodeSource; children: ReactNode }) {
   const target = meetingPartOf(source);
   const read = useMeetingById(target?.meetingId ?? null);
+  const dispatch = useAppDispatch();
   if (read.status !== "ready") return <>{children}</>;
   const { meeting, invitees, occurrences } = read.loaded;
   return (
-    <MeetingSurfaceHost meeting={meeting} invitees={invitees} occurrences={occurrences} onSaved={read.reload}>
+    <MeetingSurfaceHost
+      meeting={meeting}
+      invitees={invitees}
+      occurrences={occurrences}
+      onSaved={(saved) => dispatch(meetingSaved({ meeting: saved }))}
+    >
       {children}
     </MeetingSurfaceHost>
   );
+}
+
+/** Holds the meeting's live channel while the tile is on the board (asleep included). */
+function MeetingPartKeep({ source }: { tileId: string; source: NodeSource }) {
+  useMeetingLive(meetingPartOf(source)?.meetingId ?? null);
+  return null;
 }
 
 function partItems(meeting: { id: string; title: string }, parts: readonly MeetingPart[], withMeetingName: boolean): PlacedItem[] {
@@ -172,6 +187,7 @@ export const MEETING_ITEMS: BoardItemType[] = [
     defaultSize: { w: 520, h: 390 },
     matches: matchesMeetingPart,
     Body: MeetingPartItemBody,
+    Keep: MeetingPartKeep,
     surface: { name: MEETING_SURFACE_NAME, Host: MeetingPartSurface },
     bringIn: { label: "Meeting notes", Picker: MeetingPartPicker },
     href: (source) => {
@@ -179,5 +195,7 @@ export const MEETING_ITEMS: BoardItemType[] = [
       return target ? `/meetings/${encodeURIComponent(target.meetingId)}` : null;
     },
     kindLabel: "meeting notes",
+    // Wake and remount render the shared per-meeting load (meetingsSlice).
+    sleeps: true,
   },
 ];

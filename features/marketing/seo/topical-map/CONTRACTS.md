@@ -2,7 +2,7 @@
 
 **Status: FROZEN 2026-09-18.** Every lane builds against this file. A change here is an amendment:
 edit this file, add a dated line to its change log, and note it in the build register
-(`common-docs/projects/table-provisioning/TOPICAL-MAP-UI-REGISTER.md`). Never a silent edit.
+(`common-docs/systems/marketing/seo/topical-map/projects/topic-tree-collapse/PLAN.md`). Never a silent edit.
 Plan and rulings R1–R18: the coordinator's plan (copied to `…/TOPICAL-MAP-UI-PLAN.md` at Phase 0
 close). Local mechanics: `FEATURE.md`. Product truth:
 `common-docs/inbox/topical-map-app-requirements.md`.

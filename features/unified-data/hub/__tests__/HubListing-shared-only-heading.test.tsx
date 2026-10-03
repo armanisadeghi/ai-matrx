@@ -2,8 +2,7 @@
 //
 // THE HEADING SAYS WHAT THE COUNT COUNTS (ACTIVE-ORG-PAGES, VERIFIER-17 H3).
 //
-// Alex Hart is a member of admin's Workspace, which shows each member only what is shared with
-// them. Her hub read "Tables 1 — Everything this organization keeps records in" while the
+// Alex Hart is a member of admin's Workspace. Her hub read "Tables 1 — Everything this organization keeps records in" while the
 // organization keeps 26: the count was hers, the sentence was the organization's. This suite runs
 // the REAL `HUB_CAPABILITIES` Tables declaration through the real `HubListing`, so it fails the
 // moment the sentence beside her count claims the whole organization again.
@@ -48,7 +47,7 @@ const ONE_SHARED_TABLE = {
 let container: HTMLDivElement;
 let root: Root;
 
-async function render(sharedOnly: boolean): Promise<string> {
+async function render(): Promise<string> {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -57,7 +56,6 @@ async function render(sharedOnly: boolean): Promise<string> {
       <HubListing
         capability={TABLES}
         state={ONE_SHARED_TABLE}
-        sharedOnly={sharedOnly}
         open={false}
         onOpenChange={() => undefined}
       />,
@@ -71,17 +69,16 @@ async function render(sharedOnly: boolean): Promise<string> {
 
 describe("the Tables heading says what the count counts", () => {
   it("never tells a member her count is everything the organization keeps", async () => {
-    for (const sharedOnly of [false, true]) {
-      const heading = await render(sharedOnly);
-      expect(heading).not.toMatch(/everything this organization/i);
-      expect(heading).toMatch(/you can open|shared with you/i);
-    }
+    const heading = await render();
+    expect(heading).not.toMatch(/everything this organization/i);
+    expect(heading).toMatch(/you can open/i);
   });
 
-  it("tells a shared-only member she sees only what is shared with her", async () => {
-    const heading = await render(true);
-    expect(heading).toContain("1");
-    expect(heading).toMatch(/shared with you/i);
-    expect(heading).toMatch(/only what is shared with them/i);
+  // ACCESS LADDER (custom data adoption, 2026-10-03): every member opens every Organization-level
+  // table, so no organization "shows each member only what is shared" any more — the heading never
+  // says so (the retired custom/member_default_visibility setting).
+  it("never claims the organization shows a member only what is shared", async () => {
+    const heading = await render();
+    expect(heading).not.toMatch(/only what is shared/i);
   });
 });

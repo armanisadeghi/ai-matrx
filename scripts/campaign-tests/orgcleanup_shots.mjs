@@ -18,7 +18,7 @@ for (const f of [".env.local", ".env"]) {
 
 const phase = process.argv[2] ?? "before";
 const ORIGIN = process.env.ORG_CLEANUP_ORIGIN ?? "http://org-cleanup.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 fs.mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });

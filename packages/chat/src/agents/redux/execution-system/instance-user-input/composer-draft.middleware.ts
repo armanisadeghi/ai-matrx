@@ -33,13 +33,14 @@ import {
   writeComposerDraft,
 } from "./composer-draft-store";
 import { selectRestoreUnsentDrafts } from "../../../../host/prefs";
+import { selectUserId } from "../../../../host/identity";
 
 /** Same cadence as the dialog draft keeper (`@ai-matrx/kit/drafts (useTextDraft)`). */
 const WRITE_DEBOUNCE_MS = 400;
 
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
-/** The latest text per conversation, so `pagehide` can flush without the store. */
-const pending = new Map<string, string>();
+/** The latest text (and who typed it) per conversation, so `pagehide` can flush without the store. */
+const pending = new Map<string, { text: string; owner: string | null }>();
 
 function cancel(conversationId: string): void {
   const t = timers.get(conversationId);
@@ -49,10 +50,10 @@ function cancel(conversationId: string): void {
 }
 
 function flushAll(): void {
-  for (const [conversationId, text] of pending) {
+  for (const [conversationId, { text, owner }] of pending) {
     const t = timers.get(conversationId);
     if (t) clearTimeout(t);
-    writeComposerDraft(conversationId, text);
+    writeComposerDraft(conversationId, text, owner);
   }
   timers.clear();
   pending.clear();
@@ -67,8 +68,12 @@ function bindPagehideFlush(): void {
   window.addEventListener("pagehide", flushAll);
 }
 
-function scheduleWrite(conversationId: string, text: string): void {
-  pending.set(conversationId, text);
+function scheduleWrite(
+  conversationId: string,
+  text: string,
+  owner: string | null,
+): void {
+  pending.set(conversationId, { text, owner });
   const existing = timers.get(conversationId);
   if (existing) clearTimeout(existing);
   timers.set(
@@ -77,7 +82,9 @@ function scheduleWrite(conversationId: string, text: string): void {
       timers.delete(conversationId);
       const latest = pending.get(conversationId);
       pending.delete(conversationId);
-      if (latest !== undefined) writeComposerDraft(conversationId, latest);
+      if (latest !== undefined) {
+        writeComposerDraft(conversationId, latest.text, latest.owner);
+      }
     }, WRITE_DEBOUNCE_MS),
   );
 }
@@ -89,12 +96,14 @@ function scheduleWrite(conversationId: string, text: string): void {
  * alias on the way out.
  */
 export function flushComposerDraftWrite(conversationId: string): void {
-  const text = pending.get(conversationId);
+  const latest = pending.get(conversationId);
   const t = timers.get(conversationId);
   if (t) clearTimeout(t);
   timers.delete(conversationId);
   pending.delete(conversationId);
-  if (text !== undefined) writeComposerDraft(conversationId, text);
+  if (latest !== undefined) {
+    writeComposerDraft(conversationId, latest.text, latest.owner);
+  }
 }
 
 export function isDraftRestoreEnabled(state: ChatRootState): boolean {
@@ -115,7 +124,9 @@ function reconcile(conversationId: string, state: ChatRootState): void {
   cancel(conversationId);
   const text =
     state.instanceUserInput.byConversationId[conversationId]?.text ?? "";
-  if (text.length > 0) writeComposerDraft(conversationId, text);
+  if (text.length > 0) {
+    writeComposerDraft(conversationId, text, selectUserId(state));
+  }
   else clearComposerDraft(conversationId);
 }
 
@@ -159,7 +170,7 @@ export const composerDraftMiddleware: Middleware<
     const { conversationId, text } = (
       action as { payload: { conversationId: string; text: string } }
     ).payload;
-    scheduleWrite(conversationId, text);
+    scheduleWrite(conversationId, text, selectUserId(api.getState()));
     return result;
   }
 

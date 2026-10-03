@@ -16,7 +16,7 @@
  */
 
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { Provider } from "react-redux";
+import { Provider, ReactReduxContext } from "react-redux";
 import type { Store } from "@reduxjs/toolkit";
 import type { ChatHost, ResolvedChatHost } from "./contract";
 import { configureChat, resolveChatHost } from "./configure";
@@ -44,15 +44,31 @@ export function ChatProvider({ host, store, children }: ChatProviderProps) {
   // object is free; the React Compiler memoizes the call itself.
   const resolved =
     typeof window === "undefined" ? resolveChatHost(host) : configureChat(host);
-  const [privateStore] = useState(() => (store ? null : createChatStore()));
-  const chatStore: Store = store ?? (privateStore as Store);
+  const [privateStore] = useState(() => {
+    if (store) return null;
+    const created = createChatStore();
+    return { store: created as Store, snapshot: created.getState() as unknown };
+  });
+  const chatStore: Store = store ?? (privateStore!.store);
+  // 🚨 HYDRATE WHAT THE SERVER RENDERED. A second <Provider> over the host's store without
+  // `serverState` made every package `useAppSelector` hydrate against the LIVE store, so a value
+  // the browser restored before a streamed boundary hydrated (the active organization, from
+  // storage) changed what hydrated: the composer's context chip threw a hydration error on every
+  // /chat/new reload. The host store's own Provider already carries the pre-restore state
+  // (matrx-frontend StoreProvider's `hydrationSnapshots`); reuse it. A private store hydrates
+  // against its state at creation.
+  // Guard: host/__tests__/chat-provider-hydrates-what-the-server-rendered.test.tsx
+  const parent = useContext(ReactReduxContext);
+  const serverState: unknown =
+    privateStore?.snapshot ??
+    (parent && parent.store === store ? parent.getServerState?.() : undefined);
   // Non-React package code reads the store through the singleton; the module
   // global is never written during SSR (one request's store is never another's).
   if (typeof window !== "undefined") setStoreSingleton(chatStore);
   useChatHostSync(chatStore, resolved);
   return (
     <ChatHostContext.Provider value={resolved}>
-      <Provider store={chatStore} context={ChatStoreContext}>
+      <Provider store={chatStore} context={ChatStoreContext} serverState={serverState as never}>
         {children}
       </Provider>
     </ChatHostContext.Provider>

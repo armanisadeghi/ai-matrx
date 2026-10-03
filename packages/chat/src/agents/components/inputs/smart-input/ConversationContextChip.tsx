@@ -72,7 +72,8 @@ export function useConversationContextTab(conversationId: string, agentId: strin
   const title = valueGroupName(useValueGroupSurface(conversationId));
   const toggle = (selected?: string) =>
     tab.toggle({
-      title: title || "Values",
+      // The kind's own label (conversationContextKind.tsx) when the page has no name.
+      title: title || "Values to send",
       data: { conversationId, agentId, title: title || null },
       ...(selected !== undefined ? { selected } : {}),
     });
@@ -320,3 +321,4 @@ export function ConversationContextChip({
     />
   );
 }
+

@@ -11,7 +11,7 @@
  * the component renders null unless the session is super-admin.
  *
  * Reusable anywhere: pass the doc path (repo-rooted, e.g.
- * `common-docs/projects/content-engine/STATE.md §4.3.3`) and optionally a one
+ * `common-docs/projects/content-engine/REGISTER.md §4.3.3`) and optionally a one
  * line note. Renders a small book icon with a hover tooltip carrying the path
  * in monospace.
  */

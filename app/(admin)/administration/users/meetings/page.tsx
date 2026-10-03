@@ -1,3 +1,4 @@
+// record-view: none — an admin list of meetings
 // Users & Access › Communications › Meetings — platform usage, meeting history,
 // meet.* settings and Meet retention. Thin shell; useSearchParams (?tab, ?org)
 // needs a Suspense boundary.

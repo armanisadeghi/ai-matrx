@@ -9,6 +9,9 @@
 -- for table files" — custom.entity_record_read (SECURITY INVOKER) selected to_jsonb(x), every column,
 -- and authenticated may select 36 of files.files' 37 columns.
 
+-- ORDER (lane manager ruling 2026-10-03): this file is applied FIRST; lane 7 wave 4a
+-- (lane7w4a_*, which also replaces custom.entity_record_read) rebases onto this body.
+
 set local lock_timeout = '3s';
 
 CREATE OR REPLACE FUNCTION custom.entity_record_read(p_organization_id uuid, p_token text, p_record_id uuid)

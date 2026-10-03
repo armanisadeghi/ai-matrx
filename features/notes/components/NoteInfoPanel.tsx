@@ -51,6 +51,7 @@ import { notesEditorManifest } from "@/features/surfaces/manifests/notes-editor.
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
 interface NoteInfoPanelProps {
   noteId: string;
@@ -331,6 +332,11 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
       {/* ── The organization's own fields on this note (lane 7 W5) ───── */}
       <div className="px-1">
         <EntityCustomFields entityToken="note" recordId={noteId} organizationId={note?.organization_id} />
+      </div>
+
+      {/* ── Everything linked to this note, both ways (W1.4) ─────────── */}
+      <div className="px-1">
+        <LinkedRecordsSection token="note" id={noteId} title={note?.label ?? ""} />
       </div>
 
       {/* ── Sharing — who can see this note, and why ──────────────────── */}

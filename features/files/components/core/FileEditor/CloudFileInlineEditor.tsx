@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileWorkingCopy } from "@/features/files/hooks/useFileWorkingCopy";
+import { WorkingCopyAlert } from "@/lib/working-copy/WorkingCopyAlert";
 import {
   clearFileDraft,
   fileWorkingCopy,
@@ -96,12 +97,27 @@ function languageFor(fileName: string): string {
   return LANGUAGE_BY_EXT[fileName.slice(dot + 1).toLowerCase()] ?? "plaintext";
 }
 
-/** The control rail's editor options (font size, wrap, minimap, tab size). */
+/** Prose reads as paragraphs, so it wraps unless the person turns wrap off. */
+const PROSE_LANGUAGES = new Set(["plaintext", "markdown"]);
+
+/**
+ * The control rail's editor options (font size, wrap, minimap, tab size).
+ * Without a rail (the editor in a canvas pane) prose wraps: a plain-text
+ * note in a 360px pane otherwise runs off the right edge one line per
+ * paragraph. Code keeps Monaco's no-wrap default.
+ */
 function applyRailOptions(
   editor: StandaloneCodeEditor | null,
   controls: FileViewerControlsApi | null,
+  language: string,
 ): void {
-  if (!editor || !controls) return;
+  if (!editor) return;
+  if (!controls) {
+    editor.updateOptions({
+      wordWrap: PROSE_LANGUAGES.has(language) ? "on" : "off",
+    });
+    return;
+  }
   editor.updateOptions({
     fontSize: controls.editorFontSize,
     wordWrap: controls.editorWordWrap ? "on" : "off",
@@ -125,9 +141,11 @@ export function CloudFileInlineEditor({
   // The live Monaco instance (a new one after every show), so rail changes
   // reach it without re-creating it.
   const editorRef = useRef<StandaloneCodeEditor | null>(null);
+  const language = file ? languageFor(file.fileName) : "plaintext";
   useEffect(() => {
-    applyRailOptions(editorRef.current, controls);
+    applyRailOptions(editorRef.current, controls, language);
   }, [
+    language,
     controls,
     controls?.editorFontSize,
     controls?.editorWordWrap,
@@ -141,7 +159,11 @@ export function CloudFileInlineEditor({
     const onPageHide = () => {
       const current = fileWorkingCopy.entry(fileId);
       if (current?.value !== undefined && current.dirty) {
-        storeFileDraft(fileId, { text: current.value, baseVersion: current.baseVersion });
+        storeFileDraft(fileId, {
+          text: current.value,
+          baseVersion: current.baseVersion,
+          base: current.base ?? null,
+        });
       }
       void fileWorkingCopy.flush(fileId);
     };
@@ -167,7 +189,6 @@ export function CloudFileInlineEditor({
     );
   }
 
-  const language = languageFor(file.fileName);
   const isDirty = copy?.dirty ?? false;
   const saving = copy?.status === "saving";
   const saveError = copy?.saveError ?? null;
@@ -239,6 +260,7 @@ export function CloudFileInlineEditor({
           </button>
         </div>
       </div>
+      <WorkingCopyAlert kind={fileWorkingCopy} id={fileId} showFailure={false} />
       {saveError ? (
         <div className="border-b border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {saveError}
@@ -260,7 +282,7 @@ export function CloudFileInlineEditor({
             onSave={save}
             onEditorMount={(editor) => {
               editorRef.current = editor;
-              applyRailOptions(editor, controls);
+              applyRailOptions(editor, controls, language);
             }}
           />
         )}

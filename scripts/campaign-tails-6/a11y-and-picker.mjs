@@ -40,5 +40,5 @@ console.log("Group by picker says:", await p.evaluate(() => {
   const s = document.querySelector("select#view-field-kanban");
   return s ? { value: s.value, label: s.selectedOptions[0]?.textContent } : null;
 }));
-await p.screenshot({ path: "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22/tails6-drill-through.png", fullPage: true });
+await p.screenshot({ path: "/tmp/matrx-evidence/2026-09-22/tails6-drill-through.png", fullPage: true });
 await b.close();

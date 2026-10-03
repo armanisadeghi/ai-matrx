@@ -12,7 +12,7 @@
 import { History } from "lucide-react";
 import type { CanvasJson } from "@ai-matrx/canvas";
 import { defineCanvasKind, type AnyCanvasKind } from "@ai-matrx/canvas/react";
-import { canvasRecord, canvasText, type ToolToggleInput } from "@/features/canvas/host/toolCanvas";
+import { canvasRecord, canvasText, subjectTitle, type ToolToggleInput } from "@/features/canvas/host/toolCanvas";
 
 export const DOCUMENT_HISTORY_KIND = "document-history";
 export const WORKBOOK_HISTORY_KIND = "workbook-history";
@@ -28,12 +28,26 @@ export function readHistoryTab(data: CanvasJson | undefined | null): HistoryTabD
   return { id, editable: canvasRecord(data).editable !== false };
 }
 
-export function documentHistoryToggleInput(documentId: string, editable: boolean): ToolToggleInput {
-  return { kind: DOCUMENT_HISTORY_KIND, key: documentId, title: "Document history", data: { id: documentId, editable } };
+// The tab names its subject — two open history tabs never share a title, and
+// the editor that owns the toggle keeps it in step with a rename.
+export function documentHistoryToggleInput(documentId: string, editable: boolean, documentName?: string | null): ToolToggleInput {
+  return {
+    kind: DOCUMENT_HISTORY_KIND,
+    key: documentId,
+    title: subjectTitle("Document history", documentName),
+    data: { id: documentId, editable },
+    followTitle: true,
+  };
 }
 
-export function workbookHistoryToggleInput(workbookId: string, editable: boolean): ToolToggleInput {
-  return { kind: WORKBOOK_HISTORY_KIND, key: workbookId, title: "Workbook history", data: { id: workbookId, editable } };
+export function workbookHistoryToggleInput(workbookId: string, editable: boolean, workbookName?: string | null): ToolToggleInput {
+  return {
+    kind: WORKBOOK_HISTORY_KIND,
+    key: workbookId,
+    title: subjectTitle("Workbook history", workbookName),
+    data: { id: workbookId, editable },
+    followTitle: true,
+  };
 }
 
 export const DOCUMENT_HISTORY_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CanvasJson>({

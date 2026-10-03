@@ -48,6 +48,12 @@ export interface RowControlsProps {
   isPublic: boolean;
   /** `useSharing().childRecord` — a child follows its parent: nothing is drawn. */
   childRecord?: boolean;
+  /**
+   * `false` when this thing is never published to the web although its type is: a whole Table is a
+   * `record` too, and only a ROW has a page (/p/e/record/<id>), so a Table draws no publish switch
+   * at all (access ladder T-40; the database refuses it too). Omitted → the type decides.
+   */
+  publishable?: boolean;
   onSetShownTo: (next: ShownTo | null) => Promise<ShareActionResult>;
   onPublish: () => Promise<ShareActionResult>;
   onStopPublishing: () => Promise<ShareActionResult>;
@@ -60,6 +66,7 @@ export function RowControls({
   shownTo,
   isPublic,
   childRecord = false,
+  publishable = true,
   onSetShownTo,
   onPublish,
   onStopPublishing,
@@ -104,7 +111,7 @@ export function RowControls({
   if (!caps || childRecord) return null;
 
   const showShownTo = caps.shownToOffered && shownTo !== undefined;
-  const showPublish = caps.publishLane !== null;
+  const showPublish = publishable && caps.publishLane !== null;
   if (!showShownTo && !showPublish) return null;
 
   // "Everyone on AI Matrx" is only valid on a published record; it stays listed while it is the

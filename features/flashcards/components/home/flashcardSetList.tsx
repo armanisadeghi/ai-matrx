@@ -1,4 +1,5 @@
 "use client";
+// list-source: custom_fields — returned by education.fc_set_list_scoped (lane7w5d_fc_set); the chair applies it
 
 // features/flashcards/components/home/flashcardSetList.tsx
 //

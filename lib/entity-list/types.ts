@@ -140,7 +140,7 @@ export type ArchivedProbe =
   /** The live half is empty and the archived count is in flight. Say nothing yet. */
   | { state: "loading" }
   /** Answered. `total` archived rows match this exact scope/search/filters. */
-  | { state: "known"; total: number }
+  | { state: "known"; total: number; /** An open-ended archive: at least `total`, the store named no count. */ more?: boolean }
   /** The read broke. The page must say it cannot tell — never fall back to "none yet". */
   | { state: "failed" };
 
@@ -163,6 +163,11 @@ export interface ScopeNarrowOption {
 export interface EntityScopeCounts {
   /** True server-side total per scope kind. Absent kinds are unsupported. */
   byKind: Partial<Record<ListScopeKind, number>>;
+  /**
+   * The service names no lane counts for this question (an open-ended list the store pages
+   * without a count — `EntityListPage.hasMore`). The tabs draw no number at all, never `0`.
+   */
+  uncounted?: boolean;
   /** Narrowing options per scope kind, in server order. */
   narrow: Partial<Record<ListScopeKind, ScopeNarrowOption[]>>;
   /**
@@ -267,6 +272,13 @@ export function facetValues(
 export interface EntityListPage<TRow> {
   rows: TRow[];
   total: number;
+  /**
+   * AN OPEN-ENDED PAGE (TABLE-ACTIONS, 2026-10-03): the store pages this list and names no
+   * count. Present → `total` is only how many rows reach through THIS page, and `hasMore` says
+   * whether a next page exists; the pagers draw no "of N" and Next follows `hasMore`. Absent → a
+   * counted list, as always. A count is the store's or absent — never a full read to make one.
+   */
+  hasMore?: boolean;
 }
 
 /** Sort + paging, handed to the RPC. Style-owned, so it arrives from prefs. */

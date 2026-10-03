@@ -71,12 +71,13 @@ export function useNoteUndoRedo({
     return record ? record._undoFuture.length > 0 : false;
   });
 
-  // Commit pending words first, so the step reverses what is on screen. The
+  // The step reverses what is on screen: words still pending in the working
+  // copy reach the record first (the save-request middleware commits them as
+  // an undo step), then the step is saved through the note's one door. The
   // reducers refuse an empty stack themselves, so the gate is the record.
   const stepRecord = useCallback(
     (direction: "undo" | "redo") => {
       if (!noteId) return;
-      void noteWorkingCopy.flush(noteId);
       dispatch(direction === "undo" ? undoNoteEdit({ id: noteId }) : redoNoteEdit({ id: noteId }));
     },
     [dispatch, noteId],

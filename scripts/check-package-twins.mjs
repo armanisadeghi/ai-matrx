@@ -102,7 +102,7 @@ import process from "node:process";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
- * THE ITEM LINE (common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md), loaded
+ * THE ITEM LINE (common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md), loaded
  * dynamically so this file stays portable: a repo without `scripts/checks/items.mjs` runs the
  * guard unchanged, and SAYS so if its runner asked for items (MATRX_ITEMS=1) it cannot give.
  * Key = `<row name>|<list>|<file>` — the register row and list (`census`, `shapeCensus`,

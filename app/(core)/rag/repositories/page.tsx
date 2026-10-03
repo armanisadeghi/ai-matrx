@@ -1,3 +1,4 @@
+// record-view: none — a list of repositories
 /**
  * /knowledge/repositories — code repositories you can index for Knowledge.
  */

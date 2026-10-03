@@ -19,6 +19,7 @@ import {
   Eye,
   History,
   ListTree,
+  Lock,
   Loader2,
   Palette,
   Redo2,
@@ -390,23 +391,32 @@ export default function MermaidWorkbench({
     requiresStructural: boolean,
   ) => {
     const disabled = requiresStructural && !structuralOk;
+    // AN UNAVAILABLE VIEW SAYS SO (2026-10-03). It used to be a native
+    // `disabled` button at 40% opacity: it read as faded styling, and a
+    // disabled button fires no pointer or focus events, so the tooltip that
+    // says WHY never opened. Now it stays focusable (`aria-disabled`), its
+    // press does nothing, and a lock marks the state.
     const button = (
       <button
         type="button"
         aria-label={label}
-        disabled={disabled}
-        onClick={() => dispatch({ type: "SET_MODE", mode })}
+        aria-disabled={disabled || undefined}
+        onClick={() => {
+          if (!disabled) dispatch({ type: "SET_MODE", mode });
+        }}
         className={cn(
           "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:flex-none",
           viewerMode && "h-11 min-w-11 px-3 sm:h-8 sm:min-w-8",
           state.mode === mode
             ? "bg-card text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground",
-          disabled && "cursor-not-allowed opacity-40",
+            : disabled
+              ? "cursor-not-allowed text-muted-foreground"
+              : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Icon className="h-3.5 w-3.5" />
         <span>{label}</span>
+        {disabled ? <Lock className="h-3 w-3" aria-hidden="true" /> : null}
       </button>
     );
     if (!disabled) return button;

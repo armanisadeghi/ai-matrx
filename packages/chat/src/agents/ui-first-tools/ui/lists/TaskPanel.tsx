@@ -41,6 +41,7 @@ import {
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@host/components/official/stale-data/StaleDataNotice";
 import {
+  ensureAgentLists,
   hydrateAgentLists,
   subscribeAgentLists,
   unsubscribeAgentLists,
@@ -112,7 +113,7 @@ export function TaskPanel({ conversationId }: TaskPanelProps) {
 
   // Mounted while its tab is open: read once, then follow realtime.
   useEffect(() => {
-    void dispatch(hydrateAgentLists(conversationId));
+    void dispatch(ensureAgentLists(conversationId));
     dispatch(subscribeAgentLists(conversationId));
     return () => {
       dispatch(unsubscribeAgentLists(conversationId));

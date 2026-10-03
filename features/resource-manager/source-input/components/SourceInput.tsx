@@ -315,10 +315,16 @@ export function SourceInput({
             card={card}
             set={set}
             job={
-              card.draft.fileId
-                ? (runner.jobs.find((j) => j.cldFileId === card.draft.fileId) ?? null)
-                : null
+              // The newest job reading this Source: an upload's pipeline (by
+              // file) or a clean started here (by its processed document).
+              runner.jobs.findLast(
+                (j) =>
+                  (card.draft.fileId !== undefined && j.cldFileId === card.draft.fileId) ||
+                  (card.draft.processedDocumentId !== undefined &&
+                    j.processedDocumentId === card.draft.processedDocumentId),
+              ) ?? null
             }
+            onCleanNow={(pdId) => void runner.runStage(pdId, "clean", card.draft.label)}
             deliveries={deliveries}
             heldForOrganization={fileCardHeldForOrganization(card, activeOrgId, fileOrganizationId)}
             onProcessingSettled={() => void set.manifest()}
@@ -368,21 +374,28 @@ export function SourceInput({
               className="pl-8 text-base sm:text-sm"
             />
           </div>
-          <SegmentedControl
-            value={scopeChoice}
-            onValueChange={(v) => setScopeChoice(v === "mine" ? "mine" : "all")}
-            data={[
-              { value: "all", label: "All" },
-              { value: "mine", label: "Mine" },
-            ]}
-            size="sm"
-            className="max-w-full shrink-0 max-lg:[&_[role=tab]]:min-h-11!"
-          />
-          <EntityOrgFilter
-            orgId={orgFilter}
-            onChange={setOrgFilter}
-            counts={{ byKind: {}, narrow: { all: [] } }}
-          />
+          {/* Lanes and the organization filter share ONE row: on a phone the
+              filter is an icon button (its label is screen-reader only), and
+              stacked alone in the column it stretched into an empty
+              full-width box (375px, 2026-10-03). */}
+          <div className="flex items-center justify-between gap-2 sm:justify-start">
+            <SegmentedControl
+              value={scopeChoice}
+              onValueChange={(v) => setScopeChoice(v === "mine" ? "mine" : "all")}
+              data={[
+                { value: "all", label: "All" },
+                { value: "mine", label: "Mine" },
+              ]}
+              size="sm"
+              className="max-w-full shrink-0 max-lg:[&_[role=tab]]:min-h-11!"
+            />
+            <EntityOrgFilter
+              orgId={orgFilter}
+              onChange={setOrgFilter}
+              counts={{ byKind: {}, narrow: { all: [] } }}
+              className="shrink-0 max-sm:min-w-11 max-sm:justify-center"
+            />
+          </div>
         </div>
       ) : null}
 

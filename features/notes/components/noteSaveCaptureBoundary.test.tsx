@@ -34,7 +34,6 @@ jest.mock("@/features/context-menu-v3/EditableContextMenu", () => ({
 }));
 jest.mock("./mobile/NoteEditorDock", () => ({ NoteEditorDock: () => null }));
 jest.mock("./NoteDraftRecoveryBanner", () => ({ NoteDraftRecoveryBanner: () => null }));
-jest.mock("./NoteConflictWindow", () => ({ NoteConflictWindow: () => null }));
 jest.mock("next/dynamic", () => () => () => null);
 // The canonical save thunk, rejecting: it has ALREADY captured the failure.
 jest.mock("../redux/thunks", () => {

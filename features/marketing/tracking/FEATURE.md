@@ -1,7 +1,7 @@
 # features/marketing/tracking — Tag Manager tracking on the site record
 
 **Tier 2, inside `features/marketing`.** Product truth for the campaign lives at
-`../../../../common-docs/projects/google-native/PLAN.md` §4.10 and the U-M2 scope census
+`../../../../common-docs/systems/integrations/google/FEATURE.md` §4.10 and the U-M2 scope census
 (`SCOPE-U-M2.md`). This file is the local mechanics.
 
 ## Purpose

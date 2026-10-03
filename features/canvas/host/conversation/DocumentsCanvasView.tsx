@@ -5,14 +5,21 @@
 import { useEffect } from "react";
 import type { CanvasKindProps } from "@ai-matrx/canvas/react";
 import { setConversationDocumentEnabledThunk } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { subjectTitle, useCanvasTabTitle } from "@/features/canvas/host/toolCanvas";
 import { DocumentsWorkspace } from "@ai-matrx/chat/agents/components/working-document/documents-workspace/DocumentsWorkspace";
-import { readDocumentsTab } from "./documentsKind";
+import { documentsTabTitle, readDocumentsTab } from "./documentsKind";
 
-export default function DocumentsCanvasView({ data }: CanvasKindProps) {
+export default function DocumentsCanvasView({ data, item, canvas }: CanvasKindProps) {
   const dispatch = useAppDispatch();
   const tab = readDocumentsTab(data);
   const conversationId = tab?.conversationId ?? null;
+  // The tab names its chat ("Documents · Q3 plan"), live with a rename — two
+  // chats' Documents tabs never share a title.
+  const chatTitle = useAppSelector((state) => (conversationId ? selectConversationTitle(conversationId)(state) : null));
+  // A chat that is not loaded here names nothing: the tab keeps its last name.
+  useCanvasTabTitle(canvas, item, chatTitle?.trim() ? documentsTabTitle(chatTitle) : "");
   // A brand-new chat has no working document yet: turn it on (reserves its id;
   // it materializes with its first content) so the tab is never a refusal.
   useEffect(() => {

@@ -269,4 +269,8 @@ export function ConversationPageMenu({
   );
 }
 
+/** A menu by identity: on a phone RouteHeader moves it into the shell's ⋮
+ *  sheet instead of keeping it in the row beside the ⋮ (route-header-layout). */
+ConversationPageMenu.routeHeaderMenu = true as const;
+
 export default ConversationPageMenu;

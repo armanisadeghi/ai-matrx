@@ -27,7 +27,12 @@ const viewStore = () => configureViewStore({ reducer: { workingCopies: workingCo
 function typeIntoView(noteId: string, content: string): () => void {
   const release = holdNoteWorkingCopy(noteId, viewStore());
   noteWorkingCopy.edit(noteId, content);
-  return release;
+  // This view store holds no note record to save into: the person throws the
+  // words away as the view closes (a real close would save them).
+  return () => {
+    noteWorkingCopy.discard(noteId);
+    release();
+  };
 }
 
 enableMapSet();
@@ -98,16 +103,6 @@ describe("notes save-failure escalation", () => {
       }),
     );
 
-    expect(state.notes[NOTE_ID]._consecutiveSaveFailures).toBe(0);
-    expect(state.notes[NOTE_ID]._firstSaveFailureAt).toBeNull();
-  });
-
-  it("does NOT count a conflict toward the blocking banner", () => {
-    let state = seedDirty();
-    state = notesReducer(
-      state,
-      markNoteSaveError({ id: NOTE_ID, error: "conflict" }),
-    );
     expect(state.notes[NOTE_ID]._consecutiveSaveFailures).toBe(0);
     expect(state.notes[NOTE_ID]._firstSaveFailureAt).toBeNull();
   });

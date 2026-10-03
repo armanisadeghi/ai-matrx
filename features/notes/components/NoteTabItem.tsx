@@ -112,7 +112,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
   const openNoteInfo = useOpenNoteInfoWindow();
   const openKnowledge = useOpenNoteKnowledgePanel();
   // "Version history" opens (or focuses) the note's history canvas tab.
-  const openHistory = useToolOpener(noteHistoryInput);
+  const openHistory = useToolOpener((id: string) => noteHistoryInput(id, note?.label));
   // Only probe the active tab — avoids a Supabase query per open tab.
   const ingest = useNoteIngestStatus(isActive ? noteId : null);
 
@@ -133,7 +133,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
   );
 
   // Sync Redux label → local — NEVER while the user is typing the title.
-  // Auto-label (autoSaveMiddleware) and realtime merges land in Redux; if
+  // Auto-label (the note's working-copy save) and realtime merges land in Redux; if
   // this sync runs mid-typing it clobbers the user's in-progress name (the
   // "system freaks out about naming" bug). While focused, the input buffer
   // is authoritative; blur commits it (handleTitleBlur).

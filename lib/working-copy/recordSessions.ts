@@ -52,8 +52,12 @@ export interface RecordSessionHooks<S> {
 
 export interface RecordSessionHandle<S> {
   readonly session: S;
-  /** Detach this holder. Safe to call more than once. */
-  release: () => void;
+  /**
+   * Detach this holder. Safe to call more than once. `quiet`: the last holder
+   * leaving does not run `lastViewGone` (no flush) — the session stays while
+   * its own work is pending and drops when that settles.
+   */
+  release: (options?: { quiet?: boolean }) => void;
 }
 
 export interface RecordSessionRegistry<S> {
@@ -107,10 +111,14 @@ export function createRecordSessionRegistry<S>(
     }, keep);
   };
 
-  const release = (id: string, entry: Entry<S>) => {
+  const release = (id: string, entry: Entry<S>, quiet = false) => {
     if (entries.get(id) !== entry) return;
     entry.holders -= 1;
     if (entry.holders > 0) return;
+    if (quiet) {
+      tryDrop(id, entry);
+      return;
+    }
     const generation = entry.generation;
     let outcome: void | Promise<void>;
     try {
@@ -153,10 +161,10 @@ export function createRecordSessionRegistry<S>(
       let released = false;
       return {
         session: held.session,
-        release: () => {
+        release: (options) => {
           if (released) return;
           released = true;
-          release(id, held);
+          release(id, held, options?.quiet ?? false);
         },
       };
     },

@@ -9,7 +9,6 @@ jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({ rpc: (...a:
 jest.mock("@ai-matrx/data", () => ({ pgErrorToError: (e: { message: string }) => new Error(e.message) }));
 
 import {
-  MEMBER_ROWS_TTL_MS,
   forgetOrganizationMemberRows,
   readOrganizationMemberRows,
 } from "../orgMemberRows";
@@ -28,13 +27,13 @@ it("sixty readers of one roster make one request", async () => {
   expect(rpc).toHaveBeenCalledTimes(1);
 });
 
-it("a fresh answer is reused, a stale one refetched", async () => {
+// The remount law: a task tile that sleeps for minutes and wakes reads nothing.
+// Break: a time-to-live on the roster (it was 30 s).
+it("an answer is kept for the tab: a wake ten minutes later reads nothing", async () => {
   rpc.mockResolvedValue({ data: [ROW], error: null });
   await readOrganizationMemberRows("org-a", { now: 1_000 });
-  await readOrganizationMemberRows("org-a", { now: 1_000 + MEMBER_ROWS_TTL_MS - 1 });
+  await readOrganizationMemberRows("org-a", { now: 1_000 + 10 * 60_000 });
   expect(rpc).toHaveBeenCalledTimes(1);
-  await readOrganizationMemberRows("org-a", { now: 1_000 + MEMBER_ROWS_TTL_MS + 1 });
-  expect(rpc).toHaveBeenCalledTimes(2);
 });
 
 it("a failure is never cached", async () => {

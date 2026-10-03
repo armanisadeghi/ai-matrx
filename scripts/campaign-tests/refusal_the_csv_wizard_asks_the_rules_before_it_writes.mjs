@@ -46,7 +46,7 @@ for (const f of [
 }
 
 const ORIGIN = process.argv[2] ?? "http://127.0.0.1:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23";
+const OUT = "/tmp/matrx-evidence/2026-09-23";
 // Rincon Plumbing & Drain's dispatch board, on the older Data screens.
 const TABLE = "dbc7cd48-7b46-4402-ac9d-e459a95f4598";
 mkdirSync(OUT, { recursive: true });

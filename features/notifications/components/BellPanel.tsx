@@ -276,9 +276,16 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
         </DropdownMenu>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1">{body}</div>
+      {/* A SHORT PANE KEEPS ITS NOTICES (2026-10-03). In a split canvas the pane
+          was ~270px: the header, the pinned All places strip and the footer
+          took all of it and "Needs you · 24" was clipped under the strip. The
+          notices keep a floor (min-h-24); the strip yields first and scrolls
+          inside itself. */}
+      <div className="min-h-24 flex-1 overflow-y-auto overscroll-contain py-1">{body}</div>
 
-      <PlacesStrip onOpened={onNavigate} columns={touch ? 1 : 2} />
+      <div className="min-h-0 shrink overflow-y-auto overscroll-contain">
+        <PlacesStrip onOpened={onNavigate} columns={touch ? 1 : 2} />
+      </div>
 
       <div className={cn("shrink-0 border-t border-border px-1 py-1", touch ? "pb-safe" : undefined)}>
         <button

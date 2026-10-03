@@ -22,8 +22,18 @@
  * size or content change: un-crowd, measure, re-crowd — synchronously, so the
  * row never paints the wrong state and never oscillates.
  *
- * If compacting is not enough, the header carries `data-header-overdrawn` and
- * the console says which route and by how much — never a silent overlap.
+ * THE MAIN COLUMN, NOT THE WINDOW (2026-10-03). With the canvas open the
+ * header spans only the main column: a 1440px window with a 900px canvas and
+ * the sidebar open left the header 253px — and the shell's five controls took
+ * all of it, so the route's mode switch and actions had 19px. The phone fold
+ * (`.shell-header-secondary` → one ⋮, `styles/shell.css`) answered only a
+ * VIEWPORT under 768px. Now the header also folds its own right set into that
+ * one ⋮ (`data-header-folded`) whenever it leaves the route less than
+ * FOLD_BELOW_CENTER_PX, or when compacting the words was not enough — so every
+ * route, at every canvas width, keeps room for its own controls.
+ *
+ * If folding is not enough either, the header carries `data-header-overdrawn`
+ * and the console says which route and by how much — never a silent overlap.
  *
  * SELF-CONTAINED ON PURPOSE: the layout gate
  * (`features/shell/layout-gate/header-never-overdraws-route-controls.spec.ts`)
@@ -35,6 +45,9 @@ export function installHeaderCrowdingGuard(header: HTMLElement): () => void {
   const right = header.querySelector<HTMLElement>("[data-header-right-set]");
   if (!center) return () => {};
 
+  // Below this, the route's own row cannot hold a title or a mode switch beside
+  // the shell's five controls: fold them into the one ⋮.
+  const FOLD_BELOW_CENTER_PX = 240;
   let warnedFor = "";
   let frame = 0;
 
@@ -88,16 +101,29 @@ export function installHeaderCrowdingGuard(header: HTMLElement): () => void {
     // — the only way to ever give the words back after a window widens.
     header.removeAttribute("data-header-crowded");
     header.removeAttribute("data-header-overdrawn");
+    header.removeAttribute("data-header-folded");
+    // The center's width depends only on the header and the right set (the
+    // center is `flex: 1; min-width: 0`), never on the route's content, so
+    // this choice cannot oscillate with the route's own collapse.
+    let folded = false;
+    if (center.getBoundingClientRect().width < FOLD_BELOW_CENTER_PX) {
+      header.setAttribute("data-header-folded", "");
+      folded = true;
+    }
     if (overflowOf() <= 0) return;
     header.setAttribute("data-header-crowded", "");
-    const still = overflowOf();
+    let still = overflowOf();
+    if (still > 0 && !folded) {
+      header.setAttribute("data-header-folded", "");
+      still = overflowOf();
+    }
     if (still <= 0) return;
     header.setAttribute("data-header-overdrawn", String(still));
-    const key = `${location.pathname}@${window.innerWidth}`;
+    const key = `${location.pathname}@${Math.round(header.getBoundingClientRect().width)}`;
     if (warnedFor !== key) {
       warnedFor = key;
       console.warn(
-        `[shell-header] OVERDRAWN: the route header on ${location.pathname} needs ${still}px more than the shell leaves it at ${window.innerWidth}px, even with the header's optional labels hidden — its right-most controls sit under the header's right set. Remedy: give that route header a compact layout below this width (see features/shell/components/header/header-crowding.ts).`,
+        `[shell-header] OVERDRAWN: the route header on ${location.pathname} needs ${still}px more than the shell leaves it in a ${Math.round(header.getBoundingClientRect().width)}px header (window ${window.innerWidth}px), even with the header's optional labels hidden and its controls folded — its right-most controls sit under the header's right set. Remedy: give that route header a compact layout below this width (see features/shell/components/header/header-crowding.ts).`,
       );
     }
   };
@@ -141,5 +167,6 @@ export function installHeaderCrowdingGuard(header: HTMLElement): () => void {
     mutation.disconnect();
     header.removeAttribute("data-header-crowded");
     header.removeAttribute("data-header-overdrawn");
+    header.removeAttribute("data-header-folded");
   };
 }

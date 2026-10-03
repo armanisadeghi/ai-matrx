@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useAutoFocus } from "@/lib/dom/useAutoFocus";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useEnsureHierarchyLoaded } from "@/features/agent-context/hooks/useNavTree";
 import { useRefinableContent } from "@/components/content-refine/useRefinableContent";
@@ -208,6 +209,10 @@ export function TaskQuickCreateCore({
     hasParent ? "both" : "message",
   );
   const [savedTaskId, setSavedTaskId] = useState<string | null>(null);
+  // A board tile mounts this when an agent places it or the tile wakes: the
+  // title takes the caret only if the person is not typing elsewhere.
+  const titleRef = React.useRef<HTMLInputElement | null>(null);
+  useAutoFocus(titleRef, !savedTaskId);
   /** Non-null when the task saved but one or more link writes failed — the
    *  banner must say "not linked", never claim a link that doesn't exist. */
   const [linkFailure, setLinkFailure] = useState<string | null>(null);
@@ -565,7 +570,7 @@ export function TaskQuickCreateCore({
           </Label>
           <Input
             id="tqc-title"
-            autoFocus
+            ref={titleRef}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {

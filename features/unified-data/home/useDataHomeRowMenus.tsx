@@ -20,11 +20,14 @@
 // Rows that are not tables (forms, dashboards, digests…) keep their open entries; they get their
 // own action lists when their kinds are added to the registry.
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Link2, Star, StarOff } from "lucide-react";
+import { ArchiveRestore, ExternalLink, Link2, Star, StarOff } from "lucide-react";
 import type { PermissionLevel } from "@ai-matrx/records";
 import { RecordsProvider, useRecordsClient } from "@ai-matrx/records/react";
+import { createRecordsClient } from "@ai-matrx/records/core";
+import { restoreTableIn } from "@/features/unified-data/hub/doors";
+import { onReadTheHomeAgain } from "./readTheHomeAgain";
 import {
   TableRenameDialog,
   TableSettings,
@@ -32,7 +35,7 @@ import {
   useRecordsUi,
   whatYouMayDo,
 } from "@ai-matrx/records-ui";
-import { tableActions, type BuiltOnDestination, type ObjectAction } from "@ai-matrx/records-ui/object-actions";
+import { tableActions, type BuiltOnDestination, type ObjectAction, type TableActionHost } from "@ai-matrx/records-ui/object-actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@ai-matrx/design-system";
 
 import type { EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
@@ -46,32 +49,84 @@ import type { DataHomeRow } from "./dataHomeRows";
 const LEVELS_PER_CALL = 200;
 
 /** The table's level for each table id in hand; absent = not answered yet. */
-export function useTableLevels(tableIds: readonly string[]): ReadonlyMap<string, PermissionLevel | null> {
+/**
+ * Answers already given, for the rest of this page's life: a table's level is asked once, so a
+ * search keystroke that changes the visible rows asks only for rows not asked about before.
+ */
+const LEVELS_ASKED = new Map<string, PermissionLevel | null>();
+
+export function useTableLevels(
+  tables: ReadonlyArray<{ tableId: string; organizationId: string | null }>,
+): ReadonlyMap<string, PermissionLevel | null> {
   const client = useRecordsClient();
-  const key = [...tableIds].sort().join(",");
-  const [levels, setLevels] = useState<ReadonlyMap<string, PermissionLevel | null>>(() => new Map());
+  // `custom.my_levels` is asked IN the table's own organization (the door refuses a null one, and
+  // the Data home lists every organization): one client per organization, from the mount's config.
+  // A table with no organization (an invitation not yet accepted) is never asked —
+  // `actionsForHomeTable` resolves it at once.
+  const key = [...tables]
+    .filter((t) => t.organizationId && !LEVELS_ASKED.has(t.tableId))
+    .map((t) => `${t.organizationId}:${t.tableId}`)
+    .sort()
+    .join(",");
+  const [, setAnswered] = useState(0);
   useEffect(() => {
     if (key === "") return;
     let live = true;
-    const ids = key.split(",");
-    for (let i = 0; i < ids.length; i += LEVELS_PER_CALL) {
-      const asked = ids.slice(i, i + LEVELS_PER_CALL);
-      void client.myLevels({ ids: asked }).then((answered) => {
-        if (!live || !answered.ok) return;
-        setLevels((now) => {
-          const next = new Map(now);
+    const byOrganization = new Map<string, string[]>();
+    for (const pair of key.split(",")) {
+      const [organizationId, tableId] = pair.split(":") as [string, string];
+      byOrganization.set(organizationId, [...(byOrganization.get(organizationId) ?? []), tableId]);
+    }
+    for (const [organizationId, ids] of byOrganization) {
+      const inOrganization = createRecordsClient({ ...client.config, organizationId });
+      for (let i = 0; i < ids.length; i += LEVELS_PER_CALL) {
+        const asked = ids.slice(i, i + LEVELS_PER_CALL);
+        // A read that fails is asked again (three tries, a pause between): the menu says
+        // "Checking your access…" meanwhile, never a refusal it did not get.
+        const ask = async () => {
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const answered = await inOrganization.myLevels({ ids: asked });
+            if (answered.ok || !live) return answered;
+            await new Promise((r) => setTimeout(r, 3000));
+          }
+          return null;
+        };
+        void ask().then((answered) => {
+          if (!answered || !answered.ok) return;
           // An id the store did not answer for is "you hold nothing on it" — an answer, not a wait.
-          for (const id of asked) next.set(id, null);
-          for (const row of answered.data) next.set(row.id, row.level);
-          return next;
+          for (const id of asked) LEVELS_ASKED.set(id, null);
+          for (const row of answered.data) LEVELS_ASKED.set(row.id, row.level);
+          if (live) setAnswered((n) => n + 1);
         });
-      });
+      }
     }
     return () => {
       live = false;
     };
   }, [client, key]);
-  return levels;
+  return LEVELS_ASKED;
+}
+
+/**
+ * THE LIST READS AGAIN WHEN A TABLE COMES BACK: the archive toast's Undo and ⌘Z (one undo, wrapped
+ * by `RECORDS_NOTIFY.reversible`) call `readTheHomeAgain()`; the Data home's corpus is read again so
+ * the table is listed at once. Returns a version the corpus is keyed on. Debounced.
+ */
+export function useReadAgainOnRestore(): number {
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const again = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setVersion((v) => v + 1), 250);
+    };
+    const offRestore = onReadTheHomeAgain(again);
+    return () => {
+      offRestore();
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+  return version;
 }
 
 /** Where each "Built on it" place opens on the table's page. */
@@ -85,6 +140,42 @@ const BUILT_ON_ADDRESS: Record<BuiltOnDestination, string> = {
   dashboards: "view=dashboards",
   archived: "view=archived",
 };
+
+/** Every entry of an invitation not yet accepted, but Open and the star, says this. */
+export const ACCEPT_FIRST_REASON = "Accept the invitation first";
+
+/**
+ * A DATA HOME TABLE ROW'S ACTIONS (pure, so the never-waits rule is testable).
+ *
+ * A row with NO organization is a table shared with this person that she has not accepted yet
+ * (`dataHomeRows.ts`, the shared-with-me listing; its href is the invitation's accept screen). The
+ * access lookup cannot be asked about it (`custom.my_levels` is asked in an organization), so it
+ * must never wait on one: it resolves at once — Open goes to the invitation, the star works, and
+ * every other entry says to accept first. Same ids as any table (G2).
+ */
+export function actionsForHomeTable(
+  row: DataHomeRow,
+  tableId: string,
+  level: PermissionLevel | null | undefined,
+  host: TableActionHost,
+): ObjectAction[] {
+  const table = { id: tableId, name: row.name, is_kernel: row.system };
+  if (row.organizationId) {
+    return tableActions({ table, rights: whatYouMayDo(level ?? null, level !== undefined), host });
+  }
+  const invitation: TableActionHost = {
+    ...(host.origin ? { origin: host.origin } : {}),
+    ...(host.open ? { open: host.open } : {}),
+    ...(host.isFavorite !== undefined ? { isFavorite: host.isFavorite } : {}),
+    ...(host.toggleFavorite ? { toggleFavorite: host.toggleFavorite } : {}),
+    ...(host.extend ? { extend: host.extend } : {}),
+  };
+  // The rights are not this row's to ask yet; every entry the invitation does not offer is
+  // unbound, and its reason is the one step that unlocks it.
+  return tableActions({ table, rights: whatYouMayDo("admin", true), host: invitation }).map((a) =>
+    a.disabledReason !== undefined && a.id !== "open-public" ? { ...a, disabledReason: ACCEPT_FIRST_REASON } : a,
+  );
+}
 
 type Asked = { what: "share" | "rename" | "move" | "archive"; row: DataHomeRow; count: number };
 
@@ -105,12 +196,10 @@ export interface DataHomeRowMenus {
  * rename, a move or an archive.
  */
 export function useDataHomeRowMenus({
-  rows,
   starred,
   onOpened,
   onChanged,
 }: {
-  rows: ReadonlyMap<string, DataHomeRow>;
   starred: ReadonlySet<string>;
   onOpened: (row: DataHomeRow) => void;
   onChanged: () => void;
@@ -119,27 +208,23 @@ export function useDataHomeRowMenus({
   const client = useRecordsClient();
   const recordsUi = useRecordsUi();
   const stars = useStarToggle();
-  const tableIds = useMemo(
-    () => [...rows.values()].filter((r) => r.kind === "table" && r.tableId).map((r) => r.tableId as string),
-    [rows],
-  );
-  const levels = useTableLevels(tableIds);
   const [asked, setAsked] = useState<Asked | null>(null);
   const ask = (what: Asked["what"], row: DataHomeRow) =>
     setAsked((now) => ({ what, row, count: (now?.count ?? 0) + 1 }));
   const close = () => setAsked(null);
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
 
-  const forTable = (row: DataHomeRow, tableId: string): ItemMenuConfig => {
+  const forTable = (
+    row: DataHomeRow,
+    tableId: string,
+    levels: ReadonlyMap<string, PermissionLevel | null>,
+  ): ItemMenuConfig => {
     const level = levels.get(tableId);
     const go = (query: string) => {
       onOpened(row);
       router.push(withQuery(row.href, query));
     };
-    const actions: ObjectAction[] = tableActions({
-      table: { id: tableId, name: row.name, is_kernel: row.system },
-      rights: whatYouMayDo(level ?? null, level !== undefined),
-      host: {
+    const actions: ObjectAction[] = actionsForHomeTable(row, tableId, level, {
         ...(origin ? { origin } : {}),
         open: () => {
           onOpened(row);
@@ -182,9 +267,53 @@ export function useDataHomeRowMenus({
               }
             : { id: "open-public", label: "Open public link", icon: "link-2", group: "open", disabledReason: NO_PUBLIC_LINK_REASON, run: () => {} },
         ],
-      },
     });
     return toItemMenuConfig(actions);
+  };
+
+  /**
+   * AN ARCHIVED ROW (the list's Archived filter, TABLE-ACTIONS item 10): Open, and Restore. A table
+   * is restored in its own organization pass by pass (`custom.table_restore` through
+   * `restoreTableIn` — one call timed out on a big table), which brings back what was built on it
+   * in the same event; a portal comes back from its table's Portals rail.
+   */
+  const forArchived = (row: DataHomeRow): ItemMenuConfig => {
+    const restore = async () => {
+      if (!row.organizationId || !row.tableId) return;
+      const answered = await restoreTableIn(client.config.dataSource, row.organizationId, row.tableId);
+      if (!answered.ok) {
+        // A statement timeout is ours to word; Postgres's sentence never reaches the toast.
+        throw new Error(
+          answered.error.sqlstate === "57014" ? "The restore took too long. Try again in a moment." : answered.error.message,
+        );
+      }
+      onChanged();
+    };
+    return {
+      sections: [
+        {
+          id: "open",
+          items: [
+            { id: "open", kind: "link", label: "Open", href: row.href },
+            { id: "open-tab", kind: "link", label: "Open in new tab", icon: ExternalLink, href: row.href, target: "_blank" },
+          ],
+        },
+        {
+          id: "restore",
+          items: [
+            row.kind === "table"
+              ? {
+                  id: "restore",
+                  label: "Restore",
+                  icon: ArchiveRestore,
+                  onSelect: restore,
+                  toast: { loading: "Restoring…", success: `${row.name} restored`, error: (e) => (e instanceof Error ? e.message : "Couldn’t restore") },
+                }
+              : { id: "restore", kind: "link", label: "Restore from its table", icon: ArchiveRestore, href: row.href },
+          ],
+        },
+      ],
+    };
   };
 
   /** A row that is not a table: its open entries and its star. */
@@ -271,7 +400,15 @@ export function useDataHomeRowMenus({
       </Dialog>
     );
 
-  const useRowActions = (): EntityRowActionsResult<DataHomeRow> => ({
+  // The shell calls this as a hook, every render: the levels are asked for the rows it SHOWS
+  // (a list read that failed and was retried still gets its rights).
+  const useRowActions = (list: EntityListController<DataHomeRow>): EntityRowActionsResult<DataHomeRow> => {
+    const levels = useTableLevels(
+      list.rows
+        .filter((r) => r.kind === "table" && r.tableId && !r.archived)
+        .map((r) => ({ tableId: r.tableId as string, organizationId: r.organizationId })),
+    );
+    return {
     actions: {
       onOpenRow: (row) => {
         onOpened(row);
@@ -279,10 +416,11 @@ export function useDataHomeRowMenus({
       },
       onToggleFavorite: (row) => stars.toggle(row.id),
       menuFor: (row) => () =>
-        row.kind === "table" && row.tableId ? forTable(row, row.tableId) : forItem(row),
+        row.archived ? forArchived(row) : row.kind === "table" && row.tableId ? forTable(row, row.tableId, levels) : forItem(row),
     },
     modals,
-  });
+    };
+  };
 
   return { useRowActions };
 }

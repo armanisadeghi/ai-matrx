@@ -19,6 +19,7 @@
 import type { CoverageDepth } from "./coverage";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
+import type { SectionJournal } from "./sectionJournal";
 
 /**
  * The study-artifact kinds a source can be converted INTO. This is the target
@@ -173,6 +174,13 @@ export interface ConvertContext {
    * many calls long. Safe to ignore.
    */
   onProgress?: (progress: ConvertProgress) => void;
+  /**
+   * Optional receipt book for a segmented generation (`sectionJournal.ts`): a
+   * caller that can be interrupted (the study kit) records the run of every
+   * section here, and a retry reads finished sections back from the server
+   * instead of running them again. Safe to ignore.
+   */
+  sections?: SectionJournal;
 }
 
 /** One tick of a segmented generation's coverage progress. */

@@ -158,7 +158,7 @@ describe("census items that are wiring", () => {
   });
 
   it("3 · rule 1: nothing in the new data home reads the active organization for a read", () => {
-    for (const file of ["DataHomeList.tsx", "DataHomeArchive.tsx", "DataHomeViews.tsx", "dataHomeService.ts", "dataHomeRows.ts", "dataHomeCorpus.ts", "DataHomeRoute.tsx"]) {
+    for (const file of ["DataHomeList.tsx", "dataHomeArchived.ts", "DataHomeViews.tsx", "dataHomeService.ts", "dataHomeRows.ts", "dataHomeCorpus.ts", "DataHomeRoute.tsx"]) {
       expect(read(file)).not.toMatch(/selectActiveOrganizationId|useActiveOrganization|selectOrganizationId\b|useOrganizationRequired/);
     }
     // The page reads no active organization at all now: the write target is the New table dialog's.
@@ -187,9 +187,10 @@ describe("census items that are wiring", () => {
     for (const port of ["realtime:", "members,", "share: recordStoreShare", "chat:"]) expect(page).toContain(port);
   });
 
-  it("14 · the archive and its way back stay under the list", () => {
-    expect(page).toContain("<DataHomeArchive");
-    expect(read("DataHomeArchive.tsx")).toContain("restoreRecordIn");
+  it("14 · the archive is the list's Archived filter, and each archived table restores", () => {
+    expect(list).toContain("supportsArchived: true");
+    expect(list).toContain("readArchived:");
+    expect(read("useDataHomeRowMenus.tsx")).toContain("restoreTableIn(");
   });
 
   it("17 · flat by default: no config, knob or default sets a group-by (acceptance 5)", () => {

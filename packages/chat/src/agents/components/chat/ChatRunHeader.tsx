@@ -20,7 +20,7 @@ import {
   interceptChatAgentLink,
   stageChatAgentSwitch,
 } from "./begin-fresh-chat";
-import { HeaderActionsSlot } from "../../../host/chrome";
+import { RouteHeader } from "../../../host/chrome";
 
 interface ChatRunHeaderProps {
   /**
@@ -82,97 +82,79 @@ export function ChatRunHeader({
     });
   };
 
-  // Full-width bar with a hard left/right split at every breakpoint: agent +
-  // context stay pinned left; the page actions stay pinned right inside the center slot.
-  // (Previously `lg:w-full` + a single row let the inject zone center the
-  // shrink-wrapped cluster on mobile/tablet, which pushed controls into the
-  // avatar and broke the layout.)
-  return (
-    <div
-      className="flex w-full min-w-0 items-center justify-between gap-2"
-      onClickCapture={(event) =>
-        interceptChatAgentLink(event, {
-          dispatch: store.dispatch,
-          router,
-          getState: store.getState,
-          sourceAgentId: activeAgentId,
-          sourceConversationId: conversationId,
-        })
-      }
-    >
-      {composerMode ? (
-        <>
-          {/* Left third stays empty so the switch sits in the true center. */}
-          <div className="min-w-0 flex-1" />
-          <ComposerModeSwitch initialMode={composerMode.initialMode} />
-        </>
-      ) : (
-      <div className="flex min-w-0 items-center gap-1 overflow-hidden">
-        <div
-          data-chat-agent-picker-trigger
-          className="flex min-w-0 items-center"
-        >
-          <AgentListDropdown
-            onSelect={handleAgentSelect}
-            label={label}
-            activeAgentId={activeAgentId}
-            compact
-            noBorder
-          />
-        </div>
-        {/* Working context — Lens Chip → ActiveContextTree. Sets
-            appContextSlice; Clear lives in the tree footer. */}
-        <ActiveContextLensChip
-          conversationId={conversationId}
-          className="min-w-0"
-        />
-      </div>
+  const interceptAgentLinks = (event: React.MouseEvent<HTMLElement>) =>
+    interceptChatAgentLink(event, {
+      dispatch: store.dispatch,
+      router,
+      getState: store.getState,
+      sourceAgentId: activeAgentId,
+      sourceConversationId: conversationId,
+    });
+
+  // ON THE SHARED ROUTE HEADER (2026-10-03). This row used to be a hand-built
+  // flex row whose right side could only squeeze, and whose mode switch picked
+  // its compact form by viewport breakpoint. With the canvas open (1440px
+  // window, 640px canvas → ~800px main column) the switch drew over Records /
+  // Attached / the page menu and ran under the shell's Search: seven
+  // overlapping pairs, and the shell's crowding guard logged OVERDRAWN.
+  // RouteHeader measures the MAIN COLUMN: actions fold into "…" (lowest
+  // priority first; the page menu stays), the switch collapses to its one-
+  // button form and leaves the true center when it must (useCenterControlFit),
+  // and on a phone the actions move into the shell's ⋮ sheet.
+  const actions = (
+    <>
+      {/* "Personal — only you can see this, even inside a shared room"
+          (DD-171, 2026-09-12). Renders for the OWNER and only when the
+          conversation really does sit inside a room other people can reach. */}
+      <ConversationRoomNotice conversationId={conversationId} />
+      {/* What this chat PRODUCED — the reverse view of the record chrome drawn
+          under a kind block. Only an existing conversation can have produced
+          anything, so `/chat/new` shows nothing. */}
+      {conversationId && <ConversationRecordsChip conversationId={conversationId} />}
+      {/* WHAT this chat is pointed at — repositories, files and sheets riding
+          it (Arman, 2026-09-15). Silent until something is attached. */}
+      {conversationId && <ConversationAttachmentsChip conversationId={conversationId} />}
+      {/* DD-179 — the conversation's own menu. Absent on `/chat/new`. */}
+      {conversationId && (
+        <ConversationPageMenu conversationId={conversationId} href={`/chat/${conversationId}`} />
       )}
-      <div
-        className={
-          composerMode
-            ? "flex min-w-0 flex-1 items-center justify-end gap-1"
-            : "flex shrink-0 items-center gap-1"
-        }
-      >
-        {/* "Personal — only you can see this, even inside a shared room"
-            (DD-171, 2026-09-12; it read the opposite until that day). A
-            `personal` conversation dropped into a war room or a thread USED to
-            be readable by that room's members; the chair overturned that —
-            containment carries a container's reach to rows at `internal` and
-            above, never to `personal` — and the kernel moved before this
-            sentence did. The chip renders for the OWNER and only when the
-            conversation really does sit inside a room other people can reach. */}
-        <ConversationRoomNotice conversationId={conversationId} />
-        {/* THE SHEET CONTRACT (page-pass shared defects, 2026-09-27): on a
-            phone these fold into the shell's one ⋮ ("This page"). */}
-        <HeaderActionsSlot className="flex shrink-0 items-center gap-1">
-        {/* What this chat PRODUCED — the reverse view of the record chrome
-            drawn under a kind block. Only an existing conversation can have
-            produced anything, so `/chat/new` shows nothing rather than an
-            empty control. */}
-        {conversationId && (
-          <ConversationRecordsChip conversationId={conversationId} />
-        )}
-        {/* WHAT this chat is pointed at — which repositories, files and sheets
-            ride it. The composer rail has one 16px line for a count; twenty
-            turns later the question is "which repos?", and the answer belongs
-            where it costs no vertical space and every item opens
-            (Arman, 2026-09-15). Silent until something is attached. */}
-        {conversationId && (
-          <ConversationAttachmentsChip conversationId={conversationId} />
-        )}
-        {/* DD-179 — the conversation's own menu: rename, archive, delete (soft
-            and restorable), share, duplicate. Absent on `/chat/new`, where
-            there is no conversation yet to act on. */}
-        {conversationId && (
-          <ConversationPageMenu
-            conversationId={conversationId}
-            href={`/chat/${conversationId}`}
-          />
-        )}
-        </HeaderActionsSlot>
-      </div>
-    </div>
+    </>
+  );
+
+  if (composerMode) {
+    return (
+      <RouteHeader
+        center={<ComposerModeSwitch initialMode={composerMode.initialMode} />}
+        // The mode switch is the chat's primary control: on a phone it stays
+        // in the row as its one-button form, never inside the ⋮ sheet.
+        centerOnPhone="row"
+        right={actions}
+      />
+    );
+  }
+
+  return (
+    <RouteHeader
+      left={
+        <div
+          className="flex min-w-0 items-center gap-1 overflow-hidden"
+          onClickCapture={interceptAgentLinks}
+        >
+          <div data-chat-agent-picker-trigger className="flex min-w-0 items-center">
+            <AgentListDropdown
+              onSelect={handleAgentSelect}
+              label={label}
+              activeAgentId={activeAgentId}
+              compact
+              noBorder
+            />
+          </div>
+          {/* Working context — Lens Chip → ActiveContextTree. Sets
+              appContextSlice; Clear lives in the tree footer. */}
+          <ActiveContextLensChip conversationId={conversationId} className="min-w-0" />
+        </div>
+      }
+      right={actions}
+    />
   );
 }

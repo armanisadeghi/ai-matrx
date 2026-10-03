@@ -81,15 +81,21 @@ export function useRelationWordsFor(
 
   const [state, setState] = useState<{ key: string; byField: Map<string, RelationWordsMap> } | null>(null);
 
+  // KEYED ON THE STRING, NEVER ON THE ARRAYS (measured 2026-10-03, every Sheet on the clone preview:
+  // ~200 commits a second and "Maximum update depth exceeded" while idle). The Sheet hands this hook a
+  // freshly mapped `fields` array on every render, so `request` was a new array every render, this
+  // effect ran every render, and its `setState` of a new (equal) object rendered again — forever, and
+  // the relation reads re-ran with it. The ask is read back from `key`, which only moves when the ids do.
   useEffect(() => {
-    if (request.length === 0) {
-      setState({ key, byField: new Map() });
+    const wanted = JSON.parse(key.slice(tableId.length + 1)) as { field: string; ids: string[] }[];
+    if (wanted.length === 0) {
+      setState((prev) => (prev?.key === key && prev.byField.size === 0 ? prev : { key, byField: new Map() }));
       return;
     }
     let live = true;
     void (async () => {
       const byField = new Map<string, RelationWordsMap>();
-      for (const r of request) {
+      for (const r of wanted) {
         byField.set(
           r.field,
           await fetchRelationWords({ tableId, fieldName: r.field, rowIds: r.ids }),
@@ -100,7 +106,7 @@ export function useRelationWordsFor(
     return () => {
       live = false;
     };
-  }, [key, request, tableId]);
+  }, [key, tableId]);
 
   const wordsByField: RelationWordsByField = state?.key === key ? state.byField : EMPTY_BY_FIELD;
 

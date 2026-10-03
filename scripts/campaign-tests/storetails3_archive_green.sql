@@ -64,8 +64,10 @@ begin
     v_calls := v_calls + 1;
     exit when (v_res ->> 'done')::boolean or v_calls > 10;
   end loop;
-  if not (v_res ->> 'done')::boolean or not (v_res ->> 'table_archived')::boolean or v_calls <> 2 then
-    raise exception 'A1: the chunked archive did not finish as two calls (Kitchen, then Primary bath and the table) (% calls): %', v_calls, v_res;
+  -- TABLE-ACTIONS (2026-10-03): the last pass is chunked too — the pick list and the Table itself go in
+  -- passes of their own budget — so "two calls" became "at least two, and it finishes".
+  if not (v_res ->> 'done')::boolean or not (v_res ->> 'table_archived')::boolean or v_calls < 2 or v_calls > 10 then
+    raise exception 'A1: the chunked archive did not finish in passes (Kitchen, then Primary bath, then what is built on it and the table) (% calls): %', v_calls, v_res;
   end if;
   raise notice 'A1 PASS — Garage archived on its own; Rooms archived in % calls of one ("%")', v_calls, v_res ->> 'message';
 

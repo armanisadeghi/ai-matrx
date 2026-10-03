@@ -18,12 +18,12 @@ import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
 import notesReducer, {
   upsertNoteFromServer,
   markNoteSaveError,
-  recordNoteConflict,
   setNoteField,
 } from "../../redux/slice";
 import { NOTE_SAVE_FAILURE_BLOCK_THRESHOLD } from "../../redux/notes.types";
 import type { Note } from "../../types";
 import MobileNoteEditor from "./MobileNoteEditor";
+import { noteWorkingCopy } from "../../utils/noteLiveContent";
 import { getSurfaceRuntimeForName } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 jest.mock("../../hooks/useNotesRedux", () => ({
@@ -37,7 +37,7 @@ jest.mock("../../hooks/useNotesRedux", () => ({
 jest.mock("../../hooks/useNoteAccess", () => ({ useNoteAccess: () => ({ readOnly: false }) }));
 jest.mock("../../hooks/useNoteDelete", () => ({ useNoteDelete: () => ({ isDeleting: false, requestDelete: jest.fn() }) }));
 jest.mock("@/hooks/useToastManager", () => ({ useToastManager: () => ({ success: jest.fn(), error: jest.fn() }) }));
-jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() }, toastErrorAlreadyCaptured: jest.fn() }));
+jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn(), dismiss: jest.fn() }, toastErrorAlreadyCaptured: jest.fn() }));
 jest.mock("@/features/rich-document/RichDocument", () => ({ RichDocument: () => null }));
 jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({ NonEditableContextMenu: () => null }));
 jest.mock("@/features/context-menu-v3/EditableContextMenu", () => ({
@@ -223,35 +223,25 @@ describe("MobileNoteEditor writes through the canonical path", () => {
     richLiveMarkdown = "";
   });
 
-  it("renders the canonical conflict surface for a recorded CAS conflict (N-20)", async () => {
+  it("shows the note working copy's conflict choice when the stored note moved under unsaved words (N-20)", async () => {
     const store = makeStore();
     store.dispatch(upsertNoteFromServer({ note: row(), fetchStatus: "full" }));
-    store.dispatch(setNoteField({ id: ID, field: "content", value: "mine" }));
-    store.dispatch(
-      recordNoteConflict({
-        id: ID,
-        expectedVersion: 4,
-        currentVersion: 5,
-        currentRow: row({ content: "theirs", label: "Remote", version: 5, updated_at: "2026-09-14T00:01:00.000Z" }),
-        sentSnapshot: { content: "mine" },
-        actorId: ACTOR,
-        organizationId: ORG,
-        decisionId: "decision-1",
-        reviewId: "review-1",
-      }),
-    );
-
     const { unmount } = await mount(store);
-    // The lazily-imported window resolves on a microtask.
+
     await act(async () => {
-      await Promise.resolve();
+      noteWorkingCopy.edit(ID, "mine");
+      // The stored body moved under the unsaved words (another device saved).
+      noteWorkingCopy.load(ID, "theirs", { version: 5 });
     });
 
-    expect(store.getState().notes.notes[ID]._conflictDecision).toBeTruthy();
-    expect(document.body.textContent).toContain("Note Conflict");
-    expect(document.body.textContent).toContain("Keep Mine");
-    expect(document.body.textContent).toContain("Accept Changes");
+    expect(noteWorkingCopy.entry(ID)?.conflict).toMatchObject({ theirs: "theirs", theirsVersion: 5 });
+    expect(document.body.textContent).toContain("Changed elsewhere");
+    expect(document.body.textContent).toContain("Keep mine");
+    expect(document.body.textContent).toContain("Take theirs");
 
+    await act(async () => {
+      noteWorkingCopy.discard(ID);
+    });
     await unmount();
   });
 

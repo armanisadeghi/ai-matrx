@@ -124,12 +124,9 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
 }));
 
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { __setScopesReadFromStoreForTests } from "@/features/scopes/service/scopesReadKnob";
 
 // THE STORE READ PATH (read switch ON, lane SCOPES-WEB-REVERT): these assertions are the store
 // doors' contract; the switch is OFF in the app until member-seat parity holds.
-beforeAll(() => __setScopesReadFromStoreForTests(true));
-afterAll(() => __setScopesReadFromStoreForTests(null));
 
 it("reads the project → scope edges from the source side, never every edge into every scope", async () => {
   const res = await scopesService.getScopeTree();

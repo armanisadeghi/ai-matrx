@@ -140,9 +140,14 @@ export const fetchTaskAssociations = createAsyncThunk<
   };
 });
 
+/**
+ * The tasks linked to one record, read ONCE per record per tab: a woken or
+ * remounted chip row renders the store. `force` re-reads on purpose (after a
+ * link is added or removed here).
+ */
 export const fetchTasksForEntity = createAsyncThunk<
   { key: string; tasks: TaskForEntityRef[] },
-  { entityType: string; entityId: string }
+  { entityType: string; entityId: string; force?: boolean }
 >("taskAssociations/fetchForEntity", async ({ entityType, entityId }) => {
   const { data, error } = await supabase.rpc("get_tasks_for_entity", {
     p_entity_type: entityType,
@@ -156,6 +161,13 @@ export const fetchTasksForEntity = createAsyncThunk<
     key: entityKey(entityType, entityId),
     tasks: raw.tasks ?? [],
   };
+}, {
+  condition: ({ entityType, entityId, force }, { getState }) => {
+    if (force) return true;
+    const key = entityKey(entityType, entityId);
+    const slice = (getState() as { taskAssociations: TaskAssociationsState }).taskAssociations;
+    return slice.byEntityKey[key] === undefined && slice.loadingByEntityKey[key] !== true;
+  },
 });
 
 export const associateWithTask = createAsyncThunk<
@@ -195,7 +207,7 @@ export const associateWithTask = createAsyncThunk<
     // Refresh both sides of the linkage
     await Promise.all([
       dispatch(fetchTaskAssociations(taskId)),
-      dispatch(fetchTasksForEntity({ entityType, entityId })),
+      dispatch(fetchTasksForEntity({ entityType, entityId, force: true })),
     ]);
     return {
       id: res.data.id,
@@ -236,7 +248,7 @@ export const dissociateFromTask = createAsyncThunk<
     }
     await Promise.all([
       dispatch(fetchTaskAssociations(taskId)),
-      dispatch(fetchTasksForEntity({ entityType, entityId })),
+      dispatch(fetchTasksForEntity({ entityType, entityId, force: true })),
     ]);
     return { taskId, entityType, entityId };
   },
@@ -364,6 +376,7 @@ export const createTaskWithAssociation = createAsyncThunk<
       fetchTasksForEntity({
         entityType: input.entity_type,
         entityId: input.entity_id,
+        force: true,
       }),
     );
   }
@@ -465,6 +478,7 @@ export const createTasksBulk = createAsyncThunk<
       fetchTasksForEntity({
         entityType: input.entity_type,
         entityId: input.entity_id,
+        force: true,
       }),
     );
   }

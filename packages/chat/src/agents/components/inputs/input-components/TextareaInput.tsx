@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 import { toast } from "../../../../host/notify";
 import { variableInputPlaceholder } from "./variablePlaceholder";
+import { useAutoFocus } from "@host/lib/dom/useAutoFocus";
 
 interface TextareaInputProps {
   value: string;
@@ -49,11 +50,9 @@ export function TextareaInput({
   // result", and the Rulebook page at 390px opened on its Understudy form.
   // Focus is still given when asked for — it just never scrolls.
   // Guard: __tests__/focus-never-moves-the-page.test.tsx.
-  useEffect(() => {
-    if (autoFocus) textareaRef.current?.focus({ preventScroll: true });
-    // Mount-only, exactly like the attribute it replaces.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Nor does it take the caret from a field the person is typing in elsewhere
+  // (a board note beside the chat) — lib/dom/focus-guard.
+  useAutoFocus(textareaRef, autoFocus);
 
   const isCompact = compact && !wizardMode;
 

@@ -229,6 +229,7 @@ export function ComposerMenuSwitchRow({
           {description ? <span className="truncate text-sm text-muted-foreground">{description}</span> : null}
         </span>
         <Switch
+          size="md"
           checked={checked}
           disabled={disabled}
           onCheckedChange={onCheckedChange}

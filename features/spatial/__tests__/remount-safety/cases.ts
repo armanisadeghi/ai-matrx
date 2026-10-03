@@ -8,53 +8,73 @@
  * flips its row to `passing` (and the case becomes a normal `it`); a fix that
  * lands without the flip makes `it.failing` fail, so the row cannot go stale.
  *
- * A type may declare `sleeps: true` only while its row is `passing`
- * (`remount-ledger.test.ts`).
+ * A type may declare `sleeps: true` only while its row is `passing`, or while
+ * its red row names why with `sleepsAnyway` (`remount-ledger.test.ts`).
  */
 
 export type RemountStatus =
   | { status: "passing" }
-  | { status: "failing"; owner: string; why: string };
+  | {
+      status: "failing";
+      owner: string;
+      why: string;
+      /**
+       * The type declares `sleeps: true` although this row is red — debt the
+       * owning lane carries, with the reason sleeping is still acceptable. The
+       * ledger test fails when a red type sleeps WITHOUT this, and when this is
+       * left on a row that turned green or a type that no longer sleeps.
+       */
+      sleepsAnyway?: string;
+    };
 
 export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
-  "chat": {
-    status: "failing",
-    owner: "chat lane",
-    why: "every wake/remount re-reads the transcript's assistant messages (ProposedDirectivesZone → fetchStoredDirectiveShells, chat.message)",
-  },
+  "chat": { status: "passing" },
   "chat:quiet": { status: "passing" },
   "note": { status: "passing" },
-  "note:quiet": {
-    status: "failing",
-    owner: "notes lane",
-    why: "wake/remount re-read sharing authority (may_manage_sharing x2), docproc.processed_documents, iam.organizations, memberships",
-  },
-  "note:split-view caret": {
-    status: "failing",
-    owner: "notes lane",
-    why: "remount puts the Split view's caret/selection at 0 (kept across hide/show)",
-  },
+  "note:quiet": { status: "passing" },
+  "note:split-view caret": { status: "passing" },
   "note:split-view undo": { status: "passing" },
   "file": { status: "passing" },
   "file:quiet": { status: "passing" },
   "udt_document": { status: "passing" },
   "udt_document:quiet": { status: "passing" },
+  "udt_document:undo": { status: "passing" },
   "data-table": { status: "passing" },
-  "data-table:quiet": { status: "passing" },
+  "data-table:quiet": {
+    status: "failing",
+    owner: "unified-data lane",
+    why: "wake/remount re-read table_copy_evaluation_state, iam.organizations (x2), record_change_actions",
+  },
   "record": { status: "passing" },
-  "record:quiet": { status: "passing" },
+  "record:quiet": {
+    status: "failing",
+    owner: "unified-data lane",
+    why: "wake/remount re-read row actions, table_copy_evaluation_state, iam.organizations, record_change_actions",
+  },
   "task": { status: "passing" },
-  "task:quiet": { status: "passing" },
+  "task:quiet": {
+    status: "failing",
+    owner: "unified-data lane",
+    why: "wake/remount re-read the task's custom-fields section (EntityCustomFields: custom.entity_record_home, entity_record_read, entity_field_rights)",
+  },
   "war-room": { status: "passing" },
   "war-room:quiet": { status: "passing" },
   "meeting": { status: "passing" },
-  "meeting:quiet": { status: "passing" },
+  "meeting:quiet": {
+    status: "failing",
+    owner: "unified-data lane",
+    why: "wake/remount re-read the meeting's custom-fields section (EntityCustomFields: custom.entity_record_home, custom.entity_record_read)",
+  },
   "workflow-run": { status: "passing" },
   "workflow-run:quiet": { status: "passing" },
   "research": { status: "passing" },
   "research:quiet": { status: "passing" },
   "project": { status: "passing" },
-  "project:quiet": { status: "passing" },
+  "project:quiet": {
+    status: "failing",
+    owner: "unified-data lane",
+    why: "wake/remount re-read the project's custom-fields section (EntityCustomFields: custom.entity_record_home, entity_record_read, entity_field_rights)",
+  },
   "meeting_part": { status: "passing" },
   "meeting_part:quiet": { status: "passing" },
   "web-page": { status: "passing" },

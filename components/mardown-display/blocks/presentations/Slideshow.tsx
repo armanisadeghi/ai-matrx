@@ -269,7 +269,9 @@ const Slideshow = (
                 />
               </Suspense>
 
-              {!isFullScreen && (
+              {/* In a canvas pane the deck already IS the canvas and the pane
+                  owns Expand — neither button would add anything there. */}
+              {!isFullScreen && canvasThumbs === null && (
                 <IconButton
                   icon={ExternalLink}
                   tooltip="Open Canvas"
@@ -279,20 +281,22 @@ const Slideshow = (
                 />
               )}
 
-              <IconButton
-                icon={isFullScreen ? Minimize2 : Maximize2}
-                tooltip={
-                  isFullScreen ? "Exit full screen" : "Expand to full screen"
-                }
-                onClick={() => setIsFullScreen(!isFullScreen)}
-                size="sm"
-                className={
-                  isFullScreen
-                    ? undefined
-                    : "bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
-                }
-                variant={isFullScreen ? "outline" : "default"}
-              />
+              {(isFullScreen || canvasThumbs === null) && (
+                <IconButton
+                  icon={isFullScreen ? Minimize2 : Maximize2}
+                  tooltip={
+                    isFullScreen ? "Exit full screen" : "Expand to full screen"
+                  }
+                  onClick={() => setIsFullScreen(!isFullScreen)}
+                  size="sm"
+                  className={
+                    isFullScreen
+                      ? undefined
+                      : "bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
+                  }
+                  variant={isFullScreen ? "outline" : "default"}
+                />
+              )}
             </div>
           </div>
 

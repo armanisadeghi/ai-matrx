@@ -96,18 +96,6 @@ export function NoteEditor({
   className,
   onForceSave,
 }: NoteEditorProps) {
-  useEffect(() => {
-    if (note) {
-      console.log(
-        "[Track Quick Notes] 10, NoteEditor.tsx — editor rendering note",
-        {
-          noteId: note.id,
-          label: note.label,
-          folder: note.folder_name,
-        },
-      );
-    }
-  }, [note?.id, note?.label, note?.folder_name]);
 
   const [localContent, setLocalContent] = useState(note?.content || "");
   const [localFolder, setLocalFolder] = useState(note?.folder_name || "Draft");

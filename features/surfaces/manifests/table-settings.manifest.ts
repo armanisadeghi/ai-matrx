@@ -4,7 +4,7 @@
  * The data table's settings window (`TableConfigModal`: Fields & Order, Table
  * Settings, Actions) — a LAYER over `matrx-user/data-tables`. It is the
  * worked example of the surface chain (register
- * `common-docs/projects/ai-reachable-everywhere`, ARE-010 / ARE-011):
+ * `common-docs/systems/platform/ui-shell/projects/ai-reachable-everywhere`, ARE-010 / ARE-011):
  *
  *   - While it is open it is the primary surface (it renders inside a
  *     `SurfaceLayerBoundary`), so the Agents menu, right-click AI and the

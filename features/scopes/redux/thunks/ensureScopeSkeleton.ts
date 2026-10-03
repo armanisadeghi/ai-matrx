@@ -6,18 +6,13 @@
 //   ensureTypeScopes(typeId)     one type's first page of scopes (more with loadMoreTypeScopes)
 //   searchScopes(query)          a server-side search over every scope of her organizations
 //
-// Read switch OFF (`scopesReadKnob.ts`): the old read is one fast answer, so the skeleton IS the
-// whole tree — `ensureScopeSkeleton` simply runs `ensureScopeTree` and every type is complete. Read
-// switch ON: the skeleton is the store's `custom.context_tree_types` (no counts), and
-// the WHOLE tree still loads for the readers that need it — whenever one calls `ensureScopeTree`, and
+// The skeleton is the store's `custom.context_tree_types` (no counts), and the WHOLE tree still loads for the readers that need it — whenever one calls `ensureScopeTree`, and
 // otherwise at idle after boot (`DeferredSingletonCore`), so no reader of the whole tree ever loses a
 // scope it had before. Same no-refetch policy as ensureScopeTree: each call dedups and caches.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
-import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
-import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import {
   TYPE_SCOPES_PAGE,
   readTypeScopesPage,
@@ -36,10 +31,6 @@ const searchInFlight = new Map<string, Promise<void>>();
 export function ensureScopeSkeleton(opts: { refresh?: boolean } = {}): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     if (!getUserId()) return;
-    if (!(await scopesReadFromStore())) {
-      await dispatch(ensureScopeTree({ refresh: opts.refresh }));
-      return;
-    }
     const s = getState().scopesTree;
     if (!opts.refresh && (s.skeletonStatus === "ready" || s.treeStatus === "ready")) return;
     if (skeletonInFlight) return skeletonInFlight;
@@ -81,10 +72,6 @@ export function ensureTypeScopes(
 ): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     if (!getUserId() || !scopeTypeId) return;
-    if (!(await scopesReadFromStore())) {
-      await dispatch(ensureScopeTree());
-      return;
-    }
     const state = getState();
     if (state.scopesTree.treeStatus === "ready") return;
     const entry = state.scopesTree.typeScopes[scopeTypeId];
@@ -131,7 +118,7 @@ export function searchScopes(query: string, limit = 100): AppThunk<Promise<void>
   return async (dispatch, getState) => {
     const key = scopeSearchKey(query);
     if (!getUserId() || key === "") return;
-    if (!(await scopesReadFromStore()) || getState().scopesTree.treeStatus === "ready") return;
+    if (getState().scopesTree.treeStatus === "ready") return;
     const prev = getState().scopesTree.scopeSearch[key];
     if (prev?.status === "ready") return;
     const pending = searchInFlight.get(key);

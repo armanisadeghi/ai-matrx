@@ -49,6 +49,41 @@ interface FillColorSetter {
 interface FillColorTarget {
   setFillColors?: FillColorSetter;
   makeDirty?: (dirty: boolean) => void;
+  /** `DocBackground` reads the document it paints through its skeleton. */
+  getSkeleton?: () => {
+    getViewModel?: () => {
+      getDataModel?: () => {
+        getSnapshot?: () => { documentStyle?: { documentFlavor?: number } };
+      };
+    };
+  } | null;
+}
+
+/** `DocumentFlavor.MODERN` in `@univerjs/core` — a pageless document. */
+const DOCUMENT_FLAVOR_MODERN = 2;
+
+/**
+ * A PAGELESS (modern-flavour) document has no sheet: Univer paints the whole
+ * workspace with the "background" fill and draws the text straight onto it.
+ * So for that flavour the workspace IS the paper — give it the page colour,
+ * or the black ink lands on the dark desk and the document is unreadable in
+ * dark mode (2026-10-03, measured on a modern document in the clone).
+ */
+export function surfaceColorsForFlavor(
+  colors: UniverDocSurfaceColors,
+  documentFlavor: number | undefined,
+): UniverDocSurfaceColors {
+  return documentFlavor === DOCUMENT_FLAVOR_MODERN
+    ? { ...colors, frame: colors.page }
+    : colors;
+}
+
+function flavorOf(background: FillColorTarget): number | undefined {
+  return background
+    .getSkeleton?.()
+    ?.getViewModel?.()
+    ?.getDataModel?.()
+    ?.getSnapshot?.()?.documentStyle?.documentFlavor;
 }
 
 /** Marks (and carries the state of) the wrapper installed below. */
@@ -93,21 +128,26 @@ export function applyUniverDocSurfaceColors(
   if (!render) return { applied: false, unreached: ["render"] };
   const unreached: string[] = [];
 
+  const background = render.components?.get(DOC_BACKGROUND_COMPONENT_KEY) as
+    | FillColorTarget
+    | undefined;
+  // The flavour is read at every paint: a document can switch between paged
+  // and pageless, and Univer re-runs `setFillColors` when it does.
+  const forDocument = (palette: UniverDocSurfaceColors) =>
+    background ? surfaceColorsForFlavor(palette, flavorOf(background)) : palette;
+
   // The canvas ELEMENT's CSS background is what shows wherever the renderer
   // has not painted — the bright L-shaped margin in cold walk 18's screenshot.
   const canvasEle = render.engine?.getCanvas?.()?.getCanvasEle?.();
   const paintCanvasElement = () => {
     if (canvasEle && "style" in canvasEle) {
-      canvasEle.style.backgroundColor = colors.frame;
+      canvasEle.style.backgroundColor = forDocument(colors).frame;
       return true;
     }
     return false;
   };
   if (!paintCanvasElement()) unreached.push("canvas element");
 
-  const background = render.components?.get(DOC_BACKGROUND_COMPONENT_KEY) as
-    | FillColorTarget
-    | undefined;
   const setter = background?.setFillColors;
   if (background && typeof setter === "function") {
     if (setter[HOST_COLORS]) {
@@ -116,7 +156,7 @@ export function applyUniverDocSurfaceColors(
     } else {
       const original = setter.bind(background);
       const wrapped: FillColorSetter = (frame, page, stroke, margin) => {
-        const host = wrapped[HOST_COLORS] ?? colors;
+        const host = forDocument(wrapped[HOST_COLORS] ?? colors);
         if (canvasEle && "style" in canvasEle) {
           canvasEle.style.backgroundColor = host.frame;
         }
@@ -130,11 +170,12 @@ export function applyUniverDocSurfaceColors(
       wrapped[HOST_COLORS] = colors;
       background.setFillColors = wrapped;
     }
+    const stated = forDocument(colors);
     background.setFillColors?.(
-      colors.frame,
-      colors.page,
-      colors.pageStroke,
-      colors.marginStroke,
+      stated.frame,
+      stated.page,
+      stated.pageStroke,
+      stated.marginStroke,
     );
     // `setFillColors` only marks itself dirty when a value actually moved, and
     // the docs scene caches its layers — ask for the repaint explicitly so a
@@ -157,8 +198,13 @@ interface InjectorLike {
 type UniverLike = { __getInjector?: () => InjectorLike | undefined } | null;
 
 /** The slice of `IRenderManagerService` this needs. Structural on purpose. */
-interface RenderManagerLike {
-  getRenderById?: (id: string) => UniverDocRenderLike | null;
+export interface RenderManagerLike {
+  /**
+   * Univer 1.0's name (0.x called it `getRenderById`; after the 1.0 upgrade the
+   * old optional call returned nothing, every document warned "could not
+   * reach: render", and no host colour was ever applied — 2026-10-03).
+   */
+  getRenderUnitById?: (id: string) => UniverDocRenderLike | null | undefined;
   /** Emits every render the instance creates, for as long as it lives. */
   created$?: {
     subscribe: (next: (render: UniverDocRenderLike) => void) => {
@@ -218,7 +264,7 @@ export function useUniverDocSurfaceTheme(
         }
       };
 
-      paint(manager?.getRenderById?.(unitId) ?? null);
+      paint(manager?.getRenderUnitById?.(unitId) ?? null);
 
       // A DOCUMENT RENDER IS NOT CREATED ONCE. Autosave's realtime echo, a
       // remote snapshot and the history viewer all re-run `createUniverDoc`,

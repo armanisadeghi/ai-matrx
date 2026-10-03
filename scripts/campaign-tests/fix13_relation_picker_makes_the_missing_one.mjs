@@ -33,7 +33,7 @@ for (const f of [".env.local", ".env"]) {
 }
 
 const ORIGIN = process.argv[2] ?? "https://www.aimatrx.com";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 const JOBS = "af3bfff6-a255-41e5-9ac2-879d53816163";
 const NEW_CUSTOMER = "Marisol Okonkwo — 418 Calle Puerto Vallarta, Camarillo";
 mkdirSync(OUT, { recursive: true });

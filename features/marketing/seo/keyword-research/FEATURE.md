@@ -172,7 +172,7 @@ before adding any keyword field or per-keyword display anywhere.
   (`KeywordResearchBlock` / `KeywordClassificationBatchBlock`) — this file adds
   only chrome (header, stat tiles, the market table over `keyword_market` rows
   built from `KeywordMetrics`, the conversion CTA). This is the level-vs-lens
-  proof of the sharing experience (`common-docs/projects/sharing-experience/`).
+  proof of the sharing experience (`common-docs/systems/account/sharing/projects/sharing-experience/`).
 - `components/SavedResearchFeed.tsx` — the OWNER host: loads the keyword plane
   for the artifact's phrases and hands it to `KeywordResearchReport`, plus the
   owner doors (Open full report / ShareButton) when it knows the artifact's

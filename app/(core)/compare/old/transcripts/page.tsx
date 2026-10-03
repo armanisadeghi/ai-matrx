@@ -1,3 +1,4 @@
+// record-view: none — an old-version comparison page
 // app/(core)/compare/old/transcripts/page.tsx
 //
 // The OLD Transcripts list, kept only for comparison (Arman, 2026-09-29): the

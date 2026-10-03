@@ -14,28 +14,32 @@
  * Also keeps unsaved text across a reload: on `pagehide` the editor stores a
  * dirty copy in sessionStorage (`storeFileDraft`); the next load of that file
  * in this tab offers it back as the working copy (`readFileDraft`) until it is
- * saved or discarded.
+ * saved or discarded. The draft records the version (and text) it was typed
+ * on: if the file has a newer version by then, adopting it is a CONFLICT —
+ * the person chooses, nothing is written over the newer version.
+ *
+ * A failed save is retried by the primitive (backoff, reconnect) — the edit is
+ * never left unwritten because no view was open; a permission or conflict
+ * failure waits for the person (Save retries, Discard drops).
  */
 
 import type { ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
 import { toast } from "@/lib/toast";
-import { defineWorkingCopyKind } from "@/lib/working-copy/workingCopyKind";
+import { announceWorkingCopyConflict, dismissWorkingCopyConflict } from "@/lib/working-copy/announce";
+import { defineWorkingCopyKind, type WorkingCopyKind } from "@/lib/working-copy/workingCopyKind";
 import { getWorkingCopy, type WithWorkingCopies } from "@/lib/working-copy/workingCopySlice";
 import type { CloudFilesState } from "@/features/files/types";
 import { saveFileNewVersion } from "./thunks";
 
 type Dispatch = ThunkDispatch<{ cloudFiles: CloudFilesState }, unknown, UnknownAction>;
 
-export const fileWorkingCopy = defineWorkingCopyKind({
+export const fileWorkingCopy: WorkingCopyKind<never> = defineWorkingCopyKind({
   entity: "file",
   autosave: false,
   delay: () => 0,
   async save({ id, key, entry, reason, store }) {
     const text = entry.value;
     if (text === undefined) return { savedAt: null };
-    // A flush nobody clicked (hide, unmount) does not retry a save that just
-    // failed — the person sees the error on screen and retries with Save.
-    if (reason !== "manual" && entry.saveError) throw new Error(entry.saveError);
     // A save is the NEXT VERSION of this same file — never an upload (an
     // upload of a taken name becomes "name (1).ext", a second file).
     const result = await (store.dispatch as unknown as Dispatch)(
@@ -49,10 +53,18 @@ export const fileWorkingCopy = defineWorkingCopyKind({
     if (!after || after.value === text) clearFileDraft(id);
     return { value: text, version: result.versionNumber };
   },
-  onSaveFailed(_id, message, reason) {
-    // No editor may be on screen to show a failed save nobody clicked.
-    if (reason !== "manual") toast.error("Couldn't save your last edits", { description: message });
+  onSaveFailed(_id, message, reason, failure) {
+    // No editor may be on screen to show a failed save nobody clicked: say it
+    // once per streak (the primitive retries), and again when it is final.
+    if (reason === "manual") return;
+    if (failure.permanent) {
+      toast.error("Couldn't save your file edits", { description: message });
+    } else if (failure.attempts === 1) {
+      toast.error("Couldn't save your file edits — retrying", { description: message });
+    }
   },
+  onConflict: (id, conflict) => announceWorkingCopyConflict(fileWorkingCopy, id, "File", conflict),
+  onConflictResolved: (id) => dismissWorkingCopyConflict(fileWorkingCopy, id),
 });
 
 // ---------------------------------------------------------------------------
@@ -63,7 +75,10 @@ const DRAFT_PREFIX = "matrx:file-working-copy:";
 
 export interface StoredFileDraft {
   text: string;
+  /** The stored version the text was typed on. */
   baseVersion: number | null;
+  /** The text it was typed on (lets a conflict with a newer version merge). */
+  base?: string | null;
 }
 
 export function storeFileDraft(fileId: string, draft: StoredFileDraft): void {
@@ -86,9 +101,11 @@ export function readFileDraft(fileId: string): StoredFileDraft | null {
       typeof (parsed as { text?: unknown }).text === "string"
     ) {
       const baseVersion = (parsed as { baseVersion?: unknown }).baseVersion;
+      const base = (parsed as { base?: unknown }).base;
       return {
         text: (parsed as { text: string }).text,
         baseVersion: typeof baseVersion === "number" ? baseVersion : null,
+        base: typeof base === "string" ? base : null,
       };
     }
     return null;

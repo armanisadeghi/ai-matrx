@@ -1,6 +1,6 @@
 /**
  * THE ITEM LINE — how a check names each thing it found, so the runner can file ONE finding per
- * item instead of one per check. Protocol (the one copy): common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md.
+ * item instead of one per check. Protocol (the one copy): common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md.
  * aidream's twin is scripts/checks/items.py; both parse exactly the same line.
  *
  *   MATRX-ITEM {"key":"<stable id>","status":"new"|"known","basis":"accepted"|"debt","unit":"…","title":"…","file":"…","line":12,"rule":"…"}

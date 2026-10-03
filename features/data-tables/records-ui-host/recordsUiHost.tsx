@@ -35,9 +35,11 @@ import {
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { recordPageHref } from "@/features/unified-data/table-page/recordPageHref";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import { RecordRunsSection } from "@/features/workflow-runtime/simple-builder/RecordRunsSection";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
@@ -94,10 +96,16 @@ export interface RecordsUiHostArgs {
 function recordSectionsPort(organizationId: string | null): {
   recordSections?: (target: { tableId: string; recordId: string }) => ReactNode;
 } {
-  if (!organizationId) return {};
   return {
     recordSections: ({ recordId }) => (
-      <RecordRunsSection key={recordId} organizationId={organizationId} recordId={recordId} />
+      <>
+        {organizationId ? (
+          <RecordRunsSection key={recordId} organizationId={organizationId} recordId={recordId} />
+        ) : null}
+        {/* Everything linked to this record, both ways — its own references and every
+            "Link a record…" made from the other end (W1.4). */}
+        <LinkedRecordsSection key={`linked:${recordId}`} token="record" id={recordId} title="" />
+      </>
     ),
   };
 }
@@ -127,6 +135,9 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     openRecords: ports.openRecords,
     runAgentAction: ports.runAgentAction,
     share: recordStoreShare,
+    // EVERY RECORD OPENS ITS OWN PAGE (no-dead-ends): the grid's ⤢, a card's Open / new tab / Copy
+    // link and the peek's Open all reach /data-v2/<table>/r/<record> (records-ui `hrefForRecord`).
+    hrefForRecord: ({ table, recordId }) => recordPageHref(table.id, recordId),
     // The platform's ONE chat column bound to the record (AGT-N-9) — never a second chat.
     chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={ports.organizationId} />,
     // "What ran on this record" in the record rail (records-ui `recordSections`, lane 11 wave 2).

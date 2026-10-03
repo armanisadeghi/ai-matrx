@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { ChatRunHeader } from "@ai-matrx/chat/agents/components/chat/ChatRunHeader";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   VoiceChatClient,
   voiceChatAgentHref,
@@ -58,14 +57,12 @@ export default async function VoiceChatConversationPage({
 
   return (
     <>
-      <PageHeader>
-        <ChatRunHeader
-          activeAgentId={seed.agentId}
-          initialAgentName={seed.agentName ?? undefined}
-          conversationId={conversationId}
-          buildAgentHref={voiceChatAgentHref}
-        />
-      </PageHeader>
+      <ChatRunHeader
+        activeAgentId={seed.agentId}
+        initialAgentName={seed.agentName ?? undefined}
+        conversationId={conversationId}
+        buildAgentHref={voiceChatAgentHref}
+      />
       <VoiceChatClient
         agentId={seed.agentId}
         conversationId={conversationId}

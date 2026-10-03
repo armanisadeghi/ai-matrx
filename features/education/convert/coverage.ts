@@ -517,6 +517,17 @@ export function sectionLabelForName(label: string): string {
     .trim();
 }
 
+/**
+ * A stored title as a person may read it: any resolver chunk id stripped the
+ * same way `sectionLabelForName` strips a section label. Titles written before
+ * that rule (per-section decks named "… section 5 of 6: Chunk 9e46adde-…",
+ * 2026-09-28) still sit in the library; no screen shows the id.
+ */
+export function titleWithoutInternalIds(title: string): string {
+  if (!/chunk\s|[0-9a-f]{8}-[0-9a-f]{4}-/i.test(title)) return title;
+  return sectionLabelForName(title) || title;
+}
+
 /** THE title of one section's run: every generator names its sections here. */
 export function sectionRunTitle(
   base: string,

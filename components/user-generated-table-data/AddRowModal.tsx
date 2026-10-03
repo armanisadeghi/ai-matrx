@@ -105,6 +105,21 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relat
     fetchFields();
   }, [tableId, isOpen]);
   
+  // The first field a person can type into takes focus once the fields are drawn.
+  useEffect(() => {
+    if (!isOpen || loadingFields) return;
+    const first = [...fields]
+      .sort((a, b) => a.field_order - b.field_order)
+      .find((field) => !isComputedColumn(field));
+    if (!first) return;
+    const frame = requestAnimationFrame(() => {
+      const el = document.getElementById(first.field_name);
+      const target = el && (el.matches("input, textarea, button, [tabindex]") ? el : el.querySelector<HTMLElement>("input, textarea, button"));
+      target?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, loadingFields, fields]);
+
   // Handle field value change
   const handleValueChange = (fieldName: string, value: any) => {
     setRowData((prev) => ({
@@ -361,6 +376,9 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relat
         return (
           <ProInput
             id={field.field_name}
+            // Tab moves field to field (grids review 3: it walked each field's voice and menu buttons,
+            // and fast-typed values landed in them). The buttons stay one click away.
+            auxiliaryControlsTabIndex={-1}
             value={value === null || value === undefined ? '' : value}
             onChange={(e) => handleValueChange(field.field_name, e.target.value)}
             placeholder={`Enter ${field.display_name.toLowerCase()}`}
@@ -371,7 +389,13 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relat
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent
+        className="sm:max-w-[500px]"
+        // FOCUS STARTS IN THE FIRST FIELD (grids review 3): the fields arrive after the dialog opens, so
+        // the dialog's own first stop was Cancel and typing went nowhere. The first field takes focus
+        // the moment it is drawn (below).
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Add New Row</DialogTitle>
         </DialogHeader>

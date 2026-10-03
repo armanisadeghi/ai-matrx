@@ -12,9 +12,8 @@ import notesReducer, {
   upsertNoteFromServer,
   updateNoteContent,
   recordNoteWriteAttempt,
-  recordNoteConflict,
-  captureNoteConflictLiveBuffer,
-  applyNoteConflictResolution,
+  recordNoteStoredRow,
+  resolveNoteStoredConflict,
   markNoteSaved,
 } from "./slice";
 import { serverMatchesAttempt } from "../utils/saveVerification";
@@ -103,7 +102,6 @@ describe("notes conflict detection", () => {
     expect(state.notes[NOTE_ID]._remoteObservation?.note.content).toBe(
       "Something a colleague typed",
     );
-    expect(state.notes[NOTE_ID]._conflictDecision).toBeNull();
   });
 });
 
@@ -175,7 +173,6 @@ describe("phantom version bump while editing", () => {
     expect(record.content).toBe("the recipe, shorter");
     expect(record._dirty).toBe(true);
     expect(record._remoteObservation).toBeNull();
-    expect(record._conflictDecision).toBeNull();
     expect(record._error).toBeNull();
     // The base itself advanced: the next edit compares against version 2.
     expect(record._acknowledgedPhysicalSnapshot?.version).toBe(2);
@@ -240,9 +237,8 @@ describe("adversarial review 2026-09-13 — holes closed", () => {
     let state = notesReducer(undefined, upsertNoteFromServer({ note: fullRow(), fetchStatus: "full" }));
     state = notesReducer(state, updateNoteContent({ id: NOTE_ID, content: "mine" }));
     const remote = fullRow({ version: 2, content: "theirs", updated_at: "2026-09-14T05:56:00.000Z" });
-    state = notesReducer(state, recordNoteConflict({ id: NOTE_ID, expectedVersion: 1, currentVersion: 2, currentRow: remote, sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG_ID, decisionId: "d", reviewId: "r" }));
-    state = notesReducer(state, captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
-    state = notesReducer(state, applyNoteConflictResolution({ id: NOTE_ID, decisionId: "d", reviewId: "r", requestId: "q", choice: "theirs", proposedContent: "theirs", reviewedLiveContent: "mine" }));
+    state = notesReducer(state, recordNoteStoredRow({ id: NOTE_ID, row: remote }));
+    state = notesReducer(state, resolveNoteStoredConflict({ id: NOTE_ID, choice: "theirs", content: "theirs" }));
     expect(state.notes[NOTE_ID].content).toBe("theirs");
     expect(state.notes[NOTE_ID]._acknowledgedPhysicalSnapshot?.version).toBe(2);
     // The user types on, the desktop sync stamps file_path: version 3, nothing edited moved.

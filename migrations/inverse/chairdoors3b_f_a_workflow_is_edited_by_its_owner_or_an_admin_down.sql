@@ -1,8 +1,8 @@
 -- chair-step: undo chairdoors3b_f_a_workflow_is_edited_by_its_owner_or_an_admin.sql: restores iam.has_access_for_base(uuid, text, uuid, permission_level, boolean, text[]) exactly as it was, so organization membership alone confers editor on workflows again (any member may edit, publish and archive a colleague's workflow).
 -- lane: CHAIR-DOORS-3B
--- based-on: iam.has_access_for_base(uuid, text, uuid, permission_level, boolean, text[]) HAB_AFTER
--- based-on: iam.entity_read_kernel_expected() ERK_AFTER
--- based-on: iam.entity_read_kernel_members_expected() ERKM_AFTER
+-- based-on: iam.has_access_for_base(uuid, text, uuid, permission_level, boolean, text[]) 883bff59ccd20d194cd885199a3d766af8bd1742f982c4e01ed1eac28c1d5411
+-- based-on: iam.entity_read_kernel_expected() e446ffb53ea97df6f15cdd350a7919bef821da8c4a58823fbe054ab6d24b6aef
+-- based-on: iam.entity_read_kernel_members_expected() 51849b67e329a5ed6396e257915ca0cb2d54cdf208b17be022c78044d55728af
 
 create temp table _chairdoors3b_f_before on commit drop as select platform.kernel_equivalence_answers() a;
 

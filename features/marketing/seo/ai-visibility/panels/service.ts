@@ -27,6 +27,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import type { Database } from "@/types/database.types";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 export type AiVisibilityPanelRow =
   Database["seo"]["Tables"]["ai_visibility_panel"]["Row"];
@@ -85,11 +86,10 @@ export interface PanelTrend {
 }
 
 function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message.",
-  );
+  return postgrestError(error, {
+    action: "loading the AI visibility panels",
+    fallback: "Supabase returned an error with no message.",
+  });
 }
 
 /** The org's saved panels for one site. */

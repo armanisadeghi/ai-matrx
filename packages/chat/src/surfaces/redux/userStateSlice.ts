@@ -76,20 +76,15 @@ export const surfaceUserStateReducer = slice.reducer;
 // ── thunks ──────────────────────────────────────────────────────────────
 
 const inflight = new Map<string, Promise<void>>();
-const TTL_MS = 30_000;
 
-/** Load a feature's rows once (dedup in-flight + skip if fresh). */
+/** Load a feature's rows once per tab (dedup in-flight; `force` re-reads). */
 export function ensureSurfaceFeatureLoaded(feature: string, force = false): ChatThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const existing = getState().surfaceUserState.byFeature[feature];
-    if (
-      !force &&
-      existing?.status === "ready" &&
-      existing.fetchedAt &&
-      Date.now() - existing.fetchedAt < TTL_MS
-    ) {
-      return;
-    }
+    // Read ONCE per tab (the remount law, 2026-10-03): with a 30 s freshness, every chat tile
+    // that woke after half a minute read `user_surface_state` again. Writes land optimistically
+    // (`saveSurfaceState`); `force` is the explicit re-read (a tab regaining focus, a Retry).
+    if (!force && existing?.status === "ready") return;
     const pending = inflight.get(feature);
     if (pending && !force) return pending;
 

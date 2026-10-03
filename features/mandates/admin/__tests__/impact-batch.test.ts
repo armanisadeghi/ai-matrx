@@ -1,7 +1,7 @@
 // Agent Change Impact — the batch panel's piles, the write's result index and
 // the sentences a person reads before and after a move (I4 write half + I5).
 //
-// Every fixture is the CONTRACT's shape (common-docs/projects/agent-change-impact
+// Every fixture is the CONTRACT's shape (common-docs/systems/intelligence/mandates/projects/agent-change-impact
 // /CONTRACT.md, Amendments 1–3), never a guess at it: `blocker` and `grade`
 // are two fields, a dry-run token has no target, `principal.kind` has three
 // values.

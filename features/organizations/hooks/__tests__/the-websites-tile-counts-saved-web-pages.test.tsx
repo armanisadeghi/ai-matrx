@@ -35,6 +35,7 @@ jest.mock("@/features/resource-manager/source-input/savedWebPages", () => ({
 }));
 
 import { useContainerInventory } from "../useContainerInventory";
+import { storeReadsWrapper } from "@/test-utils/store-reads";
 
 it("the Websites tile counts the organization's saved web pages", async () => {
   let websites: number | null | undefined;
@@ -46,8 +47,13 @@ it("the Websites tile counts the organization's saved web pages", async () => {
     return null;
   }
   const root = createRoot(document.createElement("div"));
+  const Store = storeReadsWrapper();
   await act(async () => {
-    root.render(<Probe />);
+    root.render(
+      <Store>
+        <Probe />
+      </Store>,
+    );
   });
   await act(async () => {
     await new Promise((r) => setTimeout(r, 0));

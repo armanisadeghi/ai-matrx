@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchTasksForEntity,
@@ -44,12 +44,9 @@ export default function TaskChipRow({
   const isLoading = useAppSelector(
     selectTasksForEntityLoading(entityType, entityId),
   );
-  const fetchedRef = useRef<string>("");
-
+  // Once per record per tab (the thunk's condition): a woken or remounted
+  // row renders the store.
   useEffect(() => {
-    const key = `${entityType}:${entityId}`;
-    if (fetchedRef.current === key) return;
-    fetchedRef.current = key;
     dispatch(fetchTasksForEntity({ entityType, entityId }));
   }, [dispatch, entityType, entityId]);
 

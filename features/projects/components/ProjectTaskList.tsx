@@ -12,8 +12,9 @@
  * The trailing actions column opens the full task editor at /tasks/[id].
  *
  * All edits go through taskService.updateTask / createTask with optimistic
- * updates, revert-on-failure, and toast.error feedback. Self-fetches via
- * taskService (no global slice coupling).
+ * updates, revert-on-failure, and toast.error feedback. The list is a
+ * store read by project; the half-typed quick-add row is a draft in the store
+ * by project — a remount or a wake loses neither and reads nothing.
  */
 
 import React from "react";
@@ -59,7 +60,15 @@ import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiBu
 import { isDateOnlyOverdue } from "@ai-matrx/kit/dates";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { dispatchThunk, useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
+import {
+  clearWizardDraft,
+  patchWizardDraft,
+  selectWizardDraft,
+} from "@/lib/redux/slices/wizardDraftSlice";
 
+const EMPTY_TASKS: DatabaseTask[] = [];
 const isDone = (t: DatabaseTask) => t.status === "completed";
 const isOverdue = (t: DatabaseTask) =>
   !isDone(t) && isDateOnlyOverdue(t.due_date);
@@ -74,11 +83,16 @@ export function ProjectTaskList({
   onCountsChange?: (counts: { open: number; done: number }) => void;
 }) {
   const openTaskEditor = useOpenTaskEditorWindow();
-  const [tasks, setTasks] = React.useState<DatabaseTask[]>([]);
+  // The project's tasks live in Redux by project (`useStoreRead`): read once,
+  // rendered from the store on every wake and remount; every inline edit and
+  // quick-add writes the store's copy, so nothing a remount shows is stale.
+  const tasksRead = useStoreRead<DatabaseTask[]>(`projects.tasks:${projectId}`, () => getProjectTasks(projectId));
+  const tasks = tasksRead.data ?? EMPTY_TASKS;
+  const setTasks = (update: (cur: DatabaseTask[]) => DatabaseTask[]) =>
+    tasksRead.setData((cur) => update(cur ?? EMPTY_TASKS));
+  const loading = !tasksRead.hasData && tasksRead.status === "loading";
+  const loadError = tasksRead.error;
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
-  const [loadError, setLoadError] = React.useState<unknown>(null);
-  const [reloadTick, setReloadTick] = React.useState(0);
   const [busyId, setBusyId] = React.useState<string | null>(null);
   // `?done=1` opens with the Done group already expanded. A COUNT IS A DOOR:
   // "12 done" on the projects list links here, and landing on a page where
@@ -109,35 +123,7 @@ export function ProjectTaskList({
   const { inputRef: subInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
     useRefocusInputAfterAsync(isAddingSub);
 
-  // One read per project and reload. Effects re-run without a remount (a
-  // board tile waking from sleep); a re-run that read again swapped the list
-  // for a spinner, dropping its rows, open editors and scroll.
-  const loadedFor = React.useRef<string | null>(null);
-  React.useEffect(() => {
-    const key = `${projectId}#${reloadTick}`;
-    if (loadedFor.current === key) return undefined;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setLoadError(null);
-      try {
-        const rows = await getProjectTasks(projectId);
-        if (!cancelled) {
-          setTasks(rows);
-          loadedFor.current = key;
-        }
-      } catch (err) {
-        if (!cancelled) setLoadError(err ?? new Error("The read failed"));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, reloadTick]);
-
-  const reload = () => setReloadTick((t) => t + 1);
+  const reload = () => void tasksRead.refresh();
 
   const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
   const matchesSearch = (task: DatabaseTask) => {
@@ -623,6 +609,14 @@ function InlineTitle({
 
 /* ─── Quick-add row ─────────────────────────────────────────────────────── */
 
+interface QuickAddDraft {
+  title: string;
+  priority: TaskPriority;
+  due: string | null;
+  advanced: boolean;
+  description: string;
+}
+
 function QuickAddRow({
   projectId,
   organizationId,
@@ -632,11 +626,28 @@ function QuickAddRow({
   organizationId: string | null;
   onAdded: (task: DatabaseTask) => void;
 }) {
-  const [title, setTitle] = React.useState("");
-  const [priority, setPriority] = React.useState<TaskPriority>(null);
-  const [due, setDue] = React.useState<string | null>(null);
-  const [advanced, setAdvanced] = React.useState(false);
-  const [description, setDescription] = React.useState("");
+  // The half-typed row is a DRAFT in the store, keyed by project — a remount
+  // or a wake from sleep puts back exactly what was typed.
+  const dispatch = useAppDispatch();
+  const draftId = `project-quick-add:${projectId}`;
+  const draft = useAppSelector(selectWizardDraft(draftId))?.data as QuickAddDraft | undefined;
+  const title = draft?.title ?? "";
+  const priority = draft?.priority ?? null;
+  const due = draft?.due ?? null;
+  const advanced = draft?.advanced ?? false;
+  const description = draft?.description ?? "";
+  const patchDraft = (patch: Partial<QuickAddDraft>) =>
+    dispatch(patchWizardDraft({ wizardId: draftId, patch }));
+  const setTitle = (next: string | ((cur: string) => string)) =>
+    dispatchThunk(dispatch, (d, getState) => {
+      const cur = (selectWizardDraft(draftId)(getState())?.data as QuickAddDraft | undefined)?.title ?? "";
+      d(patchWizardDraft({ wizardId: draftId, patch: { title: typeof next === "function" ? next(cur) : next } }));
+    });
+  const setPriority = (next: TaskPriority) => patchDraft({ priority: next });
+  const setDue = (next: string | null) => patchDraft({ due: next });
+  const setAdvanced = (next: boolean | ((cur: boolean) => boolean)) =>
+    patchDraft({ advanced: typeof next === "function" ? next(advanced) : next });
+  const setDescription = (next: string) => patchDraft({ description: next });
   const [inFlight, setInFlight] = React.useState(0);
   const titleRef = React.useRef<HTMLInputElement>(null);
   const priorityRef = React.useRef<HTMLButtonElement>(null);
@@ -648,11 +659,7 @@ function QuickAddRow({
   }
 
   function resetAll() {
-    setTitle("");
-    setPriority(null);
-    setDue(null);
-    setDescription("");
-    setAdvanced(false);
+    dispatch(clearWizardDraft(draftId));
     focusTitle();
   }
 
@@ -665,8 +672,7 @@ function QuickAddRow({
     const t = title.trim();
     if (!t) return;
     const desc = description.trim() || null;
-    setTitle("");
-    setDescription("");
+    patchDraft({ title: "", description: "" });
     focusTitle();
     setInFlight((n) => n + 1);
     const res = await createTask({

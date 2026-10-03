@@ -199,6 +199,21 @@ with the stated vision.
 
 ## Change log
 
+- **2026-10-03** — **A kit build is never lost with its tab.** `useKitGeneration` runs as a
+  tab-bound run (`lib/wizard-draft/useTabBoundRun`, key `run:education:start:kit`) with a JOURNAL:
+  the frozen SourceSet + outputs + options + org (request), then the anchor, the kit's name, every
+  output that saved, and each section's conversation id. A reload continues by itself (≤30 min;
+  older → one Continue on `RunStoppedNotice`); a continuation keeps the anchor (no second `.md`),
+  adopts outputs whose lineage edge landed since the run began, and reads finished sections back
+  from the server (`convert/sectionJournal.ts`) instead of paying again. The board counts outputs
+  ready and sections done (`kitHeadline`) — no time promise; the kit name is editable (renameKit at
+  the end, or at once when done). The namer is bounded (20s) and a late answer still renames the
+  kit; converter runs carry no page context (`runAgentExtraction` → `surfaceName: null`: the namer
+  had adopted /education/start's surface and made 14 tool calls over the 150k-char file). Errors
+  render through `ErrorNotice` + `describeFailure`. Prose removed (count hint, workspace notice
+  sentences, "nothing is stuck", "written only from this material"). Output tiles wrap at 375.
+  Tests: `__tests__/kit-progress-and-continuation.test.ts`, `convert/__tests__/section-journal-resume.test.ts`.
+
 - **2026-10-02** — `/education/start` and `/education/kits/new` take material through the one
   Source input (`SourceInput`), replacing the local My files / Upload / Paste / Link pills and the
   creator's single file picker. Picks → `SourceSet` → `POST /sources/resolve` → `kitSources.ts`

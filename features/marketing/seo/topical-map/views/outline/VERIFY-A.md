@@ -3,7 +3,7 @@
 Run this on a machine that can host the app (the build container cannot: 15 GB against a
 dev server that needs 18–90 GB). You are the verifier: you did not write this code, you read
 the vision (`common-docs/inbox/topical-map-app-requirements.md` §2.1) and the plan's Lane A
-brief (`common-docs/projects/table-provisioning/TOPICAL-MAP-UI-PLAN.md` §6 "A — Outline + Text"),
+brief (`common-docs/systems/marketing/seo/topical-map/projects/topic-tree-collapse/PLAN.md` §6 "A — Outline + Text"),
 and you return what is missing against THOSE, never against this file's claims.
 
 Record the build SHA (`git rev-parse HEAD` on `claude/tender-gates-5qcxnd`) at the top of your

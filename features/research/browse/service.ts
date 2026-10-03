@@ -28,13 +28,13 @@ import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { listOrgParam } from "@/lib/list-scope/types";
 import type { ResearchTopicListRow } from "./types";
 import { readListRpc } from "@/lib/entity-list/readListRpc";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "The research topics list returned an error with no message.",
-  );
+  return postgrestError(error, {
+    action: "loading the research topics",
+    fallback: "The research topics list returned an error with no message.",
+  });
 }
 
 /**

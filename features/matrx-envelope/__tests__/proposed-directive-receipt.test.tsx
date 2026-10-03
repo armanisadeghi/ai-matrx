@@ -22,6 +22,7 @@ import proposedDirectivesReducer, {
   removeProposal,
   resolveProposal,
 } from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
+import storeReadsReducer from "@/lib/redux/slices/storeReadsSlice";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 
 (
@@ -42,6 +43,7 @@ function makeStore() {
     reducer: {
       proposedDirectives: proposedDirectivesReducer,
       apiConfig: apiConfigReducer,
+      storeReads: storeReadsReducer,
     },
   });
 }

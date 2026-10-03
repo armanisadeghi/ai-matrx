@@ -12,7 +12,7 @@ import { signIn, sleep } from "../lib/seat-browser.mjs";
 
 const ORIGIN = process.env.SLF_ORIGIN ?? "http://store-leak-formula.localhost:3001";
 const TABLE = "8c62d552-a893-4338-ac05-a266b2178712";
-const OUT = "/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/shots/store-leak-formula";
+const OUT = "/tmp/matrx-evidence/projects/data-doctrine-adoption/v5/shots/store-leak-formula";
 const EMAIL = process.env.SLF_EMAIL ?? "test@test.com";
 const PASSWORD = process.env.SLF_PASSWORD ?? "";
 if (!PASSWORD) throw new Error("SLF_PASSWORD is required (never printed)");

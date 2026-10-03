@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://drillpresets.localhost:3001";
-const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-presets";
+const SHOTS = process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-30/drill-presets";
 mkdirSync(SHOTS, { recursive: true });
 const out = { origin: ORIGIN, started: new Date().toISOString(), steps: [], console_errors: [], frictions: [] };
 const step = (name, r = {}) => { out.steps.push({ name, ...r }); console.log(`· ${name}`, JSON.stringify(r).slice(0, 700)); };

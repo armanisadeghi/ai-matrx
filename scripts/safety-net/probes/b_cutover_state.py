@@ -37,7 +37,7 @@ from pathlib import Path
 
 CODE = Path(__file__).resolve().parents[4]
 TARGET = os.environ.get("SN_TARGET", "clone")
-OUT = Path(os.environ.get("SN_OUT", str(CODE / "common-docs/operations/for-arman/2026-10-01/safety-net/adhoc")))
+OUT = Path(os.environ.get("SN_OUT", str("/tmp/matrx-evidence/2026-10-01/safety-net/adhoc")))
 OUT.mkdir(parents=True, exist_ok=True)
 AFTER = sys.argv[sys.argv.index("--after") + 1] if "--after" in sys.argv else (os.environ.get("SN_B_BEFORE") or None)
 TEST_SEAT_ORGS = {"884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f": "admin's Workspace", "0a54df90-eab8-4d07-ab29-81a45fb41e04": "Cedar Ridge Physical Therapy"}

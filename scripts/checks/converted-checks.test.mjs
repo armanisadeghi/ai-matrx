@@ -12,7 +12,7 @@
 //      allowlist entries that carry a reason (`reasonedKeys`), `debt` for the rest;
 //   6. END OF SCAN: a full run prints exactly one MATRX-ITEMS-END matching its item lines
 //      (`endWhen(out)` names the one honest exception: a run that could not see everything).
-// Protocol: common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md. Run: `node --test scripts/checks/converted-checks.test.mjs`.
+// Protocol: common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md. Run: `node --test scripts/checks/converted-checks.test.mjs`.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";

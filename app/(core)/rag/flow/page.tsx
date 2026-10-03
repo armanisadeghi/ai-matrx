@@ -1,3 +1,4 @@
+// record-view: none — a pipeline diagram
 "use client";
 /**
  * /knowledge/flow — Watch the Knowledge pipeline in motion.

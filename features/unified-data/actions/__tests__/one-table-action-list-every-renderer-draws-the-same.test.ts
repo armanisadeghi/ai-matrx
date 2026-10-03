@@ -26,7 +26,7 @@ import {
 import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
 import type { ContextMenuExtraItem, ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { toExtraSections, toItemMenuConfig } from "../tableActionAdapters";
-import { NOT_A_COPY_REASON, tableMenuExtensions } from "../tableMenuExtensions";
+import { tableMenuExtensions } from "../tableMenuExtensions";
 
 const TABLE = { id: "ae674b7a-6433-4cf2-8a7e-a1f7997ddf4d", name: "Balance and Gait Programs", is_kernel: false };
 
@@ -111,18 +111,37 @@ describe("one table action list, every renderer", () => {
 
         it("the table page's own entries are in the list, and Archive table is last", () => {
           const ids = actions().map((a) => a.id);
-          expect(ids).toEqual(expect.arrayContaining(["test-copy", "copy-again", "row-change-agent"]));
+          expect(ids).toEqual(
+            expect.arrayContaining(host === everyHandler ? ["test-copy", "copy-again", "row-change-agent"] : ["row-change-agent"]),
+          );
           expect(ids[ids.length - 1]).toBe("archive");
         });
       });
     }
   }
 
-  it("a viewer on a table that is not a copy meets the copy entries disabled, saying why", () => {
+  // OBJECT STATE, NOT RIGHTS (coordinator ruling, wave 1 fix round): an entry that can never apply
+  // to THIS table — the copy line and "Copy this table again" on a table that is not a copy — is
+  // absent. Rights still only ever set a reason (G2, records-ui).
+  it.each([
+    ["an admin", "admin"],
+    ["a viewer", "viewer"],
+  ] as const)("%s on a table that is not a copy meets no copy-only entry", (_who, seat) => {
+    const ids = tableActions({ table: TABLE, rights: tableRightsAt(seat), host: someMissing }).map((a) => a.id);
+    expect(ids).not.toContain("test-copy");
+    expect(ids).not.toContain("copy-again");
+    expect(ids).toContain("row-change-agent");
+  });
+
+  it("a test copy keeps both copy entries", () => {
+    const ids = tableActions({ table: TABLE, rights: tableRightsAt("viewer"), host: everyHandler }).map((a) => a.id);
+    expect(ids).toEqual(expect.arrayContaining(["test-copy", "copy-again"]));
+  });
+
+  it("a viewer on a table that is not a copy meets the other entries disabled, saying why", () => {
     const viewer = tableActions({ table: TABLE, rights: tableRightsAt("viewer"), host: someMissing });
     const byId = Object.fromEntries(drawnFromItemMenu(toItemMenuConfig(viewer)).map((d) => [d.id, d.reason]));
     expect(byId).toMatchObject({
-      "copy-again": NOT_A_COPY_REASON,
       duplicate: "Not available here",
       archive: "Needs Admin access",
       open: null,

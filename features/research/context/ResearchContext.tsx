@@ -8,6 +8,9 @@ import {
   type ReactNode,
 } from "react";
 import { useStore } from "zustand";
+import { useAppStore } from "@/lib/redux/hooks";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
+import { selectStoreRead, setStoreReadData } from "@/lib/redux/slices/storeReadsSlice";
 import * as service from "../service";
 import {
   createTopicStore,
@@ -29,6 +32,23 @@ function useTopicStore<T>(selector: (state: TopicStore) => T): T {
 }
 
 // ============================================================================
+// The topic and its overview live in Redux by topic id (`useStoreRead`): the
+// first view reads them, a remount or a second view renders the stored copy
+// and reads nothing; `refresh` / `refreshProgress` are the deliberate re-reads.
+// ============================================================================
+
+const topicKey = (topicId: string) => `research.topic:${topicId}`;
+const overviewKey = (topicId: string) => `research.overview:${topicId}`;
+
+function useTopicRead(topicId: string) {
+  return useStoreRead<ResearchTopic | null>(topicKey(topicId), () => service.getTopic(topicId));
+}
+
+function useOverviewRead(topicId: string) {
+  return useStoreRead<ResearchProgress | null>(overviewKey(topicId), () => service.getTopicOverview(topicId));
+}
+
+// ============================================================================
 // Selector hooks — components subscribe to exactly what they need
 // ============================================================================
 
@@ -36,30 +56,30 @@ export function useTopicId(): string {
   return useTopicStore((s) => s.topicId);
 }
 
-/**
- * Returns the topic + flags. Each field is selected individually so the
- * returned object is reference-stable when nothing changes — bare object
- * literals would create a new ref on every store update and trip React's
- * "result of getSnapshot should be cached" warning.
- */
 export function useTopicData(): {
   topic: ResearchTopic | null;
   isLoading: boolean;
   error: string | null;
 } {
-  const topic = useTopicStore((s) => s.topic);
-  const isLoading = useTopicStore((s) => s.isLoading);
-  const error = useTopicStore((s) => s.error);
-  return { topic, isLoading, error };
+  const topicId = useTopicId();
+  const read = useTopicRead(topicId);
+  return {
+    topic: read.data ?? null,
+    isLoading: !read.hasData && read.status !== "error",
+    // A failed refresh keeps the topic on screen; only a first read that
+    // failed is the screen's error.
+    error: read.hasData ? null : read.error,
+  };
 }
 
 export function useTopicProgress(): ResearchProgress | null {
-  return useTopicStore((s) => s.progress);
+  const topicId = useTopicId();
+  return useOverviewRead(topicId).data ?? null;
 }
 
 /** Targeted selector — primitive return, stable across rerenders. */
 export function useTopicDescription(): string | null {
-  return useTopicStore((s) => s.topic?.description ?? null);
+  return useTopicData().topic?.description ?? null;
 }
 
 // ============================================================================
@@ -82,24 +102,6 @@ export function useStreamDebug(): StreamDebugBus {
 }
 
 // ============================================================================
-// Refresh function — needs access to the store and the API hook
-// ============================================================================
-
-interface TopicRefreshActions {
-  refresh: () => Promise<void>;
-  refreshProgress: () => Promise<void>;
-}
-
-const RefreshContext = createContext<TopicRefreshActions | null>(null);
-
-function useRefreshActions(): TopicRefreshActions {
-  const ctx = useContext(RefreshContext);
-  if (!ctx)
-    throw new Error("useRefreshActions must be used within a TopicProvider");
-  return ctx;
-}
-
-// ============================================================================
 // Backward-compatible hook — returns the same shape as the old Context
 // ============================================================================
 
@@ -114,29 +116,32 @@ interface TopicContextValue {
 }
 
 export function useTopicContext(): TopicContextValue {
-  const topicId = useTopicStore((s) => s.topicId);
-  const topic = useTopicStore((s) => s.topic);
-  const progress = useTopicStore((s) => s.progress);
-  const isLoading = useTopicStore((s) => s.isLoading);
-  const error = useTopicStore((s) => s.error);
-  const { refresh, refreshProgress } = useRefreshActions();
+  const topicId = useTopicId();
+  const topicRead = useTopicRead(topicId);
+  const overviewRead = useOverviewRead(topicId);
+  const { topic, isLoading, error } = useTopicData();
   return {
     topicId,
     topic,
-    progress,
+    progress: overviewRead.data ?? null,
     isLoading,
     error,
-    refresh,
-    refreshProgress,
+    // The topic, then its overview — the order the workspace has always read.
+    refresh: async () => {
+      await topicRead.refresh();
+      await overviewRead.refresh();
+    },
+    refreshProgress: overviewRead.refresh,
   };
 }
 
 // ============================================================================
-// Provider — thin wrapper that initializes the store and triggers the fetch
+// Provider — the topic's local stream-debug store; the topic itself is in Redux
 // ============================================================================
 
 interface TopicProviderProps {
   topicId: string;
+  /** The server-rendered topic: seeds the store when it has no copy yet. */
   initialData?: TopicStoreInitialData;
   children: ReactNode;
 }
@@ -148,63 +153,37 @@ export function TopicProvider({
 }: TopicProviderProps) {
   const storeRef = useRef<TopicStoreInstance | null>(null);
   if (!storeRef.current) {
-    storeRef.current = createTopicStore(topicId, initialData);
+    storeRef.current = createTopicStore(topicId);
   }
-  const store = storeRef.current;
-  const progressRefreshSequenceRef = useRef(0);
-
-  const refreshProgressRef = useRef(async () => {
-    const requestId = ++progressRefreshSequenceRef.current;
-    const s = store.getState();
-    try {
-      const overview = await service.getTopicOverview(s.topicId);
-      if (requestId === progressRefreshSequenceRef.current && overview) {
-        s.setProgress(overview);
-      }
-    } catch (err) {
-      if (requestId === progressRefreshSequenceRef.current) {
-        console.error("[research-progress-sync] overview refresh failed", err);
-      }
-    }
-  });
-
-  const refreshRef = useRef(async () => {
-    const s = store.getState();
-    const hadInitialData = s.topic != null;
-    try {
-      if (!hadInitialData) s.setError(null);
-      const topicData = await service.getTopic(s.topicId);
-      s.setTopic(topicData);
-
-      const overview = await service.getTopicOverview(s.topicId);
-      if (overview) {
-        s.setProgress(overview);
-      }
-    } catch (err) {
-      if (!hadInitialData) {
-        s.setError((err as Error).message);
-      }
-    } finally {
-      s.setIsLoading(false);
-    }
-  });
-
-  useEffect(() => {
-    refreshRef.current();
-  }, [topicId]);
-
   return (
-    <TopicStoreContext.Provider value={store}>
-      <RefreshContext.Provider
-        value={{
-          refresh: refreshRef.current,
-          refreshProgress: refreshProgressRef.current,
-        }}
-      >
-        {children}
-      </RefreshContext.Provider>
+    <TopicStoreContext.Provider value={storeRef.current}>
+      <TopicReads topicId={topicId} initialData={initialData} />
+      {children}
     </TopicStoreContext.Provider>
   );
+}
+
+/**
+ * Asks for the topic and its overview once per topic (a no-op when the store
+ * has them). The first child of the provider, so its effects run before any
+ * view inside asks.
+ */
+function TopicReads({ topicId, initialData }: { topicId: string; initialData?: TopicStoreInitialData }) {
+  const reduxStore = useAppStore();
+  // Declared BEFORE the reads below (effects run in order): a server-rendered
+  // topic is an answer, never a reason to read it again.
+  useEffect(() => {
+    const state = reduxStore.getState();
+    if (initialData?.topic && !selectStoreRead(state, topicKey(topicId))) {
+      reduxStore.dispatch(setStoreReadData({ key: topicKey(topicId), data: initialData.topic }));
+    }
+    if (initialData?.progress && !selectStoreRead(state, overviewKey(topicId))) {
+      reduxStore.dispatch(setStoreReadData({ key: overviewKey(topicId), data: initialData.progress }));
+    }
+  }, [reduxStore, topicId, initialData]);
+  useTopicRead(topicId);
+  useOverviewRead(topicId);
+  return null;
 }
 
 /** @deprecated Use TopicProvider and useTopicContext instead */

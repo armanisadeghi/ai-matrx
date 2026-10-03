@@ -20,7 +20,7 @@ import { resolve } from "node:path";
 
 const argv = process.argv.slice(2);
 const arg = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
-const OUT = arg("--out", "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22");
+const OUT = arg("--out", "/tmp/matrx-evidence/2026-09-22");
 const ORG = arg("--org");
 if (!ORG) { console.error("--org <uuid> is required"); process.exit(2); }
 const ORIGIN = "http://127.0.0.1:3001";

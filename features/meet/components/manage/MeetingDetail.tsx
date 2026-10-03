@@ -92,7 +92,9 @@ import {
 } from "@/features/meet/components/manage/AfterMeetingWorkflows";
 import { useMeetTemplates } from "@/features/meet/hooks/useMeetTemplates";
 import { useMeetPrepStream } from "@/features/meet/hooks/useMeetPrepStream";
-import { useMeetingInviteesLive } from "@/features/meet/hooks/useMeetingInviteesLive";
+import { useMeetingById } from "@/features/meet/hooks/useMeetingById";
+import { meetingSaved } from "@/features/meet/redux/meetingsSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { MoveOccurrenceDialog } from "@/features/meet/components/manage/MoveOccurrenceDialog";
 import { useMeetingActionHost } from "@/features/meet/components/manage/useMeetingActionHost";
 import { MeetingSurfaceHost } from "@/features/meet/agent-surface/MeetingSurfaceHost";
@@ -108,14 +110,9 @@ import {
   formatTimeRange,
   zoneLabel,
 } from "@/features/meet/lib/zoned-time";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
 type Section = "details" | "guests" | "occurrences" | "settings" | "record";
-
-interface Loaded {
-  meeting: MeetingRecord;
-  invitees: readonly MeetingInvitee[];
-  occurrences: readonly MeetingOccurrence[];
-}
 
 function StatusPill({
   meeting,
@@ -178,21 +175,23 @@ export function MeetingDetail({
   const requested = embedded ? localSection : routeSection;
   const router = useRouter();
   const actions = useMeetingActions();
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  // The first read's failure, kept whole: the access gate asks the platform
-  // which of the four it is (no access, in Trash, missing, signed out) instead
-  // of printing the package's raw "not found (PGRST116)".
-  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
-  const [nonce, setNonce] = useState(0);
+  // THE shared per-meeting load (meetingsSlice): one read per meeting per tab,
+  // shared with a meeting tile, its "Meeting notes" parts and the surface; it
+  // also holds the meeting's live channel (an RSVP or an edit made anywhere
+  // else lands here). A first read that failed is kept whole: the access gate
+  // asks the platform which of the four it is (no access, in Trash, missing,
+  // signed out) instead of printing the package's raw "not found (PGRST116)".
+  const read = useMeetingById(meetingId);
+  const loaded = read.status === "ready" ? read.loaded : null;
+  const failure = read.status === "failed" ? { error: read.error } : null;
+  const dispatch = useAppDispatch();
+  const setSaved = (meeting: MeetingRecord) => dispatch(meetingSaved({ meeting }));
   const [moving, setMoving] = useState<OccurrenceRef | null>(null);
   const [, startTransition] = useTransition();
   // Hydration-safe (React #418): never read the browser zone during render.
   const viewerZone = useViewerTimeZone();
-  const reload = () => setNonce((n) => n + 1);
+  const reload = read.reload;
   const { run, dialogs } = useMeetingActionHost({ onChanged: reload });
-  // An invitee's RSVP lands here live, from any lane (link, app, pre-join).
-  useMeetingInviteesLive(meetingId, reload);
-  const repository = actions.repository;
   const isMobile = useIsMobile();
   const [savingTemplate, setSavingTemplate] = useState(false);
   // An existing meeting's templates live in the MEETING's own organization,
@@ -215,41 +214,6 @@ export function MeetingDetail({
     });
     if (text !== null) reload();
   };
-
-  useEffect(() => {
-    if (repository === null) return undefined;
-    let live = true;
-    const load = async () => {
-      const meeting = await repository.meeting(
-        meetingId as MeetingRecord["id"],
-      );
-      const [invitees, occurrences] = await Promise.all([
-        repository
-          .invitees(meeting.id)
-          .catch(() => [] as readonly MeetingInvitee[]),
-        meeting.scheduledFor
-          ? repository.meetingOccurrences(meeting.id, {
-              from: new Date(Date.now() - 24 * 3_600_000).toISOString(),
-              to: new Date(Date.now() + 400 * 86_400_000).toISOString(),
-              limit: meeting.recurrenceRule ? 20 : 1,
-            })
-          : Promise.resolve([] as readonly MeetingOccurrence[]),
-      ]);
-      return { meeting, invitees, occurrences };
-    };
-    load()
-      .then((next) => {
-        if (!live) return;
-        setLoaded(next);
-        setFailure(null);
-      })
-      .catch((thrown: unknown) => {
-        if (live) setFailure({ error: thrown });
-      });
-    return () => {
-      live = false;
-    };
-  }, [repository, meetingId, nonce]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -486,7 +450,7 @@ export function MeetingDetail({
       meeting={meeting}
       invitees={invitees}
       occurrences={occurrences}
-      onSaved={(m) => setLoaded({ ...loaded, meeting: m })}
+      onSaved={setSaved}
     >
       {embedded ? (
         <EmbeddedMeetingBar
@@ -547,6 +511,8 @@ export function MeetingDetail({
           ) : null}
           {/* The organization's own fields on this meeting (lane 7 W5). */}
           {section === "details" ? <EntityCustomFields entityToken="meet_meeting" recordId={meeting.id} organizationId={meeting.organizationId} className="mt-6" /> : null}
+          {/* Everything linked to this meeting, both ways (W1.4). */}
+          {section === "details" ? <LinkedRecordsSection token="meet_meeting" id={meeting.id} title={meeting.title} className="mt-6 flex flex-col gap-1.5" /> : null}
 
           {section === "guests" ? (
             <MeetingGuests
@@ -594,7 +560,7 @@ export function MeetingDetail({
           {section === "settings" ? (
             <SettingsSection
               meeting={meeting}
-              onSaved={(m) => setLoaded({ ...loaded, meeting: m })}
+              onSaved={setSaved}
               onReload={reload}
             />
           ) : null}

@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-Cross-repo Public Relations node: /Users/armanisadeghi/code/common-docs/systems/marketing/public-relations/STATE.md (verified truth + proposal in /Users/armanisadeghi/code/common-docs/projects/public-relations/PLAN.md, research in RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
+Cross-repo Public Relations node: /Users/armanisadeghi/code/common-docs/systems/marketing/public-relations/STATE.md (verified truth + proposal in /Users/armanisadeghi/code/common-docs/systems/marketing/public-relations/projects/public-relations/PLAN.md, research in RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
 
 **Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-09-18`
 
@@ -829,7 +829,7 @@ Write an email **from** a Person (or a deal's Person) and send it through the
 reviewed-send path Google approved us on — then keep the sent message as a real
 row on that record's timeline. Champions: HubSpot for the associated sent
 record, Superhuman for the draft experience; the audit trail on the sent record
-is the part neither of them has. Plan: `common-docs/projects/google-native/PLAN.md` §4.4.
+is the part neither of them has. Plan: `common-docs/systems/integrations/google/FEATURE.md` §4.4.
 
 **The parts.** `GmailComposePanel` is the surface (compose → review); it is
 mounted by `GmailComposeWindow` (overlay `gmailComposeWindow`, opened with
@@ -1229,7 +1229,7 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
 
 - 2026-09-18 — **F-41: the READ surfaces learned about `purpose`, and the approver
   is told what was set aside and what gets added.** Round-5 verification
-  (`common-docs/projects/google-native/VERIFY-B1-B2-R5.md` W1, W3, W4, W5) found
+  (`common-docs/systems/integrations/google/FEATURE.md` W1, W3, W4, W5) found
   four silences around the reviewed Gmail send, all of them on the client side of
   lane B-20/B-26. **W1:** the first real reviewed 1:1 registers the sender's own
   connected mailbox as `crm.sending_identity` with `purpose='correspondence'` so
@@ -1395,7 +1395,7 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
   multi-address case carried both markers at once).
 
 - 2026-09-17 — **F-30: two of the four VERIFY-B1-B2-R4 findings, fixed**
-  (`common-docs/projects/google-native/VERIFY-B1-B2-R4.md` V1/V6/V7). **The
+  (`common-docs/systems/integrations/google/FEATURE.md` V1/V6/V7). **The
   recipient parser now agrees with the server on the `To` field.** Until this
   fix `gmail/mailbox.ts` treated `To` as an ordinary address LIST, so
   `a@x.com, b@y.com` was ACCEPTED here and sent to `sendReviewedGmail`, which
@@ -1426,7 +1426,7 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
   contact import is a second, review-free path) and V4 (the reviewed-send
   endpoint asks no send authority) — neither is `features/crm/gmail/`'s file.
 - 2026-09-17 — **F-20: round 2's Gmail findings, fixed**
-  (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` N2/N7/N8/N9/N10, A1,
+  (`common-docs/systems/integrations/google/FEATURE.md` N2/N7/N8/N9/N10, A1,
   A5/D7, breaks A/B/C/D/I). **The disqualifying one:** every recipient field now
   goes through ONE RFC 5322 parser (`gmail/mailbox.ts`) BEFORE the send authority
   judges anything, so `Ada Lovelace <ada@example.com>` is Ada's address — it was
@@ -1449,7 +1449,7 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
   `migrations/crm_interaction_association_types.sql`.
 
 - 2026-09-17 — **The first hostile verification's Gmail findings, fixed**
-  (`common-docs/projects/google-native/VERIFY-B1-B2.md` A1/A4/A5/D1/D2/D6/D7/D8/D9).
+  (`common-docs/systems/integrations/google/FEATURE.md` A1/A4/A5/D1/D2/D6/D7/D8/D9).
   ONE recipient-integrity primitive (`gmail/recipient-integrity.ts`) now decides
   whose timeline a send may land on, consumed by BOTH the compose panel and the
   approvals `gmail_send` kind (the kind's private copy is deleted; a test scans

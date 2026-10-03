@@ -42,7 +42,9 @@ const service = {
   canEditSource: jest.fn(async () => true),
 };
 jest.mock("../service", () => service);
-jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn() }));
+// The sidecar's live half opens through the realtime manager, once per source (sidecarStore.ts).
+const mockRealtime = { open: jest.fn(() => ({ close: jest.fn() })) as jest.Mock };
+jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn(), useRealtimeManager: () => mockRealtime }));
 jest.mock("@ai-matrx/realtime", () => ({ defineChannelNamespace: () => ({ topic: () => "t" }) }));
 jest.mock("@/features/scopes/host/associationsStore", () => ({
   getAssociationsStore: () => ({ titles: { fetch: async () => new Map() } }),
@@ -78,7 +80,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
 });
-afterEach(() => { act(() => root.unmount()); container.remove(); });
+afterEach(() => { act(() => (jest.requireActual("../sidecarStore") as typeof import("../sidecarStore")).resetSidecarStoreForTests()); act(() => root.unmount()); container.remove(); });
 async function mount() {
   await act(async () => {
     root.render(

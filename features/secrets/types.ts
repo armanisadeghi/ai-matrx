@@ -2,7 +2,7 @@
  * Unified Credential Vault — types.
  *
  * ONE contract for both principals (personal | organization), per
- * common-docs/projects/unified-credential-vault/PLAN.md.
+ * common-docs/systems/account/vault-secrets/FEATURE.md.
  *
  * Wire shapes come from aidream's generated OpenAPI contracts
  * (`/api/vault/*` — never hand-mirrored); masked metadata read directly

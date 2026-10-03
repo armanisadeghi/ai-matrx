@@ -19,7 +19,16 @@ describe("the Anyone choice never promises a signed-out read it cannot deliver",
     expect(words).toContain("no-login link");
   });
 
-  it("a type with a real public page (note) keeps 'no sign-in'", () => {
-    expect(anyoneReachWords("note", { publicPage: hasPublicPage("note"), noLoginLink: true })).toMatch(/no sign-in/);
+  it("a type with a real public page (note) says the law's words: anyone, signed in or not", () => {
+    expect(anyoneReachWords("note", { publicPage: hasPublicPage("note"), noLoginLink: true })).toBe(
+      "Anyone, signed in or not, opens this note at its address as a viewer.",
+    );
+  });
+
+  it("a table row (access ladder T-40) has its own page, so it says the same", () => {
+    expect(hasPublicPage("record")).toBe(true);
+    expect(anyoneReachWords("record", { publicPage: hasPublicPage("record"), noLoginLink: true })).toBe(
+      "Anyone, signed in or not, opens this record at its address as a viewer.",
+    );
   });
 });

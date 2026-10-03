@@ -87,6 +87,7 @@ const PAGE = (routeWidth: number, variant: "plain" | "squeezed" | "badge" = "pla
       <div class="shell-header-secondary">
         <button class="slot">S</button><button class="slot">A</button><button class="slot">C</button><button class="slot">I</button>
       </div>
+      <div class="shell-header-overflow"><button class="slot" data-testid="overflow" aria-label="Search, intelligence, canvas, messages">V</button></div>
     </div>
   </header>
 </div>
@@ -98,11 +99,16 @@ async function mount(
   routeWidth: number,
   guard: boolean,
   variant: "plain" | "squeezed" | "badge" = "plain",
+  /** The header's own width when the canvas leaves it only the main column. */
+  headerWidth?: number,
 ) {
   await page.setViewportSize({ width, height: 600 });
   await page.setContent(PAGE(routeWidth, variant));
   await page.addStyleTag({ content: TAILWIND_SUBSET });
   await page.addStyleTag({ content: SHELL_CSS });
+  if (headerWidth) {
+    await page.addStyleTag({ content: `.shell-header { width: ${headerWidth}px; }` });
+  }
   if (guard) {
     await page.evaluate(
       `(${installHeaderCrowdingGuard.toString()})(document.querySelector('.shell-header'))`,
@@ -204,4 +210,35 @@ test("a badge hanging off a button is design, not a spill: the chip keeps its wo
     overdrawn: document.querySelector(".shell-header")!.hasAttribute("data-header-overdrawn"),
   }));
   expect(state).toEqual({ crowded: false, overdrawn: false });
+});
+
+// THE CANVAS CASE (2026-10-03): a 1440px window whose canvas leaves the header
+// only the main column. The viewport says desktop; the header has 420px.
+test("a header narrowed by the canvas folds the shell's controls into the one ⋮ and the route keeps its Save", async ({ page }) => {
+  await mount(page, 1440, 330, false, "plain", 420);
+  const before = await hitTest(page, "save");
+  expect(before.receivers).not.toEqual(["save", "save", "save"]);
+  await mount(page, 1440, 330, true, "plain", 420);
+  expect((await hitTest(page, "save")).receivers).toEqual(["save", "save", "save"]);
+  expect((await hitTest(page, "menu")).receivers).toEqual(["menu", "menu", "menu"]);
+  expect((await hitTest(page, "overflow")).receivers).toEqual(["overflow", "overflow", "overflow"]);
+  const folded = await page.evaluate(() => document.querySelector(".shell-header")!.hasAttribute("data-header-folded"));
+  expect(folded).toBe(true);
+});
+
+test("with the full window the shell keeps its five controls and no ⋮", async ({ page }) => {
+  await mount(page, 1440, ROUTE, true);
+  const state = await page.evaluate(() => ({
+    folded: document.querySelector(".shell-header")!.hasAttribute("data-header-folded"),
+    overflowShown: (document.querySelector('[data-testid="overflow"]') as HTMLElement).getBoundingClientRect().width > 0,
+  }));
+  expect(state).toEqual({ folded: false, overflowShown: false });
+});
+
+test("when nothing makes room, the route's row scrolls under its own clip — the shell's ⋮ still receives its clicks", async ({ page }) => {
+  await mount(page, 1440, 900, true, "plain", 420);
+  expect(Number(await page.evaluate(() => document.querySelector(".shell-header")!.getAttribute("data-header-overdrawn")))).toBeGreaterThan(0);
+  expect((await hitTest(page, "overflow")).receivers).toEqual(["overflow", "overflow", "overflow"]);
+  const scrolls = await page.evaluate(() => getComputedStyle(document.querySelector(".shell-header-center")!).overflowX);
+  expect(scrolls).toBe("auto");
 });

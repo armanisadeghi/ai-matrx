@@ -20,7 +20,7 @@ missing model registration, cost $2.40 and re-fetched results it had already rea
 later a provider sync costs $0.70, has zero tool errors, resolves cases the agent had never seen
 (dropped models, naming gaps across vendors), and the loop shipped nine platform fixes that every
 other agent inherits. Worked example and seed lessons:
-[`projects/agent-efficiency-loop/LESSONS.md`](/projects/agent-efficiency-loop/LESSONS.md).
+[`systems/intelligence/agent-iteration/projects/agent-efficiency-loop/LESSONS.md`](/systems/intelligence/agent-iteration/projects/agent-efficiency-loop/LESSONS.md).
 
 **The one-sentence version:** you are the operator AND the builder — run the thing yourself, read
 the ledger not the agent's story, fix the class behind every wasted call in the layer that owns it,
@@ -29,7 +29,7 @@ rerun on a different unit, and write down what you learned where the next agent 
 Companions — read the one your step reaches:
 - [launch-prompt.md](launch-prompt.md) — the prompt the owner pastes to start a loop (fill the blanks).
 - [ledger-queries.md](ledger-queries.md) — the SQL for baseline, per-run cost, waste census, run polling.
-- [`projects/agent-efficiency-loop/LESSONS.md`](/projects/agent-efficiency-loop/LESSONS.md) — the
+- [`systems/intelligence/agent-iteration/projects/agent-efficiency-loop/LESSONS.md`](/systems/intelligence/agent-iteration/projects/agent-efficiency-loop/LESSONS.md) — the
   shared lessons register: read at the start of every loop, append at the end of every round.
 
 ## 0. Standing rules (the owner's, verbatim in spirit)
@@ -141,7 +141,7 @@ Three homes, chosen by who needs the lesson:
 |---|---|---|
 | One subject (this provider, this sandbox image, this customer) | The subject's own data row (`sync_policy.notes`, the sandbox profile, the org setting) | Dated bullet; the agent reads it before working that subject |
 | This loop's method for its agent | The agent's prompt, ONE edit per round, last call | Rule + example call |
-| Any efficiency loop on any agent | [`LESSONS.md`](/projects/agent-efficiency-loop/LESSONS.md) | One row: date · loop · lever · symptom · fix (with commit or version) · metric before → after |
+| Any efficiency loop on any agent | [`LESSONS.md`](/systems/intelligence/agent-iteration/projects/agent-efficiency-loop/LESSONS.md) | One row: date · loop · lever · symptom · fix (with commit or version) · metric before → after |
 | Every agent on the platform | This skill, via `skill-authoring` (RED/GREEN proof) | A rule in §1–§3 |
 
 Read `LESSONS.md` top to bottom before your first round. Append after every round — never rewrite

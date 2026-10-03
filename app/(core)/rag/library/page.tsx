@@ -1,3 +1,4 @@
+// record-view: none — a library list
 /**
  * /knowledge/library — the Sources page (SOURCE-CONVERGENCE §8.1).
  *

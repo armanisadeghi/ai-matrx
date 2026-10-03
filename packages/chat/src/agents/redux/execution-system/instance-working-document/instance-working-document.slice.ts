@@ -179,11 +179,21 @@ export interface InstanceWorkingDocumentSliceState {
    * a slice entry at its `sp:<id>` scope holding the content to publish.
    */
   attachedScratchByConversation: Record<string, string[]>;
+  /**
+   * What has been restored from the database this session, per conversation —
+   * the restore reads run ONCE, so a remount or a wake of the composer renders
+   * the slice and reads nothing. Every write here updates the slice itself.
+   */
+  restoredByConversation: Record<string, { documents?: true; attachedScratch?: true }>;
+  /** The person's active scratchpad pointer has been resolved (found, or none yet). */
+  activeScratchpadResolved: boolean;
 }
 
 const initialState: InstanceWorkingDocumentSliceState = {
   byKey: {},
   attachedScratchByConversation: {},
+  restoredByConversation: {},
+  activeScratchpadResolved: false,
 };
 
 // =============================================================================
@@ -238,6 +248,7 @@ function deleteConversation(
     }
   }
   delete state.attachedScratchByConversation[conversationId];
+  delete state.restoredByConversation[conversationId];
 }
 
 // =============================================================================
@@ -480,6 +491,17 @@ const instanceWorkingDocumentSlice = createSlice({
           list.filter((id) => id !== action.payload.documentId);
       }
     },
+    /** A conversation's documents (or attached scratchpads) were restored. */
+    markWorkingDocsRestored(
+      state,
+      action: PayloadAction<{ conversationId: string; part: "documents" | "attachedScratch" }>,
+    ) {
+      const entry = (state.restoredByConversation[action.payload.conversationId] ??= {});
+      entry[action.payload.part] = true;
+    },
+    markActiveScratchpadResolved(state) {
+      state.activeScratchpadResolved = true;
+    },
   },
 
   extraReducers: (builder) => {
@@ -506,6 +528,8 @@ export const {
   setAttachedScratchpads,
   addAttachedScratchpad,
   removeAttachedScratchpad,
+  markWorkingDocsRestored,
+  markActiveScratchpadResolved,
 } = instanceWorkingDocumentSlice.actions;
 
 export default instanceWorkingDocumentSlice.reducer;

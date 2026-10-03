@@ -29,6 +29,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { laneApp } from "./lane.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const FRONTEND = resolve(HERE, "..", "..");
@@ -86,7 +87,7 @@ export function refuseTransactionPoolerForProduction(dsn) {
 
 function withApp(dsn, app) {
   const u = new URL(dsn);
-  if (app) u.searchParams.set("application_name", app.slice(0, 63));
+  if (app) u.searchParams.set("application_name", laneApp(app));
   return u.toString();
 }
 

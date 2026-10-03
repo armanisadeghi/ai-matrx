@@ -8,7 +8,7 @@ behalf of the Lane A owner; your report goes back through the coordinator.
 
 1. `common-docs/inbox/topical-map-app-requirements.md` — §0 standing rules and §2.1 (the
    Outline and Text bullets, and the three settings named there).
-2. `common-docs/projects/table-provisioning/TOPICAL-MAP-UI-PLAN.md` — §3 rulings R5, R11, R17;
+2. `common-docs/systems/marketing/seo/topical-map/projects/topic-tree-collapse/PLAN.md` — §3 rulings R5, R11, R17;
    §6 "A — Outline + Text" (the brief, including its "Done:" line).
 3. `features/marketing/seo/topical-map/CONTRACTS.md` — §0 laws, §1 view props, §4.1 `TopicTree`,
    §4.3 the UI kit, §7 the outline's knobs.

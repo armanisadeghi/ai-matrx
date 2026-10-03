@@ -92,10 +92,8 @@ export function KitDepthPicker({
           className="h-11 w-24 text-base [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           aria-label="Exact number of cards and questions"
         />
-        <p className="text-[11px] text-muted-foreground">
-          Exact number of cards / questions. Leave blank and we size the kit to
-          how much material you gave us.
-        </p>
+        {/* Blank = sized to the material (coverage.ts); the label says what it is. */}
+        <span className="text-xs text-muted-foreground">Cards and questions</span>
       </div>
     </div>
   );

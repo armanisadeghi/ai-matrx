@@ -38,8 +38,9 @@ export default function MessagesPageClient() {
     >
       <MessagesListHeader />
 
-      {/* Mobile: full-screen conversation list (the desktop sidebar is hidden) */}
-      <div className="flex h-full flex-col pt-[var(--shell-header-h)] md:hidden">
+      {/* Narrow column: full-screen conversation list (the layout's list is
+          hidden below its 42rem container width — MessagesLayoutClient) */}
+      <div className="flex h-full flex-col pt-[var(--shell-header-h)] @2xl/messages:hidden">
         <ConversationListPane
           className="flex-1"
           onSelect={(conversationId) => router.push(`/messages/${conversationId}`)}
@@ -47,8 +48,8 @@ export default function MessagesPageClient() {
         />
       </div>
 
-      {/* Desktop: the sidebar has the list, so this is the default content */}
-      <div className="hidden h-full flex-1 flex-col items-center justify-center p-8 text-center md:flex">
+      {/* Wide column: the layout's list is beside this, so this is the default content */}
+      <div className="hidden h-full flex-1 flex-col items-center justify-center p-8 text-center @2xl/messages:flex">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
           <MessageSquare className="h-8 w-8 text-muted-foreground" />
         </div>

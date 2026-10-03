@@ -46,6 +46,8 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STREAMING_DEBOUNCE_MS = 300;
 const SETTLED_DEBOUNCE_MS = 250;
+/** Below this frame width a pie's legend stacks under the pie. */
+const PIE_LEGEND_STACK_BELOW_PX = 520;
 
 interface MermaidRendererProps {
   source: string;
@@ -65,7 +67,7 @@ interface MermaidRendererProps {
 
 export function MermaidRenderer({
   source,
-  options,
+  options: baseOptions,
   isStreamActive = false,
   className,
   hideViewportControls,
@@ -90,6 +92,25 @@ export function MermaidRenderer({
   useEffect(() => {
     preloadMermaid();
   }, []);
+
+  // A pie's legend sits right of the pie; in a narrow frame (a 360px pane, a
+  // phone) the drawing is wider than the frame and the labels fall off the
+  // edge, so narrow frames stack the legend under the pie instead.
+  const isPie = detectDiagramType(source) === "pie";
+  const [frameEl, setFrameEl] = useState<HTMLElement | null>(null);
+  const [narrowFrame, setNarrowFrame] = useState(false);
+  useEffect(() => {
+    if (!isPie || !frameEl) return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry?.contentRect.width ?? 0;
+      if (width > 0) setNarrowFrame(width < PIE_LEGEND_STACK_BELOW_PX);
+    });
+    observer.observe(frameEl);
+    return () => observer.disconnect();
+  }, [isPie, frameEl]);
+  const options: MermaidRenderOptions = isPie
+    ? { ...baseOptions, pieLegend: narrowFrame ? "bottom" : "right" }
+    : baseOptions;
 
   const optionsKey = renderOptionsKey(options);
 
@@ -199,6 +220,7 @@ export function MermaidRenderer({
       <div
         ref={(el) => {
           frameRef.current = el;
+          setFrameEl(el);
         }}
         className={cn("space-y-2 p-3", fillHeight && "h-full", className)}
         aria-busy="true"
@@ -214,6 +236,7 @@ export function MermaidRenderer({
     <figure
       ref={(el) => {
         frameRef.current = el;
+        setFrameEl(el);
       }}
       role="img"
       aria-label={title ?? `${label} diagram`}

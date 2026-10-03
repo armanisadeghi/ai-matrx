@@ -84,8 +84,19 @@ export interface HeadlessAgentJsonOptions {
   initiation?: RequestInitiation;
   /** Variable values keyed by the agent's variable NAME. */
   variables?: Record<string, unknown>;
-  /** Canonical surface identity carried into execution context. */
-  surfaceName?: string;
+  /**
+   * Canonical surface identity carried into execution context.
+   *
+   * `null` is the explicit opt-out: the run receives NO page context — no
+   * adopted surface values, no surface chain, no documents the page shows.
+   * A generator that hands its agent everything it needs as `variables` passes
+   * `null`, so a mounted page never leaks into it. Left undefined, the launch
+   * adopts the deepest mounted surface (the launcher's default). On
+   * 2026-10-03 the study-kit namer adopted /education/start's surface, got the
+   * kit's 150k-character file as a document with tools, made 14 tool calls in
+   * 33s and missed its 25s deadline — every kit kept its filename.
+   */
+  surfaceName?: string | null;
   /** Live user-typed input (leave undefined when the user typed nothing). */
   userInput?: string;
   /**
@@ -716,7 +727,7 @@ async function launchAndWait(
         // is fire-once, so the fallback call below is a no-op when this fired.
         onRequestId: announceRequestId,
         runtime: {
-          ...(opts.surfaceName ? { surfaceName: opts.surfaceName } : {}),
+          ...(opts.surfaceName !== undefined ? { surfaceName: opts.surfaceName } : {}),
           ...(opts.variables ? { variables: opts.variables } : {}),
           ...(opts.userInput !== undefined ? { userInput: opts.userInput } : {}),
         },

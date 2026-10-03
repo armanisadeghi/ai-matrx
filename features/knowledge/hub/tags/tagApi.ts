@@ -13,19 +13,21 @@
  *                                   per organization (a `#tag` chip filters by
  *                                   all of them)
  *
- * Tag scopes are read by the scope read switch (`scopesReadFromStore()`, the platform knob
- * `custom.scope_readers_read_the_store`). OFF: the context tables directly, under RLS, with a
- * declared scope (my organizations). ON: the RECORD STORE's scope doors (lane
- * SCOPES-READS-WEB) — `custom.context_tree` for my organizations' tags,
- * `custom.context_scopes` for tags named by id.
+ * Tag scopes are read from the RECORD STORE's scope doors only (lane 9 flip, 2026-10-03) —
+ * `custom.context_tree` for my organizations' tags, `custom.context_scopes` for tags named by id.
+ * References survive archive: a record filed under a tag that was later archived still carries it,
+ * so a tag named by id that the live door leaves unanswered is looked up in my organizations' tag
+ * archives (`custom.read_records_archived`) — the pre-flip read had no `deleted_at` test either.
  */
 
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
-import { readScopeTree, readScopesById } from "@/features/scopes/service/storeScopeReads";
-// eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
-import { contextDb } from "@/utils/supabase/contextDb";
-import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
+import {
+  readArchivedScopesOfType,
+  readScopeTree,
+  readScopeTypes,
+  readScopesById,
+} from "@/features/scopes/service/storeScopeReads";
 import { getUserOrganizations } from "@/features/organizations/service";
 import { refusalMessage } from "@/features/knowledge/hub/triage/triageApi";
 
@@ -115,43 +117,9 @@ async function filedCounts(ids: string[]): Promise<Map<string, number>> {
   return counts;
 }
 
-/** READ SWITCH OFF: the ids of my organizations' live `tag` scope types, from the context tables. */
-async function tagTypeIds(): Promise<string[]> {
-  const orgIds = (await getUserOrganizations()).map((o) => o.id);
-  if (!orgIds.length) return [];
-  // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
-  const { data, error } = await contextDb(supabase)
-    .from("scope_types")
-    .select("id")
-    .eq("slug", "tag")
-    .in("organization_id", orgIds)
-    .is("deleted_at", null);
-  if (error) throw new Error(refusalMessage(error, "Reading your tag types"));
-  return ((data ?? []) as { id: string }[]).map((r) => r.id);
-}
-
 /** Every tag in my organizations, most-used first. */
 export async function listTags(): Promise<HubTag[]> {
-  let rows: ScopeRow[];
-  if (await scopesReadFromStore()) {
-    rows = await myTagScopes();
-  } else {
-    const types = await tagTypeIds();
-    if (!types.length) return [];
-    const scopes = await readAllRows(
-      ({ from, to }) =>
-        // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
-        contextDb(supabase)
-          .from("scopes")
-          .select("id, name, slug, organization_id", { count: "exact" })
-          .in("scope_type_id", types)
-          .is("deleted_at", null)
-          .order("id", { ascending: true })
-          .range(from, to),
-      { label: "context.scopes (tags)" },
-    );
-    rows = scopes as ScopeRow[];
-  }
+  const rows = await myTagScopes();
   const counts = await filedCounts(rows.map((r) => r.id));
   return rows
     .map((r) => toTag(r, counts.get(r.id) ?? 0))
@@ -163,32 +131,6 @@ export async function findTagsByName(name: string): Promise<HubTag[]> {
   const clean = normalizeTagName(name);
   if (!clean) return [];
   const slug = tagSlug(clean);
-  if (!(await scopesReadFromStore())) {
-    const types = await tagTypeIds();
-    if (!types.length) return [];
-    const base = () =>
-      // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
-      contextDb(supabase)
-        .from("scopes")
-        .select("id, name, slug, organization_id")
-        .in("scope_type_id", types)
-        .is("deleted_at", null)
-        .limit(50);
-    const [bySlug, byName] = await Promise.all([
-      slug ? base().eq("slug", slug) : Promise.resolve({ data: [], error: null }),
-      base().ilike("name", clean.replace(/[\\%_]/g, (c) => `\\${c}`)),
-    ]);
-    if (bySlug.error) throw new Error(refusalMessage(bySlug.error, "Looking up the tag"));
-    if (byName.error) throw new Error(refusalMessage(byName.error, "Looking up the tag"));
-    const seen = new Set<string>();
-    const found: HubTag[] = [];
-    for (const r of [...((bySlug.data ?? []) as ScopeRow[]), ...((byName.data ?? []) as ScopeRow[])]) {
-      if (seen.has(r.id)) continue;
-      seen.add(r.id);
-      found.push(toTag(r));
-    }
-    return found;
-  }
   const lower = clean.toLowerCase();
   const out: HubTag[] = [];
   for (const r of await myTagScopes()) {
@@ -212,42 +154,49 @@ export async function listItemTags(entityToken: string, entityId: string): Promi
   if (error) throw new Error(refusalMessage(error, "Reading its tags"));
   const ids = ((edges ?? []) as { target_id: string }[]).map((e) => e.target_id);
   if (!ids.length) return [];
-  if (!(await scopesReadFromStore())) {
-    const types = await tagTypeIds();
-    if (!types.length) return [];
-    // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
-    const { data, error: e2 } = await contextDb(supabase)
-      .from("scopes")
-      .select("id, name, slug, organization_id")
-      .in("id", ids)
-      .in("scope_type_id", types)
-      .is("deleted_at", null);
-    if (e2) throw new Error(refusalMessage(e2, "Reading its tags"));
-    return [...new Set(((data ?? []) as ScopeRow[]).map((r) => toTag(r).name))].sort((a, b) => a.localeCompare(b));
-  }
   // Those scopes, from the store (each in its own organization); only the TAG ones name a tag.
-  const res = await readScopesById(ids);
-  if (!res.ok) throw new Error(refusalMessage(res.error, "Reading its tags"));
-  const data = res.data
-    .filter((r) => r.scope_type?.slug === "tag")
-    .map((r) => ({ id: r.id, name: r.name ?? null, slug: r.slug ?? null, organization_id: r.organization_id }));
-  return [...new Set(((data ?? []) as ScopeRow[]).map((r) => toTag(r).name))].sort((a, b) => a.localeCompare(b));
+  const tags = await tagScopesAmong(ids, "Reading its tags");
+  return [...new Set(tags.map((r) => toTag(r).name))].sort((a, b) => a.localeCompare(b));
 }
 
 /** A tag on one record: the scope it is filed under, and its name. */
 export interface ItemTagRef {
   scopeId: string;
   name: string;
+  /** The tag's scope was archived after this record was filed under it (it still names it). */
+  archived?: true;
 }
 
-let tagTypesOnce: Promise<string[]> | null = null;
-/** The tag scope types, read once per page load (they change when an organization is created). */
-function cachedTagTypeIds(): Promise<string[]> {
-  tagTypesOnce ??= tagTypeIds().catch((e) => {
-    tagTypesOnce = null;
-    throw e;
-  });
-  return tagTypesOnce;
+/** Of these scope ids, the TAG scopes (a scope of the type whose slug is `tag`), live or archived. */
+async function tagScopesAmong(scopeIds: string[], doing: string): Promise<Array<ScopeRow & { archived?: true }>> {
+  if (!scopeIds.length) return [];
+  const res = await readScopesById(scopeIds);
+  if (!res.ok) throw new Error(refusalMessage(res.error, doing));
+  const answered = new Set(res.data.map((r) => r.id));
+  const live = res.data
+    .filter((r) => r.scope_type?.slug === "tag")
+    .map((r) => ({ id: r.id, name: r.name ?? null, slug: r.slug ?? null, organization_id: r.organization_id }));
+  const unanswered = new Set(scopeIds.filter((id) => id && !answered.has(id)));
+  if (!unanswered.size) return live;
+  return [...live, ...(await archivedTagScopesAmong(unanswered, doing))];
+}
+
+/** Of these ids (the live door did not answer them), the ARCHIVED tag scopes of my organizations. */
+async function archivedTagScopesAmong(ids: Set<string>, doing: string): Promise<Array<ScopeRow & { archived: true }>> {
+  const orgIds = (await getUserOrganizations()).map((o) => o.id);
+  if (!orgIds.length) return [];
+  const types = await readScopeTypes(orgIds, false);
+  if (!types.ok) throw new Error(refusalMessage(types.error, doing));
+  const out: Array<ScopeRow & { archived: true }> = [];
+  for (const t of types.data.types.filter((t) => t.slug === "tag")) {
+    const wanted = new Set([...ids].filter((id) => !out.some((o) => o.id === id)));
+    if (!wanted.size) break;
+    const res = await readArchivedScopesOfType(t.organization_id, t.id, wanted);
+    if (!res.ok) throw new Error(refusalMessage(res.error, doing));
+    for (const r of res.data)
+      out.push({ id: r.id, name: r.name, slug: r.slug, organization_id: t.organization_id, archived: true });
+  }
+  return out;
 }
 
 /**
@@ -257,8 +206,6 @@ function cachedTagTypeIds(): Promise<string[]> {
 export async function listTagsForItems(items: { entity: string; id: string }[]): Promise<Map<string, ItemTagRef[]>> {
   const out = new Map<string, ItemTagRef[]>();
   if (!items.length) return out;
-  const types = await cachedTagTypeIds();
-  if (!types.length) return out;
   const edges: { source_type: string; source_id: string; target_id: string }[] = [];
   const byType = new Map<string, string[]>();
   for (const it of items) byType.set(it.entity, [...(byType.get(it.entity) ?? []), it.id]);
@@ -277,24 +224,16 @@ export async function listTagsForItems(items: { entity: string; id: string }[]):
       edges.push(...((data ?? []) as typeof edges));
     }
   const scopeIds = [...new Set(edges.map((e) => e.target_id))];
-  const names = new Map<string, string>();
-  for (let i = 0; i < scopeIds.length; i += 100) {
-    // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT), the same pre-store read listItemTags uses
-    const { data, error } = await contextDb(supabase)
-      .from("scopes")
-      .select("id, name, slug, organization_id")
-      .in("id", scopeIds.slice(i, i + 100))
-      .in("scope_type_id", types)
-      .is("deleted_at", null);
-    if (error) throw new Error(refusalMessage(error, "Reading the rows' tags"));
-    for (const r of (data ?? []) as ScopeRow[]) names.set(r.id, toTag(r).name);
-  }
+  const names = new Map<string, { name: string; archived?: true }>();
+  for (const r of await tagScopesAmong(scopeIds, "Reading the rows' tags"))
+    names.set(r.id, r.archived ? { name: toTag(r).name, archived: true } : { name: toTag(r).name });
   for (const e of edges) {
-    const name = names.get(e.target_id);
-    if (!name) continue;
+    const tag = names.get(e.target_id);
+    if (!tag) continue;
+    const { name } = tag;
     const key = `${e.source_type}:${e.source_id}`;
     const list = out.get(key) ?? [];
-    if (!list.some((t) => t.name.toLowerCase() === name.toLowerCase())) list.push({ scopeId: e.target_id, name });
+    if (!list.some((t) => t.name.toLowerCase() === name.toLowerCase())) list.push({ scopeId: e.target_id, ...tag });
     out.set(key, list);
   }
   return out;
@@ -304,15 +243,6 @@ export async function listTagsForItems(items: { entity: string; id: string }[]):
 export async function tagScopeIdsAmong(scopeIds: string[]): Promise<Set<string>> {
   const out = new Set<string>();
   if (!scopeIds.length) return out;
-  const types = await cachedTagTypeIds();
-  if (!types.length) return out;
-  // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT), the same pre-store read listItemTags uses
-  const { data, error } = await contextDb(supabase)
-    .from("scopes")
-    .select("id")
-    .in("id", scopeIds.slice(0, 200))
-    .in("scope_type_id", types);
-  if (error) throw new Error(refusalMessage(error, "Reading which are tags"));
-  for (const r of (data ?? []) as { id: string }[]) out.add(r.id);
+  for (const r of await tagScopesAmong(scopeIds.slice(0, 200), "Reading which are tags")) out.add(r.id);
   return out;
 }

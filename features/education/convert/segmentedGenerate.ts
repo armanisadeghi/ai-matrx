@@ -42,6 +42,7 @@ import {
 } from "./coverage";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { runAgentExtraction } from "./runAgentExtraction";
+import { recoverSectionValue, sectionPlanKey } from "./sectionJournal";
 import type {
   ConvertContext,
   ConvertOptions,
@@ -208,6 +209,11 @@ export async function segmentedGenerate<T>({
   let retrying = 0;
   const deadlineMs = timeoutMs ?? SECTION_ATTEMPT_DEADLINE_MS;
   const total = plan.segments.length;
+  // THE KIT SURVIVES THE TAB: sections this plan already ran (before a reload
+  // or a closed tab) are read back from the server, never paid for twice.
+  const journal = ctx.sections;
+  const planKey = journal ? sectionPlanKey(targetKind, source.text, plan) : "";
+  const recorded = journal ? journal.recorded(planKey) : {};
   const report = (label: string) =>
     ctx.onProgress?.({ done: settled, total, label, items: itemCount, failed, retrying });
 
@@ -216,6 +222,8 @@ export async function segmentedGenerate<T>({
   report("");
 
   /** One attempt at one section, bounded end to end by `deadlineMs`. */
+  /** The conversation each section's latest attempt ran in (segment id → id). */
+  const lastRun = new Map<string, string>();
   const attempt = async (segment: SourceSegment) => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -252,7 +260,11 @@ export async function segmentedGenerate<T>({
           // Only a single-pass run has a stream worth showing; a fan-out reports
           // sections instead (see THE SINGLE-WRITER RULE above).
           onRequestId: live ? ctx.onRequestId : undefined,
-          onConversationCreated: live ? ctx.onConversationCreated : undefined,
+          onConversationCreated: (conversationId) => {
+            lastRun.set(segment.id, conversationId);
+            journal?.started(planKey, segment.id, conversationId);
+            if (live) ctx.onConversationCreated?.(conversationId);
+          },
         }),
         deadline,
       ]);
@@ -266,11 +278,29 @@ export async function segmentedGenerate<T>({
   const { results, missed } = await runOverSegments(
     plan.segments,
     async (segment) => {
-      let extracted: Awaited<ReturnType<typeof attempt>> | null = null;
+      let extracted: { value: unknown; conversationId: string } | null = null;
+      const earlier = recorded[segment.id];
+      if (earlier) {
+        const value = await recoverSectionValue(earlier, { deadlineMs });
+        if (value != null) extracted = { value, conversationId: earlier };
+      }
       for (let n = 1; extracted === null; n++) {
         try {
           extracted = await attempt(segment);
         } catch (error) {
+          // A PAID ANSWER IS NEVER THROWN AWAY: the attempt that missed its
+          // deadline may still have finished on the server (a slow queue, a
+          // stream that never reached this tab). Read it back before paying
+          // for the section again — and before calling it missed.
+          const ran = lastRun.get(segment.id);
+          const value = ran
+            ? await recoverSectionValue(ran, { deadlineMs: n >= SECTION_MAX_ATTEMPTS ? 30_000 : 5_000 })
+            : null;
+          if (value != null && ran) {
+            if (n > 1) retrying -= 1;
+            extracted = { value, conversationId: ran };
+            break;
+          }
           if (n >= SECTION_MAX_ATTEMPTS) {
             if (n > 1) retrying -= 1;
             settled += 1;

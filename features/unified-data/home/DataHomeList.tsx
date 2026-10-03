@@ -13,7 +13,8 @@
 // in the footer). Nothing in this file reads the active organization for a read.
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { foundHighlightOf } from "@ai-matrx/kit/reversible";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
@@ -40,13 +41,19 @@ import {
 import { ACCESS_WORD, dataHomeKindWord, type DataHomeAccess, type DataHomeRow } from "./dataHomeRows";
 import { createDataHomeService, DATA_HOME_ROW_CAP } from "./dataHomeService";
 import { createDataHomeCorpus } from "./dataHomeCorpus";
+import { readArchivedDataHomePage } from "./dataHomeArchived";
+import { ARCHIVED_TABLES_HREF, ARCHIVED_TABLES_SPOT } from "./archivedTablesPlace";
 import { createRecordCountStore } from "./dataHomeRecordCounts";
 import { tableRowCounts } from "@/features/unified-data/hub/doors";
 import { dataHomeColumns, ownerLabel } from "./dataHomeColumns";
 import { DataHomeCards, DataHomeRows } from "./DataHomeViews";
 import { useDataHomeMarks, useDataHomeShowAppTables } from "./useDataHomeMarks";
-import { useDataHomeRowMenus } from "./useDataHomeRowMenus";
+import { useDataHomeRowMenus, useReadAgainOnRestore } from "./useDataHomeRowMenus";
 import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
+import { useFocusedRowCommands } from "@/features/unified-data/actions/tableActionCommands";
+
+const ROW_ID = (row: DataHomeRow) => row.id;
+const ROW_NAME = (row: DataHomeRow) => row.name;
 import { DATA_HOME_DEFAULT_VIEW_KNOB, resolveDataHomeView } from "./dataHomeKnobs";
 import { tokensToFilters, updatedBucket } from "./dataHomeQuery";
 import { DataHomeRecent, recentRows } from "./DataHomeRecent";
@@ -77,11 +84,13 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   const [showAppTables, setShowAppTables] = useDataHomeShowAppTables();
   /** A row's menu renamed, moved or archived a table: the corpus is read again. */
   const [corpusVersion, setCorpusVersion] = useState(0);
+  // A restore (Undo, ⌘Z, Restore) on this page lists the table again at once.
+  const restoredVersion = useReadAgainOnRestore();
   // THE CORPUS (rows in hand) and the server search beside it — dataHomeCorpus.ts.
   const corpus = useMemo(
     () => createDataHomeCorpus(client, dataSource, { includeAppTables: showAppTables }),
     // `corpusVersion`: a row's menu renamed, moved or archived a table, so the corpus is read again.
-    [client, dataSource, showAppTables, corpusVersion],
+    [client, dataSource, showAppTables, corpusVersion, restoredVersion],
   );
   // THE RECORDS COLUMN, lazily: cells on screen ask this; the list never waits on it.
   const recordCounts = useMemo(
@@ -114,8 +123,8 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   const recent = recentRows(marks.recent, rowsById, testOrganizationIds);
   // THE ROW'S MENU IS THE TABLE'S ONE ACTION LIST (lane TABLE-ACTIONS): row ⋯, card ⋯ and
   // right-click all draw `menuFor`, which draws `tableActions()` for a table row.
+  const withFocusedRow = useFocusedRowCommands<DataHomeRow>(ROW_ID, ROW_NAME);
   const rowMenus = useDataHomeRowMenus({
-    rows: rowsById,
     starred: starredSet,
     onOpened: (row) => marks.opened(row.id),
     onChanged: () => setCorpusVersion((v) => v + 1),
@@ -126,17 +135,27 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       createDataHomeService({
         load: corpus.load,
         loaded: corpus.loaded,
+        // The Archived filter's rows, a store page at a time, only when it asks (TABLE-ACTIONS item 10).
+        readArchived: (page, sort) => readArchivedDataHomePage(dataSource, page, userId, sort),
         server: corpus.server,
         isStarred: (row) => starredSet.has(row.id),
         ownerLabel,
       }),
-    [corpus, starredSet],
+    [corpus, starredSet, dataSource, userId],
   );
 
   // Defaults stay knobs (person / platform tier; never the active organization).
   const defaultScope = resolveDataHomeScope(null, useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_SCOPE_KNOB));
+  const searchParams = useSearchParams();
   // `?kind=` (the old page's address) is kept as an alias: it opens on that kind, one chip away from all.
-  const kindParam = useSearchParams().get("kind");
+  const kindParam = searchParams.get("kind");
+  // "Open Archived tables" from an older announcement (`?found=archived-tables`) lands on the
+  // list's Archived filter, where the archive lives now (TABLE-ACTIONS item 10).
+  const router = useRouter();
+  const foundArchive = foundHighlightOf(searchParams) === ARCHIVED_TABLES_SPOT;
+  useEffect(() => {
+    if (foundArchive) router.replace(ARCHIVED_TABLES_HREF);
+  }, [foundArchive, router]);
   const defaultKind = resolveDataHomeKind(kindParam, useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_KIND_KNOB));
   const order = resolveDataHomeOrder(useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_ORDER_KNOB));
   const defaultView = resolveDataHomeView(useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_VIEW_KNOB));
@@ -152,7 +171,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // organizations the viewer belongs to or holds a grant in), so System is absent, not empty.
       lanes: { system: false },
       service,
-      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}|${corpusVersion}`,
+      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}|${corpusVersion}.${restoredVersion}`,
       columns,
       prefsVersion: 1,
       prefsDefaults: {
@@ -167,7 +186,8 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // `/` search, ↑/↓ move, Enter opens, `s` stars, Esc clears — the shell's one keyboard handler.
       rowKeys: true,
       door: { column: "name", hrefFor: (row) => row.href },
-      useRowActions: rowMenus.useRowActions,
+      // ⌘K offers the focused row's menu as commands (TABLE-ACTIONS T4.1).
+      useRowActions: (list) => withFocusedRow(rowMenus.useRowActions(list), list.rows),
       // WHAT A ROW IS, for right-click's Attach To (a record-store table is a `record`). No
       // `resourceType`: the action list carries Share, so v3's generic Share is not drawn beside it.
       getRowEntity: (row) =>
@@ -176,7 +196,9 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
         isFavorite: (row) => starredSet.has(row.id),
         canToggle: () => true,
       },
-      supportsArchived: false,
+      // THE ARCHIVE IS THE LIST'S ARCHIVED FILTER (hide archived · show all · archived only;
+      // common-docs/policies/archived-items.md): archived tables and portals, each with Restore.
+      supportsArchived: true,
       facetSections: [
         { facet: "kind", filterId: "kind", label: "Kind", noneLabel: "None", countInLabel: false, formatValue: dataHomeKindWord },
         {
@@ -265,7 +287,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
           }
         : { title: "No tables yet", description: "New table makes one." },
     };
-  }, [service, starredKey, serverVersion, showAppTables, corpusVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, starredSet, marks, rowMenus]);
+  }, [service, starredKey, serverVersion, showAppTables, corpusVersion, restoredVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, starredSet, marks, rowMenus, withFocusedRow]);
 
   return (
     // The right-click on every row and card is the proposed menu (`DataMenuProvider`).

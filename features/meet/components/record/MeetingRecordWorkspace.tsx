@@ -66,6 +66,7 @@ import { MeetingOrgScope } from "@/features/meet/components/MeetingOrgScope";
 import { TranscriptPanel } from "@/features/meet/components/record/TranscriptPanel";
 import { ShareWithAudienceButton } from "@/features/sharing/audience/ShareWithAudience";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
 type Side = "transcript" | "chat" | "activity" | "people";
 
@@ -433,6 +434,8 @@ function Workspace({
           {/* The organization's own fields on this meeting (lane 7 W5) — on the Record tab an
               ended meeting lands on, in its info column. */}
           <EntityCustomFields entityToken="meet_meeting" recordId={meeting.id} organizationId={meeting.organizationId} />
+          {/* Everything linked to this meeting, both ways (W1.4). */}
+          <LinkedRecordsSection token="meet_meeting" id={meeting.id} title={meeting.title} />
         </div>
 
         <aside

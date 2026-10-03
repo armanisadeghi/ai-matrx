@@ -31,7 +31,7 @@ from pathlib import Path
 
 CODE = Path(__file__).resolve().parents[4]
 HOME = Path.home()
-OUT = Path(os.environ.get("SN_OUT", str(CODE / "common-docs/operations/for-arman/2026-10-01/safety-net/adhoc")))
+OUT = Path(os.environ.get("SN_OUT", str("/tmp/matrx-evidence/2026-10-01/safety-net/adhoc")))
 OUT.mkdir(parents=True, exist_ok=True)
 FREEZE = os.environ.get("SN_B_FREEZE_FROM")
 SHIPPERS = ["ship-all-codex", "ship-all-repos"]

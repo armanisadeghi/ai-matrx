@@ -7,7 +7,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { QUICK_DATA_SURFACE_NAME } from "@/features/surfaces/manifests/quick-data.manifest";
 import {
   datasetTableEntityRef,
-  buildDatasetTableMenuSection,
+  tableActionSectionsAwayFromPage,
 } from "@/features/data-tables/dataset-table-actions";
 
 interface QuickDataWindowProps {
@@ -43,7 +43,7 @@ function QuickDataWindowBody({
   // entity needs `QuickDataSheet` to lift its `selectedTableId` — flagged,
   // not fixed here (out of this shard).
   const row = selectedTable ? { id: selectedTable, name: null } : null;
-  const datasetSection = buildDatasetTableMenuSection({ getRow: () => row });
+  const tableSections = tableActionSectionsAwayFromPage(row);
 
   return (
     <WindowPanel
@@ -63,7 +63,7 @@ function QuickDataWindowBody({
         surfaceName={QUICK_DATA_SURFACE_NAME}
         contentSource={{ type: "raw" }}
         entity={datasetTableEntityRef(row) ?? undefined}
-        extraSections={[datasetSection]}
+        extraSections={tableSections}
       >
         <div className="flex h-full w-full relative overflow-hidden bg-background">
           <QuickDataSheet

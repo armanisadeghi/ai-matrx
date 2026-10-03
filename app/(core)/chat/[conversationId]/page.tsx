@@ -6,7 +6,6 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { ChatRunHeader } from "@ai-matrx/chat/agents/components/chat/ChatRunHeader";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   conversationSandboxBindingFromRow,
   type ConversationSandboxBinding,
@@ -127,9 +126,7 @@ export default async function ChatConversationPage({
   if (seed.kind === "unavailable") {
     return (
       <>
-        <PageHeader>
-          <ChatRunHeader conversationId={conversationId} />
-        </PageHeader>
+        <ChatRunHeader conversationId={conversationId} />
         <AccessGate
           token="conversation"
           id={conversationId}
@@ -149,14 +146,12 @@ export default async function ChatConversationPage({
 
   return (
     <>
-      <PageHeader>
-        <ChatRunHeader
-          activeAgentId={display?.agentId ?? undefined}
-          initialAgentName={display?.agentName ?? undefined}
-          conversationId={conversationId}
-          composerMode={{ initialMode }}
-        />
-      </PageHeader>
+      <ChatRunHeader
+        activeAgentId={display?.agentId ?? undefined}
+        initialAgentName={display?.agentName ?? undefined}
+        conversationId={conversationId}
+        composerMode={{ initialMode }}
+      />
       <ChatConversationRoom
         conversationId={conversationId}
         agentId={display?.agentId ?? null}

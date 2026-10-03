@@ -83,7 +83,7 @@ from zoneinfo import ZoneInfo
 
 CODE = Path(__file__).resolve().parents[4]
 TARGET = os.environ.get("SN_TARGET", "live")
-OUT = Path(os.environ.get("SN_OUT", str(CODE / "common-docs/operations/for-arman/2026-10-02/query-correctness/adhoc")))
+OUT = Path(os.environ.get("SN_OUT", str("/tmp/matrx-evidence/2026-10-02/query-correctness/adhoc")))
 OUT.mkdir(parents=True, exist_ok=True)
 STAMP = os.environ.get("SN_STAMP") or datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%b %-d %H%M")
 LLM = os.environ.get("SN_QC_LLM") == "1"

@@ -3,6 +3,8 @@ import path from "node:path";
 
 describe("agent browse authenticated read boundary", () => {
   const agentsRoot = path.resolve(__dirname, "..");
+  // The drift-alert hook and the shortcut thunks moved into the chat package (CPM move B).
+  const packageAgentsRoot = path.resolve(__dirname, "../../../packages/chat/src/agents");
 
   it("verifies a browser session before every browse RPC", () => {
     const source = fs.readFileSync(path.join(__dirname, "service.ts"), "utf8");
@@ -26,7 +28,7 @@ describe("agent browse authenticated read boundary", () => {
 
   it("does not dispatch the drift-alert read before auth is usable", () => {
     const source = fs.readFileSync(
-      path.join(agentsRoot, "hooks/useDriftAlerts.ts"),
+      path.join(packageAgentsRoot, "hooks/useDriftAlerts.ts"),
       "utf8",
     );
 
@@ -40,7 +42,7 @@ describe("agent browse authenticated read boundary", () => {
 
   it("keeps the shortcut admin directory behind the same browser auth boundary", () => {
     const thunkSource = fs.readFileSync(
-      path.join(agentsRoot, "redux/agent-shortcuts/thunks.ts"),
+      path.join(packageAgentsRoot, "redux/agent-shortcuts/thunks.ts"),
       "utf8",
     );
     const directorySource = fs.readFileSync(

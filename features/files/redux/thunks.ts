@@ -988,7 +988,7 @@ export const ensureFolderPath = createAsyncThunk<
  * Say, on the screen the person is actually looking at, that an upload failed —
  * in the SERVER'S words.
  *
- * 🚨 THE 2026-09-19 SILENT FAILURE (`common-docs/projects/acquisition-frontier/
+ * 🚨 THE 2026-09-19 SILENT FAILURE (`common-docs/systems/knowledge/ingestion/projects/acquisition-frontier/
  * own-files/VERIFICATION.md` §15/§16). A 21-file drop on a fresh Rulebook fired
  * 21 uploads and every one came back `400 matrx-files: this write carries no
  * organization`. Every sentence was captured correctly — into

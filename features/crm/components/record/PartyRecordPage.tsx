@@ -80,6 +80,7 @@ import { PartyOutputsSection } from "./PartyOutputsSection";
 import { PartyDealsCard } from "../deals/PartyDealsCard";
 import type { CrmRecordCopyParent } from "./record-copy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
 interface Props {
   partyId: string;
@@ -705,6 +706,15 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                     entityToken="party"
                     recordId={party.id}
                     organizationId={party.organization_id}
+                  />
+                </div>
+                <div className="max-lg:order-14">
+                  {/* Everything linked to this person or company, both ways (W1.4). */}
+                  <LinkedRecordsSection
+                    token="party"
+                    id={party.id}
+                    title={party.display_name ?? ""}
+                    className="flex flex-col gap-1.5 rounded-lg border border-border bg-card p-3"
                   />
                 </div>
                 {!isPerson && party.primary_domain && (

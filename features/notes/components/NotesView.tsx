@@ -758,7 +758,7 @@ export function NotesView({
       </div>
 
       {hidePageHeader ? (
-        <TapTargetButtonGroup>
+        <TapTargetButtonGroup surface="solid">
           {activeTabId && !narrowShowsList && (
             <>
               <ListTapButton
@@ -766,14 +766,14 @@ export function NotesView({
                 onClick={toggleOutline}
                 ariaLabel="Outline"
                 tooltip="Document outline"
-                className={outlineOpen ? "text-primary" : undefined}
+                pressed={outlineOpen}
               />
               <HistoryTapButton
                 variant="group"
                 onClick={history.toggle}
                 ariaLabel="Versions"
                 tooltip="Version history"
-                className={history.isVisible ? "text-primary" : undefined}
+                pressed={history.isVisible}
               />
               <NoteCleanupButton noteId={activeTabId} asTapGroup />
             </>
@@ -848,14 +848,14 @@ export function NotesView({
                         onClick={toggleOutline}
                         ariaLabel="Outline"
                         tooltip="Document outline"
-                        className={outlineOpen ? "text-primary" : undefined}
+                        pressed={outlineOpen}
                       />
                       <HistoryTapButton
                         variant="group"
                         onClick={history.toggle}
                         ariaLabel="Versions"
                         tooltip="Version history"
-                        className={history.isVisible ? "text-primary" : undefined}
+                        pressed={history.isVisible}
                       />
                       <NoteCleanupButton noteId={headerNoteId} asTapGroup />
                     </>
@@ -886,11 +886,14 @@ export function NotesView({
               just the main area, no group. */}
           {narrowSidebar ? (
             narrowShowsList ? (
-              <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 <NoteSidebar instanceId={instanceId} onNoteOpened={() => setListShownFrom(null)} />
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 flex-col">{mainArea}</div>
+              // min-w-0: in this flex ROW a column without it is as wide as its
+              // widest unbreakable row — beside the canvas the footer's copy
+              // pair slid under the canvas.
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">{mainArea}</div>
             )
           ) : showSidebar && !singleNote ? (
             <ResizablePanelGroup

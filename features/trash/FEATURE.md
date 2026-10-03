@@ -8,7 +8,7 @@
 
 ## Purpose
 
-Trash is the one place a person sees and restores everything they archived, anywhere on the platform. There is no per-feature trash and no purge button: permanent destruction belongs to the retention engine (`common-docs/projects/data-lifecycle-platform`).
+Trash is the one place a person sees and restores everything they archived, anywhere on the platform. There is no per-feature trash and no purge button: permanent destruction belongs to the retention engine (`common-docs/systems/architecture/database/data-lifecycle/projects/data-lifecycle-platform/PLAN.md`).
 
 ---
 

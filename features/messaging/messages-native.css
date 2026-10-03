@@ -351,7 +351,13 @@
   padding: 0;
   border-radius: 50%;
 }
-@media (min-width: 768px) {
+/* Back is drawn only when the list is NOT on screen beside the thread — a
+   question about the messages surface's own width, never the window's: a
+   canvas pane on a desktop is 360–900px, and a viewport query hid Back in a
+   628–751px pane whose list was not shown (2026-10-03). Every host that shows
+   the list beside a thread is a `@container/messages` root and does so at the
+   same 42rem (the canvas tab, the /messages layout). */
+@container messages (min-width: 42rem) {
   .messages-back {
     display: none;
   }
@@ -377,6 +383,19 @@
   padding-top: 7px;
   padding-bottom: 7px;
   min-height: 36px;
+}
+/* ON A TOUCH SCREEN THE CONTROLS GET THEIR OWN ROW (2026-10-03). The skin
+   above lays ProTextarea's mic / "…" / send over the text's right end and
+   reserves 132px for them — the size they are with a mouse. On a touch screen
+   they are 44px targets (~180px with the send button), wider than the reserve,
+   and on a 375px phone the field showed "age" of "Message" between the pill
+   and the attach button. Here the field keeps ProTextarea's own reserved
+   bottom row (its `pb-14`, proTextareaControlPlacement.ts): the text has the
+   whole line, the controls sit under it. */
+@media (pointer: coarse) {
+  .messages-native .messages-composer textarea {
+    padding: 11px 13px 56px;
+  }
 }
 .messages-draft-attachments {
   display: flex;

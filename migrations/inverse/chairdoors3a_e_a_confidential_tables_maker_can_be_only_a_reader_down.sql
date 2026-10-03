@@ -1,7 +1,7 @@
 -- chair-step: undo chairdoors3a_e_a_confidential_tables_maker_can_be_only_a_reader.sql - drops the five-argument Confidential door and puts back the four-argument one (EXECUTE with the store's owner alone), and restores the bodies of custom.confidential_answer and custom._table_shape_guard exactly as they were. A Table that was given maker_is_reader keeps the key in its document; nothing reads it after this.
 -- lane: CHAIR-DOORS-3A
 -- based-on: custom.confidential_answer(uuid, uuid, permission_level) 0dfd591b33f3b0bf173fd778bbff379a6b1d011d0c25ffc5ac519a518721eebb
--- based-on: custom._table_shape_guard() INVGUARD
+-- based-on: custom._table_shape_guard() 19bca0363cfc729b1003f5a0be8a57ae6711d2815b5812f1d6d8a0305f5b3518
 -- based-on: custom.set_table_confidential_arman_explicitly_approved(uuid, jsonb, text, date, boolean) 145c687c1891be916edde16f3201d3b10a6fb6824a58f263008cc3a3f63e23fc
 
 drop function custom.set_table_confidential_arman_explicitly_approved(uuid, jsonb, text, date, boolean);

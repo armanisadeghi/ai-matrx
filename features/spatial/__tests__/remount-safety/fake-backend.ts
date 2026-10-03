@@ -170,7 +170,7 @@ function queryBuilder(schema: string, table: string) {
       }
       if (prop === "catch" || prop === "finally") {
         const p = Promise.resolve().then(answer);
-        return (p as unknown as Record<string, unknown>)[prop as string]?.bind?.(p);
+        return prop === "catch" ? p.catch.bind(p) : p.finally.bind(p);
       }
       if (typeof prop === "symbol") return undefined;
       return (...args: unknown[]) => {

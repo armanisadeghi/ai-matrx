@@ -450,6 +450,11 @@ export function ShareModal({
                     shownTo,
                     isPublic: resourceIsPublic,
                     childRecord,
+                    // A whole Table is a `record` too and is never published to the web (no page
+                    // of its own; only its rows have one): no switch is drawn for it.
+                    ...(resourceType === "record" && resourceNoun === "Table"
+                      ? { publishable: false }
+                      : {}),
                     onSetShownTo: setShownTo,
                     onPublish: () => makePublic(),
                     onStopPublishing: () => revokeAccess({ isPublic: true }),

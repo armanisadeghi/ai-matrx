@@ -151,12 +151,13 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Notifications
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/projects/communications-platform/P1-notifications-actions.md` — read it before changing task assignment or reminder delivery. Locally, the saved task transition writes assignment email and in-app notice intents; `app/api/notifications/task-assigned/route.ts` still owns the action-chip DM, while `app/api/cron/due-date-reminders/route.ts` owns due-date reminders.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/projects/communications-platform/README.md` — read it before changing task assignment or reminder delivery. Locally, the saved task transition writes assignment email and in-app notice intents; `app/api/notifications/task-assigned/route.ts` still owns the action-chip DM, while `app/api/cron/due-date-reminders/route.ts` owns due-date reminders.
 
 Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tasks-world-class.md).
 
 ## Change log
 
+- `2026-10-03` — claude: **Quick Tasks loads in its own shape.** `QuickTasksSheet` and `QuickTasksWorkspace` showed a plain "Loading tasks..." line; both now draw skeleton task rows (`role="status"`, `aria-label="Loading tasks"`).
 - `2026-10-01` — **A `?task=` deep link to a task the viewer cannot see renders `<AccessGate token="task">`, not a PGRST116 error.** `useEnsureTaskLoaded` reads `fetchTask`'s new `missing` result (see `features/agent-context/FEATURE.md`); `TaskEditor` shows a spinner while the first read is in flight and the gate after (the hand-written "Task not found" is gone); `MobileTasksView` shows the same gate instead of the could-not-load notice, and its selection is now the Redux `selectedTaskId` (was a local `useState`, so a phone ignored `?task=` deep links and Back/Forward). `TaskUrlSync` no longer strips a cold deep link (its sync ref started equal to the param, so the first pass read Redux's empty selection as "Redux moved" and pushed bare `/tasks`). `updateTaskLabels`, `updateTaskResult`'s assignee pre-read and the comment-notification lookup use `.maybeSingle()`.
 
 - `2026-09-29` — **Org-filter sweep (F5): the Tasks list is never narrowed by the header's selected organization.** `selectFilteredTasks`, `selectSmartViewCounts` and `selectValidProjectIds` read `taskUiSlice.filterOrgId` (default All), which the sidebar's Organization section sets in place; it no longer writes the header org. Quick Tasks no longer seeds its org filter from the header org (new tasks still fall back to it for their destination). Scope-chip names span every organization. Test: `redux/__tests__/orgFilterIsOnPage.test.ts`.
@@ -192,7 +193,7 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
   `https://tasks.googleapis.com/tasks/v1/lists/<list>/tasks/<id>` — an identity,
   not a page, measured at **HTTP 401** with a JSON error body, so every imported
   Google task shipped a click into an API error
-  (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` N5). The rule now lives
+  (`common-docs/systems/integrations/google/FEATURE.md` N5). The rule now lives
   in the shared layer (`features/tasks/provenance-door.ts`) rather than as a
   comment in the import panel that never rendered the column: an API host or an
   API-shaped path renders the provenance WITHOUT a door, with the reason on hover

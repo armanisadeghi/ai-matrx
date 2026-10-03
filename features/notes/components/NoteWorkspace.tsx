@@ -81,7 +81,7 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
   const listStatus = useAppSelector(selectNotesListStatus);
   useEffect(() => {
     if (listStatus !== "idle") return;
-    void dispatch(fetchNotesList());
+    void dispatch(fetchNotesList({ ifIdle: true }));
     void dispatch(fetchSharedNotesList());
   }, [dispatch, listStatus]);
 

@@ -51,6 +51,7 @@ import { useRowChangeAgentOffer } from "@/features/unified-data/row-change-agent
 import { tableMenuExtensions } from "@/features/unified-data/actions/tableMenuExtensions";
 import { useTableFavorite } from "@/features/unified-data/actions/useTableFavorite";
 import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
+import { useTablePageCommands } from "@/features/unified-data/actions/tableActionCommands";
 import { tableCopyEvaluation, useTableCopyEvaluation } from "@/features/unified-data/tableCopyEvaluation";
 import { RecordStoreTableSurface, useGridContextChannel } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import type { ShownViewLike } from "@/features/unified-data/page-capture/shownViewCapture";
@@ -221,6 +222,8 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
    * reason where they do not apply. Duplicate is left unbound until its store door is live, so it
    * says "Not available here".
    */
+  /** ⌘K finds this table's actions (the same list the header ⋯ draws; TABLE-ACTIONS T4.1). */
+  const onActions = useTablePageCommands(null);
   const actionHost: TablePageActionHost = {
     ...(typeof window !== "undefined" ? { origin: window.location.origin } : {}),
     ...(favorite.known ? { isFavorite: favorite.isFavorite, toggleFavorite: favorite.toggle } : {}),
@@ -324,6 +327,7 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
     whereItLives,
     allTablesHref,
     actionHost,
+    onActions,
     says,
     mountsTheTable,
     recordsConfig,
@@ -387,6 +391,7 @@ export function UnifiedTableBody({
           activeRail={address.rail}
           activeItemId={address.item}
           actionHost={mount.actionHost}
+          onActions={mount.onActions}
           {...pageHeader}
         />
       </RecordStoreTableSurface>

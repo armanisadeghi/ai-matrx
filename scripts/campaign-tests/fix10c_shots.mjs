@@ -16,7 +16,7 @@ config({ path: ".env" });
 config({ path: ".env.local", override: false });
 
 const ORIGIN = process.env.FIX10C_ORIGIN ?? "http://fix10c.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 // Rincon Plumbing Co (the working copy) → its Jobs table → the saved view the
 // digest actually linked to. Taken verbatim from the live digest row.
 const DEEP_LINK =

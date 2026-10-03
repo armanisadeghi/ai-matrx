@@ -93,22 +93,8 @@ export function useNotesRedux() {
     if (fetchedUserIdRef.current === userId) return;
     if (fetchedUserIdRef.current !== null) dispatch(resetNotesState());
     fetchedUserIdRef.current = userId;
-    console.log(
-      "[Track Quick Notes] 5, useNotesRedux.ts — dispatch fetchNotesList (listStatus idle)",
-    );
-    dispatch(fetchNotesList());
+    dispatch(fetchNotesList({ ifIdle: true }));
   }, [authReady, dispatch, listStatus, userId]);
-
-  useEffect(() => {
-    if (listStatus === "loaded") {
-      console.log(
-        "[Track Quick Notes] 6b, useNotesRedux.ts — notes list status → loaded",
-        {
-          notesCount: notes.length,
-        },
-      );
-    }
-  }, [listStatus, notes.length]);
 
   const setActiveNote = useCallback(
     (note: Note | null) => {

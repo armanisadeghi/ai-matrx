@@ -29,6 +29,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
 import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 /** A rung of the one ladder. `run` never appears here — it is not stored. */
 export type MandateRung = "system" | "org" | "user";
@@ -119,11 +120,10 @@ export async function fetchMandateLadder(
     : { p_mandate_key: mandateKey };
   const { data, error } = await supabase.schema("mandate").rpc("resolve", args);
   if (error) {
-    throw new Error(
-      error.message?.trim()
-        ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-        : "The ladder could not be read — the database answered with no message.",
-    );
+    throw postgrestError(error, {
+      action: "reading the ladder",
+      fallback: "The ladder could not be read — the database answered with no message.",
+    });
   }
   return (data ?? []).map(toMandateLadderRow);
 }

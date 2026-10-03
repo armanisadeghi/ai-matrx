@@ -28,7 +28,8 @@ chrome, and the routes.
 | Room ⇄ Board layout choice (connected phase only; per viewer, this browser) | [`components/MeetingLayout.tsx`](./components/MeetingLayout.tsx) |
 | One meeting, one box: the home and the live room in the same place (Board meeting tile) — Join switches to `MeetingSurface chrome="embedded"` (stage contained by `--mx-meet-height: 100%`, @ai-matrx/meet 0.7.78), Leave or Details returns; the home stays mounted so its agent surface keeps answering | [`components/MeetingHomeAndRoom.tsx`](./components/MeetingHomeAndRoom.tsx) |
 | The Board layout — the person's own Board (`UserBoard`) as a saved board linked to the meeting + floating people strip + captions; the "Meeting notes" parts are a registered board item type | [`components/board/`](./components/board/) (`MeetingBoard`, `PeopleStrip`, `MeetingNotesBodies`, `useGuestMeetingBoard`, `LayoutSwitch`), `features/spatial/items/meeting-items.tsx` |
-| One meeting + invitees + occurrences, one read per meeting per tab (the surface host's inputs) | [`hooks/useMeetingById.ts`](./hooks/useMeetingById.ts) |
+| One meeting + invitees + occurrences, one read per meeting per tab, in Redux by meeting id — the meeting's home, a meeting tile, its "Meeting notes" parts and the surface all select it; a wake or remount reads nothing (plus the meeting templates per organization and person) | [`redux/meetingsSlice.ts`](./redux/meetingsSlice.ts), [`hooks/useMeetingById.ts`](./hooks/useMeetingById.ts), [`hooks/useMeetTemplates.ts`](./hooks/useMeetTemplates.ts) |
+| The meeting, live: one channel per meeting per tab (ref-counted, `openShared`) — an edit elsewhere (newer `version`) re-reads the meeting, a guest's RSVP re-reads the guest list, a reconnect re-reads; held by `useMeetingById` and by the Board tiles' `Keep` so a sleeping tile stays current | [`hooks/useMeetingLive.ts`](./hooks/useMeetingLive.ts) |
 | aidream base URL | [`lib/meetBaseUrl.ts`](./lib/meetBaseUrl.ts) |
 | Stylesheets (tokens → brand → structure) | `app/layout.tsx` imports 1 and 3; the brand map is the `--mx-meet-*` block in `app/globals.css` |
 
@@ -290,6 +291,8 @@ with its answer, and the whiteboard as it was left, read through the package's
 Census: `common-docs/systems/communications/meet/PARITY.md` § Wave 5.
 
 ## Change log
+
+- 2026-10-03 — One meeting, loaded once per tab: `meetingsSlice` (Redux, by meeting id) replaces `MeetingDetail`'s own copy of the load and `useMeetingById`'s per-mount read; `useMeetingLive` (meeting row + invitees, one shared channel per meeting) replaces `useMeetingInviteesLive`; the templates knobs are kept per organization and person. Board meeting and meeting-notes tiles now sleep (remount-safety cases green). Tests: `redux/meetingsSlice.test.ts`, `features/spatial/__tests__/remount-safety.feature.test.tsx`.
 
 - 2026-10-02 — The Board layout is the canonical Board: `MeetingBoard` renders `UserBoard` over a saved board linked by `settings.meeting_id` (guests: the same document in this browser); the five Meeting notes tiles are the registered item type `meeting_part` (live in the room, the durable record elsewhere, `matrx-user/meeting` surface). Gone with the bespoke board: the scratchpad (a real Note now), the sample pages and the replayed demo stream (demo content), save-to-Notes up-throw and the one-click "Meeting notes" fly button (bring in Meeting notes instead). Tests: `features/spatial/__tests__/meeting-board.test.ts`, `features/spatial/items/__tests__/meeting-items.logic.test.ts`.
 

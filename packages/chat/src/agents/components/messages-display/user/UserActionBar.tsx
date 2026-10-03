@@ -303,7 +303,7 @@ export function UserActionBar({
 
   return (
     <>
-      <TapTargetButtonGroup>
+      <TapTargetButtonGroup surface="solid">
         <TapTargetButtonForGroup
           onClick={handleCopy}
           ariaLabel="Copy message"

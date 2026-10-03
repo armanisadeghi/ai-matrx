@@ -11,7 +11,7 @@ const OVERLAY_ID = "pageResearchWindow" as const;
  *
  * Pass the page's own values — they are the point of this window: the topic
  * is named after the page and keyword #1 IS the page's target query (Arman,
- * `common-docs/projects/content-engine/STATE.md` §2.14: *"you're now passing
+ * `common-docs/projects/content-engine/REGISTER.md` §2.14: *"you're now passing
  * values that mean something from one step to the next"*).
  *
  * Opening is free; the user still presses Start, because a research run is a

@@ -5,7 +5,7 @@
  * ─── WHY THIS FILE EXISTS ───────────────────────────────────────────────────
  * `@univerjs/engine-render` routes EVERY `ctx.fillStyle = <string>` and
  * `ctx.strokeStyle = <string>` on its own rendering context through
- * `ICanvasColorService.getRenderColor()` (engine-render 0.25.1,
+ * `ICanvasColorService.getRenderColor()` (engine-render 0.25.1 and 1.0.2,
  * `UniverRenderingContext`). The shipped implementation, `CanvasColorService`,
  * does two things once `ThemeService.darkMode` is true:
  *
@@ -32,8 +32,14 @@
  * colour stored in every text run. It is unreachable while an inversion sits
  * between what the host states and what the canvas paints — invert the paper
  * and the ink inverts with it. So the document instance swaps the inverting
- * service for Univer's own `DumbCanvasColorService`, which returns every
- * colour unchanged.
+ * service for one that resolves Univer's THEME TOKENS and inverts nothing.
+ *
+ * NOT `DumbCanvasColorService` (used here until 2026-10-03). Univer 1.0 paints
+ * its own fills as tokens (`"gray.0"` page, `"gray.100"` desk, `"gray.900"`
+ * ink) and only `CanvasColorService` resolves them; the dumb service handed the
+ * canvas `"gray.0"`, the canvas ignored it and kept its default black, and
+ * every document page rendered solid black in every browser and theme — see
+ * `univer-theme-token-color.ts`.
  *
  * This reaches the CANVAS only. Univer's chrome (ribbon, menus, popups) is
  * DOM + CSS keyed off the `univer-dark` class that `toggleDarkMode` adds, so
@@ -41,10 +47,10 @@
  */
 "use client";
 
-import {
-  DumbCanvasColorService,
-  ICanvasColorService,
-} from "@univerjs/engine-render";
+import { ThemeService } from "@univerjs/core";
+import { ICanvasColorService } from "@univerjs/engine-render";
+
+import { resolveUniverCanvasColor } from "./univer-theme-token-color";
 
 /** The slice of redi's `Injector` this needs. Structural on purpose. */
 export interface ReplaceableInjector {
@@ -70,7 +76,17 @@ export function renderDocumentCanvasColorsVerbatim(
   try {
     injector.replace([
       ICanvasColorService,
-      { useClass: DumbCanvasColorService },
+      {
+        // Tokens resolved from the LIVE theme on every call (a theme change
+        // reaches the next frame); real colours pass through untouched.
+        useFactory: (themeService: ThemeService) => ({
+          getRenderColor: (color: string) =>
+            resolveUniverCanvasColor(color, (token) =>
+              themeService.getColorFromTheme(token),
+            ),
+        }),
+        deps: [ThemeService],
+      },
     ]);
     return { applied: true };
   } catch (err) {

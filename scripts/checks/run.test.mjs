@@ -263,7 +263,7 @@ test("the same defect with a different first offender keeps its fingerprint", ()
   );
 });
 
-// ── C5: items before inflow (common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md) ─────────
+// ── C5: items before inflow (common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md) ─────────
 import { emitItem, itemFingerprint, parseItems } from "./items.mjs";
 
 const ITEM = (json) => `[ "$MATRX_ITEMS" = 1 ] && echo 'MATRX-ITEM ${JSON.stringify(json)}'`;

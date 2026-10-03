@@ -14,8 +14,7 @@
  * the very first read needs no further question.
  */
 
-import { useCallback, useLayoutEffect, useState } from "react";
-import { toast } from "@/components/ui/use-toast";
+import { useLayoutEffect, useState } from "react";
 import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
 import {
   placeTableInRecordStore,
@@ -29,8 +28,8 @@ export interface SheetLayoutProps {
   /** The person reading; `null` only while the session is still resolving. */
   userId: string | null;
   /**
-   * The table page's own export, handed to a host layout by records-ui 0.85+ (the export is a
-   * rail of the page's one menu there, so there is no button to find).
+   * The table page's own export, handed to a host layout by records-ui. Unused: the page's header
+   * ⋯ is the table's one menu and carries Export (TABLE-ACTIONS item 11).
    */
   openExport?: (() => void) | undefined;
   /**
@@ -45,7 +44,7 @@ export interface SheetLayoutProps {
   footer?: "sticky" | "inline" | undefined;
 }
 
-export function SheetLayout({ tableId, organizationId, userId, openExport: pageExport, toolbarSlot, footer }: SheetLayoutProps) {
+export function SheetLayout({ tableId, organizationId, userId, toolbarSlot, footer }: SheetLayoutProps) {
   const fills = footer !== "inline";
   const placedAlready = (() => {
     const home = recordStoreHomeOf(tableId);
@@ -57,47 +56,6 @@ export function SheetLayout({ tableId, organizationId, userId, openExport: pageE
     placeTableInRecordStore(tableId, { organizationId, userId });
     setPlaced(true);
   }, [tableId, organizationId, userId]);
-
-  // THE PAGE OWNS SHARE AND EXPORT (ruling 2026-09-23). The grid's own controls are absent;
-  // its right-click "Export this table…" opens the table page's export (CSV, XLSX and the
-  // copy-and-transform menu in the page header). records-ui gives a host layout no door to
-  // that menu yet, so the page's own trigger is found and pressed; if it is not on screen,
-  // the person is told where it is — never a dead item.
-  const openExport = useCallback(() => {
-    if (pageExport) {
-      // Called from the right-click menu, which is still closing: open the page's export once
-      // it has let go, so the rail is not dismissed by the menu handing focus back.
-      window.setTimeout(pageExport, 120);
-      return;
-    }
-    const trigger = Array.from(
-      document.querySelectorAll<HTMLElement>('[aria-label^="Copy, transform or export"]'),
-    ).find((el) => !el.closest("[data-sheet-layout]"));
-    if (trigger) {
-      // Called from a menu item: the right-click menu is still closing and hands focus back
-      // as it goes, which dismisses a popover opened meanwhile (walked: a fixed 150 ms opened
-      // it and lost it). So wait until no menu is open any more, then press the trigger.
-      const started = Date.now();
-      const press = () => {
-        const menuOpen = document.querySelector('[role="menu"]') !== null;
-        if (menuOpen && Date.now() - started < 2000) {
-          window.setTimeout(press, 50);
-          return;
-        }
-        window.setTimeout(() => {
-          trigger.scrollIntoView({ block: "nearest" });
-          trigger.focus();
-          trigger.click();
-        }, 80);
-      };
-      window.setTimeout(press, 50);
-      return;
-    }
-    toast({
-      title: "Export is in the page header",
-      description: "Use CSV, XLSX, or the copy-and-transform menu above the table.",
-    });
-  }, [pageExport]);
 
   if (!placed) return null;
   return (
@@ -117,7 +75,7 @@ export function SheetLayout({ tableId, organizationId, userId, openExport: pageE
         // write a confirmed cell through the seam's own upsertCell, and the row forms get
         // their Person chooser (PersonChoicesProvider sits inside this branch).
         emitSurfaceScope
-        pageOwnsShareAndExport={{ openExport }}
+        pageOwnsShareAndExport
       />
     </div>
   );

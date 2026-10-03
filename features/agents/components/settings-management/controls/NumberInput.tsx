@@ -21,6 +21,8 @@ export interface NumberInputProps {
   isInteger?: boolean;
   disabled?: boolean;
   withSlider?: boolean;
+  /** "comfortable" = menu sizing (36px / 44px touch, text-sm, a box wide enough for six digits). */
+  size?: "dense" | "comfortable";
 }
 
 export function NumberInput({
@@ -33,7 +35,12 @@ export function NumberInput({
   isInteger = false,
   disabled = false,
   withSlider = false,
+  size = "dense",
 }: NumberInputProps) {
+  const comfortable = size === "comfortable";
+  const boxClass = comfortable
+    ? "h-9 px-2.5 text-sm tabular-nums pointer-coarse:h-11"
+    : "h-7 px-2 text-xs";
   const [draftState, setDraftState] = useState(() => ({
     sourceValue: value,
     text: String(value),
@@ -52,7 +59,13 @@ export function NumberInput({
 
   if (withSlider) {
     return (
-      <div className="grid grid-cols-[1fr_4rem] items-center gap-2">
+      <div
+        className={
+          comfortable
+            ? "grid grid-cols-[1fr_6rem] items-center gap-3"
+            : "grid grid-cols-[1fr_4rem] items-center gap-2"
+        }
+      >
         <Slider
           min={min}
           max={max}
@@ -76,7 +89,7 @@ export function NumberInput({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           disabled={disabled}
-          className="h-7 px-2 text-xs"
+          className={boxClass}
         />
       </div>
     );
@@ -94,7 +107,7 @@ export function NumberInput({
         if (e.key === "Enter") e.currentTarget.blur();
       }}
       disabled={disabled}
-      className="h-7 px-2 text-xs w-full"
+      className={`${boxClass} w-full`}
     />
   );
 }

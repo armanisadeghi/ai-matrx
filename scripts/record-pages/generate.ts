@@ -49,7 +49,7 @@ async function main() {
   let census = buildCensus({ root: ROOT, entityTypes, ledger });
   if (args.has("--seed-ledger")) {
     ledger = {
-      exemptCeiling: census.units.filter((u) => u.declaration.kind === "none" || u.declaration.kind === "pending").length,
+      exemptCeiling: census.units.filter((u) => u.declaration.kind === "pending").length,
       pending: census.units.filter((u) => u.declaration.kind === "pending").map((u) => u.key),
       tablesPending: census.tables.filter((t) => t.rowToken === "pending").map((t) => t.file),
       listQueue: census.tables.filter((t) => t.rowToken === "noncanonical").map((t) => t.file),
@@ -82,7 +82,7 @@ async function main() {
     ledger = {
       exemptCeiling: Math.min(
         ledger.exemptCeiling,
-        census.units.filter((u) => u.declaration.kind === "none" || u.declaration.kind === "pending").length,
+        census.units.filter((u) => u.declaration.kind === "pending").length,
       ),
       pending: ledger.pending.filter((k) => pendingNow.has(k)),
       tablesPending: ledger.tablesPending.filter((f) => tablesNow.has(f)),

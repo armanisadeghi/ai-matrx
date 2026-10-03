@@ -428,7 +428,10 @@ export function AgentConversationColumn({
             ref={scrollRef}
             onScroll={handleScroll}
             className={cn(
-              "absolute inset-0 overflow-y-auto pt-12",
+              // A SIZE container: what renders inside (the empty-state hero)
+              // answers the pane's real height — a 438px split pane beside
+              // two others is not a full-height chat.
+              "absolute inset-0 overflow-y-auto pt-12 [container-type:size]",
               // Edge-to-edge surfaces (chat, agent run, scribe) deliberately
               // opt into a visible, higher-contrast scrollbar — the column is
               // a long-form reading surface where finding/grabbing the bar

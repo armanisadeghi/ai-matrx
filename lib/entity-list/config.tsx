@@ -74,6 +74,8 @@ export interface EntityListController<TRow> {
   query: EntityListQuery;
   rows: TRow[];
   total: number;
+  /** An open-ended page (`EntityListPage.hasMore`): no count; whether a next page exists. */
+  hasMore?: boolean | undefined;
   counts: EntityScopeCounts;
   /** The counts query is in flight — distinct from the row query's loading. */
   countsLoading: boolean;

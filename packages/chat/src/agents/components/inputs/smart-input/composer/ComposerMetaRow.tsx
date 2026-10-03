@@ -36,7 +36,11 @@ export function ComposerPills({
   return (
     // The agent pill is the ONE pill here that shrinks (its label ellipsizes),
     // never below a readable floor; Effort keeps its natural width.
-    <div className="ml-auto flex min-w-0 shrink items-center justify-end gap-0.5 [&>*:first-child]:min-w-[4.5rem] [&>*:not(:first-child)]:shrink-0">
+    // `ml-auto` keeps the cluster on the right. Never `justify-end`: past the
+    // floor a `justify-end` cluster spills its pills out of its LEFT edge,
+    // over the Output pill ("TexGen…" at a 260px column); start-justified,
+    // the overflow runs right, into the row's sideways scroll.
+    <div className="ml-auto flex min-w-0 shrink items-center gap-0.5 [&>*:first-child]:min-w-[4.5rem] [&>*:not(:first-child)]:shrink-0">
       <ComposerAgentPill
         conversationId={conversationId}
         mode={composer.mode}
@@ -67,7 +71,9 @@ export function ComposerMetaRow({
 }) {
   return (
     // One line, always: a phone scrolls the row sideways, never wraps it.
-    <div className={cn(COMPOSER_ROW_CLASS, "justify-between gap-2 px-1")}>
+    // `@container/composer-meta`: a narrow column (a chat beside a wide
+    // canvas) folds the Scope chip to its icon, as a phone does.
+    <div className={cn(COMPOSER_ROW_CLASS, "@container/composer-meta justify-between gap-2 px-1")}>
       <div className="flex shrink-0 items-center gap-0.5">
         <ActiveContextLensChip conversationId={conversationId} className="h-6 rounded-md px-2" />
         <ComposerOutputPill conversationId={conversationId} size={composer.size} menuSide={menuSide} />

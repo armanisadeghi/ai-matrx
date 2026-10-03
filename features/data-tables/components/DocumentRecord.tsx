@@ -144,7 +144,9 @@ export function DocumentRecord({
   const remember = () => {
     if (!docRef.current) return;
     const meta: DocumentRecordMeta = {
-      row: docRef.current,
+      // Redux freezes what it holds: it gets its own copy, never the object a
+      // service handed back (that one stays the caller's).
+      row: { ...docRef.current },
       userId: userIdRef.current,
       canEdit: canEditRef.current,
     };

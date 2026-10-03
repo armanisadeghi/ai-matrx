@@ -11,10 +11,18 @@
 import { History } from "lucide-react";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
-import { canvasText, useToolToggle, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectNoteLabel } from "@/features/notes/redux/selectors";
+import { canvasText, subjectTitle, useToolToggle, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
 
 export const NOTE_HISTORY_KIND = "note-history";
-const LABEL = "Version history";
+// The tab names its subject — two open history tabs never share a title.
+const LABEL = "Note history";
+
+/** "Note history · <note title>" (just "Note history" while untitled). */
+export function noteHistoryTitle(label: string | null | undefined): string {
+  return subjectTitle(LABEL, label);
+}
 
 export function readNoteHistoryTab(data: CanvasJson | undefined | null): { noteId: string } | null {
   const noteId = canvasText(data, "noteId");
@@ -22,13 +30,14 @@ export function readNoteHistoryTab(data: CanvasJson | undefined | null): { noteI
 }
 
 /** The toggle (and open) request for one note's tab. */
-export function noteHistoryInput(noteId: string | null): ToolOpenInput {
-  return { kind: NOTE_HISTORY_KIND, key: noteId ?? "", title: LABEL, data: { noteId } };
+export function noteHistoryInput(noteId: string | null, label?: string | null): ToolOpenInput {
+  return { kind: NOTE_HISTORY_KIND, key: noteId ?? "", title: noteHistoryTitle(label), data: { noteId } };
 }
 
 /** A Versions button: `isVisible` (pressed) while this note's tab is in front; `toggle` opens / focuses / closes it. */
 export function useNoteHistoryTab(noteId: string | null): { isVisible: boolean; toggle: () => void } {
-  return useToolToggle(noteHistoryInput(noteId));
+  const label = useAppSelector(noteId ? selectNoteLabel(noteId) : () => undefined);
+  return useToolToggle(noteHistoryInput(noteId, label));
 }
 
 export const NOTE_HISTORY_CANVAS_KIND = defineCanvasKind<CanvasJson>({

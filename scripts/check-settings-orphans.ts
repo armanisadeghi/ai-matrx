@@ -316,7 +316,7 @@ async function main(): Promise<void> {
             "SPEC-FIRST — mostly the HR program's hr.* and esign.* rows, written before their screens — and the " +
             "unfinished-work alarm forbids deleting them. They are KNOWN DEBT with an owner, reported on every run, " +
             "tolerated only so the guard can hold the line against NEW orphans. Each entry leaves when its consumer " +
-            "ships (common-docs/projects/unified-settings-platform/REGISTER.md).",
+            "ships (common-docs/systems/account/settings/projects/unified-settings-platform/PLAN.md).",
           _how:
             "`pnpm check:settings-orphans --write` removes keys that gained a consumer or left the registry. It " +
             "CANNOT add one: a new orphan must get a real reader, or be deleted from the registry.",

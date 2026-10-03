@@ -103,3 +103,13 @@ describe("chart", () => {
     expect(outside.querySelector(".h-\\[340px\\]")).not.toBeNull();
   });
 });
+
+describe("expand inside a canvas pane", () => {
+  it("leaves Expand to the pane: no fullscreen button in the chart body there, one outside", () => {
+    const inPane = render(<ChartBlock content={CHART} />, PORTRAIT);
+    expect(inPane.querySelector('[aria-label="View fullscreen"]')).toBeNull();
+
+    const outside = render(<ChartBlock content={CHART} />, null);
+    expect(outside.querySelector('[aria-label="View fullscreen"]')).not.toBeNull();
+  });
+});

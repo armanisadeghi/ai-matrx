@@ -36,8 +36,16 @@ jest.mock("@/components/official/ProInput", () => ({
 jest.mock("@/components/official/ProTextarea", () => ({ ProTextarea: () => null }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
 
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import storeReadsReducer from "@/lib/redux/slices/storeReadsSlice";
+import wizardDraftReducer from "@/lib/redux/slices/wizardDraftSlice";
 import { InlineProjectName } from "../ProjectInlineEditors";
 import { ProjectTaskList } from "../ProjectTaskList";
+
+/** The slices the task list keeps its rows and its quick-add draft in. */
+const makeTaskListStore = () =>
+  configureStore({ reducer: { storeReads: storeReadsReducer, wizardDraft: wizardDraftReducer } });
 
 const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -98,15 +106,40 @@ it("a renamed project still updates the name shown", async () => {
 });
 
 it("a wake does not read the task list again", async () => {
+  const store = makeTaskListStore();
   const ui = (mode: "visible" | "hidden") => (
-    <Activity mode={mode}>
-      <ProjectTaskList projectId="p-warehouse" organizationId="org-1" />
-    </Activity>
+    <Provider store={store}>
+      <Activity mode={mode}>
+        <ProjectTaskList projectId="p-warehouse" organizationId="org-1" />
+      </Activity>
+    </Provider>
   );
   await render(ui("visible"));
   expect(host.textContent).toContain("Confirm the pallet count");
   await render(ui("hidden"));
   await render(ui("visible"));
+  expect(mockReads).toEqual(["p-warehouse"]);
+  expect(host.textContent).toContain("Confirm the pallet count");
+});
+
+// Break: the list or the half-typed quick-add task lives in the component, so
+// unmounting and mounting again (a board tile removed and put back) reads the
+// list again and empties the row the person was typing in.
+it("a remount reads nothing and keeps the half-typed quick-add task", async () => {
+  const store = makeTaskListStore();
+  const ui = (present: boolean) => (
+    <Provider store={store}>{present ? <ProjectTaskList projectId="p-warehouse" organizationId="org-1" /> : null}</Provider>
+  );
+  await render(ui(true));
+  const field = () => host.querySelector('input[placeholder^="Task title"]') as HTMLInputElement;
+  await act(async () => {
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    setValue.call(field(), "Order replacement blinds for the bedroom");
+    field().dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await render(ui(false));
+  await render(ui(true));
+  expect(field().value).toBe("Order replacement blinds for the bedroom");
   expect(mockReads).toEqual(["p-warehouse"]);
   expect(host.textContent).toContain("Confirm the pallet count");
 });

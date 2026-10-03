@@ -1,3 +1,4 @@
+// record-view: none — an old-version comparison page
 // Old Library catalog list (/knowledge/library-catalog with no item open,
 // before H6b, 2026-09-27), review-only. LibraryCatalogPage is still live (it
 // is an item's record page); rendered here with no id it shows the old list.

@@ -17,7 +17,7 @@
  * is the common case and it must stay pixel-identical.
  *
  * No "delete permanently" button: destruction is the retention engine's job
- * (common-docs/projects/data-lifecycle-platform), never an impulse click.
+ * (common-docs/systems/architecture/database/data-lifecycle/projects/data-lifecycle-platform/PLAN.md), never an impulse click.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

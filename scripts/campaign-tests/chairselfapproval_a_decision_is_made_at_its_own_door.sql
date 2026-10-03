@@ -121,6 +121,22 @@ insert into res select 'F4 person: record_update swapping the change is refused 
 insert into res select 'F5 person: record_update of decided_by alone is refused by the door', pg_temp.refused_by_door(o, 'work_approval'), o from pg_temp.try(format(
   $q$select custom.record_update(%L, %L, '{"decided_by":"%s"}'::jsonb)$q$, current_setting('t.cedar'), (select val from ids where k = 'a1'), current_setting('t.admin'))) o;
 
+-- ── CHAIR-ACCESS item 6 (person): the two batch doors lane 11 said were never probed. A refusal at the
+-- ── Table wall (the approval row is in no Table) or at the trigger both leave the approval pending;
+-- ── what must never happen is WROTE (pg_temp.try reports a write that went through by that word). ──
+insert into res select 'X1 person: record_change_many state→approved never goes through', o <> 'WROTE', o from pg_temp.try(format(
+  $q$select custom.record_change_many(%L, %L, '[{"op":"update","record_id":"%s","patch":{"state":"approved","decided_at":"2026-10-03T00:00:00.000Z","decided_by":"%s"}}]'::jsonb)$q$,
+  current_setting('t.cedar'), current_setting('t.rooms'), (select val from ids where k = 'a1'), current_setting('t.test'))) o;
+insert into res select 'X2 person: record_change_many with no table never goes through', o <> 'WROTE', o from pg_temp.try(format(
+  $q$select custom.record_change_many(%L, null, '[{"op":"update","record_id":"%s","patch":{"state":"approved","decided_at":"2026-10-03T00:00:00.000Z","decided_by":"%s"}}]'::jsonb)$q$,
+  current_setting('t.cedar'), (select val from ids where k = 'a1'), current_setting('t.test'))) o;
+insert into res select 'X3 person: record_write_many over the approval''s id never goes through', o <> 'WROTE', o from pg_temp.try(format(
+  $q$select custom.record_write_many(%L, %L, array['{"state":"approved","decided_at":"2026-10-03T00:00:00.000Z","decided_by":"%s"}'::jsonb], array[%L::uuid])$q$,
+  current_setting('t.cedar'), current_setting('t.rooms'), current_setting('t.test'), (select val from ids where k = 'a1'))) o;
+insert into res select 'X4 person: record_write_many with no table over the approval''s id never goes through', o <> 'WROTE', o from pg_temp.try(format(
+  $q$select custom.record_write_many(%L, null, array['{"state":"approved","decided_at":"2026-10-03T00:00:00.000Z","decided_by":"%s"}'::jsonb], array[%L::uuid])$q$,
+  current_setting('t.cedar'), current_setting('t.test'), (select val from ids where k = 'a1'))) o;
+
 -- ── F7–F8: the same two from the agent tier (test's agent, server channel) ──────────────────────
 select set_config('request.headers', '', true), set_config('app.actor_tier', 'agent', true), set_config('app.actor_system', 'records', true) \g /dev/null
 insert into res select 'F7 agent: record_update state→approved is refused by the door', pg_temp.refused_by_door(o, 'work_approval'), o from pg_temp.try(format(
@@ -149,6 +165,22 @@ insert into res select 'F10 person: record_update writing signed_at on a sign re
 
 -- ── W1: admin decides a1 (applied), then F6 tries to reopen it ──────────────────────────────────
 select set_config('request.jwt.claims', json_build_object('sub', current_setting('t.admin'), 'role', 'authenticated')::text, true) \g /dev/null
+
+-- ── CHAIR-ACCESS item 6 (admin): the two batch doors lane 11 said were never probed. A refusal at the
+-- ── Table wall (the approval row is in no Table) or at the trigger both leave the approval pending;
+-- ── what must never happen is WROTE (pg_temp.try reports a write that went through by that word). ──
+insert into res select 'X1 admin: record_change_many state→approved never goes through', o <> 'WROTE', o from pg_temp.try(format(
+  $q$select custom.record_change_many(%L, %L, '[{"op":"update","record_id":"%s","patch":{"state":"approved","decided_at":"2026-10-03T00:00:00.000Z","decided_by":"%s"}}]'::jsonb)$q$,
+  current_setting('t.cedar'), current_setting('t.rooms'), (select val from ids where k = 'a1'), current_setting('t.admin'))) o;
+insert into res select 'X2 admin: record_change_many with no table never goes through', o <> 'WROTE', o from pg_temp.try(format(
+  $q$select custom.record_change_many(%L, null, '[{"op":"update","record_id":"%s","patch":{"state":"approved","decided_at":"2026-10-03T00:00:00.000Z","decided_by":"%s"}}]'::jsonb)$q$,
+  current_setting('t.cedar'), (select val from ids where k = 'a1'), current_setting('t.admin'))) o;
+insert into res select 'X3 admin: record_write_many over the approval''s id never goes through', o <> 'WROTE', o from pg_temp.try(format(
+  $q$select custom.record_write_many(%L, %L, array['{"state":"approved","decided_at":"2026-10-03T00:00:00.000Z","decided_by":"%s"}'::jsonb], array[%L::uuid])$q$,
+  current_setting('t.cedar'), current_setting('t.rooms'), current_setting('t.admin'), (select val from ids where k = 'a1'))) o;
+insert into res select 'X4 admin: record_write_many with no table over the approval''s id never goes through', o <> 'WROTE', o from pg_temp.try(format(
+  $q$select custom.record_write_many(%L, null, array['{"state":"approved","decided_at":"2026-10-03T00:00:00.000Z","decided_by":"%s"}'::jsonb], array[%L::uuid])$q$,
+  current_setting('t.cedar'), current_setting('t.admin'), (select val from ids where k = 'a1'))) o;
 do $$
 declare r jsonb; m text;
 begin

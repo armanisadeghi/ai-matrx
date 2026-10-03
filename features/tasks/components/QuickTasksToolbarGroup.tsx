@@ -51,7 +51,7 @@ export function QuickTasksToolbarGroup({
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <TapTargetButtonGroup className={className}>
+    <TapTargetButtonGroup surface="solid" className={className}>
       <PanelLeftTapButton
         variant="group"
         onClick={onSidebarToggle}

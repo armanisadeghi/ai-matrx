@@ -1,6 +1,15 @@
--- chair-step: this GRANTs EXECUTE on TWO new functions, custom.table_duplicate(uuid, boolean, text, uuid) and custom.table_duplicate_continue(uuid), to `authenticated`, after declaring each in platform.client_callable_door (signed-in callers only; anon gains nothing). It also REVOKEs PUBLIC's implicit EXECUTE on the five new internal helpers, custom._uuid_remap(jsonb, jsonb), custom._copied_metadata(jsonb), custom._without_rows_of(jsonb, uuid, uuid), custom._duplicate_id(uuid, uuid) and custom._table_duplicate_step(uuid, interval), so no client can call them. Nothing else is granted, revoked, dropped or rewritten; no table, column, trigger or policy is touched; the only row written is the one door-register row. No strong lock: CREATE FUNCTION and one INSERT into the register. The schema-wide door-reopen sweep is held off for this transaction only (see "THE SWEEP" below) so the apply never contends for locks across `custom`.
+-- chair-step: this GRANTs EXECUTE on THREE new functions — custom.table_duplicate(uuid, boolean, text, uuid), custom.table_duplicate_continue(uuid) and custom.table_copies_in_progress() — to `authenticated`, after declaring each in platform.client_callable_door (signed-in callers only; anon gains nothing), and REVOKEs PUBLIC's implicit EXECUTE on the nine new internal helpers it adds. It REPLACES nine peer bodies, each declared below with the body it was written against: custom.has_visibility and custom.visible_set (the one ladder and the one row-set every door is built on: a table still being copied, and its rows, answer no / nothing to anyone but its maker, via the new custom._copy_in_progress_hides), custom.table_kept_out_of_lists (a copy being made joins the kept-out set), custom.tables_at_home (a copy being made is in no Home list but its maker's), custom.assert_may_know_table, custom.assert_client_may_open and custom.assert_client_may_change (each asks custom._copy_in_progress_guard: a table still being copied answers only its maker), custom._field_reads_what_it_reads (no cycle walk for a column the copy writes) and custom.trg_associations_bump_visibility (no per-row organization version bump while a copy is written; one bump at handover). No table, column, trigger or policy is touched; the only rows written are the door-register rows. No strong lock: CREATE FUNCTION and INSERTs into the register. The schema-wide door-reopen sweep is held off for this transaction only (see "THE SWEEP" below).
 -- lock: custom
 -- lane: TABLE-ACTIONS
+-- based-on: custom.table_kept_out_of_lists(text) 36607167b69fb78a08c5777621ef8d6802ef88cda2622c10ee94188c070f1865
+-- based-on: custom.assert_may_know_table(uuid, uuid, text) 5f76f911bd987e79f75178983a636badb097abbcd513ec6083580e4997f231da
+-- based-on: custom.assert_client_may_open(uuid, uuid, text, permission_level, text) 6a95285026132e93020169e2995d14b3a422cc73581676852702b7fd7e459d18
+-- based-on: custom.assert_client_may_change(uuid, uuid, text, permission_level, text) 6976bb1bb47394294021f9caf0567bc94fc9686040e12491a467e040e3a7b3af
+-- based-on: custom._field_reads_what_it_reads() 22aaa6382efe9f384d9c696a9902c7a172c9dfbd8019a31b33bacd7c53124c6f
+-- based-on: custom.trg_associations_bump_visibility() 283af85cf282d9e72e35821eced1a0f07ebf4aceb6c4653b15867c0739c9c2e2
+-- based-on: custom.tables_at_home(uuid, uuid[]) ac36784874b016f818478a4aa79515c093ff18897625e9489d4336a8db245648
+-- based-on: custom.has_visibility(uuid, text, uuid, permission_level) a62d4e0e3499c9c104702b7cabaa0ce6e311173c32e6672f9affe53643acbf00
+-- based-on: custom.visible_set(uuid, uuid, uuid, permission_level) 216e1e14c3e4e4368dd1b3a7cab69577f14fb0c903465f0ef0849be0528edf61
 --
 -- The inverse is `migrations/inverse/tableactions_a_table_can_be_duplicated_down.sql`.
 --
@@ -14,19 +23,31 @@
 -- columns, and (when asked) the same rows.
 --
 -- PAGED, LIKE custom.table_archive. One call never holds more than a few seconds of work: the
--- first call (custom.table_duplicate) checks the rights, records the job, makes the copy's Table
--- record and stops starting new work 1.5 s into the call; it answers "copying" with progress, and the
--- client calls custom.table_duplicate_continue(<the copy>) — each stops starting new work 2.5 s into the call — until "done". Every unit of work is
--- small (a choice list's Table, its Fields, 200 options, 5 fields, one view, 25 records, 50 links) and the budget
--- is checked between units, so a call ends within the budget plus one unit even when the
--- database is busy. Nothing is stored about how far it got: each copied row's id is worked out
--- from the copy and the source row (custom._duplicate_id), so what remains is read off the copy
--- itself, exactly as custom.table_archive reads what remains off the records. The job is the
--- copy's one history row (verb "duplicate"): its  flag says the copy is unfinished. While
--- unfinished the copy is the app's (kept_for "copying"), which keeps it out of every person's
--- table list, so nobody opens or edits a half copy; the last pass hands it over. Only the person
--- who started a copy carries it on, and the source is asked again on every pass. No record
--- ceiling: any size is copied, one page at a time.
+-- first call (custom.table_duplicate) checks the rights, fixes what the copy carries (the
+-- columns, views and choice lists live now, the maker's read mask, and which rows made by now the
+-- maker is handed), records the job and makes the copy's Table record; the client then calls
+-- custom.table_duplicate_continue(<the copy>) until "done". Every pass does at least one unit and
+-- starts no new unit 1.5 s (first call) / 2.5 s (later) into the call; a unit is small (a choice
+-- list's Table, its columns, 200 options, 5 stored columns, ONE worked-out column, one view, 25
+-- records, 50 links). Later passes read what is fixed from the job (no visible-set or mask is
+-- worked out again) and page records and links from cursors the job keeps. Each copied row's id
+-- is worked out from the copy and the source row (custom._duplicate_id), so the copy is
+-- resumable and exactly-once. One pass at a time per copy (an advisory lock; a second answers
+-- "busy" and the client waits). The job is the copy's one history row (verb "duplicate"): state
+-- copying | done | failed | discarded. While copying the copy is kept_for "copying" and "Shown to:
+-- only me": out of every table list (custom.table_kept_out_of_lists, and "only me" even where a
+-- list asks for the app's own tables) and refused by every open, read, view and write door
+-- to anyone but its maker (custom._copy_in_progress_guard). Its maker finds unfinished copies with
+-- custom.table_copies_in_progress() and carries one on or discards it (archiving the half copy;
+-- its job is then closed). A source archived, or with an archive under way, while it is copied
+-- fails the copy: it is not handed over and the answer says so. The organization's version is
+-- bumped once, at handover, never per row. No record ceiling.
+--
+-- THE SOURCE MAY MOVE WHILE IT IS COPIED. The copy's structure and row set are the ones fixed at
+-- the first pass: a column archived since is still copied (complete for the rows copied before)
+-- and named in changed_during_copy.columns_archived_since; rows changed after they were copied
+-- keep their values then and are counted (rows_changed_after_copied — live rows only, so an
+-- archived row is counted once, under rows_archived_since), as are rows archived or added since. Counts are exact: totals are what was fixed.
 --
 -- WHAT IS COPIED
 --   · the Table record: every setting and its look (decorations, default sort, row actions),
@@ -76,7 +97,9 @@
 --                definition.filters values; definition.grid.widths{<id>};
 --                metadata.record_positions{<record id>} (hand-set order)
 --     Record     a link value naming another row of the same Table
+--   Ids of source ROWS the copy carries are rewritten by custom._remap_rows against the job.
 --   An id the map does not hold (another Table, a person, a file) is left exactly as it was.
+--   metadata.copied_from_view on a copied view keeps the source view's id on purpose (provenance).
 --
 -- A ROW THAT WAS NOT COPIED IS NEVER POINTED AT. After the remap, any id still naming a row of
 -- the SOURCE table (always, without records; with records, a row that stayed behind) is taken
@@ -260,6 +283,931 @@ revoke execute on function custom._without_rows_of(jsonb, uuid, uuid) from publi
 comment on function custom._without_rows_of(jsonb, uuid, uuid) is
   'TABLE-ACTIONS. Takes out of a document every reference to a row of the given Table: a condition (anything with an op) naming one is dropped whole, a "value" naming one is cleared to null, any other key holding or keyed by one is dropped. NULL when the whole value goes. Internal to custom.table_duplicate; no client grant.';
 
+create or replace function custom._copy_in_progress_hides(p_user uuid, p_id uuid)
+returns boolean
+language plpgsql
+stable
+set search_path to 'pg_catalog'
+as $function$
+declare
+  v_table uuid;
+  v_key   text;
+  v_maker text;
+begin
+  -- Is this Table, or the Table this row belongs to, still being copied by somebody other than
+  -- p_user? One lookup of the row's Table, then the Table's answer is memoised for the statement
+  -- (platform.memo_k_*), so a list that asks it per row pays one index probe a row.
+  if p_id is null then
+    return false;
+  end if;
+  select case when r.table_id = custom.table_kernel_id() then r.id else r.table_id end
+    into v_table
+    from custom.record r
+   where r.id = p_id
+   limit 1;
+  if v_table is null then
+    return false;
+  end if;
+  v_key := 'dup:copying:' || v_table::text;
+  v_maker := platform.memo_k_get(v_key);
+  if v_maker is null then
+    select case when t.data ->> 'kept_for' = 'copying' then coalesce(t.created_by::text, '?') else '-' end
+      into v_maker
+      from custom.record t
+     where t.id = v_table and t.table_id = custom.table_kernel_id()
+     limit 1;
+    v_maker := coalesce(v_maker, '-');
+    perform platform.memo_k_put(v_key, v_maker);
+  end if;
+  return v_maker <> '-' and v_maker is distinct from coalesce(p_user::text, '');
+end;
+$function$;
+
+revoke execute on function custom._copy_in_progress_hides(uuid, uuid) from public;
+
+comment on function custom._copy_in_progress_hides(uuid, uuid) is
+  'TABLE-ACTIONS. True when the Table, or the Table this row belongs to, is still being copied (kept_for copying) by somebody other than p_user. Asked by custom.has_visibility and custom.visible_set, so every door built on the ladder hides a half copy. Internal; no client grant.';
+
+CREATE OR REPLACE FUNCTION custom.has_visibility(p_user_id uuid, p_type text, p_id uuid, p_required permission_level DEFAULT 'viewer'::permission_level)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_org   uuid;
+  v_table uuid;
+begin
+  if p_user_id is null or p_id is null then return false; end if;
+
+  -- TABLE-ACTIONS: A TABLE STILL BEING COPIED IS ITS MAKER'S ALONE — the Table and every row of it
+  -- answer no to anybody else, through this one ladder every per-id door asks
+  -- (custom._copy_in_progress_hides; one lookup of the row's Table, memoised per statement).
+  if p_type = 'record' and custom._copy_in_progress_hides(p_user_id, p_id) then
+    return false;
+  end if;
+
+  -- ARMS 1, 2 AND 3 — ownership, grants, the organization lanes, and the store's own carrying.
+  -- They live in `custom.reaches_directly` so that the two callers who mean "does this
+  -- container carry its contents" can ask exactly them and not arm 4.
+  if custom.reaches_directly(p_user_id, p_type, p_id, p_required) then
+    return true;
+  end if;
+
+  -- ARM 4 — A TABLE YOU CAN SEE SOMETHING INSIDE IS A TABLE YOU MAY KNOW (SHARED-ONLY).
+  --
+  -- Arms 1 to 3 all ask "who reaches THIS row". A Table is a record (REC-25) and so it was
+  -- asked the same way — and under `shared_only` the answer for somebody who had been shared
+  -- one RECORD inside it was no. `custom.assert_may_know_table` is the first line of
+  -- `custom.read_records`, `custom.applicable_fields` and every screen door in the store, so
+  -- that no closed the whole feature for her: the record she had been given was unreachable
+  -- through the only doors that show it, and the table it lived in never appeared in her list.
+  -- So did the table holding a record SHE HERSELF had created.
+  --
+  -- AT `viewer` AND NEVER ABOVE IT. Knowing a table — its name, its columns, that it exists —
+  -- is not changing one. Adding a column, renaming it and deleting it all ask `admin` on the
+  -- Table and this arm refuses them, so a person shared one row cannot reshape the table.
+  --
+  -- IT DOES NOT CARRY. Whoever reads this answer as "and therefore every row in it" is asking
+  -- the wrong function: `custom.reaches_directly` is the one that means carrying.
+  --
+  -- IT IS THE LAST ARM ON PURPOSE: it is the only one that reads other rows, so every cheaper
+  -- reason has already been tried and answered no.
+  if p_type = 'record' and p_required <= 'viewer'::public.permission_level then
+    select r.organization_id, r.table_id into v_org, v_table
+      from custom.record r
+     where r.id = p_id;
+    if v_table = custom.table_kernel_id()
+       and custom.table_has_a_visible_record(p_user_id, v_org, p_id) then
+      return true;
+    end if;
+  end if;
+
+  return false;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.visible_set(p_user uuid, p_organization_id uuid, p_table_id uuid, p_required permission_level DEFAULT 'viewer'::permission_level, OUT o_all_visible boolean, OUT o_true_visibility platform.visibility[], OUT o_granted_all uuid[], OUT o_granted_visible uuid[], OUT o_carried_visible uuid[], OUT o_ladder_calls integer, OUT o_fallback boolean, OUT o_note text)
+ RETURNS record
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_label   text;
+  v_vis     platform.visibility;
+  v_rep     uuid;
+  v_id      uuid;
+  v_n       integer;
+  v_window  integer;
+  v_carried record;
+  -- SHARED-ONLY (2026-09-19): does the caller reach the TABLE itself at this level? Asked
+  -- ONCE, before anything else, because it answers for every row at once.
+  v_table_carries boolean := false;
+  v_tables        integer;
+  v_seen_memo     text;   -- STORE-READ-PERF-3
+begin
+  o_all_visible     := false;
+  o_true_visibility := '{}'::platform.visibility[];
+  o_granted_all     := '{}'::uuid[];
+  o_granted_visible := '{}'::uuid[];
+  o_carried_visible := '{}'::uuid[];
+  o_ladder_calls    := 0;
+  o_fallback        := false;
+  o_note            := null;
+
+  if p_user is null or p_organization_id is null then
+    o_fallback := true;
+    o_note := 'READ-PERF: no principal, so the set-based shape has nobody to answer for. The door is walking the per-row ladder, which is what it did before this file.';
+    return;
+  end if;
+
+  -- CD-LADDER (2026-10-03): AN ARCHIVED ORGANIZATION IS CLOSED TO EVERYONE (access ladder T-33). The
+  -- kernel and custom.read_record refuse every row of it, so the set every list door is built from is
+  -- empty too (custom.list_door_disagreements found this set carrying rows the read door refused).
+  if exists (select 1 from iam.organizations o
+              where o.id = p_organization_id and o.archived_at is not null) then
+    o_note := 'ARCHIVED: this organization is archived and closed to everyone (access ladder T-33).';
+    return;
+  end if;
+
+  -- TABLE-ACTIONS: A TABLE STILL BEING COPIED IS ITS MAKER'S ALONE. For anybody else its row set is
+  -- empty, exactly the shape of an archived organization above, so every list door built on this set
+  -- (custom.read_records, custom.read_records_page, custom.query_visible_ids …) answers nothing.
+  if p_table_id is not null and custom._copy_in_progress_hides(p_user, p_table_id) then
+    o_note := 'COPYING: this table is still being copied, and only the person copying it can see it.';
+    return;
+  end if;
+
+  -- THE FOURTH THING THAT MAKES IT STOP (SHARED-ONLY). With no Table named, the answer spans
+  -- the kernel Table as well as every ordinary one, and a Table is no longer a member of a
+  -- visibility CLASS — it is visible when something inside it is (arm 4 of the one ladder),
+  -- so two Tables of one class answer differently and no representative can speak for them.
+  if p_table_id is null then
+    o_fallback := true;
+    o_note := 'SHARED-ONLY: no Table was named, so this answer spans the kernel Table, whose rows '
+           || 'are Tables — and a Table is visible when a record inside it is, which is not a '
+           || 'property of its visibility class. The door is walking the per-row ladder. REMEDY: '
+           || 'name the Table, or give custom.visible_set a per-Table carry list the way '
+           || 'custom.visible_predicate_sql would need to emit `table_id = any(...)`.';
+    return;
+  end if;
+
+  -- THE CONFIDENTIAL STOP (CHAIR-CONFIDENTIAL-STORE, 2026-10-02). A row of a Confidential Table —
+  -- or a child of one — opens to its owner and the people ITS OWN fields name, so two rows of one
+  -- visibility class no longer answer alike and no representative may speak for its class. Asked
+  -- only when the organization holds a Confidential Table at all, so every other organization pays
+  -- one bounded look at its own Tables and nothing else changes.
+  if p_table_id is distinct from custom.table_kernel_id()
+     and exists (select 1 from custom.record t
+                  where t.organization_id = p_organization_id
+                    and t.table_id = custom.table_kernel_id()
+                    and t.deleted_at is null
+                    and t.data ->> 'level' = 'confidential')
+     and (exists (select 1 from custom.record t
+                   where t.organization_id = p_organization_id
+                     and t.id = p_table_id
+                     and t.data ->> 'level' = 'confidential')
+          or exists (select 1 from custom.record c
+                      where c.organization_id = p_organization_id
+                        and c.table_id = p_table_id
+                        and c.deleted_at is null
+                        and jsonb_typeof(c.data -> 'parent_id') = 'string'
+                        and custom.confidential_anchor(c.id) is not null)) then
+    o_fallback := true;
+    o_note := 'CONFIDENTIAL: this Table is Confidential, or holds rows whose parent is, so each row '
+           || 'opens to its owner and the people its own fields name and no visibility class can '
+           || 'answer for another row. The door is walking the per-row ladder (custom.confidential_answer).';
+    return;
+  end if;
+
+  -- THE FIRST THING THAT MAKES IT STOP. `iam.has_access_for_base` pushes a child's REGISTERED
+  -- FK parents onto its frontier as well as the closure. There is no such registration for
+  -- `record` today, so a record's containers come only from associations — which
+  -- `custom.read_door_carried_ids` resolves. If one is ever registered, a row's container is a
+  -- COLUMN of its own row, two rows of one class stop answering alike, and the argument this
+  -- file rests on stops holding. So it says so and walks.
+  if exists (select 1 from platform.entity_relationships er
+              where er.child_type = 'record' and er.kind in ('composition', 'containment')) then
+    o_fallback := true;
+    o_note := 'READ-PERF: `record` now has a registered FK containment parent in '
+           || 'platform.entity_relationships, so a row''s container is a column of its own row and '
+           || 'two rows of one visibility class no longer answer alike. The door is walking the '
+           || 'per-row ladder. REMEDY: teach custom.visible_set to classify on that column too, or '
+           || 'seed custom.read_door_carried_ids from it the way it is seeded from associations.';
+    return;
+  end if;
+
+  -- AN ARCHIVED TABLE WITH NO LIVE RECORD IS ALL-VISIBLE, SAID AT ONCE (CHAIR-DOORS-3A, asked by lane 9
+  -- SCOPES-ON-THE-STORE, scopes-i). For a Table that is not the kernel, past the confidential and the
+  -- containment-relationship stops above, whose own kernel row is not live and which holds no live
+  -- record, the rest of this body can only answer o_all_visible = true with every array empty: the
+  -- Table-carries question is asked of a live Table only; custom.read_door_granted_ids returns live
+  -- ids only, so v_n = 0; custom.read_door_carried_ids has no live record to climb from, so o_ids = {}
+  -- and o_containers = 0; every representative query reads live rows only; and the final `exists`
+  -- is false. Production, 2026-10-03: 27 of 27 archived scope types, both seats, answered exactly
+  -- so after the granted-ids read, the containment walk, 15 representative queries and the exists.
+  -- The answer is the same; only the work is gone. o_ladder_calls stays 0, as it was.
+  if p_table_id is distinct from custom.table_kernel_id()
+     and not exists (select 1 from custom.record t
+                      where t.organization_id = p_organization_id
+                        and t.id = p_table_id
+                        and t.deleted_at is null)
+     and not exists (select 1 from custom.record r
+                      where r.organization_id = p_organization_id
+                        and r.table_id = p_table_id
+                        and r.deleted_at is null) then
+    o_all_visible := true;
+    return;
+  end if;
+
+  -- THE TABLE ITSELF, ONCE (SHARED-ONLY). A Table shared with somebody carries every row in it
+  -- (arm 3 of `custom.carrying_edges_of`), so one ladder call about the TABLE answers for the
+  -- whole page.
+  --
+  -- 🚨 AND THE QUESTION IS `iam.has_access_for`, NOT `custom.reaches_directly` (LEAK-T10,
+  -- 2026-09-20). This is the whole of acceptance test 10 and it is a live cross-project leak.
+  -- `custom.reaches_directly` treats the Table as the SUBJECT of the walk, so its arm 3 climbs
+  -- from the Table into the Table's own HOMES — and a person shared ONE Home of a Table was
+  -- handed every record of that Table in every other Home, with its contents, by this line,
+  -- while `custom.read_record` refused her the same row.
+  --
+  -- What the PER-ROW ladder asks about this Table is one thing, and asking exactly it is what
+  -- makes the two doors agree by construction instead of by agreement:
+  -- `custom.visibility_ancestors` returns the Table as a TERMINAL ancestor of every row in it,
+  -- at `admin`, and `custom.reaches_directly` arm 3 then asks
+  -- `iam.has_access_for(user, 'record', <the Table>, required)` about it — ownership, a grant
+  -- row, the organization lanes, the platform's own containment closure, and nothing above
+  -- them. A whole Table shared through `custom.share_grant` writes the `iam.permissions` row
+  -- that admits it, so the case this shortcut exists for is untouched.
+  --
+  -- The rows it does NOT speak for are the ones whose own `visibility` is below `internal`,
+  -- which that edge deliberately does not carry; they fall through to their class below.
+  --
+  -- THE SAME-ORGANISATION, LIVE-ROW JOIN STAYS. The kernel Tables (`Table`, `Field`, and the
+  -- home-record kernel every fixture hangs off) live in the SYSTEM organization, which is
+  -- global_readable, so `iam.has_access_for` says yes about them to EVERY signed-in person.
+  -- Without this line `p_table_id = 11111111-…-0002` — the Field kernel — made every Field row
+  -- of a `shared_only` organization visible to every member.
+  if p_table_id is distinct from custom.table_kernel_id()
+     and exists (select 1 from custom.record t
+                  where t.organization_id = p_organization_id
+                    and t.id = p_table_id
+                    and t.deleted_at is null) then
+    o_ladder_calls := o_ladder_calls + 1;
+    v_table_carries := custom.table_carries_its_rows(p_user, p_table_id, p_required);
+  end if;
+
+  -- THE GRANTED IDS, and the second thing that makes it stop.
+  -- STORE-READ-PERF-3: for the Table kernel, the same ids may already be in this statement's memo,
+  -- left by custom.tables_seen_once_per_group, which asked read_door_granted_ids' own query once for
+  -- every organization of the door statement that called us.
+  -- STORE-READ-PERF-4: only while the transaction has written nothing (a writing transaction may
+  -- have changed the answer after the memo was taken).
+  if p_table_id = custom.table_kernel_id() and pg_catalog.pg_current_xact_id_if_assigned() is null then
+    v_seen_memo := platform.memo_k_get('custom.kernel_granted:' || p_organization_id::text || ':' || pg_catalog.pg_current_snapshot()::text);
+  end if;
+  if v_seen_memo is not null then
+    o_granted_all := array(select g from unnest(string_to_array(nullif(v_seen_memo, ''), ',')::uuid[]) g order by g);
+    v_seen_memo := null;
+  else
+    o_granted_all := custom.read_door_granted_ids(p_organization_id, p_table_id);
+  end if;
+  v_n := coalesce(array_length(o_granted_all, 1), 0);
+  if v_n > custom.read_door_ladder_ceiling() then
+    o_fallback := true;
+    o_note := format('READ-PERF: %s ids of this Table carry a grant, a membership or a closure row, '
+                  || 'which is over the ceiling of %s, so asking them one at a time is no cheaper '
+                  || 'than the walk this replaces. The door is walking the per-row ladder. REMEDY: '
+                  || 'raise custom.read_door_ladder_ceiling(), or resolve grants set-based the way '
+                  || 'custom.read_door_carried_ids resolves containment.',
+                  v_n, custom.read_door_ladder_ceiling());
+    return;
+  end if;
+
+  -- THE TABLE LIST (SHARED-ONLY). The rows of the kernel Table are the organization's Tables,
+  -- and a Table is visible when a record inside it is — one Table at a time, never by class.
+  -- An organization holds a few hundred Tables at the very most (263 is the largest on this
+  -- database today, against a ceiling of 5,000), so this enumerates them and asks the ladder
+  -- once each. Over the ceiling it says so and walks, like every other stop here.
+  if p_table_id = custom.table_kernel_id() then
+    select count(*) into v_tables
+      from custom.record r
+     where r.organization_id = p_organization_id
+       and r.table_id = custom.table_kernel_id()
+       and r.deleted_at is null;
+    if v_tables > custom.read_door_ladder_ceiling() then
+      o_fallback := true;
+      o_note := format('SHARED-ONLY: this organization holds %s Tables, over the ceiling of %s, and a '
+                    || 'Table is visible when a record inside it is - which no representative can '
+                    || 'answer for. The door is walking the per-row ladder. REMEDY: raise '
+                    || 'custom.read_door_ladder_ceiling(), or index the "does this Table hold a row '
+                    || 'this person reaches" question the way custom.visibility_cache intends.',
+                    v_tables, custom.read_door_ladder_ceiling());
+      return;
+    end if;
+    -- STORE-READ-PERF-3 (2026-09-28). At viewer the same answer — custom.has_visibility about every
+    -- live Table — comes from custom.tables_seen_once_per_group: the one ladder asked once per group
+    -- of Tables it cannot tell apart (its header has the argument), or, when the door statement
+    -- that called us already asked it for this person and organization, from that statement's memo.
+    -- Any other level walks every Table as before. o_ladder_calls still counts one answer per Table.
+    if p_required = 'viewer'::public.permission_level then
+      v_seen_memo := case when pg_catalog.pg_current_xact_id_if_assigned() is null
+                          then platform.memo_k_get('custom.tables_seen:' || p_user::text || ':' || p_organization_id::text
+                                                   || ':' || pg_catalog.pg_current_snapshot()::text) end;
+      if v_seen_memo is null then
+        select coalesce(array_agg(g.id) filter (where g.seen), '{}'::uuid[])
+          into o_carried_visible
+          from custom.tables_seen_once_per_group(p_user, array[p_organization_id]) g;
+      else
+        o_carried_visible := coalesce(string_to_array(nullif(v_seen_memo, ''), ',')::uuid[], '{}'::uuid[]);
+      end if;
+      o_ladder_calls := o_ladder_calls + v_tables;
+    else
+      for v_id in
+        select r.id
+          from custom.record r
+         where r.organization_id = p_organization_id
+           and r.table_id = custom.table_kernel_id()
+           and r.deleted_at is null
+      loop
+        o_ladder_calls := o_ladder_calls + 1;
+        if custom.has_visibility(p_user, 'record', v_id, p_required) then
+          o_carried_visible := o_carried_visible || v_id;
+        end if;
+      end loop;
+    end if;
+    o_all_visible := (v_tables = coalesce(array_length(o_carried_visible, 1), 0));
+    return;
+  end if;
+
+  -- CONTAINMENT, ONCE, DOWNWARD — and the third thing that makes it stop.
+  v_carried := custom.read_door_carried_ids(p_user, p_organization_id, p_table_id, p_required);
+  o_ladder_calls := o_ladder_calls + coalesce(v_carried.o_containers, 0);
+  if v_carried.o_ids is null then
+    o_fallback := true;
+    o_note := format('READ-PERF: this Table''s records sit under %s distinct containers, which is '
+                  || 'over the ceiling of %s, so asking the ladder about each of them is no cheaper '
+                  || 'than the walk this replaces. The door is walking the per-row ladder. REMEDY: '
+                  || 'raise custom.read_door_ladder_ceiling(), or give the containers an accessible-set '
+                  || 'cache the way VIS-9''s epochs intend.',
+                  v_carried.o_containers, custom.read_door_ladder_ceiling());
+    return;
+  end if;
+  o_carried_visible := v_carried.o_ids;
+
+  -- THE CLASSES. One ladder call for each label of `platform.visibility` this Table actually
+  -- holds, asked about a row that is NOT the caller's own, NOT granted and NOT carried — the
+  -- three things that would make a representative answer for a reason its class does not have.
+  for v_label in select e.enumlabel
+                   from pg_catalog.pg_enum e
+                   join pg_catalog.pg_type t on t.oid = e.enumtypid
+                   join pg_catalog.pg_namespace n on n.oid = t.typnamespace
+                  where n.nspname = 'platform' and t.typname = 'visibility'
+                  order by e.enumsortorder
+  loop
+    v_vis := v_label::platform.visibility;
+    -- THE TABLE ALREADY ANSWERED FOR THIS CLASS (SHARED-ONLY). The Table edge carries every
+    -- row at or above `internal`, so when the caller reaches the Table there is nothing left
+    -- to ask about those classes and no representative to find.
+    if v_table_carries and v_vis >= 'internal'::platform.visibility then
+      o_true_visibility := o_true_visibility || v_vis;
+      continue;
+    end if;
+    -- THE ROW THIS CLASS SPEAKS FOR, found in three bounded index scans instead of one scan of
+    -- the class. `created_by is distinct from p_user` is two ranges and a null, and each of the
+    -- three stops at its own first entry; the window is one row wider than the number of ids
+    -- that may not represent their class, so it cannot miss a row it is allowed to choose.
+    v_window := coalesce(array_length(o_granted_all, 1), 0)
+              + coalesce(array_length(o_carried_visible, 1), 0) + 1;
+    select c.id into v_rep
+      from (
+        (select r.id
+           from custom.record r
+          where r.organization_id = p_organization_id
+            and r.table_id is not distinct from p_table_id
+            and r.deleted_at is null
+            and r.visibility = v_vis
+            and r.created_by is null
+          limit v_window)
+        union all
+        (select r.id
+           from custom.record r
+          where r.organization_id = p_organization_id
+            and r.table_id is not distinct from p_table_id
+            and r.deleted_at is null
+            and r.visibility = v_vis
+            and r.created_by < p_user
+          order by r.created_by desc
+          limit v_window)
+        union all
+        (select r.id
+           from custom.record r
+          where r.organization_id = p_organization_id
+            and r.table_id is not distinct from p_table_id
+            and r.deleted_at is null
+            and r.visibility = v_vis
+            and r.created_by > p_user
+          order by r.created_by asc
+          limit v_window)
+      ) c
+     where not (c.id = any (o_granted_all))
+       and not (c.id = any (o_carried_visible))
+     limit 1;
+    if v_rep is not null then
+      o_ladder_calls := o_ladder_calls + 1;
+      if custom.has_visibility(p_user, 'record', v_rep, p_required) then
+        o_true_visibility := o_true_visibility || v_vis;
+      end if;
+    end if;
+  end loop;
+
+  -- THE GRANTED IDS, ONE AT A TIME, ON THE ONE LADDER. Nothing here decides anything: it asks.
+  foreach v_id in array o_granted_all loop
+    o_ladder_calls := o_ladder_calls + 1;
+    if custom.has_visibility(p_user, 'record', v_id, p_required) then
+      o_granted_visible := o_granted_visible || v_id;
+    end if;
+  end loop;
+
+  -- IS IT THE WHOLE TABLE? Then the page needs no visibility predicate at all and the LIMIT
+  -- stops the scan at the first p_limit rows. This is the ordinary case — somebody reading a
+  -- Table of their own organization — and it is the case that was costing seconds.
+  o_all_visible := (v_n = 0)
+                   and not exists (
+                     select 1 from custom.record r
+                      where r.organization_id = p_organization_id
+                        and r.table_id is not distinct from p_table_id
+                        and r.deleted_at is null
+                        and not (r.visibility = any (o_true_visibility)));
+  return;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.table_kept_out_of_lists(p_kept_for text)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'pg_catalog'
+AS $function$
+  -- WHICH PLACEMENT WORDS STAY OUT OF EVERY DEFAULT LIST (lane CHAIR-DOORS-2, v6 N-C8). One word today:
+  -- agent_output — the table an agent's outputs land in (KINDS-GLUE wave 2). A list shows such a Table
+  -- only when its caller asks (p_include_app_tables). Null and every other word: not kept out.
+  select coalesce(p_kept_for, '') = any (array['agent_output', 'copying'])
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.tables_at_home(p_organization_id uuid, p_home_ids uuid[])
+ RETURNS TABLE(table_id uuid, home_record_id uuid, kind text)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+#variable_conflict use_column
+declare
+  v_me uuid := custom.query_principal();
+begin
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.tables_at_home');
+  -- THIS DOOR TAKES A LIST, so the answer is FILTERED rather than refused: asking about ten
+  -- homes and being refused because one of them is somebody else's would be a different
+  -- leak, told the other way round. Both ends are asked — the Home the placement is in and
+  -- the Table it places — because either one alone tells her something (VIS-5).
+  return query
+    select h.table_id, h.home_record_id, h.kind
+      from custom.home h
+     where h.organization_id = p_organization_id
+       and h.home_record_id = any (p_home_ids)
+       and (custom.query_is_store_owner()
+            or (v_me is not null
+                and custom.has_visibility(v_me, 'record', h.home_record_id, 'viewer'::public.permission_level)
+                and custom.has_visibility(v_me, 'record', h.table_id, 'viewer'::public.permission_level)))
+       -- TABLE-ACTIONS: a table still being copied is in no Home list but its maker's.
+       and not exists (select 1 from custom.record t
+                        where t.organization_id = p_organization_id and t.id = h.table_id
+                          and t.data ->> 'kept_for' = 'copying'
+                          and t.created_by is distinct from v_me);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.assert_may_know_table(p_organization_id uuid, p_table_id uuid, p_door text)
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_me   uuid;
+  v_pred text;
+  v_any  boolean := false;
+  v_memo text := 'w:k:' || coalesce(p_organization_id::text, '-') || ':' || coalesce(p_table_id::text, '-');
+begin
+  -- THE SAME YES, ALREADY GIVEN IN THIS TRANSACTION, TO THIS SEAT, ABOUT THIS TABLE. The wall
+  -- below is part of that yes: this memo entry is only ever written after it has been passed.
+  if platform.memo_k_get(v_memo) = '1' then
+    return;
+  end if;
+  -- THE FINAL SWITCH NEVER DEPENDS ON WHO PRESSED IT (PRESS-FENCE B). While platform.final_switch_press or
+  -- platform.final_switch_undo runs (app.final_switch_step = 'on', transaction-local, set and cleared only
+  -- by them; set_config is no client door), a platform administrator on the admin lane passes this wall for
+  -- every organization: the press is platform-wide, so the presser's own memberships never decide it.
+  if platform.final_switch_acting() then
+    return;
+  end if;
+
+  -- The wall first, always, and in the same order every other door asks it.
+  perform custom.assert_client_may_reach(p_organization_id, p_door);
+
+  -- WAY THROUGH 1: the Table record itself. Unchanged — this is the whole of what this
+  -- function used to be, and it is still the answer under the shipped setting.
+  if custom.query_is_store_owner() then
+    perform platform.memo_k_put(v_memo, '1');
+    return;
+  end if;
+  v_me := custom.query_principal();
+  if v_me is null or p_table_id is null then
+    perform platform.memo_k_put(v_memo, '1');
+    return;
+  end if;
+  -- TABLE-ACTIONS: a table still being copied answers only the person copying it (its rows,
+  -- its columns, its views). Everyone else hears one sentence until the copy is handed over.
+  perform custom._copy_in_progress_guard(p_table_id, v_me);
+  if custom.has_visibility(v_me, 'record', p_table_id, 'viewer'::public.permission_level) then
+    perform platform.memo_k_put(v_memo, '1');
+    return;
+  end if;
+
+  -- WAY THROUGH 2: anything IN it that she may see. The same ladder, asked set-wise over the
+  -- table's own partition and stopped at the first row.
+  v_pred := custom.visible_predicate_sql(v_me, p_organization_id, p_table_id,
+                                         'viewer'::public.permission_level, 'r');
+  execute format(
+    'select exists (select 1 from custom.record r
+                     where r.organization_id = %L::uuid
+                       and r.table_id = %L::uuid
+                       and r.deleted_at is null
+                       and (%s)
+                     limit 1)', p_organization_id, p_table_id, v_pred)
+    into v_any;
+  if v_any then
+    perform platform.memo_k_put(v_memo, '1');
+    return;
+  end if;
+
+  -- NEITHER. T10's refusal, word for word — and it is now true when it is said: there is
+  -- nothing in this table she may see, so telling her it exists would be the leak.
+  raise exception 'You do not have access to this table, so % has nothing to show you.',
+    coalesce(nullif(btrim(p_door), ''), 'that door')
+    using errcode = '42501',
+          hint = 'VIS-5 / T10: you know a table if you may open the table itself, or if anything in it has been shared with you. Ask whoever owns it to share the table, or a record in it, with you.';
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.assert_client_may_open(p_organization_id uuid, p_subject_id uuid, p_door text, p_required permission_level DEFAULT 'viewer'::permission_level, p_subject_word text DEFAULT 'record'::text)
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_me          uuid;
+  v_subject_org uuid;
+begin
+  -- ONE order, always, and it is `custom.assert_client_may_change`'s order: the
+  -- organization wall first, then the row.
+  -- THE FINAL SWITCH NEVER DEPENDS ON WHO PRESSED IT (PRESS-FENCE B). While platform.final_switch_press or
+  -- platform.final_switch_undo runs (app.final_switch_step = 'on', transaction-local, set and cleared only
+  -- by them; set_config is no client door), a platform administrator on the admin lane passes this wall for
+  -- every organization: the press is platform-wide, so the presser's own memberships never decide it.
+  if platform.final_switch_acting() then
+    return;
+  end if;
+  perform custom.assert_client_may_reach(p_organization_id, p_door);
+
+  -- Way through 1: the role that owns the store (every campaign and server lane).
+  if custom.query_is_store_owner() then
+    return;
+  end if;
+
+  if p_subject_id is null then
+    return;
+  end if;
+
+  -- Way through 2: no signed-in person at all — the anonymous doors, which have
+  -- already decided the request against the form's own token.
+  v_me := custom.query_principal();
+  if v_me is null then
+    return;
+  end if;
+
+  -- TABLE-ACTIONS: a table still being copied answers only the person copying it (its rows,
+  -- its columns, its views). Everyone else hears one sentence until the copy is handed over.
+  perform custom._copy_in_progress_guard(p_subject_id, v_me);
+
+  -- WHERE THE SUBJECT ACTUALLY LIVES, BY ITS ID AND NOTHING ELSE (2026-09-23).
+  -- This used to look only inside p_organization_id and RETURN — let the call through —
+  -- when the subject was elsewhere, trusting every door to filter by that organization a
+  -- line later. Sixteen doors never did: `custom.record_as_of` handed a member of one
+  -- organization the full, unmasked state of a record in an organization she does not
+  -- belong to (proven live 2026-09-23 as test@test.com, rolled back). Access is a question
+  -- about the PERSON and the ROW, never about which organization was passed in
+  -- (organization-is-the-container rule 5).
+  select r.organization_id into v_subject_org
+    from custom.record r
+   where r.id = p_subject_id;
+
+  -- Not there at all: the door raises its own 02000, the same for an invented id.
+  if v_subject_org is null then
+    return;
+  end if;
+
+  -- The platform's globally readable tenants (the Matrx System kernel Tables every
+  -- organization builds on) stay reachable exactly as before.
+  if v_subject_org is distinct from p_organization_id
+     and exists (select 1 from iam.system_orgs s
+                  where s.organization_id = v_subject_org and s.global_readable) then
+    return;
+  end if;
+
+  -- THE ONE LADDER, asked about the row wherever it lives.
+  if custom.has_visibility(v_me, 'record', p_subject_id, p_required) then
+    return;
+  end if;
+
+  raise exception 'You do not have access to this %, so % has nothing to show you.',
+    coalesce(nullif(btrim(p_subject_word), ''), 'record'),
+    coalesce(nullif(btrim(p_door), ''), 'that door')
+    using errcode = '42501',
+          hint = format(
+            'DOOR-1 decides reading and writing with the SAME question: a %s you may not open is a %s you may not change. This needs the %s level (viewer < commenter < editor < admin) - ask whoever holds it to share it with you, or ask an owner of this organization.',
+            coalesce(nullif(btrim(p_subject_word), ''), 'record'),
+            coalesce(nullif(btrim(p_subject_word), ''), 'record'),
+            p_required);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.assert_client_may_change(p_organization_id uuid, p_subject_id uuid, p_door text, p_required permission_level DEFAULT 'editor'::permission_level, p_subject_word text DEFAULT 'record'::text)
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_me          uuid;
+  v_subject_org uuid;
+  v_held        public.permission_level;
+begin
+  -- THE FINAL SWITCH NEVER DEPENDS ON WHO PRESSED IT (PRESS-FENCE C): platform.final_switch_acting().
+  if platform.final_switch_acting() then
+    return;
+  end if;
+  -- ONE order, always: the organization wall first, then the row.
+  perform custom.assert_client_may_reach(p_organization_id, p_door);
+
+  -- Way through 1: the role that owns the store (every campaign and server lane).
+  if custom.query_is_store_owner() then
+    return;
+  end if;
+
+  if p_subject_id is null then
+    return;
+  end if;
+
+  -- Way through 2: no signed-in person at all — the anonymous capture door, which has
+  -- already decided this write against the form's own token.
+  v_me := custom.query_principal();
+  if v_me is null then
+    return;
+  end if;
+
+  -- TABLE-ACTIONS: a table still being copied answers only the person copying it (its rows,
+  -- its columns, its views). Everyone else hears one sentence until the copy is handed over.
+  perform custom._copy_in_progress_guard(p_subject_id, v_me);
+
+  -- WHERE THE SUBJECT ACTUALLY LIVES, BY ITS ID AND NOTHING ELSE (2026-09-23). A subject
+  -- outside p_organization_id used to be waved through on the promise that the door would
+  -- filter by that organization; the same promise was broken on the read side
+  -- (`custom.record_as_of`, a cross-organization leak proven live). Access is decided by the
+  -- PERSON and the ROW (organization-is-the-container rule 5).
+  select r.organization_id into v_subject_org
+    from custom.record r
+   where r.id = p_subject_id;
+
+  -- Not there at all: the door raises its own 02000 a line later.
+  if v_subject_org is null then
+    return;
+  end if;
+
+  -- The globally readable platform tenant's kernel Tables: unchanged — the door decides.
+  if v_subject_org is distinct from p_organization_id
+     and exists (select 1 from iam.system_orgs s
+                  where s.organization_id = v_subject_org and s.global_readable) then
+    return;
+  end if;
+
+  if custom.has_visibility(v_me, 'record', p_subject_id, p_required) then
+    return;
+  end if;
+
+  -- THE REFUSAL NAMES THE RUNG HELD, NOT ONLY THE RUNG NEEDED (lane TAILS, 2026-09-21).
+  v_held := custom.effective_level(v_me, v_subject_org, p_subject_id, 'record');
+
+  if v_held is null then
+    raise exception 'You do not have access to this %, so % may not write to it.',
+      coalesce(nullif(btrim(p_subject_word), ''), 'record'),
+      coalesce(nullif(btrim(p_door), ''), 'that door')
+      using errcode = '42501',
+            hint = format(
+              'DOOR-1 decides reading and writing with the SAME question: a %s you may not open is a %s you may not change. This needs the %s level (viewer < commenter < editor < admin) - ask whoever holds it to share it with you, or ask an owner of this organization. Being a member of the organization is not by itself permission to rewrite somebody else''s row.',
+              coalesce(nullif(btrim(p_subject_word), ''), 'record'),
+              coalesce(nullif(btrim(p_subject_word), ''), 'record'),
+              p_required);
+  end if;
+
+  raise exception 'You hold the % level on this %, and % needs the % level.',
+    v_held,
+    coalesce(nullif(btrim(p_subject_word), ''), 'record'),
+    coalesce(nullif(btrim(p_door), ''), 'that door'),
+    p_required
+    using errcode = '42501',
+          hint = format(
+            'DOOR-1 decides reading and writing with the SAME question, on ONE ladder: viewer < commenter < editor < admin. You hold %s on this %s and %s needs the %s level, so ask an admin of this %s - or an owner of this organization - to raise your level. Being a member of the organization is not by itself permission to rewrite somebody else''s row.',
+            v_held,
+            coalesce(nullif(btrim(p_subject_word), ''), 'record'),
+            coalesce(nullif(btrim(p_door), ''), 'that door'),
+            p_required,
+            coalesce(nullif(btrim(p_subject_word), ''), 'record'));
+end
+$function$;
+
+CREATE OR REPLACE FUNCTION custom._field_reads_what_it_reads()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_deps  jsonb;
+  v_floor record;
+  v_path  text[];                      -- STORE-TAILS-3: a circle this definition would close
+  v_cp    record;                      -- STORE-TAILS-3: the agent-visibility floor
+  r       record;
+begin
+  if new.table_id is distinct from custom.field_kernel_id() or new.data_class = 'kernel' then
+    return new;
+  end if;
+
+  -- STORE-TAILS-3: A COLUMN AN AGENT IS NOW KEPT FROM MORE FIRMLY TAKES ITS READERS WITH IT
+  -- (any column, worked out or not — Budget is a plain number). Every formula, lookup and rollup
+  -- that reads it, directly or through another, is given at least the same word, here, in the
+  -- write that raised it; each reader's own write passes this same trigger and carries it on.
+  if tg_op = 'UPDATE'
+     and custom.context_policy_rank(new.data ->> 'context_policy')
+         > custom.context_policy_rank(old.data ->> 'context_policy') then
+    for r in
+      select f.organization_id, f.id
+        from custom.record f
+       where f.organization_id = new.organization_id
+         and f.table_id = custom.field_kernel_id()
+         and f.data_class <> 'kernel'
+         and f.id <> new.id
+         and f.data ->> 'type' = 'formula'
+         and coalesce(f.data -> 'config', '{}'::jsonb) ?| array['expr', 'pick', 'agg']
+         and custom.context_policy_rank(f.data ->> 'context_policy') < custom.context_policy_rank(new.data ->> 'context_policy')
+         and exists (select 1 from custom.field_input_closure(f.organization_id, f.data, f.id) c
+                      where c.input_id = new.id)
+    loop
+      update custom.record
+         set data = jsonb_set(data, '{context_policy}', to_jsonb(new.data ->> 'context_policy'))
+       where organization_id = r.organization_id
+         and id = r.id;
+    end loop;
+  end if;
+  if coalesce(new.data ->> 'type', '') <> 'formula'
+     or not (coalesce(new.data -> 'config', '{}'::jsonb) ?| array['expr', 'pick', 'agg']) then
+    return new;
+  end if;
+  -- A retirement is not a change of shape (the shared rule): the document stays byte-for-byte
+  -- what it was, so every guard after this one still sees a retirement.
+  if tg_op = 'UPDATE'
+     and custom.is_a_retirement(old.deleted_at, new.deleted_at, old.data, new.data,
+                                old.table_id, new.table_id, old.organization_id,
+                                new.organization_id, old.data_class, new.data_class) then
+    return new;
+  end if;
+
+  -- STORE-TAILS-3: A COLUMN THAT WOULD READ ITSELF IS NOT SAVED. The walk starts from the
+  -- definition being written (not the stored one) and comes back to this column's id through
+  -- whatever reads it — by id, or by key for a lookup's far column and the older formula shape.
+  -- TABLE-ACTIONS: a column custom.table_duplicate copies is not walked for a circle. The graph
+  -- is the source's, already proven acyclic when its columns were saved, and the copy remaps it
+  -- one to one (every id it reads becomes the copy's own), so the walk could only say "no" —
+  -- at 5-6 s a computed column in a large organization. Marked by the copy's own transaction-
+  -- local setting, which no client can set (set_config is no client door).
+  if new.deleted_at is null
+     and coalesce(current_setting('custom.table_duplicate_into', true), '') is distinct from new.data ->> 'entity_definition_id' then
+    v_path := custom.field_cycle(new.organization_id, new.data, new.id);
+    if v_path is not null then
+      raise exception 'The column "%" would be worked out from itself: % — so it was not saved.',
+        coalesce(nullif(new.data ->> 'label', ''), new.data ->> 'key'),
+        array_to_string(v_path, ' reads ')
+        using errcode = '42P17',
+              hint = 'STORE-TAILS-3: a formula, lookup or rollup that reads itself round a circle has no answer. Point one of the columns in that circle at something outside it, and save again.';
+    end if;
+  end if;
+
+  -- depends_on: the columns of THIS table it reads, by key (the list custom.field_dependants
+  -- and REC-18's "this field is used by …" read). Worked out from the definition, never typed.
+  select coalesce(jsonb_agg(distinct i.input_key order by i.input_key), '[]'::jsonb)
+    into v_deps
+    from custom.field_inputs_of(new.organization_id, new.data) i
+   where i.input_table::text = new.data ->> 'entity_definition_id'
+     and not i.retired;
+  if new.data -> 'depends_on' is distinct from v_deps then
+    new.data := jsonb_set(new.data, '{depends_on}', v_deps);
+  end if;
+
+  select * into v_floor
+    from custom.field_sensitivity_floor(new.organization_id, new.data, new.id);
+  if v_floor.sensitivity is not null
+     and custom.sensitivity_rank(new.data ->> 'sensitivity') < custom.sensitivity_rank(v_floor.sensitivity) then
+    raise notice 'the column "%" reads %, which is %, so it is % too (it was %)',
+      coalesce(nullif(new.data ->> 'label', ''), new.data ->> 'key'),
+      (select string_agg(format('"%s"', e ->> 'label'), ', ') from jsonb_array_elements(v_floor.reads) e),
+      v_floor.sensitivity, v_floor.sensitivity, coalesce(new.data ->> 'sensitivity', 'nothing');
+    new.data := jsonb_set(new.data, '{sensitivity}', to_jsonb(v_floor.sensitivity));
+  end if;
+
+  -- STORE-TAILS-3: WHAT AN AGENT MAY SEE FOLLOWS WHAT THE COLUMN READS, the same way sensitivity
+  -- does. A column worked out from one the organization keeps out of conversations (`exclude`),
+  -- gives an agent only on request, or only as a summary, is kept from an agent at least as
+  -- firmly — raised to the strictest word among everything it reads, never lowered here.
+  select * into v_cp
+    from custom.field_context_policy_floor(new.organization_id, new.data, new.id);
+  if v_cp.context_policy is not null
+     and custom.context_policy_rank(new.data ->> 'context_policy') < custom.context_policy_rank(v_cp.context_policy) then
+    raise notice 'the column "%" reads %, which an agent is given as "%", so an agent is given it as "%" too (it was "%")',
+      coalesce(nullif(new.data ->> 'label', ''), new.data ->> 'key'),
+      (select string_agg(format('"%s"', e ->> 'label'), ', ') from jsonb_array_elements(v_cp.reads) e),
+      v_cp.context_policy, v_cp.context_policy, coalesce(new.data ->> 'context_policy', 'nothing');
+    new.data := jsonb_set(new.data, '{context_policy}', to_jsonb(v_cp.context_policy));
+  end if;
+  return new;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.trg_associations_bump_visibility()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_row   record := coalesce(new, old);
+  v_org   uuid;
+begin
+  -- The row's organization is established FIRST, because the off switch below is an
+  -- org-overridable knob and resolving it without an organization silently reads the
+  -- platform value for every tenant.
+  v_org := v_row.organization_id;
+
+  -- THE OFF SWITCH, READ INSIDE THE BODY. A trigger's guard cannot live in the file header: the
+  -- header is not consulted at run time and an UPDATE would still pay for this work while every
+  -- additive check read green. So the knob is read here, and while it resolves false this trigger
+  -- is a no-op on every write to platform.associations.
+  if not custom.store_is_open(v_org) then
+    return null;
+  end if;
+
+  -- THE SECOND GATE, AND THE REASON THIS TRIGGER IS INERT FOR TODAY'S WRITES: it does nothing at
+  -- all unless the row's role is one of the new store's declared carrying roles. A trigger WHEN
+  -- clause cannot carry a subquery, so the check lives here, one index lookup on a three-row table.
+  if not exists (
+    select 1 from custom.carrying_rule cr
+    where cr.is_active and cr.role = v_row.role
+  ) then
+    return null;
+  end if;
+
+  -- The moved record's own epoch, and its container's. Two rows, never a subtree.
+  -- TABLE-ACTIONS: while custom.table_duplicate writes a copy (its own transaction-local mark),
+  -- the organization's visibility version is NOT bumped per row: every pass used to hold that one
+  -- hot row to its end, queueing every other writer in the organization. The half copy is hidden
+  -- from everyone but its maker, and the copy bumps once, when it is handed over.
+  if coalesce(current_setting('custom.table_duplicate_into', true), '') = '' then
+    perform custom.bump_epoch(v_row.source_type, v_row.source_id, v_org);
+    perform custom.bump_epoch(v_row.target_type, v_row.target_id, v_org);
+  end if;
+
+  -- The pair's cache entries go in the SAME COMMIT. This is the "invalidated in the same commit"
+  -- half of VIS-7, and it is bounded: the pair, never the closure below it.
+  delete from custom.visibility_cache c
+   where (c.container_type = v_row.source_type and c.container_id = v_row.source_id)
+      or (c.container_type = v_row.target_type and c.container_id = v_row.target_id)
+      or (c.item_type      = v_row.source_type and c.item_id      = v_row.source_id)
+      or (c.item_type      = v_row.target_type and c.item_id      = v_row.target_id);
+
+  return null;
+end;
+$function$;
+
 create or replace function custom._duplicate_id(p_copy uuid, p_old uuid)
 returns uuid
 language sql
@@ -268,8 +1216,7 @@ set search_path to 'pg_catalog'
 as $function$
   -- THE COPY'S ID FOR ONE SOURCE ROW, worked out, never stored: the same copy and the same source
   -- row always give the same id. That is what makes a copy resumable without a job table — every
-  -- call reads what is already there off the copy itself, exactly as custom.table_archive reads
-  -- what remains off the records.
+  -- pass reads what is already there off the copy itself.
   select md5(p_copy::text || ':' || p_old::text)::uuid;
 $function$;
 
@@ -277,6 +1224,106 @@ revoke execute on function custom._duplicate_id(uuid, uuid) from public;
 
 comment on function custom._duplicate_id(uuid, uuid) is
   'TABLE-ACTIONS. The id a copy gives one source row: md5(copy:source) as a uuid, the same on every call, so a paged copy resumes from what already exists. Internal to custom.table_duplicate; no client grant.';
+
+create or replace function custom._copy_in_progress_guard(p_subject_id uuid, p_me uuid)
+returns void
+language plpgsql
+stable
+set search_path to 'pg_catalog'
+as $function$
+declare
+  v_name text;
+begin
+  -- A TABLE STILL BEING COPIED ANSWERS ONLY THE PERSON COPYING IT. The subject is the Table
+  -- itself or a row of it; the copy's maker is its Table record's created_by (stamped when the
+  -- copy's first pass made it). Asked by custom.assert_may_know_table (every read door),
+  -- custom.assert_client_may_open (open, views) and custom.assert_client_may_change (writes).
+  if p_subject_id is null or p_me is null then
+    return;
+  end if;
+  select coalesce(nullif(t.data ->> 'name', ''), 'This table') into v_name
+    from custom.record s
+    join custom.record t
+      on t.organization_id = s.organization_id
+     and t.id = case when s.table_id = custom.table_kernel_id() then s.id else s.table_id end
+   where s.id = p_subject_id
+     and t.table_id = custom.table_kernel_id()
+     and t.data ->> 'kept_for' = 'copying'
+     and t.created_by is distinct from p_me
+   limit 1;
+  if found then
+    raise exception '% is still being copied, so only the person copying it can open it until the copy is finished.', v_name
+      using errcode = '42501';
+  end if;
+end;
+$function$;
+
+revoke execute on function custom._copy_in_progress_guard(uuid, uuid) from public;
+
+comment on function custom._copy_in_progress_guard(uuid, uuid) is
+  'TABLE-ACTIONS. Refuses, with one sentence, anyone but its maker on a Table still being copied (kept_for copying) or a row of it. Asked by custom.assert_may_know_table, custom.assert_client_may_open and custom.assert_client_may_change. Internal; no client grant.';
+
+create or replace function custom._remap_rows(p_doc jsonb, p_copy uuid, p_job jsonb)
+returns jsonb
+language plpgsql
+stable
+set search_path to 'pg_catalog'
+as $function$
+declare
+  v_text text;
+  v_id   text;
+  v_src  uuid := (p_job ->> 'duplicated_from')::uuid;
+  v_org  uuid := (p_job ->> 'duplicated_from_organization_id')::uuid;
+begin
+  -- EVERY ID OF A SOURCE ROW THIS COPY CARRIES becomes that row's id in the copy (any letter
+  -- case). Which rows the copy carries was fixed when it started (custom.table_duplicate:
+  -- live then, made by then, handed to its maker): asked here row by row against the job, so no
+  -- pass works the whole set out again. An id of a row it does not carry is left for
+  -- custom._without_rows_of to take out.
+  if p_doc is null then
+    return null;
+  end if;
+  v_text := p_doc::text;
+  for v_id in
+    select distinct m[1]
+      from regexp_matches(v_text, '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', 'gi') m
+  loop
+    if custom._duplicate_carries_row(p_job, v_org, v_src, lower(v_id)::uuid) then
+      v_text := replace(v_text, v_id, custom._duplicate_id(p_copy, lower(v_id)::uuid)::text);
+    end if;
+  end loop;
+  return v_text::jsonb;
+end;
+$function$;
+
+create or replace function custom._duplicate_carries_row(p_job jsonb, p_org uuid, p_src uuid, p_id uuid)
+returns boolean
+language sql
+stable
+set search_path to 'pg_catalog'
+as $function$
+  -- Is this source row one the copy carries? Live and made when the copy started, not
+  -- quarantined, and handed to its maker then (the job keeps whichever is shorter: the rows
+  -- handed, or the rows not handed).
+  select coalesce((p_job ->> 'with_records')::boolean, false)
+     and exists (
+       select 1 from custom.record r
+        where r.organization_id = p_org and r.id = p_id and r.table_id = p_src
+          and r.data_class = 'record'
+          and r.created_at <= (p_job ->> 'cutoff')::timestamptz
+          and coalesce(r.metadata ->> 'quarantine', 'false') <> 'true')
+     and case when p_job ? 'rows_handed'
+              then (p_job -> 'rows_handed') ? p_id::text
+              else not (coalesce(p_job -> 'rows_not_handed', '{}'::jsonb) ? p_id::text) end;
+$function$;
+
+revoke execute on function custom._remap_rows(jsonb, uuid, jsonb) from public;
+revoke execute on function custom._duplicate_carries_row(jsonb, uuid, uuid, uuid) from public;
+
+comment on function custom._remap_rows(jsonb, uuid, jsonb) is
+  'TABLE-ACTIONS. Rewrites every id of a source row the copy carries to that row''s id in the copy. Internal to custom.table_duplicate; no client grant.';
+comment on function custom._duplicate_carries_row(jsonb, uuid, uuid, uuid) is
+  'TABLE-ACTIONS. Whether a source row is one the copy carries, as fixed when the copy started. Internal; no client grant.';
 
 create or replace function custom._table_duplicate_step(p_copy uuid, p_budget interval)
 returns jsonb
@@ -288,9 +1335,10 @@ declare
   c_records_per_unit constant integer := 25;
   c_options_per_unit constant integer := 200;
   c_links_per_unit   constant integer := 50;
-  -- The budget is counted from the start of THIS CALL (statement_timestamp), so the rights,
-  -- the mask and the map a call works out first are inside it, not on top of it.
+  -- The budget is counted from the start of THIS CALL (statement_timestamp), and is asked only
+  -- after a pass has done at least one unit, so every pass moves the copy on.
   v_start      timestamptz := statement_timestamp();
+  v_units      integer := 0;
   v_me         uuid := custom.query_principal();
   v_job        record;
   v_inv        jsonb;
@@ -298,16 +1346,20 @@ declare
   v_to         uuid;
   v_src        uuid;
   v_with       boolean;
+  v_cutoff     timestamptz;
+  v_fields     uuid[];
+  v_views      uuid[];
+  v_lists      uuid[];
+  v_visible    text[];
+  v_declared   text[];
+  v_hidden     text[];
+  v_self_keys  text[];
+  v_dead_keys  text[];
   v_map        jsonb;
-  v_level      public.permission_level;
-  v_mask       jsonb;
-  v_visible    text[] := array[]::text[];
-  v_declared   text[] := array[]::text[];
-  v_hidden     text[] := array[]::text[];
-  v_seen       uuid[] := array[]::uuid[];
-  v_self_keys  text[] := array[]::text[];
-  v_dead_keys  text[] := array[]::text[];
-  v_opt        record;
+  v_opt        uuid;
+  v_opt_data   jsonb;
+  v_opt_meta   jsonb;
+  v_opt_shown  platform.shown_to;
   v_new_opts   uuid;
   v_opt_dead   text[];
   v_view       record;
@@ -315,19 +1367,25 @@ declare
   v_def        jsonb;
   v_meta       jsonb;
   v_k          integer;
+  v_cursor     jsonb;
   v_step       text := 'done';
-  v_done       boolean := false;
-  v_refs_out   jsonb;
-  v_hidden_out jsonb := '{}'::jsonb;
-  v_views_failed jsonb;
+  v_status     text := 'copying';
+  v_sentence   text;
+  v_src_live   boolean;
+  v_src_name   text;
+  v_d_fields   bigint; v_d_views bigint; v_d_lists bigint; v_d_recs bigint;
   v_out        jsonb;
-  v_t_fields   bigint; v_d_fields bigint;
-  v_t_views    bigint; v_d_views  bigint;
-  v_t_recs     bigint; v_d_recs   bigint;
-  v_t_lists    bigint; v_d_lists  bigint;
+  v_setup_ms   numeric;
 begin
-  -- THE JOB is the copy's one history row (verb "duplicate"); its stored undo carries what the
-  -- copy was asked for, and `open` says it is not finished — custom.table_archive's own signal.
+  -- ONE PASS AT A TIME PER COPY. A second pass that arrives while one is running answers "busy"
+  -- (the client waits and asks again), never a duplicate-key error halfway through a page.
+  if not pg_try_advisory_xact_lock(hashtextextended('custom.table_duplicate:' || p_copy::text, 0)) then
+    return jsonb_build_object('status', 'busy', 'step', 'busy',
+      'sentence', 'Another pass of this copy is running. Wait a moment and carry on.');
+  end if;
+
+  -- THE JOB is the copy's one history row (verb "duplicate"): its stored undo carries what the
+  -- copy was asked for and everything fixed when it started.
   select m.id, m.organization_id, m.inverse into v_job
     from history.migration_log m
    where m.verb = 'duplicate' and m.target_kind = 'table' and m.target_id = p_copy
@@ -337,430 +1395,407 @@ begin
     raise exception 'That is not a copy that is being made, so there is nothing to carry on.'
       using errcode = '42501';
   end if;
-  v_inv  := v_job.inverse;
-  v_to   := v_job.organization_id;
-  v_from := (v_inv ->> 'duplicated_from_organization_id')::uuid;
-  v_src  := (v_inv ->> 'duplicated_from')::uuid;
-  v_with := coalesce((v_inv ->> 'with_records')::boolean, false);
+  v_inv    := v_job.inverse;
+  v_to     := v_job.organization_id;
+  v_from   := (v_inv ->> 'duplicated_from_organization_id')::uuid;
+  v_src    := (v_inv ->> 'duplicated_from')::uuid;
+  v_with   := coalesce((v_inv ->> 'with_records')::boolean, false);
+  v_cutoff := (v_inv ->> 'cutoff')::timestamptz;
+  select coalesce(array_agg(x::uuid), '{}') into v_fields from jsonb_array_elements_text(v_inv -> 'fields') x;
+  select coalesce(array_agg(x::uuid), '{}') into v_views  from jsonb_array_elements_text(v_inv -> 'views') x;
+  select coalesce(array_agg(x::uuid), '{}') into v_lists  from jsonb_array_elements_text(v_inv -> 'choice_lists') x;
+  select coalesce(array_agg(x), '{}') into v_visible   from jsonb_array_elements_text(v_inv -> 'mask_visible') x;
+  select coalesce(array_agg(x), '{}') into v_declared  from jsonb_array_elements_text(v_inv -> 'mask_declared') x;
+  select coalesce(array_agg(x), '{}') into v_hidden    from jsonb_array_elements_text(v_inv -> 'mask_hidden') x;
+  select coalesce(array_agg(x), '{}') into v_self_keys from jsonb_array_elements_text(v_inv -> 'self_keys') x;
+  select coalesce(array_agg(x), '{}') into v_dead_keys from jsonb_array_elements_text(v_inv -> 'dead_keys') x;
 
-  -- EVERY ROW THIS CALL WRITES IS PART OF THE ONE DUPLICATE EVENT (history.migration_record's
-  -- own mark, set again for this statement because the event was recorded by an earlier one).
-  perform set_config('history.mark_at',   statement_timestamp()::text, true);
-  perform set_config('history.mark_id',   v_job.id::text,              true);
-  perform set_config('history.mark_verb', 'duplicate',                 true);
-
-  -- WHAT THIS PERSON MAY READ OF THE SOURCE: the same field mask custom.read_records asks.
-  v_level := custom.effective_level(v_me, v_from, v_src);
-  v_mask  := custom.read_mask_for(v_me, v_from, v_src, v_level, 'read');
-  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_visible
-    from jsonb_array_elements(v_mask -> 'visible') x;
-  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_declared
-    from jsonb_array_elements(v_mask -> 'declared') x;
-  select coalesce(array_agg(d), '{}'::text[]) into v_hidden
-    from unnest(v_declared) d where not (d = any (v_visible));
-  if v_with then
-    -- THE ROWS THIS PERSON IS HANDED (custom.query_visible_ids at viewer: the ladder, then
-    -- "Shown to" — another person's "only me" rows stay theirs).
-    v_seen := array(select q from custom.query_visible_ids(v_from, v_src, 'viewer') q);
+  -- ALREADY OVER: handed over, failed, or discarded (the half copy archived).
+  if (v_inv ->> 'state') in ('done', 'failed', 'discarded') then
+    v_status := v_inv ->> 'state';
+  elsif exists (select 1 from custom.record t where t.organization_id = v_to and t.id = p_copy and t.deleted_at is not null) then
+    v_inv := v_inv || jsonb_build_object('state', 'discarded', 'open', false);
+    update history.migration_log set inverse = v_inv where id = v_job.id;
+    v_status := 'discarded';
   end if;
 
-  -- THE MAP: every source id the copy carries -> its worked-out id in the copy.
-  v_map := jsonb_build_object(v_src::text, p_copy::text);
-  v_map := v_map || coalesce((
-    select jsonb_object_agg(x.id::text, custom._duplicate_id(p_copy, x.id)::text)
-      from custom.record x
-     where x.organization_id = v_from
-       and (   (x.table_id = custom.field_kernel_id() and x.data_class <> 'kernel' and x.deleted_at is null
-                and x.data ->> 'entity_definition_id' = v_src::text)
-            or (v_with and x.table_id = v_src and x.data_class = 'record' and x.deleted_at is null
-                and coalesce(x.metadata ->> 'quarantine', 'false') <> 'true' and x.id = any (v_seen)))), '{}'::jsonb);
-  v_map := v_map || coalesce((
-    select jsonb_object_agg(o.id::text, custom._duplicate_id(p_copy, o.id)::text)
-      from custom.record x
-      join custom.record o
-        on o.organization_id = v_from
-       and (   o.id = (x.data -> 'config' ->> 'options_table_id')::uuid
-            or (o.table_id = custom.field_kernel_id() and o.data_class <> 'kernel' and o.deleted_at is null
-                and o.data ->> 'entity_definition_id' = x.data -> 'config' ->> 'options_table_id')
-            or (o.table_id::text = x.data -> 'config' ->> 'options_table_id' and o.data_class = 'record'
-                and o.deleted_at is null))
-     where x.organization_id = v_from and x.table_id = custom.field_kernel_id()
-       and x.data_class <> 'kernel' and x.deleted_at is null
-       and x.data ->> 'entity_definition_id' = v_src::text
-       and nullif(x.data -> 'config' ->> 'options_table_id', '') is not null), '{}'::jsonb);
+  -- THE SOURCE IS STILL WHOLE, OR THE COPY STOPS. An archived source, or one whose archive has
+  -- started, would be handed over half-copied; instead the copy is marked failed, kept hidden,
+  -- and the person is told how to discard it.
+  if v_status = 'copying' then
+    select t.deleted_at is null, coalesce(nullif(t.data ->> 'name', ''), 'The table') into v_src_live, v_src_name
+      from custom.record t where t.organization_id = v_from and t.id = v_src;
+    if not coalesce(v_src_live, false)
+       or exists (select 1 from history.migration_log a
+                   where a.organization_id = v_from and a.verb = 'archive' and a.target_kind = 'table'
+                     and a.target_id = v_src and a.undone_at is null
+                     and coalesce((a.inverse ->> 'open')::boolean, false)) then
+      v_sentence := format('%s was archived while it was being copied, so the copy was stopped and not handed over. Discard it from your unfinished copies.',
+                           coalesce(v_src_name, 'The table'));
+      v_inv := v_inv || jsonb_build_object('state', 'failed', 'open', false, 'why', v_sentence);
+      update history.migration_log set inverse = v_inv where id = v_job.id;
+      v_status := 'failed';
+    end if;
+  end if;
 
-  <<work>>
-  loop
-    -- 1. EVERY CHOICE LIST, AS A NEW ONE: its own Table (in a Home of its own), its Fields and
-    -- its live options — words, colours, stable keys, order. Record values store the option's
-    -- key, so they stay valid unchanged; editing the copy's choices never edits the original's.
-    for v_opt in
-      select distinct o.id as opts_id, o.data as opts_data, o.metadata as opts_meta, o.shown_to as opts_shown_to
-        from custom.record f
-        join custom.record o
-          on o.organization_id = v_from and o.id = (f.data -> 'config' ->> 'options_table_id')::uuid
-         and o.table_id = custom.table_kernel_id() and o.data_class = 'table'
-       where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-         and f.data_class <> 'kernel' and f.deleted_at is null
-         and f.data ->> 'entity_definition_id' = v_src::text
-         and nullif(f.data -> 'config' ->> 'options_table_id', '') is not null
-    loop
-      v_new_opts := custom._duplicate_id(p_copy, v_opt.opts_id);
-      if not exists (select 1 from custom.record t where t.organization_id = v_to and t.id = v_new_opts) then
-        if clock_timestamp() - v_start > p_budget then v_step := 'choices'; exit work; end if;
-        insert into custom.record (id, organization_id, table_id, data)
-        values (custom._duplicate_id(p_copy, custom._duplicate_id(p_copy, v_opt.opts_id)), v_to,
-                custom.person_kernel_id(),
-                jsonb_build_object('name', coalesce(nullif(v_opt.opts_data ->> 'name', ''), 'Choices') || ' Home'));
-        insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
-        values (v_new_opts, v_to, custom.table_kernel_id(), 'table',
-                custom._uuid_remap(v_opt.opts_data, v_map)
-                  || jsonb_build_object(
-                       'parent_id', custom._duplicate_id(p_copy, custom._duplicate_id(p_copy, v_opt.opts_id))::text,
-                       'slug', left(regexp_replace(coalesce(nullif(v_opt.opts_data ->> 'slug', ''), 'choices'),
-                                                   '_[0-9a-f]{16,}$', '')
-                                    || '_' || left(replace(v_new_opts::text, '-', ''), 20), 48)),
-                custom._copied_metadata(v_opt.opts_meta), v_opt.opts_shown_to);
-      end if;
-      -- its Fields (a list may carry more than a title — "name" and "color" are common), as their own unit.
-      if exists (select 1 from custom.record x
-                  where x.organization_id = v_from and x.table_id = custom.field_kernel_id()
-                    and x.data_class <> 'kernel' and x.deleted_at is null
-                    and x.data ->> 'entity_definition_id' = v_opt.opts_id::text
-                    and not exists (select 1 from custom.record c where c.organization_id = v_to
-                                       and c.id = custom._duplicate_id(p_copy, x.id))) then
-        if clock_timestamp() - v_start > p_budget then v_step := 'choices'; exit work; end if;
-        insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
-        select custom._duplicate_id(p_copy, x.id), v_to, x.table_id, x.data_class,
-               custom._uuid_remap(x.data, v_map), custom._copied_metadata(x.metadata), x.shown_to
-          from custom.record x
-         where x.organization_id = v_from and x.table_id = custom.field_kernel_id()
-           and x.data_class <> 'kernel' and x.deleted_at is null
-           and x.data ->> 'entity_definition_id' = v_opt.opts_id::text
-           and not exists (select 1 from custom.record c where c.organization_id = v_to
-                              and c.id = custom._duplicate_id(p_copy, x.id))
-         order by coalesce((x.data ->> 'sort')::integer, 0), x.created_at;
-      end if;
-      -- the options, in pages; a value kept under an ARCHIVED column of the list stays behind.
-      select coalesce(array_agg(distinct d.data ->> 'key'), array[]::text[]) into v_opt_dead
-        from custom.record d
-       where d.organization_id = v_from and d.table_id = custom.field_kernel_id()
-         and d.data_class <> 'kernel' and d.deleted_at is not null
-         and d.data ->> 'entity_definition_id' = v_opt.opts_id::text
-         and not exists (select 1 from custom.record l
-                          where l.organization_id = v_from and l.table_id = custom.field_kernel_id()
-                            and l.data_class <> 'kernel' and l.deleted_at is null
-                            and l.data ->> 'entity_definition_id' = v_opt.opts_id::text
-                            and l.data ->> 'key' = d.data ->> 'key');
-      loop
-        exit when not exists (
-          select 1 from custom.record x
-           where x.organization_id = v_from and x.table_id = v_opt.opts_id
-             and x.data_class = 'record' and x.deleted_at is null
-             and not exists (select 1 from custom.record c where c.organization_id = v_to
-                                and c.id = custom._duplicate_id(p_copy, x.id)));
-        if clock_timestamp() - v_start > p_budget then v_step := 'choices'; exit work; end if;
-        insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
-        select custom._duplicate_id(p_copy, x.id), v_to, v_new_opts, 'record',
-               custom._uuid_remap(x.data - '_values' - v_opt_dead, v_map), custom._copied_metadata(x.metadata), x.shown_to
-          from custom.record x
-         where x.organization_id = v_from and x.table_id = v_opt.opts_id
-           and x.data_class = 'record' and x.deleted_at is null
-           and not exists (select 1 from custom.record c where c.organization_id = v_to
-                              and c.id = custom._duplicate_id(p_copy, x.id))
-         order by x.created_at, x.id
-         limit c_options_per_unit;
-      end loop;
-    end loop;
+  if v_status = 'copying' then
+    -- EVERY ROW THIS PASS WRITES IS PART OF THE ONE DUPLICATE EVENT (history.migration_record's
+    -- own mark, set again for this statement), and this transaction is marked as writing this
+    -- copy: the organization's version is bumped once at handover rather than per row, and no cycle walk for the columns it copies.
+    perform set_config('history.mark_at',   statement_timestamp()::text, true);
+    perform set_config('history.mark_id',   v_job.id::text,              true);
+    perform set_config('history.mark_verb', 'duplicate',                 true);
+    perform set_config('custom.table_duplicate_into', p_copy::text, true);
 
-    -- 2. THE FIELDS, the stored ones first, then the ones worked out from them (a formula's
-    -- guard reads the Fields it names, so they have to be there), a few at a time.
-    loop
-      exit when not exists (
-        select 1 from custom.record f
-         where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-           and f.data_class <> 'kernel' and f.deleted_at is null
-           and f.data ->> 'entity_definition_id' = v_src::text
-           and not exists (select 1 from custom.record c where c.organization_id = v_to
-                              and c.id = custom._duplicate_id(p_copy, f.id)));
-      if clock_timestamp() - v_start > p_budget then v_step := 'fields'; exit work; end if;
-      insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
-      select custom._duplicate_id(p_copy, f.id), v_to, f.table_id, f.data_class,
-             coalesce(custom._without_rows_of(custom._uuid_remap(f.data, v_map), v_from, v_src), '{}'::jsonb),
-             custom._copied_metadata(f.metadata), f.shown_to
-        from custom.record f
-       where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-         and f.data_class <> 'kernel' and f.deleted_at is null
-         and f.data ->> 'entity_definition_id' = v_src::text
-         and not exists (select 1 from custom.record c where c.organization_id = v_to
-                            and c.id = custom._duplicate_id(p_copy, f.id))
-       order by (coalesce(f.data ->> 'type', '') = 'formula' or coalesce(f.data ->> 'source', '') = 'formula'),
-                coalesce((f.data ->> 'sort')::integer, 0), f.created_at
-       limit c_fields_per_unit;
-    end loop;
+    -- THE MAP of structure ids (bounded by the Table's shape, never its rows): the Table, its
+    -- columns as fixed when the copy started, and every choice list with its columns and options.
+    v_map := jsonb_build_object(v_src::text, p_copy::text);
+    v_map := v_map || coalesce((select jsonb_object_agg(f::text, custom._duplicate_id(p_copy, f)::text)
+                                  from unnest(v_fields) f), '{}'::jsonb);
+    v_map := v_map || coalesce((
+      select jsonb_object_agg(o.id::text, custom._duplicate_id(p_copy, o.id)::text)
+        from custom.record o
+       where o.organization_id = v_from
+         and (   o.id = any (v_lists)
+              or (o.table_id = custom.field_kernel_id() and o.data_class <> 'kernel' and o.deleted_at is null
+                  and (o.data ->> 'entity_definition_id')::uuid = any (v_lists))
+              or (o.table_id = any (v_lists) and o.data_class = 'record' and o.deleted_at is null))), '{}'::jsonb);
 
-    -- 3. THE VIEWS this person may see (another person's "only me" view stays theirs), made
-    -- through the house door for a new view (custom.view_declare), so a copied view is born the
-    -- way every new view is; then its look, order, hand-set positions and "Shown to" are set on
-    -- it by name. A view the house door refuses is named in left_behind, never half made.
-    for v_view in
-      select sv.id, sv.name, sv.description, sv.definition, sv.metadata, sv.shown_to, sv.sort_order,
-             (sv.is_default or (sv.definition -> 'is_default') = 'true'::jsonb) as is_default
-        from platform.saved_view sv
-       where sv.organization_id = v_from and sv.deleted_at is null and sv.surface_key = 'custom/records'
-         and coalesce(sv.subject_id, nullif(sv.definition ->> 'table_id', '')::uuid) = v_src
-         and (sv.shown_to is distinct from 'only_me' or sv.created_by = v_me)
-         and not exists (select 1 from platform.saved_view c
-                          where c.organization_id = v_to and c.subject_id = p_copy and c.deleted_at is null
-                            and c.metadata ->> 'copied_from_view' = sv.id::text)
-         and not (coalesce(v_inv -> 'views_failed', '{}'::jsonb) ? sv.id::text)
-       order by sv.sort_order nulls last, sv.created_at
+    -- How long this pass took before its first unit (reported in the answer as pass.setup_ms).
+    v_setup_ms := round(extract(epoch from clock_timestamp() - v_start) * 1000);
+
+    <<work>>
     loop
-      if clock_timestamp() - v_start > p_budget then v_step := 'views'; exit work; end if;
-      v_def := coalesce(custom._without_rows_of(custom._uuid_remap(v_view.definition, v_map), v_from, v_src), '{}'::jsonb);
-      v_meta := coalesce(custom._without_rows_of(custom._uuid_remap(coalesce(v_view.metadata, '{}'::jsonb), v_map),
-                                                 v_from, v_src), '{}'::jsonb);
-      begin
-        v_new_view := custom.view_declare(v_to, p_copy, jsonb_build_object(
-          'name', v_view.name,
-          'filters', coalesce(v_def -> 'filters', '{}'::jsonb),
-          'definition', v_def - 'table_id' - 'filters' - 'order' - 'is_default' - 'moved_from' - 'hidden_fields'));
-        update platform.saved_view sv
-           set description = v_view.description,
-               sort_order  = v_view.sort_order,
-               shown_to    = v_view.shown_to,
-               definition  = case when v_def ->> 'order' = 'manual'
-                                  then jsonb_set(sv.definition, '{order}', '"manual"'::jsonb, true)
-                                  else sv.definition end,
-               metadata    = coalesce(sv.metadata, '{}'::jsonb) || v_meta
-                             || jsonb_build_object('copied_from_view', v_view.id::text)
-         where sv.organization_id = v_to and sv.id = v_new_view;
-        if v_view.is_default then
-          perform custom.view_designate(v_to, p_copy, v_new_view, null);
+      -- 1. EVERY CHOICE LIST, AS A NEW ONE: its Table (in a Home of its own), its columns, its
+      -- options in pages — words, colours, stable keys, order.
+      foreach v_opt in array v_lists loop
+        v_new_opts := custom._duplicate_id(p_copy, v_opt);
+        select o.data, o.metadata, o.shown_to into v_opt_data, v_opt_meta, v_opt_shown
+          from custom.record o where o.organization_id = v_from and o.id = v_opt;
+        if not exists (select 1 from custom.record t where t.organization_id = v_to and t.id = v_new_opts) then
+          if v_units > 0 and clock_timestamp() - v_start > p_budget then v_step := 'choices'; exit work; end if;
+          insert into custom.record (id, organization_id, table_id, data)
+          values (custom._duplicate_id(p_copy, v_new_opts), v_to, custom.person_kernel_id(),
+                  jsonb_build_object('name', coalesce(nullif(v_opt_data ->> 'name', ''), 'Choices') || ' Home'));
+          insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
+          values (v_new_opts, v_to, custom.table_kernel_id(), 'table',
+                  custom._uuid_remap(v_opt_data, v_map)
+                    || jsonb_build_object(
+                         'parent_id', custom._duplicate_id(p_copy, v_new_opts)::text,
+                         'slug', left(regexp_replace(coalesce(nullif(v_opt_data ->> 'slug', ''), 'choices'),
+                                                     '_[0-9a-f]{16,}$', '')
+                                      || '_' || left(replace(v_new_opts::text, '-', ''), 20), 48)),
+                  custom._copied_metadata(v_opt_meta), v_opt_shown);
+          v_units := v_units + 1;
         end if;
-      exception when others then
-        v_inv := jsonb_set(v_inv, '{views_failed}',
-                           coalesce(v_inv -> 'views_failed', '{}'::jsonb)
-                           || jsonb_build_object(v_view.id::text, v_view.name || ': ' || sqlerrm), true);
-        update history.migration_log set inverse = v_inv where id = v_job.id;
-      end;
-    end loop;
-
-    -- 4. THE RECORDS this person may open, in pages, through the read mask: a column this person
-    -- may not read keeps its place in the copy and its values stay behind. A link to another row
-    -- of this same Table is written in step 5, once its target is there.
-    if v_with then
-      select coalesce(array_agg(f.data ->> 'key'), array[]::text[]) into v_self_keys
-        from custom.record f
-       where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-         and f.data_class <> 'kernel' and f.deleted_at is null
-         and f.data ->> 'entity_definition_id' = v_src::text
-         and f.data ->> 'relation_target' = v_src::text
-         and not (f.data ->> 'key' = any (v_hidden));
-      select coalesce(array_agg(distinct d.data ->> 'key'), array[]::text[]) into v_dead_keys
-        from custom.record d
-       where d.organization_id = v_from and d.table_id = custom.field_kernel_id()
-         and d.data_class <> 'kernel' and d.deleted_at is not null
-         and d.data ->> 'entity_definition_id' = v_src::text
-         and not exists (select 1 from custom.record l
-                          where l.organization_id = v_from and l.table_id = custom.field_kernel_id()
-                            and l.data_class <> 'kernel' and l.deleted_at is null
-                            and l.data ->> 'entity_definition_id' = v_src::text
-                            and l.data ->> 'key' = d.data ->> 'key');
-      loop
-        exit when not exists (
-          select 1 from custom.record r
-           where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
-             and v_map ? r.id::text
+        if exists (select 1 from custom.record x
+                    where x.organization_id = v_from and x.table_id = custom.field_kernel_id()
+                      and x.data_class <> 'kernel' and x.deleted_at is null
+                      and x.data ->> 'entity_definition_id' = v_opt::text
+                      and not exists (select 1 from custom.record c where c.organization_id = v_to
+                                         and c.id = custom._duplicate_id(p_copy, x.id))) then
+          if v_units > 0 and clock_timestamp() - v_start > p_budget then v_step := 'choices'; exit work; end if;
+          insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
+          select custom._duplicate_id(p_copy, x.id), v_to, x.table_id, x.data_class,
+                 custom._uuid_remap(x.data, v_map), custom._copied_metadata(x.metadata), x.shown_to
+            from custom.record x
+           where x.organization_id = v_from and x.table_id = custom.field_kernel_id()
+             and x.data_class <> 'kernel' and x.deleted_at is null
+             and x.data ->> 'entity_definition_id' = v_opt::text
              and not exists (select 1 from custom.record c where c.organization_id = v_to
-                                and c.id = custom._duplicate_id(p_copy, r.id)));
-        if clock_timestamp() - v_start > p_budget then v_step := 'records'; exit work; end if;
-        insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
-        select custom._duplicate_id(p_copy, r.id), v_to, p_copy, 'record',
-               custom._uuid_remap(
-                 custom.mask_document(r.data - '_values' - v_dead_keys, v_visible, '{}'::jsonb,
-                                      false, '{}'::jsonb, v_declared)
-                 - v_hidden, v_map) - v_self_keys,
-               custom._copied_metadata(r.metadata), r.shown_to
-          from custom.record r
-         where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
-           and v_map ? r.id::text
-           and not exists (select 1 from custom.record c where c.organization_id = v_to
-                              and c.id = custom._duplicate_id(p_copy, r.id))
-         order by r.created_at, r.id
-         limit c_records_per_unit;
-      end loop;
-
-      -- 5. THE LINKS WITHIN THE TABLE, now that every row is there: each follows the map to the
-      -- copy's row; a link to a row that stayed behind is left empty, never the original.
-      if cardinality(v_self_keys) > 0 then
+                                and c.id = custom._duplicate_id(p_copy, x.id))
+           order by coalesce((x.data ->> 'sort')::integer, 0), x.created_at;
+          v_units := v_units + 1;
+        end if;
+        select coalesce(array_agg(distinct d.data ->> 'key'), array[]::text[]) into v_opt_dead
+          from custom.record d
+         where d.organization_id = v_from and d.table_id = custom.field_kernel_id()
+           and d.data_class <> 'kernel' and d.deleted_at is not null
+           and d.data ->> 'entity_definition_id' = v_opt::text
+           and not exists (select 1 from custom.record l
+                            where l.organization_id = v_from and l.table_id = custom.field_kernel_id()
+                              and l.data_class <> 'kernel' and l.deleted_at is null
+                              and l.data ->> 'entity_definition_id' = v_opt::text
+                              and l.data ->> 'key' = d.data ->> 'key');
         loop
           exit when not exists (
-            select 1
-              from custom.record r
-              cross join unnest(v_self_keys) k(key)
-              join custom.record c on c.organization_id = v_to and c.id = custom._duplicate_id(p_copy, r.id)
-             where r.organization_id = v_from and r.table_id = v_src and v_map ? r.id::text
-               and not (c.data ? k.key)
-               and ((jsonb_typeof(r.data -> k.key) = 'string' and v_map ? lower(r.data ->> k.key))
-                    or (jsonb_typeof(r.data -> k.key) = 'array' and jsonb_array_length(r.data -> k.key) > 0)));
-          if clock_timestamp() - v_start > p_budget then v_step := 'links'; exit work; end if;
-          update custom.record x
-             set data = x.data || p.patch
-            from (select custom._duplicate_id(p_copy, r.id) as new_id,
-                         jsonb_object_agg(k.key,
-                           case jsonb_typeof(r.data -> k.key)
-                             when 'string' then to_jsonb(v_map ->> lower(r.data ->> k.key))
-                             else (select coalesce(jsonb_agg(to_jsonb(v_map ->> lower(e.v))), '[]'::jsonb)
-                                     from jsonb_array_elements_text(r.data -> k.key) e(v)
-                                    where v_map ? lower(e.v))
-                           end) as patch
-                    from custom.record r
-                    cross join unnest(v_self_keys) k(key)
-                    join custom.record c on c.organization_id = v_to and c.id = custom._duplicate_id(p_copy, r.id)
-                   where r.organization_id = v_from and r.table_id = v_src and v_map ? r.id::text
-                     and not (c.data ? k.key)
-                     and ((jsonb_typeof(r.data -> k.key) = 'string' and v_map ? lower(r.data ->> k.key))
-                          or (jsonb_typeof(r.data -> k.key) = 'array' and jsonb_array_length(r.data -> k.key) > 0))
-                   group by r.id
-                   limit c_links_per_unit) p
-           where x.organization_id = v_to and x.id = p.new_id;
+            select 1 from custom.record x
+             where x.organization_id = v_from and x.table_id = v_opt and x.data_class = 'record' and x.deleted_at is null
+               and not exists (select 1 from custom.record c where c.organization_id = v_to
+                                  and c.id = custom._duplicate_id(p_copy, x.id)));
+          if v_units > 0 and clock_timestamp() - v_start > p_budget then v_step := 'choices'; exit work; end if;
+          insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
+          select custom._duplicate_id(p_copy, x.id), v_to, v_new_opts, 'record',
+                 custom._uuid_remap(x.data - '_values' - v_opt_dead, v_map), custom._copied_metadata(x.metadata), x.shown_to
+            from custom.record x
+           where x.organization_id = v_from and x.table_id = v_opt and x.data_class = 'record' and x.deleted_at is null
+             and not exists (select 1 from custom.record c where c.organization_id = v_to
+                                and c.id = custom._duplicate_id(p_copy, x.id))
+           order by x.created_at, x.id
+           limit c_options_per_unit;
+          v_units := v_units + 1;
         end loop;
+      end loop;
+
+      -- 2. THE COLUMNS AS FIXED WHEN THE COPY STARTED (one archived in the source since is still
+      -- copied — and named in the answer). Stored ones five at a time; a worked-out one (formula,
+      -- lookup, rollup) one at a time, after every stored one, and never walked for a circle (see
+      -- custom._field_reads_what_it_reads).
+      loop
+        exit when not exists (
+          select 1 from custom.record f
+           where f.organization_id = v_from and f.id = any (v_fields)
+             and not exists (select 1 from custom.record c where c.organization_id = v_to
+                                and c.id = custom._duplicate_id(p_copy, f.id)));
+        if v_units > 0 and clock_timestamp() - v_start > p_budget then v_step := 'fields'; exit work; end if;
+        insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
+        select custom._duplicate_id(p_copy, f.id), v_to, f.table_id, f.data_class,
+               coalesce(custom._without_rows_of(custom._remap_rows(custom._uuid_remap(f.data, v_map), p_copy, v_inv),
+                                                v_from, v_src), '{}'::jsonb),
+               custom._copied_metadata(f.metadata), f.shown_to
+          from custom.record f
+         where f.organization_id = v_from and f.id = any (v_fields)
+           and not exists (select 1 from custom.record c where c.organization_id = v_to
+                              and c.id = custom._duplicate_id(p_copy, f.id))
+           and (coalesce(f.data ->> 'type', '') = 'formula' or coalesce(f.data ->> 'source', '') = 'formula')
+               = not exists (select 1 from custom.record g
+                              where g.organization_id = v_from and g.id = any (v_fields)
+                                and coalesce(g.data ->> 'type', '') <> 'formula' and coalesce(g.data ->> 'source', '') <> 'formula'
+                                and not exists (select 1 from custom.record c where c.organization_id = v_to
+                                                   and c.id = custom._duplicate_id(p_copy, g.id)))
+         order by coalesce((f.data ->> 'sort')::integer, 0), f.created_at
+         limit case when exists (select 1 from custom.record g
+                                  where g.organization_id = v_from and g.id = any (v_fields)
+                                    and coalesce(g.data ->> 'type', '') <> 'formula' and coalesce(g.data ->> 'source', '') <> 'formula'
+                                    and not exists (select 1 from custom.record c where c.organization_id = v_to
+                                                       and c.id = custom._duplicate_id(p_copy, g.id)))
+                    then c_fields_per_unit else 1 end;
+        v_units := v_units + 1;
+      end loop;
+
+      -- 3. THE VIEWS fixed when the copy started (another person's "only me" view stays theirs),
+      -- made through the house door for a new view (custom.view_declare), then given the source
+      -- view's look, order, hand-set positions and "Shown to" by name. A view the house door
+      -- refuses is named in the answer, never half made.
+      for v_view in
+        select sv.id, sv.name, sv.description, sv.definition, sv.metadata, sv.shown_to, sv.sort_order,
+               (sv.is_default or (sv.definition -> 'is_default') = 'true'::jsonb) as is_default
+          from platform.saved_view sv
+         where sv.organization_id = v_from and sv.id = any (v_views)
+           and not exists (select 1 from platform.saved_view c
+                            where c.organization_id = v_to and c.subject_id = p_copy and c.deleted_at is null
+                              and c.metadata ->> 'copied_from_view' = sv.id::text)
+           and not (coalesce(v_inv -> 'views_failed', '{}'::jsonb) ? sv.id::text)
+         order by sv.sort_order nulls last, sv.created_at
+      loop
+        if v_units > 0 and clock_timestamp() - v_start > p_budget then v_step := 'views'; exit work; end if;
+        v_def := coalesce(custom._without_rows_of(custom._remap_rows(custom._uuid_remap(v_view.definition, v_map), p_copy, v_inv),
+                                                  v_from, v_src), '{}'::jsonb);
+        v_meta := coalesce(custom._without_rows_of(custom._remap_rows(custom._uuid_remap(coalesce(v_view.metadata, '{}'::jsonb), v_map),
+                                                                      p_copy, v_inv), v_from, v_src), '{}'::jsonb);
+        begin
+          v_new_view := custom.view_declare(v_to, p_copy, jsonb_build_object(
+            'name', v_view.name,
+            'filters', coalesce(v_def -> 'filters', '{}'::jsonb),
+            'definition', v_def - 'table_id' - 'filters' - 'order' - 'is_default' - 'moved_from' - 'hidden_fields'));
+          update platform.saved_view sv
+             set description = v_view.description,
+                 sort_order  = v_view.sort_order,
+                 shown_to    = v_view.shown_to,
+                 definition  = case when v_def ->> 'order' = 'manual'
+                                    then jsonb_set(sv.definition, '{order}', '"manual"'::jsonb, true)
+                                    else sv.definition end,
+                 metadata    = coalesce(sv.metadata, '{}'::jsonb) || v_meta
+                               || jsonb_build_object('copied_from_view', v_view.id::text)
+           where sv.organization_id = v_to and sv.id = v_new_view;
+          if v_view.is_default then
+            perform custom.view_designate(v_to, p_copy, v_new_view, null);
+          end if;
+        exception when others then
+          v_inv := jsonb_set(v_inv, '{views_failed}',
+                             coalesce(v_inv -> 'views_failed', '{}'::jsonb)
+                             || jsonb_build_object(v_view.id::text, v_view.name || ': ' || sqlerrm), true);
+          update history.migration_log set inverse = v_inv where id = v_job.id;
+        end;
+        v_units := v_units + 1;
+      end loop;
+
+      -- 4. THE RECORDS fixed when the copy started, in pages, in (created_at, id) order from a
+      -- cursor the job keeps (no pass reads the whole set), through the read mask fixed then:
+      -- a column the maker may not read keeps its place in the copy and its values stay behind.
+      if v_with then
+        loop
+          v_cursor := coalesce(v_inv -> 'record_cursor', '{}'::jsonb);
+          exit when not exists (
+            select 1 from custom.record r
+             where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
+               and r.deleted_at is null
+               and (v_cursor = '{}'::jsonb
+                    or (r.created_at, r.id) > ((v_cursor ->> 'at')::timestamptz, (v_cursor ->> 'id')::uuid))
+               and custom._duplicate_carries_row(v_inv, v_from, v_src, r.id));
+          if v_units > 0 and clock_timestamp() - v_start > p_budget then v_step := 'records'; exit work; end if;
+          with page as (
+            select r.*
+              from custom.record r
+             where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
+               and r.deleted_at is null
+               and (v_cursor = '{}'::jsonb
+                    or (r.created_at, r.id) > ((v_cursor ->> 'at')::timestamptz, (v_cursor ->> 'id')::uuid))
+               and custom._duplicate_carries_row(v_inv, v_from, v_src, r.id)
+             order by r.created_at, r.id
+             limit c_records_per_unit
+          ), ins as (
+            insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
+            select custom._duplicate_id(p_copy, p.id), v_to, p_copy, 'record',
+                   custom._remap_rows(custom._uuid_remap(
+                     custom.mask_document(p.data - '_values' - v_dead_keys, v_visible, '{}'::jsonb,
+                                          false, '{}'::jsonb, v_declared)
+                     - v_hidden, v_map), p_copy, v_inv) - v_self_keys,
+                   custom._copied_metadata(p.metadata), p.shown_to
+              from page p
+             where not exists (select 1 from custom.record c where c.organization_id = v_to
+                                  and c.id = custom._duplicate_id(p_copy, p.id))
+            returning 1
+          )
+          select jsonb_build_object('at', max_at, 'id', max_id) into v_cursor
+            from (select p.created_at as max_at, p.id as max_id from page p order by p.created_at desc, p.id desc limit 1) z
+           where (select count(*) from ins) >= 0;
+          v_inv := jsonb_set(v_inv, '{record_cursor}', v_cursor, true);
+          update history.migration_log set inverse = v_inv where id = v_job.id;
+          v_units := v_units + 1;
+        end loop;
+
+        -- 5. THE LINKS WITHIN THE TABLE, once every row is there, from their own cursor: each
+        -- follows to the copy's row; a link to a row the copy does not carry is left empty.
+        if cardinality(v_self_keys) > 0 then
+          loop
+            v_cursor := coalesce(v_inv -> 'link_cursor', '{}'::jsonb);
+            exit when not exists (
+              select 1 from custom.record r
+               where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
+                 and (v_cursor = '{}'::jsonb
+                      or (r.created_at, r.id) > ((v_cursor ->> 'at')::timestamptz, (v_cursor ->> 'id')::uuid))
+                 and exists (select 1 from unnest(v_self_keys) k(key) where jsonb_typeof(r.data -> k.key) in ('string', 'array'))
+                 and custom._duplicate_carries_row(v_inv, v_from, v_src, r.id));
+            if v_units > 0 and clock_timestamp() - v_start > p_budget then v_step := 'links'; exit work; end if;
+            with page as (
+              select r.*
+                from custom.record r
+               where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
+                 and (v_cursor = '{}'::jsonb
+                      or (r.created_at, r.id) > ((v_cursor ->> 'at')::timestamptz, (v_cursor ->> 'id')::uuid))
+                 and exists (select 1 from unnest(v_self_keys) k(key) where jsonb_typeof(r.data -> k.key) in ('string', 'array'))
+                 and custom._duplicate_carries_row(v_inv, v_from, v_src, r.id)
+               order by r.created_at, r.id
+               limit c_links_per_unit
+            ), patch as (
+              select custom._duplicate_id(p_copy, p.id) as new_id,
+                     jsonb_object_agg(k.key,
+                       case jsonb_typeof(p.data -> k.key)
+                         when 'string' then case when custom._duplicate_carries_row(v_inv, v_from, v_src, lower(p.data ->> k.key)::uuid)
+                                                 then to_jsonb(custom._duplicate_id(p_copy, lower(p.data ->> k.key)::uuid)::text) end
+                         else (select coalesce(jsonb_agg(to_jsonb(custom._duplicate_id(p_copy, lower(e.v)::uuid)::text)), '[]'::jsonb)
+                                 from jsonb_array_elements_text(p.data -> k.key) e(v)
+                                where e.v ~* '^[0-9a-f-]{36}$'
+                                  and custom._duplicate_carries_row(v_inv, v_from, v_src, lower(e.v)::uuid))
+                       end) filter (where jsonb_typeof(p.data -> k.key) in ('string', 'array')) as patch
+                from page p cross join unnest(v_self_keys) k(key)
+               group by p.id
+            ), upd as (
+              update custom.record x
+                 set data = x.data || jsonb_strip_nulls(pt.patch)
+                from patch pt
+               where x.organization_id = v_to and x.id = pt.new_id and pt.patch is not null
+              returning 1
+            )
+            select jsonb_build_object('at', z.created_at, 'id', z.id) into v_cursor
+              from (select p.created_at, p.id from page p order by p.created_at desc, p.id desc limit 1) z
+             where (select count(*) from upd) >= 0;
+            v_inv := jsonb_set(v_inv, '{link_cursor}', v_cursor, true);
+            update history.migration_log set inverse = v_inv where id = v_job.id;
+            v_units := v_units + 1;
+          end loop;
+        end if;
       end if;
-    end if;
 
-    -- 6. FINISHED: the copy stops being the app's work in progress and becomes a person's table.
-    update custom.record t
-       set data = t.data - 'kept_by_the_app' - 'kept_for'
-     where t.organization_id = v_to and t.id = p_copy
-       and (t.data ? 'kept_by_the_app' or t.data ? 'kept_for');
-    v_inv := jsonb_set(v_inv, '{open}', 'false'::jsonb, true);
-    update history.migration_log set inverse = v_inv where id = v_job.id;
-    v_done := true;
-    v_step := 'done';
-    exit work;
-  end loop work;
+      -- 6. HANDED OVER: the copy stops being the app's work in progress and becomes a person's
+      -- table; the organization's version is bumped once, now.
+      update custom.record t
+         set data = t.data - 'kept_by_the_app' - 'kept_for',
+             shown_to = (v_inv ->> 'table_shown_to')::platform.shown_to
+       where t.organization_id = v_to and t.id = p_copy;
+      perform set_config('custom.table_duplicate_into', '', true);
+      perform custom.bump_epoch('record', p_copy, v_to);
+      v_inv := v_inv || jsonb_build_object('state', 'done', 'open', false);
+      update history.migration_log set inverse = v_inv where id = v_job.id;
+      v_status := 'done';
+      v_step := 'done';
+      exit work;
+    end loop work;
+    perform set_config('custom.table_duplicate_into', '', true);
+  end if;
 
-  -- PROGRESS, read off the copy itself.
-  select count(*), count(*) filter (where exists (select 1 from custom.record c where c.organization_id = v_to
-                                                     and c.id = custom._duplicate_id(p_copy, f.id)))
-    into v_t_fields, v_d_fields
-    from custom.record f
-   where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-     and f.data_class <> 'kernel' and f.deleted_at is null and f.data ->> 'entity_definition_id' = v_src::text;
-  select count(*), count(*) filter (where exists (select 1 from custom.record c where c.organization_id = v_to
-                                                     and c.id = custom._duplicate_id(p_copy, o.id)))
-    into v_t_lists, v_d_lists
-    from (select distinct (f.data -> 'config' ->> 'options_table_id')::uuid as id
-            from custom.record f
-           where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-             and f.data_class <> 'kernel' and f.deleted_at is null and f.data ->> 'entity_definition_id' = v_src::text
-             and nullif(f.data -> 'config' ->> 'options_table_id', '') is not null) o;
-  select count(*) into v_t_views
-    from platform.saved_view sv
-   where sv.organization_id = v_from and sv.deleted_at is null and sv.surface_key = 'custom/records'
-     and coalesce(sv.subject_id, nullif(sv.definition ->> 'table_id', '')::uuid) = v_src
-     and (sv.shown_to is distinct from 'only_me' or sv.created_by = v_me);
-  select count(*) into v_d_views
-    from platform.saved_view c
+  -- PROGRESS, exact: totals are what was fixed when the copy started; done is read off the copy.
+  select count(*) into v_d_fields from unnest(v_fields) f
+   where exists (select 1 from custom.record c where c.organization_id = v_to and c.id = custom._duplicate_id(p_copy, f));
+  select count(*) into v_d_lists from unnest(v_lists) l
+   where exists (select 1 from custom.record c where c.organization_id = v_to and c.id = custom._duplicate_id(p_copy, l));
+  select count(*) into v_d_views from platform.saved_view c
    where c.organization_id = v_to and c.subject_id = p_copy and c.deleted_at is null and c.metadata ? 'copied_from_view';
   if v_with then
-    select count(*) into v_t_recs from jsonb_object_keys(v_map) k
-     where exists (select 1 from custom.record r where r.organization_id = v_from and r.id = k::uuid
-                     and r.table_id = v_src and r.data_class = 'record');
     select count(*) into v_d_recs from custom.record c
      where c.organization_id = v_to and c.table_id = p_copy and c.data_class = 'record' and c.deleted_at is null;
   end if;
 
   v_out := jsonb_build_object(
-    'status', case when v_done then 'done' else 'copying' end,
-    'step', v_step,
+    'status', v_status,
+    'step', case when v_status = 'copying' then v_step else v_status end,
+    'pass', jsonb_build_object('setup_ms', v_setup_ms, 'units', v_units,
+                               'ms', round(extract(epoch from clock_timestamp() - v_start) * 1000)),
     'progress', jsonb_build_object(
-      'choice_lists', jsonb_build_object('done', v_d_lists, 'total', v_t_lists),
-      'fields',       jsonb_build_object('done', v_d_fields, 'total', v_t_fields),
-      'views',        jsonb_build_object('done', v_d_views, 'total', v_t_views),
-      'records',      case when v_with then jsonb_build_object('done', v_d_recs, 'total', v_t_recs) end));
+      'choice_lists', jsonb_build_object('done', v_d_lists, 'total', cardinality(v_lists)),
+      'fields',       jsonb_build_object('done', v_d_fields, 'total', cardinality(v_fields)),
+      'views',        jsonb_build_object('done', v_d_views, 'total', cardinality(v_views)),
+      'records',      case when v_with then jsonb_build_object('done', v_d_recs, 'total', (v_inv ->> 'records_total')::bigint) end));
 
-  if v_done then
-    -- WHAT STAYED BEHIND, said once, when the copy is finished.
-    v_refs_out := '[]'::jsonb;
-    if exists (select 1 from custom.record s where s.organization_id = v_from and s.id = v_src
-                 and custom._without_rows_of(custom._uuid_remap(s.data, v_map), v_from, v_src)
-                     is distinct from custom._uuid_remap(s.data, v_map)) then
-      v_refs_out := v_refs_out || jsonb_build_array('the table''s colours or row actions');
-    end if;
-    v_refs_out := v_refs_out || coalesce((
-      select jsonb_agg('column ' || coalesce(nullif(f.data ->> 'label', ''), f.data ->> 'key'))
-        from custom.record f
-       where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-         and f.data_class <> 'kernel' and f.deleted_at is null and f.data ->> 'entity_definition_id' = v_src::text
-         and custom._without_rows_of(custom._uuid_remap(f.data, v_map), v_from, v_src)
-             is distinct from custom._uuid_remap(f.data, v_map)), '[]'::jsonb);
-    v_refs_out := v_refs_out || coalesce((
-      select jsonb_agg('view ' || sv.name)
-        from platform.saved_view sv
-       where sv.organization_id = v_from and sv.deleted_at is null and sv.surface_key = 'custom/records'
-         and coalesce(sv.subject_id, nullif(sv.definition ->> 'table_id', '')::uuid) = v_src
-         and (sv.shown_to is distinct from 'only_me' or sv.created_by = v_me)
-         and (custom._without_rows_of(custom._uuid_remap(sv.definition, v_map), v_from, v_src)
-                is distinct from custom._uuid_remap(sv.definition, v_map)
-              or custom._without_rows_of(custom._uuid_remap(coalesce(sv.metadata, '{}'::jsonb), v_map), v_from, v_src)
-                is distinct from custom._uuid_remap(coalesce(sv.metadata, '{}'::jsonb), v_map))), '[]'::jsonb);
-    if v_with then
-      select coalesce(jsonb_object_agg(coalesce(nullif(f.data ->> 'label', ''), f.data ->> 'key'), n.c), '{}'::jsonb)
-        into v_hidden_out
-        from custom.record f
-        cross join lateral (
-          select count(*) as c from custom.record r
-           where r.organization_id = v_from and r.table_id = v_src and v_map ? r.id::text
-             and r.data ? (f.data ->> 'key') and jsonb_typeof(r.data -> (f.data ->> 'key')) <> 'null') n
-       where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-         and f.data_class <> 'kernel' and f.deleted_at is null and f.data ->> 'entity_definition_id' = v_src::text
-         and f.data ->> 'key' = any (v_hidden);
-    end if;
+  if v_status in ('failed', 'discarded') then
+    v_out := v_out || jsonb_build_object('sentence',
+      coalesce(v_inv ->> 'why', 'This copy was discarded, so there is nothing to carry on.'));
+  end if;
+
+  if v_status = 'done' then
     v_out := v_out || jsonb_build_object(
       'copied', jsonb_build_object(
         'fields', v_d_fields, 'choice_lists', v_d_lists,
         'choices', (select count(*) from custom.record o
                      where o.organization_id = v_to and o.data_class = 'record' and o.deleted_at is null
-                       and o.table_id in (select custom._duplicate_id(p_copy, (f.data -> 'config' ->> 'options_table_id')::uuid)
-                                            from custom.record f
-                                           where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-                                             and f.data_class <> 'kernel' and f.deleted_at is null
-                                             and f.data ->> 'entity_definition_id' = v_src::text
-                                             and nullif(f.data -> 'config' ->> 'options_table_id', '') is not null)),
+                       and o.table_id in (select custom._duplicate_id(p_copy, l) from unnest(v_lists) l)),
         'views', v_d_views, 'records', coalesce(v_d_recs, 0), 'with_records', v_with),
-      'left_behind', jsonb_build_object(
-        'archived_fields', (select count(*) from custom.record f
-                             where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
-                               and f.data_class <> 'kernel' and f.deleted_at is not null
-                               and f.data ->> 'entity_definition_id' = v_src::text),
-        'archived_records', case when v_with then (select count(*) from custom.record r
-                             where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
-                               and (r.deleted_at is not null or coalesce(r.metadata ->> 'quarantine', 'false') = 'true')) end,
-        'records_not_yours_to_open', case when v_with then (select count(*) from custom.record r
-                             where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
-                               and r.deleted_at is null and coalesce(r.metadata ->> 'quarantine', 'false') <> 'true'
-                               and not (v_map ? r.id::text)) end,
-        'hidden_columns', v_hidden_out,
-        'private_views', (select count(*) from platform.saved_view sv
-                           where sv.organization_id = v_from and sv.deleted_at is null and sv.surface_key = 'custom/records'
-                             and coalesce(sv.subject_id, nullif(sv.definition ->> 'table_id', '')::uuid) = v_src
-                             and sv.shown_to = 'only_me' and sv.created_by is distinct from v_me),
-        -- A copied view is born as every new view is (the house door). Where the source view was
-        -- "only me" the copy keeps "Shown to: only me" but is an organization view underneath:
-        -- the retiring row column cannot be carried by name (T-13), and "Shown to" is a list
-        -- filter, not a lock. Those views are named here.
-        'views_shared_as_new_views', coalesce((
-            select jsonb_agg(sv.name) from platform.saved_view sv
-             where sv.organization_id = v_from and sv.deleted_at is null and sv.surface_key = 'custom/records'
-               and coalesce(sv.subject_id, nullif(sv.definition ->> 'table_id', '')::uuid) = v_src
-               and sv.shown_to = 'only_me' and sv.created_by = v_me), '[]'::jsonb),
-        'views_not_copied', coalesce((select jsonb_agg(value) from jsonb_each_text(coalesce(v_inv -> 'views_failed', '{}'::jsonb))), '[]'::jsonb),
-        'row_references_dropped', v_refs_out,
-        'not_copied', jsonb_build_array('history', 'forms', 'booking pages', 'portals', 'dashboards',
-                                        'capture sheets', 'rules', 'webhooks', 'tables inside its rows',
-                                        'sharing', 'comments', 'published to the web')));
+      'left_behind', (v_inv -> 'left_behind')
+        || jsonb_build_object(
+             'views_not_copied', coalesce((select jsonb_agg(value) from jsonb_each_text(coalesce(v_inv -> 'views_failed', '{}'::jsonb))), '[]'::jsonb)),
+      -- WHAT MOVED IN THE SOURCE WHILE IT WAS BEING COPIED: the copy's structure is the one fixed
+      -- when it started, so a column archived since is still here (complete for the rows copied
+      -- before it went); a row changed after it was copied keeps the values it had then.
+      'changed_during_copy', jsonb_build_object(
+        'columns_archived_since', coalesce((
+            select jsonb_agg(coalesce(nullif(f.data ->> 'label', ''), f.data ->> 'key'))
+              from custom.record f
+             where f.organization_id = v_from and f.id = any (v_fields) and f.deleted_at is not null), '[]'::jsonb),
+        'rows_changed_after_copied', (
+            select count(*) from custom.record r
+              join custom.record c on c.organization_id = v_to and c.id = custom._duplicate_id(p_copy, r.id)
+             where r.organization_id = v_from and r.table_id = v_src and r.deleted_at is null
+               and r.updated_at > c.created_at),
+        'rows_archived_since', case when v_with then (
+            select count(*) from custom.record r
+             where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
+               and r.deleted_at is not null and r.deleted_at > v_cutoff
+               and custom._duplicate_carries_row(v_inv, v_from, v_src, r.id)) end,
+        'rows_added_since', case when v_with then (
+            select count(*) from custom.record r
+             where r.organization_id = v_from and r.table_id = v_src and r.data_class = 'record'
+               and r.deleted_at is null and r.created_at > v_cutoff) end));
   end if;
   return v_out;
 end;
@@ -769,7 +1804,7 @@ $function$;
 revoke execute on function custom._table_duplicate_step(uuid, interval) from public;
 
 comment on function custom._table_duplicate_step(uuid, interval) is
-  'TABLE-ACTIONS. One bounded pass of a copy: choice lists, fields, views, records (through the read mask), links within the table, then finish — each unit small, stopping when the time budget is spent; what remains is read off the copy itself. Internal to custom.table_duplicate / custom.table_duplicate_continue; no client grant.';
+  'TABLE-ACTIONS. One bounded pass of a copy: choice lists, columns, views, records and links as fixed when the copy started, each unit small, at least one unit a pass, stopping when the time budget is spent; one pass at a time per copy (advisory lock, else "busy"); a source archived meanwhile fails the copy. Internal; no client grant.';
 
 create or replace function custom.table_duplicate(
   p_table_id        uuid,
@@ -782,12 +1817,10 @@ security definer
 set search_path to 'pg_catalog'
 as $function$
 declare
-  -- ONE CALL'S TIME BUDGET. A client call is cancelled at 8 s (authenticated's statement_timeout);
-  -- a call stops starting new work after this much and answers "copying", and the client calls
-  -- custom.table_duplicate_continue until "done". Each unit of work is small (5 fields, 25
-  -- records, 200 options, one view), so a call ends within budget + one unit. The first call
-  -- also checks the rights, records the job and makes the Table record, so it spends less.
-  -- Measured on the loaded nightly copy 2026-10-02 (1,002 records, 11 columns): see the lane report.
+  -- ONE CALL'S TIME BUDGET. A client call is cancelled at 8 s (authenticated's statement_timeout).
+  -- This first call does the copy's one-time work (rights, what it carries, the job, the Table
+  -- record), then at least one unit, and starts no new unit 1.5 s into the call. The client then
+  -- calls custom.table_duplicate_continue until "done".
   c_budget     constant interval := interval '1.5 seconds';
   v_me         uuid := custom.query_principal();
   v_with       boolean := coalesce(p_with_records, false);
@@ -810,6 +1843,17 @@ declare
   v_cross      record;
   v_event      uuid;
   v_seen       uuid[] := array[]::uuid[];
+  v_level      public.permission_level;
+  v_mask       jsonb;
+  v_visible    text[];
+  v_declared   text[];
+  v_hidden     text[];
+  v_job        jsonb;
+  v_total      bigint := 0;
+  v_handed     jsonb;
+  v_not_handed jsonb;
+  v_hidden_out jsonb := '{}'::jsonb;
+  v_refs_out   jsonb := '[]'::jsonb;
 begin
   if v_me is null then
     raise exception 'Sign in to duplicate a table.' using errcode = '42501';
@@ -827,8 +1871,6 @@ begin
   end if;
   v_from := (v_opens ->> 'organization_id')::uuid;
   v_id   := (v_opens ->> 'resolved_id')::uuid;
-  -- THE DECISION, IN THIS BODY: the source organization's wall, asked here and not only inside
-  -- custom.where_id_opens.
   perform custom.assert_client_may_reach(v_from, 'custom.table_duplicate');
 
   select r.* into v_src
@@ -840,7 +1882,11 @@ begin
     raise exception '% is part of how the record store is built, so it cannot be copied.', v_src_name
       using errcode = '42501';
   end if;
-  if v_src.deleted_at is not null then
+  if v_src.deleted_at is not null
+     or exists (select 1 from history.migration_log a
+                 where a.organization_id = v_from and a.verb = 'archive' and a.target_kind = 'table'
+                   and a.target_id = v_id and a.undone_at is null
+                   and coalesce((a.inverse ->> 'open')::boolean, false)) then
     raise exception '% is archived. Bring it back from the trash, then copy it.', v_src_name
       using errcode = '55000';
   end if;
@@ -861,8 +1907,7 @@ begin
   perform custom.assert_client_may_reach(v_to, 'custom.table_duplicate');
   perform custom.assert_store_door(v_to, 'custom.table_duplicate');
 
-  -- A COLUMN'S OWN TARGET NEVER CROSSES AN ORGANIZATION (custom.organization_references marks a
-  -- Field's relation_target not openable). Refused here, by name, before anything is made.
+  -- A COLUMN'S OWN TARGET NEVER CROSSES AN ORGANIZATION. Refused here, by name, before anything is made.
   if v_to <> v_from then
     select f.data ->> 'label' as label, coalesce(t.data ->> 'name', 'another table') as target
       into v_cross
@@ -887,7 +1932,7 @@ begin
   end if;
 
   -- THE NAME. A name the person gave is used as given; otherwise "<name> (copy)", then
-  -- "(copy 2)", "(copy 3)", … until no live Table of the destination carries it.
+  -- "(copy 2)", "(copy 3)", … until no Table of the destination being used or copied carries it.
   v_name := nullif(btrim(p_name), '');
   if v_name is null then
     v_name := v_src_name || ' (copy)';
@@ -912,8 +1957,6 @@ begin
     v_slug := v_base_slug || '_' || v_k;
   end loop;
 
-  -- WHERE THE COPY LIVES: beside the source in its own organization; in another organization,
-  -- in that organization's own record (made if the store never gave it one, as custom.table_move does).
   if v_to = v_from then
     v_parent := nullif(v_src.data ->> 'parent_id', '')::uuid;
   else
@@ -927,43 +1970,156 @@ begin
     end if;
   end if;
 
-  -- THE ONE HISTORY ROW, ON THE NEW TABLE: it is also the job. Its stored undo says what was asked
-  -- for and `open` says the copy is not finished (custom.table_archive's own signal).
-  v_event := history.migration_record(
-    v_to, 'duplicate', 'table', v_new,
-    jsonb_build_object('kind', 'none',
-                       'why', 'A copy is undone by archiving it; the table it was copied from was never changed.',
-                       'duplicated_from', v_id,
-                       'duplicated_from_organization_id', v_from,
-                       'with_records', v_with,
-                       'by', v_me,
-                       'open', true),
-    format('Duplicated from %s', v_src_name));
+  -- WHAT THE COPY CARRIES, FIXED NOW, ONCE: the columns and views live now, the choice lists they
+  -- use, the read mask for this person (the same one custom.read_records asks), and with records,
+  -- which live rows made by now this person is handed (custom.query_visible_ids at viewer: the
+  -- ladder, then "Shown to"). Later passes read this from the job and never work it out again.
+  v_level := custom.effective_level(v_me, v_from, v_id);
+  v_mask  := custom.read_mask_for(v_me, v_from, v_id, v_level, 'read');
+  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_visible from jsonb_array_elements(v_mask -> 'visible') x;
+  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_declared from jsonb_array_elements(v_mask -> 'declared') x;
+  select coalesce(array_agg(d), '{}'::text[]) into v_hidden from unnest(v_declared) d where not (d = any (v_visible));
 
-  -- THE TABLE RECORD, made now so the copy has its id; its settings and look remapped, every
-  -- reference to a row that will not be copied taken out. WHILE IT IS BEING MADE it is the app's
-  -- (kept_for "copying"): kept tables stay out of every person's table list, so nobody opens or
-  -- edits a half copy; only the person making it holds its id, and the last pass hands it over.
+  v_job := jsonb_build_object(
+    'kind', 'none',
+    'why_undo', 'A copy is undone by archiving it; the table it was copied from was never changed.',
+    'duplicated_from', v_id,
+    'duplicated_from_organization_id', v_from,
+    'with_records', v_with,
+    'by', v_me,
+    'open', true,
+    'state', 'copying',
+    'table_shown_to', v_src.shown_to,
+    'cutoff', clock_timestamp(),
+    'mask_visible', to_jsonb(v_visible),
+    'mask_declared', to_jsonb(v_declared),
+    'mask_hidden', to_jsonb(v_hidden),
+    'fields', coalesce((select jsonb_agg(f.id order by coalesce((f.data ->> 'sort')::integer, 0), f.created_at)
+                          from custom.record f
+                         where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
+                           and f.data_class <> 'kernel' and f.deleted_at is null
+                           and f.data ->> 'entity_definition_id' = v_id::text), '[]'::jsonb),
+    'choice_lists', coalesce((select jsonb_agg(distinct o.id)
+                                from custom.record f
+                                join custom.record o
+                                  on o.organization_id = v_from and o.id = (f.data -> 'config' ->> 'options_table_id')::uuid
+                                 and o.table_id = custom.table_kernel_id() and o.data_class = 'table'
+                               where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
+                                 and f.data_class <> 'kernel' and f.deleted_at is null
+                                 and f.data ->> 'entity_definition_id' = v_id::text
+                                 and nullif(f.data -> 'config' ->> 'options_table_id', '') is not null), '[]'::jsonb),
+    'views', coalesce((select jsonb_agg(sv.id)
+                         from platform.saved_view sv
+                        where sv.organization_id = v_from and sv.deleted_at is null and sv.surface_key = 'custom/records'
+                          and coalesce(sv.subject_id, nullif(sv.definition ->> 'table_id', '')::uuid) = v_id
+                          and (sv.shown_to is distinct from 'only_me' or sv.created_by = v_me)), '[]'::jsonb),
+    'self_keys', coalesce((select jsonb_agg(f.data ->> 'key')
+                             from custom.record f
+                            where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
+                              and f.data_class <> 'kernel' and f.deleted_at is null
+                              and f.data ->> 'entity_definition_id' = v_id::text
+                              and f.data ->> 'relation_target' = v_id::text
+                              and not (f.data ->> 'key' = any (v_hidden))), '[]'::jsonb),
+    'dead_keys', coalesce((select jsonb_agg(distinct d.data ->> 'key')
+                             from custom.record d
+                            where d.organization_id = v_from and d.table_id = custom.field_kernel_id()
+                              and d.data_class <> 'kernel' and d.deleted_at is not null
+                              and d.data ->> 'entity_definition_id' = v_id::text
+                              and not exists (select 1 from custom.record l
+                                               where l.organization_id = v_from and l.table_id = custom.field_kernel_id()
+                                                 and l.data_class <> 'kernel' and l.deleted_at is null
+                                                 and l.data ->> 'entity_definition_id' = v_id::text
+                                                 and l.data ->> 'key' = d.data ->> 'key')), '[]'::jsonb));
   if v_with then
     v_seen := array(select q from custom.query_visible_ids(v_from, v_id, 'viewer') q);
+    select count(*) filter (where r.id = any (v_seen)),
+           coalesce(jsonb_object_agg(r.id::text, true) filter (where r.id = any (v_seen)), '{}'::jsonb),
+           coalesce(jsonb_object_agg(r.id::text, true) filter (where not (r.id = any (v_seen))), '{}'::jsonb)
+      into v_total, v_handed, v_not_handed
+      from custom.record r
+     where r.organization_id = v_from and r.table_id = v_id and r.data_class = 'record'
+       and r.deleted_at is null and coalesce(r.metadata ->> 'quarantine', 'false') <> 'true'
+       and r.created_at <= (v_job ->> 'cutoff')::timestamptz;
+    -- Whichever list is shorter is kept: for a member handed every row it is empty.
+    if (select count(*) from jsonb_object_keys(v_handed)) <= (select count(*) from jsonb_object_keys(v_not_handed)) then
+      v_job := v_job || jsonb_build_object('rows_handed', v_handed);
+    else
+      v_job := v_job || jsonb_build_object('rows_not_handed', v_not_handed);
+    end if;
+    v_job := v_job || jsonb_build_object('records_total', v_total);
+    select coalesce(jsonb_object_agg(coalesce(nullif(f.data ->> 'label', ''), f.data ->> 'key'), n.c), '{}'::jsonb)
+      into v_hidden_out
+      from custom.record f
+      cross join lateral (
+        select count(*) as c from custom.record r
+         where r.organization_id = v_from and r.table_id = v_id and r.id = any (v_seen)
+           and r.data ? (f.data ->> 'key') and jsonb_typeof(r.data -> (f.data ->> 'key')) <> 'null') n
+     where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
+       and f.data_class <> 'kernel' and f.deleted_at is null and f.data ->> 'entity_definition_id' = v_id::text
+       and f.data ->> 'key' = any (v_hidden);
   end if;
-  v_map := jsonb_build_object(v_id::text, v_new::text);
-  v_map := v_map || coalesce((
-    select jsonb_object_agg(x.id::text, custom._duplicate_id(v_new, x.id)::text)
-      from custom.record x
-     where x.organization_id = v_from
-       and (   (x.table_id = custom.field_kernel_id() and x.data_class <> 'kernel' and x.deleted_at is null
-                and x.data ->> 'entity_definition_id' = v_id::text)
-            or (v_with and x.table_id = v_id and x.data_class = 'record' and x.deleted_at is null
-                and coalesce(x.metadata ->> 'quarantine', 'false') <> 'true' and x.id = any (v_seen)))), '{}'::jsonb);
-  v_data := coalesce(custom._without_rows_of(custom._uuid_remap(v_src.data, v_map), v_from, v_id), '{}'::jsonb)
+
+  -- WHAT STAYS BEHIND, worked out now while every input is here, and handed back when done.
+  v_map := jsonb_build_object(v_id::text, v_new::text)
+           || coalesce((select jsonb_object_agg(f #>> '{}', custom._duplicate_id(v_new, (f #>> '{}')::uuid)::text)
+                          from jsonb_array_elements(v_job -> 'fields') f), '{}'::jsonb);
+  if custom._without_rows_of(custom._remap_rows(custom._uuid_remap(v_src.data, v_map), v_new, v_job), v_from, v_id)
+     is distinct from custom._remap_rows(custom._uuid_remap(v_src.data, v_map), v_new, v_job) then
+    v_refs_out := v_refs_out || jsonb_build_array('the table''s colours or row actions');
+  end if;
+  v_refs_out := v_refs_out || coalesce((
+    select jsonb_agg('view ' || sv.name)
+      from platform.saved_view sv
+     where sv.organization_id = v_from and (v_job -> 'views') ? sv.id::text
+       and (custom._without_rows_of(custom._remap_rows(custom._uuid_remap(sv.definition, v_map), v_new, v_job), v_from, v_id)
+              is distinct from custom._remap_rows(custom._uuid_remap(sv.definition, v_map), v_new, v_job)
+            or custom._without_rows_of(custom._remap_rows(custom._uuid_remap(coalesce(sv.metadata, '{}'::jsonb), v_map), v_new, v_job), v_from, v_id)
+              is distinct from custom._remap_rows(custom._uuid_remap(coalesce(sv.metadata, '{}'::jsonb), v_map), v_new, v_job))), '[]'::jsonb);
+  v_job := v_job || jsonb_build_object('left_behind', jsonb_build_object(
+    'archived_fields', (select count(*) from custom.record f
+                         where f.organization_id = v_from and f.table_id = custom.field_kernel_id()
+                           and f.data_class <> 'kernel' and f.deleted_at is not null
+                           and f.data ->> 'entity_definition_id' = v_id::text),
+    'archived_records', case when v_with then (select count(*) from custom.record r
+                         where r.organization_id = v_from and r.table_id = v_id and r.data_class = 'record'
+                           and (r.deleted_at is not null or coalesce(r.metadata ->> 'quarantine', 'false') = 'true')) end,
+    'records_not_yours_to_open', case when v_with then (select count(*) from jsonb_object_keys(coalesce(v_not_handed, '{}'::jsonb))) end,
+    'hidden_columns', v_hidden_out,
+    'private_views', (select count(*) from platform.saved_view sv
+                       where sv.organization_id = v_from and sv.deleted_at is null and sv.surface_key = 'custom/records'
+                         and coalesce(sv.subject_id, nullif(sv.definition ->> 'table_id', '')::uuid) = v_id
+                         and sv.shown_to = 'only_me' and sv.created_by is distinct from v_me),
+    -- A copied view is born as every new view is (the house door). Where the source view was
+    -- "only me" the copy keeps "Shown to: only me" but is an organization view underneath: the
+    -- retiring row column cannot be carried by name (T-13). Those views are named here.
+    'views_shared_as_new_views', coalesce((
+        select jsonb_agg(sv.name) from platform.saved_view sv
+         where sv.organization_id = v_from and (v_job -> 'views') ? sv.id::text and sv.shown_to = 'only_me'), '[]'::jsonb),
+    'row_references_dropped', v_refs_out,
+    'not_copied', jsonb_build_array('history', 'forms', 'booking pages', 'portals', 'dashboards',
+                                    'capture sheets', 'rules', 'webhooks', 'tables inside its rows',
+                                    'sharing', 'comments', 'published to the web')));
+
+  -- THE ONE HISTORY ROW, ON THE NEW TABLE: it is also the job.
+  v_event := history.migration_record(v_to, 'duplicate', 'table', v_new, v_job,
+                                      format('Duplicated from %s', v_src_name));
+
+  -- THE TABLE RECORD. While it is being made it is the app's (kept_for "copying"): kept out of
+  -- every table list (custom.table_kept_out_of_lists) and refused by every open, read, view and
+  -- write door to anyone but its maker (custom._copy_in_progress_guard). The last pass hands it over.
+  perform set_config('custom.table_duplicate_into', v_new::text, true);
+  v_data := coalesce(custom._without_rows_of(custom._remap_rows(custom._uuid_remap(v_src.data, v_map), v_new, v_job), v_from, v_id), '{}'::jsonb)
             || jsonb_build_object('name', v_name, 'slug', v_slug, 'kept_by_the_app', true, 'kept_for', 'copying');
   if v_parent is not null then
     v_data := v_data || jsonb_build_object('parent_id', v_parent::text);
   end if;
+  -- "Shown to: only me" while it is being made, so even a list that asks for the app's own
+  -- tables does not show another person a half copy; the source's own "Shown to" comes back at
+  -- handover.
   insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
   values (v_new, v_to, custom.table_kernel_id(), 'table', v_data,
-          custom._copied_metadata(v_src.metadata), v_src.shown_to);
+          custom._copied_metadata(v_src.metadata), 'only_me');
+  perform set_config('custom.table_duplicate_into', '', true);
 
   return jsonb_build_object(
     'duplicated', true,
@@ -983,7 +2139,7 @@ security definer
 set search_path to 'pg_catalog'
 as $function$
 declare
-  -- ONE PASS'S TIME BUDGET (see custom.table_duplicate): stop starting new work 2.5 s into the call.
+  -- ONE PASS: no new unit starts 2.5 s into the call; every pass does at least one unit.
   c_budget  constant interval := interval '2.5 seconds';
   v_me      uuid := custom.query_principal();
   v_to      uuid;
@@ -996,7 +2152,7 @@ begin
   end if;
   select t.organization_id, t.data ->> 'name' into v_to, v_name
     from custom.record t
-   where t.id = p_table_id and t.table_id = custom.table_kernel_id() and t.deleted_at is null
+   where t.id = p_table_id and t.table_id = custom.table_kernel_id()
    limit 1;
   select m.inverse into v_inv
     from history.migration_log m
@@ -1011,12 +2167,17 @@ begin
   perform custom.assert_client_may_reach(v_to, 'custom.table_duplicate_continue');
   perform custom.assert_store_door(v_to, 'custom.table_duplicate_continue');
   -- The source is asked again, every pass: a person who lost access mid-copy copies no more.
-  v_opens := custom.where_id_opens((v_inv ->> 'duplicated_from')::uuid);
-  if v_opens is null or v_opens ->> 'kind' is distinct from 'table' then
-    raise exception 'The table this was being copied from is no longer one you have been given, so the copy stops here.'
-      using errcode = '42501';
+  if coalesce(v_inv ->> 'state', 'copying') = 'copying' then
+    v_opens := custom.where_id_opens((v_inv ->> 'duplicated_from')::uuid);
+    if v_opens is not null and v_opens ->> 'kind' is distinct from 'table' then
+      v_opens := null;
+    end if;
+    if v_opens is null and exists (select 1 from custom.record s
+                                     where s.id = (v_inv ->> 'duplicated_from')::uuid and s.deleted_at is null) then
+      raise exception 'The table this was being copied from is no longer one you have been given, so the copy stops here.'
+        using errcode = '42501';
+    end if;
   end if;
-  perform custom.assert_client_may_reach((v_inv ->> 'duplicated_from_organization_id')::uuid, 'custom.table_duplicate_continue');
   return jsonb_build_object(
     'duplicated', true,
     'table', jsonb_build_object('id', p_table_id, 'name', v_name),
@@ -1025,11 +2186,71 @@ begin
 end;
 $function$;
 
+create or replace function custom.table_copies_in_progress()
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'pg_catalog'
+as $function$
+declare
+  v_me  uuid := custom.query_principal();
+  r     record;
+  v_out jsonb := '[]'::jsonb;
+begin
+  -- THE CALLER'S UNFINISHED COPIES: still being made, or stopped (the source archived meanwhile),
+  -- each with what it is, where it came from and how far it got — so an abandoned copy is found
+  -- and carried on (custom.table_duplicate_continue) or discarded (archive the copy). A copy
+  -- whose half table was archived is closed here: its history row stops saying it is open.
+  if v_me is null then
+    raise exception 'Sign in to see the copies you are making.' using errcode = '42501';
+  end if;
+  for r in
+    select m.id as job, m.organization_id as org, m.target_id as copy, m.inverse as inv, m.applied_at,
+           t.data ->> 'name' as name, t.deleted_at is not null as archived,
+           s.data ->> 'name' as source_name, o.name as org_name
+      from history.migration_log m
+      left join custom.record t on t.organization_id = m.organization_id and t.id = m.target_id
+      left join custom.record s on s.id = (m.inverse ->> 'duplicated_from')::uuid
+                               and s.organization_id = (m.inverse ->> 'duplicated_from_organization_id')::uuid
+      left join iam.organizations o on o.id = m.organization_id
+     where m.verb = 'duplicate' and m.target_kind = 'table'
+       and m.inverse ->> 'by' = v_me::text
+       and coalesce(m.inverse ->> 'state', 'copying') in ('copying', 'failed')
+       and iam.is_org_member(v_me, m.organization_id)
+     order by m.applied_at desc
+  loop
+    if r.archived or r.name is null then
+      update history.migration_log
+         set inverse = inverse || jsonb_build_object('state', 'discarded', 'open', false)
+       where id = r.job;
+      continue;
+    end if;
+    v_out := v_out || jsonb_build_array(jsonb_build_object(
+      'table', jsonb_build_object('id', r.copy, 'name', r.name),
+      'organization', jsonb_build_object('id', r.org, 'name', r.org_name),
+      'from', jsonb_build_object('id', r.inv ->> 'duplicated_from', 'name', r.source_name),
+      'status', coalesce(r.inv ->> 'state', 'copying'),
+      'sentence', r.inv ->> 'why',
+      'started_at', r.applied_at,
+      'records', case when (r.inv ->> 'with_records')::boolean then jsonb_build_object(
+                   'done', (select count(*) from custom.record c
+                             where c.organization_id = r.org and c.table_id = r.copy
+                               and c.data_class = 'record' and c.deleted_at is null),
+                   'total', (r.inv ->> 'records_total')::bigint) end,
+      'path', '/data-v2/' || r.copy::text));
+  end loop;
+  return v_out;
+end;
+$function$;
+
+comment on function custom.table_copies_in_progress() is
+  'TABLE-ACTIONS. The caller''s unfinished copies (still being made, or stopped because the source was archived), each with its source, status, sentence and progress, so it can be carried on or discarded. A copy whose half table was archived is closed here.';
+
 comment on function custom.table_duplicate_continue(uuid) is
   'TABLE-ACTIONS. Carries on a copy custom.table_duplicate started: one bounded pass (new work stops 2.5 s into the call; small units), answering copying|done with progress, then what stayed behind. Only the person who started the copy; the source is re-checked every pass.';
 
 comment on function custom.table_duplicate(uuid, boolean, text, uuid) is
-  'TABLE-ACTIONS. Duplicates a Table the caller may open into an organization the caller is a member of (default: the same one): its settings and look, every live Field (new ids), every choice list as a new list (same words, keys, order), every live saved view (filters, sorts, layouts and every id inside them remapped to the copy), and with p_with_records every live record the caller may open, its values through the read doors'' own field mask (custom.read_mask_for + custom.mask_document: a column the caller may not read is copied empty and named in left_behind.hidden_columns); links within the Table follow to the copy, links to other Tables stay, and a reference to a row that was not copied is taken out. Name: p_name, else "<name> (copy)", "(copy 2)", …. Writes one history.migration_log row on the new Table (verb duplicate); the source is never written. Paged: it makes the copy''s Table record, stops starting new work 1.5 s into the call and answers status copying|done with progress; custom.table_duplicate_continue carries it on. Refuses with one sentence: not given / archived / still being copied / not a member of the destination / a column linking across organizations.';
+  'TABLE-ACTIONS. Duplicates a Table the caller may open into an organization the caller is a member of (default: the same one): its settings and look, every live Field (new ids), every choice list as a new list (same words, keys, order), every live saved view (filters, sorts, layouts and every id inside them remapped to the copy), and with p_with_records every live record the caller may open, its values through the read doors'' own field mask (custom.read_mask_for + custom.mask_document: a column the caller may not read is copied empty and named in left_behind.hidden_columns); links within the Table follow to the copy, links to other Tables stay, and a reference to a row that was not copied is taken out. Name: p_name, else "<name> (copy)", "(copy 2)", …. Writes one history.migration_log row on the new Table (verb duplicate); the source is never written. Paged: it fixes what the copy carries, makes the copy''s Table record (hidden from everyone but its maker until handed over), does at least one unit, starts none 1.5 s into the call and answers copying|done|failed|busy with progress; custom.table_duplicate_continue carries it on. Refuses with one sentence: not given / archived / still being copied / not a member of the destination / a column linking across organizations.';
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
@@ -1073,7 +2294,7 @@ values
   ('custom', 'table_duplicate_continue',
    'p_table_id uuid',
    array['uuid'::regtype::oid],
-   'Takes the id of a copy custom.table_duplicate started. Refuses unless that copy''s job (its history.migration_log row, verb duplicate) was started by the signed-in caller, the caller still reaches the destination organization (custom.assert_client_may_reach + custom.assert_store_door), and custom.where_id_opens still says the caller may open the source Table. Only then does it spend one bounded pass copying what remains (choice lists, fields, views, records through the read doors'' field mask, links), and answers copying|done with progress. It never writes the source.',
+   'Takes the id of a copy custom.table_duplicate started. Refuses unless that copy''s job (its history.migration_log row, verb duplicate) was started by the signed-in caller, the caller still reaches the destination organization (custom.assert_client_may_reach + custom.assert_store_door), and custom.where_id_opens still says the caller may open the source Table. Only then does it spend one bounded pass (at least one unit; one pass at a time per copy, else busy) copying what remains (choice lists, fields, views, records through the read doors'' field mask, links), and answers copying|done with progress. It never writes the source.',
    'tableactions_a_table_can_be_duplicated.sql', null, true, false,
    jsonb_build_object(
      'version', 1,
@@ -1086,10 +2307,17 @@ values
          'entity', 'custom_record',
          'foreign', jsonb_build_object('bounded', true, 'sqlstate', '42501', 'same_as_invented', true,
                                        'note', 'Only the caller''s own copy is carried on, and only from a source the caller may still open.'),
-         'null_rule', jsonb_build_object('says', 'That is not a copy you are making, so there is nothing to carry on.', 'sqlstate', '42501')))))
+         'null_rule', jsonb_build_object('says', 'That is not a copy you are making, so there is nothing to carry on.', 'sqlstate', '42501'))))),
+  ('custom', 'table_copies_in_progress',
+   '',
+   array[]::oid[],
+   'Takes no argument. Answers only the signed-in caller''s own unfinished copies (history.migration_log rows of verb duplicate whose stored maker is the caller, in organizations the caller is a member of): their names, sources, status and progress. It writes nothing but closing the job of a copy whose half table was archived.',
+   'tableactions_a_table_can_be_duplicated.sql', null, true, false,
+   jsonb_build_object('version', 1, 'declared_by', 'tableactions_a_table_can_be_duplicated.sql', 'arguments', '{}'::jsonb))
 on conflict do nothing;
 
 grant execute on function custom.table_duplicate(uuid, boolean, text, uuid) to authenticated;
 grant execute on function custom.table_duplicate_continue(uuid) to authenticated;
+grant execute on function custom.table_copies_in_progress() to authenticated;
 
 select set_config('platform.closed_schema_sweep', '0', true);

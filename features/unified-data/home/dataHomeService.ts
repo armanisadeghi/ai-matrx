@@ -24,7 +24,33 @@ import type { DataHomeRow } from "./dataHomeRows";
 import { matchesTokens, parseTokens, scoreRow, UPDATED_BUCKET_MS } from "./dataHomeSearch";
 
 /** The most rows the home holds in hand (a stated bound, not a silent one). */
+
+/** The orders the store pages the archive in (`custom.archived_tables_everywhere` p_sort / p_desc). */
+export interface ArchiveSort {
+  sort: "archived_at" | "name" | "organization";
+  desc: boolean;
+}
+export const DEFAULT_ARCHIVE_SORT: ArchiveSort = { sort: "archived_at", desc: true };
+const archiveSortKey = (s: ArchiveSort) => `${s.sort}:${s.desc ? "desc" : "asc"}`;
+/**
+ * The list's column sort as the store's archive order. Name, Updated (an archived row's Updated is
+ * when it was archived) and Organization page in the store; another column keeps newest archived first.
+ */
+export function archiveSortOf(sort: EntityListSort): ArchiveSort {
+  const desc = sort.direction === "desc";
+  if (sort.sort === "name") return { sort: "name", desc };
+  if (sort.sort === "organization") return { sort: "organization", desc };
+  if (sort.sort === "updated") return { sort: "archived_at", desc };
+  return DEFAULT_ARCHIVE_SORT;
+}
+
 export const DATA_HOME_ROW_CAP = 5000;
+
+/** How many archived rows one store read asks for (one page ≈ 0.7 s for a many-org person). */
+export const ARCHIVE_READ = 100;
+
+/** The most one store read asks for (the door's own ceiling is 1000). */
+export const ARCHIVE_READ_MAX = 500;
 
 export const LANES: readonly DataHomeScope[] = ["all", "mine", "team", "orgs", "shared", "public", "system"];
 
@@ -46,6 +72,16 @@ export interface DataHomeServiceOptions {
   isStarred: (row: DataHomeRow) => boolean;
   ownerLabel: (row: DataHomeRow) => string | null;
   now?: () => number;
+  /**
+   * THE ARCHIVE AXIS (lane TABLE-ACTIONS item 10): the archive, read a page at a time from the
+   * store only when the list's Archived filter asks (never on first paint), newest archived first.
+   * `offset`/`limit` are the store's; `ended` says the archive has nothing after these rows.
+   * Absent → the axis shows active rows only.
+   */
+  readArchived?: (
+    page: { offset: number; limit: number },
+    sort?: ArchiveSort,
+  ) => Promise<{ rows: DataHomeRow[]; ended: boolean }>;
   /**
    * The rows `load` resolved to, synchronously, once they are in hand (undefined before). With it
    * the service answers the shell's `peek` — every keystroke repaints in its own render.
@@ -316,30 +352,123 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
     }
   };
 
+  // ── THE ARCHIVE, PAGED LIKE THE STORE PAGES IT (TABLE-ACTIONS fix round, 2026-10-03) ──────────
+  // The store answers the archive a page at a time and names no count, so this half of the list is
+  // OPEN-ENDED (`EntityListPage.hasMore`): the first rows draw as soon as the store's first page
+  // arrives, the next page is read only when the person pages on, and no count is shown — the lane
+  // badges and facet options are absent here rather than a full read of every archived table. The
+  // order is the store's (newest archived first); a search, a lane, a filter or the organization
+  // filter keeps reading pages until this page is full or the archive ends.
+  // THE ARCHIVE SORTS BY ITS COLUMN IN THE STORE (TABLE-ACTIONS, 2026-10-03): name, archived
+  // (the Updated column) and organization are asked of `custom.archived_tables_everywhere`, which
+  // pages in that order; a new sort starts the archive's pages over.
+  const archive: { rows: DataHomeRow[]; ended: boolean; reading: Promise<void> | null; key: string } = {
+    rows: [],
+    ended: false,
+    reading: null,
+    key: archiveSortKey(DEFAULT_ARCHIVE_SORT),
+  };
+  let archiveSort: ArchiveSort = DEFAULT_ARCHIVE_SORT;
+  const sortArchiveBy = (sort: EntityListSort) => {
+    const next = archiveSortOf(sort);
+    const key = archiveSortKey(next);
+    if (key === archive.key) return;
+    archiveSort = next;
+    archive.key = key;
+    archive.rows = [];
+    archive.ended = false;
+    archive.reading = null;
+  };
+  /** One store read: at least ARCHIVE_READ rows, or as many as this page still needs. */
+  const readMoreArchive = (atLeast = ARCHIVE_READ) => {
+    if (!opts.readArchived) {
+      archive.ended = true;
+      return Promise.resolve();
+    }
+    if (!archive.reading) {
+      const key = archive.key;
+      const reading: Promise<void> = opts
+        .readArchived({ offset: archive.rows.length, limit: Math.min(Math.max(ARCHIVE_READ, atLeast), ARCHIVE_READ_MAX) }, archiveSort)
+        .then((answer) => {
+          if (archive.key !== key) return; // the sort changed while this page was in the air
+          archive.rows.push(...answer.rows);
+          if (answer.ended || archive.rows.length >= DATA_HOME_ROW_CAP) archive.ended = true;
+        })
+        .finally(() => {
+          if (archive.reading === reading) archive.reading = null;
+        });
+      archive.reading = reading;
+    }
+    return archive.reading;
+  };
+  const archiveMatches = (query: EntityListQuery) =>
+    matching(archive.rows, query, { lane: laneOf(query) }).out.map((m) => m.row);
+  /** The archived half's page, or undefined when it needs another store page first. */
+  const archivePageInHand = (query: EntityListQuery, sort: EntityListSort, before: DataHomeRow[]) => {
+    const want = query.page * sort.pageSize + 1 - before.length;
+    const found = archiveMatches(query);
+    if (found.length < want && !archive.ended) return undefined;
+    const rows = [...before, ...found];
+    const start = Math.max(0, (query.page - 1) * sort.pageSize);
+    const shown = rows.slice(start, start + sort.pageSize);
+    return { rows: shown, total: start + shown.length, hasMore: rows.length > start + sort.pageSize };
+  };
+  /** "Active + archived": the live rows as the list orders them, then the archive, open-ended. */
+  const activeHalf = (rows: DataHomeRow[], query: EntityListQuery, sort: EntityListSort) =>
+    pageOf(rows, { ...query, page: 1 }, { ...sort, pageSize: Number.MAX_SAFE_INTEGER }).rows;
+  const openEndedPage = async (query: EntityListQuery, sort: EntityListSort) => {
+    sortArchiveBy(sort);
+    const before = query.archived === "all" ? activeHalf(await all(), query, sort) : [];
+    for (let reads = 0; ; reads++) {
+      const page = archivePageInHand(query, sort, before);
+      if (page) return page;
+      // First read: as many as this page still needs, so a 100-row page is one read, not two. A
+      // search or filter that the first read could not fill reads on in the largest steps.
+      await readMoreArchive(
+        reads === 0 ? query.page * sort.pageSize + 1 - before.length - archiveMatches(query).length : ARCHIVE_READ_MAX,
+      );
+    }
+  };
+  // No count is made here (see above); the organization filter lists its choices without numbers.
+  const NO_COUNTS: EntityScopeCounts = { byKind: {}, narrow: {}, uncounted: true };
+  const NO_FACETS: EntityFacets = { byKind: {} };
+  const openEnded = (query: EntityListQuery) => query.archived === "archived" || query.archived === "all";
+
   return {
     async fetchPage(query: EntityListQuery, sort: EntityListSort) {
+      if (openEnded(query)) return openEndedPage(query, sort);
       const rows = await all();
       askServer(query);
       return pageOf(rows, query, sort);
     },
     async fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts> {
+      if (openEnded(query)) return NO_COUNTS;
       return countsOf(await all(), query);
     },
     async fetchFacets(query: EntityListQuery): Promise<EntityFacets> {
+      if (openEnded(query)) return NO_FACETS;
       return facetsOf(await all(), query);
     },
     peek: {
       page(query, sort) {
+        if (openEnded(query)) {
+          sortArchiveBy(sort);
+          if (query.archived === "archived") return archivePageInHand(query, sort, []);
+          const rows = inHand();
+          return rows ? archivePageInHand(query, sort, activeHalf(rows, query, sort)) : undefined;
+        }
         const rows = inHand();
         if (!rows) return undefined;
         askServer(query);
         return pageOf(rows, query, sort);
       },
       counts(query) {
+        if (openEnded(query)) return NO_COUNTS;
         const rows = inHand();
         return rows ? countsOf(rows, query) : undefined;
       },
       facets(query) {
+        if (openEnded(query)) return NO_FACETS;
         const rows = inHand();
         return rows ? facetsOf(rows, query) : undefined;
       },

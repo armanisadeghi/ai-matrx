@@ -21,7 +21,15 @@ export interface MermaidRenderOptions {
   theme: MermaidTheme;
   look: MermaidLook;
   layout: MermaidLayout;
+  /**
+   * Where a pie chart draws its legend. "bottom" stacks it under the pie so a
+   * narrow pane or a phone shows every label; the renderer picks it from the
+   * frame's width. Omitted = mermaid's default (right of the pie).
+   */
+  pieLegend?: MermaidPieLegend;
 }
+
+export type MermaidPieLegend = "right" | "bottom";
 
 /** User-facing option set; theme may be "auto" (follows app dark/light mode). */
 export interface MermaidOptionPreferences {
@@ -56,5 +64,5 @@ export function resolveMermaidTheme(
 
 /** Stable string key for a render-options combination (config re-init gate). */
 export function renderOptionsKey(opts: MermaidRenderOptions): string {
-  return `${opts.theme}|${opts.look}|${opts.layout}`;
+  return `${opts.theme}|${opts.look}|${opts.layout}|${opts.pieLegend ?? "right"}`;
 }

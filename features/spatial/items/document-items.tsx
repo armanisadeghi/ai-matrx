@@ -95,5 +95,11 @@ export const DOCUMENT_ITEMS: readonly BoardItemType[] = [
     startNew: { label: "New document", create: newDocumentItem },
     bringIn: { label: "Document", Picker: DocumentPicker },
     href: (s) => documentHref(s, documentDoor),
+    // Checked 2026-10-03 (remount harness udt_document + :quiet green; the
+    // board in the browser): the typed text is kept across sleep / wake and a
+    // removed-and-undone tile, one save, nothing re-read. The document is one
+    // working copy per tab (lib/working-copy, kind udt_document) kept warm
+    // after its last view leaves.
+    sleeps: true,
   },
 ];

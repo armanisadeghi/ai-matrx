@@ -104,7 +104,7 @@ export function TasksHeaderControls() {
         )}
       >
         <CalendarCheck className="h-3.5 w-3.5" />
-        <span className="max-sm:sr-only">Import from Google Tasks</span>
+        <span className="max-sm:sr-only" data-header-compact-label>Import from Google Tasks</span>
       </Button>
       <MandateDoorLink feature="tasks" label="Task agents" />
       </HeaderActionsSlot>

@@ -31,9 +31,12 @@ export default function MessagesLayoutClient({
   const getScope = useMessagesSurfaceScope();
 
   return (
-    <div className="flex h-full min-h-0 overflow-y-auto overflow-x-hidden bg-background">
-      {/* Desktop Sidebar - Persistent Conversation List */}
-      <div className="hidden min-h-0 shrink-0 flex-col border-r border-border pt-[var(--shell-header-h)] md:flex md:w-80">
+    // A size container: the list sits beside the thread when the MAIN COLUMN
+    // has room (42rem), not the window — the canvas narrows the column on a
+    // desktop. The thread's Back follows the same container (messages-native.css).
+    <div className="@container/messages flex h-full min-h-0 overflow-y-auto overflow-x-hidden bg-background">
+      {/* Persistent conversation list beside the thread */}
+      <div className="hidden min-h-0 w-80 shrink-0 flex-col border-r border-border pt-[var(--shell-header-h)] @2xl/messages:flex">
         <ConversationListPane
           className="min-h-0 flex-1"
           onSelect={(conversationId) => router.push(`/messages/${conversationId}`)}

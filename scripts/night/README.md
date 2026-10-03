@@ -14,7 +14,7 @@
 > `…plist.PAUSED-2026-09-21`. It runs ~190 suites serially against PRODUCTION, the class of Sunday
 > night's lock incident; Arman ruled that nothing of that kind runs tonight. The two branch-refresh
 > jobs were left loaded (branch-only writes). The way suites come back is against the nightly clone:
-> `common-docs/projects/database-workload-safety/DEV-CLONE-AND-BACKUP.md`. Re-arm only on Arman's word.
+> `common-docs/systems/architecture/database/projects/database-workload-safety/PLAN.md`. Re-arm only on Arman's word.
 >
 > 🚨 **Identity trap (measured 2026-09-22) — CLOSED the same day.** A Supabase DATA branch
 > (`with_data: true`) is a physical restore and reports the **same

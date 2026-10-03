@@ -1,3 +1,4 @@
+// record-view: none — redirects to the source studio, which shows the record
 import { redirect } from "next/navigation";
 import { sourceStudioPath } from "@/features/source-studio/sourceStudioModel";
 

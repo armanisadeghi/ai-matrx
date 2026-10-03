@@ -4,7 +4,7 @@
  * CheckFindingsConsole — /administration/reporting/check-findings.
  *
  * Every static check's last run and its findings, from the checks store (`ops.proof_check`
- * `kind='static'`, `ops.check_run`, `ops.check_item` — common-docs/projects/checks-run-in-the-app/
+ * `kind='static'`, `ops.check_run`, `ops.check_item` — common-docs/systems/architecture/observability/projects/checks-run-in-the-app/
  * P2-STORAGE-DESIGN.md). Two views on one URL: the per-check board (no `?check=`), and one
  * check's items (`?check=<proof_check id>&state=open|accepted|fixed|broken|retired`), grouped by
  * work unit.

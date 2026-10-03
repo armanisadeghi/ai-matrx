@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 // features/unified-data/components/EntityCustomFields.tsx
 //
 // THE ONE LINE A STANDARD ENTITY PAGE ADDS (SCR-12 / REC-40 / REC-34).
@@ -49,6 +49,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
@@ -96,7 +97,12 @@ type RecordHome =
   | { state: "error" }
   | { state: "absent" };
 
-/** The row's organization, asked as the person. Never the active organization. */
+/** What the home door answered, as kept in the store (plain JSON). A failed read is never kept. */
+type HomeAnswer =
+  | { kind: "home"; organizationId: string }
+  | { kind: "door-absent" }
+  | { kind: "refused"; sentence: string; reason: string | null };
+
 /** PostgREST (PGRST202) / Postgres (42883) say the FUNCTION is not on this database — nothing else. */
 function doorIsAbsent(error: { message: string; sqlstate?: string | undefined }): boolean {
   return error.sqlstate === "PGRST202" || error.sqlstate === "42883";
@@ -105,7 +111,31 @@ let announcedFallback = false;
 let announcedAbsent = false;
 let announcedUnreadable = false;
 
+/** Said once per tab: the home door is not on this database yet (and what the section does instead). */
+function announceDoorAbsent(withPageOrganization: boolean): void {
+  if (withPageOrganization ? announcedFallback : announcedAbsent) return;
+  if (withPageOrganization) announcedFallback = true;
+  else announcedAbsent = true;
+  console.warn(
+    withPageOrganization
+      ? "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); using the organization the page holds for the record."
+      : "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); surfaces without a page organization show no custom-fields section until it is.",
+  );
+}
+
 type Readable = "checking" | "ok" | "absent" | "error";
+
+/**
+ * 🚨 READ ONCE PER RECORD PER TAB (the remount law, 2026-10-03). Both of the section's own reads —
+ * the row's organization and whether the row reads — are kept in the store by record
+ * (`useStoreRead`): a board tile that sleeps and wakes, a Remove + Undo, or a second view of the
+ * same record renders the kept answer and reads nothing. They used to live in this component's
+ * `useState`, so every wake asked `entity_record_home` and `entity_record_read` again. A failed
+ * read is never kept: the next view (or Retry) asks again.
+ */
+export const recordHomeKey = (token: string, recordId: string) => `unified-data.record-home:${token}:${recordId}`;
+export const recordReadableKey = (organizationId: string, token: string, recordId: string) =>
+  `unified-data.record-readable:${organizationId}:${token}:${recordId}`;
 
 /**
  * The section's own first read, asked BEFORE it mounts. A store refusal is never printed raw: the
@@ -114,40 +144,39 @@ type Readable = "checking" | "ok" | "absent" | "error";
  * else is the short "Couldn't read this record" state.
  */
 function useRecordReadable(token: string, recordId: string, organizationId: string | null) {
-  const [readable, setReadable] = useState<Readable>("checking");
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    if (!organizationId) return;
-    let live = true;
-    setReadable("checking");
-    void entityRecordReadable(recordsDataSource(createClient()), organizationId, token, recordId).then(
-      (answer) => {
-        if (!live) return;
-        if (answer.ok) return setReadable("ok");
-        if (answer.error.sqlstate === "42501") {
-          if (!announcedUnreadable) {
-            announcedUnreadable = true;
-            console.warn(
-              "[EntityCustomFields] custom.entity_record_read refused a column of this table (lane7w5b SQL, chair's apply); the section stays hidden on such tables until it is.",
-              { token },
-            );
-          }
-          return setReadable("absent");
-        }
-        console.error("[EntityCustomFields] custom.entity_record_read failed", { token, recordId, error: answer.error });
-        setReadable("error");
-      },
-      (error: unknown) => {
-        if (!live) return;
+  const read = useStoreRead<"ok" | "absent">(
+    organizationId ? recordReadableKey(organizationId, token, recordId) : null,
+    async () => {
+      let answer: Awaited<ReturnType<typeof entityRecordReadable>>;
+      try {
+        answer = await entityRecordReadable(recordsDataSource(createClient()), organizationId!, token, recordId);
+      } catch (error) {
         console.error("[EntityCustomFields] custom.entity_record_read threw", { token, recordId, error });
-        setReadable("error");
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [token, recordId, organizationId, attempt]);
-  return { readable, retry: () => setAttempt((n) => n + 1) };
+        throw error;
+      }
+      if (answer.ok) return "ok";
+      if (answer.error.sqlstate === "42501") {
+        if (!announcedUnreadable) {
+          announcedUnreadable = true;
+          console.warn(
+            "[EntityCustomFields] custom.entity_record_read refused a column of this table (lane7w5b SQL, chair's apply); the section stays hidden on such tables until it is.",
+            { token },
+          );
+        }
+        return "absent";
+      }
+      console.error("[EntityCustomFields] custom.entity_record_read failed", { token, recordId, error: answer.error });
+      throw new Error(answer.error.message);
+    },
+  );
+  const readable: Readable = !organizationId
+    ? "checking"
+    : read.status === "error"
+      ? "error"
+      : read.hasData && read.data
+        ? read.data
+        : "checking";
+  return { readable, retry: () => void read.refresh() };
 }
 
 function useRecordHome(
@@ -155,59 +184,41 @@ function useRecordHome(
   recordId: string,
   pageOrganizationId: string | null,
 ): { home: RecordHome; retry: () => void } {
-  const [home, setHome] = useState<RecordHome>({ state: "loading" });
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    let live = true;
-    setHome({ state: "loading" });
-    void entityRecordHome(recordsDataSource(createClient()), token, recordId).then(
-      (answer) => {
-        if (!live) return;
-        if (!answer.ok) {
-          if (doorIsAbsent(answer.error) && pageOrganizationId) {
-            if (!announcedFallback) {
-              announcedFallback = true;
-              console.warn(
-                "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); using the organization the page holds for the record.",
-              );
-            }
-            setHome({ state: "home", organizationId: pageOrganizationId });
-            return;
-          }
-          if (doorIsAbsent(answer.error)) {
-            // No door yet and no page organization (Detail window, /detail, a peek): these surfaces
-            // never had a section before this door, so the section is ABSENT — never a box blaming
-            // the person's record for a door we have not applied.
-            if (!announcedAbsent) {
-              announcedAbsent = true;
-              console.warn(
-                "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); surfaces without a page organization show no custom-fields section until it is.",
-              );
-            }
-            setHome({ state: "absent" });
-            return;
-          }
-          console.error("[EntityCustomFields] custom.entity_record_home failed", { token, recordId, error: answer.error });
-          setHome({ state: "error" });
-        } else if (answer.data.organization_id) setHome({ state: "home", organizationId: answer.data.organization_id });
-        else
-          setHome({
-            state: "refused",
-            sentence: answer.data.refused ?? "This record takes no custom fields.",
-            reason: answer.data.reason ?? null,
-          });
-      },
-      (error: unknown) => {
-        if (!live) return;
-        console.error("[EntityCustomFields] custom.entity_record_home threw", { token, recordId, error });
-        setHome({ state: "error" });
-      },
-    );
-    return () => {
-      live = false;
+  const read = useStoreRead<HomeAnswer>(recordHomeKey(token, recordId), async () => {
+    let answer: Awaited<ReturnType<typeof entityRecordHome>>;
+    try {
+      answer = await entityRecordHome(recordsDataSource(createClient()), token, recordId);
+    } catch (error) {
+      console.error("[EntityCustomFields] custom.entity_record_home threw", { token, recordId, error });
+      throw error;
+    }
+    if (!answer.ok) {
+      if (doorIsAbsent(answer.error)) return { kind: "door-absent" };
+      console.error("[EntityCustomFields] custom.entity_record_home failed", { token, recordId, error: answer.error });
+      throw new Error(answer.error.message);
+    }
+    if (answer.data.organization_id) return { kind: "home", organizationId: answer.data.organization_id };
+    return {
+      kind: "refused",
+      sentence: answer.data.refused ?? "This record takes no custom fields.",
+      reason: answer.data.reason ?? null,
     };
-  }, [token, recordId, attempt, pageOrganizationId]);
-  return { home, retry: () => setAttempt((n) => n + 1) };
+  });
+  const retry = () => void read.refresh();
+  if (read.status === "error" && !read.hasData) return { home: { state: "error" }, retry };
+  const answer = read.hasData ? read.data : undefined;
+  if (!answer) return { home: read.status === "error" ? { state: "error" } : { state: "loading" }, retry };
+  if (answer.kind === "home") return { home: { state: "home", organizationId: answer.organizationId }, retry };
+  if (answer.kind === "refused") return { home: { state: "refused", sentence: answer.sentence, reason: answer.reason }, retry };
+  if (pageOrganizationId) {
+    announceDoorAbsent(true);
+    return { home: { state: "home", organizationId: pageOrganizationId }, retry };
+  }
+  // No door yet and no page organization (Detail window, /detail, a peek): these surfaces never had
+  // a section before this door, so the section is ABSENT — never a box blaming the person's record
+  // for a door we have not applied.
+  announceDoorAbsent(false);
+  return { home: { state: "absent" }, retry };
 }
 
 /** One line in the section's place: the heading and why nothing more shows. */

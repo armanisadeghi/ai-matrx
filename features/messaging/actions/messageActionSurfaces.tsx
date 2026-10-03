@@ -28,6 +28,8 @@ import {
   FileChartColumn,
   Flag,
   KeyRound,
+  AppWindow,
+  PanelRight,
   PenLine,
   Search,
 } from "lucide-react";
@@ -50,7 +52,18 @@ import type {
 } from "@/features/messaging/types";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import { getResourceIcon } from "@/features/sharing/resourceIcons";
-import { EntityCard } from "@ai-matrx/chat/tool-call-visualization/renderers/_shared-entity/EntityCard";
+import {
+  EntityCard,
+  type EntityAction,
+} from "@ai-matrx/chat/tool-call-visualization/renderers/_shared-entity/EntityCard";
+import { useOpenDetail } from "@ai-matrx/detail/react";
+import {
+  getItemConfig,
+  itemTypeForEntityToken,
+  opensBespokeWindow,
+  opensTheRecord,
+} from "@/features/item-presentation/registry";
+import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
 import { ResourceActionRequestButtons } from "@/features/access-gate/components/ResourceActionRequestButtons";
 import { isJsonObject } from "@/types/json";
@@ -95,9 +108,14 @@ function ResourceSharedCard({
   payload,
 }: SurfaceProps<ResourceSharedActionPayload>) {
   const p = payload;
+  const openDetail = useOpenDetail();
+  const openItem = useOpenItemPresentation();
   if (!p?.resource_type || !p?.resource_id) return null;
-  const href = getResourceSharePath(p.resource_type, p.resource_id);
+  const href =
+    (typeof p.resource_href === "string" && p.resource_href.startsWith("/") ? p.resource_href : null) ??
+    getResourceSharePath(p.resource_type, p.resource_id);
   const Icon = getResourceIcon(p.resource_type);
+  const title = p.resource_title || p.resource_label || "Shared item";
   const subtitle = p.sharer_name
     ? `${p.resource_label} · shared by ${p.sharer_name}`
     : p.resource_label;
@@ -105,15 +123,66 @@ function ResourceSharedCard({
     <div className="w-full max-w-sm">
       <EntityCard
         icon={Icon}
-        title={p.resource_title || p.resource_label || "Shared item"}
+        title={title}
         subtitle={subtitle}
         actionLabel="Open"
-        // No "Open" when the resource has no page — a link to nowhere in a
-        // shared-with-you card is worse than no button.
-        actions={href ? [{ label: "Open", icon: ExternalLink, href }] : []}
+        // No door when the resource has neither an in-place presentation nor a
+        // page — a link to nowhere in a shared-with-you card is worse than none.
+        actions={sharedResourceActions({
+          token: p.resource_type,
+          id: p.resource_id,
+          title,
+          href,
+          openDetail,
+          openItem,
+        })}
       />
     </div>
   );
+}
+
+/**
+ * THE DOORS OF A SHARED RECORD (2026-10-03). The card's menu held ONE row,
+ * "Open", which left the app for a new browser tab. The record opens in place
+ * first — beside the conversation in the canvas (the Detail primitive's docked
+ * `record-peek` tab) or as a window — and the page is the last choice. A type
+ * with its own window (a note, an agent, a file) opens that window: docking it
+ * would show the bare row instead of the record. One choice → one button
+ * (EntityCard), never a one-row menu.
+ */
+export function sharedResourceActions({
+  token,
+  id,
+  title,
+  href,
+  openDetail,
+  openItem,
+}: {
+  token: string;
+  id: string;
+  title: string;
+  href: string | null;
+  openDetail: ReturnType<typeof useOpenDetail>;
+  openItem: ReturnType<typeof useOpenItemPresentation>;
+}): EntityAction[] {
+  const actions: EntityAction[] = [];
+  const itemType = itemTypeForEntityToken(token);
+  const { config } = getItemConfig(itemType);
+  const seed = { name: title, about: null };
+  if (itemType && opensTheRecord(config)) {
+    if (opensBespokeWindow(config)) {
+      actions.push({ label: "Open in window", icon: AppWindow, onSelect: () => void openItem(itemType, id, seed) });
+    } else {
+      actions.push(
+        { label: "Open in canvas", icon: PanelRight, onSelect: () => void openDetail({ type: itemType, id, seed, presentation: "docked" }) },
+        { label: "Open in window", icon: AppWindow, onSelect: () => void openDetail({ type: itemType, id, seed, presentation: "window" }) },
+      );
+    }
+  }
+  if (href) {
+    actions.push({ label: "Open in new tab", icon: ExternalLink, href, separatorBefore: actions.length > 0 });
+  }
+  return actions;
 }
 
 /**

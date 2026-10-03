@@ -1,3 +1,4 @@
+// record-view: none — a run analysis page
 // /workflows/runs/analyze — YOUR RUNS, ANALYZED (lane DRILL-CONVERSIONS).
 //
 // Beside the runs list (`/workflows/runs`, which stays and is where every run opens): the declared

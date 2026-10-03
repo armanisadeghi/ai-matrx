@@ -171,6 +171,11 @@ interface Props<TRow> {
    * count — "0 rows" under a failed read is a claim about the data nobody can make.
    */
   totalUnknown?: boolean;
+  /**
+   * An open-ended list (`EntityListPage.hasMore`): the store named no count. The label reads
+   * "start-end" with no "of N", and the pager offers the next page only when one exists.
+   */
+  hasMore?: boolean;
   /** Resolved empty state from the page (which knows if a search/filter is on). */
   emptyState?: {
     title: string;
@@ -320,6 +325,7 @@ export function EntityListTable<TRow>({
   emptyState,
   read,
   totalUnknown = false,
+  hasMore,
   selection,
   tableToolbar,
   pageToolbarSlot,
@@ -553,6 +559,8 @@ export function EntityListTable<TRow>({
       paginationLabelFormat={(start, end, count) =>
         isLoading || totalUnknown || read?.status === "error"
           ? ""
+          : hasMore !== undefined
+            ? count === 0 ? "" : `${start.toLocaleString()}-${end.toLocaleString()}`
           : count === 0
             ? // ONE WORDING (list-shell fix D, 2026-09-28): the cards and rows
               // views' footer reads "0 of 0"; the table said "0 rows".
@@ -588,7 +596,12 @@ export function EntityListTable<TRow>({
         // so the table is told the named page exists; it clamps only against
         // a real count.
         totalItems:
-          isLoading || totalUnknown ? Math.max(total, page * pageSize) : total,
+          isLoading || totalUnknown
+            ? Math.max(total, page * pageSize)
+            : // Open-ended: the pager sees one page past this one exactly when the store has more.
+              hasMore !== undefined
+              ? (hasMore ? (page + 1) * pageSize : total)
+              : total,
         state: {
           page,
           pageSize,

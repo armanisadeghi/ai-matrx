@@ -11,7 +11,7 @@
  * viewport width.
  *
  * Pinned to the exact viewport the defect (2026-09-19,
- * common-docs/projects/acquisition-frontier/screen-reverify-2026-09-19)
+ * common-docs/systems/knowledge/ingestion/STATE.md)
  * reproduced at: 390x844, the Rulebook rule row's provenance text wrapped
  * one character per line because the row's action buttons
  * (`shrink-0 flex-nowrap`) squeezed the text column to near-zero width.

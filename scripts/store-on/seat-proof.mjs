@@ -21,7 +21,7 @@ for (const f of ["/Users/armanisadeghi/code/matrx-frontend/.env.local", "/Users/
   } catch {}
 }
 const ORIGIN = process.argv[2] ?? "http://store-on.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23";
+const OUT = "/tmp/matrx-evidence/2026-09-23";
 mkdirSync(OUT, { recursive: true });
 
 // The sentences a switched-off or unreadable store puts on the screen, old and new spellings.

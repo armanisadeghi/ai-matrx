@@ -10,7 +10,8 @@ import { AllChangesView } from "@ai-matrx/diff/react";
 import { ChangesOnlyView } from "@ai-matrx/diff/react";
 import { SummaryView } from "@ai-matrx/diff/react";
 import { RawJsonView } from "@ai-matrx/diff/react";
-import { TextDiff } from "@ai-matrx/diff/react";
+import { TextDiff, type TextDiffView } from "@ai-matrx/diff/react";
+import { useMeasure } from "@ai-matrx/kit/hooks";
 import {
   TextFieldAdapter,
   TagsFieldAdapter,
@@ -34,6 +35,14 @@ interface NoteDiffViewerProps {
   className?: string;
 }
 
+/**
+ * Below this container width two side-by-side columns cut words mid-line
+ * ("separat"), so the Content diff stacks (one column, old above new). A
+ * container query, not a viewport one: a 360px canvas pane on a wide monitor
+ * is just as narrow as a phone.
+ */
+const SPLIT_MIN_WIDTH_PX = 560;
+
 export type NoteDiffTab =
   "content" | "all" | "changes-only" | "summary" | "raw-json";
 
@@ -46,7 +55,10 @@ function buildNoteAdapterRegistry() {
   registry.register("folder_id", { ...TextFieldAdapter, label: "Folder ID" });
   registry.register("tags", { ...TagsFieldAdapter, label: "Tags" });
   registry.register("shown_to", { ...TextFieldAdapter, label: "Shown to" });
-  registry.register("published_to_web", { ...TextFieldAdapter, label: "Published to the web" });
+  registry.register("published_to_web", {
+    ...TextFieldAdapter,
+    label: "Published to the web",
+  });
   registry.register("metadata", { ...JsonObjectAdapter, label: "Metadata" });
   registry.register("organization_id", {
     ...TextFieldAdapter,
@@ -104,6 +116,12 @@ export function NoteDiffViewer({
   className,
 }: NoteDiffViewerProps) {
   const [tab, setTab] = useState<NoteDiffTab>(defaultTab);
+  // The view follows the container until the person picks one in the toolbar.
+  const [pickedView, setPickedView] = useState<TextDiffView | null>(null);
+  const [contentRef, { width: contentWidth }] = useMeasure<HTMLDivElement>();
+  const narrow =
+    (contentWidth ?? 0) > 0 && (contentWidth ?? 0) < SPLIT_MIN_WIDTH_PX;
+  const contentView: TextDiffView = pickedView ?? (narrow ? "inline" : "split");
   const adapters = useMemo(() => buildNoteAdapterRegistry(), []);
 
   const oldContent = typeof oldNote.content === "string" ? oldNote.content : "";
@@ -115,7 +133,9 @@ export function NoteDiffViewer({
     // column. Fields the snapshot never had are not changes — counting them
     // printed "+13 added" over a Content tab that (correctly) said "No changes".
     const comparableNew = Object.fromEntries(
-      Object.entries(newNote as Record<string, unknown>).filter(([key]) => key in oldNote),
+      Object.entries(newNote as Record<string, unknown>).filter(
+        ([key]) => key in oldNote,
+      ),
     );
     const result = computeDiff(
       oldNote as Record<string, unknown>,
@@ -134,22 +154,27 @@ export function NoteDiffViewer({
         onValueChange={(v) => setTab(v as NoteDiffTab)}
         className="flex h-full min-h-0 flex-col"
       >
-        <div className="flex shrink-0 items-center gap-3 border-b border-border bg-card/50 px-3 py-1.5">
-          <TabsList className="h-7 bg-muted/50 p-0.5">
+        {/* The bar answers its OWN width: in a 360px canvas pane the five
+            tabs keep their icons and drop their words (kept as names and
+            tooltips) instead of clipping the last one. */}
+        <div className="@container/diffbar flex shrink-0 items-center gap-3 border-b border-border bg-card/50 px-3 py-1.5">
+          <TabsList className="h-7 min-w-0 shrink-0 bg-muted/50 p-0.5">
             {TAB_CONFIG.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
                 value={value}
+                aria-label={label}
+                title={label}
                 className="h-6 gap-1 px-2 text-xs data-[state=active]:bg-background"
               >
                 <Icon className="h-3 w-3" />
-                {label}
+                <span className="hidden @[30rem]/diffbar:inline">{label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
           <div className="flex-1" />
           {hasChanges ? (
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap text-xs">
               {stats.added > 0 && (
                 <span className="text-green-600 dark:text-green-400">
                   +{stats.added} added
@@ -175,17 +200,24 @@ export function NoteDiffViewer({
           value="content"
           className="mt-0 min-h-0 flex-1 overflow-hidden"
         >
-          <TextDiff
-            original={oldContent}
-            modified={newContent}
-            originalLabel={oldLabel}
-            modifiedLabel={newLabel}
-            defaultView="split"
-            showToolbar
-            wrap
-            className="h-full"
-            diffOptions={{ wordLevel: true, granularity: "word" }}
-          />
+          <div
+            ref={contentRef}
+            className="h-full min-h-0"
+            data-diff-layout={contentView === "split" ? "split" : "stacked"}
+          >
+            <TextDiff
+              original={oldContent}
+              modified={newContent}
+              originalLabel={oldLabel}
+              modifiedLabel={newLabel}
+              view={contentView}
+              onViewChange={setPickedView}
+              showToolbar
+              wrap
+              className="h-full"
+              diffOptions={{ wordLevel: true, granularity: "word" }}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent

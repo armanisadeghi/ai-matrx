@@ -38,11 +38,13 @@ export function threadResourcesToggleInput(threadId: string, threadTitle: string
   };
 }
 
-export function roomResourcesOpenInput(sessionId: string) {
+export function roomResourcesOpenInput(sessionId: string, roomTitle?: string | null) {
+  const name = roomTitle?.trim();
   return {
     kind: WAR_ROOM_RESOURCES_KIND,
     key: `room:${sessionId}`,
-    title: "Room resources",
+    // Names its room — two rooms' resource tabs never share a title.
+    title: name ? `Resources · ${name}` : "Room resources",
     data: { scope: "room", id: sessionId },
   };
 }

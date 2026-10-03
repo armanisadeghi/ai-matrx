@@ -144,6 +144,14 @@ export async function mountTile(
   store.dispatch(setUserAuth({ id: PERSON.id, email: PERSON.email, authReady: true, accessToken: "test-access-token" }));
   store.dispatch(setOrganization({ id: ORGANIZATION.id, name: ORGANIZATION.name }));
   options.prepareStore?.(store);
+  // What `SyncBootstrap` does after the app hydrates: read the persisted slices
+  // once, and wait out the identity resync it starts — a slice written before
+  // hydration settles waits on a hold whose expiry is logged as an error.
+  const sync = (store as unknown as { _sync: { boot: () => Promise<void>; hydrationSettled: () => boolean } })._sync;
+  await act(async () => {
+    await sync.boot();
+  });
+  for (let i = 0; i < 200 && !sync.hydrationSettled(); i++) await settle(25);
 
   const opened: string[] = [];
   let open = openOverlayKeys(store);

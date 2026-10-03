@@ -31,11 +31,11 @@ timestamp: 2026-08-17T00:00:00Z
 `app/api/mcp/[transport]/route.ts` — see [`app/api/mcp/FEATURE.md`](../../app/api/mcp/FEATURE.md).
 
 **Credential storage:** governed by the Unified Credential Vault plan —
-`/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md`. Read it
+`/Users/armanisadeghi/code/common-docs/systems/account/vault-secrets/FEATURE.md`. Read it
 before changing MCP credential storage or resolution in any repo.
 
 **Microsoft identity, Graph, Work IQ MCP, and Microsoft 365:** the cross-repo execution plan is
-`/Users/armanisadeghi/code/common-docs/projects/microsoft-platform-integration/PLAN.md`. Read it
+`/Users/armanisadeghi/code/common-docs/systems/integrations/microsoft/projects/microsoft-platform-integration/PLAN.md`. Read it
 before adding a Microsoft OAuth client, scope, callback, MCP server, or connection surface.
 
 **Provider access discovery, scope selection, submissions, verification, and follow-through:** the

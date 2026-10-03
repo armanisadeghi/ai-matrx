@@ -295,6 +295,46 @@ async function writeRowControl(
   return { success: true };
 }
 
+/**
+ * A table row's row controls ("Shown to", "Published to the web"), written through the record
+ * store's one door, `custom.record_row_controls_set` — `authenticated` holds no table privilege on
+ * `custom.record`, so the generic row write above cannot reach it. The door needs the row's OWN
+ * organization, which the store's read door names (never the active organization).
+ */
+async function writeStoreRowControls(
+  resourceType: ResourceType,
+  resourceId: string,
+  controls: { shown_to?: ShownTo | null; published_to_web?: boolean },
+): Promise<ShareActionResult> {
+  const { data: lane, error: laneError } = await supabase.rpc("store_door_lane", {
+    p_resource_type: resourceType,
+    p_resource_id: resourceId,
+  });
+  if (laneError) return { success: false, error: errMessage(laneError) };
+  const organizationId = (lane as { organization_id?: unknown } | null)?.organization_id;
+  if (typeof organizationId !== "string") {
+    return { success: false, error: "That record is not here any more." };
+  }
+  const { error } = await (
+    supabase as unknown as {
+      schema(name: string): {
+        rpc(
+          fn: string,
+          args: Record<string, unknown>,
+        ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
+      };
+    }
+  )
+    .schema("custom")
+    .rpc("record_row_controls_set", {
+      p_organization_id: organizationId,
+      p_record_id: resourceId,
+      p_controls: controls,
+    });
+  if (error) return { success: false, error: errMessage(error) };
+  return { success: true };
+}
+
 const SHOWN_TO_VALUES: readonly ShownTo[] = [
   "only_me",
   "my_team",
@@ -362,35 +402,15 @@ export async function getResourceVisibility(
               : {}),
           }
         : null;
-    const laneWord = typeof row.lane === "string" ? row.lane : null;
-    const choice: LaneChoice | null =
-      laneWord === "mine" || laneWord === "organization" || laneWord === "world"
-        ? laneWord
-        : null;
-    const whoCanSee: WhoCanSee | null = choice
-      ? {
-          source: "store",
-          choice,
-          organizationId:
-            typeof row.organization_id === "string"
-              ? row.organization_id
-              : null,
-          organizationName:
-            typeof row.organization_name === "string"
-              ? row.organization_name
-              : (organizationDefault?.organizationName ?? null),
-          memberDefaultLevel:
-            typeof row.member_default_level === "string"
-              ? row.member_default_level
-              : (organizationDefault?.level ?? null),
-          membersReachNow: organizationDefault !== null,
-          worldOffered: row.world_open === true || choice === "world",
-        }
-      : null;
+    // ACCESS LADDER (custom data adoption, 2026-10-03): a table row carries the same two row
+    // controls as every other Organization record — "Shown to" and "Published to the web" — read
+    // off the row by the store's door and drawn by RowControls. The old lane control ("Only me" /
+    // "Everyone in …" / "Anyone with the link") is not offered for it any more.
     return {
-      isPublic: row.is_public === true,
+      isPublic: row.published_to_web === true || row.is_public === true,
+      shownTo: asShownTo(row.shown_to),
       organizationDefault,
-      whoCanSee,
+      whoCanSee: null,
       homeOrganizationId:
         typeof row.organization_id === "string" ? row.organization_id : null,
     };
@@ -460,6 +480,9 @@ export async function setResourceShownTo(
   shownTo: ShownTo | null,
 ): Promise<ShareActionResult> {
   try {
+    if (getShareableResource(resourceType)?.schemaName === "custom") {
+      return await writeStoreRowControls(resourceType, resourceId, { shown_to: shownTo });
+    }
     const capabilities = await getShareCapabilities(resourceType);
     if (!capabilities.shownToOffered) {
       return {
@@ -486,6 +509,9 @@ async function setPublishedToWeb(
   resourceId: string,
   on: boolean,
 ): Promise<ShareActionResult> {
+  if (getShareableResource(resourceType)?.schemaName === "custom") {
+    return writeStoreRowControls(resourceType, resourceId, { published_to_web: on });
+  }
   const capabilities = await getShareCapabilities(resourceType);
   switch (capabilities.publishLane) {
     case "published_to_web":
@@ -563,8 +589,10 @@ export async function shareWithUser(
       if (!user) return;
       const resourceLabel = getResourceTypeLabel(resourceType);
 
-      // (1) Email (respects the recipient's preferences server-side).
-      fetch("/api/sharing/notify", {
+      // (1) Email (respects the recipient's preferences server-side). It answers the address it
+      // named for THIS recipient (a table row outside its organization: /p/e/record/<id>, access
+      // ladder T-40), which the in-app card below opens too.
+      const notified: Promise<string | null> = fetch("/api/sharing/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -572,7 +600,15 @@ export async function shareWithUser(
           resourceType,
           resourceId,
         }),
-      }).catch((err) => console.error("Sharing notification failed:", err));
+      })
+        .then(async (res) => {
+          const body = (await res.json().catch(() => null)) as { path?: unknown } | null;
+          return typeof body?.path === "string" ? body.path : null;
+        })
+        .catch((err) => {
+          console.error("Sharing notification failed:", err);
+          return null;
+        });
 
       // (2) In-app DM with a clickable resource card. Lazy import keeps the
       // messaging service out of the permissions bundle.
@@ -595,8 +631,8 @@ export async function shareWithUser(
         );
         return;
       }
-      import("@/features/messaging/service/sendDirectActionMessage")
-        .then(({ sendDirectActionMessage }) =>
+      Promise.all([import("@/features/messaging/service/sendDirectActionMessage"), notified])
+        .then(([{ sendDirectActionMessage }, resourceHref]) =>
           sendDirectActionMessage({
             recipientId: userId,
             organizationId: dmOrganizationId,
@@ -615,6 +651,7 @@ export async function shareWithUser(
                   user.user_metadata?.name ||
                   user.email ||
                   "Someone",
+                ...(resourceHref ? { resource_href: resourceHref } : {}),
               },
             },
           }),

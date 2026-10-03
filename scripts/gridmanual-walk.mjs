@@ -17,7 +17,7 @@ import { signIn } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://grid-manual.localhost:3001";
 const TABLE = process.env.TABLE ?? "7fb0f057-7fe2-49d3-955d-ba25b631a221";
-const OUT = process.env.OUT ?? "/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/shots/grid-manual";
+const OUT = process.env.OUT ?? "/tmp/matrx-evidence/projects/data-doctrine-adoption/v5/handoff-2026-09-20/shots/grid-manual";
 mkdirSync(OUT, { recursive: true });
 const env = Object.fromEntries(readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n").map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2].replace(/^"|"$/g, "")]));
 const results = [];

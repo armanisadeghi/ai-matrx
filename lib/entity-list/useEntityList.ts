@@ -334,6 +334,8 @@ export function useEntityList<TRow>({
   const debouncedSearch = searchDebounceMs <= 0 ? query.search : heldSearch;
   const [rows, setRows] = useState<TRow[]>([]);
   const [total, setTotal] = useState(0);
+  /** The open-ended page's "a next page exists" (`EntityListPage.hasMore`); undefined = counted. */
+  const [hasMore, setHasMore] = useState<boolean | undefined>(undefined);
   const [counts, setCounts] = useState<EntityScopeCounts>(EMPTY_SCOPE_COUNTS);
   // Counts have their OWN pending and failure state, because a scope section
   // that has no options yet must be able to tell "still reading" from "read,
@@ -384,6 +386,8 @@ export function useEntityList<TRow>({
   // typing, so it neither waits for the debounce nor keeps showing the rows
   // of a different question (see THE ROWS ANSWER THIS QUESTION, below).
   const lastTypedAt = useRef(0);
+  // The text the person last typed into the box (null = nothing typed on this mount).
+  const [typedSearch, setTypedSearch] = useState<string | null>(null);
   const typingRecently = () =>
     Date.now() - lastTypedAt.current < Math.max(searchDebounceMs, SEARCH_DEBOUNCE_MS) * 4;
 
@@ -429,7 +433,10 @@ export function useEntityList<TRow>({
       orgId: q.orgId,
       archived: q.archived,
       deep: q.deep,
-      service: serviceKey,
+      // NOT the service key (TABLE-ACTIONS, 2026-10-03): a service re-stating itself (`serviceKey`
+      // — a server search answered, a rename, a star) re-reads the SAME question, so the rows on
+      // screen still answer it and stay while the read runs. Blanking them unmounted every row and
+      // closed a row menu the person had open (guard: an-open-menu-survives-the-lists-next-answer).
     });
   const [rowsAnswer, setRowsAnswer] = useState<string | null>(null);
 
@@ -457,10 +464,21 @@ export function useEntityList<TRow>({
   const peekRef = useRef<{ page: typeof peekedPage; key: string; shown: boolean }>({ page: undefined, key: "", shown: false });
   peekRef.current = { page: peekedPage, key: queryKey, shown: showPeek };
   const liveQuestion = questionOf(query, query.search);
+  // 🚨 TYPED TEXT KEEPS THE ROWS UNTIL ITS ANSWER LANDS (2026-10-03). The typing exception used to
+  // last only `typingRecently()` — one second — while a server list answers in 0.5–3 s, so at any
+  // normal typing pace the table dropped to its skeleton between characters ("the agent search box
+  // is non-functional and loading on each character", /agents/all?q=an). The exception now holds
+  // for as long as the box still says what the person typed, however slow the read: the previous
+  // rows stay under the box's spinner until the newer answer replaces them. A search that arrives
+  // any other way (Back, a link) was never typed here, so it still holds the skeleton.
+  const searchWasTyped = typedSearch !== null && typedSearch === query.search;
+  // A FAILED answer ends the exception: the failure is about the typed text, so the old rows must
+  // not sit under its banner as if they answered it.
   const rowsAnswerThisQuestion =
     rowsAnswer === null ||
     rowsAnswer === liveQuestion ||
-    (typingRecently() &&
+    (error === null &&
+      (searchWasTyped || typingRecently()) &&
       rowsAnswer === questionOf(query, JSON.parse(rowsAnswer).search));
 
   useEffect(() => {
@@ -488,6 +506,7 @@ export function useEntityList<TRow>({
         if (gen !== generation.current) return; // a newer query won
         setRows(page.rows);
         setTotal(page.total);
+        setHasMore(page.hasMore);
         setRowsAnswer(askedQuestion);
         setError(null);
       } catch (err) {
@@ -690,6 +709,8 @@ export function useEntityList<TRow>({
   const [archivedAnswer, setArchivedAnswer] = useState<{
     key: string;
     total: number | null;
+    /** The store pages the archive and named no count: at least `total`, maybe more. */
+    more?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -707,7 +728,7 @@ export function useEntityList<TRow>({
           },
         );
         if (!cancelled)
-          setArchivedAnswer({ key: archivedProbeKey, total: page.total });
+          setArchivedAnswer({ key: archivedProbeKey, total: page.total, ...(page.hasMore ? { more: true } : {}) });
       } catch (err) {
         // NOTHING FAILS SILENTLY, and a failed count is NOT zero: falling back
         // to the static "none yet" copy here would restore the very lie this
@@ -729,7 +750,7 @@ export function useEntityList<TRow>({
       ? { state: "loading" }
       : archivedAnswer.total === null
         ? { state: "failed" }
-        : { state: "known", total: archivedAnswer.total };
+        : { state: "known", total: archivedAnswer.total, ...(archivedAnswer.more ? { more: true } : {}) };
 
   // Plain functions, NOT useCallback: `setQuery` is re-created per render for a
   // URL-backed surface, so an empty dep array here would freeze the very first
@@ -755,6 +776,7 @@ export function useEntityList<TRow>({
   const setFilters = (filters: EntityFilters) => patchQuery({ filters });
   const setSearch = (search: string) => {
     lastTypedAt.current = Date.now();
+    setTypedSearch(search);
     patchQuery({ search });
   };
   const setDeep = (deep: boolean) => patchQuery({ deep });
@@ -788,6 +810,7 @@ export function useEntityList<TRow>({
     if (!held.shown || !held.page) return false;
     setRows(held.page.rows);
     setTotal(held.page.total);
+    setHasMore(held.page.hasMore);
     setRowsAnswer(null);
     setPeekReleasedFor(held.key);
     return true;
@@ -822,6 +845,7 @@ export function useEntityList<TRow>({
     query,
     rows: showPeek ? peekedPage.rows : rowsAnswerThisQuestion ? rows : [],
     total: showPeek ? peekedPage.total : rowsAnswerThisQuestion ? total : 0,
+    hasMore: showPeek ? peekedPage.hasMore : rowsAnswerThisQuestion ? hasMore : undefined,
     counts: peekedCounts ?? counts,
     countsLoading,
     countsError: peekedCounts !== undefined ? null : countsError,

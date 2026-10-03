@@ -118,7 +118,7 @@ try {
     await sleep(2500);
     state.noteUrl = admin.url();
     if (!/[?&]active=/.test(state.noteUrl)) return { ok: false, detail: `the new note has no address of its own: ${state.noteUrl}` };
-    await admin.locator('[title="Set context for this note"]').first().click();
+    await admin.locator('[title="Set scopes for this note"]').first().click();
     const picker = admin.locator("[data-context-section]").first().locator("xpath=ancestor::div[contains(@class,'relative')][1]");
     void picker;
     await admin.getByPlaceholder(/Search scopes, projects and tasks/).first().waitFor({ timeout: 60000 });
@@ -130,7 +130,7 @@ try {
     await admin.locator('textarea[aria-label="Note text"]').first().waitFor({ timeout: 120000 });
     await sleep(3000);
     const before = (await text(admin)).includes(tagText);
-    await admin.locator('[title="Set context for this note"]').first().click();
+    await admin.locator('[title="Set scopes for this note"]').first().click();
     const shown = await until("note tag", async () => (await text(admin)).includes(tagText), 60000);
     return { ok: Boolean(shown.v), detail: `the reopened note shows the "${tagText}" tag ${Boolean(shown.v)} (before opening its context picker: ${before})` };
   });
@@ -178,13 +178,14 @@ try {
   await ctx.step(["S05"], "tag a chat with the scope", admin, async () => {
     if (!state.madeScope) return { ok: false, detail: "no scope to tag with" };
     await go(admin, "/chat/new");
-    // The scope chip names the organization first ("Context: CRP · 1 scope"); the "Context: 7 sent" chip beside it is the delivery table.
-    const chipSel = 'button[aria-label^="Context: CRP"], button[aria-label="Set context"]';
+    // The scope chip names the organization first ("Scopes: CRP · 1 scope"; "Set scopes" when nothing is picked) — the
+    // labels since 3457b808e8 (2026-10-02, "name scopes as scopes"); the "Context: 7 sent" chip beside it is the delivery table.
+    const chipSel = 'button[aria-label^="Scopes: CRP"], button[aria-label="Set scopes"]';
     const chip = admin.locator(chipSel).locator("visible=true").first();
     await chip.waitFor({ timeout: 180000 });
     await sleep(3000);
     await chip.click();
-    const find = admin.locator('input[aria-label="Search context tree"]').first();
+    const find = admin.locator('input[aria-label="Search scopes"]').first();
     await find.waitFor({ timeout: 60000 });
     await find.fill(SCOPE);
     await sleep(2500);

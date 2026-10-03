@@ -140,6 +140,12 @@ async function enabled(organizationId: string | null | undefined): Promise<boole
 const SWITCH_ANSWER_MS = 30_000;
 const switchAnswers = new WeakMap<object, Map<string, { at: number | null; answer: Promise<StoreSwitchAnswer> }>>();
 
+/** Forget the shared answers (the switch was just written in this tab). */
+export function forgetStoreSwitchAnswers(): void {
+    const supabase = createClient();
+    if (supabase && typeof supabase === "object") switchAnswers.delete(supabase);
+}
+
 async function check(organizationId: string | null | undefined): Promise<StoreSwitchAnswer> {
     if (!organizationId) return { state: UNIFIED_DATA_CAMPAIGN_DEFAULT ? "on" : "off" };
     const supabase = createClient();

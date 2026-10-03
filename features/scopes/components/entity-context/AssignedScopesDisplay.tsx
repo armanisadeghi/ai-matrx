@@ -28,7 +28,11 @@ import { scopeShortHref } from "@/features/scopes/lib/scopeRoutes";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { EntityType } from "@/features/scopes/types";
-import { getOrganizationBySlugOrId } from "@/features/organizations/service";
+import { useOrganizationLabel } from "@/features/organizations/hooks/useOrganizationLabel";
+import { dispatchThunk, useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
+import { ensureEntityScopes, entityScopesKey } from "@/features/scopes/redux/thunks/ensureEntityScopes";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import {
   resolveColor,
@@ -47,6 +51,26 @@ interface Group {
   scopes: { id: string; name: string }[];
 }
 
+const NO_GROUPS: Group[] = [];
+
+/** The entity's assigned scopes, grouped by type (empty when the read fails). */
+async function readAssignedGroups(entityType: string, entityId: string): Promise<Group[]> {
+  const res = await scopesService.getEntityScopeDetails(entityType as EntityType, entityId);
+  if (isScopesRpcErr(res) || res.data.scopes.length === 0) return [];
+  const byType = new Map<string, Group>();
+  for (const row of res.data.scopes) {
+    const t = row.scope_type;
+    if (!t) continue;
+    let group = byType.get(t.id);
+    if (!group) {
+      group = { type: t, scopes: [] };
+      byType.set(t.id, group);
+    }
+    group.scopes.push({ id: row.id, name: row.name });
+  }
+  return Array.from(byType.values()).sort((a, b) => a.type.label_singular.localeCompare(b.type.label_singular));
+}
+
 export function AssignedScopesDisplay({
   entityType,
   entityId,
@@ -62,61 +86,30 @@ export function AssignedScopesDisplay({
   variant?: "block" | "inline";
   emptyHint?: string;
 }) {
-  const [groups, setGroups] = React.useState<Group[]>([]);
-  const [orgName, setOrgName] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(true);
-
+  // Everything here is a store read — a remount or a wake renders it and reads
+  // nothing. The assignment ids come from the scopes tree (`ensureEntityScopes`,
+  // updated by every tagger write); the details are read once per SET of ids,
+  // so a changed assignment reads again and an unchanged one never does.
+  const dispatch = useAppDispatch();
+  const scopesKey = entityScopesKey(entityType as EntityTypeToken, entityId);
+  const assigned = useAppSelector((s) => s.scopesTree.entityScopesByKey[scopesKey]);
   React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      // Org name (the entity's single org), resolved separately.
-      if (showOrg && organizationId) {
-        // Label enrichment only: the org heading is omitted without it.
-        getOrganizationBySlugOrId(organizationId).then(
-          (o) => {
-            if (!cancelled) setOrgName(o?.name ?? null);
-          },
-          (err: unknown) => {
-            console.error("[AssignedScopesDisplay] organization label unavailable:", err);
-          },
-        );
-      } else {
-        setOrgName(null);
-      }
-
-      const res = await scopesService.getEntityScopeDetails(
-        entityType as EntityType,
-        entityId,
-      );
-      if (cancelled) return;
-      if (isScopesRpcErr(res) || res.data.scopes.length === 0) {
-        setGroups([]);
-        setLoading(false);
-        return;
-      }
-
-      const byType = new Map<string, Group>();
-      for (const row of res.data.scopes) {
-        const t = row.scope_type;
-        if (!t) continue;
-        let group = byType.get(t.id);
-        if (!group) {
-          group = { type: t, scopes: [] };
-          byType.set(t.id, group);
-        }
-        group.scopes.push({ id: row.id, name: row.name });
-      }
-      const sorted = Array.from(byType.values()).sort((a, b) =>
-        a.type.label_singular.localeCompare(b.type.label_singular),
-      );
-      setGroups(sorted);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [entityType, entityId, organizationId, showOrg]);
+    void dispatchThunk(dispatch, ensureEntityScopes(entityType as EntityTypeToken, entityId));
+  }, [dispatch, entityType, entityId]);
+  const signature =
+    assigned?.status === "ready"
+      ? [...assigned.scope_ids].sort().join(",")
+      : assigned?.status === "error"
+        ? "unknown"
+        : null;
+  const detailsRead = useStoreRead<Group[]>(
+    signature ? `scopes.assigned-details:${scopesKey}:${signature}` : null,
+    () => readAssignedGroups(entityType, entityId),
+  );
+  const groups = detailsRead.data ?? NO_GROUPS;
+  const orgName = useOrganizationLabel(showOrg ? organizationId : null)?.name ?? null;
+  // No ids yet, or ids being described for the first time.
+  const loading = signature === null || (signature !== "" && !detailsRead.hasData && detailsRead.status === "loading");
 
   if (loading) {
     return (

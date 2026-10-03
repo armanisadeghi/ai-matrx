@@ -1,6 +1,7 @@
 // features/tasks/components/QuickTasksSheet.tsx
 "use client";
 
+import { Skeleton } from "@ai-matrx/design-system";
 import React, {
   useState,
   useMemo,
@@ -292,8 +293,16 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
 
   if (loading && projects.length === 0) {
     return (
-      <div className={cn("flex items-center justify-center h-full", className)}>
-        <div className="text-sm text-muted-foreground">Loading tasks...</div>
+      <div className={cn("h-full", className)}>
+        {/* The list's own shape while it loads — rows where the tasks will be. */}
+        <div className="space-y-1 px-3 py-2" role="status" aria-label="Loading tasks" aria-busy="true">
+          {[0, 1, 2, 3, 4, 5].map((n) => (
+            <div key={n} className="flex h-8 items-center gap-2">
+              <Skeleton className="h-4 w-4 rounded-full" />
+              <Skeleton className="h-3 flex-1" style={{ maxWidth: `${75 - (n % 3) * 15}%` }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

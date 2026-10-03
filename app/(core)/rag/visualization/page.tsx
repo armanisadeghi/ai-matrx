@@ -1,3 +1,4 @@
+// record-view: none — a visualization page
 import { redirect } from "next/navigation";
 
 /**
