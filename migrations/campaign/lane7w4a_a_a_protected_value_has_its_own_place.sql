@@ -4,7 +4,7 @@
 -- machinery, INSERT) and adds one locked platform knob row (custom/protected_field_rules, INSERT).
 -- No ALTER of an existing table, no strong lock on a live table, no grant to any client role.
 -- Its inverse drops both tables (refused while either holds a row) and the knob row.
--- ORDER (production, chair ruling): r2 -> w2_a -> 5b2 -> 4a (a, b, c):
+-- ORDER (production, chair ruling): r2, w2_a, w5_a, w3a, w2_b (live) -> 5b2 -> 4a (a, b, c):
 -- lane7sec_r2_an_archived_field_never_blocks_a_row.sql, then
 -- lane7w2_a_a_choice_on_a_standard_row_holds_its_key.sql (re-based on r2), then
 -- lane7w5b2_a_record_read_takes_only_the_columns_you_may_read.sql (custom.entity_record_read), then

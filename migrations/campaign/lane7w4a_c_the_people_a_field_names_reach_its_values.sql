@@ -3,7 +3,7 @@
 -- and four invoker helpers (field_is_protected, protected_field_rule, protected_readers_problem,
 -- field_protection_refusal), declared in platform.client_callable_door. Each answers only what custom.field_access's rule admits the
 -- signed-in person to. Requires file b. Its inverse revokes the three grants and removes the rows.
--- ORDER (production, chair ruling): r2 -> w2_a -> 5b2 -> 4a (a, b, c):
+-- ORDER (production, chair ruling): r2, w2_a, w5_a, w3a, w2_b (live) -> 5b2 -> 4a (a, b, c):
 -- lane7sec_r2_an_archived_field_never_blocks_a_row.sql, then
 -- lane7w2_a_a_choice_on_a_standard_row_holds_its_key.sql (re-based on r2), then
 -- lane7w5b2_a_record_read_takes_only_the_columns_you_may_read.sql (custom.entity_record_read), then

@@ -3,13 +3,13 @@
 -- protected_field_notice, protected_field_query_refusal, protected_value, protected_values,
 -- protected_matches, field_protection_refusal, protected_value_leaks,
 -- entity_field_protect_arman_explicitly_approved; hr.custom_field_subject, hr.custom_field_access;
--- history.protect_field_scrub [CHAIR RULING R2]; platform._drill_protect) and edits six live bodies by
+-- history.protect_field_scrub [history exception, chair-allowed 2026-10-03 for the fold only]; platform._drill_protect) and edits six live bodies by
 -- asserted fragment: custom._entity_custom_fields_guard, custom._field_shape_guard,
 -- custom.entity_field_declare, custom.entity_record_read (also STABLE -> VOLATILE: a granted read is
 -- audited), custom.entity_records_find, platform._drill_plan. No table DDL, no client grant (every new
 -- definer door is revoked from clients; file c opens three). Requires file a. Its inverse removes each
 -- fragment (asserted) and drops the functions.
--- ORDER (production, chair ruling): r2 -> w2_a -> 5b2 -> 4a (a, b, c):
+-- ORDER (production, chair ruling): r2, w2_a, w5_a, w3a, w2_b (live) -> 5b2 -> 4a (a, b, c):
 -- lane7sec_r2_an_archived_field_never_blocks_a_row.sql, then
 -- lane7w2_a_a_choice_on_a_standard_row_holds_its_key.sql (re-based on r2), then
 -- lane7w5b2_a_record_read_takes_only_the_columns_you_may_read.sql (custom.entity_record_read), then
@@ -71,7 +71,7 @@ end
 $function$;
 REVOKE ALL ON FUNCTION custom.protected_field_rule(text) FROM anon;   -- invoker: the shape guard asks it as the writer
 
--- The shape of `readers`. CHAIR RULING R1 is the `capability` arm below (and its twin in
+-- The shape of `readers`. The `capability` reader kind is ALLOWED by the chair (2026-10-03); it is the arm below (and its twin in
 -- hr.custom_field_access): without it, delete both arms and a protected HR field is readable by
 -- the employee alone — which would take HR admins' access away, so the chair rules it.
 CREATE OR REPLACE FUNCTION custom.protected_readers_problem(p_token text, p_readers jsonb)
@@ -563,7 +563,8 @@ $function$;
 REVOKE ALL ON FUNCTION custom.protected_value_leaks(uuid) FROM PUBLIC, anon, authenticated, service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────
--- 9. CHAIR RULING R2 — THE HISTORY EXCEPTION. history.row_versions is append-only by doctrine
+-- 9. THE HISTORY EXCEPTION — ALLOWED BY THE CHAIR (2026-10-03) ONLY FOR THE FOLD: protecting an existing
+-- field (and the HR fold, 4b, which protects HR's fields through this same door). Nothing else may call it. history.row_versions is append-only by doctrine
 -- (and by grant: no client may update it; on the clone no trigger forbids the database owner, the
 -- one vault barrier aside). Protecting a field that already has values must not leave them in old
 -- snapshots, so this ONE function removes that one key from that token's snapshots in that
