@@ -121,7 +121,6 @@ export function CalendarCreateReview({
     // Session storage is an external browser system and cannot be read during SSR.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSaved(restored.record);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWarning(restored.warning);
   }, [actorId, storageDoor]);
   useEffect(() => {
@@ -190,7 +189,11 @@ export function CalendarCreateReview({
       setSaved(reviewed);
     } catch (cause) {
       if (callEpoch !== epoch.current) return;
-      setSaved(pending);
+      const failed = { ...pending, phase: unavailable(cause) ? "preview_unavailable" as const : "uncertain" as const };
+      if (!writeCalendarCreateRecovery(storageDoor, failed)) {
+        setWarning("The review failure could not be saved in this tab. Do not create this event.");
+      }
+      setSaved(failed);
       setError(getUserMessage(cause));
     } finally {
       if (callEpoch === epoch.current) { setBusy(null); busyRef.current = false; }
@@ -232,30 +235,16 @@ export function CalendarCreateReview({
       if (settled.phase === "reconciliation_required") setError("Google returned a different event. Check the original source before doing anything else.");
     } catch (cause) {
       if (callEpoch !== epoch.current) return;
-      const failed = { ...attempting, phase: unavailable(cause) ? "retryable_same_intent" as const : "uncertain" as const };
-      writeCalendarCreateRecovery(storageDoor, failed);
+      let failed = { ...attempting, phase: unavailable(cause) ? "retryable_same_intent" as const : "uncertain" as const };
+      if (!writeCalendarCreateRecovery(storageDoor, failed)) {
+        failed = { ...attempting, phase: "uncertain" as const };
+        setWarning("The confirmation failure could not be saved in this tab. Do not retry it.");
+      }
       setSaved(failed);
       setError(getUserMessage(cause));
     } finally {
       if (callEpoch === epoch.current) { setBusy(null); busyRef.current = false; }
     }
-  }
-
-  async function foundEvent() {
-    if (!saved || !["uncertain", "reconciliation_required", "attempting"].includes(saved.phase)) return;
-    const approvalEpoch = epoch.current;
-    const approved = await confirmAction({
-      title: "Did you find this exact event in Google?",
-      description: `${saved.account_label} · ${saved.calendar_summary} · ${saved.request.event_id}`,
-      confirmText: "I found this event",
-    });
-    if (!approved || approvalEpoch !== epoch.current) return;
-    const settled = { ...saved, phase: "consumed" as const };
-    if (!writeCalendarCreateRecovery(storageDoor, settled)) {
-      setError("This tab could not save the source check.");
-      return;
-    }
-    setSaved(settled); setError(null);
   }
 
   function startAnother() {
@@ -311,9 +300,8 @@ export function CalendarCreateReview({
           {["attempting", "uncertain", "reconciliation_required"].includes(saved.phase) ? (
             <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
               <p>This event may already exist. Check the original Google source before continuing.</p>
-              <p>Use account {saved.account_label} and calendar {saved.calendar_summary}. Match the event ID shown above.</p>
+              <p>Review {saved.request.summary} at {saved.request.starts_at} in {saved.account_label} · {saved.calendar_summary}.</p>
               <a className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline" href={sourceUrl(saved)} target="_blank" rel="noreferrer">Open Google Calendar for manual check <ExternalLink className="h-3.5 w-3.5" /></a>
-              <Button type="button" size="sm" variant="outline" onClick={() => void foundEvent()}>I found this event</Button>
             </div>
           ) : null}
           {saved.phase === "consumed" ? (
