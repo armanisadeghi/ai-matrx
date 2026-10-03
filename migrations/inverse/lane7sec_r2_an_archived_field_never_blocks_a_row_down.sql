@@ -1,8 +1,11 @@
--- chair-step: the inverse of lane7sec_r2_an_archived_field_never_blocks_a_row.sql. It puts the three bodies back
+-- chair-step: the inverse of lane7sec_r2_an_archived_field_never_blocks_a_row.sql. It puts the six bodies back
 -- exactly as production held them before that file ran. No table, trigger or grant change.
 -- based-on: custom.validate_value_envelope(uuid, custom.record[], jsonb) 92f351888a258249fbc3e8bf3601b92fb0807ecf7b1243382e1d68bfc9a18b04
--- based-on: custom._entity_custom_fields_guard() 102ef124e89fa9368f4099c84fef1b83e6e405b36e050911c33de1cf29f616f8
+-- based-on: custom._entity_custom_fields_guard() f13edfda19808d5d4245ae195c56a9f736e5d37a7b092852c2bbc0c587081812
 -- based-on: custom._field_shape_guard() e63f8891325e414862f62a2f2b506629bb2cbaf6f4be527b6352beddd8caf2ae
+-- based-on: custom.entity_read_mask(uuid, text, permission_level, text) e6dbba804b48a23a025c69478e4dcce0a9f0ea94b3e9d84956714756032b0900
+-- based-on: custom.field_restore(uuid, uuid) 36b8426c3827d7c8093d91dcbd359b739880f8b3680165771f156ec8d9f87c58
+-- based-on: custom._field_document_for(uuid, uuid, jsonb) 610df186bc19163087305f895df813b918ac819757f1928409d34172b1aa8c5d
 
 CREATE OR REPLACE FUNCTION custom.validate_value_envelope(p_organization_id uuid, p_fields custom.record[], p_data jsonb)
  RETURNS void
@@ -832,4 +835,654 @@ begin
 
   return new;
 end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.entity_read_mask(p_organization_id uuid, p_token text, p_level permission_level, p_action text DEFAULT 'read'::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_me       uuid := auth.uid();
+  f          custom.record;
+  v_key      text;
+  v_visible  text[] := '{}'::text[];
+  v_declared text[] := '{}'::text[];
+  v_notices  jsonb  := '{}'::jsonb;
+  v_labels   jsonb  := '{}'::jsonb;
+  v_ids      jsonb  := '{}'::jsonb;
+  v_excluded text[];
+begin
+  perform custom.assert_entity_door(p_organization_id, 'custom.entity_read_mask');
+  if p_action is null or p_action not in ('read', 'edit') then
+    raise exception 'A field is read or edited, and this asks to %.', coalesce(p_action, 'nothing')
+      using errcode = '22023';
+  end if;
+
+  for f in select * from custom.entity_fields(p_organization_id, p_token) loop
+    v_key := f.data ->> 'key';
+    continue when v_key is null;
+    v_declared := v_declared || v_key;
+    v_labels := v_labels || jsonb_build_object(v_key, coalesce(nullif(f.data ->> 'label', ''), v_key));
+    v_ids    := v_ids    || jsonb_build_object(v_key, f.id::text);
+    -- No reader or no rung narrows to nothing: iam.may_touch_field grants only what a
+    -- per-person share of the Field grants on its own.
+    if v_me is not null
+       and iam.may_touch_field(v_me, f.id, p_organization_id, p_level, p_action) then
+      v_visible := v_visible || v_key;
+    else
+      v_notices := v_notices || jsonb_build_object(v_key, custom.hidden_field_notice(f, p_action));
+    end if;
+  end loop;
+
+  select coalesce(e.client_excluded_columns, '{}'::text[]) into v_excluded
+    from platform.entity_types e where e.token = p_token;
+
+  return jsonb_build_object(
+    'token',    p_token,
+    'level',    p_level,
+    'action',   p_action,
+    'visible',  to_jsonb(v_visible),
+    'declared', to_jsonb(v_declared),
+    'notices',  v_notices,
+    'labels',   v_labels,
+    'key_ids',  v_ids,
+    'excluded', to_jsonb(coalesce(v_excluded, '{}'::text[])));
+end
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.field_restore(p_organization_id uuid, p_field_id uuid)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+-- lane STORE-RESTORE-DOORS. THE UNDO OF custom.field_retire. A retirement takes a SET — the Field
+-- and every Field of the same Table that works its answer out through it — in one statement, so the
+-- set is every Field of this Table archived at this Field's own moment. It comes back whole: the
+-- Table declares the columns again (custom.field_declare's order: the Table is told first), the
+-- Field rows are live again, and the links custom.relation_edges_withdraw took out in the same
+-- statement come back. THE VALUES NEVER LEFT: a retirement changes no record's document (the
+-- undeclared-key guard judges only a key a write changes), so every record still holds what it held
+-- under that column, and the column shows it again the moment it is back.
+declare
+  v_field  jsonb;
+  v_table  uuid;
+  v_at     timestamptz;
+  v_spec   jsonb;
+  v_going  uuid[];
+  v_keys   text[];
+  v_taken  text;
+  v_edges  integer := 0;
+  v_named  boolean := false;
+begin
+  perform custom.assert_store_door(p_organization_id, 'custom.field_restore');
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.field_restore');
+
+  select r.data, nullif(r.data ->> 'entity_definition_id', '')::uuid, r.deleted_at
+    into v_field, v_table, v_at
+    from custom.record r
+   where r.organization_id = p_organization_id
+     and r.id = p_field_id
+     and r.table_id = custom.field_kernel_id();
+  if v_field is null then
+    raise exception 'There is no such field in this organization, so nothing was brought back.'
+      using errcode = '02000', hint = 'REC-29: organizations are hard walls.';
+  end if;
+  if v_at is null then
+    raise exception 'The field "%" was not removed, so there was nothing to bring back.',
+                    custom.said(v_field ->> 'label', v_field ->> 'key')
+      using errcode = '02000', hint = 'REC-23: it is already here.';
+  end if;
+  if v_table is null then
+    raise exception 'The field "%" belongs to a standard table, and this door brings back a field of a table somebody made.',
+                    custom.said(v_field ->> 'label', 'that one')
+      using errcode = '23514', hint = 'FLD-8: a field on a standard table is part of that table''s own definition.';
+  end if;
+
+  select r.data into v_spec
+    from custom.record r
+   where r.organization_id = p_organization_id and r.id = v_table
+     and r.table_id = custom.table_kernel_id() and r.deleted_at is null;
+  if v_spec is null then
+    raise exception 'The field "%" belongs to a table that is archived, so it cannot come back on its own.',
+                    custom.said(v_field ->> 'label', v_field ->> 'key')
+      using errcode = '23514',
+            hint = 'Restore the table from Trash first. A field removed with its table comes back with it; a field removed before, from Trash once the table is back.';
+  end if;
+
+  -- The rung custom.field_retire climbs: admin on the Table.
+  perform custom.assert_client_may_change(p_organization_id, v_table, 'custom.field_restore',
+                                          'admin'::public.permission_level, 'table');
+
+  -- THE SET THAT WENT TOGETHER: every Field of this Table retired in the same statement.
+  select array_agg(f.id order by f.id), array_agg(f.data ->> 'key' order by f.id)
+    into v_going, v_keys
+    from custom.record f
+   where f.organization_id = p_organization_id
+     and f.table_id = custom.field_kernel_id()
+     and f.deleted_at = v_at
+     and f.data ->> 'entity_definition_id' = v_table::text;
+
+  -- A column made since under the same key holds that key now; two columns cannot share it.
+  select string_agg(format('"%s"', custom.said(f.data ->> 'label', f.data ->> 'key')), ', ')
+    into v_taken
+    from custom.record f
+   where f.organization_id = p_organization_id
+     and f.table_id = custom.field_kernel_id()
+     and f.deleted_at is null
+     and f.data ->> 'entity_definition_id' = v_table::text
+     and f.data ->> 'key' = any (v_keys);
+  if v_taken is not null then
+    raise exception 'This table has a field % again, so "%" cannot come back beside it.',
+                    v_taken, custom.said(v_field ->> 'label', v_field ->> 'key')
+      using errcode = '23505',
+            hint = 'Two fields of one table cannot share a key. Rename or remove the newer one, then restore this one from Trash.';
+  end if;
+
+  -- The Table declares the columns first — the field guard refuses a definition for a column the
+  -- Table does not declare (custom.field_declare tells the Table first for the same reason).
+  update custom.record
+     set data = jsonb_set(data, '{fields}',
+                          coalesce(data -> 'fields', '[]'::jsonb)
+                          || coalesce((select jsonb_agg(jsonb_build_object('name', k) order by o)
+                                         from unnest(v_keys) with ordinality as u(k, o)
+                                        where not exists (select 1
+                                                            from jsonb_array_elements(coalesce(data -> 'fields', '[]'::jsonb)) x
+                                                           where x ->> 'name' = k)), '[]'::jsonb)),
+         updated_at = now(), version = version + 1
+   where organization_id = p_organization_id and id = v_table
+     and table_id = custom.table_kernel_id();
+
+  update custom.record
+     set deleted_at = null
+   where organization_id = p_organization_id
+     and id = any (v_going)
+     and table_id = custom.field_kernel_id()
+     and deleted_at = v_at;
+
+  -- THE LINKS THE RETIREMENT TOOK: custom.relation_edges_withdraw tombstoned them in the same
+  -- statement (deleted_at = that moment, no deleted_via — it is not a trashing). One the records
+  -- have made again since is live already and is left as it is.
+  if nullif(current_setting('app.actor_system', true), '') is null
+     and coalesce(platform.declared_actor_tier(), platform.actor_tier()) in ('agent', 'system') then
+    perform set_config('app.actor_system', 'custom.relations', true);
+    v_named := true;
+  end if;
+  update platform.associations a
+     set deleted_at = null
+   where a.organization_id = p_organization_id
+     and a.relation_field_id = any (v_going)
+     and a.deleted_at = v_at
+     and a.deleted_via_type is null
+     and not exists (select 1 from platform.associations b
+                      where b.organization_id = a.organization_id
+                        and b.relation_field_id = a.relation_field_id
+                        and b.source_type = a.source_type and b.source_id = a.source_id
+                        and b.target_type = a.target_type and b.target_id = a.target_id
+                        and b.role is not distinct from a.role
+                        and b.deleted_at is null);
+  get diagnostics v_edges = row_count;
+  if v_named then
+    perform set_config('app.actor_system', '', true);
+  end if;
+
+  raise notice '%', format('Brought back: %s field(s) with their values%s.',
+    cardinality(v_going),
+    case when v_edges > 0 then format(', and %s link(s) they made', v_edges) else '' end);
+  return true;
+end
+$function$;
+
+CREATE OR REPLACE FUNCTION custom._field_document_for(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  d        jsonb;
+  v_parity text := nullif(p_spec ->> 'parity_type', '');
+  v_key    text := nullif(p_spec ->> 'key', '');
+  -- ── LIMITS-FIX 2026-09-21: ONE WORD FOR WHAT A PERSON READS ON THE COLUMN. ──────────
+  -- A table spec's inline field says `name` (`custom._table_shape_guard` demands it) and
+  -- this door said `label`, so the same concept had two words one call apart and a caller
+  -- that used the table's word was told "A field needs a name" while holding one. Real-data
+  -- crew D hit this on 2026-09-21 declaring a podcast episode pipeline. Both words are read
+  -- here; `label` still wins when a caller sends both, so no existing caller changes.
+  v_label  text := coalesce(nullif(p_spec ->> 'label', ''), nullif(p_spec ->> 'name', ''));
+  v_multi  boolean := coalesce((p_spec ->> 'multi')::boolean, false);
+  v_config jsonb := coalesce(p_spec -> 'config', '{}'::jsonb);
+  v_rules  jsonb := coalesce(p_spec -> 'rules', '[]'::jsonb);
+  v_plain  text := coalesce(nullif(p_spec ->> 'plain', ''), 'text');
+  v_alias  text := lower(btrim(coalesce(p_spec ->> 'type', '')));
+  -- FIX-10B-F6: the caller said the word `signature`. It is one of the kinds
+  -- `custom.field_kinds()` publishes and it is NOT a parity type — it is plain
+  -- text wearing the one format `custom.doc_sign` accepts — so it is resolved
+  -- here, beside the other words, and carried into the plain-text arm below.
+  v_signature boolean := false;
+  -- GRID-PRIMITIVES G5: the three column kinds the store fills in itself.
+  v_system text := null;
+  -- GRID-PRIMITIVES G3: a formula a person TYPED, parsed by the store.
+  v_parsed jsonb := null;
+  v_relation uuid := null;   -- SEAT-SUITES: the Table a caller's own relation column points at
+  -- SC-R / P12, 2026-09-24: a column that points at a PLATFORM thing — an agent, a note, a web
+  -- site, a workbook — rather than at a record of one of this organization's Tables.
+  v_entity  boolean := false;
+  v_allowed jsonb   := null;
+  -- LIMITS-FIX 2026-09-21: the same one-word rule for the relation's target. Real-data crew E
+  -- reported that no client door could declare a table-to-table relation; the door could, and
+  -- has since 2026-09-19 — it only ever answered to `relation_target`, and a caller reaching
+  -- for `target_table` got "A column that points at other records is a Person column or a File
+  -- column", which describes a different mistake entirely.
+  v_target text := coalesce(nullif(p_spec ->> 'relation_target', ''), nullif(p_spec ->> 'target_table', ''));
+  v_deps   jsonb := case when jsonb_typeof(p_spec -> 'depends_on') = 'array'
+                         then p_spec -> 'depends_on' else '[]'::jsonb end;
+begin
+  -- ── STORE-T: `type` IS THE WORD EVERY CALLER REACHES FOR, AND IT WAS THROWN AWAY. ──────
+  -- Measured on 2026-09-20: `{"type":"number"}` produced a TEXT column and `{"type":"banana"}`
+  -- was ACCEPTED, silently, as text. Only `parity_type` and `plain` were ever read, so every
+  -- agent, script and other client that said "type" got a text column and was never told.
+  -- Now it is read as what it plainly means, and a word that means nothing is refused BY NAME
+  -- with the list — nothing is guessed and nothing is silently dropped.
+  if v_alias <> '' and v_parity is null and nullif(p_spec ->> 'plain', '') is null then
+    if exists (select 1 from custom.parity_field_types() t where t.parity_type = v_alias) then
+      v_parity := v_alias;
+    elsif v_alias in ('number', 'range', 'integer', 'decimal', 'float') then
+      v_plain := 'number';
+    elsif v_alias in ('long_text', 'longtext', 'long text', 'paragraph') then
+      v_plain := 'long_text';
+    elsif v_alias in ('text', 'string') then
+      v_plain := 'text';
+    elsif v_alias in ('boolean', 'bool', 'checkbox', 'check_box', 'tick', 'tickbox',
+                      'yes_no', 'yesno', 'yes/no', 'toggle', 'switch') then
+      -- LIMITS-FIX: every word a person, an agent or a spreadsheet reaches for when they
+      -- mean a tick box lands on the one type that is one.
+      v_parity := 'checkbox';
+    elsif v_alias = 'list' then
+      v_parity := 'select';
+    elsif v_alias in ('signature', 'sign', 'e_signature', 'esignature') then
+      -- ── FIX-10B-F6, 2026-09-22: THE E-SIGN HALF OF DOCUMENTS COULD NOT BE REACHED. ──────
+      -- `custom.doc_sign` accepts exactly one field — text whose format is `signature` — and
+      -- this door would write that format only when a caller sent `format: signature`
+      -- alongside a plain text type. No screen sends a format: the add-a-column panel
+      -- collects an INTENTION and the store answers the behaviour, the format and the unit.
+      -- So the sentence under a rendered document ("Crews needs a signature column - a text
+      -- column whose format is signature") named a precondition no screen could meet, and
+      -- every sign request, expiring link and sealed hash behind it was unreachable.
+      -- VERIFIER-10 F6, measured from the admin seat on Rincon Plumbing's Crews table.
+      -- A signature is now a WORD like every other kind, published by
+      -- `custom.field_kinds()`, and the panel that offers it sends the word.
+      v_plain := 'text';
+      v_signature := true;
+    elsif v_alias in ('autonumber', 'created_time', 'modified_time', 'auto_number',
+                      'created', 'modified', 'last_modified', 'last_modified_time') then
+      -- ── GRID-PRIMITIVES G5, 2026-09-22: THE STORE'S OWN STAMPS AS COLUMNS. ──────────────
+      -- The older grid has an Autonumber, a Created time and a Last modified time column,
+      -- and none of the three is typed: the database assigns the number and the row carries
+      -- its own stamps. Here each is a formula Field whose expression is the system node —
+      -- fx.autonumber is worked out ONCE, on write, and kept; the two stamps on read — so
+      -- every reader that serves a worked-out value serves these with nothing new, and a
+      -- hand-typed value is refused exactly as it is for any formula (FLD-9).
+      v_parity := 'formula';
+      v_system := case when v_alias in ('autonumber', 'auto_number') then 'autonumber'
+                       when v_alias in ('created_time', 'created') then 'created_time'
+                       else 'modified_time' end;
+    elsif v_alias in ('entity_reference', 'entity', 'entity_ref', 'reference', 'platform_reference') then
+      -- ── SC-R / P12, 2026-09-24: A RECORD POINTING AT SOMETHING THAT IS NOT A RECORD. ─────
+      -- The scope system let a client's column point at its web site, its intake note or the
+      -- agent that works it (16 such columns live on the main database), and the store could
+      -- not: a relation reached one Table of this organization or the kernel File / Person
+      -- Table and nothing else, so the mover had to refuse all sixteen. An entity reference is
+      -- a RELATION (FLD-1's closed set of five behaviours holds) whose target mode is `any`
+      -- (REL-8), restricted to the kinds it names in `allowed_types` — the scope system's own
+      -- word `allowed_reference_types` is read too. Each kind must be one
+      -- custom.entity_reference_kinds() lists; custom._field_shape_guard says which is not.
+      v_entity := true;
+      v_allowed := coalesce(
+        case when jsonb_typeof(p_spec -> 'allowed_types') = 'array' then p_spec -> 'allowed_types' end,
+        case when jsonb_typeof(v_config -> 'allowed_types') = 'array' then v_config -> 'allowed_types' end,
+        case when jsonb_typeof(p_spec -> 'allowed_reference_types') = 'array' then p_spec -> 'allowed_reference_types' end,
+        case when jsonb_typeof(p_spec -> 'allowed_types') = 'string'
+             then jsonb_build_array(p_spec -> 'allowed_types') end);
+      select coalesce(jsonb_agg(w order by first_at), '[]'::jsonb) into v_allowed
+        from (select lower(btrim(x #>> '{}')) as w, min(o) as first_at
+                from jsonb_array_elements(coalesce(v_allowed, '[]'::jsonb)) with ordinality as a(x, o)
+               where jsonb_typeof(x) = 'string' and btrim(x #>> '{}') <> ''
+               group by 1) s;
+      if jsonb_array_length(v_allowed) = 0 then
+        raise exception 'A column that points at things on the platform has to say which kinds of thing, and "%" names none.', coalesce(v_label, v_key, 'this column')
+          using errcode = '23514',
+                hint = 'SC-R / P12: send allowed_types, a list such as ["note", "web_site"]; select token, label from custom.entity_reference_kinds() lists every kind. A file is a File column and a person a Person column. Nothing was created.';
+      end if;
+    elsif v_alias = 'relation' then
+      -- ── SEAT-SUITES, 2026-09-19: A COLUMN POINTING AT ANOTHER OF YOUR OWN TABLES COULD
+      -- NOT BE MADE AT ALL. ────────────────────────────────────────────────────────────
+      -- `member` points at the kernel Person Table and `attachment` at the kernel File
+      -- Table, and those were the ONLY two relations this door could build. A person with
+      -- an Invoice Table and a Line Table could not give Invoice a Lines column through any
+      -- door, although the store holds exactly that shape already: the parity-floor
+      -- fixture's own `lines` field is a plain relation at a custom Table, and every guard,
+      -- every edge, every rollup and `custom.record_relation_edges` handle it. Only the
+      -- door refused, and it refused EVEN WHEN THE CALLER SAID WHICH TABLE.
+      -- THE RULE: a caller that NAMES its target gets the relation it asked for; a caller
+      -- that names nothing still gets the old sentence, because a relation with no target
+      -- is the thing that sentence is actually about.
+      if v_target is null then
+        raise exception 'A column that points at other records is a Person column or a File column, and "%" does not say which.', v_alias
+          using errcode = '23514',
+                hint = 'FLD-11: say member for a person or attachment for a file, or name the Table this column points at in relation_target. Nothing was created.';
+      end if;
+      v_relation := v_target::uuid;
+      -- ── RELATION-DECLARE, 2026-09-20: A COLUMN COULD POINT AT SOMETHING THAT IS NOT A
+      -- TABLE, AND NOBODY WAS TOLD. ────────────────────────────────────────────────────────
+      -- This arm took the caller's uuid and wrote it down unread. A uuid naming NOTHING at
+      -- all was accepted; a uuid naming a RECORD instead of a Table was accepted. The column
+      -- then points at a thing with no records to pick from and no title field to make a chip
+      -- out of, and every reader downstream has to guess what that means. Measured from the
+      -- seat `authenticated` on the main database, 2026-09-20. (A Table in ANOTHER
+      -- organization was already refused by custom._field_shape_guard; that stands.)
+      if not exists (select 1 from custom.record t
+                      where t.id = v_relation
+                        and t.deleted_at is null
+                        and t.table_id = custom.table_kernel_id()
+                        and (t.organization_id = p_organization_id or t.data_class = 'kernel')) then
+        raise exception 'A column that points at other records has to point at a TABLE, and the one it names is not one of this organization''s tables.' using errcode = '23503',
+                hint = 'FLD-11 / REL-8: relation_target names the Table whose records this column may point at - open the Table you meant and use its id. Nothing was created.',
+            detail = jsonb_build_object('relation', v_relation)::text;
+      end if;
+    else
+      raise exception 'There is no kind of column called "%".', p_spec ->> 'type'
+        using errcode = '23514',
+              hint = format('FLD-11: %s. Nothing was created.', custom._field_kinds_sentence());
+    end if;
+  end if;
+  if v_label is null then
+    raise exception 'A field needs a name - it is what a person reads on the column.'
+      using errcode = '23514', hint = 'Give the field a name (a table spec''s own word) or a label - they mean the same thing here. Everything else this door can work out.';
+  end if;
+  if v_key is null then
+    -- The panel derives the key from the label; a caller that did not is not
+    -- refused for a machine token it never meant to think about.
+    v_key := regexp_replace(lower(btrim(v_label)), '[^a-z0-9]+', '_', 'g');
+    v_key := regexp_replace(v_key, '^_+|_+$', '', 'g');
+    if v_key !~ '^[a-z]' then v_key := 'f_' || v_key; end if;
+    v_key := left(v_key, 48);
+  end if;
+  if v_key !~ '^[a-z][a-z0-9_]*$' then
+    raise exception 'A field''s key is made of lower-case letters, digits and underscores, and this one is "%".', v_key
+      using errcode = '23514', hint = 'FLD-13: leave the key out and the store makes one from the name.';
+  end if;
+
+  -- THE FLOOR EVERY FIELD STANDS ON. Every key the guards demand is written,
+  -- always, so no caller can omit one by accident.
+  d := jsonb_build_object(
+    'key',                  v_key,
+    'label',                v_label,
+    'multi',                v_multi,
+    'dated',                coalesce((p_spec ->> 'dated')::boolean, false),
+    'required',             coalesce((p_spec ->> 'required')::boolean, false),
+    'sort',                 coalesce((p_spec ->> 'sort')::numeric, 100),
+    'source',               coalesce(nullif(p_spec ->> 'source', ''), 'manual'),
+    'source_config',        coalesce(p_spec -> 'source_config', '{}'::jsonb),
+    'sensitivity',          coalesce(nullif(p_spec ->> 'sensitivity', ''), 'internal'),
+    'context_policy',       coalesce(nullif(p_spec ->> 'context_policy', ''), 'include'),
+    'applies_to_types',     coalesce(p_spec -> 'applies_to_types', '[]'::jsonb),
+    -- STORE-T / T7: THE CALLER'S OWN DEPENDENCY LIST, KEPT. It used to be hard-coded to the
+    -- empty list here, so NO client-made formula ever had dependencies, `custom.field_dependants`
+    -- could never name one, and REC-18's refusal — "this field is used by …" — could not fire for
+    -- anything a person or an agent built. That is the third half of T7.
+    'depends_on',           v_deps,
+    'entity_definition_id', p_table_id);
+
+  -- SEAT-SUITES 2026-09-19: two properties `custom.field` has always projected and this door
+  -- silently dropped, so a person could read them and never set them. They are carried only
+  -- when the caller names them, so no existing field's document changes shape.
+  if nullif(p_spec ->> 'review_interval_days', '') is not null then
+    d := d || jsonb_build_object('review_interval_days', (p_spec ->> 'review_interval_days')::integer);
+  end if;
+  if p_spec ? 'default' then
+    d := d || jsonb_build_object('default', p_spec -> 'default');
+  end if;
+
+  -- SC-R / P12: THE ENTITY REFERENCE (see its arm above). A relation with no Table target: its
+  -- target mode is `any` and `allowed_types` says which platform kinds it may name. No display
+  -- spec — its words are each thing's own title, read by platform.relation_label.
+  if v_entity then
+    d := d || jsonb_build_object(
+      'type',             'relation',
+      'relation_max',     coalesce((p_spec ->> 'relation_max')::integer, case when v_multi then 25 else 1 end),
+      'on_target_delete', case when nullif(p_spec ->> 'on_target_delete', '') in ('restrict','set_null','cascade')
+                               then p_spec ->> 'on_target_delete' else 'set_null' end,
+      'rules',            v_rules,
+      'config',           (v_config - 'allowed_types' - 'target_tables')
+                          || jsonb_build_object('target_mode', 'any', 'allowed_types', v_allowed));
+    return custom._with_display_format(d, p_spec - 'display');
+  end if;
+
+  -- THE RELATION A CALLER NAMED ITSELF (see the `relation` arm above). It carries no parity
+  -- type — `custom.parity_type` answers nothing for it, exactly as it answers nothing for
+  -- plain text and plain numbers — and every relation property is the caller's to declare.
+  if v_relation is not null then
+    d := d || jsonb_build_object(
+      'type',             'relation',
+      'relation_target',  v_relation,
+      'relation_max',     coalesce((p_spec ->> 'relation_max')::integer, case when v_multi then 25 else 1 end),
+      'on_target_delete', case when nullif(p_spec ->> 'on_target_delete', '') in ('restrict','set_null','cascade')
+                               then p_spec ->> 'on_target_delete' else 'set_null' end,
+      'rules',            v_rules,
+      'config',           v_config);
+    if nullif(p_spec ->> 'inverse_key', '') is not null then
+      d := d || jsonb_build_object('inverse_key', p_spec ->> 'inverse_key');
+    end if;
+    return custom._with_display_format(custom._with_display(p_organization_id, d, p_spec - 'display_format'), p_spec);
+  end if;
+
+  if v_parity is null then
+    -- The three behaviours a person picks that are NOT one of the parity types:
+    -- plain text, a long text and a plain number. They carry no parity type,
+    -- which is exactly what `custom.parity_type` answers for them.
+    if v_plain = 'number' then
+      d := d || jsonb_build_object('type', 'range', 'config', v_config, 'rules', v_rules);
+      if nullif(p_spec ->> 'unit', '') is not null then
+        d := d || jsonb_build_object('unit', p_spec ->> 'unit');
+      end if;
+    elsif v_plain = 'long_text' then
+      d := d || jsonb_build_object('type', 'text', 'format', 'long',
+                                   'config', v_config || jsonb_build_object('multiline', true),
+                                   'rules', v_rules);
+    else
+      d := d || jsonb_build_object('type', 'text', 'config', v_config, 'rules', v_rules);
+      -- ── SEAT-SUITES, 2026-09-19: A SIGNATURE FIELD COULD NOT BE DECLARED BY ANYBODY. ────
+      -- `custom.doc_signature_field_ok` accepts exactly one shape — a text field whose
+      -- `format` is `signature` — and `custom.doc_sign` refuses every other field by name.
+      -- No door wrote that `format`: this branch dropped it, and the parity types
+      -- have no signature among them. So `custom.doc_sign`, which IS granted to
+      -- `authenticated`, could never be used by a signed-in person at all: the one field it
+      -- accepts had no way to exist outside an INSERT straight into `custom.record`, which
+      -- needs a table privilege nobody has. Measured from the seat on the main database on
+      -- 2026-09-19 while converting `scripts/campaign-tests/w3_doc_c43.sql`.
+      -- A plain text field may now SAY it holds a signature, and nothing else changes: a
+      -- field that does not ask for it is written exactly as before.
+      if v_signature or nullif(p_spec ->> 'format', '') = 'signature' then
+        d := d || jsonb_build_object('format', 'signature');
+      end if;
+    end if;
+    return custom._with_display_format(custom._with_display(p_organization_id, d, p_spec - 'display_format'), p_spec);
+  end if;
+
+  if not exists (select 1 from custom.parity_field_types() t where t.parity_type = v_parity) then
+    raise exception 'There is no field type called "%" in this system.', v_parity
+      using errcode = '23514',
+            hint = format('FLD-11: %s.', custom._parity_types_sentence());
+  end if;
+
+  d := d || jsonb_build_object('parity_type', v_parity);
+
+  case v_parity
+    -- ── the two list types ───────────────────────────────────────────────────
+    when 'select', 'multi_select' then
+      d := d || jsonb_build_object(
+        'type',   'list',
+        'multi',  v_parity = 'multi_select',
+        'rules',  v_rules,
+        'config', v_config || jsonb_build_object(
+                    'options_table_id', coalesce(nullif(p_spec ->> 'options_table_id', ''),
+                                                nullif(v_config ->> 'options_table_id', ''))));
+
+    -- ── the two relation types a person names by what they hold ─────────────
+    when 'member' then
+      d := d || jsonb_build_object(
+        'type',             'relation',
+        'relation_target',  custom.person_kernel_id(),
+        'relation_max',     coalesce((p_spec ->> 'relation_max')::integer, case when v_multi then 25 else 1 end),
+        -- STORE-T / T7 (REL-2): what happens to this record when the thing it points at is
+        -- deleted is the CALLER'S to declare — restrict, set_null or cascade. It was hard-coded
+        -- to set_null, so no client could ever declare the `restrict` T7 asks for and every
+        -- delete of a pointed-at record was accepted. set_null stays the default.
+        'on_target_delete', case when nullif(p_spec ->> 'on_target_delete', '') in ('restrict','set_null','cascade')
+                                 then p_spec ->> 'on_target_delete' else 'set_null' end,
+        'rules',            v_rules,
+        'config',           v_config);
+    when 'attachment' then
+      d := d || jsonb_build_object(
+        'type',             'relation',
+        'relation_target',  custom.file_kernel_id(),
+        'relation_max',     coalesce((p_spec ->> 'relation_max')::integer, case when v_multi then 25 else 1 end),
+        -- REC-31: removing the file removes the attachment, never the record — so `cascade` is
+        -- the one answer this field may not give, and custom._field_type_parity_guard refuses it
+        -- by name. restrict is a caller's to choose.
+        'on_target_delete', case when nullif(p_spec ->> 'on_target_delete', '') in ('restrict','set_null','cascade')
+                                 then p_spec ->> 'on_target_delete' else 'set_null' end,
+        'rules',            v_rules,
+        'config',           v_config);
+
+    -- ── the three worked-out types ──────────────────────────────────────────
+    when 'lookup' then
+      d := d || jsonb_build_object(
+        'type',       'formula',
+        'source',     'formula',
+        'compute_on', coalesce(nullif(p_spec ->> 'compute_on', ''), 'read'),
+        'rules',      v_rules,
+        'config',     v_config || jsonb_strip_nulls(jsonb_build_object(
+                        'via',  nullif(p_spec ->> 'via', ''),
+                        'pick', nullif(p_spec ->> 'pick', ''))));
+    when 'rollup' then
+      d := d || jsonb_build_object(
+        'type',       'formula',
+        'source',     'formula',
+        -- FLD-11: a rollup that stamped itself at write time would be stale the
+        -- moment a contained record changed, and the store refuses that — so the
+        -- only answer this door can give is the right one.
+        'compute_on', 'read',
+        'rules',      v_rules,
+        'config',     v_config || jsonb_strip_nulls(jsonb_build_object(
+                        'via', nullif(p_spec ->> 'via', ''),
+                        'agg', nullif(p_spec ->> 'agg', ''),
+                        'of',  nullif(p_spec ->> 'of', ''))));
+    when 'formula' then
+      -- ── GRID-PRIMITIVES G3 / G5, 2026-09-22. ────────────────────────────────────────────
+      -- A system kind carries its system expression and says which it is; nothing else it
+      -- was sent can change what it works out. A formula a person TYPED (`formula_text`, the
+      -- older grid's language) is parsed here by custom.formula_parse, against this Table's
+      -- own columns; a mistake is refused in the parser's own words with where it is, and
+      -- the text is kept beside the expression so the person edits text and never JSON.
+      if v_system is not null then
+        v_config := (v_config - 'formula_text') || jsonb_build_object('system', v_system);
+        d := d || jsonb_build_object(
+          'type',       'formula',
+          'source',     'formula',
+          'compute_on', case when v_system = 'autonumber' then 'write' else 'read' end,
+          'rules',      v_rules,
+          'config',     v_config || jsonb_build_object('expr', jsonb_build_object('op', 'fx.' || v_system)));
+        if coalesce(jsonb_typeof(p_spec -> 'display_format'), 'null') = 'null' then
+          p_spec := p_spec || jsonb_build_object('display_format', jsonb_build_object('id', v_system));
+        end if;
+      else
+        if nullif(btrim(coalesce(p_spec ->> 'formula_text', '')), '') is not null then
+          v_parsed := custom.formula_parse(p_organization_id, p_table_id, p_spec ->> 'formula_text');
+          if not coalesce((v_parsed ->> 'ok')::boolean, false) then
+            raise exception 'The formula for "%" cannot be worked out: % (at character %).',
+                            v_label, v_parsed ->> 'error', coalesce((v_parsed ->> 'position')::integer, 0) + 1
+              using errcode = '23514',
+                    hint = 'GRID-PRIMITIVES G3: a formula names columns in braces, like {Visit fee} - {Deposit taken}; select signature, says from custom.formula_node_kinds() lists every function. Nothing was written.';
+          end if;
+          v_config := v_config || jsonb_build_object('formula_text', p_spec ->> 'formula_text',
+                                                     'expr', v_parsed -> 'expr');
+        elsif p_spec ? 'expr' then
+          -- An expression written by hand no longer matches any text it came with.
+          v_config := v_config - 'formula_text';
+        end if;
+        d := d || jsonb_build_object(
+          'type',       'formula',
+          'source',     'formula',
+          'compute_on', coalesce(nullif(p_spec ->> 'compute_on', ''), 'read'),
+          'rules',      v_rules,
+          'config',     v_config || jsonb_build_object('expr',
+                          coalesce(v_parsed -> 'expr', p_spec -> 'expr', v_config -> 'expr')));
+      end if;
+
+    -- ── the three formatted texts. The format says how to SHOW it; the
+    --    pattern Rule is what makes it enforceable (FLD-3 / FLD-11), so the
+    --    door writes the Rule rather than leaving a label on an empty box.
+    when 'url' then
+      d := d || jsonb_build_object('type', 'text', 'format', 'url', 'config', v_config,
+        'rules', case when exists (select 1 from jsonb_array_elements(v_rules) r where r ->> 'kind' = 'pattern')
+                      then v_rules
+                      else v_rules || jsonb_build_array(jsonb_build_object(
+                             'kind', 'pattern', 'value', '^https?://[^\s]+$')) end);
+    when 'email' then
+      d := d || jsonb_build_object('type', 'text', 'format', 'email', 'config', v_config,
+        'rules', case when exists (select 1 from jsonb_array_elements(v_rules) r where r ->> 'kind' = 'pattern')
+                      then v_rules
+                      else v_rules || jsonb_build_array(jsonb_build_object(
+                             'kind', 'pattern', 'value', '^[^@\s]+@[^@\s]+\.[^@\s]+$')) end);
+    when 'phone' then
+      d := d || jsonb_build_object('type', 'text', 'format', 'phone', 'config', v_config,
+        'rules', case when exists (select 1 from jsonb_array_elements(v_rules) r where r ->> 'kind' = 'pattern')
+                      then v_rules
+                      else v_rules || jsonb_build_array(jsonb_build_object(
+                             'kind', 'pattern', 'value', custom.phone_pattern())) end);
+
+    -- ── the three numbers and dates ─────────────────────────────────────────
+    when 'currency' then
+      d := d || jsonb_build_object(
+        'type', 'range', 'format', 'currency',
+        'unit', coalesce(nullif(p_spec ->> 'unit', ''), '$'),
+        'config', v_config, 'rules', v_rules);
+    when 'percent' then
+      d := d || jsonb_build_object(
+        'type', 'range', 'format', 'percent', 'unit', '%', 'config', v_config,
+        -- FLD-3 / FLD-11: a percent field that takes -40 is a percent in name only.
+        'rules', case when exists (select 1 from jsonb_array_elements(v_rules) r
+                                    where r ->> 'kind' in ('min', 'max'))
+                      then v_rules
+                      else v_rules || jsonb_build_array(
+                             jsonb_build_object('kind', 'min', 'value', 0),
+                             jsonb_build_object('kind', 'max', 'value', 100)) end);
+    -- ── the tick box ────────────────────────────────────────────────────────
+    -- No format, no unit, no options Table and no Rule: what it holds IS the
+    -- behaviour. A default is carried when the caller named one (above), which is
+    -- how a column can start life ticked.
+    when 'checkbox' then
+      d := d || jsonb_build_object('type', 'boolean', 'config', v_config, 'rules', v_rules);
+
+    when 'datetime' then
+      d := d || jsonb_build_object(
+        'type', 'range', 'rules', v_rules,
+        'config', v_config || jsonb_build_object(
+                    'kind', case when coalesce(p_spec ->> 'kind', v_config ->> 'kind') = 'datetime'
+                                 then 'datetime' else 'date' end));
+      if coalesce(p_spec ->> 'kind', v_config ->> 'kind') = 'datetime' then
+        d := d || jsonb_build_object('format', 'datetime');
+      end if;
+    else
+      raise exception 'The field type "%" is known but this store does not yet know what it is made of.', v_parity
+        using errcode = '23514',
+              hint = 'custom._field_document_for has an arm per parity type; this one is missing. Nothing was written.';
+  end case;
+
+  return custom._with_display_format(custom._with_display(p_organization_id, d, p_spec - 'display_format'), p_spec);
+end
 $function$;

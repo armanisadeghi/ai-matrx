@@ -21,6 +21,7 @@ state, and the SAME expectations are read in every mode, so red and green are on
              opentable  the closed-table knob also names `note`        -> opentable
              freeform   the closed-table knob also names the profile   -> freeform (client cases)
              mover      the mover skips its declare step               -> mover
+             carryback  r2 without its archived-history carry-back     -> carryback
              r0guard    the guard that refused every writer (lane7sec_a's body) is put back
                         -> servernotice, legacy, opentable, freeform, prefix
                         (the header cases no longer depend on this guard: platform.declared_actor_tier
@@ -146,6 +147,12 @@ with conn() as c:
         ddl(R2.read_text())           # r2 applied in the txn (production's bodies + the archive fix)
     elif MODE != 'current':
         sys.exit(f'unknown mode {MODE}')
+    if PLANT == 'carryback':
+        # r2 with its archived-envelope carry-back block taken out
+        txt = R2.read_text()
+        a = txt.index("  -- LANE7-SEC-ARCHIVE: an archived Field's envelope is carried exactly")
+        b = txt.index("  end if;\n", a) + len("  end if;\n")
+        ddl(txt[:a] + txt[b:])
 
     # ── fixtures, through the real doors ───────────────────────────────────────────────────
     seat(cur, ADMIN)
@@ -238,6 +245,16 @@ with conn() as c:
     o = step(cur, "update crm.party set custom_fields = custom_fields || '{\"insurance_verified\":false}'::jsonb where id=%s returning id", (arow,))
     record('DEFECT', 'archive', 'member writes a NEW value to the archived field: refused, saying it is archived', o,
            lambda o: o[0] == 'REFUSED' and 'archived' in o[1])
+    o = step(cur, "select custom.entity_value_write(%s,'party',%s,'{\"insurance_verified\":false}'::jsonb) is not null", (ORG, arow))
+    record('DEFECT', 'archive', 'member changes the archived field through the DOOR: the true archived sentence, never "no field"', o,
+           lambda o: o[0] == 'REFUSED' and 'archived' in o[1] and 'no field' not in o[1])
+    o = step(cur, "update crm.party set custom_fields = jsonb_set(custom_fields, '{_values,insurance_verified,ver}', '9') where id=%s returning id", (arow,))
+    record('DEFECT', 'archive', 'member edits ONLY the archived field\'s stored history: refused in the sentence, never silently undone', o,
+           lambda o: o[0] == 'REFUSED' and 'archived' in o[1])
+    server(cur)
+    o = step(cur, "update crm.party set custom_fields = (custom_fields - '_values') || '{\"intake_notes\":\"Imported week 5\"}'::jsonb where id=%s returning custom_fields->'_values'->'insurance_verified'", (arow,))
+    record('LEGIT', 'carryback', 'a writer that sends no history at all: the archived field\'s history is carried back untouched', (o, env_before),
+           lambda x: x[0][0] == 'OK' and x[0][1][0][0] == x[1])
     server(cur)
     o = step(cur, "update crm.party set custom_fields = custom_fields - 'insurance_verified' where id=%s returning id", (arow,))
     record('DEFECT', 'archive', 'a server job clears the archived field\'s value: refused (archived means restorable)', o,
@@ -246,6 +263,15 @@ with conn() as c:
     o = step(cur, "select custom.entity_field_declare(%s,'party','{\"label\":\"Patient number\",\"type\":\"formula\",\"key\":\"patient_number_x\",\"source\":\"formula\",\"config\":{\"expr\":{\"op\":\"fx.autonumber\"},\"system\":\"autonumber\"}}'::jsonb)", (ORG,))
     record('DEFECT', 'worked', 'admin declares a worked-out field (record number) on a standard table: refused in "field" words', o,
            lambda o: o[0] == 'REFUSED' and 'field' in o[1].lower() and 'column' not in o[1].lower())
+    o = step(cur, "select custom.entity_field_declare(%s,'party','{\"label\":\"Visits left\",\"type\":\"formula\",\"key\":\"visits_left\",\"formula_text\":\"{Intake notes}\"}'::jsonb)", (ORG,))
+    record('DEFECT', 'worked', 'admin declares a formula NAMING a field on a standard table: refused in "field" words', o,
+           lambda o: o[0] == 'REFUSED' and 'column' not in o[1].lower() and 'worked out' in o[1])
+    # The way back the sentence names is real: restore from Trash, as admin, then the value changes.
+    o = step(cur, "select public.org_trash_restore(%s,'record',%s)->>'restored'", (ORG, fid))
+    record('LEGIT', 'restore', 'admin restores the archived field from Trash', o, lambda o: first(o) == 'true')
+    seat(cur, TEST)
+    o = step(cur, "select custom.entity_value_write(%s,'party',%s,'{\"insurance_verified\":false}'::jsonb)->'custom'->>'insurance_verified'", (ORG, arow))
+    record('LEGIT', 'restore', 'after the restore, the member changes the value through the door', o, lambda o: first(o) == 'false')
 
     # ── LEGIT: what must keep working ──────────────────────────────────────────────────────
     seat(cur, ADMIN)
@@ -344,7 +370,7 @@ bad = [r for r in results if not r[3]]
 print(f"\n{MODE}{' plant=' + PLANT if PLANT else ''}: {len(results) - len(bad)}/{len(results)} expectations met")
 for r in bad:
     print('  FAIL', r[0], r[1], '-', r[2])
-EXPECTED_RED = {'opentable': {'opentable'}, 'freeform': {'freeform'}, 'mover': {'mover'},
+EXPECTED_RED = {'opentable': {'opentable'}, 'freeform': {'freeform'}, 'mover': {'mover'}, 'carryback': {'carryback'},
                 'r0guard': {'servernotice', 'legacy', 'opentable', 'freeform', 'prefix'}}
 if PLANT:
     planted = {r[1] for r in bad}
