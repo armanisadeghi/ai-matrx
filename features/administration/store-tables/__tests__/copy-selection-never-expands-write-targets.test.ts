@@ -120,3 +120,21 @@ describe("unmapped keyword rows are copyable without becoming write targets", ()
     expect(setGscKeywordClass).not.toHaveBeenCalled();
   });
 });
+
+
+it.each([
+  "features/marketing/seo/value-system/topics/UnplacedQueue.tsx",
+  "features/marketing/seo/value-system/topics/ProposedQueue.tsx",
+  "features/marketing/seo/keyword-workbench/components/KeywordWorkbench.tsx",
+])("labels the full-selection clear action honestly in %s", (file) => {
+  const source = ts.createSourceFile(file, readFileSync(resolve(ROOT, file), "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const labels: string[] = [];
+  function visit(node: ts.Node) {
+    if (ts.isJsxElement(node) && node.openingElement.attributes.properties.some((attribute) =>
+      ts.isJsxAttribute(attribute) && attribute.name.getText(source) === "onClick" && attribute.initializer?.getText(source) === "{clear}",
+    )) labels.push(node.children.map((child) => child.getText(source)).join(" ").trim());
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  expect(labels).toEqual(["Clear selection"]);
+});

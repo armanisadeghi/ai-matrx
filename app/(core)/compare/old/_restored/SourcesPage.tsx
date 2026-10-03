@@ -130,6 +130,7 @@ import {
   sourceListedAt,
   sourceStage,
   stageCellState,
+  stageCellLabel,
   STAGE_CELL_LABEL,
   transcriptLengthWords,
   transcriptSegmentCount,
@@ -260,7 +261,7 @@ function StageCell({
           state === "not_searchable" && "text-muted-foreground",
         )}
       >
-        {SOURCE_STAGE_LABEL[state]}
+        {stageCellLabel(state)}
       </span>
     );
   return (
@@ -782,9 +783,7 @@ export function SourcesPage() {
       header: "Stage",
       accessorFn: (r) => {
         const st = stageCellState(facts.get(r.id), readOf(r.id));
-        return st === "checking" || st === "read_failed"
-          ? STAGE_CELL_LABEL[st]
-          : SOURCE_STAGE_LABEL[st];
+        return stageCellLabel(st);
       },
       cell: (r) => (
         <StageCell

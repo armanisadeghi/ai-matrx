@@ -211,7 +211,7 @@ export function UnplacedQueue({
                 className="h-7 text-xs text-muted-foreground"
                 onClick={clear}
               >
-                Clear {keywordIds.length}
+                Clear selection
               </Button>
             </div>
           )}
