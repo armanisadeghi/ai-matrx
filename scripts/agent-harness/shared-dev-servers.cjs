@@ -5,10 +5,10 @@
 // brought 70-130 Turbopack workers and 15-25 GB, and the Mac rebooted twice. A second "clone"
 // server on another port (2026-09-27) ran beside it until 2026-09-30, when the two together held
 // ~41 GB and ~75 workers and stalled the 256 GB Mac again. Ruling (Arman, 2026-09-30): ONE
-// server, on port 3001, whose DATABASE is a mode:
+// server, on port 3001, on the live database (Arman, 2026-10-03: test on live as admin@admin.com;
+// the nightly copy is only for rehearsing destructive migrations, never a dev server):
 //
-//   pnpm preview:start          clone mode (default)  dist .next-preview-clone  the nightly clone
-//   pnpm preview:start --live   live mode             dist .next-preview        production
+//   pnpm preview:start          dist .next-preview        the live database
 //
 // `scripts/agent-dev-server.sh` is the only launcher; it sets MATRX_SHARED_PREVIEW to the token
 // and MATRX_PREVIEW_MODE to the mode. The bash twin of this table is
@@ -26,10 +26,10 @@ const ONE_DEV_SERVER = Object.freeze({
   port: 3001,
   token: "1",
   stateStem: "shared-next-dev",
-  defaultMode: "clone",
+  defaultMode: "live",
   // NEXT_PUBLIC_* are inlined at compile time, so each mode compiles into its own dir: a mode
   // switch never serves the other database's bundles. Only ONE process ever runs.
-  distDirs: Object.freeze({ clone: ".next-preview-clone", live: ".next-preview" }),
+  distDirs: Object.freeze({ live: ".next-preview" }),
 });
 
 /** The -p / --port / --port= value on a `next dev` command line, or null. */
@@ -53,9 +53,8 @@ function hostOf(url) {
 
 const HOW =
   "  There is exactly ONE dev server on this machine, on port 3001, started by the shared launcher:\n" +
-  "    pnpm preview:start          clone database (default)  http://<your-session>.localhost:3001\n" +
-  "    pnpm preview:start --live   live database\n" +
-  "  Everyone shares it; `pnpm preview:status` shows its mode. Restart: `pnpm preview:stop && pnpm preview:start`.\n" +
+  "    pnpm preview:start          http://<your-session>.localhost:3001 (live database)\n" +
+  "  Everyone shares it; `pnpm preview:status` shows it. Restart: `pnpm preview:stop && pnpm preview:start`.\n" +
   "  Why: extra dev servers exhausted memory and stalled or rebooted the Mac (2026-09-23/24, 2026-09-30).";
 
 /**
@@ -95,33 +94,12 @@ function sharedDevServerRefusal({ env, argv, others = [] }) {
   const mode = env.MATRX_PREVIEW_MODE;
   const distDir = ONE_DEV_SERVER.distDirs[mode];
   if (!distDir) {
-    return `[one-dev-server] Refusing: MATRX_PREVIEW_MODE is '${mode || "(unset)"}', not clone or live.\n` + HOW;
+    return `[one-dev-server] Refusing: MATRX_PREVIEW_MODE is '${mode || "(unset)"}', not live.\n` + HOW;
   }
   if (env.NEXT_DISTDIR !== distDir) {
     return (
       `[one-dev-server] Refusing: ${mode} mode builds into ${distDir}, not ` +
       `${env.NEXT_DISTDIR || "(unset)"}.\n` + HOW
-    );
-  }
-  if (mode === "clone") {
-    // Arman's pairing condition: a clone page must never read one database and call a
-    // server that writes another. The launcher sets MATRX_CLONE_PAIRED only after the local
-    // clone-wired aidream answered /health/database-identity with this ref.
-    const ref = env.MATRX_CLONE_PAIRED || "";
-    const supabaseHost = hostOf(env.NEXT_PUBLIC_SUPABASE_URL);
-    if (!/^[a-z0-9]{20}$/.test(ref) || supabaseHost !== `${ref}.supabase.co`) {
-      return (
-        "[one-dev-server] Refusing an UNPAIRED clone-mode server: NEXT_PUBLIC_SUPABASE_URL is " +
-        `'${supabaseHost || "(unset)"}' and MATRX_CLONE_PAIRED is '${ref || "(unset)"}'. ` +
-        "Only `pnpm preview:start` may start clone mode, after proving the local aidream on " +
-        "port 8200 is wired to the same clone.\n" + HOW
-      );
-    }
-  }
-  if (mode === "live" && env.MATRX_CLONE_PAIRED) {
-    return (
-      "[one-dev-server] Refusing: live mode was handed clone wiring (MATRX_CLONE_PAIRED is set). " +
-      "Clone mode is `pnpm preview:start`; live is `pnpm preview:start --live`.\n" + HOW
     );
   }
   return null;

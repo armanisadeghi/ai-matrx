@@ -1,7 +1,6 @@
 # Local dev-server and build-cache management
 
-ONE shared preview on port 3001 — its database is a **mode** (clone by default,
-live with `--live`) — plus one cleanup system. The machine-wide guard refuses any
+ONE shared preview on port 3001, on the live database — plus one cleanup system. The machine-wide guard refuses any
 second Next.js dev tree, from this repo or another.
 
 ## Why this exists
@@ -20,67 +19,18 @@ The failure classes are:
 3. **Runaway servers.** Turbopack can retain native memory far beyond Node's
    JavaScript heap.
 
-## The one managed preview and its two modes
+## The one managed preview
 
-Arman, 2026-09-30: one server, ever. A second "clone" server on another port
-(2026-09-27) ran beside the live one and the two held ~41 GB and ~75 Turbopack
-workers and stalled the Mac. Tests never touch the live database (2026-09-29), so
-clone is the default mode.
-
-| Mode | Start | Host | Database | Python server | Build dir |
-|---|---|---|---|---|---|
-| clone (default) | `pnpm preview:start` | `<session>.localhost:3001` | the clone named in `common-docs/operations/clone/CLONE-REF` | the local clone-wired aidream, `http://localhost:8200` | `.next-preview-clone` |
-| live | `pnpm preview:start --live` | `<session>.localhost:3001` | LIVE (`db.matrxserver.com`) | production | `.next-preview` |
+Arman, 2026-09-30: one server, ever. Arman, 2026-10-03: it runs on the live
+database and we test as `admin@admin.com`; the nightly clone is only for
+rehearsing destructive migrations, never a dev server.
 
 | Command | Effect |
 |---|---|
-| `pnpm preview:start [--clone\|--live]` | Nothing running: start in the requested mode (clone if none). Running in that mode, or no flag: reuse it. Running in the OTHER mode: idle ≥ 5 min → stopped and restarted in the requested mode; busy → refused in one line. Never a second server. |
-| `pnpm preview:status` | The one server: mode, database, pid, real memory, last use. |
-| `pnpm preview:stop` | Stop it from its owning checkout; both build caches are preserved. |
-| `pnpm dev-login [/path]` | Mint a single-use nonce for your host and print the sign-in URL. `--clone`/`--live` only assert the running mode. |
-
-Each mode keeps its own build dir because `NEXT_PUBLIC_*` values are inlined into
-the bundles: a switch never serves the other database's env, and both caches stay
-hot. Only one process ever runs.
-
-### Clone mode's pairing rule
-
-Arman's condition: *"it starts to become a problem for aidream so you have to
-make sure it's properly managed when the changes modify both the client and the
-server."* A clone page reads and writes the clone through supabase-js AND calls a
-Python server; if that server wrote to live, one action would land half on each
-database. So clone mode:
-
-1. regenerates the gitignored `.env.clone.local` whenever CLONE-REF's `clone_ref`
-   changes (the clone rotates nightly; no ref is hardcoded) — the clone's
-   Supabase URL + publishable + secret key from the Management API, and EVERY
-   Python-server URL the app can select — aidream's tiers
-   (prod/dev/staging/local/gpu/ec2) AND the separately hosted files, scraper and
-   seo services, which are wired to live — set to `http://localhost:8200` (the
-   clone-wired aidream serves the same `/files`, `/scraper`, `/seo` routes);
-2. asks `http://localhost:8200/health/database-identity` which project its
-   database pool AND its auth issuer belong to, and REFUSES — starting nothing —
-   unless both are the clone. The refusal prints the exact command:
-   `cd ../aidream && scripts/clone/clone_server.sh start` (boots in a few min;
-   `scripts/clone/clone_server.sh status` shows when it is paired). That server
-   reloads itself onto aidream's checkout (up 10 min + new code); `clone_server.sh
-   reload` gets your code now, and `pnpm preview:status` prints its running commit;
-3. launches with `MATRX_PREVIEW_MODE=clone` and `MATRX_CLONE_PAIRED=<ref>`;
-   `next.config.js` re-checks that the Supabase URL is that clone before a worker
-   spawns;
-4. signs people in with Google / GitHub / Apple through a bridge: providers only return to a
-   callback registered in advance and the clone's ref is new nightly, so the round-trip runs on
-   live auth and `/auth/clone-signin` opens the SAME account on the clone, revoking the live
-   session at once (`utils/supabase/oauthStart.ts`; guard `oauthStart.door.test.ts`);
-5. on every reuse, re-proves the pairing and refuses a server started for a
-   clone CLONE-REF no longer names (restart it: `pnpm preview:stop &&
-   pnpm preview:start`).
-
-Logic and tests: `scripts/clone-preview/clone-preview-env.cjs`,
-`scripts/__tests__/clone-preview-env.test.ts`. The server half:
-`aidream/docs/LOCAL_DEV.md` § "Running against the clone". An admin's hand-typed
-*custom* server URL is the one route around the pairing — never set one in clone
-mode.
+| `pnpm preview:start` | Nothing running: start it. Running: reuse it. Never a second server. `--clone` is refused. |
+| `pnpm preview:status` | The one server: pid, real memory, last use. |
+| `pnpm preview:stop` | Stop it from its owning checkout; the build cache is preserved. |
+| `pnpm dev-login [/path]` | Mint a single-use nonce for your host and print the sign-in URL. |
 
 `scripts/agent-dev-server.sh` owns this lifecycle. Its state and start lock live
 in the user's machine-wide temporary directory, not inside a checkout, so two
@@ -137,8 +87,8 @@ defaults with `MATRX_PREVIEW_MAX_RSS_GB` and `MATRX_PREVIEW_NO_PROGRESS_SEC`.
 **Named `preview_start`, raw `pnpm dev`, and any second server are banned.**
 Three guards, each tested to refuse a second server
 (`scripts/__tests__/shared-dev-servers.test.ts`): `next.config.js`
-(`scripts/agent-harness/shared-dev-servers.cjs` — token, port 3001, the mode's
-build dir, a paired clone mode, and no other dev server running, even one with a
+(`scripts/agent-harness/shared-dev-servers.cjs` — token, port 3001, the live
+build dir, and no other dev server running, even one with a
 valid token), the installed PreToolUse hook
 (`scripts/agent-harness/matrx-preview-ports.sh`), and the launcher's one slot.
 `pnpm check:one-dev-server` (+ `:self-test`, RED on the two-server commit) fails
@@ -168,10 +118,7 @@ against production at once (Arman: "default 4").
   knob screams in the log and the gate fails OPEN.
 - **Scope:** development server only, and only when `NEXT_PUBLIC_SUPABASE_URL`
   is production. A production build drops the code.
-- **Refused?** Wait for a walk to go idle, or switch the one server to clone
-  mode once it is idle 5 min: `pnpm preview:start --clone`, then
-  `pnpm dev-login`. Clone mode is never capped (its Supabase URL is not
-  production).
+- **Refused?** Wait for a walk to go idle, then reload.
 
 ## Process discovery and cleanup
 
@@ -214,6 +161,9 @@ Codex skips a new or changed non-managed hook until a human reviews its hash.
 Open `/hooks` once after installation and trust the Matrx dev-server guard.
 
 ## Change Log
+
+- 2026-10-03: clone mode removed; the one server runs on live (Arman: test on
+  live as admin@admin.com).
 
 - 2026-09-30: ONE server on port 3001; the database is its mode (clone default,
   `--live`). The port-3002 clone server, its slot and its `-clone` host are gone;

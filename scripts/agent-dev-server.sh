@@ -3,17 +3,12 @@
 # agent-dev-server.sh — provider-neutral lifecycle for THE one shared preview.
 #
 # Claude and Codex both call this through:
-#   pnpm preview:start            port 3001, CLONE mode (default)   http://<session>.localhost:3001
-#   pnpm preview:start --live     port 3001, LIVE mode
+#   pnpm preview:start            port 3001, live database   http://<session>.localhost:3001
 #   pnpm preview:stop | pnpm preview:status
 #
-# ONE Next.js dev server on this machine, ever (Arman, 2026-09-24; reaffirmed 2026-09-30, when a
-# second "clone" server on another port beside the live one helped hold ~41 GB and ~75 Turbopack
-# workers and stalled the Mac). The database is the server's MODE. Tests never run against the
-# live database (Arman, 2026-09-29), so clone is the default. Clone mode REFUSES to start unless
-# the local aidream it bakes in as its Python server (http://localhost:8200) proves it is wired
-# to the same clone — otherwise one page would write half to the clone and half to live. The
-# environment and the proof: scripts/clone-preview/clone-preview-env.cjs.
+# ONE Next.js dev server on this machine, ever (Arman, 2026-09-24; reaffirmed 2026-09-30). It runs
+# on the live database: we test on live as admin@admin.com (Arman, 2026-10-03). The nightly copy
+# is only for rehearsing destructive migrations — never a dev server — so `--clone` is refused.
 #
 # Asking for the OTHER mode than the one running: an idle (>= RECYCLE_IDLE_MIN) server is
 # stopped and restarted in the requested mode; a busy one is never touched — the start refuses
@@ -40,16 +35,15 @@ GUARD="$REPO_ROOT/scripts/agent-harness/matrx-preview-ports.sh"
 source "$REPO_ROOT/scripts/agent-harness/preview-session.sh"
 # shellcheck source=scripts/agent-harness/shared-servers.sh
 source "$REPO_ROOT/scripts/agent-harness/shared-servers.sh"
-CLONE_ENV_TOOL="$REPO_ROOT/scripts/clone-preview/clone-preview-env.cjs"
 
-# The requested DATABASE MODE. `--clone` / `--live` may appear anywhere after the subcommand.
+# The DATABASE MODE: always live. `--live` is accepted (a no-op); `--clone` is refused.
 CMD="${1:-}"
 REQUESTED_MODE="$SHARED_SERVER_DEFAULT_MODE"
 MODE_EXPLICIT=0
 POSITIONAL=()
 for arg in "${@:2}"; do
   case "$arg" in
-    --clone) REQUESTED_MODE=clone; MODE_EXPLICIT=1 ;;
+    --clone) echo "[preview] --clone is gone: the dev server runs on live; test as admin@admin.com (Arman, 2026-10-03)." >&2; exit 2 ;;
     --live) REQUESTED_MODE=live; MODE_EXPLICIT=1 ;;
     *) POSITIONAL+=("$arg") ;;
   esac
@@ -280,13 +274,8 @@ announce_session_url() {
 
 # One line, every time: which database a page on this server reads and writes.
 announce_database() {
-  if [[ "$MODE" == "clone" ]]; then
-    local ref
-    ref="$(meta_value CLONE_REF)"
-    [[ -n "$ref" ]] || ref="${CLONE_REF:-unknown}"
-    log "MODE clone — DATABASE: the CLONE $ref (https://$ref.supabase.co) + server http://localhost:8200 (aidream wired to the same clone) — writes never reach live"
-  elif [[ "$MODE" == "live" ]]; then
-    log "MODE live — DATABASE: LIVE production (db.matrxserver.com) — every write is real; tests belong on clone mode (pnpm preview:start --clone once this one is idle)"
+  if [[ "$MODE" == "live" ]]; then
+    log "DATABASE: live (db.matrxserver.com) — test as admin@admin.com"
   else
     log "MODE unknown — this server's lease names no mode; restart it to know which database it uses: pnpm preview:stop && pnpm preview:start"
   fi
@@ -352,28 +341,10 @@ reuse_managed_meta() {
     refuse_busy_other_mode "$running_mode"
   fi
   use_mode "${running_mode:-unknown}"
-  [[ "$MODE" != "clone" ]] || reverify_clone_pairing
   log "reusing the managed preview (pid $pid, port $port, $MODE mode)"
   announce_session_url "$port"
   log "it may still be compiling"
   return 0
-}
-
-# A running clone preview is only reusable while (a) CLONE-REF still names the
-# clone it was started for and (b) the server it bakes in still answers as that
-# clone. The clone rotates nightly; a stale preview would read yesterday's copy.
-reverify_clone_pairing() {
-  local out status started current
-  started="$(meta_value CLONE_REF)"
-  out="$(node "$CLONE_ENV_TOOL" pair)"
-  status=$?
-  current="$(printf '%s\n' "$out" | sed -n 's/^CLONE_REF=//p')"
-  if [[ -n "$started" && -n "$current" && "$current" != "$started" ]]; then
-    fail "the running clone-mode server was started for the clone $started, but CLONE-REF now names $current (the nightly clone rotated). Restart it: pnpm preview:stop && pnpm preview:start"
-  fi
-  if (( status != 0 )); then
-    fail "the running clone-mode server's Python server is no longer paired with the clone ${started:-$current} (the reason is printed above). Its pages would call a server that is down or wired elsewhere — fix the server first, then use this preview again."
-  fi
 }
 
 acquire_start_lock() {
@@ -409,8 +380,7 @@ slot_occupied() {
   [[ "$(meta_value PID)" == "$pid" && -n "$owner_session" ]] || owner_session="unmanaged (no lease file — started outside pnpm preview:start)"
   if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" && "$label" == agent-preview && "$port" == "$PORT" ]]; then
     use_mode "$(meta_value MODE)"
-    [[ "$MODE" != "clone" ]] || reverify_clone_pairing
-    log "the dev-server slot is held by $label pid $pid on port $port,"
+      log "the dev-server slot is held by $label pid $pid on port $port,"
     log "started by $owner_session from THIS checkout ($cwd)."
     log "That is your code, so you do not need a second server — you need your own host."
     log "Edits in this checkout hot-reload in the existing server; no restart or private preview is needed."
@@ -568,23 +538,7 @@ cmd_start() {
 
   ensure_worktree_node_modules
 
-  # THE PAIRING GATE (clone mode). Regenerates .env.clone.local if CLONE-REF
-  # rotated, then proves the local aidream on :8200 answers as the same clone.
-  # A refusal here starts nothing — never an unpaired clone-mode server.
   use_mode "$REQUESTED_MODE"
-  CLONE_REF=""
-  local clone_env_file=""
-  if [[ "$MODE" == "clone" ]]; then
-    local prep
-    prep="$(node "$CLONE_ENV_TOOL" prepare)" || {
-      rmdir "$LOCK" 2>/dev/null || true
-      fail "the preview was NOT started in clone mode (reason above). Nothing fails silently: fix the pairing, then re-run pnpm preview:start (or pnpm preview:start --live for the live database)."
-    }
-    CLONE_REF="$(printf '%s\n' "$prep" | sed -n 's/^CLONE_REF=//p')"
-    clone_env_file="$(printf '%s\n' "$prep" | sed -n 's/^CLONE_ENV_FILE=//p')"
-    [[ -n "$CLONE_REF" && -f "$clone_env_file" ]] || fail "clone preparation returned no ref/env file; nothing was started"
-  fi
-
   local next_bin
   next_bin="$(resolve_next_bin)" || fail "dependencies are missing; run pnpm install first"
 
@@ -620,13 +574,13 @@ cmd_start() {
   # exec_command owns and reaps its shell process group. Python's
   # start_new_session creates a real detached OS session that survives the tool
   # call while still giving us the exact root pid to track and stop.
-  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" "$next_bin" "$SHARED_SERVER_TOKEN" "$MODE" "$clone_env_file" "$CLONE_REF" <<'PY'
+  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" "$next_bin" "$SHARED_SERVER_TOKEN" "$MODE" <<'PY'
 import os
 import shutil
 import subprocess
 import sys
 
-root, log_path, distdir, port, next_bin, token, mode, clone_env_file, clone_ref = sys.argv[1:]
+root, log_path, distdir, port, next_bin, token, mode = sys.argv[1:]
 node_exe = shutil.which("node") or "node"
 env = os.environ.copy()
 env["NODE_OPTIONS"] = "--dns-result-order=ipv4first"
@@ -640,19 +594,6 @@ env["MATRX_PREVIEW_MODE"] = mode
 env.pop("MATRX_CLONE_PAIRED", None)
 # Next sets PORT to the port it bound; an inherited one must never disagree with -p.
 env.pop("PORT", None)
-if clone_env_file:
-    # Process env beats every .env* file Next loads, so these values — the
-    # clone's Supabase URL/keys and every backend URL pointed at the paired
-    # clone server — win over .env.local's live ones.
-    with open(clone_env_file) as fh:
-        for line in fh:
-            line = line.rstrip("\n")
-            if line and not line.startswith("#") and "=" in line:
-                key, value = line.split("=", 1)
-                env[key] = value
-    # Proven by clone-preview-env.cjs a moment ago; next.config.js re-checks it
-    # against NEXT_PUBLIC_SUPABASE_URL before a single worker spawns.
-    env["MATRX_CLONE_PAIRED"] = clone_ref
 # Node's own fetch() (undici) ignores HTTPS_PROXY/HTTP_PROXY by default — it
 # only honors the env proxy vars once NODE_USE_ENV_PROXY=1 is set (Node
 # 22.12+/24.x). This dev server's own /api/dev-login route falls back to a
@@ -702,7 +643,6 @@ PY
     echo "OWNER_SESSION=$SESSION_RAW"
     echo "OWNER_HOST=$SESSION_HOST"
     echo "MODE=$MODE"
-    [[ -z "$CLONE_REF" ]] || echo "CLONE_REF=$CLONE_REF"
   } >"$META"
   rm -f "$READY" "$JAR" "$FAILED"
   date +%s >"$USED" # a fresh start counts as use; the idle clock starts now
@@ -1043,12 +983,6 @@ cmd_monitor() {
 
 cmd_status() {
   cmd_status_one
-  # The clone preview's Python server (aidream on :8200): its running commit and how stale it is.
-  # It reloads itself onto aidream's checkout; `clone_server.sh reload` gets your code now.
-  local clone_server="$REPO_ROOT/../aidream/scripts/clone/clone_server.sh"
-  if [[ "$(meta_value MODE)" != live && -x "$clone_server" ]]; then
-    log "python :8200 $(bash "$clone_server" code 2>/dev/null)"
-  fi
 }
 
 cmd_status_one() {
@@ -1093,12 +1027,12 @@ cmd_status_one() {
   elif [[ -f "$FAILED" ]]; then
     report_previous_failure
     if [[ "$(head -1 "$FAILED")" == "$RECYCLED_PREFIX"* ]]; then
-      log "STOPPED (recycled, normal) — pnpm preview:start starts a fresh one (clone mode; --live for live)"
+      log "STOPPED (recycled, normal) — pnpm preview:start starts a fresh one (live database)"
     else
       log "STOPPED — fix the reported cause, then run pnpm preview:start"
     fi
   else
-    log "no managed preview is running (start: pnpm preview:start — clone mode; --live for live)"
+    log "no managed preview is running (start: pnpm preview:start )"
   fi
 }
 
@@ -1120,7 +1054,7 @@ cmd_stop() {
   distdir="$(meta_value DISTDIR)"
   owner="$(meta_value ROOT)"
   case "$distdir" in
-    "$(shared_server_distdir clone)" | "$(shared_server_distdir live)") ;;
+    "$(shared_server_distdir live)") ;;
     *) fail "refusing to stop unexpected distdir '$distdir'" ;;
   esac
   [[ "$owner" == "$REPO_ROOT" ]] || fail "preview lease belongs to '$owner'; stop it from its owning checkout"
@@ -1150,6 +1084,6 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     status) cmd_status ;;
     warm) cmd_warm "${POSITIONAL[0]:-}" ;;
     monitor) cmd_monitor "${POSITIONAL[0]:-}" ;;
-    *) echo "usage: $0 {start|stop|status} [--clone|--live]" >&2; exit 2 ;;
+    *) echo "usage: $0 {start|stop|status}" >&2; exit 2 ;;
   esac
 fi

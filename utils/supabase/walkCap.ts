@@ -7,7 +7,7 @@ import { escapeHtml } from "@ai-matrx/kit/html-escape";
 // `<label>.localhost:3001`, and 15–26 of those hosts — 40–69 signed-in
 // sessions per 30 minutes, all admin@admin.com — were hitting production at
 // once. Arman approved: "cap concurrent agent browser walks against
-// production, default 4, the rest on the clone".
+// production, default 4".
 //
 // THE RULE. A preview host that carried a signed-in request within
 // `ops.agent_walks.activity_window_minutes` is an active walk. A signed-in
@@ -240,7 +240,6 @@ code{background:#f1f1f1;padding:1px 5px;border-radius:4px}
 <p>${active.length} agent sessions are already signed in against production (the cap is ${knobs.cap}):</p>
 <ul>${list}</ul>
 <p>Wait until one of them goes idle for ${knobs.windowMinutes} minutes, then reload this page.</p>
-<p>Or work on the clone instead — a nightly copy of production with no cap: once this server has been idle 5 minutes, <code>pnpm preview:start --clone</code> switches the one server to clone mode; then <code>pnpm dev-login</code> and open the URL it prints. If it refuses, it names the one command that starts its paired server.</p>
 <p><small>Host refused: <code>${escapeHtml(host)}</code>. Knobs: <code>${WALK_CAP_FEATURE}.${CAP_KEY}</code> and <code>${WALK_CAP_FEATURE}.${WINDOW_KEY}</code>. This check runs only in local development against the live database.</small></p>
 </body></html>`;
 }

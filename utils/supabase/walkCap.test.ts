@@ -382,7 +382,7 @@ describe("process-global idle expiry", () => {
 });
 
 describe("walkCapGate refusal page — names the way out", () => {
-  it("a refused walk is told to use the clone preview, which now exists", async () => {
+  it("a refused walk is told how to get back in, never sent to the clone", async () => {
     const response = await walkCapGate({
       host: "late.localhost:3001",
       env: { NODE_ENV: "development", NEXT_PUBLIC_SUPABASE_URL: "https://db.matrxserver.com" },
@@ -393,8 +393,8 @@ describe("walkCapGate refusal page — names the way out", () => {
     });
     expect(response?.status).toBe(503);
     const html = (await response?.text()) ?? "";
-    expect(html).toContain("pnpm preview:start --clone");
-    expect(html).toContain("pnpm dev-login");
+    expect(html).not.toMatch(/--clone/);
+    expect(html).toContain("reload this page");
     expect(html).not.toMatch(/3002/);
     expect(html).not.toMatch(/not built|waiting is the only path/);
   });

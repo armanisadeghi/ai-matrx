@@ -1,6 +1,6 @@
 /**
  * ONE dev server, ever (Arman, 2026-09-24; reaffirmed 2026-09-30 when a second "clone" server on
- * port 3002 helped stall the Mac). Its database is a MODE (clone default, --live). Three guards
+ * port 3002 helped stall the Mac). It runs on the live database (Arman, 2026-10-03). Three guards
  * enforce it, and each is proven here to still refuse a second server:
  *
  *   1. next.config.js  — `sharedDevServerRefusal` (scripts/agent-harness/shared-dev-servers.cjs)
@@ -17,7 +17,7 @@ import { join, resolve } from "node:path";
 type Other = { pid: number; why: string };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const table = require("../agent-harness/shared-dev-servers.cjs") as {
-  ONE_DEV_SERVER: { port: number; token: string; stateStem: string; defaultMode: string; distDirs: Record<"clone" | "live", string> };
+  ONE_DEV_SERVER: { port: number; token: string; stateStem: string; defaultMode: string; distDirs: Record<string, string> };
   isNextDevRoot: (command: string) => boolean;
   sharedDevServerRefusal: (input: { env: Record<string, string | undefined>; argv: string[]; others?: Other[] }) => string | null;
 };
@@ -26,16 +26,8 @@ const ROOT = resolve(__dirname, "..", "..");
 const HARNESS = resolve(ROOT, "scripts", "agent-harness");
 const HOOK = resolve(HARNESS, "matrx-preview-ports.sh");
 const LAUNCHER = resolve(ROOT, "scripts", "agent-dev-server.sh");
-const CLONE = "hykobnqyuxspbcijrodb";
 
 const LIVE_ENV = { MATRX_SHARED_PREVIEW: "1", MATRX_PREVIEW_MODE: "live", NEXT_DISTDIR: ".next-preview" };
-const CLONE_ENV = {
-  MATRX_SHARED_PREVIEW: "1",
-  MATRX_PREVIEW_MODE: "clone",
-  NEXT_DISTDIR: ".next-preview-clone",
-  MATRX_CLONE_PAIRED: CLONE,
-  NEXT_PUBLIC_SUPABASE_URL: `https://${CLONE}.supabase.co`,
-};
 const NEXT_ARGV = (port: number) => ["node", "next", "dev", "-p", String(port)];
 // The start-server child that loads next.config.js: no -p, Next has set PORT to the bound port.
 const CHILD = { argv: ["node", "next-server"] };
@@ -58,43 +50,34 @@ function decision(out: string): string | null {
 describe("guard 1 — next.config.js boots only THE one server, on 3001", () => {
   const refuse = table.sharedDevServerRefusal;
 
-  it("clone mode (paired) and live mode boot on 3001", () => {
-    expect(refuse({ env: CLONE_ENV, argv: NEXT_ARGV(3001) })).toBeNull();
+  it("the live server boots on 3001", () => {
     expect(refuse({ env: LIVE_ENV, argv: NEXT_ARGV(3001) })).toBeNull();
-    expect(refuse({ env: { ...CLONE_ENV, PORT: "3001" }, argv: CHILD.argv })).toBeNull();
+    expect(refuse({ env: { ...LIVE_ENV, PORT: "3001" }, argv: CHILD.argv })).toBeNull();
   });
 
   it("any port but 3001 is refused — on argv, on the bound PORT, or when no port is known", () => {
     for (const port of [3000, 3002, 3003, 4000]) {
       expect(refuse({ env: LIVE_ENV, argv: NEXT_ARGV(port) })).toMatch(/runs on port 3001, not/);
-      expect(refuse({ env: { ...CLONE_ENV, PORT: String(port) }, argv: CHILD.argv })).toMatch(/runs on port 3001, not/);
+      expect(refuse({ env: { ...LIVE_ENV, PORT: String(port) }, argv: CHILD.argv })).toMatch(/runs on port 3001, not/);
     }
-    expect(refuse({ env: CLONE_ENV, argv: ["next", "dev", "--port=3002"] })).toMatch(/not 3002/);
+    expect(refuse({ env: LIVE_ENV, argv: ["next", "dev", "--port=3002"] })).toMatch(/not 3002/);
     expect(refuse({ env: LIVE_ENV, argv: CHILD.argv })).toMatch(/no port given/);
     expect(refuse({ env: { ...LIVE_ENV, PORT: "3002" }, argv: NEXT_ARGV(3001) })).toMatch(/disagree/);
   });
 
   it("a SECOND concurrent server is refused even with the valid token, port and mode", () => {
     const others = [{ pid: 4242, why: "the managed preview lease" }];
-    expect(refuse({ env: CLONE_ENV, argv: NEXT_ARGV(3001), others })).toMatch(/SECOND dev server: pid 4242/);
+    expect(refuse({ env: LIVE_ENV, argv: NEXT_ARGV(3001), others })).toMatch(/SECOND dev server: pid 4242/);
     expect(refuse({ env: LIVE_ENV, argv: NEXT_ARGV(3001), others })).toMatch(/SECOND dev server/);
   });
 
   it("no token, an old second-server token, a wrong dist dir or an unknown mode is refused", () => {
     expect(refuse({ env: {}, argv: NEXT_ARGV(3001) })).toMatch(/not started by `pnpm preview:start`/);
-    expect(refuse({ env: { ...CLONE_ENV, MATRX_SHARED_PREVIEW: "clone" }, argv: NEXT_ARGV(3001) })).toMatch(/not started by/);
+    expect(refuse({ env: { ...LIVE_ENV, MATRX_SHARED_PREVIEW: "clone" }, argv: NEXT_ARGV(3001) })).toMatch(/not started by/);
     expect(refuse({ env: { ...LIVE_ENV, NEXT_DISTDIR: ".next-agent-1" }, argv: NEXT_ARGV(3001) })).toMatch(/builds into/);
     expect(refuse({ env: { ...LIVE_ENV, NEXT_DISTDIR: ".next-preview-clone" }, argv: NEXT_ARGV(3001) })).toMatch(/builds into/);
-    expect(refuse({ env: { ...LIVE_ENV, MATRX_PREVIEW_MODE: undefined }, argv: NEXT_ARGV(3001) })).toMatch(/not clone or live/);
-  });
-
-  it("an UNPAIRED clone mode is refused, and live mode never takes clone wiring", () => {
-    const { MATRX_CLONE_PAIRED: _paired, ...unpaired } = CLONE_ENV;
-    expect(refuse({ env: unpaired, argv: NEXT_ARGV(3001) })).toMatch(/UNPAIRED clone/);
-    expect(
-      refuse({ env: { ...CLONE_ENV, NEXT_PUBLIC_SUPABASE_URL: "https://db.matrxserver.com" }, argv: NEXT_ARGV(3001) }),
-    ).toMatch(/UNPAIRED clone/);
-    expect(refuse({ env: { ...LIVE_ENV, MATRX_CLONE_PAIRED: CLONE }, argv: NEXT_ARGV(3001) })).toMatch(/live mode was handed clone wiring/);
+    expect(refuse({ env: { ...LIVE_ENV, MATRX_PREVIEW_MODE: undefined }, argv: NEXT_ARGV(3001) })).toMatch(/not live/);
+    expect(refuse({ env: { ...LIVE_ENV, MATRX_PREVIEW_MODE: "clone" }, argv: NEXT_ARGV(3001) })).toMatch(/not live/);
   });
 
   it("only the argv shape of a next dev root counts as a running server", () => {
@@ -118,7 +101,9 @@ describe("guard 1 — next.config.js boots only THE one server, on 3001", () => 
     expect(sharedShell("echo $SHARED_SERVER_TOKEN")).toBe(js.token);
     expect(sharedShell("echo $SHARED_SERVER_STATE_STEM")).toBe(js.stateStem);
     expect(sharedShell("echo $SHARED_SERVER_DEFAULT_MODE")).toBe(js.defaultMode);
-    for (const mode of ["clone", "live"] as const) expect(sharedShell(`shared_server_distdir ${mode}`)).toBe(js.distDirs[mode]);
+    expect(js.defaultMode).toBe("live");
+    expect(sharedShell("shared_server_distdir live")).toBe(js.distDirs.live);
+    expect(Object.keys(js.distDirs)).toEqual(["live"]);
     // One label under .localhost — aidream's CORS admits exactly one; no per-mode host.
     expect(sharedShell("shared_server_host s1")).toBe("s1.localhost");
   });
@@ -188,18 +173,10 @@ describe("guard 3 — the launcher switches an idle server's mode and never star
     return result;
   }
 
-  it("a BUSY server in the other mode is never touched: one-line refusal naming its mode", () => {
-    const r = run("--clone", 30);
-    expect(r.alive).toBe(true);
-    expect(r.out).toMatch(/running in live mode and is in use .* use it as is \(pnpm preview:start\) or retry --clone/);
-    expect(r.out).not.toMatch(/rc=0/);
-  });
-
-  it("an IDLE server in the other mode is stopped so the requested mode can start", () => {
+  it("--clone is refused and never touches the running server", () => {
     const r = run("--clone", 6 * 60);
-    expect(r.alive).toBe(false);
-    expect(r.out).toMatch(/switched to clone mode/);
-    expect(r.out).toMatch(/rc=0/);
+    expect(r.alive).toBe(true);
+    expect(r.out).toMatch(/--clone is gone/);
   });
 
   it("the same mode, or no mode flag, never stops a running server", () => {

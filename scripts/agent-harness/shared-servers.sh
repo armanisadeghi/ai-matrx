@@ -2,8 +2,8 @@
 #
 # shared-servers.sh — THE one shared dev server, for bash. Sourcing starts nothing.
 #
-#   pnpm preview:start          port 3001, CLONE mode (default)  dist .next-preview-clone
-#   pnpm preview:start --live   port 3001, LIVE mode              dist .next-preview
+#   pnpm preview:start          port 3001, live database          dist .next-preview
+#   (Arman, 2026-10-03: test on live as admin@admin.com; the nightly copy is never a dev server)
 #
 # ONE Next.js dev server on this machine, ever (Arman, 2026-09-24; reaffirmed 2026-09-30 after a
 # second "clone" server on another port helped hold ~41 GB and ~75 Turbopack workers and stalled
@@ -17,12 +17,12 @@
 SHARED_SERVER_PORT=3001
 SHARED_SERVER_TOKEN=1
 SHARED_SERVER_STATE_STEM=shared-next-dev
-SHARED_SERVER_DEFAULT_MODE=clone
+SHARED_SERVER_DEFAULT_MODE=live
 
 # The build dir of a mode. NEXT_PUBLIC_* are inlined at compile time, so each mode compiles
 # into its own dir and a switch never serves the other database's bundles.
 shared_server_distdir() {
-  case "$1" in live) echo .next-preview ;; clone) echo .next-preview-clone ;; *) return 1 ;; esac
+  case "$1" in live) echo .next-preview ;; *) return 1 ;; esac
 }
 
 # The session's hostname. One label under .localhost: aidream's CORS admits exactly one
