@@ -65,6 +65,7 @@ const HEADER_SLOT_FILES = [
   "features/shell/components/header/PageHeaderRightPortal.tsx",
   "features/shell/components/header/RouteHeader.tsx",
   "features/shell/components/header/route-header-layout.tsx",
+  "features/shell/components/header/RouteModeNav.tsx",
   "features/shell/components/header/templates/CrumbTrailHeader.tsx",
   "features/shell/components/header/templates/EntityModeHeader.tsx",
   "features/shell/components/header/templates/RouteTreeBreadcrumbHeader.tsx",
@@ -182,6 +183,7 @@ describe("the header is not glass (glass only floats; the band is solid)", () =>
       if (/<TapTargetButton[\s>]/.test(src)) offenders.push(`${file}: raw <TapTargetButton> (glass default)`);
       if (/variant="(glass|group)"/.test(src)) offenders.push(`${file}: variant glass/group`);
       if (/data-matrx-glass(?!-plane)/.test(src)) offenders.push(`${file}: data-matrx-glass`);
+      if (/matrx-glass-(thin-border|interactive)/.test(src)) offenders.push(`${file}: glass surface class`);
       // A pre-composed *TapButton must say transparent (its default is glass).
       for (const m of src.matchAll(/<([A-Z][A-Za-z]*TapButton)\b([^>]*?)\/?>/gs)) {
         if (!/variant="transparent"/.test(m[2])) offenders.push(`${file}: <${m[1]}> without variant="transparent"`);
