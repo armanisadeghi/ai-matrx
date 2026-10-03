@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { memberOrganizationsInvalidated } from "@/features/agent-context/redux/organizationsSlice";
 import {
   acceptInvitation,
   getOrganization,
@@ -52,6 +54,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export default function AcceptInvitationPage() {
   const params = useParams();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const token = params.token as string;
 
   const [loading, setLoading] = useState(true);
@@ -202,6 +205,7 @@ export default function AcceptInvitationPage() {
       const result = await acceptInvitation(token);
 
       if (result.success && result.organization) {
+        dispatch(memberOrganizationsInvalidated());
         toast.success(`Welcome to ${result.organization.name}!`);
         router.push(`/organizations/${result.organization.id}/settings`);
       } else {

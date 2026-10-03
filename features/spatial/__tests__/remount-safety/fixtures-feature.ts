@@ -438,6 +438,8 @@ export const meetingRow = {
 } satisfies Row<"communication", "meet_meetings">;
 
 export function seedMeeting(): void {
+  // The meeting's home carries the record page's own reads (its custom-fields section).
+  seedRecordDoors();
   seed("communication.meet_meetings", [meetingRow]);
   seed("communication.meet_invitees", []);
   seedRpc("meet_meeting_occurrences", []);

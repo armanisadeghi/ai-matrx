@@ -2,83 +2,43 @@
 
 // features/meet/hooks/useMeetingById.ts
 //
-// ONE meeting by id, with its invitees and upcoming occurrences — the three
-// reads `MeetingSurfaceHost` needs (the `matrx-user/meeting` surface). The
-// read is the package repository's, exactly as the meeting's home
-// (`MeetingDetail`) loads it, and several consumers of the same meeting in one
-// tab (the five "Meeting notes" tiles of one meeting on a board) share ONE
-// read in flight.
+// ONE meeting by id, with its invitees and upcoming occurrences — the shared
+// per-meeting load (`meetingsSlice`): one read per meeting per tab, shared by
+// the meeting's home (`MeetingDetail`), a meeting tile, every "Meeting notes"
+// part of it and the meeting's agent surface (`MeetingSurfaceHost`). A view
+// that mounts, wakes or remounts renders the store and reads nothing it
+// already has; `reload` re-reads on purpose (after a write here); changes made
+// anywhere else arrive through the meeting's live channel, which this holds
+// open while mounted.
 //
-// A failed read is returned whole (`failure`), never shown as "no meeting".
+// A failed read is returned whole (`error`), never shown as "no meeting".
 
-import { useEffect, useState } from "react";
-import type { MeetingInvitee, MeetingOccurrence, MeetingRecord, MeetRepository } from "@ai-matrx/meet/react";
-import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";
+import { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { loadMeeting, selectMeetingEntry, type LoadedMeeting } from "@/features/meet/redux/meetingsSlice";
+import { useMeetingLive } from "@/features/meet/hooks/useMeetingLive";
 
-export interface LoadedMeeting {
-  meeting: MeetingRecord;
-  invitees: readonly MeetingInvitee[];
-  occurrences: readonly MeetingOccurrence[];
-}
+export type { LoadedMeeting };
 
 export type MeetingByIdState =
   | { status: "loading" }
   | { status: "ready"; loaded: LoadedMeeting }
   | { status: "failed"; error: unknown };
 
-const DAY_MS = 86_400_000;
-
-/** The read itself; exported for tests. */
-export async function loadMeetingById(repository: MeetRepository, meetingId: string): Promise<LoadedMeeting> {
-  const meeting = await repository.meeting(meetingId as MeetingRecord["id"]);
-  const [invitees, occurrences] = await Promise.all([
-    repository.invitees(meeting.id).catch(() => [] as readonly MeetingInvitee[]),
-    meeting.scheduledFor
-      ? repository.meetingOccurrences(meeting.id, {
-          from: new Date(Date.now() - DAY_MS).toISOString(),
-          to: new Date(Date.now() + 400 * DAY_MS).toISOString(),
-          limit: meeting.recurrenceRule ? 20 : 1,
-        })
-      : Promise.resolve([] as readonly MeetingOccurrence[]),
-  ]);
-  return { meeting, invitees, occurrences };
-}
-
-// Reads in flight, shared by every consumer of the same meeting; dropped once
-// settled so the next mount (or `reload`) reads fresh.
-const inFlight = new Map<string, Promise<LoadedMeeting>>();
-
-function sharedLoad(repository: MeetRepository, meetingId: string): Promise<LoadedMeeting> {
-  const existing = inFlight.get(meetingId);
-  if (existing) return existing;
-  const work = loadMeetingById(repository, meetingId).finally(() => inFlight.delete(meetingId));
-  inFlight.set(meetingId, work);
-  return work;
-}
-
 export function useMeetingById(meetingId: string | null): MeetingByIdState & { reload: () => void } {
-  const { repository } = useMeetingActions();
-  const [nonce, setNonce] = useState(0);
-  const [state, setState] = useState<{ key: string; value: MeetingByIdState } | null>(null);
-  const key = `${meetingId ?? ""}|${nonce}`;
+  const dispatch = useAppDispatch();
+  const entry = useAppSelector((state) => (meetingId ? selectMeetingEntry(state, meetingId) : undefined));
+  useMeetingLive(meetingId);
 
+  // The thunk reads only a meeting no view in this tab has read.
   useEffect(() => {
-    if (!meetingId) return undefined;
-    let live = true;
-    sharedLoad(repository, meetingId).then(
-      (loaded) => {
-        if (live) setState({ key, value: { status: "ready", loaded } });
-      },
-      (error: unknown) => {
-        if (live) setState({ key, value: { status: "failed", error } });
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [repository, meetingId, key]);
+    if (meetingId) void dispatch(loadMeeting({ meetingId }));
+  }, [dispatch, meetingId]);
 
-  const reload = () => setNonce((n) => n + 1);
-  const value: MeetingByIdState = state?.key === key ? state.value : { status: "loading" };
-  return { ...value, reload };
+  const reload = () => {
+    if (meetingId) void dispatch(loadMeeting({ meetingId, force: true }));
+  };
+  if (entry?.loaded) return { status: "ready", loaded: entry.loaded, reload };
+  if (entry && !entry.loading && entry.error !== null) return { status: "failed", error: entry.error, reload };
+  return { status: "loading", reload };
 }

@@ -75,11 +75,7 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "workflow-run": { status: "passing" },
   "workflow-run:quiet": { status: "passing" },
   "research": { status: "passing" },
-  "research:quiet": {
-    status: "failing",
-    owner: "research lane",
-    why: "wake/remount re-read the topic, its overview and its document",
-  },
+  "research:quiet": { status: "passing" },
   "project": { status: "passing" },
   "project:quiet": {
     status: "failing",

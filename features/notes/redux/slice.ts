@@ -517,7 +517,22 @@ export interface NotesSharedReadState {
   sharedError: string | null;
 }
 
-const initialState: NotesSliceState & NotesSharedReadState & {
+/**
+ * "Is this note in the knowledge base?" — the latest live
+ * `docproc.processed_documents` row for the note, read once per note per tab
+ * (`useNoteIngestStatus`). A woken or remounted note view reads it from here;
+ * a finished ingest re-reads it on purpose.
+ */
+export interface NoteIngestEntry {
+  state: "loading" | "ingested" | "not_ingested";
+  documentId: string | null;
+}
+
+export interface NotesIngestReadState {
+  ingestByNoteId: Record<string, NoteIngestEntry>;
+}
+
+const initialState: NotesSliceState & NotesSharedReadState & NotesIngestReadState & {
   // DEPRECATED — kept for backward compatibility during migration.
   // Remove in Phase 5 when old components are deleted.
   activeNoteId: string | null;
@@ -533,6 +548,7 @@ const initialState: NotesSliceState & NotesSharedReadState & {
   trashError: null,
   sharedStatus: "idle",
   sharedError: null,
+  ingestByNoteId: {},
   conflictResolutionReceipts: {},
   currentConflictReviewKeys: {},
   retainedConflictReviews: {},
@@ -1736,6 +1752,17 @@ const notesSlice = createSlice({
       }
     },
 
+    // ── Knowledge-base status (useNoteIngestStatus) ─────────────────────
+
+    noteIngestRequested(state, action: PayloadAction<{ noteId: string }>) {
+      const entry = state.ingestByNoteId[action.payload.noteId];
+      if (!entry) state.ingestByNoteId[action.payload.noteId] = { state: "loading", documentId: null };
+    },
+    noteIngestResolved(state, action: PayloadAction<{ noteId: string; documentId: string | null }>) {
+      const { noteId, documentId } = action.payload;
+      state.ingestByNoteId[noteId] = { state: documentId ? "ingested" : "not_ingested", documentId };
+    },
+
     // ── Bulk operations ─────────────────────────────────────────────────
 
     /** Clear all notes and reset state (e.g., on logout) */
@@ -1926,6 +1953,8 @@ export const {
   setFindIncludePaths,
   setFindExcludePaths,
   requestActiveMatch,
+  noteIngestRequested,
+  noteIngestResolved,
 } = notesSlice.actions;
 
 export default notesSlice.reducer;

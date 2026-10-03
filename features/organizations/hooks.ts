@@ -6,7 +6,13 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  loadMemberOrganizations,
+  memberOrganizationsInvalidated,
+  memberOrganizationsKey,
+  selectMemberOrganizations,
+} from "@/features/agent-context/redux/organizationsSlice";
 import {
   selectAccessToken,
   selectAuthReady,
@@ -25,7 +31,6 @@ import {
   InviteMemberOptions,
 } from "./types";
 import {
-  getUserOrganizations,
   getOrganization,
   getOrganizationBySlugOrId,
   createOrganization,
@@ -61,46 +66,36 @@ import { DEFAULT_ARCHIVE_FILTER } from "@ai-matrx/design-system";
 export function useUserOrganizations(
   archiveFilter: OrganizationArchiveFilter = DEFAULT_ARCHIVE_FILTER,
 ) {
+  const dispatch = useAppDispatch();
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = authReady && Boolean(userId) && Boolean(accessToken);
-  const [nonce, setNonce] = useState(0);
-  const key = canFetch ? `${userId}:${archiveFilter}:${nonce}` : null;
-  const [resolved, setResolved] = useState<{
-    key: string;
-    organizations: OrganizationWithRole[];
-    error: string | null;
-  } | null>(null);
+  // One answer per person per filter per tab, in the store: a woken or
+  // remounted screen renders it; a membership change made here (or `refresh`)
+  // re-reads it.
+  const key = canFetch && userId ? memberOrganizationsKey(userId, archiveFilter) : null;
+  const entry = useAppSelector((state) => (key ? selectMemberOrganizations(state, key) : undefined));
+  const stale = entry?.stale ?? false;
 
   useEffect(() => {
-    if (!key) return;
-    let active = true;
-    void (async () => {
-      try {
-        const organizations = await getUserOrganizations(archiveFilter);
-        if (active) setResolved({ key, organizations, error: null });
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Failed to fetch organizations";
-        if (active) setResolved({ key, organizations: [], error: message });
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [key, archiveFilter]);
+    if (!canFetch || !userId) return;
+    void dispatch(loadMemberOrganizations({ userId, archiveFilter }));
+  }, [dispatch, canFetch, userId, archiveFilter, stale]);
 
-  const current = resolved?.key === key ? resolved : null;
-  const refresh = () => setNonce((value) => value + 1);
+  const refresh = () => {
+    if (canFetch && userId) void dispatch(loadMemberOrganizations({ userId, archiveFilter, force: true }));
+  };
 
   return {
-    organizations: current?.organizations ?? [],
-    loading: key === null || current === null,
-    error: current?.error ?? null,
+    organizations: entry?.organizations ?? NO_ORGANIZATIONS,
+    loading: key === null || !entry || entry.organizations === null,
+    error: entry?.error ?? null,
     refresh,
   };
 }
+
+const NO_ORGANIZATIONS: OrganizationWithRole[] = [];
 
 /**
  * Hook to get a single organization
@@ -223,6 +218,7 @@ export function useResolvedOrganization(orgSlugOrId: string | undefined) {
  * Hook for organization CRUD operations
  */
 export function useOrganizationOperations() {
+  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -232,6 +228,7 @@ export function useOrganizationOperations() {
 
     try {
       const result = await createOrganization(options);
+      if (result.success) dispatch(memberOrganizationsInvalidated());
 
       if (!result.success) {
         setError(result.error || "Failed to create organization");
@@ -255,6 +252,7 @@ export function useOrganizationOperations() {
 
       try {
         const result = await updateOrganization(orgId, updates);
+      if (result.success) dispatch(memberOrganizationsInvalidated());
 
         if (!result.success) {
           setError(result.error || "Failed to update organization");
@@ -279,6 +277,7 @@ export function useOrganizationOperations() {
 
     try {
       const result = await deleteOrganization(orgId);
+      if (result.success) dispatch(memberOrganizationsInvalidated());
 
       if (!result.success) {
         setError(result.error || "Failed to delete organization");
@@ -355,6 +354,7 @@ export function useOrganizationMembers(orgId: string | undefined) {
  * Hook for member management operations
  */
 export function useMemberOperations(orgId: string) {
+  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { refresh: refreshMembers } = useOrganizationMembers(orgId);
@@ -366,6 +366,7 @@ export function useMemberOperations(orgId: string) {
 
       try {
         const result = await updateMemberRole(orgId, userId, newRole);
+      if (result.success) dispatch(memberOrganizationsInvalidated());
 
         if (!result.success) {
           setError(result.error || "Failed to update member role");
@@ -393,6 +394,7 @@ export function useMemberOperations(orgId: string) {
 
       try {
         const result = await removeMember(orgId, userId);
+      if (result.success) dispatch(memberOrganizationsInvalidated());
 
         if (!result.success) {
           setError(result.error || "Failed to remove member");
@@ -419,6 +421,7 @@ export function useMemberOperations(orgId: string) {
 
     try {
       const result = await leaveOrganization(orgId);
+      if (result.success) dispatch(memberOrganizationsInvalidated());
 
       if (!result.success) {
         setError(result.error || "Failed to leave organization");
@@ -646,6 +649,7 @@ export function useInvitationOperations(orgId: string) {
  * Hook to get invitations for current user
  */
 export function useUserInvitations() {
+  const dispatch = useAppDispatch();
   const [invitations, setInvitations] = useState<
     OrganizationInvitationWithOrg[]
   >([]);
@@ -680,6 +684,7 @@ export function useUserInvitations() {
 
       try {
         const result = await acceptInvitation(token);
+      if (result.success) dispatch(memberOrganizationsInvalidated());
 
         if (!result.success) {
           setError(result.error || "Failed to accept invitation");

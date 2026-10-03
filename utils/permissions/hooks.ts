@@ -9,7 +9,10 @@ import { useState, useEffect, useCallback } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
+  selectSharingAuthority,
   selectSharingStatus,
+  sharingAuthorityRequested,
+  sharingAuthorityResolved,
   sharingStatusFailed,
   sharingStatusKey,
   sharingStatusLoaded,
@@ -236,38 +239,30 @@ export function useCanAdmin(resourceType: ResourceType, resourceId: string) {
  * @param resourceId Resource ID
  */
 export function useIsOwner(resourceType: ResourceType, resourceId: string) {
-  const [isOwner, setIsOwner] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(Boolean(resourceType && resourceId));
+  const store = useAppStore();
+  const key = sharingStatusKey(resourceType, resourceId);
+  const entry = useAppSelector((state) => selectSharingAuthority(state, key));
+  const asked = Boolean(resourceType && resourceId);
 
+  // Asked once per record per tab: a mount (a woken or remounted share
+  // control) reads the answer from the store; only a record nobody in this tab
+  // has asked about yet reaches the database.
+  const known = entry !== undefined;
   useEffect(() => {
-    if (!resourceType || !resourceId) {
-      // Nothing to resolve — do NOT sit in a permanent loading state.
-      setIsOwner(false);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-
+    if (known || !asked) return;
+    // Another control of the same record may have asked a moment ago.
+    if (selectSharingAuthority(store.getState(), key)) return;
+    store.dispatch(sharingAuthorityRequested({ key }));
     void resolveSharingAuthority(resourceType, resourceId).then((result) => {
-      if (cancelled) return;
-      setIsOwner(result.isOwner);
-      setError(result.error);
-      setLoading(false);
+      store.dispatch(sharingAuthorityResolved({ key, isOwner: result.isOwner, error: result.error }));
     });
+  }, [known, asked, key]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [resourceType, resourceId]);
-
+  if (!asked) return { isOwner: false, loading: false, error: null };
   return {
-    isOwner,
-    loading,
-    error,
+    isOwner: entry?.isOwner ?? false,
+    loading: entry ? entry.loading : true,
+    error: entry?.error ?? null,
   };
 }
 

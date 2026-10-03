@@ -13,6 +13,9 @@ import { projectsDb } from "@/utils/supabase/projectsDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import type { NavOrganization } from "./hierarchySlice";
+import { getUserOrganizations } from "@/features/organizations/service";
+import type { OrganizationWithRole } from "@/features/organizations/types";
+import type { OrganizationArchiveFilter } from "@/features/organizations/service/organizationArchive";
 
 // ─── Data level system ─────────────────────────────────────────────────────
 
@@ -51,17 +54,37 @@ export interface OrgRecord {
 
 const orgsAdapter = createEntityAdapter<OrgRecord>();
 
+/**
+ * The signed-in person's organizations with their role and member count
+ * (`useUserOrganizations`), read ONCE per person per archive filter per tab,
+ * keyed `${userId}:${archiveFilter}`. A woken or remounted screen (a note's
+ * organization field, a list's scope switcher) renders this; a membership
+ * change made here marks every list `stale` and the views on screen re-read.
+ */
+export interface MemberOrganizationsEntry {
+  organizations: OrganizationWithRole[] | null;
+  loading: boolean;
+  error: string | null;
+  stale: boolean;
+}
+
 interface OrgsExtraState {
   meta: Record<string, DataLevelMeta>;
   loading: boolean;
   error: string | null;
+  memberLists: Record<string, MemberOrganizationsEntry>;
 }
 
 const initialState = orgsAdapter.getInitialState<OrgsExtraState>({
   meta: {},
   loading: false,
   error: null,
+  memberLists: {},
 });
+
+export function memberOrganizationsKey(userId: string, archiveFilter: OrganizationArchiveFilter): string {
+  return `${userId}:${archiveFilter}`;
+}
 
 // ─── Thunks ────────────────────────────────────────────────────────────────
 
@@ -111,6 +134,27 @@ export const fetchOrg = createAsyncThunk<FetchOrgResult, string>(
         role,
       } as OrgRecord,
     };
+  },
+);
+
+/** Read the person's organizations into `memberLists` (once, unless `force` or stale). */
+export const loadMemberOrganizations = createAsyncThunk<
+  { key: string; organizations: OrganizationWithRole[] },
+  { userId: string; archiveFilter: OrganizationArchiveFilter; force?: boolean },
+  { state: StateWithOrgs }
+>(
+  "organizations/loadMemberLists",
+  async ({ userId, archiveFilter }) => ({
+    key: memberOrganizationsKey(userId, archiveFilter),
+    organizations: await getUserOrganizations(archiveFilter),
+  }),
+  {
+    condition: ({ userId, archiveFilter, force }, { getState }) => {
+      const entry = getState().organizations.memberLists[memberOrganizationsKey(userId, archiveFilter)];
+      if (!entry) return true;
+      if (entry.loading) return false;
+      return Boolean(force) || entry.stale;
+    },
   },
 );
 
@@ -204,9 +248,43 @@ const organizationsSlice = createSlice({
       orgsAdapter.removeOne(state, action.payload);
       delete state.meta[action.payload];
     },
+
+    /** A membership changed here (created, joined, left, renamed, a role or member moved). */
+    memberOrganizationsInvalidated(state) {
+      for (const entry of Object.values(state.memberLists)) entry.stale = true;
+    },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(loadMemberOrganizations.pending, (state, action) => {
+        const key = memberOrganizationsKey(action.meta.arg.userId, action.meta.arg.archiveFilter);
+        const entry = state.memberLists[key];
+        if (entry) {
+          entry.loading = true;
+          entry.stale = false;
+        } else {
+          state.memberLists[key] = { organizations: null, loading: true, error: null, stale: false };
+        }
+      })
+      .addCase(loadMemberOrganizations.fulfilled, (state, action) => {
+        const entry = state.memberLists[action.payload.key];
+        state.memberLists[action.payload.key] = {
+          organizations: action.payload.organizations,
+          loading: false,
+          error: null,
+          stale: entry?.stale ?? false,
+        };
+      })
+      .addCase(loadMemberOrganizations.rejected, (state, action) => {
+        const key = memberOrganizationsKey(action.meta.arg.userId, action.meta.arg.archiveFilter);
+        const entry = state.memberLists[key];
+        state.memberLists[key] = {
+          organizations: entry?.organizations ?? null,
+          loading: false,
+          error: action.error.message ?? "Failed to fetch organizations",
+          stale: entry?.stale ?? false,
+        };
+      })
       .addCase(fetchOrg.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -236,10 +314,12 @@ const organizationsSlice = createSlice({
           id: action.payload.id,
           changes: action.payload.patch,
         });
+        for (const entry of Object.values(state.memberLists)) entry.stale = true;
       })
       .addCase(archiveOrg.fulfilled, (state, action) => {
         orgsAdapter.removeOne(state, action.payload);
         delete state.meta[action.payload];
+        for (const entry of Object.values(state.memberLists)) entry.stale = true;
       });
   },
 });
@@ -248,6 +328,7 @@ export const {
   hydrateOrgsFromContext,
   upsertOrgWithLevel,
   removeOrgFromSlice,
+  memberOrganizationsInvalidated,
 } = organizationsSlice.actions;
 
 export default organizationsSlice.reducer;
@@ -296,4 +377,12 @@ export const selectOrgBySlugOrId = createSelector(
   [selectAllOrgs, (_state: StateWithOrgs, slugOrId: string) => slugOrId],
   (orgs, slugOrId) =>
     orgs.find((o) => o.id === slugOrId || o.slug === slugOrId),
+);
+
+export const selectMemberOrganizations = createSelector(
+  [
+    (state: StateWithOrgs) => state.organizations.memberLists,
+    (_state: StateWithOrgs, key: string) => key,
+  ],
+  (lists, key): MemberOrganizationsEntry | undefined => lists[key],
 );

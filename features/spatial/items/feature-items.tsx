@@ -54,6 +54,7 @@ import { useWarRoomView } from "@/features/war-room/hooks/useWarRoomView";
 // Meeting
 import { useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
 import { MeetingHomeAndRoom } from "@/features/meet/components/MeetingHomeAndRoom";
+import { useMeetingLive } from "@/features/meet/hooks/useMeetingLive";
 import { useSpatialStore } from "../engine/react";
 import { MeetingFormDialog } from "@/features/meet/components/manage/MeetingFormDialog";
 import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";
@@ -609,6 +610,16 @@ function MeetingBody({ tileId, source, title, onSource }: ItemBodyProps) {
   );
 }
 
+/**
+ * Holds the meeting's live channel for as long as the tile is on the board, so
+ * an edit or an RSVP made elsewhere while the tile sleeps is in the store
+ * (and on screen) when it wakes.
+ */
+function MeetingKeep({ source }: { tileId: string; source: NodeSource }) {
+  useMeetingLive(entityIdOf(source));
+  return null;
+}
+
 // ─── Workflow run ────────────────────────────────────────────────────────────
 
 const runHref = (id: string) => `/workflows/runs/${encodeURIComponent(id)}`;
@@ -1010,11 +1021,15 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     defaultSize: { w: 720, h: 680 },
     matches: matchesEntity(FEATURE_ENTITY.meeting),
     Body: MeetingBody,
+    Keep: MeetingKeep,
     startNew: { label: "New meeting", Dialog: MeetingCreateDialog },
     bringIn: { label: "Meeting", Picker: MeetingPicker },
     // The meeting's home (before, during, after); "Join" in the tile enters the room.
     href: hrefFor(FEATURE_ENTITY.meeting, (id) => `/meetings/${encodeURIComponent(id)}`),
     kindLabel: "meeting",
+    // Wake and remount render the shared per-meeting load (meetingsSlice) and
+    // re-read nothing of the meeting; MeetingKeep holds its live channel.
+    sleeps: true,
   },
   {
     key: FEATURE_ENTITY.workflowRun,

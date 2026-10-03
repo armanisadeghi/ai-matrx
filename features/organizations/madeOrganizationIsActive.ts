@@ -14,6 +14,7 @@
 
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { setOrganization } from "@/lib/redux/slices/appContextSlice";
+import { memberOrganizationsInvalidated } from "@/features/agent-context/redux/organizationsSlice";
 
 export function makeCreatedOrganizationActive(org: { id: string; name?: string | null }): void {
   const store = getStoreSingleton();
@@ -23,4 +24,6 @@ export function makeCreatedOrganizationActive(org: { id: string; name?: string |
     return;
   }
   store.dispatch(setOrganization({ id: org.id, name: org.name ?? null }));
+  // Her organization lists (kept per tab, `useUserOrganizations`) now include it.
+  store.dispatch(memberOrganizationsInvalidated());
 }

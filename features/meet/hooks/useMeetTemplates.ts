@@ -8,17 +8,20 @@
 // `platform.knob_resolve`, written with `platform.knob_override_set` through the
 // scoped-config service. Needs an active organization (a user rung lives inside
 // one); without one there are no templates to show and nothing to save into.
+// The lists live in the store (meetingsSlice `templatesByKey`), read once per
+// organization and person per tab.
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/utils/supabase/client";
+import { useEffect } from "react";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { knobRefusalSentence, setKnobOverride } from "@/lib/scoped-config/service";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  fetchKnobWriteDoor,
-  knobRefusalSentence,
-  setKnobOverride,
-} from "@/lib/scoped-config/service";
+  loadMeetTemplates,
+  meetTemplatesKey,
+  meetTemplatesWritten,
+  selectMeetTemplates,
+} from "@/features/meet/redux/meetingsSlice";
 import {
-  parseTemplateList,
   withTemplate,
   withoutTemplate,
   type MeetingTemplate,
@@ -39,48 +42,27 @@ export interface MeetTemplates {
   remove(template: ScopedTemplate): Promise<void>;
 }
 
+const NO_TEMPLATES: MeetingTemplate[] = [];
+
 export function useMeetTemplates(
   organizationId: string | null,
   userId: string | null,
 ): MeetTemplates {
-  const [lists, setLists] = useState<Record<TemplateScope, MeetingTemplate[]>>({
-    organization: [],
-    personal: [],
-  });
-  const [loaded, setLoaded] = useState(false);
-  const [mayWriteOrganization, setMayWriteOrganization] = useState(false);
+  const dispatch = useAppDispatch();
+  // Read once per organization and person per tab (meetingsSlice): a woken or
+  // remounted meeting home renders the store.
+  const key = organizationId !== null && userId !== null ? meetTemplatesKey(organizationId, userId) : null;
+  const entry = useAppSelector((state) => (key ? selectMeetTemplates(state, key) : undefined));
 
   useEffect(() => {
-    if (organizationId === null || userId === null) return undefined;
-    let live = true;
-    const read = (key: string, forUser: boolean) =>
-      supabase
-        .schema("platform")
-        .rpc("knob_resolve", {
-          p_feature: "meet",
-          p_key: key,
-          p_organization_id: organizationId,
-          // The organization list is read WITHOUT the person, so a personal
-          // override of the same key could never shadow it.
-          p_user_id: (forUser ? userId : null) as string,
-        })
-        .then(({ data, error }) => (error ? [] : parseTemplateList(data)));
-    void Promise.all([
-      read(KEY.organization, false),
-      read(KEY.personal, true),
-    ]).then(([organization, personal]) => {
-      if (!live) return;
-      setLists({ organization, personal });
-      setLoaded(true);
-    });
-    void fetchKnobWriteDoor({ fullKey: "meet.templates", organizationId })
-      // An unknown answer (null) is not permission.
-      .then((door) => live && setMayWriteOrganization(door.mayWrite === true))
-      .catch(() => live && setMayWriteOrganization(false));
-    return () => {
-      live = false;
-    };
-  }, [organizationId, userId]);
+    if (organizationId === null || userId === null) return;
+    void dispatch(loadMeetTemplates({ organizationId, userId }));
+  }, [dispatch, organizationId, userId]);
+
+  const lists: Record<TemplateScope, MeetingTemplate[]> = {
+    organization: entry?.organization ?? NO_TEMPLATES,
+    personal: entry?.personal ?? NO_TEMPLATES,
+  };
 
   const write = async (scope: TemplateScope, next: MeetingTemplate[]) => {
     if (userId === null) throw new Error("Sign in to save templates.");
@@ -96,12 +78,12 @@ export function useMeetTemplates(
       value: next,
     });
     if (!result.ok) throw new Error(knobRefusalSentence(result));
-    setLists((current) => ({ ...current, [scope]: next }));
+    dispatch(meetTemplatesWritten({ key: meetTemplatesKey(orgId, userId), scope, templates: next }));
   };
 
   return {
-    loaded,
-    mayWriteOrganization,
+    loaded: entry?.loaded ?? false,
+    mayWriteOrganization: entry?.mayWriteOrganization ?? false,
     templates: [
       ...lists.personal.map((t) => ({ ...t, scope: "personal" as const })),
       ...lists.organization.map((t) => ({
