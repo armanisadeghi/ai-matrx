@@ -40,6 +40,6 @@ it("sets the route view before the menu chunk arrives", () => {
   const root = createRoot(host);
   act(() => root.render(<Slot />));
   expect(sheet.dataset.sidebarView).toBe("route");
-  expect(host.querySelector("button")?.getAttribute("aria-label")).toBe("Switch to Main Menu");
+  expect(host.querySelector("button")?.getAttribute("aria-label")).toBe("Back to all areas");
   act(() => root.unmount());
 });

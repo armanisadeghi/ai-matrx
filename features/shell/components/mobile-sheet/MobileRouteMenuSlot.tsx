@@ -156,8 +156,12 @@ export default function MobileRouteMenuSlot() {
   // Constant swap glyph in BOTH views — see RouteMenuSlot for rationale. The
   // control reads identically in either menu so it's clearly one reversible
   // switch; only the destination label flips.
-  const switchIconName = "ArrowLeftRight";
-  const switchLabel = currentView === "route" ? "Main Menu" : match.label;
+  // THE PHONE'S HALF OF THE DOMAIN PANEL: inside an area the drawer opens on
+  // that area's own menu, with one step back to every area — the drill-in the
+  // rest of the drawer uses, never a sideways "switch".
+  const inArea = currentView === "route";
+  const switchIconName = inArea ? "ChevronLeft" : "ChevronRight";
+  const switchLabel = inArea ? "All areas" : match.label;
 
   return (
     <>
@@ -168,7 +172,7 @@ export default function MobileRouteMenuSlot() {
         data-visible={switchVisible ? "true" : undefined}
         onClick={handleSwitch}
         disabled={loading}
-        aria-label={`Switch to ${switchLabel}`}
+        aria-label={inArea ? "Back to all areas" : `Open the ${match.label} menu`}
       >
         <span className="shell-nav-icon">
           {loading ? (
