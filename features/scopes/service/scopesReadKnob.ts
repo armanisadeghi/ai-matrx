@@ -15,9 +15,10 @@
 // Why a knob and not a build flag: the store path has to be seen side by side with the old one — by
 // one person (test@test.com, admin@admin.com) or one organization — on the shared localhost and on
 // production, with no rebuild for everyone (the memory rule: no redirect until validated, old and
-// new side by side, one flip later). An override is written through the admin door
-// (Administration → Users & Access → Limits & Knobs → this knob → add an override for a person or an
-// organization), never by SQL. The retired env flag `NEXT_PUBLIC_SCOPES_READ_FROM_STORE` decides
+// new side by side, one flip later). An override is written through a settings door, never by SQL:
+// the person's own Settings → Personal configuration (user rung, in the organization chosen there),
+// an organization's Configuration page (organization rung), or Administration → Users & Access →
+// Limits & Knobs (a platform admin, any rung). The retired env flag `NEXT_PUBLIC_SCOPES_READ_FROM_STORE` decides
 // nothing any more.
 //
 // Decided ONCE PER PAGE LOAD (the knob's `propagation` is `next_load`): the first scope read asks,

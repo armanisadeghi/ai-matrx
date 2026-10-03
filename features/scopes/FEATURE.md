@@ -421,8 +421,8 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   flag `NEXT_PUBLIC_SCOPES_READ_FROM_STORE` is gone; `await scopesReadFromStore()` resolves
   `custom.scope_readers_read_the_store` (now `overridable_by {organization,user}`) for the signed-in person in their
   active organization through `platform.knob_snapshot`, once per page load; unanswerable = old path + a console
-  warning. An override for one person or one organization is added at Administration → Users & Access → Limits &
-  Knobs. The server's two one-row readers use `scopesReadKnob.server.ts` (platform rung: the server never knows the
+  warning. An override is set at Settings → Personal configuration (a person, in the organization chosen there),
+  the organization's Configuration page, or Administration → Users & Access → Limits & Knobs. The server's two one-row readers use `scopesReadKnob.server.ts` (platform rung: the server never knows the
   active organization). Reference chips read neither table until the page has decided. Guard:
   `service/__tests__/the-read-switch-is-the-platform-knob-for-the-signed-in-person.test.ts`.
 - 2026-09-29 — **The store read path is behind a switch, OFF** (lane SCOPES-WEB-REVERT). The SCOPES-READS-WEB read
