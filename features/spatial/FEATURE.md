@@ -391,6 +391,7 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-10-03 — Chat, task, research and project pass the core remount law with no waiver: what each tile shows is a store read kept in Redux by record and read once (`lib/redux/store-reads/useStoreRead.ts`), and the project's half-typed quick-add task is a draft in the store by project. research:quiet is green; chat:quiet (the @ai-matrx/associations conversation-files hook), task:quiet and project:quiet (EntityCustomFields) stay red with their owners named in the ledger. Browser (clone, admin's Workspace): sleep→wake and remove+Undo on all four read none of their records; the quick-add draft survives both.
 - 2026-10-03 — The board's document item sleeps. A document is one working copy per tab (lib/working-copy, kind udt_document), kept warm after its last view; a wake or a removed-and-undone tile reads and writes nothing (remount harness udt_document + :quiet green; browser: slept, woke with its text, zero requests).
 - 2026-10-03 — Table and record tiles read nothing on wake or Undo. The record store's data layer
   (`@ai-matrx/records` 0.65.0) owns every answer and the realtime subscription; the tiles' `Keep`
