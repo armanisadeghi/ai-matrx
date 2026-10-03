@@ -121,10 +121,14 @@ export function ArtifactRender({
   // the bridge output, identical to the live stream. A JSON-STRING kind value
   // (a row that missed the structured write) reads as its object
   // (`storedKindValue`); no-ops for other strings, non-kind objects, and
-  // callers that already supplied serverData.
+  // callers that already supplied serverData. `raw` is read too: surfaces that
+  // hand the payload as text (ArtifactBlock in a note preview) carry a
+  // `{"__kind":…}` body there, and must render exactly like chat.
   const structuredServerData =
     props.serverData == null
-      ? kindServerDataFromStoredValue(storedKindValue(props.data))
+      ? kindServerDataFromStoredValue(
+          storedKindValue(props.data ?? props.raw),
+        )
       : null;
   const finalProps = structuredServerData
     ? { ...props, serverData: structuredServerData }
