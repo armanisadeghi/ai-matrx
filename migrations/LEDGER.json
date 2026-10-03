@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T00:21:43.764Z",
+  "generated_at": "2026-10-03T00:23:21.660Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4495,6 +4495,12 @@
       "filename": "reversible_a_an_archive_acts_at_once_and_offers_undo.sql",
       "checksum": "69f2766d38706168915bf9e9d02293d7e53927ee5322a0bd19fbb68d544bda3a",
       "applied_at": "2026-10-02 19:07:34.366119+00"
+    },
+    "migrations/campaign/reversible_b_what_is_built_on_a_table_goes_and_comes_back_with_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "reversible_b_what_is_built_on_a_table_goes_and_comes_back_with_it.sql",
+      "checksum": "366e9b53977c016245a1d301a6f79795f807bd8612f43d72211344c67d1f1ff9",
+      "applied_at": "2026-10-03 00:23:19.979463+00"
     },
     "migrations/campaign/rls_reference_convert_catalogues.sql": {
       "source": "matrx-frontend",
