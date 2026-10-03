@@ -68,6 +68,7 @@ import {
 import { answerForRecent, isTestOrganization, recentlyChanged, withoutTestOrganizations } from "./recent";
 import { MakeMount, NewTableBody, SAVED_WHERE_CHOSEN, SavesTo } from "./MakeMount";
 import { TemplateGallerySection } from "./gallery/TemplateGallery";
+import { DescribeBox } from "./describe/DescribeBox";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Two reads across every organization: Recent (the data home's one call) and step 1's tables.
@@ -199,6 +200,7 @@ export default function MakeHome() {
               </h1>
               <SavesTo />
             </div>
+            <DescribeBox />
             <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3" data-make-tiles="">
               {MAKE_TILES.map((tile) => (
                 <li key={tile.id} className="min-w-0">
