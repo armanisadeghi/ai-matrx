@@ -7,6 +7,12 @@ jest.mock("../../../../../host/db", () => ({
   },
 }));
 
+// A signed-in person: the fetch's sign-in gate reads the browser session, which
+// this suite has no host for. Everything else is real.
+jest.mock("../../../../../host/identity", () => ({
+  ...jest.requireActual("../../../../../host/identity"),
+  isSignedOutVisitor: async () => false,
+}));
 jest.mock("uuid", () => ({ v4: () => "unused-generated-id" }));
 
 import { configureStore } from "@reduxjs/toolkit";

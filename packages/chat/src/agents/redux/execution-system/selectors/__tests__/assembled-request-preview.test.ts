@@ -12,9 +12,11 @@ jest.mock("uuid", () => ({
 }));
 
 import { makeSelectAssembledRequest } from "../aggregate.selectors";
+import agentDefinitionReducer from "../../../agent-definition/slice";
 import appContextReducer from "@host/lib/redux/slices/appContextSlice";
 import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
 import type { DirectiveApplyPolicy } from "../../../../../host/prefs";
+import { DEFAULT_CHAT_PREFERENCES } from "../../../../../host/defaults/prefs";
 import type { ChatRootState } from "../../../../../store/root-state";
 
 const CONVERSATION_ID = "conversation-1";
@@ -53,10 +55,12 @@ function makeState(
     instanceModelOverrides: { byConversationId: {} },
     instanceContext: { byConversationId: {} },
     instanceClientTools: { byConversationId: {} },
+    agentDefinition: agentDefinitionReducer(undefined, { type: "@@INIT" }),
     appContext: appContextReducer(undefined, { type: "@@INIT" }),
     adminPreferences: adminPreferencesReducer(undefined, { type: "@@INIT" }),
-    userPreferences: {
-      assistant: { directiveApplyPolicy },
+    // The person's preferences live in the package's own host slice (P8).
+    chatHost: {
+      preferences: { ...DEFAULT_CHAT_PREFERENCES, directiveApplyPolicy },
     },
   } as unknown as ChatRootState;
 }

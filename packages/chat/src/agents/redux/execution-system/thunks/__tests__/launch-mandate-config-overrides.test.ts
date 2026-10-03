@@ -21,6 +21,13 @@
 
 // Stub `uuid` — its v13 ESM build trips Jest's CommonJS loader.
 let __uuidCounter = 0;
+// A signed-in person: the launch's sign-in gate (isSignedOutVisitor) reads the
+// browser session, which this suite has no host for. Everything else is real.
+jest.mock("../../../../../host/identity", () => ({
+  ...jest.requireActual("../../../../../host/identity"),
+  isSignedOutVisitor: async () => false,
+}));
+
 jest.mock("uuid", () => ({
   v4: () => `uuid-stub-${++__uuidCounter}`,
 }));

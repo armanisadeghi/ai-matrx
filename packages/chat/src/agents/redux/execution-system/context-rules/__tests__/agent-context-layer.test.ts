@@ -40,7 +40,9 @@ jest.mock("../../../../../host/identity", () => {
   const standIns: Record<string, unknown> = {
     ...(() => ({ requireUserId: () => "user-1" }))(),
   };
-  const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
+  // Signed in: the agent fetch's gate (isSignedOutVisitor) reads the browser session this suite has no host for.
+  standIns.isSignedOutVisitor = async () => false;
+  const moved = ["isSignedOutVisitor","selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
   return {
     ...jest.requireActual("../../../../../host/identity"),
     ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
