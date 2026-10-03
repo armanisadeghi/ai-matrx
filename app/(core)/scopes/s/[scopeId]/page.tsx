@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { contextDb } from "@/utils/supabase/contextDb";
-import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
+import { scopesReadFromStoreOnServer } from "@/features/scopes/service/scopesReadKnob.server";
 import { oldTypeSlug, type StoreScopeRow } from "@/features/scopes/service/storeScopeAdapter";
 import { scopeHref, scopeSeg } from "@/features/scopes/lib/scopeRoutes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -55,8 +55,8 @@ export default async function ScopeShortLink({
   // The scope, read from the record store where it lives (lane SCOPES-READS-WEB): the store's
   // `custom.context_scopes` door finds its organization from the object itself and decides on the
   // one ladder — a scope this person may not open is absent, which is a 404 here, as before.
-  // READ SWITCH OFF (the default, lane SCOPES-WEB-REVERT): the context tables, as before.
-  if (!scopesReadFromStore()) {
+  // READ SWITCH OFF (knob custom.scope_readers_read_the_store, lane SCOPES-WEB-REVERT): the context tables, as before.
+  if (!(await scopesReadFromStoreOnServer())) {
     const { data, error } = await contextDb(supabase)
       .from("scopes")
       .select("id, slug, organization_id, scope_type_id")

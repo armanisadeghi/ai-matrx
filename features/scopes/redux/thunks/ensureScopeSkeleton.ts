@@ -36,7 +36,7 @@ const searchInFlight = new Map<string, Promise<void>>();
 export function ensureScopeSkeleton(opts: { refresh?: boolean } = {}): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     if (!getUserId()) return;
-    if (!scopesReadFromStore()) {
+    if (!(await scopesReadFromStore())) {
       await dispatch(ensureScopeTree({ refresh: opts.refresh }));
       return;
     }
@@ -81,7 +81,7 @@ export function ensureTypeScopes(
 ): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     if (!getUserId() || !scopeTypeId) return;
-    if (!scopesReadFromStore()) {
+    if (!(await scopesReadFromStore())) {
       await dispatch(ensureScopeTree());
       return;
     }
@@ -131,7 +131,7 @@ export function searchScopes(query: string, limit = 100): AppThunk<Promise<void>
   return async (dispatch, getState) => {
     const key = scopeSearchKey(query);
     if (!getUserId() || key === "") return;
-    if (!scopesReadFromStore() || getState().scopesTree.treeStatus === "ready") return;
+    if (!(await scopesReadFromStore()) || getState().scopesTree.treeStatus === "ready") return;
     const prev = getState().scopesTree.scopeSearch[key];
     if (prev?.status === "ready") return;
     const pending = searchInFlight.get(key);

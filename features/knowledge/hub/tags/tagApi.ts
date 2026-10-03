@@ -13,8 +13,8 @@
  *                                   per organization (a `#tag` chip filters by
  *                                   all of them)
  *
- * Tag scopes are read by the scope read switch (`scopesReadFromStore()`, lane
- * SCOPES-WEB-REVERT). OFF (default): the context tables directly, under RLS, with a
+ * Tag scopes are read by the scope read switch (`scopesReadFromStore()`, the platform knob
+ * `custom.scope_readers_read_the_store`). OFF: the context tables directly, under RLS, with a
  * declared scope (my organizations). ON: the RECORD STORE's scope doors (lane
  * SCOPES-READS-WEB) — `custom.context_tree` for my organizations' tags,
  * `custom.context_scopes` for tags named by id.
@@ -23,7 +23,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { readScopeTree, readScopesById } from "@/features/scopes/service/storeScopeReads";
-// eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when scopes/read_from_store flips on
+// eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
 import { contextDb } from "@/utils/supabase/contextDb";
 import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import { getUserOrganizations } from "@/features/organizations/service";
@@ -119,7 +119,7 @@ async function filedCounts(ids: string[]): Promise<Map<string, number>> {
 async function tagTypeIds(): Promise<string[]> {
   const orgIds = (await getUserOrganizations()).map((o) => o.id);
   if (!orgIds.length) return [];
-  // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when scopes/read_from_store flips on
+  // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
   const { data, error } = await contextDb(supabase)
     .from("scope_types")
     .select("id")
@@ -133,14 +133,14 @@ async function tagTypeIds(): Promise<string[]> {
 /** Every tag in my organizations, most-used first. */
 export async function listTags(): Promise<HubTag[]> {
   let rows: ScopeRow[];
-  if (scopesReadFromStore()) {
+  if (await scopesReadFromStore()) {
     rows = await myTagScopes();
   } else {
     const types = await tagTypeIds();
     if (!types.length) return [];
     const scopes = await readAllRows(
       ({ from, to }) =>
-        // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when scopes/read_from_store flips on
+        // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
         contextDb(supabase)
           .from("scopes")
           .select("id, name, slug, organization_id", { count: "exact" })
@@ -163,11 +163,11 @@ export async function findTagsByName(name: string): Promise<HubTag[]> {
   const clean = normalizeTagName(name);
   if (!clean) return [];
   const slug = tagSlug(clean);
-  if (!scopesReadFromStore()) {
+  if (!(await scopesReadFromStore())) {
     const types = await tagTypeIds();
     if (!types.length) return [];
     const base = () =>
-      // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when scopes/read_from_store flips on
+      // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
       contextDb(supabase)
         .from("scopes")
         .select("id, name, slug, organization_id")
@@ -212,10 +212,10 @@ export async function listItemTags(entityToken: string, entityId: string): Promi
   if (error) throw new Error(refusalMessage(error, "Reading its tags"));
   const ids = ((edges ?? []) as { target_id: string }[]).map((e) => e.target_id);
   if (!ids.length) return [];
-  if (!scopesReadFromStore()) {
+  if (!(await scopesReadFromStore())) {
     const types = await tagTypeIds();
     if (!types.length) return [];
-    // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when scopes/read_from_store flips on
+    // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT): the pre-store read, verbatim; deleted when custom.scope_readers_read_the_store flips on for everyone
     const { data, error: e2 } = await contextDb(supabase)
       .from("scopes")
       .select("id, name, slug, organization_id")

@@ -5,7 +5,7 @@
  * THE STORE READ PATH EQUALS THE OLD PATH, READER BY READER, SEAT BY SEAT — ON THE DEV CLONE
  * (lane SCOPES-READ-SWITCH-VALIDATE, 2026-09-30).
  *
- * The web's scope reads have two paths behind `scopesReadFromStore()` (knob `scopes/read_from_store`):
+ * The web's scope reads have two paths behind `scopesReadFromStore()` (the knob `custom.scope_readers_read_the_store`):
  * the `context.*` tables (OFF, today) and the record store's `custom.context_*` doors (ON). Before
  * anybody flips it, every reader every scope screen calls must hand back the same thing on both
  * paths from the person's own seat. This suite signs in on the CLONE (never production) as

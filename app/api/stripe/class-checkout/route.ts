@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
+import { scopesReadFromStoreOnServer } from "@/features/scopes/service/scopesReadKnob.server";
 import type { Json } from "@/types/database.types";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { ensureStripeCustomer } from "@/features/entitlements/stripe/sync";
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       deleted_at: string | null;
     };
     let scope: ClassScope | null;
-    if (scopesReadFromStore()) {
+    if (await scopesReadFromStoreOnServer()) {
       const { data: found, error: classError } = await (admin as unknown as SupabaseClient)
         .schema("custom")
         .rpc("context_class_for_checkout", { p_scope_id: body.classId });

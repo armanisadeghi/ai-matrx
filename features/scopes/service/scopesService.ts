@@ -3,7 +3,9 @@
 // THE SOLE CHOKEPOINT for the scope system from frontend code.
 //
 // TWO READ PATHS, ONE SWITCH (lane SCOPES-WEB-REVERT, 2026-09-29). The switch is
-// `scopesReadFromStore()` (knob `scopes/read_from_store`, `scopesReadKnob.ts`), OFF by default.
+// `await scopesReadFromStore()` (`scopesReadKnob.ts`): the platform knob
+// `custom.scope_readers_read_the_store` for the signed-in person, decided once per page load; OFF
+// at the platform rung, ON for a person or organization given an override.
 //
 //   - OFF (today): every read below reads the `context.*` tables directly, exactly as before lane
 //     SCOPES-READS-WEB (commit 3ed36176d1). This is the path every screen runs.
@@ -227,7 +229,7 @@ export const scopesService = {
       // or write (the list-change engine's `getCompleteTable` / `bulkWrite`) reaches it.
       // Where the scope lives: from the scope itself (the store's door when the read switch is on).
       let organizationId: string | undefined;
-      if (scopesReadFromStore()) {
+      if (await scopesReadFromStore()) {
         const scopeRes = await readScopesById([scopeId]);
         if (!scopeRes.ok) return scopeRes;
         organizationId = scopeRes.data[0]?.organization_id;
@@ -269,7 +271,7 @@ export const scopesService = {
     // and the scope types WITHOUT their scopes (`scopes: []`) — the first paint. The scopes come per
     // type (`readTypeScopesPage`) or with the whole tree later. Switch OFF: the old read is one fast
     // answer, so the skeleton IS the whole tree there.
-    const skeleton = opts.shape === "skeleton" && scopesReadFromStore();
+    const skeleton = opts.shape === "skeleton" && (await scopesReadFromStore());
     try {
       requireUserId();
 
@@ -316,7 +318,7 @@ export const scopesService = {
 
       // READ SWITCH OFF (the default): the scope types and scopes come from the context tables,
       // in parallel with the organizations and projects, exactly as before lane SCOPES-READS-WEB.
-      const oldTypesP = scopesReadFromStore() ? null : bootTreeTypesFromContextTables(orgIds);
+      const oldTypesP = (await scopesReadFromStore()) ? null : bootTreeTypesFromContextTables(orgIds);
 
       // VIEW LAW: org-scoped — restricted to orgIds (see orgsP above).
       const projectsP = projectsDb(supabase)
@@ -475,7 +477,7 @@ export const scopesService = {
       // Read switch OFF (default): the context tables, whose platform-admin policies decide.
       const [orgRes, treeRes] = await Promise.all([
         orgP,
-        scopesReadFromStore()
+        (await scopesReadFromStore())
           ? readScopeTree([organizationId]).then((r) => (isScopesRpcErr(r) ? r : ok(r.data.types)))
           : adminLaneTypesFromContextTables(organizationId),
       ]);
@@ -544,8 +546,9 @@ export const scopesService = {
       requireUserId();
       // VIEW LAW: system context items are intentionally global public facts with no owner or scope dimension.
       // Read through the store's door (reference data that stays in place; lane SCOPES-READS-WEB).
+      const fromStore = await scopesReadFromStore();
       const { data: answer, error } = await runWithSessionRetry(() =>
-        scopesReadFromStore()
+        fromStore
           ? contextDoorQuery("context_system_items")
           : contextDb(supabase)
               .from("system_context_item")
@@ -689,7 +692,7 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ items: ContextItemRow[] }>> {
     try {
       requireUserId();
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         const { data, error } = await contextDb(supabase)
           .from("context_items")
           .select("*")
@@ -716,7 +719,7 @@ export const scopesService = {
     try {
       requireUserId();
       if (scopeTypeIds.length === 0) return ok({ items: [] });
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         // Every item of every listed type, however many (readAllRowsIn: batched ids, whole reads).
         const items = await readAllRowsIn(
           scopeTypeIds,
@@ -757,7 +760,7 @@ export const scopesService = {
       // IN BATCHES, EACH READ WHOLE (lane HANDOVER, 2026-09-27; lane SCOPES-READS-WEB): the store's
       // values door answers at most 200 scopes a call, so `readContextValues` asks 100 at a time
       // (in the request body — no address to overflow) and returns every current value.
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         // `readAllRowsIn` asks 100 scopes at a time, each read whole.
         const values = await readAllRowsIn(
           scopeIds,
@@ -795,7 +798,7 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ values: ContextItemValue[] }>> {
     try {
       requireUserId();
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         const { data, error } = await contextDb(supabase)
           .from("context_item_values")
           .select(
@@ -833,7 +836,7 @@ export const scopesService = {
   > {
     try {
       requireUserId();
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         const { data, error } = await contextDb(supabase)
           .from("scope_types")
           .select("id, label_singular, label_plural, slug, parent_type_id, sort_order")
@@ -874,7 +877,7 @@ export const scopesService = {
   > {
     try {
       requireUserId();
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         const { data, error } = await contextDb(supabase)
           .from("scopes")
           .select("id, name, parent_scope_id, scope_type_id")
@@ -913,7 +916,7 @@ export const scopesService = {
   > {
     try {
       requireUserId();
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         const { data, error } = await contextDb(supabase)
           .from("scopes")
           .select("id, name, organization_id, scope_type_id")
@@ -961,7 +964,7 @@ export const scopesService = {
   > {
     try {
       requireUserId();
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         const ctx = contextDb(supabase);
         const [valueRes, scopeRes, itemRes] = await Promise.all([
           ctx
@@ -1029,7 +1032,7 @@ export const scopesService = {
       requireUserId();
 
       // Read switch OFF (default): the context tables, exactly as before lane SCOPES-READS-WEB.
-      if (!scopesReadFromStore()) return await resolveSuggestionTargetFromContextTables(args);
+      if (!(await scopesReadFromStore())) return await resolveSuggestionTargetFromContextTables(args);
 
       // The scope, its type, its items and their current values — from the store (lane SCOPES-READS-WEB).
       const scopeRes = await readScopesById([args.scopeId]);
@@ -1224,7 +1227,7 @@ export const scopesService = {
       // Read through the store's own templates door (reference data; lane SCOPES-READS-WEB). The door
       // answers the ACTIVE templates — the only ones any caller asks for (no caller passes false today).
       // Read switch OFF (default): the context schema's templates tables, as before.
-      const res = scopesReadFromStore()
+      const res = (await scopesReadFromStore())
         ? await callContextDoor<StoreTemplateRow[]>("context_templates")
         : await templatesFromContextTables(activeOnly);
       if (!res.ok) return res;
@@ -1309,7 +1312,7 @@ export const scopesService = {
       requireUserId();
       const wanted = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
       if (wanted.length === 0) return ok([]);
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         const { data, error } = await contextDb(supabase)
           .from("scopes")
           .select("id, name, scope_type:scope_types(label_singular)")
@@ -1541,7 +1544,7 @@ export const scopesService = {
       // The org of the first assigned scope (scopes carry organization_id); from the store's
       // door when the read switch is on.
       let orgId: string | null;
-      if (scopesReadFromStore()) {
+      if (await scopesReadFromStore()) {
         const scopeRes = await readScopesById([scopeIds[0]!]);
         if (!scopeRes.ok) return scopeRes;
         orgId = scopeRes.data[0]?.organization_id ?? null;
@@ -1666,7 +1669,7 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ types: ArchivedScopeTypeRow[] }>> {
     try {
       requireUserId();
-      if (!scopesReadFromStore()) {
+      if (!(await scopesReadFromStore())) {
         const { data, error } = await contextDb(supabase)
           .from("scope_types")
           .select(
@@ -2021,7 +2024,7 @@ async function fetchScopeDisplays(
   scopeIds: string[],
 ): Promise<ScopesRpcResult<ScopeWithType[]>> {
   if (scopeIds.length === 0) return ok([]);
-  if (!scopesReadFromStore()) {
+  if (!(await scopesReadFromStore())) {
     // EVERY ROW, HOWEVER MANY (lane HANDOVER, 2026-09-27): read by id in batches, each read whole.
     let data: unknown[];
     try {

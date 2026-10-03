@@ -23,7 +23,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
+import { peekScopesReadFromStore, scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import { useEffect, useRef, useState } from "react";
 import { noteRecordChanged, recordRevision, useRecordRevision } from "@ai-matrx/content-ir-react";
 
@@ -468,15 +468,15 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     bodyFields: ["description"],
   }),
 
-  // The scope read switch (lane SCOPES-WEB-REVERT): OFF (default) reads the context tables, as
-  // before lane SCOPES-READS-WEB; ON resolves through the record store.
-  scope_type: scopesReadFromStore()
-    ? createStoreRecordResolver({
+  // The scope read switch (knob custom.scope_readers_read_the_store, `scopesReadKnob.ts`): off reads
+  // the context tables, as before lane SCOPES-READS-WEB; on resolves through the record store.
+  scope_type: scopeReadSwitched(
+    createStoreRecordResolver({
         openItemType: "scope_type",
         titleFields: ["label_singular", "label_plural", "name"],
         bodyFields: ["description"],
-      })
-    : createRecordResolver({
+      }),
+    createRecordResolver({
         openItemType: "scope_type",
         schema: "context",
         table: "scope_types",
@@ -484,13 +484,14 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         titleFields: ["label_singular", "label_plural"],
         bodyFields: ["description"],
       }),
-  scope: scopesReadFromStore()
-    ? createStoreRecordResolver({
+  ),
+  scope: scopeReadSwitched(
+    createStoreRecordResolver({
         openItemType: "scope",
         titleFields: ["name"],
         bodyFields: ["description", "scope_description"],
-      })
-    : createRecordResolver({
+      }),
+    createRecordResolver({
         openItemType: "scope",
         schema: "context",
         table: "scopes",
@@ -498,13 +499,14 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         titleFields: ["name"],
         bodyFields: ["description"],
       }),
-  context_item: scopesReadFromStore()
-    ? createStoreRecordResolver({
+  ),
+  context_item: scopeReadSwitched(
+    createStoreRecordResolver({
         openItemType: "context_item",
         titleFields: ["label", "key"],
         bodyFields: ["description"],
-      })
-    : createRecordResolver({
+      }),
+    createRecordResolver({
         openItemType: "context_item",
         schema: "context",
         table: "context_items",
@@ -512,6 +514,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         titleFields: ["display_name"],
         bodyFields: ["description"],
       }),
+  ),
 
   /** Current value at scope × context_item (the cell agents care about). */
   context_value: {
@@ -829,6 +832,24 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   },
 };
 
+/**
+ * ONE SCOPE NOUN, TWO READERS, ONE ANSWER PER PAGE (lane 9, builder E). The value read awaits the
+ * scope read switch; the door's table (sync) is the old one only once the page has decided "old" —
+ * before the decision it names no table, so nothing reads `context.*` on a page that reads the store.
+ */
+function scopeReadSwitched(store: ReferenceResolver, old: ReferenceResolver): ReferenceResolver {
+  return {
+    openItemType: old.openItemType ?? store.openItemType,
+    get opensTable() {
+      const fromStore = peekScopesReadFromStore();
+      return fromStore === false ? old.opensTable : fromStore === true ? store.opensTable : undefined;
+    },
+    openId: (ref) => old.openId(ref),
+    resolveValue: async (supabase, ref) =>
+      (await scopesReadFromStore()) ? store.resolveValue(supabase, ref) : old.resolveValue(supabase, ref),
+  };
+}
+
 // ── Catalog-derived generic resolver ─────────────────────────────────────────
 // The server's computed directive catalog ships every registered noun's table +
 // title_column (mirrored → the SLIM catalog-nouns.generated.ts: plain-id nouns
@@ -851,7 +872,8 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
   // the old `context.*` tables for scope / scope_type / context_item, and those nouns resolve through
   // the store resolvers above while the scope read switch is on (`scopesReadFromStore()`); with it
   // off (the default) a context-schema row is read by table, as before.
-  if (schema === "context" && scopesReadFromStore()) return undefined;
+  // Undecided (no scope read on this page has asked yet) is "neither": no context-schema read either.
+  if (schema === "context" && peekScopesReadFromStore() !== false) return undefined;
   const titleFields = entry.title_column
     ? [entry.title_column, ...COMMON_TITLE_FIELDS]
     : COMMON_TITLE_FIELDS;

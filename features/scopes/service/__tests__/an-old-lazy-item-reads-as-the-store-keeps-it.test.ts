@@ -6,7 +6,7 @@
  *
  * The record store keeps three words (include / on_request / exclude) and folded the old table's
  * "lazy" into on_request and "batch_related" into include on the copy. The web's old read path
- * (`scopesService.listContextItems`, knob `scopes/read_from_store` OFF — the path every screen runs
+ * (`scopesService.listContextItems`, knob `custom.scope_readers_read_the_store` OFF — the path every screen runs
  * today) handed the old word through, so the item hub printed "Lazy" where the store path says
  * "On demand", and the settings form offered two words no write could keep.
  *
