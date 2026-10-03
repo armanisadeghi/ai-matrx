@@ -29,13 +29,12 @@
 -- role rather than only from `postgres`.
 --
 -- IT WRITES NOTHING THAT SURVIVES — one transaction, ending in ROLLBACK. Registered in the
--- nightly clone sweep (scripts/night/clone-suite-sweep.sh picks up every
--- scripts/campaign-tests/*.sql) and in the release gates as `pnpm check:store-on-by-default`.
+-- release gates as `pnpm check:store-on-by-default`, which runs it on the live database.
 -- Its red twin is scripts/campaign-tests/storeon_red.sql.
 --
 -- RUN IT:
 --   PSQL="$(pnpm -s exec tsx scripts/lib/psql-path.ts --print)"
---   "$PSQL" "$CLONE_DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/storeon_green.sql
+--   pnpm check:store-on-by-default        (live, from SUPABASE_MATRIX_*)
 
 \set ON_ERROR_STOP on
 \timing off

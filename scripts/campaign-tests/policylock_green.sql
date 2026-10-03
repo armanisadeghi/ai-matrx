@@ -28,9 +28,8 @@
 -- that trap cost W1-ORG-PREP a whole measurement it had to throw away.)
 --
 -- IT WRITES NOTHING THAT SURVIVES. Everything happens inside ONE transaction that ROLLS BACK:
--- the scratch table, the policy, the locks. It is registered in the nightly clone sweep
--- (scripts/night/clone-suite-sweep.sh picks up every scripts/campaign-tests/*.sql) and in the
--- release gates as `pnpm check:policy-lock-set`.
+-- the scratch table, the policy, the locks. It is registered in the release gates as
+-- `pnpm check:policy-lock-set`, which runs it on the nightly clone only (rehearsal: it issues DDL).
 --
 -- RUN IT:
 --   PSQL="$(pnpm -s exec tsx scripts/lib/psql-path.ts --print)"
