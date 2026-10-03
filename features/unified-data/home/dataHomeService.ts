@@ -29,6 +29,9 @@ export const DATA_HOME_ROW_CAP = 5000;
 /** How many archived rows one store read asks for (one page ≈ 0.7 s for a many-org person). */
 export const ARCHIVE_READ = 100;
 
+/** The most one store read asks for (the door's own ceiling is 1000). */
+export const ARCHIVE_READ_MAX = 500;
+
 export const LANES: readonly DataHomeScope[] = ["all", "mine", "team", "orgs", "shared", "public", "system"];
 
 /** One server search's answer: row id → where and how well it matched (best first). */
@@ -334,14 +337,15 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
   // order is the store's (newest archived first); a search, a lane, a filter or the organization
   // filter keeps reading pages until this page is full or the archive ends.
   const archive: { rows: DataHomeRow[]; ended: boolean; reading: Promise<void> | null } = { rows: [], ended: false, reading: null };
-  const readMoreArchive = () => {
+  /** One store read: at least ARCHIVE_READ rows, or as many as this page still needs. */
+  const readMoreArchive = (atLeast = ARCHIVE_READ) => {
     if (!opts.readArchived) {
       archive.ended = true;
       return Promise.resolve();
     }
     if (!archive.reading) {
       archive.reading = opts
-        .readArchived({ offset: archive.rows.length, limit: ARCHIVE_READ })
+        .readArchived({ offset: archive.rows.length, limit: Math.min(Math.max(ARCHIVE_READ, atLeast), ARCHIVE_READ_MAX) })
         .then((answer) => {
           archive.rows.push(...answer.rows);
           if (answer.ended || archive.rows.length >= DATA_HOME_ROW_CAP) archive.ended = true;
@@ -372,7 +376,8 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
     for (;;) {
       const page = archivePageInHand(query, sort, before);
       if (page) return page;
-      await readMoreArchive();
+      // As many as this page still needs, so a 100-row page is one read, not two.
+      await readMoreArchive(query.page * sort.pageSize + 1 - before.length - archiveMatches(query).length);
     }
   };
   // No count is made here (see above); the organization filter lists its choices without numbers.

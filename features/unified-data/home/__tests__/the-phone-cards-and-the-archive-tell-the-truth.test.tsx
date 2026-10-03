@@ -179,6 +179,13 @@ describe("W4 — the Archived filter pages like the store pages it", () => {
     expect(first).toMatchObject({ total: 25, hasMore: true });
   });
 
+  it("a 100-row page is ONE store read, sized to the page", async () => {
+    const readArchived = storeArchive(1300);
+    const page = await homeService(readArchived).fetchPage(query("archived"), { ...SORT, pageSize: 100 });
+    expect(readArchived.mock.calls.map((c) => c[0])).toEqual([{ offset: 0, limit: 101 }]);
+    expect(page).toMatchObject({ total: 100, hasMore: true });
+  });
+
   it("a later page reads the store only when the rows in hand run out", async () => {
     const readArchived = storeArchive(130);
     const service = homeService(readArchived);
