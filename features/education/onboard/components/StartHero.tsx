@@ -197,7 +197,11 @@ export function StartHero() {
         depth,
         count: Number.isFinite(requested) && requested > 0 ? requested : undefined,
       }, runOrgId);
-      if (ok) await ingestGuard.commit();
+      if (ok) {
+        await ingestGuard.commit();
+        // The kit holds the material now; the input starts empty next time.
+        for (const card of set.sources) set.remove(card.id);
+      }
     });
   }, [
     canGenerate,
