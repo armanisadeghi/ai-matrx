@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { TableToolbarAction } from "./TableToolbarAction";
 
 jest.mock("@ai-matrx/tap-target", () => ({
-  TapTargetButton: ({ ariaLabel, icon }: { ariaLabel: string; icon: React.ReactNode }) => (
+  TapTargetButtonSolid: ({ ariaLabel, icon }: { ariaLabel: string; icon: React.ReactNode }) => (
     <button type="button" aria-label={ariaLabel}>{icon}</button>
   ),
   TapTargetButtonTransparent: ({ ariaLabel, icon }: { ariaLabel: string; icon: React.ReactNode }) => (
