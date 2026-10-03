@@ -291,7 +291,7 @@ export function EntityFilterPanel<TRow>({
           aria-label={canSort ? "Filters and sort" : "Filters"}
           title={canSort ? "Filters and sort" : "Filters"}
           className={cn(
-            "relative inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2 text-xs font-medium transition-colors",
+            "relative inline-flex h-7 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium transition-colors",
             compact && "justify-center",
             activeCount > 0
               ? "text-primary"

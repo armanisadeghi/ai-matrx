@@ -14,8 +14,8 @@
 
 import { useEffect, useState, type RefObject } from "react";
 
-/** The narrowest the search box may get when it shares the row (the toolbar's `sm:min-w-40`). */
-const SEARCH_MIN_PX = 160;
+/** The search box's floor when its computed min-width is unreadable (the toolbar's `sm:min-w-40`). */
+const SEARCH_MIN_FALLBACK_PX = 160;
 
 function visibleWidth(el: Element | null): number {
   if (!(el instanceof HTMLElement)) return 0;
@@ -33,8 +33,11 @@ function measureFits(row: HTMLElement): boolean | null {
   const toolbarParts = Array.from(toolbar.children).filter(
     (child) => !child.hasAttribute("data-entity-list-search-box") && visibleWidth(child) > 0,
   );
+  // The search box's own floor at this width (`sm:min-w-40 lg:min-w-56`), read, never assumed.
+  const search = toolbar.querySelector<HTMLElement>("[data-entity-list-search-box]");
+  const searchMin = (search && Number.parseFloat(getComputedStyle(search).minWidth)) || SEARCH_MIN_FALLBACK_PX;
   const toolbarMin =
-    SEARCH_MIN_PX +
+    searchMin +
     toolbarParts.reduce((sum, child) => sum + visibleWidth(child), 0) +
     toolbarParts.length * toolbarGap;
 

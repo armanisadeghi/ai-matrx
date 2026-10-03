@@ -184,7 +184,7 @@ export function EntityListToolbar<TRow>({
   const searchBox = (
       <div
         data-entity-list-search-box=""
-        className="flex h-7 min-w-0 flex-1 basis-full items-center gap-1.5 rounded-md border border-border bg-card px-2 sm:basis-auto sm:min-w-40">
+        className="flex h-7 min-w-0 flex-1 basis-full items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 sm:basis-auto sm:min-w-40 lg:min-w-56">
         {isFetching ? (
           <Loader2
             role="status"
@@ -305,7 +305,7 @@ export function EntityListToolbar<TRow>({
             // ONE "View" MENU BELOW `xl` (DATA-HOME-3E, 2026-10-01): at 1024 px the inline view
             // and density groups pushed the table's controls past the right edge; the phone's
             // menu already held all of them, so it now serves every width under 1280.
-            className="inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-md border border-border bg-card px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground xl:hidden"
+            className="inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground xl:hidden"
           >
             <Settings2 className="h-3.5 w-3.5" />
             {phoneRow ? null : <span>View</span>}
@@ -420,7 +420,7 @@ export function EntityListToolbar<TRow>({
     // crushed the search to an empty 22px pill). On a phone the search owns
     // its line and the controls take the next; from `sm:` up everything sits
     // on the search row and the view-tab strip scrolls inside its own box.
-    <div data-entity-list-toolbar="" className="matrx-tap-ring flex min-w-0 flex-wrap items-center gap-1.5 lg:flex-nowrap">
+    <div data-entity-list-toolbar="" className="matrx-tap-ring flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2 lg:flex-nowrap">
       {searchBox}
 
       {filterPanel}
@@ -440,7 +440,7 @@ export function EntityListToolbar<TRow>({
 
 
       {hasAltViews && (
-        <div className="hidden h-7 items-center gap-0.5 rounded-md border border-border bg-card px-0.5 xl:flex">
+        <div className="hidden h-7 items-center gap-0.5 rounded-lg border border-border bg-card px-0.5 xl:flex">
           <IconToggle
             active={prefs.view === "table"}
             label="Table"
@@ -469,7 +469,7 @@ export function EntityListToolbar<TRow>({
         </div>
       )}
 
-      <div className="hidden h-7 items-center gap-0.5 rounded-md border border-border bg-card px-0.5 xl:flex">
+      <div className="hidden h-7 items-center gap-0.5 rounded-lg border border-border bg-card px-0.5 xl:flex">
         <IconToggle
           active={prefs.density === "compact"}
           label={

@@ -1230,7 +1230,7 @@ export function EntityListPage<TRow>({
           // select-all bar on a desktop) still made its sibling "not last"
           // under space-y and pushed the table down 8px the moment rows
           // arrived (page-pass /connected-sources, 2026-09-27).
-          "flex shrink-0 flex-col gap-1.5 px-3 pb-2",
+          "flex shrink-0 flex-col gap-1.5 px-3 pb-2 sm:gap-2",
           clearsShellHeader
             ? "pt-[calc(var(--shell-header-h)+0.5rem)]"
             : "pt-2",
@@ -1264,7 +1264,7 @@ export function EntityListPage<TRow>({
           // this row and the toolbar stays 28px and gets an invisible 44px hit
           // area on a touch screen, instead of the list's touch floor growing
           // each one to 44px (owner, /board/all on an iPad, 2026-10-02).
-          className="matrx-tap-ring flex min-w-0 items-center justify-between gap-1.5"
+          className="matrx-tap-ring flex min-w-0 items-center justify-between gap-1.5 sm:gap-2"
         >
           {/* On a phone the organization filter is an icon until it narrows and
               the lane select gives way first (it truncates); wider, the tabs take
@@ -1333,7 +1333,7 @@ export function EntityListPage<TRow>({
             // size the page asked for: the shell owns this row's geometry.
             <div
               data-entity-list-actions=""
-              className="flex shrink-0 items-center gap-1.5 [&_a]:h-7 [&_button]:h-7 [&_button]:min-h-0"
+              className="flex shrink-0 items-center gap-1.5 sm:gap-2 [&_a]:h-7 [&_button]:h-7 [&_button]:min-h-0"
             >
               {typeof headerActions === "function"
                 ? headerActions(list)
