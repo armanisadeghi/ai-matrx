@@ -66,12 +66,11 @@ const CRM_PRIMARY_RECORD_CLASS = "contact";
 function pgError(error: { message?: string; code?: string }): Error {
   // A zero-row refusal already carries its sentence for a person — keep it typed.
   if (error instanceof WriteDidNotLandError) return error;
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message — usually a gateway/PostgREST " +
+  return postgrestError(error, {
+    action: "working with the CRM records",
+    fallback: "Supabase returned an error with no message — usually a gateway/PostgREST " +
           "failure rather than a query error.",
-  );
+  });
 }
 
 // ── Value normalization ─────────────────────────────────────────────────────
@@ -93,6 +92,7 @@ import {
   type WholeResultPurpose,
 } from "@/features/unified-data/standard-field-columns/wholeResult";
 import { announceRecordChange } from "@/lib/records/recordChanges";
+import { postgrestError } from "@/lib/failure/postgrestError";
 export { normalizeMediumValue };
 
 // ── List page ───────────────────────────────────────────────────────────────

@@ -32,14 +32,14 @@ import { listOrgParam } from "@/lib/list-scope/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { WorkflowBrowseRow, WorkflowRowEdit } from "./types";
 import { readListRpc } from "@/lib/entity-list/readListRpc";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message — usually a gateway/PostgREST " +
+  return postgrestError(error, {
+    action: "loading the workflow runs",
+    fallback: "Supabase returned an error with no message — usually a gateway/PostgREST " +
         "failure rather than a query error.",
-  );
+  });
 }
 
 /** The filter bag as the RPC wants it. Empty object = no column filters. */

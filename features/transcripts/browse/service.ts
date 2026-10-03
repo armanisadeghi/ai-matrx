@@ -23,6 +23,7 @@ import type { EntityListPage } from "@/lib/entity-list/types";
 import { listOrgParam } from "@/lib/list-scope/types";
 import type { TranscriptListRow, TranscriptRowEdit } from "./types";
 import { readListRpc } from "@/lib/entity-list/readListRpc";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 /** The list's filters plus the archive axis, as `trx_list_scoped` / `trx_list_scope_counts` read them. */
 export function transcriptFilters(query: EntityListQuery): Record<string, unknown> {
@@ -37,12 +38,11 @@ function sortFacets(facets: EntityFacets): EntityFacets {
 }
 
 function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message — usually a gateway/PostgREST " +
+  return postgrestError(error, {
+    action: "loading the transcripts",
+    fallback: "Supabase returned an error with no message — usually a gateway/PostgREST " +
         "failure rather than a query error.",
-  );
+  });
 }
 
 export async function fetchTranscriptListPage(

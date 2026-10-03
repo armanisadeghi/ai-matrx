@@ -24,6 +24,7 @@ import type {
   SavedViewRow,
   SavedViewVisibility,
 } from "./types";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 /**
  * Every list brings its own definition shape; the service is generic over it.
@@ -38,12 +39,11 @@ export interface SavedViewCodec<TDef> {
 }
 
 function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message — usually a gateway/PostgREST " +
+  return postgrestError(error, {
+    action: "loading the saved views",
+    fallback: "Supabase returned an error with no message — usually a gateway/PostgREST " +
         "failure rather than a query error.",
-  );
+  });
 }
 
 /**

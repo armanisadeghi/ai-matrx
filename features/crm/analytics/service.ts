@@ -32,6 +32,7 @@ import {
   type ResponseRates,
   type StatusCounts,
 } from "./lib";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 /** How far back the win trend looks. A quarter is the reporting unit clients use. */
 export const TREND_DAYS = 90;
@@ -41,12 +42,11 @@ const MAX_TREND_ROWS = 2000;
 export const MAX_REPORTED_CAMPAIGNS = 100;
 
 function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message — usually a gateway/PostgREST " +
+  return postgrestError(error, {
+    action: "loading the CRM analytics",
+    fallback: "Supabase returned an error with no message — usually a gateway/PostgREST " +
         "failure rather than a query error.",
-  );
+  });
 }
 
 async function crm() {

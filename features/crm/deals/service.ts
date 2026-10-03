@@ -44,16 +44,16 @@ import type {
   DealUpdate,
 } from "./types";
 import { DEAL_SORT_KEYS } from "./types";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 function pgError(error: { message?: string; code?: string }): Error {
   // A zero-row refusal already carries its sentence for a person — keep it typed.
   if (error instanceof WriteDidNotLandError) return error;
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message — usually a gateway/PostgREST " +
+  return postgrestError(error, {
+    action: "working with the deals",
+    fallback: "Supabase returned an error with no message — usually a gateway/PostgREST " +
         "failure rather than a query error.",
-  );
+  });
 }
 
 function crm() {

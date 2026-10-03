@@ -22,14 +22,14 @@ import { listOrgParam } from "@/lib/list-scope/types";
 import type { InteractionRow } from "@/features/crm/types";
 import type { InboxRow } from "./types";
 import { readListRpc } from "@/lib/entity-list/readListRpc";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message — usually a gateway/PostgREST " +
+  return postgrestError(error, {
+    action: "loading the inbox",
+    fallback: "Supabase returned an error with no message — usually a gateway/PostgREST " +
         "failure rather than a query error.",
-  );
+  });
 }
 
 export async function fetchInboxListPage(
