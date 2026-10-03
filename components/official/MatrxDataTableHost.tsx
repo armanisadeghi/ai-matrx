@@ -31,6 +31,7 @@ import { useIsInsideContextMenu } from "@/features/context-menu-v3/menu-presence
 import { TABLE_MENU_ICONS, toContextMenuExtraSections } from "./table-menu-sections";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { useTableCustomFieldColumns } from "@/features/unified-data/standard-field-columns/useTableCustomFieldColumns";
 
 export type TableDensity = MatrxDataTableDensity;
 export const TABLE_DENSITY_KNOB_KEY = "tables.density.mode";
@@ -138,6 +139,9 @@ const ports: TableHost = {
   createDefaultMenuContext: createDefaultTableRowMenuDescriptor,
   ContextMenuBoundary: TableContextMenuBoundary,
   MenuIcon: TableMenuIcon,
+  // Lane 7 W5 — every table that names its rows' registry token (`rowToken`) gets that token's
+  // custom-field columns, for the organizations its rows belong to.
+  useCustomFieldColumns: useTableCustomFieldColumns,
 };
 export function MatrxDataTableHost({ children }: { children: ReactNode }) {
   const organizationId = useAppSelector(selectOrganizationId);

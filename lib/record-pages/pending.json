@@ -1692,8 +1692,7 @@
   "features/war-room/components/all/WarRoomThreadsTable.tsx",
   "features/window-panels/windows/admin/user-search/UserSearchWindow.tsx",
   "features/workflow-runtime/components/ReadoutView.tsx",
-  "features/workflow-runtime/discovery/components/RunsList.tsx",
-  "lib/entity-list/components/EntityListTable.tsx"
+  "features/workflow-runtime/discovery/components/RunsList.tsx"
  ],
  "listQueue": [
   "app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx",

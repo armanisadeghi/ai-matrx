@@ -531,6 +531,8 @@ export function EntityListTable<TRow>({
 
   return (
     <MatrxDataTable<TRow>
+      // Lane 7 W5 — the rows' registry token: the table host adds that token's custom-field columns.
+      rowToken={typeof config.door?.token === "string" ? config.door.token : undefined}
       data={rows}
       columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
         <ItemMenu config={actions.menuFor(row)} align="end">

@@ -11,9 +11,9 @@
   "peek.none": 5,
   "peek.any": 1,
   "route.manifestRowWithoutFile": 14,
-  "table.pending": 242,
+  "table.pending": 241,
   "table.noncanonical": 26,
-  "table.set": 1
+  "table.set": 2
  },
  "tokens": [
   "agent",
@@ -6346,6 +6346,6 @@
   "features/window-panels/windows/admin/user-search/UserSearchWindow.tsx": "pending",
   "features/workflow-runtime/components/ReadoutView.tsx": "pending",
   "features/workflow-runtime/discovery/components/RunsList.tsx": "pending",
-  "lib/entity-list/components/EntityListTable.tsx": "pending"
+  "lib/entity-list/components/EntityListTable.tsx": "set"
  }
 }
