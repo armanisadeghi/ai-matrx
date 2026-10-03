@@ -135,6 +135,13 @@ describe("where a value sits when nobody stamped its page", () => {
     expect(door.context_surfaces).toBeNull();
   });
 
+  it("a sent turn's conversation id is the platform's, never an attachment", () => {
+    // The receipt files the first turn's `conversation` client-sent under `_default`.
+    expect(placeContextRow({ key: "conversation", surfaceKey: "_default", origin: "attached" }, KNOWLEDGE).level.id).toBe(
+      "ai_matrx",
+    );
+  });
+
   it("the platform's own keys are never a page's value, whoever wrote them", () => {
     expect(publishingPlace({ key: "surface_chain", surfaceName: TRANSCRIPTS }, KNOWLEDGE).surface).toBeNull();
   });

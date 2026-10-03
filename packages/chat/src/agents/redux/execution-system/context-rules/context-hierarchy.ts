@@ -23,9 +23,19 @@ import { DEFAULT_SURFACE_KEY, type ResolvedContextRow } from "@ai-matrx/agents/c
 import { getManifest, getSurfaceSectionLabel } from "../../../../surfaces/runtime/registry";
 import { getSurfaceDisplayLabel } from "../../../../surfaces/utils/surface-display";
 import {
+  OWN_CONVERSATION_WITHHELD,
   PAGE_OFF_WITHHELD,
   PERSON_CONTEXT_VALUES,
 } from "../../../../surfaces/manifests/_baseline.manifest";
+
+/**
+ * What identifies the conversation itself (`conversation`): the platform's
+ * value, never an attachment — a sent turn's receipt files it client-sent
+ * under `_default`, and it used to land in "Attached".
+ */
+const CONVERSATION_IDENTITY: ReadonlySet<string> = new Set(
+  OWN_CONVERSATION_WITHHELD.filter((key) => !PAGE_OFF_WITHHELD.includes(key)),
+);
 
 export interface ContextLevelPlace {
   id: string;
@@ -87,7 +97,10 @@ export function placeContextRow(
       : pageSurface && PAGE_OFF_WITHHELD.includes(row.key)
         ? pageSurface
         : null;
-  if (!surface) return { level: row.origin === "attached" ? ATTACHED_PLACE : AI_MATRX_PLACE, group: null };
+  if (!surface) {
+    const attached = row.origin === "attached" && !CONVERSATION_IDENTITY.has(row.key);
+    return { level: attached ? ATTACHED_PLACE : AI_MATRX_PLACE, group: null };
+  }
   return { level: surfaceLevelPlace(surface), group: declaredGroup(surface, row.key) };
 }
 
