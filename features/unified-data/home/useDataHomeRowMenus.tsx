@@ -20,7 +20,7 @@
 // Rows that are not tables (forms, dashboards, digests…) keep their open entries; they get their
 // own action lists when their kinds are added to the registry.
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Link2, Star, StarOff } from "lucide-react";
 import type { PermissionLevel } from "@ai-matrx/records";
@@ -56,8 +56,18 @@ export function useTableLevels(tableIds: readonly string[]): ReadonlyMap<string,
     const ids = key.split(",");
     for (let i = 0; i < ids.length; i += LEVELS_PER_CALL) {
       const asked = ids.slice(i, i + LEVELS_PER_CALL);
-      void client.myLevels({ ids: asked }).then((answered) => {
-        if (!live || !answered.ok) return;
+      // A read that fails is asked again (three tries, a pause between): the menu says
+      // "Checking your access…" meanwhile, never a refusal it did not get.
+      const ask = async () => {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const answered = await client.myLevels({ ids: asked });
+          if (answered.ok || !live) return answered;
+          await new Promise((r) => setTimeout(r, 3000));
+        }
+        return null;
+      };
+      void ask().then((answered) => {
+        if (!live || !answered || !answered.ok) return;
         setLevels((now) => {
           const next = new Map(now);
           // An id the store did not answer for is "you hold nothing on it" — an answer, not a wait.
@@ -105,12 +115,10 @@ export interface DataHomeRowMenus {
  * rename, a move or an archive.
  */
 export function useDataHomeRowMenus({
-  rows,
   starred,
   onOpened,
   onChanged,
 }: {
-  rows: ReadonlyMap<string, DataHomeRow>;
   starred: ReadonlySet<string>;
   onOpened: (row: DataHomeRow) => void;
   onChanged: () => void;
@@ -119,18 +127,17 @@ export function useDataHomeRowMenus({
   const client = useRecordsClient();
   const recordsUi = useRecordsUi();
   const stars = useStarToggle();
-  const tableIds = useMemo(
-    () => [...rows.values()].filter((r) => r.kind === "table" && r.tableId).map((r) => r.tableId as string),
-    [rows],
-  );
-  const levels = useTableLevels(tableIds);
   const [asked, setAsked] = useState<Asked | null>(null);
   const ask = (what: Asked["what"], row: DataHomeRow) =>
     setAsked((now) => ({ what, row, count: (now?.count ?? 0) + 1 }));
   const close = () => setAsked(null);
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
 
-  const forTable = (row: DataHomeRow, tableId: string): ItemMenuConfig => {
+  const forTable = (
+    row: DataHomeRow,
+    tableId: string,
+    levels: ReadonlyMap<string, PermissionLevel | null>,
+  ): ItemMenuConfig => {
     const level = levels.get(tableId);
     const go = (query: string) => {
       onOpened(row);
@@ -271,7 +278,13 @@ export function useDataHomeRowMenus({
       </Dialog>
     );
 
-  const useRowActions = (): EntityRowActionsResult<DataHomeRow> => ({
+  // The shell calls this as a hook, every render: the levels are asked for the rows it SHOWS
+  // (a list read that failed and was retried still gets its rights).
+  const useRowActions = (list: EntityListController<DataHomeRow>): EntityRowActionsResult<DataHomeRow> => {
+    const levels = useTableLevels(
+      list.rows.filter((r) => r.kind === "table" && r.tableId).map((r) => r.tableId as string),
+    );
+    return {
     actions: {
       onOpenRow: (row) => {
         onOpened(row);
@@ -279,10 +292,11 @@ export function useDataHomeRowMenus({
       },
       onToggleFavorite: (row) => stars.toggle(row.id),
       menuFor: (row) => () =>
-        row.kind === "table" && row.tableId ? forTable(row, row.tableId) : forItem(row),
+        row.kind === "table" && row.tableId ? forTable(row, row.tableId, levels) : forItem(row),
     },
     modals,
-  });
+    };
+  };
 
   return { useRowActions };
 }

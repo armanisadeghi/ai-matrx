@@ -115,7 +115,6 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   // THE ROW'S MENU IS THE TABLE'S ONE ACTION LIST (lane TABLE-ACTIONS): row ⋯, card ⋯ and
   // right-click all draw `menuFor`, which draws `tableActions()` for a table row.
   const rowMenus = useDataHomeRowMenus({
-    rows: rowsById,
     starred: starredSet,
     onOpened: (row) => marks.opened(row.id),
     onChanged: () => setCorpusVersion((v) => v + 1),
