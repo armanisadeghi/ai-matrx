@@ -74,6 +74,7 @@ jest.mock("../redux/workflow-runs.selectors", () => ({
   // The store's own discriminator: the page knows the status only once the
   // server has said one. `runStatus = null` here IS "nothing read yet".
   selectRunStatusKnown: () => () => runStatus !== null,
+  selectRunStartWait: () => () => null,
 }));
 
 import { RunHero } from "../components/run/RunHero";

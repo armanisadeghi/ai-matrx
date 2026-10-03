@@ -562,8 +562,8 @@ describe("workflow-runs slice", () => {
     expect(state.byRunId[RUN_ID]?.status).toBe("pending");
     expect(state.byRunId[RUN_ID]?.startWait).toBe("No worker has picked this run up yet.");
 
-    const pendingRun = state.byRunId[RUN_ID];
-    if (pendingRun) pendingRun.statusTs = "2026-10-03T00:00:01Z";
+    const pendingRun = state.byRunId[RUN_ID]!;
+    state = { ...state, byRunId: { ...state.byRunId, [RUN_ID]: { ...pendingRun, statusTs: "2026-10-03T00:00:01Z" } } };
     state = reducer(state, seedRunRow({ runId: RUN_ID, row: { ...pendingRow, status: "running", start_wait: null } }));
     expect(state.byRunId[RUN_ID]?.status).toBe("running");
     expect(state.byRunId[RUN_ID]?.startWait).toBeNull();
