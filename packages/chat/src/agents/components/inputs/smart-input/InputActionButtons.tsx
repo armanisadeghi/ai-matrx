@@ -299,7 +299,7 @@ export function InputActionButtons({
         className={
           compact
             ? "flex min-w-0 items-center justify-between gap-1 shrink-0"
-            : "flex min-w-0 items-center justify-between px-1 shrink-0"
+            : "flex min-w-0 items-center justify-between gap-1 shrink-0"
         }
       >
         <div className="flex min-w-0 items-center gap-0.5">

@@ -19,6 +19,37 @@ import { COMPOSER_ROW_CLASS } from "./composer-chip";
 import { cn } from "@ai-matrx/design-system";
 import type { ComposerPresentation } from "./composer-types";
 import { useEffectiveModelId } from "./useComposerAgent";
+import { useAppSelector } from "../../../../../store/hooks";
+import { selectAgentIdFromInstance } from "../../../../redux/execution-system/conversations/conversations.selectors";
+import {
+  ConversationContextChip,
+  useConversationContextChipShown,
+} from "../ConversationContextChip";
+
+/**
+ * The value-group chip, in the meta row beside Output (Arman, 2026-10-03): the
+ * card never spends a whole row on this one chip. The rail is told not to draw it.
+ */
+export function ComposerValueGroupChip({ conversationId }: { conversationId: string }) {
+  const shown = useConversationContextChipShown(conversationId);
+  const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
+  if (!shown) return null;
+  return (
+    <span className="flex shrink-0 items-center">
+      <ConversationContextChip conversationId={conversationId} agentId={agentId ?? null} />
+    </span>
+  );
+}
+
+/**
+ * The Scope chip's two faces under comparison (Arman, 2026-10-03):
+ * `plain` = the Output pill's own face; `pill` = bordered, round like the card.
+ */
+const SCOPE_CHIP_CLASS: Record<"plain" | "pill", string> = {
+  plain:
+    "h-6 rounded-md border-transparent bg-transparent px-2 text-muted-foreground hover:bg-accent hover:text-foreground",
+  pill: "h-6 rounded-full px-2.5",
+};
 
 /** Agent · (Effort) — the right cluster, shared by the meta row and the compact toolbar. */
 export function ComposerPills({
@@ -75,8 +106,12 @@ export function ComposerMetaRow({
     // canvas) folds the Scope chip to its icon, as a phone does.
     <div className={cn(COMPOSER_ROW_CLASS, "@container/composer-meta justify-between gap-2 px-1")}>
       <div className="flex shrink-0 items-center gap-0.5">
-        <ActiveContextLensChip conversationId={conversationId} className="h-6 rounded-md px-2" />
+        <ActiveContextLensChip
+          conversationId={conversationId}
+          className={SCOPE_CHIP_CLASS[composer.scopeChipStyle ?? "plain"]}
+        />
         <ComposerOutputPill conversationId={conversationId} size={composer.size} menuSide={menuSide} />
+        <ComposerValueGroupChip conversationId={conversationId} />
       </div>
       <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} />
     </div>

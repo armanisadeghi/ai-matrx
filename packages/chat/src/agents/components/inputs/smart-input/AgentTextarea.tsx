@@ -95,6 +95,10 @@ interface AgentTextareaProps {
   maxHeightPx?: number;
   /** The canonical right-click agent menu on this textarea (composer `textMenu`). */
   textMenu?: ComposerTextMenu;
+  /** Empty-state height in px. Absent = 28 compact / 40 otherwise. The composer passes one line (28). */
+  minHeightPx?: number;
+  /** Drop the shell's own side padding — the composer card owns the one inset. */
+  flush?: boolean;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -118,6 +122,8 @@ export function AgentTextarea({
   autoFocus = true,
   showExpandToggle = true,
   placeholder,
+  minHeightPx,
+  flush = false,
   maxHeightPx,
   textMenu,
 }: AgentTextareaProps) {
@@ -314,7 +320,7 @@ export function AgentTextarea({
       return;
     }
 
-    const minH = compact ? 20 : 40;
+    const minH = minHeightPx ?? (compact ? 20 : 40);
     // Measure from a collapsed block size. `height: auto` is self-referential
     // inside constrained flex columns: the browser can allocate the remaining
     // column height to the focused textarea, then expose that allocation as its
@@ -364,7 +370,7 @@ export function AgentTextarea({
   useLayoutEffect(() => {
     sizeToContentRef.current = sizeToContent;
     sizeToContent();
-  }, [visibleText, isExpanded, singleRow, compact, unexpandedCapPx]);
+  }, [visibleText, isExpanded, singleRow, compact, unexpandedCapPx, minHeightPx]);
 
   // ── Re-measure when the WIDTH changes ─────────────────────────────────────
   // Content height depends on width: the same draft (or the empty placeholder)
@@ -462,7 +468,7 @@ export function AgentTextarea({
   }
 
   return (
-    <div className="px-2 relative shrink-0">
+    <div className={flush ? "relative shrink-0" : "px-2 relative shrink-0"}>
       <ComposerDraftNotice
         conversationId={conversationId}
         surfaceKey={draftAlias ?? surfaceKey}
@@ -496,7 +502,7 @@ export function AgentTextarea({
                   : ""
             }`}
             style={{
-              minHeight: compact ? 28 : 40,
+              minHeight: minHeightPx ?? (compact ? 28 : 40),
               maxHeight: isExpanded ? undefined : unexpandedCapPx,
             }}
             rows={1}

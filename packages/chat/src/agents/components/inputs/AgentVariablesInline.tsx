@@ -297,11 +297,11 @@ export function AgentVariablesInline({
             return (
               <div key={variable.name} data-control-variable={variable.name}>
                 {index === firstSettingIndex && (
-                  <p className="px-2.5 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  <p data-variable-heading="" className="px-2.5 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                     Settings
                   </p>
                 )}
-                <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 min-h-8">
+                <div data-variable-row="" className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 min-h-8">
                   <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0">
                     {variableRunLabel(variable)}:
                   </Label>
@@ -348,7 +348,7 @@ export function AgentVariablesInline({
               >
                 <PopoverTrigger asChild>
                   <div
-                    className="flex items-center gap-2 pl-2.5 pr-1.5 h-8 bg-transparent hover:bg-accent/40 transition-colors focus-within:bg-accent/30 group w-full cursor-pointer"
+                    data-variable-row="" className="flex items-center gap-2 pl-2.5 pr-1.5 h-8 bg-transparent hover:bg-accent/40 transition-colors focus-within:bg-accent/30 group w-full cursor-pointer"
                     onClick={() => handleExpand(variable.name)}
                     tabIndex={index + 1}
                   >
@@ -422,7 +422,7 @@ export function AgentVariablesInline({
           return (
             <div
               key={variable.name}
-              className="flex items-center gap-2 pl-2.5 pr-1.5 h-8 bg-transparent hover:bg-accent/40 transition-colors focus-within:bg-accent/30 group"
+              data-variable-row="" className="flex items-center gap-2 pl-2.5 pr-1.5 h-8 bg-transparent hover:bg-accent/40 transition-colors focus-within:bg-accent/30 group"
             >
               <Label
                 className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer"

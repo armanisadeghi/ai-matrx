@@ -149,6 +149,12 @@ interface ConversationContextRailProps {
   withAttachments?: boolean;
   /** Locate anchor for the attachments, when `withAttachments`. */
   attachmentsSurfaceValueName?: string;
+  /**
+   * Render the value-group chip at the right of this row (default). The
+   * composer passes `false` and places `ConversationContextChip` in its meta
+   * row beside Output, so the card never spends a row on one chip.
+   */
+  withValueGroupChip?: boolean;
 }
 
 export interface AttachedContextRailItem {
@@ -208,6 +214,7 @@ export function ConversationContextRail({
   surfaceValueName,
   withAttachments = false,
   attachmentsSurfaceValueName,
+  withValueGroupChip = true,
 }: ConversationContextRailProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -226,7 +233,8 @@ export function ConversationContextRail({
   // conversation gets the live values of the page it is shown on, unless it
   // is that page's own conversation.
   useConversationFollowsPage(conversationId);
-  const contextChipShown = useConversationContextChipShown(conversationId);
+  const contextChipShown =
+    useConversationContextChipShown(conversationId) && withValueGroupChip;
   // The person's saved context rules load as the composer mounts — chip shown
   // or not — so a page's first send never waits on them.
   useEffect(() => {

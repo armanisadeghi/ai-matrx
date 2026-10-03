@@ -36,7 +36,7 @@ import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 import type { ComposerPresentation } from "./composer/composer-types";
 import { composerShows } from "./composer/composer-mode-visibility";
 import { ComposerChipsRow } from "./composer/ComposerChipsRow";
-import { ComposerMetaRow, ComposerPills } from "./composer/ComposerMetaRow";
+import { ComposerMetaRow, ComposerPills, ComposerValueGroupChip } from "./composer/ComposerMetaRow";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
   presentation?: "default" | "ambient";
@@ -258,9 +258,16 @@ export function SmartAgentInputStacked({
     const menuSide = composer.size === "splash" ? "bottom" : "top";
     const cardClassName = cn(
       "relative flex w-full min-h-0 flex-col border border-border bg-card transition-colors focus-within:border-foreground/25",
+      // ONE inset (Arman, 2026-10-03): the send button's distance from the
+      // card edge is every edge's distance — variables, attachments, text and
+      // toolbar carry no side padding of their own inside the card.
+      "[&_[data-variable-row]]:px-0 [&_[data-variable-heading]]:px-0",
+      // The drop target's hidden file input is not a row (it took a gap), and
+      // an inline-block textarea leaves a 7px baseline strip under itself.
+      "[&>input[type=file]]:!hidden [&_textarea]:block",
       compact
-        ? "rounded-[14px] px-1.5 py-1 gap-1"
-        : "rounded-[22px] px-2.5 pt-2 pb-1.5 gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+        ? "rounded-[14px] p-1.5 gap-1.5"
+        : "rounded-[22px] p-2 gap-2 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
     );
     const textarea = (
       <AgentTextarea
@@ -278,6 +285,8 @@ export function SmartAgentInputStacked({
         placeholder={composer.placeholder}
         maxHeightPx={composer.maxInputHeightPx}
         textMenu={composer.textMenu}
+        minHeightPx={28}
+        flush
       />
     );
     const toolbar = (
@@ -298,7 +307,10 @@ export function SmartAgentInputStacked({
           size: composer.size,
           mode: composer.mode,
           trailing: compact ? (
-            <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} />
+            <>
+              <ComposerValueGroupChip conversationId={conversationId} />
+              <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} />
+            </>
           ) : undefined,
         }}
       />
@@ -332,6 +344,9 @@ export function SmartAgentInputStacked({
             surfaceValueName={surfaceValueAnchors?.context}
             withAttachments
             attachmentsSurfaceValueName={surfaceValueAnchors?.resources}
+            // The value-group chip rides the meta row beside Output (compact: the toolbar).
+            withValueGroupChip={false}
+            className="px-0 pb-0"
           />
           <SmartAgentVariables
             conversationId={conversationId}

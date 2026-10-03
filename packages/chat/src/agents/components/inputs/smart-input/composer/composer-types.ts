@@ -78,6 +78,8 @@ export type ComposerTextMenu = Omit<
 export interface ComposerPresentation {
   size: ComposerSize;
   mode: ComposerMode;
+  /** The Scope chip's face (meta row). Absent = `plain`, the Output pill's face. */
+  scopeChipStyle?: "plain" | "pill";
   agent?: ComposerAgentControl;
   /** Literal placeholder; absent = the conversation's configured placeholder. */
   placeholder?: string;
