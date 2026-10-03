@@ -22,6 +22,12 @@ describe("phone-stack card list", () => {
     expect(css.match(/\.phone-stack > table > thead \{/g)).toHaveLength(1);
   });
 
+  it("is width-defined: a size container has no intrinsic width and collapses to 0 in a content-sized parent", () => {
+    const rule = css.match(/\.phone-stack \{([^}]*)\}/)?.[1] ?? "";
+    expect(rule).toContain("container-type: inline-size");
+    expect(rule).toMatch(/width:\s*100%/);
+  });
+
   it("has no per-renderer class copy of it", () => {
     for (const f of [
       "components/mardown-display/tables/table-viewer.ts",

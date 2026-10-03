@@ -2547,6 +2547,11 @@
    "narrow" threshold (CANVAS_NARROW_WIDTH). Guard: phone-stack-single-definition.test.ts. */
 .phone-stack {
   container-type: inline-size;
+  /* A size container contributes ZERO intrinsic width, so a wrapper that sizes
+     to its content (flex item, inline-block, absolute) would collapse to 0.
+     Width-define it; probed live in 8 parent contexts. */
+  width: 100%;
+  min-width: 0;
 }
 @container (width < 480px) {
   .phone-stack > table,
