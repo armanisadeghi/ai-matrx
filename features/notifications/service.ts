@@ -88,6 +88,15 @@ function triageDoorKnownAbsent(): boolean {
   }
   return false;
 }
+/** Forget what was learned about the triage doors (a test, or a migration just applied). */
+export function forgetTriageDoorAbsence(): void {
+  absentAt = 0;
+  try {
+    globalThis.sessionStorage?.removeItem(ABSENT_KEY);
+  } catch {
+    /* nothing kept */
+  }
+}
 function rememberTriageDoorAbsent(): void {
   absentAt = Date.now();
   try {

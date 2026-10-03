@@ -35,9 +35,10 @@ jest.mock("@/utils/supabase/client", () => {
   return { createClient: () => wrapClientForCapture(raw) };
 });
 
-import { fetchInbox, fetchInboxSummary, markInboxSeen, setNoticesState } from "../service";
+import { fetchInbox, fetchInboxSummary, forgetTriageDoorAbsence, markInboxSeen, setNoticesState } from "../service";
 
 beforeEach(() => {
+  forgetTriageDoorAbsence();
   clearCapturedErrors();
   answer = "absent";
   jest.spyOn(console, "warn").mockImplementation(() => {});

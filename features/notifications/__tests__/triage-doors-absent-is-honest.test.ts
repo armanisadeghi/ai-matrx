@@ -28,9 +28,10 @@ jest.mock("@/utils/supabase/client", () => ({
   }),
 }));
 
-import { fetchInbox, fetchInboxSummary, markInboxSeen, setNoticesState } from "../service";
+import { fetchInbox, fetchInboxSummary, forgetTriageDoorAbsence, markInboxSeen, setNoticesState } from "../service";
 
 beforeEach(() => {
+  forgetTriageDoorAbsence();
   calls.length = 0;
   missing = true;
   otherError = false;
@@ -71,4 +72,12 @@ it("uses the triage door when it exists", async () => {
   const page = await fetchInbox({ state: "done", orgId: "o1" });
   expect(page.triage).toBe(true);
   expect(calls[0].args).toMatchObject({ p_state: "done", p_org_id: "o1" });
+});
+
+it("asks an absent triage door once, not on every call (no 404 per page and poll)", async () => {
+  await fetchInboxSummary();
+  await fetchInboxSummary();
+  await fetchInbox({ state: "inbox" });
+  expect(calls.filter((c) => c.name === "my_inbox_summary")).toHaveLength(1);
+  expect(calls.filter((c) => c.name === "inbox_notifications")).toHaveLength(0);
 });
