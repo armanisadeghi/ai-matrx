@@ -1,5 +1,5 @@
 -- LANE 9 SCOPES-ON-THE-STORE — CHAIR RULINGS 2 AND 4 (2026-10-02 13:20 PT), measured RED then GREEN on the dev
--- clone (migrations/campaign/scopesb_a_scope_value_shows_the_version_a_person_made.sql).
+-- clone (migrations/campaign/scopesb2_a_scope_value_shows_the_version_a_person_made.sql).
 --
 -- THE USE CASE (admin@admin.com's test firm and workspace on the clone; everything rolled back):
 --   Castellano & Reyes, LLP — four matter values a person set and the copy later rewrote (the workers'

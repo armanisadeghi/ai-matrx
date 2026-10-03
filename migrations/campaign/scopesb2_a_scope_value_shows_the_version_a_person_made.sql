@@ -11,7 +11,7 @@
 -- based-on: custom.context_archived_types(uuid) 155e35d5ed116c54778861c2781f64ac85356746b284c1c44c00b7ecb0632e11
 -- lock: custom
 --
--- Inverse: migrations/inverse/scopesb_a_scope_value_shows_the_version_a_person_made_down.sql.
+-- Inverse: migrations/inverse/scopesb2_a_scope_value_shows_the_version_a_person_made_down.sql.
 -- Guard: scripts/campaign-tests/scopesb_version_and_archived_count_red_green.sql.
 --
 -- THE USE CASE. Castellano & Reyes, LLP on the clone: the workers' compensation team (value ab9a65bb)
@@ -327,13 +327,20 @@ begin
     custom.visible_predicate_sql(v_uid, p_organization_id, v_tables, 'viewer'::public.permission_level, 'r'))
   into v_rows;
   -- Each carries how many of its scopes were archived, which is what a restore brings back.
-  -- THE ARCHIVED SCOPES THE CALLER COULD SEE (lane 9 SCOPES-ON-THE-STORE, chair ruling 4, 2026-10-02),
-  -- counted the way the data home's archive answers them: the rows of custom.read_records_archived for
-  -- that Table (the one ladder's predicate at viewer, the "Only me" list rule, quarantine left out), read
-  -- page by page at the organization's page ceiling. The count used to be every archived Record of the
-  -- Table, whoever could open it. A Table the caller may not know answers 0: nothing there is theirs to
-  -- bring back.
-  for v_type in select distinct (p ->> 'id')::uuid from jsonb_array_elements(coalesce(v_rows, '[]'::jsonb)) p loop
+  -- THE ARCHIVED SCOPES THE CALLER COULD SEE (lane 9 SCOPES-ON-THE-STORE, chair ruling 4, 2026-10-02):
+  -- exactly the rows the data home's archive answers the caller for that Table — custom.read_records_archived
+  -- itself (the one ladder's predicate at viewer, the "Only me" list rule, quarantine left out), read page by
+  -- page at the organization's page ceiling and counted. Its WHERE is not copied here: it reads the row
+  -- column T-13 retires, which only the archive door may (platform._t13_allowlist). A type with no archived
+  -- Record at all is 0 without asking the door; a Table the caller may not know (42501) is 0 — nothing
+  -- there is theirs to bring back. The count used to be every archived Record of the Table, whoever could
+  -- open it.
+  for v_type in
+    select distinct (p ->> 'id')::uuid from jsonb_array_elements(coalesce(v_rows, '[]'::jsonb)) p
+     where exists (select 1 from custom.record r
+                    where r.organization_id = p_organization_id
+                      and r.table_id = (p ->> 'id')::uuid and r.deleted_at is not null)
+  loop
     v_n := 0;
     if v_uid is not null then
       v_page := greatest(coalesce(custom.page_ceiling(p_organization_id), 200), 1);
