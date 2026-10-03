@@ -25,13 +25,16 @@
  *                            PopoverContent, a Table…) in the same file, with no sticky/fixed bar or
  *                            data-matrx-glass-plane between them. Only what is statically visible.
  *
- * KEYS: `<rule>|<file>|<what>` — no line number, so editing above a site never moves it; a second
- * identical site in the same file gets `#2`, a third `#3` (so a NEW duplicate is a new key).
+ * ITEMS: one per rule × file, key `<rule>|<file>` (no line, so edits never move it), its count =
+ * the sites in it. (One item per site was ~44,700 rows a day; the store held ~1,900 in all.)
  *
- * BASELINE: scripts/ui-drift/baseline.json `ids` (+ `reasons` written by `pnpm findings accept`).
- * A baselined key is `known` (debt, or `accepted` when it carries a reason); anything else is `new`.
- * The baseline ONLY SHRINKS: `--update` drops ids that no longer occur and never adds one; `--init`
- * writes it only when no baseline exists. A new site is fixed, or accepted with a reason.
+ * BASELINE (count ratchet): scripts/ui-drift/baseline.json `counts` — sites per key when recorded,
+ * at commit `sha`. A key at or under its count is `known` (debt); above it, or not in `counts`, is
+ * `new`, and its title names each new site — the multiset difference against the same file at
+ * `sha`, so a moved line is not new and a third copy of an existing site is. `ids` (+ `reasons`,
+ * written by `pnpm findings accept`) are keys accepted with a reason: that rule is allowed in that
+ * file at any count (`basis: accepted`). Counts ONLY GO DOWN: `--update` lowers them to what
+ * occurs and drops fixed keys, never raises one; `--init` writes it only when none exists.
  *
  * NARROWING: positional paths (files or directories), or MATRX_FINDINGS_PATHS (a JSON array set by
  * `pnpm findings <paths>`), scan only those files — about a second. A narrowed run never prints the
@@ -48,7 +51,6 @@
  * file. A green run proves only what the static text shows.
  */
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -333,26 +335,67 @@ export function scanSource(file, text) {
   return sites;
 }
 
-/** Sites → keyed items. Identical sites in one file get #2, #3… in source order. */
-const KEY_BUDGET = 280; // items.mjs refuses keys over 300; leave room for "#n"
-export function siteKey(rule, file, what) {
-  const head = `${rule}|${file}|`;
-  const room = KEY_BUDGET - head.length;
-  if (what.length <= room) return head + what;
-  // Too long to keep whole: a prefix plus a hash of the whole, so two long sites never collide.
-  return `${head}${what.slice(0, Math.max(0, room - 10))}~${createHash("sha1").update(what).digest("hex").slice(0, 8)}`;
+/** Sites in source order: by file, then line. */
+export function sortSites(sites) {
+  return sites.sort((a, b) => (a.file === b.file ? a.line - b.line : a.file < b.file ? -1 : 1));
 }
 
-export function keySites(sites) {
-  const seen = new Map();
-  return sites
-    .sort((a, b) => (a.file === b.file ? a.line - b.line : a.file < b.file ? -1 : 1))
-    .map((s) => {
-      const base = siteKey(s.rule, s.file, s.what);
-      const n = (seen.get(base) ?? 0) + 1;
-      seen.set(base, n);
-      return { ...s, key: n === 1 ? base : `${base}#${n}` };
-    });
+/**
+ * One ITEM per rule × file (key `rule|file`), carrying every site in it. 44,700 single-site items
+ * swamped the store (ops.check_item held ~1,900 rows before); ~12,000 rule × file items do not,
+ * and the count ratchet below still names each new site.
+ */
+export function groupSites(sites) {
+  const groups = new Map();
+  for (const s of sortSites(sites)) {
+    const key = `${s.rule}|${s.file}`;
+    if (!groups.has(key)) groups.set(key, { key, rule: s.rule, file: s.file, sites: [] });
+    groups.get(key).sites.push(s);
+  }
+  return groups;
+}
+
+/**
+ * The sites in `group` that are NEW against `oldSites` (the same file at the baseline's commit):
+ * a multiset difference on each site's text, so a moved line is not new and a third copy of an
+ * existing site is. `oldSites` null (no history to read) → the last `grown` sites, said as such.
+ */
+export function newSitesOf(group, oldSites, grown) {
+  if (!oldSites) return { sites: group.sites.slice(-grown), exact: false };
+  const left = new Map();
+  for (const o of oldSites) if (o.rule === group.rule) left.set(o.what, (left.get(o.what) ?? 0) + 1);
+  const fresh = [];
+  for (const s of group.sites) {
+    const n = left.get(s.what) ?? 0;
+    if (n > 0) left.set(s.what, n - 1);
+    else fresh.push(s);
+  }
+  return { sites: fresh, exact: true };
+}
+
+/**
+ * Judge every group against the baseline. A key is KNOWN when it is accepted (`ids`, with a reason
+ * in `reasons`) or its count is at or under the baseline count; otherwise NEW, naming its new sites.
+ * `oldSitesFor(file)` returns that file's sites at the baseline commit, or null.
+ */
+export function judge(groups, baseline, oldSitesFor) {
+  const counts = baseline?.counts ?? {};
+  const accepted = new Set(baseline?.ids ?? []);
+  const reasons = baseline?.reasons ?? {};
+  const out = [];
+  for (const g of groups.values()) {
+    const n = g.sites.length;
+    const allowed = counts[g.key] ?? 0;
+    if (accepted.has(g.key)) {
+      out.push({ ...g, status: "known", basis: String(reasons[g.key]?.reason ?? "").trim() ? "accepted" : "debt", allowed, fresh: [] });
+    } else if (n <= allowed) {
+      out.push({ ...g, status: "known", basis: "debt", allowed, fresh: [] });
+    } else {
+      const fresh = allowed === 0 ? { sites: g.sites, exact: true } : newSitesOf(g, oldSitesFor(g.file), n - allowed);
+      out.push({ ...g, status: "new", allowed, fresh: fresh.sites, exact: fresh.exact });
+    }
+  }
+  return out;
 }
 
 const SKIP = (f) => /\.(test|spec|stories)\.tsx$/.test(f) || f.includes("__tests__") || f.startsWith("node_modules/") || /(^|\/)fixtures?\//.test(f);
@@ -399,21 +442,46 @@ export function collect({ root = REPO_ROOT, paths = null } = {}) {
     }
     sites.push(...scanSource(f, text));
   }
-  return keySites(sites);
+  return sortSites(sites);
 }
+
+/** Each file's sites at a commit (null when the file or the commit cannot be read). */
+function oldSitesReader(sha, root = REPO_ROOT) {
+  const cache = new Map();
+  return (file) => {
+    if (!sha) return null;
+    if (cache.has(file)) return cache.get(file);
+    let sites = null;
+    try {
+      const text = execFileSync("git", ["show", `${sha}:${file}`], { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] });
+      sites = scanSource(file, text);
+    } catch {
+      sites = null;
+    }
+    cache.set(file, sites);
+    return sites;
+  };
+}
+
+const headSha = (root = REPO_ROOT) => execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
 
 function loadBaseline() {
   if (!existsSync(BASELINE_PATH)) return null;
   return JSON.parse(readFileSync(BASELINE_PATH, "utf8"));
 }
 
-function writeBaseline(ids, previous) {
-  const reasons = Object.fromEntries(Object.entries(previous?.reasons ?? {}).filter(([id]) => ids.includes(id)));
+function writeBaseline(counts, previous) {
+  const keys = Object.keys(counts).sort();
+  const ids = (previous?.ids ?? []).filter((k) => k in counts).sort();
+  const reasons = Object.fromEntries(Object.entries(previous?.reasons ?? {}).filter(([k]) => ids.includes(k)));
   const body = {
-    note: "UI drift sites that existed when the check was introduced (2026-10-03). This list may only SHRINK — fix a site, then `node scripts/ui-drift/check-ui-drift.mjs --update`. A new site is fixed or accepted with a reason (`pnpm findings accept ui-drift <key> --reason …`). See scripts/ui-drift/check-ui-drift.mjs.",
+    note: "UI drift per rule × file: `counts` is how many sites each `rule|file` had when recorded. A count may only go DOWN — fix sites, then `node scripts/ui-drift/check-ui-drift.mjs --update` (it lowers counts and drops fixed keys; it never raises one). A key above its count is NEW and names its new sites, diffed against the file at `sha`. `ids` are keys accepted with a reason (`pnpm findings accept ui-drift <rule|file> --reason …`): that rule is allowed in that file at any count. See scripts/ui-drift/check-ui-drift.mjs.",
     updated: new Date().toISOString().slice(0, 10),
+    sha: headSha(),
+    sites: keys.reduce((n, k) => n + counts[k], 0),
     count: ids.length,
     ids,
+    counts: Object.fromEntries(keys.map((k) => [k, counts[k]])),
     ...(Object.keys(reasons).length ? { reasons } : {}),
   };
   writeFileSync(BASELINE_PATH, `${JSON.stringify(body, null, 2)}\n`);
@@ -487,9 +555,22 @@ export function selfTest() {
   for (const s of quiet) problems.push(`compliant code flagged: ${s.rule} ${s.what}`);
   const spinnerOk = scanSource("components/matrx/LoadingSpinner.tsx", `export const S = () => <i className="animate-spin" />;`);
   if (spinnerOk.some((s) => s.rule === "spinner-outside-spinner")) problems.push("a spinner component's own animate-spin was flagged");
-  const keyed = keySites([...scanSource("a.tsx", PLANTED), ...scanSource("a.tsx", PLANTED)]);
-  if (new Set(keyed.map((k) => k.key)).size !== keyed.length) problems.push("two identical sites share a key (the #n suffix is broken)");
-  if (keyed.some((k) => /\|\d+$/.test(k.key) || k.key.length > 300)) problems.push("a key carries a line number or is too long");
+  // The count ratchet: at the baseline count → known; one more → new, naming exactly the new site.
+  const before = scanSource("a.tsx", PLANTED);
+  const extra = PLANTED.replace('<i className="animate-spin" />', '<i className="animate-spin" />\n      <span className="text-[11px]">again</span>');
+  const after = scanSource("a.tsx", extra);
+  const counts = Object.fromEntries([...groupSites(before).values()].map((g) => [g.key, g.sites.length]));
+  const same = judge(groupSites(scanSource("a.tsx", PLANTED)), { counts }, () => before);
+  if (same.some((j) => j.status !== "known")) problems.push("an unchanged file read as new against its own counts");
+  const grown = judge(groupSites(after), { counts }, () => before).filter((j) => j.status === "new");
+  if (grown.length !== 1 || grown[0].key !== "arbitrary-text-size|a.tsx" || grown[0].fresh.length !== 1 || grown[0].fresh[0].line !== 12) {
+    problems.push(`a grown count did not name exactly its one new site: ${JSON.stringify(grown.map((g) => [g.key, g.fresh.map((f) => f.line)]))}`);
+  }
+  const shrunk = judge(groupSites(after.filter((x) => x.rule !== "raw-color")), { counts }, () => before);
+  if (shrunk.some((j) => j.status !== "known" && j.key !== "arbitrary-text-size|a.tsx")) problems.push("a lower count read as new");
+  if (judge(groupSites(after), { counts, ids: ["arbitrary-text-size|a.tsx"], reasons: { "arbitrary-text-size|a.tsx": { reason: "x" } } }, () => before).some((j) => j.status === "new")) {
+    problems.push("an accepted rule × file key still reads as new");
+  }
   if (problems.length) {
     console.error(`${TAG} SELF-TEST FAILED — the check can no longer catch what it exists for:\n  ${problems.join("\n  ")}`);
     return 1;
@@ -502,8 +583,10 @@ export function main(argv = process.argv.slice(2)) {
   if (argv.includes("--self-test")) return selfTest();
   const paths = narrowedPaths(argv);
   const started = Date.now();
-  const items = collect({ paths });
+  const sites = collect({ paths });
+  const groups = groupSites(sites);
   const baseline = loadBaseline();
+  const current = Object.fromEntries([...groups.values()].map((g) => [g.key, g.sites.length]));
 
   if (argv.includes("--init")) {
     if (baseline) {
@@ -514,8 +597,8 @@ export function main(argv = process.argv.slice(2)) {
       console.error(`${TAG} refused: --init needs a full scan, not a narrowed one.`);
       return 1;
     }
-    writeBaseline([...new Set(items.map((i) => i.key))].sort(), null);
-    console.log(`${TAG} baseline written: ${items.length} sites.`);
+    writeBaseline(current, null);
+    console.log(`${TAG} baseline written: ${groups.size} rule × file keys, ${sites.length} sites.`);
     return 0;
   }
   if (argv.includes("--update")) {
@@ -523,40 +606,53 @@ export function main(argv = process.argv.slice(2)) {
       console.error(`${TAG} refused: --update needs an existing baseline and a full scan.`);
       return 1;
     }
-    const present = new Set(items.map((i) => i.key));
-    const kept = baseline.ids.filter((id) => present.has(id));
-    writeBaseline(kept, baseline);
-    console.log(`${TAG} baseline shrunk ${baseline.ids.length} → ${kept.length} (never grows).`);
+    const lowered = {};
+    for (const [k, n] of Object.entries(baseline.counts ?? {})) if (current[k]) lowered[k] = Math.min(n, current[k]);
+    writeBaseline(lowered, baseline);
+    console.log(`${TAG} baseline shrunk: ${Object.keys(baseline.counts ?? {}).length} → ${Object.keys(lowered).length} keys (counts only go down).`);
     return 0;
   }
 
-  const ids = new Set(baseline?.ids ?? []);
-  const reasons = baseline?.reasons ?? {};
-  const fresh = [];
-  for (const it of items) {
-    const known = ids.has(it.key);
-    if (!known) fresh.push(it);
+  const judged = judge(groups, baseline, oldSitesReader(baseline?.sha));
+  const fresh = judged.filter((j) => j.status === "new");
+  for (const j of judged) {
+    const title = RULES[j.rule].title;
+    const lead = j.status === "new" ? j.fresh[0] : j.sites[0];
+    // New sites FIRST: the runner cuts a finding title at ~100 characters, so what is new must
+    // lead; the file is the item's own `file`/`line`, never repeated here.
+    const named = j.fresh.map((f) => `L${f.line} ${f.what}`).join("; ");
     emitItem({
-      key: it.key,
-      status: known ? "known" : "new",
-      ...(known ? { basis: String(reasons[it.key]?.reason ?? "").trim() ? "accepted" : "debt" } : {}),
-      title: `${it.file}:${it.line} ${RULES[it.rule].title}: ${it.what}`,
-      file: it.file,
-      line: it.line,
-      rule: it.rule,
+      key: j.key,
+      status: j.status,
+      ...(j.status === "known" ? { basis: j.basis } : {}),
+      title:
+        j.status === "new"
+          ? `+${j.fresh.length} ${title}: ${named} (now ${j.sites.length}, baseline ${j.allowed})`
+          : `${j.sites.length} × ${title} (baseline ${j.allowed})`,
+      file: j.file,
+      line: lead.line,
+      rule: j.rule,
     });
   }
   if (!paths) endItems(); // only a full scan may say "everything else is fixed"
 
   const byRule = {};
-  for (const it of items) byRule[it.rule] = (byRule[it.rule] ?? 0) + 1;
-  const stale = paths ? 0 : [...ids].filter((id) => !items.some((i) => i.key === id)).length;
+  for (const s2 of sites) byRule[s2.rule] = (byRule[s2.rule] ?? 0) + 1;
+  const counts = baseline?.counts ?? {};
+  const shrinkable = paths ? 0 : Object.entries(counts).filter(([k, n]) => (current[k] ?? 0) < n).length;
+  const newSites = fresh.reduce((n, j) => n + j.fresh.length, 0);
   console.log(
-    `${TAG} ${items.length} drifting site(s)${paths ? ` in ${paths.length} path(s)` : ""} (${Object.entries(byRule).map(([r, n]) => `${r} ${n}`).join(", ") || "none"}); ${fresh.length} NEW, not in the baseline (${Date.now() - started} ms).`,
+    `${TAG} ${sites.length} drifting site(s) in ${groups.size} rule × file key(s)${paths ? ` in ${paths.length} path(s)` : ""} (${Object.entries(byRule).map(([r, n]) => `${r} ${n}`).join(", ") || "none"}); ${fresh.length} key(s) NEW or grown, ${newSites} new site(s) (${Date.now() - started} ms).`,
   );
-  for (const it of fresh.slice(0, 200)) console.log(`  NEW ${it.file}:${it.line}  ${RULES[it.rule].title}: ${it.what}\n      fix: ${RULES[it.rule].fix}`);
-  if (fresh.length > 200) console.log(`  … and ${fresh.length - 200} more`);
-  if (stale) console.log(`${TAG} ${stale} baseline id(s) no longer occur — shrink it: node scripts/ui-drift/check-ui-drift.mjs --update`);
+  let shown = 0;
+  for (const j of fresh) {
+    for (const f of j.fresh) {
+      if (shown++ >= 200) break;
+      console.log(`  NEW ${f.file}:${f.line}  ${RULES[j.rule].title}: ${f.what}${j.exact === false ? " (no history at the baseline commit — the newest sites are named)" : ""}\n      fix: ${RULES[j.rule].fix}`);
+    }
+  }
+  if (newSites > 200) console.log(`  … and ${newSites - 200} more`);
+  if (shrinkable) console.log(`${TAG} ${shrinkable} key(s) are under their baseline count — lock the gain in: node scripts/ui-drift/check-ui-drift.mjs --update`);
   if (!baseline) console.log(`${TAG} no baseline at ${BASELINE_REL}: every site is new.`);
   return argv.includes("--strict") && fresh.length ? 1 : 0;
 }

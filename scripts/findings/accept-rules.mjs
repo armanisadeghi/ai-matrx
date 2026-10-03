@@ -330,10 +330,15 @@ export function corpusCases(root = REPO_ROOT) {
     let realFile = "over its real file";
     for (const [rel, text] of Object.entries(files)) {
       if (!text || text.length <= REAL_FILE_CORPUS_LIMIT || entry.accept.kind !== "ids-count-reasons") continue;
-      const data = JSON.parse(text);
-      const ids = data.ids.slice(0, 25);
-      files[rel] = `${JSON.stringify({ ...data, count: ids.length, ids }, null, 2)}\n`;
-      realFile = "over its real file's first 25 ids";
+      // Every long list or map is cut to its first 25 entries (ui-drift's `counts` is a 12,000-key map).
+      const data = Object.fromEntries(
+        Object.entries(JSON.parse(text)).map(([k, v]) => [
+          k,
+          Array.isArray(v) ? v.slice(0, 25) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).slice(0, 25)) : v,
+        ]),
+      );
+      files[rel] = `${JSON.stringify({ ...data, count: data.ids.length }, null, 2)}\n`;
+      realFile = "over its real file's first 25 entries";
     }
     const sample = {
       "detector-allowlist": `${entry.accept.detectors?.[0]}|corpus/sample — file.ts|*`,

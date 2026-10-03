@@ -372,7 +372,7 @@ function PowerUpTile({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "group flex min-w-0 cursor-pointer items-center gap-2.5 rounded-lg border border-border bg-card p-2.5 text-left transition-colors",
+        "group flex min-w-0 cursor-pointer items-center gap-2.5 rounded-lg border border-border bg-card p-2.5 text-left transition-colors max-sm:flex-col max-sm:gap-1.5 max-sm:text-center",
         "hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         "disabled:cursor-not-allowed disabled:opacity-70",
       )}
@@ -382,7 +382,7 @@ function PowerUpTile({
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
-          <span className="truncate text-[0.8125rem] font-semibold leading-5 text-foreground">{title}</span>
+          <span className="text-[0.8125rem] font-semibold leading-5 text-foreground max-sm:mx-auto sm:truncate">{title}</span>
           {badge && (
             <span className="hidden h-[1.125rem] shrink-0 items-center rounded-md border border-border px-1.5 text-[0.6875rem] font-medium tabular-nums text-muted-foreground sm:inline-flex">
               {badge}
@@ -1502,12 +1502,15 @@ export function FlashcardSetSample({
                 deck's AI power-ups, and its audio, as one band. */}
             <section className="flex flex-col gap-2 empty:hidden" aria-label="Deck mastery and tools">
               {!deckEmpty && (
-                <div className="rounded-lg border border-border bg-card px-3 py-2.5">
-                  <DeckMasteryBar masteries={data.cards.map((c) => masteryByCard[c.id])} />
-                </div>
-              )}
-              {!deckEmpty && (
-                <div className={cn("grid gap-2", canEdit ? "grid-cols-3" : "grid-cols-1")}>
+                <div
+                  className={cn(
+                    "grid gap-2",
+                    canEdit ? "grid-cols-3 lg:grid-cols-[minmax(0,1.35fr)_repeat(3,minmax(0,1fr))]" : "grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]",
+                  )}
+                >
+                  <div className="col-span-full flex flex-col justify-center rounded-lg border border-border bg-card px-3 py-2 lg:col-span-1">
+                    <DeckMasteryBar masteries={data.cards.map((c) => masteryByCard[c.id])} />
+                  </div>
                   {canEdit && (
                     <PowerUpTile
                       tone="enrich"
@@ -1627,7 +1630,8 @@ export function FlashcardSetSample({
                         </button>
                       )}
                       <span className="flex-1" />
-                      <label className="uc-field max-sm:hidden" style={{ width: "14rem" }}>
+                      <div className="contents max-sm:hidden">
+                      <label className="uc-field" style={{ width: "14rem" }}>
                         <Search aria-hidden />
                         <input
                           type="search"
@@ -1642,6 +1646,7 @@ export function FlashcardSetSample({
                           </button>
                         )}
                       </label>
+                      </div>
                       <div className="uc-seg" role="radiogroup" aria-label="Card view">
                         {DECK_VIEWS.map((v) => (
                           <TooltipProvider key={v.id}>
@@ -1666,7 +1671,8 @@ export function FlashcardSetSample({
                       </div>
                     </div>
                     {/* Phone: search gets its own full row. */}
-                    <label className="uc-field sm:hidden" style={{ flexBasis: "calc(100% - var(--matrx-tap-gap))" }}>
+                    <div className="hidden max-sm:contents">
+                    <label className="uc-field" style={{ flexBasis: "calc(100% - var(--matrx-tap-gap))" }}>
                       <Search aria-hidden />
                       <input
                         type="search"
@@ -1676,6 +1682,7 @@ export function FlashcardSetSample({
                         aria-label="Search cards in this deck"
                       />
                     </label>
+                    </div>
                   </div>
                   {canEdit && selecting && (
                     <div className="mb-2 flex flex-wrap items-center gap-x-2 rounded-lg border border-primary/30 bg-primary/5 py-1 pl-3 pr-[9px]">

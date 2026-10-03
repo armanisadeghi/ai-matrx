@@ -31,7 +31,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # Full history: a grown rule × file count names its NEW sites by diffing the file against the
+      # baseline's own commit (scripts/ui-drift/baseline.json `sha`).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

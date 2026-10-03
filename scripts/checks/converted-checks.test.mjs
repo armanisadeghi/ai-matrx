@@ -228,11 +228,16 @@ export const CONVERTED = [
     keyShape: /^((undisclosed|inline-disclosure)\|[^|]+\.tsx?|cross-surface\|.+)$/,
   },
   {
-    // Baseline: scripts/ui-drift/baseline.json `ids` — `<rule>|<file>|<site>[#n]` (no line).
+    // Baseline: scripts/ui-drift/baseline.json — a COUNT ratchet per `<rule>|<file>` (`counts`),
+    // plus `ids` accepted with a reason (any count). A grown key is `new` AND a baseline key.
     id: "ui-drift",
     cmd: "pnpm check:ui-drift:strict",
-    allowKeys: () => json("scripts/ui-drift/baseline.json").ids,
-    keyShape: /^(primitive-visual-class|arbitrary-text-size|raw-color|spinner-outside-spinner|styled-raw-button|hand-rolled-overlay|glass-tap-on-solid)\|[^|]+\.tsx\|.+$/s,
+    allowKeys: () => {
+      const b = json("scripts/ui-drift/baseline.json");
+      return [...new Set([...Object.keys(b.counts ?? {}), ...(b.ids ?? [])])];
+    },
+    keyShape: /^(primitive-visual-class|arbitrary-text-size|raw-color|spinner-outside-spinner|styled-raw-button|hand-rolled-overlay|glass-tap-on-solid)\|[^|]+\.tsx$/,
+    countRatchet: true,
     reasonedKeys: () => Object.entries(json("scripts/ui-drift/baseline.json").reasons ?? {}).filter(([, v]) => withReason(v)).map(([k]) => k),
   },
   {
