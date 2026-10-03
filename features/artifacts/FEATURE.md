@@ -43,6 +43,11 @@ the node's `STATE.md` in the same session.
 
 ## Change log
 
+- 2026-10-03 — **The row-stability plumbing is gone: the table owns it.** `@ai-matrx/design-system` 0.59.0
+  no longer redraws rows when a host hands new inline functions (rows compare what they draw; handlers
+  trampoline to the latest), so `CmsArtifactList` writes its actions column, `rowClassName` and `getRowId`
+  inline again and its host guard test is deleted. Guard: the package's `MatrxDataTable.inline-callbacks.test.tsx`.
+
 - 2026-10-03 — **Opening an artifact no longer redraws every row of `/artifacts`.** `CmsArtifactList` wrote
   the actions column, `rowClassName` and `getRowId` inline in its JSX; the React Compiler cached them with
   the element, so each re-render of the list (opening in the canvas re-renders it twice) handed
