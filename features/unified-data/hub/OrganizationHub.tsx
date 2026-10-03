@@ -494,7 +494,7 @@ export function OrganizationHub({
     async (tableId: string) => {
       const home = organizationId ? null : archivedTables?.find((t) => t.id === tableId)?.organizationId;
       if (!organizationId && home) {
-        const restored = await doors.restoreRecordIn(dataSource, home, tableId);
+        const restored = await doors.restoreTableIn(dataSource, home, tableId);
         if (!restored.ok) return {
           code: "refused_by_rule" as const,
           message: restored.error.message,
@@ -504,8 +504,15 @@ export function OrganizationHub({
         router.refresh();
         return null;
       }
-      const answered = await client.recordRestore({ record_id: tableId });
-      if (!answered.ok) return answered.error;
+      // A TABLE COMES BACK IN PASSES (custom.table_restore): one call timed out on a big table.
+      const org = organizationId ?? client.config.organizationId;
+      if (!org) return { code: "refused_by_rule" as const, message: "Pick the table's organization to bring it back." };
+      const answered = await doors.restoreTableIn(dataSource, org, tableId);
+      if (!answered.ok) return {
+        code: "refused_by_rule" as const,
+        message: answered.error.message,
+        ...(answered.error.hint ? { hint: answered.error.hint } : {}),
+      };
       await readArchive();
       router.refresh();
       return null;

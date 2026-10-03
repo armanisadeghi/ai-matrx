@@ -20,6 +20,7 @@ import {
   getTrashCounts,
   listTrash,
   restoreFromTrash,
+  carryOnTableRestore,
   type TrashCount,
   type TrashItem,
 } from "@/features/trash/service";
@@ -59,6 +60,7 @@ export const mainTrashSource: TrashSource = {
   list: (opts) => listTrash(opts),
   restore: async (item) => {
     await restoreFromTrash(item.entity_token, item.id);
+    await carryOnTableRestore(item.entity_token, item.organization_id, item.id);
     return { notices: [] };
   },
 };

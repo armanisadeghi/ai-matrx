@@ -31,7 +31,7 @@ import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRe
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { ArchivedTablesList, type ArchivedTable } from "@/features/unified-data/hub/ArchivedTablesList";
-import { tableKernelId } from "@/features/unified-data/hub/doors";
+import { restoreTableIn, tableKernelId } from "@/features/unified-data/hub/doors";
 import { createList } from "../service";
 import { listAddress } from "../where-lists-live";
 import { readPickListIndex, type PickListEntry } from "../pick-list-index";
@@ -316,8 +316,21 @@ function PicklistsArchive({
   }, [client, dataSource, idsKey, reread]);
 
   const bringBack = async (listId: string): Promise<RecordsError | null> => {
-    const answered = await client.recordRestore({ record_id: listId });
-    if (!answered.ok) return answered.error;
+    // A pick list is a Table: it comes back pass by pass (custom.table_restore, TABLE-ACTIONS).
+    const org = client.config.organizationId;
+    if (!org) {
+      const unknownHome: RecordsError = { code: "internal", message: "Pick the list's organization to bring it back." };
+      return unknownHome;
+    }
+    const answered = await restoreTableIn(client.config.dataSource, org, listId);
+    if (!answered.ok) {
+      const refused: RecordsError = {
+        code: "internal",
+        message: answered.error.message,
+        ...(answered.error.hint ? { hint: answered.error.hint } : {}),
+      };
+      return refused;
+    }
     onRestored();
     return null;
   };

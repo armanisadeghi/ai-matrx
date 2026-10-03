@@ -15,6 +15,8 @@ import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 import { followRemovalWithToast } from "@/features/trash/cascade";
+import { recordsDataSource } from "@ai-matrx/records-ui";
+import { restoreTableIn } from "@/features/unified-data/hub/doors";
 
 export type TrashItem =
   Database["public"]["Functions"]["trash_list"]["Returns"][number];
@@ -127,6 +129,19 @@ export async function restoreFromTrash(
   void followRemovalWithToast(entityToken, id, "Item");
 }
 
+/**
+ * A RECORD-STORE TABLE COMES BACK IN PASSES (lane TABLE-ACTIONS, 2026-10-03). The Trash door
+ * (`_trash_store_restore`) brings a Table back with its structure and a first bounded pass of what
+ * its archive took (`custom.table_restore`); the rest — records, then forms, views, dashboards — is
+ * carried on here, pass by pass, until the store says done. A Record, or a Table with nothing left
+ * waiting, answers at once.
+ */
+export async function carryOnTableRestore(entityToken: string, organizationId: string | null, id: string): Promise<void> {
+  if (entityToken !== "record" || !organizationId) return;
+  const carried = await restoreTableIn(recordsDataSource(supabase), organizationId, id, { carryOnOnly: true });
+  if (!carried.ok) throw restoreError({ message: carried.error.message, ...(carried.error.sqlstate ? { code: carried.error.sqlstate } : {}), hint: carried.error.hint ?? null });
+}
+
 // ── ORGANIZATION TRASH (lane TRASH-2) ─────────────────────────────────────────────────────────
 // Personal Trash (above) is what YOU archived plus what was shared with you by name. An
 // organization's owners and admins see members' archived items in THAT organization here —
@@ -187,6 +202,7 @@ export async function restoreFromOrgTrash(
   });
   if (error) throw restoreError(error);
   const raw = (data ?? {}) as { restored?: unknown; message?: unknown };
+  if (raw.restored === true) await carryOnTableRestore(entityToken, organizationId, id);
   return {
     restored: raw.restored === true,
     message:

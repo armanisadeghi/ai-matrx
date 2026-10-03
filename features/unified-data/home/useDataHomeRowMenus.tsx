@@ -26,6 +26,7 @@ import { ArchiveRestore, ExternalLink, Link2, Star, StarOff } from "lucide-react
 import type { PermissionLevel } from "@ai-matrx/records";
 import { RecordsProvider, useRecordsClient } from "@ai-matrx/records/react";
 import { createRecordsClient } from "@ai-matrx/records/core";
+import { restoreTableIn } from "@/features/unified-data/hub/doors";
 import { onReadTheHomeAgain } from "./readTheHomeAgain";
 import {
   TableRenameDialog,
@@ -272,18 +273,18 @@ export function useDataHomeRowMenus({
 
   /**
    * AN ARCHIVED ROW (the list's Archived filter, TABLE-ACTIONS item 10): Open, and Restore. A table
-   * is restored in its own organization by the store's one restore (`recordRestore`), which brings
-   * back what was built on it in the same event; a portal comes back from its table's Portals rail.
+   * is restored in its own organization pass by pass (`custom.table_restore` through
+   * `restoreTableIn` — one call timed out on a big table), which brings back what was built on it
+   * in the same event; a portal comes back from its table's Portals rail.
    */
   const forArchived = (row: DataHomeRow): ItemMenuConfig => {
     const restore = async () => {
       if (!row.organizationId || !row.tableId) return;
-      const inOrganization = createRecordsClient({ ...client.config, organizationId: row.organizationId });
-      const answered = await inOrganization.recordRestore({ record_id: row.tableId });
+      const answered = await restoreTableIn(client.config.dataSource, row.organizationId, row.tableId);
       if (!answered.ok) {
         // A statement timeout is ours to word; Postgres's sentence never reaches the toast.
         throw new Error(
-          answered.error.code === "timed_out" ? "The restore took too long. Try again in a moment." : answered.error.message,
+          answered.error.sqlstate === "57014" ? "The restore took too long. Try again in a moment." : answered.error.message,
         );
       }
       onChanged();

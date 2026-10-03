@@ -507,6 +507,76 @@ export async function restoreRecordIn(
   return answered.ok ? { ok: true, data: null } : answered;
 }
 
+/** One pass of `custom.table_restore` (lane TABLE-ACTIONS): what came back and what still waits. */
+export interface TableRestorePass {
+  table_id: string;
+  table_name: string;
+  restored: number;
+  structure_restored: number;
+  built_on_restored: number;
+  remaining: number;
+  built_on_remaining: number;
+  /** Rows refused on their own now, left archived and named. */
+  left: number;
+  table_restored: boolean;
+  done: boolean;
+  message: string;
+}
+
+/** The pass `restoreTableIn` starts with; the door also stops each pass itself at 1 s. */
+export const TABLE_RESTORE_PASS = 20;
+const TABLE_RESTORE_MAX_PASSES = 500;
+
+/**
+ * BRING A WHOLE TABLE BACK, PASS BY PASS (`custom.table_restore`, lane TABLE-ACTIONS 2026-10-03).
+ *
+ * `custom.record_restore` on a Table brought the Table, its structure, every record and everything
+ * built on it back in ONE statement and timed out on a big table. This loops the paged door until
+ * it answers `done`, halving the pass on a statement timeout (a timed-out pass changed nothing).
+ * The same loop as `@ai-matrx/records` 0.66 `client.tableRestoreWhole`; this repo installs that
+ * version once it is published, and this goes.
+ *
+ * `carryOnOnly` (the Trash, whose own door already brought the Table and its first pass back):
+ * a Record rather than a Table, or nothing left waiting, answers `null` — there is nothing to carry
+ * on. Otherwise a store without the door yet (the main database before the chair's apply) brings
+ * the table back through the one-call `record_restore`, as before.
+ */
+export async function restoreTableIn(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+  tableId: string,
+  options: { carryOnOnly?: boolean; onPass?: (pass: TableRestorePass) => void } = {},
+): Promise<DoorAnswer<TableRestorePass | null>> {
+  let size = TABLE_RESTORE_PASS;
+  for (let pass = 0; pass < TABLE_RESTORE_MAX_PASSES; pass += 1) {
+    const answered = await call<TableRestorePass>(dataSource, "table_restore", {
+      p_organization_id: organizationId,
+      p_table_id: tableId,
+      p_chunk: size,
+    });
+    if (!answered.ok) {
+      const code = answered.error.sqlstate;
+      if (code === "57014" && size > 1) {
+        size = Math.max(1, Math.floor(size / 2));
+        continue;
+      }
+      const doorAbsent = code === "PGRST202" || code === "42883";
+      if (options.carryOnOnly && pass === 0 && (doorAbsent || code === "02000")) return { ok: true, data: null };
+      if (doorAbsent && pass === 0) {
+        const back = await restoreRecordIn(dataSource, organizationId, tableId);
+        return back.ok ? { ok: true, data: null } : back;
+      }
+      return answered;
+    }
+    options.onPass?.(answered.data);
+    if (answered.data.done) return answered;
+  }
+  return {
+    ok: false,
+    error: { message: `The table is not all back after ${TABLE_RESTORE_MAX_PASSES} passes. Bring it back again to carry on.` },
+  };
+}
+
 /** One (organization, kind, ids) question for `custom.data_home_changed_by`. */
 export interface ChangedByAsk {
   organization_id: string;
