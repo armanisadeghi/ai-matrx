@@ -63,7 +63,10 @@ export function MicWithDeviceMenu({
       : "text-muted-foreground";
 
   return (
-    <div className="relative inline-flex h-10 items-center">
+    // `data-matrx-glass`: the capsule below IS glass (matrx-glass-thin-border),
+    // so a glass tap button beside it (ProTextarea's "…") is an all-glass row
+    // — tap-target placement rule 2 — not glass beside bare chrome.
+    <div data-matrx-glass className="relative inline-flex h-10 items-center">
       <div
         className={cn(
           "relative flex h-7 items-stretch overflow-hidden rounded-full matrx-glass-thin-border",

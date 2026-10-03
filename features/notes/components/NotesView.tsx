@@ -886,11 +886,14 @@ export function NotesView({
               just the main area, no group. */}
           {narrowSidebar ? (
             narrowShowsList ? (
-              <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 <NoteSidebar instanceId={instanceId} onNoteOpened={() => setListShownFrom(null)} />
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 flex-col">{mainArea}</div>
+              // min-w-0: in this flex ROW a column without it is as wide as its
+              // widest unbreakable row — beside the canvas the footer's copy
+              // pair slid under the canvas.
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">{mainArea}</div>
             )
           ) : showSidebar && !singleNote ? (
             <ResizablePanelGroup

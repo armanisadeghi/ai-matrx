@@ -1293,8 +1293,11 @@ export const ProTextarea = React.forwardRef<
             {/* Control cluster (mic + "…" menu) — floats OVER the text
             and fades in on pointer hover or keyboard focus-within. It also
             stays visible while the menu popover is open so it can't vanish
-            mid-interaction. */}
+            mid-interaction. A GLASS PLANE (tap-target placement rule 1):
+            it rides over the field's own scrolling text, so its glass
+            buttons legitimately float — the guard reads the marker. */}
             <div
+              data-matrx-glass-plane
               className={cn(
                 "absolute right-0 top-0 flex items-center transition-opacity duration-200 z-10 focus-within:opacity-100 focus-within:pointer-events-auto",
                 // Always in a RESERVED row, never over text: the bottom row

@@ -577,7 +577,9 @@ export default function WorkbooksLandingPage() {
           )}
 
           {!loading && workbooks.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            // Columns follow the LIST's width, never the window's: beside the
+            // canvas a 1440px window left three 180px cards ("Top …").
+            <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))]">
               {workbooks.map((wb) => (
                 <Card key={wb.id} className="group/entity-ref">
                   <CardContent className="p-4 space-y-2">
@@ -591,7 +593,7 @@ export default function WorkbooksLandingPage() {
                       >
                         <FileSpreadsheet className="size-5 mt-0.5 text-muted-foreground" />
                         <div className="min-w-0">
-                          <div className="font-medium truncate">
+                          <div className="font-medium line-clamp-2 break-words" title={wb.workbook_name}>
                             {wb.workbook_name}
                           </div>
                           {wb.description && (

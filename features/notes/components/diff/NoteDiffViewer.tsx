@@ -154,22 +154,27 @@ export function NoteDiffViewer({
         onValueChange={(v) => setTab(v as NoteDiffTab)}
         className="flex h-full min-h-0 flex-col"
       >
-        <div className="flex shrink-0 items-center gap-3 border-b border-border bg-card/50 px-3 py-1.5">
-          <TabsList className="h-7 bg-muted/50 p-0.5">
+        {/* The bar answers its OWN width: in a 360px canvas pane the five
+            tabs keep their icons and drop their words (kept as names and
+            tooltips) instead of clipping the last one. */}
+        <div className="@container/diffbar flex shrink-0 items-center gap-3 border-b border-border bg-card/50 px-3 py-1.5">
+          <TabsList className="h-7 min-w-0 shrink-0 bg-muted/50 p-0.5">
             {TAB_CONFIG.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
                 value={value}
+                aria-label={label}
+                title={label}
                 className="h-6 gap-1 px-2 text-xs data-[state=active]:bg-background"
               >
                 <Icon className="h-3 w-3" />
-                {label}
+                <span className="hidden @[30rem]/diffbar:inline">{label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
           <div className="flex-1" />
           {hasChanges ? (
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap text-xs">
               {stats.added > 0 && (
                 <span className="text-green-600 dark:text-green-400">
                   +{stats.added} added

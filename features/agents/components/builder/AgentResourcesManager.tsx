@@ -127,6 +127,7 @@ function AgentResourcePickerAction({
         <button
           type="button"
           className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label={batch ? "Batch add resources" : "Add a resource"}
           title={
             batch
               ? "Add several permanent resources"
@@ -134,7 +135,7 @@ function AgentResourcePickerAction({
           }
         >
           <Icon className="h-3.5 w-3.5" />
-          {batch ? "Batch add" : "Add"}
+          <span className="hidden @[22rem]/resource-row:inline">{batch ? "Batch add" : "Add"}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -246,7 +247,9 @@ function SavedAgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
     : null;
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    // The row answers its OWN width: narrow, the two actions keep their icons
+    // and drop their words (kept as names and tooltips) instead of clipping.
+    <div className="@container/resource-row flex min-w-0 items-center gap-2">
       <Label className="shrink-0 text-xs text-muted-foreground">
         Resources
       </Label>

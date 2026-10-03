@@ -80,8 +80,12 @@ export function AgentEmptyMessageDisplay({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6 py-12">
-      <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+    // Short pane (a split canvas pane, a landscape phone): the hero icon steps
+    // aside and the padding shrinks, so the name and description stay above
+    // the composer; anything still too tall scrolls instead of centering off
+    // both edges (`justify-center-safe`).
+    <div className="flex flex-col items-center justify-center-safe h-full gap-3 text-center px-6 py-12 [@container(max-height:420px)]:py-3 [@container(max-height:420px)]:gap-1.5">
+      <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center [@container(max-height:420px)]:hidden">
         {iconNameOverride ? (
           <IconResolver
             iconName={iconNameOverride}

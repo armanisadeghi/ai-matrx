@@ -329,7 +329,9 @@ export function NoteMetadataBar({
           )}
         </div>
 
-        {trailing && <div className="ml-auto flex min-w-0 shrink items-center">{trailing}</div>}
+        {/* Clipped: when the row is crowded the counts step down (the metrics
+            bar measures this box), and never paint over the copy pair. */}
+        {trailing && <div className="ml-auto flex min-w-0 shrink items-center overflow-hidden">{trailing}</div>}
 
         {/*
          * The note RECORD pair. A note's body is the highest-value AI capture

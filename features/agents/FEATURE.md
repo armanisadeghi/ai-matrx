@@ -887,6 +887,7 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 
 ## Change log
 
+- `2026-10-03` — **Builder rows answer their own width.** The Context policy and Resources rows are containers: under 22rem their Add / Batch add actions keep their icons and drop their words (kept as accessible names and tooltips) instead of clipping to "Batc" beside the canvas.
 - `2026-09-30` — **A sent message shows what the server did with its context.** The user
   bubble's context tile now opens a read-only `ContextRulesTable` built from that turn's
   `context_receipt` (common-docs context-delivery RULES.md §5): one door,

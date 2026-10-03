@@ -343,7 +343,8 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
               <Button
                 variant="outline"
                 size="sm"
-                className="shrink-0 gap-2"
+                // Pressed reads at a glance while the sources tab is open.
+                className="shrink-0 gap-2 aria-pressed:border-primary/60 aria-pressed:bg-primary/10 aria-pressed:text-primary"
                 // Toggles the sources tab; pressed while it is open.
                 onClick={() => setSourcesOpen((current) => !current)}
                 aria-pressed={sourcesOpen}

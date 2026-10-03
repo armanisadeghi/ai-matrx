@@ -969,7 +969,10 @@ export function AgentContextPoliciesManager({
 
   return (
     <>
-      <div className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap">
+      {/* The row answers its OWN width: in a narrow builder column the two
+          actions keep their icons and drop their words, never clipping to
+          "Batc" (the words stay as the accessible names and tooltips). */}
+      <div className="@container/policy-row flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap">
         <Label className="text-xs text-muted-foreground shrink-0">
           Context policy
         </Label>
@@ -989,19 +992,22 @@ export function AgentContextPoliciesManager({
             type="button"
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
             onClick={openAdd}
+            aria-label="Add context policy"
+            title="Add context policy"
           >
             <Plus className="w-3.5 h-3.5" />
-            Add
+            <span className="hidden @[22rem]/policy-row:inline">Add</span>
           </button>
 
           <button
             type="button"
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
             onClick={() => openBatchImport({ agentId })}
+            aria-label="Batch add"
             title="Batch add variables and context policies from a scope type"
           >
             <Layers className="w-3.5 h-3.5" />
-            Batch add
+            <span className="hidden @[22rem]/policy-row:inline">Batch add</span>
           </button>
         </div>
       </div>
