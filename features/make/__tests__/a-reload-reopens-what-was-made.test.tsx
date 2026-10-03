@@ -63,7 +63,6 @@ jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "87a6e699-3622-486
 jest.mock("@/features/organizations/useOrganizationRequired", () => ({ useOrganizationRequired: () => ({ organizationId: ORG, organizationState: "ready" }) }));
 jest.mock("@/features/organizations/hooks", () => ({ useUserOrganizations: () => ({ organizations: [], loading: false }) }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({ OrganizationContextNotice: () => null }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({ UNIFIED_DATA_CAMPAIGN: { check: async () => ({ state: "on" }) } }));
 jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), dataHomeTables: jest.fn(), doorFailureLine: () => "" }));
 jest.mock("@/features/unified-data/home/dataHomeRows", () => ({ buildDataHomeRows: jest.fn(), dataHomeKindWord: (k: string) => k }));
 jest.mock("@/features/unified-data/hub/capabilities", () => ({ HUB_CAPABILITIES: [] }));
@@ -111,13 +110,13 @@ async function open(flow: string, madeId: string | null, onMade: (id: string) =>
 it("a form flow makes one only while the address names none, and names the one it made", async () => {
   const made: string[] = [];
   await open("form", null, (id) => made.push(id));
-  expect(seen["FormBuilder"]!["createOnMount"]).toBe(true);
+  expect(seen["FormBuilder"]!["startWithOne"]).toBe(true);
   const onActive = seen["FormBuilder"]!["onActiveForm"] as (f: { id: string; state: string }) => void;
   act(() => onActive({ id: MADE, state: "draft" }));
   expect(made).toEqual([MADE]);
 
   await open("form", MADE);
-  expect(seen["FormBuilder"]!["createOnMount"]).toBeFalsy();
+  expect(seen["FormBuilder"]!["startWithOne"]).toBeFalsy();
   expect(seen["FormBuilder"]!["activeFormId"]).toBe(MADE);
 });
 

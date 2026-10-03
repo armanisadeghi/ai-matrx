@@ -65,7 +65,6 @@ jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "87a6e699-3622-486
 jest.mock("@/features/organizations/useOrganizationRequired", () => ({ useOrganizationRequired: () => ({ organizationId: ORG, organizationState: "ready" }) }));
 jest.mock("@/features/organizations/hooks", () => ({ useUserOrganizations: () => ({ organizations: [], loading: false }) }));
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({ OrganizationContextNotice: () => null }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({ UNIFIED_DATA_CAMPAIGN: { check: async () => ({ state: "on" }) } }));
 jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), dataHomeTables: jest.fn(), doorFailureLine: () => "" }));
 jest.mock("@/features/unified-data/home/dataHomeRows", () => ({ buildDataHomeRows: jest.fn(), dataHomeKindWord: (k: string) => k }));
 jest.mock("@/features/unified-data/hub/capabilities", () => ({ HUB_CAPABILITIES: [] }));
@@ -84,7 +83,7 @@ const { MakeFlowSheet } = require("../MakeHome") as typeof import("../MakeHome")
  * (records-ui), stated here once: a tile whose builder is not in this table has no proof.
  */
 const SAVE_PROTOCOL: Partial<Record<MakeFlow, { builder: string; save: (props: Props) => void; reopen: string; makeNew?: string }>> = {
-  form: { builder: "FormBuilder", save: (p) => (p["onActiveForm"] as (f: unknown) => void)({ id: MADE, state: "draft" }), reopen: "activeFormId", makeNew: "createOnMount" },
+  form: { builder: "FormBuilder", save: (p) => (p["onActiveForm"] as (f: unknown) => void)({ id: MADE, state: "draft" }), reopen: "activeFormId", makeNew: "startWithOne" },
   booking: { builder: "BookingBuilder", save: (p) => (p["onSaved"] as (b: unknown) => void)({ form_id: MADE }), reopen: "bookingId", makeNew: "startNew" },
   dashboard: { builder: "DashboardCanvas", save: (p) => (p["onCreated"] as (id: string) => void)(MADE), reopen: "activeDashboardId", makeNew: "createOnMount" },
   checklist: { builder: "ChecklistTemplateEditor", save: (p) => (p["onSaved"] as (id: string) => void)(MADE), reopen: "templateId" },

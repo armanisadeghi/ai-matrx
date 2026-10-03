@@ -25,7 +25,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, ChevronRight } from "lucide-react";
 import { createRecordsClient, supabaseDataSource } from "@ai-matrx/records/core";
 import { bookingPath, publicFormPath } from "@ai-matrx/records";
-import { useRecordsClient } from "@ai-matrx/records/react";
+import { useOptionalRecordsClient } from "@ai-matrx/records/react";
 import {
   BookingBuilder,
   ChecklistTemplateEditor,
@@ -47,7 +47,6 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import * as doors from "@/features/unified-data/hub/doors";
 import { buildDataHomeRows, dataHomeKindWord, type DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
 import { HUB_CAPABILITIES } from "@/features/unified-data/hub/capabilities";
@@ -442,9 +441,9 @@ function PortalFlow({ organizationId, madeId, onMade, onName }: { organizationId
 
 /** Reads the made thing's own name (inside the mount, where the store client is) and reports it for the title. */
 function MadeName({ flow, tableId, madeId, onName }: { flow: MakeFlow; tableId: string | null; madeId: string | null; onName: (name: string | null) => void }) {
-  const client = useRecordsClient();
+  const client = useOptionalRecordsClient();
   useEffect(() => {
-    if (!madeId) return;
+    if (!madeId || !client) return;
     let alive = true;
     const say = (name: string | null | undefined) => {
       if (alive && name && name.trim()) onName(name.trim());
@@ -455,7 +454,7 @@ function MadeName({ flow, tableId, madeId, onName }: { flow: MakeFlow; tableId: 
         if (card.ok) say(card.data.title);
       } else if (flow === "form" && tableId) {
         const forms = await client.forms({ table_id: tableId as never });
-        if (forms.ok) say(forms.data.find((f) => f.id === madeId)?.name);
+        if (forms.ok) say(forms.data.find((f) => f.form_id === madeId)?.title);
       } else if (flow === "booking" && tableId) {
         const pages = await client.bookings({ table_id: tableId as never });
         if (pages.ok) say(pages.data.find((b) => b.form_id === madeId)?.title);
@@ -503,12 +502,6 @@ function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizati
     }
     setMaking(true);
     setRefused(null);
-    const gate = await UNIFIED_DATA_CAMPAIGN.check(activeOrganizationId);
-    if (gate.state !== "on") {
-      setMaking(false);
-      setRefused("Data records are not on in this organization.");
-      return;
-    }
     const client = createRecordsClient({
       dataSource: supabaseDataSource(createClient()),
       actor: userId ? { actor: "user", user_id: userId } : { actor: "user" },
