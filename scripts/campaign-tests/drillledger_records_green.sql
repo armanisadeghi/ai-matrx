@@ -47,6 +47,13 @@ begin
     if w = b then raise exception 'plant nolane did not apply'; end if;
     execute w;
   end if;
+  if current_setting('dl.plant') = 'queue' then
+    b := pg_get_functiondef('platform.ai_usage_recount(uuid,timestamptz,timestamptz)'::regprocedure);
+    w := replace(b, $x$if not pg_try_advisory_xact_lock(hashtextextended('runtime._ai_usage_hourly', 0)) then$x$,
+                    $x$perform pg_advisory_xact_lock(hashtextextended('runtime._ai_usage_hourly', 0)); if false then$x$);
+    if w = b then raise exception 'plant queue did not apply'; end if;
+    execute w;
+  end if;
 end $$;
 
 -- ════════════════════════════════════════════════════════════════════════════════════════════
@@ -344,8 +351,10 @@ end $$;
 create or replace function platform.drill_def__ledger_suite_probe() returns jsonb language sql immutable set search_path to 'pg_catalog' as $f$
   select (platform.drill_def__ai_usage() - 'records' - 'stale_after_knob')
     || jsonb_build_object('key', 'ledger_suite_probe', 'label', 'Ledger suite probe')
-    || jsonb_build_object('measures', (platform.drill_def__ai_usage() -> 'measures') || '[{"key":"cost_per_request","label":"Cost per request","op":"ratio","num":["cost"],"den":"requests","unit":"usd"},
-                                                                                   {"key":"tokens_per_request","label":"Tokens per request","op":"ratio","num":["tokens_in","tokens_out"],"den":"requests","unit":"tokens"}]'::jsonb)
+    || jsonb_build_object('measures', (platform.drill_def__ai_usage() -> 'measures') || (select coalesce(jsonb_agg(x), '[]'::jsonb) from jsonb_array_elements('[{"key":"cost_per_request","label":"Cost per request","op":"ratio","num":["cost"],"den":"requests","unit":"usd"},
+                                                                                   {"key":"tokens_per_request","label":"Tokens per request","op":"ratio","num":["tokens_in","tokens_out"],"den":"requests","unit":"tokens"}]'::jsonb) x
+        -- the live ai_usage declares cost_per_request itself since 2026-09-30: add only what it does not already declare
+        where not exists (select 1 from jsonb_array_elements(platform.drill_def__ai_usage() -> 'measures') d where d ->> 'key' = x ->> 'key')))
     || '{"views":[{"key":"by_model","label":"By model","question":{"by":["model"],"show":["cost","calls"],"sort":{"key":"cost","direction":"desc"},"window":{"key":"at","preset":"30d"}}}],
          "findings":[{"key":"hogs","label":"People who spent a large share","question":{"by":["person"],"show":["cost"],"having":[{"measure":"cost","op":">=","share_of_total":20,"knob":"drill.finding.ledger_suite_probe.hogs.hog_share_pct"}],"window":{"key":"at","preset":"30d"}},
                       "knobs":{"hog_share_pct":{"default":20,"label":"Share of the window''s cost","unit":"percent"}}}]}'::jsonb
@@ -523,11 +532,13 @@ grant execute on function pg_temp.late_page(text, uuid, jsonb) to authenticated;
 do $$
 declare
   c_test constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
-  v_w jsonb := jsonb_build_object('key', 'at', 'from', (select last_hour from pg_temp.dlt) - interval '3 days', 'to', (select last_hour from pg_temp.dlt) + interval '1 hour');
+  v_w jsonb := jsonb_build_object('key', 'at', 'from', (select last_hour from pg_temp.dlt) - interval '14 days', 'to', (select last_hour from pg_temp.dlt) + interval '1 hour');
   v_org uuid; v_exec uuid; v_before jsonb; v_after jsonb; v_healed jsonb;
 begin
   select c.organization_id, c.execution_id into v_org, v_exec from runtime._ai_usage_calls c
    where c.person_id = c_test and c.created_at >= (v_w ->> 'from')::timestamptz and c.created_at < (v_w ->> 'to')::timestamptz
+     -- the doors refuse an organization the seat is not in (REC-29 / T15 hard walls), so the page's organization is one the seat belongs to (its latest cost there can be older than 3 days, hence the 14-day window)
+     and exists (select 1 from iam.organization_member m where m.organization_id = c.organization_id and m.user_id = c_test)
    order by c.created_at desc limit 1;
   perform set_config('request.jwt.claims', json_build_object('sub', c_test, 'role', 'authenticated')::text, true);
   perform set_config('request.headers', '{}', true);
@@ -593,6 +604,17 @@ select pg_temp.chk('G1 platform._drill_ratio_sql and platform._drill_question_pr
   and not has_function_privilege('anon', 'platform._drill_ratio_sql(jsonb,text,text)', 'execute')
   and not has_function_privilege('authenticated', 'platform._drill_question_problems(jsonb,jsonb,text)', 'execute')
   and not has_function_privilege('anon', 'platform._drill_question_problems(jsonb,jsonb,text)', 'execute'));
+
+-- ═════════════════════════════════════════════════════════════════════════════════════════
+-- Q. A client door never queues behind a rebuild (usage walk step 02: ai_usage_recount 500).
+--    Q1 the door TRIES the rebuild lock and answers busy when it is held; it never WAITS on it
+--       (the door runs under authenticated's 8 s statement and lock timeouts; a rebuild holds the
+--       lock 4-20 min). plant=queue swaps the try for a waiting lock -> RED.
+-- ═════════════════════════════════════════════════════════════════════════════════════════
+select pg_temp.chk('Q1 platform.ai_usage_recount tries the rebuild lock and answers busy; it never waits on it',
+  pg_get_functiondef('platform.ai_usage_recount(uuid,timestamptz,timestamptz)'::regprocedure) like '%if not pg_try_advisory_xact_lock(hashtextextended(''runtime._ai_usage_hourly'', 0))%'
+  and pg_get_functiondef('platform.ai_usage_recount(uuid,timestamptz,timestamptz)'::regprocedure) like '%''busy'', true%'
+  and pg_get_functiondef('platform.ai_usage_recount(uuid,timestamptz,timestamptz)'::regprocedure) not like '%perform pg_advisory_xact_lock%');
 
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, left(detail, 300) as detail from pg_temp.dlr order by n;
 select format('%s passed, %s failed', count(*) filter (where ok), count(*) filter (where not ok)) as summary from pg_temp.dlr;

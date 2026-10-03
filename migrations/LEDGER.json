@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T00:23:21.660Z",
+  "generated_at": "2026-10-03T00:37:16.425Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2071,6 +2071,12 @@
       "filename": "drillcustom_the_two_doors_can_be_reached.sql",
       "checksum": "3b02d357ed02b189984dbce6abb839d78eda472f4ca70fda407b33c8f07e92ba",
       "applied_at": "2026-09-29 23:50:29.802106+00"
+    },
+    "migrations/campaign/drillledger_a_recount_never_queues_behind_a_rebuild.sql": {
+      "source": "matrx-frontend",
+      "filename": "drillledger_a_recount_never_queues_behind_a_rebuild.sql",
+      "checksum": "3e5bbe2b643ee0b28b7b053583eebd2565686d0ba612ae7a4bd63c71ad4b883c",
+      "applied_at": "2026-10-03 00:37:15.386839+00"
     },
     "migrations/campaign/drillstandarddoor_drill_declares_agents_by_model.sql": {
       "source": "matrx-frontend",
