@@ -41,7 +41,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { stashChatDraftTransfer } from "@ai-matrx/chat/agents/components/chat/chat-draft-transfer";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
-import { resolveMandate } from "@ai-matrx/chat/mandates/service";
+import { resolveMandateAsking } from "@ai-matrx/chat/mandates/resolve-asking";
+import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -99,7 +100,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
       // `/chat/new` mounts the `chat.default_new_chat` MANDATE's agent — resolve
       // the same mandate here so the stashed draft targets exactly what the
       // landing will mount (shared 5-min cache; the user's binding wins).
-      void resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY)
+      void resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY)
         .then((resolved) => {
           stashChatDraftTransfer({
             text: prompt,
@@ -108,6 +109,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
           startTransition(() => router.push("/chat/new"));
         })
         .catch((error: unknown) => {
+          if (isOrganizationSelectionCancelled(error)) return;
           console.error(
             `[NewMenu] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve:`,
             error,

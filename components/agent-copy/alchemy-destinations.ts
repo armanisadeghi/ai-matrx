@@ -40,8 +40,15 @@ export function createAlchemyDestinationPorts(host: Host) {
     openCode: (content) => { host.dispatch(openOverlay({ overlayId: "saveToCode", instanceId: `alchemy-code:${crypto.randomUUID()}`, data: { initialContent: content.plainText, initialLanguage: "plaintext", suggestedName: content.label, defaultFolderId: null } })); },
     openAttachment: (target) => { host.dispatch(openOverlay({ overlayId: "contextAssignment", instanceId: `alchemy-attach:${target.id}`, data: { subject: { entityType: "note", entityId: target.id, title: target.label } } })); },
     openChat: async (content, mode, current) => {
-      const { resolveMandate } = await import("@ai-matrx/chat/mandates/service");
-      const mandate = await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
+      const { resolveMandateAsking } = await import("@ai-matrx/chat/mandates/resolve-asking");
+      const { isOrganizationSelectionCancelled } = await import("@ai-matrx/chat/host/org");
+      let mandate;
+      try {
+        mandate = await resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY);
+      } catch (error) {
+        if (isOrganizationSelectionCancelled(error)) return;
+        throw error;
+      }
       identity();
       const resource = { type: "text" as const, data: { id: crypto.randomUUID(), label: content.label, text: content.markdown } };
       if (mode === "chat") {

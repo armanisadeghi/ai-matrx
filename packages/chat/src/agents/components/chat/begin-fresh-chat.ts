@@ -4,7 +4,8 @@ import type { ChatRouter } from "../../../host/contract";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { clearFocus } from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
-import { resolveMandate } from "../../../mandates/service";
+import { resolveMandateAsking } from "../../../mandates/resolve-asking";
+import { isOrganizationSelectionCancelled } from "../../../host/org";
 import {
   bumpFreshSession,
   stageDraftHandoff,
@@ -193,9 +194,11 @@ export async function beginFreshChat({
   let defaultAgentId: string | null = null;
   if (state.userAuth.id !== null && !state.userAuth.isAnonymous) {
     try {
-      defaultAgentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY))
+      defaultAgentId = (await resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY))
         .agentId;
     } catch (error) {
+      // Declined the organization question: no fresh chat starts.
+      if (isOrganizationSelectionCancelled(error)) return;
       console.error(
         `[beginFreshChat] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — routing to /chat/new, which will surface the error:`,
         error,
