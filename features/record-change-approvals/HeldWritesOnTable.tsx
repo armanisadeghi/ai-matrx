@@ -41,7 +41,23 @@ type Held =
   | { state: "unreadable"; why: string };
 
 /** Everything held for a person on one table, read from the one queue. */
-export async function heldWritesOnTable(
+/**
+ * ONE READ FOR EVERY MOUNT IN FLIGHT (T5.3): the table page draws its header twice while it opens
+ * (the fallback header, then the page's own), and each asked the queue — three `work_inbox` calls on
+ * one table open. Mounts that ask while a read is in flight share it; a later ask reads again.
+ */
+const inFlight = new Map<string, Promise<Held>>();
+
+export function heldWritesOnTable(organizationId: string, tableId: string): Promise<Held> {
+  const key = `${organizationId}:${tableId}`;
+  const held = inFlight.get(key);
+  if (held) return held;
+  const read = readHeldWritesOnTable(organizationId, tableId).finally(() => inFlight.delete(key));
+  inFlight.set(key, read);
+  return read;
+}
+
+async function readHeldWritesOnTable(
   organizationId: string,
   tableId: string,
 ): Promise<Held> {
