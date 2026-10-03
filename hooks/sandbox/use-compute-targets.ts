@@ -25,6 +25,7 @@ const COMPUTE_TARGETS_CHANGED = "matrx:compute-targets-changed";
 
 /** Refresh mounted pickers after a successful sandbox mutation. */
 export function notifyComputeTargetsChanged(): void {
+  generation += 1;
   window.dispatchEvent(new Event(COMPUTE_TARGETS_CHANGED));
 }
 
@@ -46,12 +47,16 @@ interface UseComputeTargetsResult {
  * ONE request per refresh, however many pickers are mounted. Every instance
  * listens for window focus, so a page with the chat composer, the sandbox
  * panel and a verified binding fired five or six identical GETs per focus
- * (Vercel, 2026-10-03). Callers that start while one is in flight share it.
+ * (Vercel, 2026-10-03). Refreshes share the request in flight unless it
+ * predates a change: a change notice or an explicit refetch moves
+ * `generation`, so the first refresh after it asks again and the rest share
+ * that newer request.
  */
-let inflight: Promise<ComputeTargetListResponse> | null = null;
+let generation = 0;
+let inflight: { generation: number; request: Promise<ComputeTargetListResponse> } | null = null;
 
 function loadComputeTargets(): Promise<ComputeTargetListResponse> {
-  if (inflight) return inflight;
+  if (inflight && inflight.generation === generation) return inflight.request;
   const request = (async () => {
     const resp = await fetch("/api/compute-targets");
     if (!resp.ok) {
@@ -60,11 +65,11 @@ function loadComputeTargets(): Promise<ComputeTargetListResponse> {
     }
     return (await resp.json()) as ComputeTargetListResponse;
   })();
-  inflight = request;
-  void request.then(
-    () => { if (inflight === request) inflight = null; },
-    () => { if (inflight === request) inflight = null; },
-  );
+  inflight = { generation, request };
+  const settled = () => {
+    if (inflight?.request === request) inflight = null;
+  };
+  void request.then(settled, settled);
   return request;
 }
 
@@ -74,7 +79,7 @@ export function useComputeTargets(): UseComputeTargetsResult {
   const [error, setError] = useState<string | null>(null);
   const fetchIdRef = useRef(0);
 
-  const refetch = useCallback(async () => {
+  const load = useCallback(async () => {
     const myId = ++fetchIdRef.current;
     setLoading(true);
     setError(null);
@@ -90,9 +95,15 @@ export function useComputeTargets(): UseComputeTargetsResult {
     }
   }, []);
 
+  /** An explicit refetch never reuses a request that started before it. */
+  const refetch = useCallback(async () => {
+    generation += 1;
+    await load();
+  }, [load]);
+
   useEffect(() => {
     const refresh = () => {
-      void refetch();
+      void load();
     };
     refresh();
     window.addEventListener(COMPUTE_TARGETS_CHANGED, refresh);
@@ -101,7 +112,7 @@ export function useComputeTargets(): UseComputeTargetsResult {
       window.removeEventListener(COMPUTE_TARGETS_CHANGED, refresh);
       window.removeEventListener("focus", refresh);
     };
-  }, [refetch]);
+  }, [load]);
 
   return { data, loading, error, refetch };
 }
