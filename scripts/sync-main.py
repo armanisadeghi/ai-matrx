@@ -784,9 +784,20 @@ def commit_all():
         return 0
     _, names, _ = git("diff", "--cached", "--name-only", "-z")
     files = [x for x in names.split("\0") if x]
-    n = len(files)
-    git("commit", "--no-verify", "-q", "-m", LOCAL_MSG, "-m", sweep_message_body(files))
-    return n
+    body = sweep_message_body(files)
+    rc, out, err = git("commit", "--no-verify", "-q", "-m", LOCAL_MSG, "-m", body, check=False)
+    if rc != 0:
+        # The shared checkout has concurrent writers. sweep_message_body() reads transcripts for
+        # seconds; in that window another session's `git commit --only <its paths>` can commit
+        # exactly the files we staged (it rewrites the index too). Our commit then finds nothing
+        # to commit and exits 1 -- the work is safe in HEAD, so that is not a failure
+        # (ship-all 2026-10-03_14-13-08). Anything still staged means a real failure: stop.
+        if git("diff", "--cached", "--quiet", check=False)[0] == 0:
+            say("SWEEP: another session committed the staged files while this sync was writing "
+                "the sweep message; nothing left to commit, continuing.")
+            return 0
+        die("git commit failed:\n%s%s" % (out, err))
+    return len(files)
 
 
 # ── blob helpers ────────────────────────────────────────────────────────────────────────────
