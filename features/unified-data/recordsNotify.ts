@@ -15,6 +15,7 @@ import type { ReversibleAnnouncement, ReversibleFoundAt } from "@ai-matrx/kit/re
 import { toast } from "@/lib/toast";
 import { announceReversible } from "@/lib/reversible/announceReversible";
 import { ARCHIVED_TABLES_PLACE } from "@/features/unified-data/home/archivedTablesPlace";
+import { readTheHomeAgain } from "@/features/unified-data/home/readTheHomeAgain";
 
 /** Where each kind of record-store thing waits once it is archived. */
 const FOUND_AT_BY_NOUN: Record<string, ReversibleFoundAt> = {
@@ -35,6 +36,12 @@ export const RECORDS_NOTIFY = {
     announceReversible({
       ...announcement,
       foundAt: announcement.foundAt ?? FOUND_AT_BY_NOUN[announcement.noun],
+      // The toast's Undo and ⌘Z run this one undo; once it lands, the Data home lists the thing
+      // again without a reload (lane TABLE-ACTIONS fix round).
+      undo: async () => {
+        await announcement.undo();
+        readTheHomeAgain();
+      },
     });
   },
 };

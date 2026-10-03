@@ -11,12 +11,25 @@ import Link from "next/link";
 import { MoreVertical, Star } from "lucide-react";
 
 import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { MatrxTableRowAlchemyProvider } from "@ai-matrx/design-system/data-table";
+import type { CopyControlProps, MatrxDataTableRecordControls } from "@ai-matrx/design-system/data-table";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
 import { dataHomeKindWord, type DataHomeRow } from "./dataHomeRows";
 import { FoundationBadge, KindIcon, useRecordCount } from "./dataHomeColumns";
 import type { RecordCountStore } from "./dataHomeRecordCounts";
+
+/** A card has no side panel, window or in-place edit: the row scope's controls do nothing. */
+const NOTHING = () => {};
+const NO_ROW_CONTROLS: MatrxDataTableRecordControls = {
+  closeDetail: NOTHING,
+  openDetail: NOTHING,
+  openWindow: NOTHING,
+  closeWindow: NOTHING,
+  hasPendingEdits: false,
+  discardPendingEdits: NOTHING,
+};
 
 export type DataHomeViewProps = EntityAltViewProps<DataHomeRow> & {
   isStarred: (row: DataHomeRow) => boolean;
@@ -62,21 +75,39 @@ function StarButton({
   );
 }
 
-function RowMenu({ row, props }: { row: DataHomeRow; props: EntityAltViewProps<DataHomeRow> }) {
+/**
+ * THE ROW'S ALCHEMY, ON EVERY LAYOUT (lane TABLE-ACTIONS wave 1 fix: the table row's ⋯ carried an
+ * "Alchemy" entry the card and compact-row ⋯ did not). The table gets it from MatrxDataTable's
+ * per-row `MatrxTableRowAlchemyProvider` (placement "menu"), which `ItemMenu` reads to inject the
+ * entry; the cards and rows put the same provider around the same `ItemMenu`, so one thing has one
+ * menu on every surface.
+ */
+export function dataHomeRowCopy(row: DataHomeRow): CopyControlProps {
+  return {
+    sourceId: `data-home:row:${row.id}`,
+    label: dataHomeKindWord(row.kind),
+    human: () => [row.name, subtitle(row)].filter(Boolean).join("\n"),
+    json: () => row,
+  };
+}
+
+export function RowMenu({ row, props }: { row: DataHomeRow; props: EntityAltViewProps<DataHomeRow> }) {
   return (
-    <ItemMenu config={props.actions.menuFor(row)} align="end">
-      <button
-        type="button"
-        aria-label={`Actions for ${row.name}`}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
-      >
-        <MoreVertical className="h-4 w-4" />
-      </button>
-    </ItemMenu>
+    <MatrxTableRowAlchemyProvider copy={dataHomeRowCopy(row)} placement="menu" controls={NO_ROW_CONTROLS}>
+      <ItemMenu config={props.actions.menuFor(row)} align="end">
+        <button
+          type="button"
+          aria-label={`Actions for ${row.name}`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </button>
+      </ItemMenu>
+    </MatrxTableRowAlchemyProvider>
   );
 }
 

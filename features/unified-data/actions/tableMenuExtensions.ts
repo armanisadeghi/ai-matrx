@@ -7,7 +7,8 @@
 // again" and "When a row changes, run an agent…". They belong to features of this app (the
 // cutover mover, the row-change agent), not to the package, so they arrive through
 // `host.extend` — and they are always in the list, disabled with a reason where they do not apply,
-// so no seat and no table ever meets a menu of a different shape.
+// so no seat ever meets a menu of a different shape. The copy entries are object state: present
+// only on a table that is a copy.
 
 import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
 import { ROW_CHANGE_AGENT_LABEL } from "../row-change-agent/RowChangeAgentLink";
@@ -23,8 +24,6 @@ export interface TableMenuExtras {
   workflows?: () => void;
 }
 
-export const NOT_A_COPY_REASON = "Only on a copied table";
-
 const NOOP = () => {};
 
 /** The three entries, in their one order — pass as `host.extend`'s result. */
@@ -34,19 +33,14 @@ export function tableMenuExtensions(extras: TableMenuExtras): ObjectAction[] {
     workflows
       ? { id: "workflows", label: "Workflows", icon: "blocks", group: "built-on", run: workflows }
       : { id: "workflows", label: "Workflows", icon: "blocks", group: "built-on", disabledReason: "Not available here", run: NOOP },
-    testCopy
-      ? { id: "test-copy", label: testCopy.label, icon: "copy", group: "manage", run: testCopy.run }
-      : { id: "test-copy", label: "Copy status", icon: "copy", group: "manage", disabledReason: NOT_A_COPY_REASON, run: NOOP },
-    copyAgain
-      ? { id: "copy-again", label: "Copy this table again", icon: "copy", group: "manage", run: copyAgain }
-      : {
-          id: "copy-again",
-          label: "Copy this table again",
-          icon: "copy",
-          group: "manage",
-          disabledReason: NOT_A_COPY_REASON,
-          run: NOOP,
-        },
+    // OBJECT STATE, NOT RIGHTS: the copy line and "Copy this table again" exist only on a table
+    // that IS a test copy; on any other table they are absent (they could never apply to it).
+    ...(testCopy
+      ? [{ id: "test-copy", label: testCopy.label, icon: "copy", group: "manage", run: testCopy.run } satisfies ObjectAction]
+      : []),
+    ...(testCopy && copyAgain
+      ? [{ id: "copy-again", label: "Copy this table again", icon: "copy", group: "manage", run: copyAgain } satisfies ObjectAction]
+      : []),
     rowChangeAgent
       ? { id: "row-change-agent", label: ROW_CHANGE_AGENT_LABEL, icon: "bell", group: "built-on", run: rowChangeAgent }
       : {

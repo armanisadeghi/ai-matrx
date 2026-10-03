@@ -48,7 +48,7 @@ import { tableRowCounts } from "@/features/unified-data/hub/doors";
 import { dataHomeColumns, ownerLabel } from "./dataHomeColumns";
 import { DataHomeCards, DataHomeRows } from "./DataHomeViews";
 import { useDataHomeMarks, useDataHomeShowAppTables } from "./useDataHomeMarks";
-import { useDataHomeRowMenus } from "./useDataHomeRowMenus";
+import { useDataHomeRowMenus, useReadAgainOnRestore } from "./useDataHomeRowMenus";
 import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
 import { DATA_HOME_DEFAULT_VIEW_KNOB, resolveDataHomeView } from "./dataHomeKnobs";
 import { tokensToFilters, updatedBucket } from "./dataHomeQuery";
@@ -80,11 +80,13 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   const [showAppTables, setShowAppTables] = useDataHomeShowAppTables();
   /** A row's menu renamed, moved or archived a table: the corpus is read again. */
   const [corpusVersion, setCorpusVersion] = useState(0);
+  // A restore (Undo, ⌘Z, Restore) on this page lists the table again at once.
+  const restoredVersion = useReadAgainOnRestore();
   // THE CORPUS (rows in hand) and the server search beside it — dataHomeCorpus.ts.
   const corpus = useMemo(
     () => createDataHomeCorpus(client, dataSource, { includeAppTables: showAppTables }),
     // `corpusVersion`: a row's menu renamed, moved or archived a table, so the corpus is read again.
-    [client, dataSource, showAppTables, corpusVersion],
+    [client, dataSource, showAppTables, corpusVersion, restoredVersion],
   );
   // THE RECORDS COLUMN, lazily: cells on screen ask this; the list never waits on it.
   const recordCounts = useMemo(
@@ -164,7 +166,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // organizations the viewer belongs to or holds a grant in), so System is absent, not empty.
       lanes: { system: false },
       service,
-      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}|${corpusVersion}`,
+      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}|${corpusVersion}.${restoredVersion}`,
       columns,
       prefsVersion: 1,
       prefsDefaults: {
@@ -279,7 +281,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
           }
         : { title: "No tables yet", description: "New table makes one." },
     };
-  }, [service, starredKey, serverVersion, showAppTables, corpusVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, starredSet, marks, rowMenus]);
+  }, [service, starredKey, serverVersion, showAppTables, corpusVersion, restoredVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, starredSet, marks, rowMenus]);
 
   return (
     // The right-click on every row and card is the proposed menu (`DataMenuProvider`).
