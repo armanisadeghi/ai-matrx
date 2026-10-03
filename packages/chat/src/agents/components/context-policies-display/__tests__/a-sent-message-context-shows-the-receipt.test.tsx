@@ -5,7 +5,7 @@
  *
  * Breaks this catches: the popover rendering anything but the receipt's rows
  * (the old live-value list), dropping the person's "off" row, letting a
- * historical turn be edited, or hiding that a model reads no context.
+ * historical turn be edited (any switch on a sent row), or hiding that a model reads no context.
  *
  * Fixture: two live `context_receipt` events from /notes, 2026-09-30.
  */
@@ -85,7 +85,11 @@ function rowsOf(table: Element) {
     included: r.getAttribute("data-included"),
     chars: r.querySelectorAll('[role="cell"]')[2]?.textContent,
     limit: (r.querySelector("input") as HTMLInputElement | null)?.placeholder,
-    locked: (r.querySelector('[role="switch"]') as HTMLButtonElement | null)?.disabled,
+    // A sent turn is frozen (@ai-matrx/agents 0.43.9+): no switch at all, a
+    // static lock mark whose state is what the turn sent. A disabled switch
+    // still reads as a control, so "locked" means "no switch, one mark".
+    hasSwitch: r.querySelector('[role="switch"]') !== null,
+    frozen: r.querySelector("[data-frozen-include]")?.getAttribute("data-frozen-include") ?? null,
   }));
 }
 
@@ -99,7 +103,8 @@ it.each([
   expect(rows.map((r) => r.key).sort()).toEqual(receipt.rows!.map((r) => r.key).sort());
   expect(rows).toHaveLength(count);
   expect(rows.filter((r) => r.included === "false").map((r) => r.key)).toEqual(offKeys);
-  expect(rows.every((r) => r.locked === true)).toBe(true);
+  expect(rows.filter((r) => r.hasSwitch).map((r) => r.key)).toEqual([]);
+  for (const r of rows) expect([r.key, r.frozen]).toEqual([r.key, r.included === "false" ? "off" : "on"]);
 });
 
 it("shows the limit the server applied and the size it measured", () => {
