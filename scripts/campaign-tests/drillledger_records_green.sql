@@ -177,6 +177,26 @@ end $$;
 create temp table dls (seat text, lane text, org uuid, win text, ask jsonb, rows jsonb) on commit drop;
 create temp table dlt on commit drop as select date_trunc('hour', max(created_at), 'UTC') as last_hour from runtime.global_execution;
 grant all on dls, dlt to authenticated;
+-- FIXTURE: the owner seat's organization must have usage INSIDE the aligned (last 3 days) window, or the
+-- seat proves nothing about it. On a copy of production that organization's last call can be older than
+-- that (it was 2026-09-28 on 2026-10-02), so one of its own calls is moved into the last hour here (inside
+-- this rolled-back transaction) and the rollup rebuilt over it. The assertions are untouched.
+do $$
+declare
+  c_test constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
+  v_last timestamptz := (select last_hour from pg_temp.dlt);
+  v_org uuid; v_exec uuid;
+begin
+  select m.organization_id into v_org from iam.organization_member m
+   where m.user_id = c_test and m.role in ('owner', 'admin')
+     and exists (select 1 from runtime._ai_usage_hourly h where h.organization_id = m.organization_id and h.bucket > v_last - interval '5 days')
+   order by m.organization_id limit 1;
+  if v_org is not null and not exists (select 1 from runtime._ai_usage_calls c where c.organization_id = v_org and c.created_at >= v_last - interval '3 days') then
+    select c.execution_id into v_exec from runtime._ai_usage_calls c where c.organization_id = v_org and c.created_at > v_last - interval '5 days' order by c.created_at desc limit 1;
+    update runtime.global_execution set created_at = (select max(created_at) from runtime.global_execution) where id = v_exec;
+    perform runtime.ai_usage_hourly_refresh(v_last - interval '6 days', now());
+  end if;
+end $$;
 create or replace function pg_temp.seat_pair(p_seat text, p_lane text, p_org uuid) returns void language plpgsql as $$
 declare
   v_last timestamptz := (select last_hour from pg_temp.dlt);
