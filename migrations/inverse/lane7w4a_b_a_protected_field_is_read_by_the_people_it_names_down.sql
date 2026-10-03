@@ -250,6 +250,7 @@ end
 $do$;
 
 ALTER FUNCTION custom.entity_record_read(uuid, text, uuid) STABLE;
+DELETE FROM platform.client_callable_door WHERE (schema_name, function_name) IN (('custom','field_access'),('custom','protected_field_query_refusal'),('hr','custom_field_subject'),('hr','custom_field_access'),('custom','protected_value_leaks'),('history','protect_field_scrub'),('custom','entity_field_protect_arman_explicitly_approved'),('platform','_drill_protect'),('custom','protected_value'),('custom','protected_values'),('custom','protected_matches'));
 DROP FUNCTION IF EXISTS platform._drill_protect(jsonb, jsonb, text);
 DROP FUNCTION IF EXISTS custom.entity_field_protect_arman_explicitly_approved(uuid, jsonb, text, date);
 DROP FUNCTION IF EXISTS history.protect_field_scrub(text, uuid, uuid, text);

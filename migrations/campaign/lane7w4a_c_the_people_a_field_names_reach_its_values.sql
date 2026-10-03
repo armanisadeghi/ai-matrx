@@ -20,24 +20,7 @@
 -- The three read doors above are reached from the signed-in seat (custom.entity_record_read and
 -- custom.entity_records_find run as the person; the drill doors' compiled SQL runs as the person).
 -- GRANT CHANGE (announce): EXECUTE to authenticated, declared as client-callable doors.
-INSERT INTO platform.client_callable_door
-  (schema_name, function_name, identity_args, declared_by, reason, signed_in_callers, identity_argtypes)
-SELECT d.s, d.f, d.a,
-       'migrations/campaign/lane7w4a_c_the_people_a_field_names_reach_its_values.sql (lane 7 STANDARD-TABLES W4a)',
-       d.r, true, d.t
-  FROM (VALUES
-    ('custom', 'protected_value', 'p_token text, p_row_id uuid, p_field_id uuid',
-     'SECURITY DEFINER read of one protected custom value on a standard row: returns it only when custom.field_access''s rule admits the signed-in person, else null. The drill doors call it per row as the seat.',
-     array['text'::regtype, 'uuid'::regtype, 'uuid'::regtype]::oid[]),
-    ('custom', 'protected_values', 'p_organization_id uuid, p_token text, p_row_id uuid',
-     'SECURITY DEFINER read of a row''s protected custom values: the ones the field''s rule admits the signed-in person to, a withheld notice for the rest; each granted read audited. custom.entity_record_read calls it as the seat.',
-     array['uuid'::regtype, 'text'::regtype, 'uuid'::regtype]::oid[]),
-    ('custom', 'protected_matches', 'p_field_id uuid, p_value jsonb',
-     'SECURITY DEFINER find over one protected custom field: refused in a sentence unless the rule admits the signed-in person to use the field across rows; then only the rows whose value she may read. custom.entity_records_find calls it as the seat.',
-     array['uuid'::regtype, 'jsonb'::regtype]::oid[])
-  ) d(s, f, a, r, t)
- WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door c WHERE c.schema_name = d.s AND c.function_name = d.f);
-
+-- (The three doors were declared in file b, in the same transaction that created them.)
 REVOKE ALL ON FUNCTION custom.protected_value(text, uuid, uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION custom.protected_values(uuid, text, uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION custom.protected_matches(uuid, jsonb) FROM PUBLIC, anon;
