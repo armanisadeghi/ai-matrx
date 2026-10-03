@@ -2273,6 +2273,11 @@ export async function processStream({
               );
             } else {
               // Same requestId-anchor rationale as the assistant branch.
+              // A user row reaching here has no optimistic twin — a rejoin
+              // after a reload mid-answer. The server echoes the person's
+              // pristine words on this frame; seed them so the bubble shows
+              // what they sent before the turn settles.
+              const echoed = d.metadata.user_content;
               dispatch(
                 reserveMessage({
                   conversationId: owningConversationId,
@@ -2280,6 +2285,9 @@ export async function processStream({
                   role,
                   position,
                   requestId,
+                  ...(role === "user" && Array.isArray(echoed)
+                    ? { userContent: echoed as Json }
+                    : {}),
                 }),
               );
             }

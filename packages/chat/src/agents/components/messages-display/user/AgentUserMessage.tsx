@@ -395,6 +395,10 @@ export function AgentUserMessage({
     // inputs are machine frames she never supplied, so the bubble is absent
     // rather than a stand-in that claims her turn was empty.
     if (authoredByHost || launchOnlyTurn || !record) return null;
+    // A row the server has only RESERVED (a rejoin mid-answer, before the
+    // turn commits) whose words never reached this page is not "empty" — it
+    // is unknown. Show nothing; the settle re-read fills it.
+    if (record.status === "reserved") return null;
     const storedTextLength = extractFlatText({
       ...record,
       userContent: null,

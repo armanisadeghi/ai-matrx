@@ -676,6 +676,13 @@ const messagesSlice = createSlice({
         requestId?: string;
         /** Segment of the live request timeline this assistant row owns. */
         streamSlotStart?: number;
+        /**
+         * The person's own words for a USER reservation, echoed on the
+         * server's `record_reserved` frame. A rejoin (reload mid-answer) has
+         * no optimistic row and no committed row yet — this is the only
+         * source until the turn settles.
+         */
+        userContent?: Json | null;
       }>,
     ) {
       const {
@@ -686,6 +693,7 @@ const messagesSlice = createSlice({
         position = 0,
         requestId,
         streamSlotStart,
+        userContent = null,
       } = action.payload;
       const entry = getOrCreate(state, conversationId);
       if (entry.byId[messageId]) {
@@ -713,7 +721,7 @@ const messagesSlice = createSlice({
         role,
         content: [],
         contentHistory: null,
-        userContent: null,
+        userContent,
         position,
         source: "",
         status: "reserved",
