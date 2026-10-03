@@ -121,6 +121,9 @@ beforeEach(() => {
 });
 afterEach(() => {
   act(() => root.unmount());
+  // The sidecar store keeps a source's read for the whole tab (read-once law); a test that
+  // re-mocks the comments must start from an empty store, not the previous test's read.
+  act(() => (jest.requireActual("@/features/rich-document/annotations/sidecarStore") as typeof import("@/features/rich-document/annotations/sidecarStore")).resetSidecarStoreForTests());
   container.remove();
   window.getSelection()?.removeAllRanges();
 });
