@@ -162,6 +162,8 @@ begin
 
   -- the repair authorization sent to Mr. Tanaka (out of the seat: esign_green proves the maker)
   perform set_config('role', 'postgres', true);
+  -- CHAIR-SELF-APPROVAL: a sign_request row is written only under its door's mark; this fixture stands in for the create door
+  perform set_config('custom.decision_door', 'sign_request:create', true);
   insert into custom.record (organization_id, id, table_id, data_class, data)
   values (v_org, v_sign, null, 'sign_request', jsonb_build_object(
     'record_id', v_tanaka::text, 'table_id', v_jobs::text, 'field_key', 'customer_signature',
@@ -169,6 +171,7 @@ begin
     'document_title', 'Repair authorization: front brakes', 'sent_at', now(),
     'expires_at', now() + interval '14 days', 'token_hash', encode(sha256('archorgwork'::bytea), 'hex'),
     'bad_attempts', 0, 'reminder_count', 0));
+  perform set_config('custom.decision_door', '', true);
   perform set_config('role', 'authenticated', true);
 
   perform set_config('request.jwt.claims', c_tech_j, true);

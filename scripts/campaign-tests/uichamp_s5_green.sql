@@ -242,9 +242,12 @@ begin
   -- PART 5 — A PENDING ROW ABOUT AN ARCHIVED THING (filed before this lane) IS REFUSED BY NAME.
   -- ════════════════════════════════════════════════════════════════════════════
   perform set_config('role', 'postgres', true);           -- out of the seat: make the legacy row
+  -- CHAIR-SELF-APPROVAL: an approval row changes only under a door's mark; this fixture stands in for the return door
+  perform set_config('custom.decision_door', 'work_approval:return', true);
   update custom.record a
      set data = (a.data - 'withdrawn_reason' - 'withdrawn_by' - 'decided_at' - 'outcome') || '{"state":"pending"}'::jsonb
    where a.organization_id = v_org and a.id = v_asks[3];
+  perform set_config('custom.decision_door', '', true);
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_desk_j, true);
   if exists (select 1 from custom.work_inbox(v_org, 200, 0, false) w where w.item_id = v_asks[3]) then
