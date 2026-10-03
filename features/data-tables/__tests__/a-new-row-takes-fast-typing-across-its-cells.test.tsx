@@ -20,7 +20,7 @@ jest.mock("../service", () => ({
 jest.mock("@/components/ui/use-toast", () => ({ toast: jest.fn() }));
 jest.mock("@/components/official/ProTextarea", () => {
   const R = jest.requireActual("react") as typeof import("react");
-  return { ProTextarea: R.forwardRef<HTMLTextAreaElement, R.TextareaHTMLAttributes<HTMLTextAreaElement>>((props, ref) => R.createElement("textarea", { ...props, ref })) };
+  return { ProTextarea: R.forwardRef<HTMLTextAreaElement, import("react").TextareaHTMLAttributes<HTMLTextAreaElement>>((props, ref) => R.createElement("textarea", { ...props, ref })) };
 });
 
 import { EditableCell } from "../components/EditableCell";

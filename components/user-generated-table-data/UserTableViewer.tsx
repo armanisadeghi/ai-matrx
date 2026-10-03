@@ -2628,7 +2628,8 @@ const UserTableViewer = ({
     // by Title — the Title's re-sort re-read the page 250 ms later, mid-row, and every value after it
     // was lost. While a cell is open or a new row is taking its keys, the view waits and settles after.
     if (sheetEditingNow.get() || sheetAddingRowNow.get()) {
-      setTimeout(() => void settleTheView(), 250);
+      // Ask again in a quarter second: the same edits, re-armed (the effect below waits on them).
+      setViewEdits((prev) => prev.slice());
       return;
     }
     const edited: EditedCell[] = viewEdits.map(({ rowId, fieldName }) => ({ rowId, fieldName }));
