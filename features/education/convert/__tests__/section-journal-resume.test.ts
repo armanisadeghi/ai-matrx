@@ -132,4 +132,22 @@ describe("a continued output reads finished sections back instead of running the
     expect(recoverSectionValue).not.toHaveBeenCalled();
     expect(runAgentExtraction).toHaveBeenCalledTimes(4);
   });
+
+  it("reads a timed-out section back from the server instead of paying for it again", async () => {
+    // Section 2's stream never reaches the tab (the call finished on the server).
+    jest.mocked(runAgentExtraction).mockImplementation(async (_d, _s, opts) => {
+      const n = sectionOf(opts.variables);
+      opts.onConversationCreated?.(`conv-${n}`);
+      if (n === "2") return new Promise(() => {}) as never;
+      return { value: [{ q: `osmosis question ${n}` }], requestId: `r${n}`, conversationId: `conv-${n}` } as never;
+    });
+    jest.mocked(recoverSectionValue).mockImplementation(async (conversationId) =>
+      conversationId === "conv-2" ? [{ q: "osmosis question 2" }] : null,
+    );
+    const result = await generate(memoryJournal().journal);
+    const calls = jest.mocked(runAgentExtraction).mock.calls.map(([, , o]) => sectionOf(o.variables));
+    expect(calls.filter((c) => c === "2")).toHaveLength(1);
+    expect(result.items.map((i) => i.q)).toContain("osmosis question 2");
+    expect(result.missedCount).toBe(0);
+  });
 });

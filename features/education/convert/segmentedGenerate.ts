@@ -222,6 +222,8 @@ export async function segmentedGenerate<T>({
   report("");
 
   /** One attempt at one section, bounded end to end by `deadlineMs`. */
+  /** The conversation each section's latest attempt ran in (segment id → id). */
+  const lastRun = new Map<string, string>();
   const attempt = async (segment: SourceSegment) => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -259,6 +261,7 @@ export async function segmentedGenerate<T>({
           // sections instead (see THE SINGLE-WRITER RULE above).
           onRequestId: live ? ctx.onRequestId : undefined,
           onConversationCreated: (conversationId) => {
+            lastRun.set(segment.id, conversationId);
             journal?.started(planKey, segment.id, conversationId);
             if (live) ctx.onConversationCreated?.(conversationId);
           },
@@ -285,6 +288,19 @@ export async function segmentedGenerate<T>({
         try {
           extracted = await attempt(segment);
         } catch (error) {
+          // A PAID ANSWER IS NEVER THROWN AWAY: the attempt that missed its
+          // deadline may still have finished on the server (a slow queue, a
+          // stream that never reached this tab). Read it back before paying
+          // for the section again — and before calling it missed.
+          const ran = lastRun.get(segment.id);
+          const value = ran
+            ? await recoverSectionValue(ran, { deadlineMs: n >= SECTION_MAX_ATTEMPTS ? 30_000 : 5_000 })
+            : null;
+          if (value != null && ran) {
+            if (n > 1) retrying -= 1;
+            extracted = { value, conversationId: ran };
+            break;
+          }
           if (n >= SECTION_MAX_ATTEMPTS) {
             if (n > 1) retrying -= 1;
             settled += 1;
