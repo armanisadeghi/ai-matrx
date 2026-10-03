@@ -42,14 +42,43 @@
  * does not hold the toast's timer while it is open.
  */
 
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import dynamic from "next/dynamic";
 import { TapTargetButtonTransparent, TapTargetCopyButton } from "@ai-matrx/tap-target";
-import { ExternalLinkTapButton, MaximizeTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
+import {
+  ExternalLinkTapButton,
+  MaximizeTapButton,
+  MoreHorizontalTapButton,
+  XTapButton,
+} from "@ai-matrx/tap-target/buttons";
 import { buildAgentPayload } from "@ai-matrx/kit/content-transfer";
-import { ChevronDown, CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from "lucide-react";
+import {
+  ChevronDown,
+  CircleAlert,
+  CircleCheck,
+  ExternalLink,
+  Info,
+  Maximize2,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -202,7 +231,7 @@ export function ToastWindowHost() {
 /* Layer 2 body — shared by the peek, the window and the static mock   */
 /* ------------------------------------------------------------------ */
 
-function ToastDetailBody({
+export function ToastDetailBody({
   kind,
   message,
   detail,
@@ -238,11 +267,40 @@ function ToastDetailBody({
   );
 }
 
-const PEEK_CLASS = "w-80 p-3 bg-card border border-border shadow-lg";
+export const PEEK_CLASS = "w-80 p-3 bg-card border border-border shadow-lg";
 
 /* ------------------------------------------------------------------ */
 /* THE toast — every layer, driven by props                            */
 /* ------------------------------------------------------------------ */
+
+/** Below this card width the optional layer buttons (details, window, new
+ *  tab) fold into ONE "more" button, so copy + close + more always fit and the
+ *  message keeps a readable column. */
+export const TOAST_NARROW_PX = 300;
+
+/** Measures the card (and whether the message is clamped) before paint, so a
+ *  narrow toast never flashes the wide control row. A zero width means "not
+ *  laid out yet" (SSR, jsdom) and keeps the full row. */
+function useToastFit(card: RefObject<HTMLElement | null>, text: RefObject<HTMLElement | null>, message: string) {
+  const [narrow, setNarrow] = useState(false);
+  const [clamped, setClamped] = useState(false);
+  useLayoutEffect(() => {
+    const el = card.current;
+    if (!el) return;
+    const read = () => {
+      const w = el.getBoundingClientRect().width;
+      setNarrow(w > 0 && w < TOAST_NARROW_PX);
+      const t = text.current;
+      setClamped(!!t && t.scrollHeight > t.clientHeight + 1);
+    };
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [card, text, message]);
+  return { narrow, clamped };
+}
 
 export function SmartToastCard({
   kind,
@@ -261,35 +319,58 @@ export function SmartToastCard({
 }) {
   const k = KIND[kind];
   const shownAt = useRef<string | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
   const [hoverOpen, setHoverOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
+  const { narrow, clamped } = useToastFit(cardRef, textRef, message);
 
   useEffect(() => {
     shownAt.current ??= new Date().toISOString();
   }, []);
 
-  const detail = options.detail;
+  // A message longer than two lines is never lost: the clamp hides the rest
+  // and the peek carries the whole text, even when the caller sent no detail.
+  const detail = options.detail ?? (clamped ? {} : undefined);
   const windowTitle =
     typeof options.window === "object" && options.window.title ? options.window.title : detail?.title ?? message;
+  const canWindow = !!(options.detail && options.window);
+  const optionalCount = (detail ? 1 : 0) + (canWindow ? 1 : 0) + (options.href ? 1 : 0);
+  const folded = narrow && optionalCount > 0;
+  const openWindow = () => {
+    if (options.detail) openToastWindow({ title: windowTitle, kind, message, detail: options.detail });
+  };
 
+  // The clamp sits on an inner element: padding on a line-clamped box would
+  // show the top of the third line inside the padding.
   const messageNode = (
-    <p
-      className={cn(
-        "min-w-0 flex-1 py-2 text-[13px] leading-snug text-foreground",
-        detail && "cursor-pointer",
-      )}
+    <div
+      data-toast-message=""
+      className={cn("min-w-0 flex-1 py-2", detail && "cursor-pointer")}
       onClick={detail ? () => setPinned((p) => !p) : undefined}
     >
-      {message}
-    </p>
+      <div className="flex min-w-0 items-start">
+        <p ref={textRef} className="line-clamp-2 min-w-0 flex-1 break-words text-[13px] leading-snug text-foreground">
+          {message}
+        </p>
+        {/* Every error on screen carries the Alchemy Menu, on its own line. */}
+        {kind === "error" && (
+          <span className="text-[13px] leading-snug">
+            <ErrorAlchemyMenu input={{ message, source: "toast" }} label={message} />
+          </span>
+        )}
+      </div>
+    </div>
   );
 
   return (
     <div
+      ref={cardRef}
       role={kind === "error" ? "alert" : "status"}
       data-toast-kind={kind}
+      data-toast-narrow={narrow ? "" : undefined}
       className={cn(
-        "flex w-[356px] max-w-full items-center rounded-lg border bg-card pl-2.5 pr-[calc(var(--matrx-tap-gap)/2)] py-[calc(var(--matrx-tap-gap)/2-1px)] shadow-lg",
+        "flex w-[356px] min-w-[240px] max-w-full items-center rounded-lg border bg-card pl-2.5 pr-[calc(var(--matrx-tap-gap)/2)] py-[calc(var(--matrx-tap-gap)/2-1px)] shadow-lg",
         k.surface,
         className,
       )}
@@ -313,8 +394,8 @@ export function SmartToastCard({
       ) : (
         messageNode
       )}
-      <div className="flex shrink-0 items-center">
-        {detail && (
+      <div data-toast-controls="" className="flex shrink-0 flex-nowrap items-center">
+        {!folded && detail && (
           <TapTargetButtonTransparent
             icon={<ChevronDown />}
             ariaLabel="Details"
@@ -323,15 +404,15 @@ export function SmartToastCard({
             onClick={() => setPinned((p) => !p)}
           />
         )}
-        {detail && options.window && (
+        {!folded && canWindow && (
           <MaximizeTapButton
             variant="transparent"
             ariaLabel="Open in window"
             tooltip="Open in window"
-            onClick={() => openToastWindow({ title: windowTitle, kind, message, detail })}
+            onClick={openWindow}
           />
         )}
-        {options.href && (
+        {!folded && options.href && (
           <ExternalLinkTapButton
             variant="transparent"
             ariaLabel="Open in new tab"
@@ -340,6 +421,32 @@ export function SmartToastCard({
             target="_blank"
             rel="noopener noreferrer"
           />
+        )}
+        {folded && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <MoreHorizontalTapButton variant="transparent" ariaLabel="More" tooltip="More" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-40">
+              {detail && (
+                <DropdownMenuItem onSelect={() => setPinned(true)}>
+                  <ChevronDown aria-hidden /> Details
+                </DropdownMenuItem>
+              )}
+              {canWindow && (
+                <DropdownMenuItem onSelect={openWindow}>
+                  <Maximize2 aria-hidden /> Open in window
+                </DropdownMenuItem>
+              )}
+              {options.href && (
+                <DropdownMenuItem asChild>
+                  <a href={options.href} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink aria-hidden /> Open in new tab
+                  </a>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         <TapTargetCopyButton
           variant="transparent"
@@ -384,7 +491,7 @@ export const smartToast = {
 /* Specimen                                                            */
 /* ------------------------------------------------------------------ */
 
-const SAMPLE_DETAIL: SmartToastDetail = {
+export const SAMPLE_DETAIL: SmartToastDetail = {
   title: "Note saved",
   rows: [
     { label: "Note", value: "Q4 intake checklist" },
@@ -394,9 +501,12 @@ const SAMPLE_DETAIL: SmartToastDetail = {
   body: "3 paragraphs changed since revision 13.",
 };
 
+export const TOAST_LONG_SAMPLE =
+  "Couldn't save the note: the folder Clinic / Intake was moved by Ana Ruiz while you were editing, so the save was held";
+
 const SAMPLE_CONTEXT = { noteId: "c1f0-demo", revision: 14, autosave: false };
 
-const ALL_LAYERS: SmartToastOptions = {
+export const ALL_LAYERS: SmartToastOptions = {
   aiContext: SAMPLE_CONTEXT,
   detail: SAMPLE_DETAIL,
   window: { title: "Note saved" },
@@ -468,6 +578,12 @@ export function ToastSystemSpecimen() {
             onCopied={setCopied}
           />
         ))}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="text-[11px] font-medium text-muted-foreground">Narrow · 240px</div>
+        <SmartToastCard kind="success" message="Note saved" options={ALL_LAYERS} onClose={noop} onCopied={setCopied} className="w-[240px]" />
+        <SmartToastCard kind="error" message={TOAST_LONG_SAMPLE} options={{ href: "/notes" }} onClose={noop} onCopied={setCopied} className="w-[240px]" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-4">

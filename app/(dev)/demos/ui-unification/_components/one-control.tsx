@@ -163,9 +163,12 @@ export function MeasuredBare({ children, className = "uc-row" }: { children: Rea
     const row = ref.current;
     if (!row) return;
     const measure = () => {
-      const kids = Array.from(row.children).filter(
+      const all = Array.from(row.children);
+      const kids = all.filter(
         (c) => c.tagName !== "STYLE" && c.getAttribute("aria-hidden") !== "true" && c.getBoundingClientRect().width > 2 && c.getBoundingClientRect().height > 2,
       );
+      // A flex spacer between two controls is deliberate distance, not spacing.
+      const adjacent = (a: Element, b: Element) => all.indexOf(b) - all.indexOf(a) === 1;
       const visible = kids.map(
         (c) => (c.querySelector(".matrx-tap-group-capsule, .matrx-tap-pill") as HTMLElement | null) ?? (c as HTMLElement),
       );
@@ -174,7 +177,7 @@ export function MeasuredBare({ children, className = "uc-row" }: { children: Rea
       for (let i = 1; i < visible.length; i++) {
         const a = visible[i - 1]!.getBoundingClientRect();
         const b = visible[i]!.getBoundingClientRect();
-        if (Math.abs(a.top - b.top) < 4) gaps.push(Math.round(b.left - a.right));
+        if (Math.abs(a.top - b.top) < 4 && adjacent(kids[i - 1]!, kids[i]!)) gaps.push(Math.round(b.left - a.right));
       }
       const hs = Array.from(new Set(heights));
       const gs = Array.from(new Set(gaps));
