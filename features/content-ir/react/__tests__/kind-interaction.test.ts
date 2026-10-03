@@ -97,6 +97,13 @@ test("pure view state never stages", async () => {
   expect(chips(s)).toHaveLength(0);
 });
 
+test("a progress step is named by its words, not its id", async () => {
+  const s = makeStore();
+  const data = { phases: [{ id: "category-1", steps: [{ id: "item-1", text: "Book the venue" }] }] };
+  await emit(s, { kind: "progress", data, state: { completed: ["item-1"] }, previous: null });
+  expect(chips(s)[0].remark.summary).toBe("I marked done: Book the venue.");
+});
+
 test("answer state back to nothing removes the chip", async () => {
   const s = makeStore();
   await emit(s, { kind: "progress", state: { completed: ["Book venue"] }, previous: null });

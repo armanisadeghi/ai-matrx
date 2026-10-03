@@ -56,6 +56,18 @@ function names(value: unknown[], max = 4): string {
   return value.length > max ? `${shown} +${value.length - max}` : shown;
 }
 
+/** A progress tracker step's words for its id (`phases[].steps[]`), or null. */
+function progressStepText(data: unknown, id: unknown): string | null {
+  const phases = data && typeof data === "object" ? (data as { phases?: unknown }).phases : undefined;
+  for (const phase of list(phases)) {
+    for (const step of list((phase as { steps?: unknown } | null)?.steps)) {
+      const s = step as { id?: unknown; text?: unknown } | null;
+      if (s?.id === id && typeof s.text === "string" && s.text.trim()) return s.text.trim();
+    }
+  }
+  return null;
+}
+
 /** Per-kind answer keys. A kind not listed is never staged. */
 export const KIND_INTERACTION_RULES: Readonly<Record<string, KindInteractionRule>> = {
   recipe: {
@@ -74,8 +86,8 @@ export const KIND_INTERACTION_RULES: Readonly<Record<string, KindInteractionRule
   },
   progress: {
     keys: ["completed"],
-    summarize: (s) => {
-      const done = list(s.completed);
+    summarize: (s, data) => {
+      const done = list(s.completed).map((id) => progressStepText(data, id) ?? id);
       return done.length ? `I marked done: ${names(done)}.` : "";
     },
   },
