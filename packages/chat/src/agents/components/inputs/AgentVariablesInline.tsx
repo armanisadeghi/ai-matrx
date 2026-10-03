@@ -304,6 +304,7 @@ export function AgentVariablesInline({
                       value={rawValue}
                       onChange={(v) => handleValueChange(variable.name, v)}
                       variableName={variable.name}
+                      label={variableRunLabel(variable)}
                       customComponent={variable.customComponent}
                       helpText={variable.helpText}
                       compact
@@ -384,6 +385,7 @@ export function AgentVariablesInline({
                     value={rawValue}
                     onChange={(v) => handleValueChange(variable.name, v)}
                     variableName={variable.name}
+                    label={variableRunLabel(variable)}
                     customComponent={variable.customComponent}
                     onRequestClose={() => handleExpand(null)}
                     onEnterAdvance={() => advanceFromExpanded(index)}

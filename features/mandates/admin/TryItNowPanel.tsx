@@ -705,7 +705,8 @@ export function TryItNowPanel({
                 />
               ) : (
                 <VariableInputComponent
-                  variableName={label}
+                  variableName={field.name}
+                  label={label}
                   value={currentValue(field)}
                   onChange={(value: unknown) =>
                     setValues((current) => ({

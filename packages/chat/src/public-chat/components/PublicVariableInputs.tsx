@@ -163,6 +163,7 @@ export function PublicVariableInputs({
                       handleVariableChange(variable.name, newValue as string)
                     }
                     variableName={variable.name}
+                    label={variableRunLabel(variable)}
                     customComponent={variable.customComponent}
                     onRequestClose={() => handleExpandedVariableChange(null)}
                     helpText={variable.helpText}

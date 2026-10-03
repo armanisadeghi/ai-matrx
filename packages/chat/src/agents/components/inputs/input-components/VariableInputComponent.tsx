@@ -51,7 +51,14 @@ interface VariableInputComponentProps {
    * whatever they receive.
    */
   onChange: (value: unknown) => void;
+  /** The variable's key (`normal_text`) — storage and media-policy identity, never shown. */
   variableName: string;
+  /**
+   * What the person sees: the variable's own label (callers pass
+   * `variableRunLabel(variable)`). Absent → the image role's ask, else the
+   * key through `humanizeIdentifier`.
+   */
+  label?: string;
   conversationId?: string;
   customComponent?: VariableCustomComponent;
   onRequestClose?: () => void;
@@ -79,6 +86,7 @@ export function VariableInputComponent({
   value,
   onChange,
   variableName,
+  label,
   conversationId,
   customComponent,
   onRequestClose,
@@ -101,7 +109,11 @@ export function VariableInputComponent({
     customComponent?.imageRole
       ? IMAGE_ROLE_META[customComponent.imageRole]
       : null;
-  const formattedName = imageRoleMeta?.ask ?? humanizeIdentifier(variableName);
+  const formattedName =
+    (label ?? "").trim() ||
+    imageRoleMeta?.ask ||
+    humanizeIdentifier(variableName) ||
+    variableName;
   const shownHelpText = helpText ?? imageRoleMeta?.explanation;
   const options = customComponent?.options ?? [];
   const hasOptions = options.length > 0;

@@ -81,7 +81,8 @@ export function AgentVariablesStacked({
                 onChange={(newValue) =>
                   handleVariableValueChange(variable.name, newValue)
                 }
-                variableName={variableRunLabel(variable)}
+                variableName={variable.name}
+                label={variableRunLabel(variable)}
                 customComponent={variable.customComponent}
                 helpText={variable.helpText}
                 compact

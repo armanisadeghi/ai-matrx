@@ -344,7 +344,8 @@ export function ServedFieldControl({
         <VariableInputComponent
           value={value}
           onChange={onChange}
-          variableName={input.label || input.name}
+          variableName={input.name}
+          label={input.label}
           customComponent={component}
           helpText={input.help || undefined}
           placeholder={input.placeholder || undefined}

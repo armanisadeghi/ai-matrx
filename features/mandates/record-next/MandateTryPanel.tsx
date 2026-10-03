@@ -388,7 +388,8 @@ export function MandateTryPanel({
                 />
               ) : (
                 <VariableInputComponent
-                  variableName={label}
+                  variableName={field.name}
+                  label={label}
                   value={value}
                   onChange={(next: unknown) => setValue(field.name, next)}
                   customComponent={componentForKind(field.kind)}

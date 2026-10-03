@@ -149,6 +149,7 @@ export function AgentVariablesWizard({
           value={value}
           onChange={(v) => handleValueChange(variable.name, v)}
           variableName={variable.name}
+          label={variableRunLabel(variable)}
           customComponent={variable.customComponent}
           helpText={undefined}
           compact={true}

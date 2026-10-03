@@ -340,6 +340,7 @@ export default function KindInputForm({
                     }))
                   }
                   variableName={pair.variable.name}
+                  label={pair.variable.label}
                   customComponent={pair.variable.customComponent}
                   helpText={pair.variable.helpText}
                   hideLabel

@@ -168,6 +168,7 @@ export function ContextValueInput({
           value={value}
           onChange={onChange}
           variableName={displayName ?? "Value"}
+          label={displayName ?? "Value"}
           customComponent={customComponent}
           hideLabel
           compact

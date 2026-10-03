@@ -448,7 +448,8 @@ function AnswerField({
           <VariableInputComponent
             value={value}
             onChange={onChange}
-            variableName={field.label || field.name}
+            variableName={field.name}
+            label={field.label}
             customComponent={component}
             helpText={field.description || undefined}
             hideLabel

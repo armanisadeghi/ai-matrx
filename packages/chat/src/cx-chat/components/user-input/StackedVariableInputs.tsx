@@ -146,6 +146,7 @@ export function StackedVariableInputs({
                       handleVariableChange(variable.name, newValue as string)
                     }
                     variableName={variable.name}
+                    label={variableRunLabel(variable)}
                     customComponent={
                       variable.customComponent as unknown as never
                     }
