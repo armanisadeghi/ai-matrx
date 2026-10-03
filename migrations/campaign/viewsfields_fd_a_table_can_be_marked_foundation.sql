@@ -885,8 +885,8 @@ begin
        -- LANE 10 FD (2026-10-02): a TABLE's own record answers too. A Table is a record of the Table
        -- kernel; its settings (its name, its Foundation mark) are written through record_update at the
        -- version a person saw, and this was the only door that tells a client that version — so every
-       -- such write (rename included) refused with "latest changes could not be checked". Visibility
-       -- is unchanged: the rows below still pass custom.query_visible_ids on their own table.
+       -- such write (rename included) refused with "latest changes could not be checked". Who may
+       -- read a row is unchanged: the rows below still pass the store's own reach check for their table.
        and r.data_class in ('record', 'table') and r.deleted_at is null
   loop
     return query

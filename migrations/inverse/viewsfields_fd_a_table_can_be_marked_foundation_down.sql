@@ -1,4 +1,4 @@
--- chair-step: the inverse of migrations/campaign/viewsfields_fd_a_table_can_be_marked_foundation.sql. It puts custom._table_shape_guard, custom.table_placement and custom.data_home back byte for byte as they stood before it, re-makes the view custom.table without its `foundation` column (drop and re-make: a view cannot lose a column in place; nothing depends on it; its comment is set again and the schema's default privilege gives service_role its read back), re-makes custom.table_facts(uuid) without its `foundation` result column with EXECUTE granted again to exactly the roles that held it, then drops custom.table_is_foundation(jsonb), which nothing reads any more. A Table document that still says `foundation: true` keeps the key; nothing reads it.
+-- chair-step: the inverse of migrations/campaign/viewsfields_fd_a_table_can_be_marked_foundation.sql. It puts custom._table_shape_guard, custom.table_placement, custom.data_home and custom.record_headers back byte for byte as they stood before it, re-makes the view custom.table without its `foundation` column (drop and re-make: a view cannot lose a column in place; nothing depends on it; its comment is set again and the schema's default privilege gives service_role its read back), re-makes custom.table_facts(uuid) without its `foundation` result column with EXECUTE granted again to exactly the roles that held it, then drops custom.table_is_foundation(jsonb), which nothing reads any more. A Table document that still says `foundation: true` keeps the key; nothing reads it.
 -- lane: VIEWS-AND-FIELDS
 -- lock: custom
 -- window-class: function bodies, one view re-made, one function re-made in place; no DDL on any table.
@@ -7,6 +7,7 @@
 -- based-on: custom.data_home(uuid, text, boolean) 51b005bc0b36317c6fe903a5264fef4f9ae2e9a9e1920e185db546b50166c81a
 -- based-on: custom.table_facts(uuid) 99dfa9feb0382a3991ad4632857bd0123b5585be19e4811880c8be8e98eedd45
 -- based-on: view custom.table 2a746d83a63e782bbe2b3883e575f446697cc803ea5bbbcf2c82e9f43370bbe4
+-- based-on: custom.record_headers(uuid, uuid[]) 943e052108cd87a14a0a86b39c91d05f976a4d6d7f4d2487ee80c0278ae67735
 
 set local lock_timeout = '2s';
 set local statement_timeout = '60s';
@@ -563,6 +564,42 @@ begin
   end if;
   return jsonb_build_object('tables', v_tables, 'items', v_items, 'changed_by', v_changed, 'search', v_q);
 end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.record_headers(p_organization_id uuid, p_ids uuid[])
+ RETURNS TABLE(id uuid, table_id uuid, created_at timestamp with time zone, updated_at timestamp with time zone, version integer, deleted_at timestamp with time zone, mine boolean, created_by uuid)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_me uuid := custom.query_principal();
+  v_t  uuid;
+begin
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.record_headers');
+  if coalesce(cardinality(p_ids), 0) > 1000 then
+    raise exception 'One call answers at most 1000 records; this one named %.', cardinality(p_ids)
+      using errcode = '54000', hint = 'Ask for the rows a page shows. Nothing was read.';
+  end if;
+
+  for v_t in
+    select distinct r.table_id
+      from custom.record r
+     where r.organization_id = p_organization_id
+       and r.id = any(coalesce(p_ids, '{}'::uuid[]))
+       and r.data_class = 'record' and r.deleted_at is null
+  loop
+    return query
+      select r.id, r.table_id, r.created_at, r.updated_at, r.version, r.deleted_at,
+             (v_me is not null and r.created_by = v_me),
+             case when v_me is not null and r.created_by = v_me then v_me end
+        from custom.record r
+       where r.organization_id = p_organization_id
+         and r.table_id = v_t
+         and r.id = any(p_ids)
+         and r.id in (select v from custom.query_visible_ids(p_organization_id, v_t, 'viewer') v);
+  end loop;
+end
 $function$;
 
 drop view custom.table;
