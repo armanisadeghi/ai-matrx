@@ -7,11 +7,18 @@
  * drop" rule are enforced once.
  */
 
-import { selectCanvasActiveItem, selectCanvasIsOpen, type CanvasController, type CanvasItemId } from "@ai-matrx/canvas";
+import {
+  selectCanvasActiveItem,
+  selectCanvasIsOpen,
+  selectCanvasKindVisibility,
+  toggleKind,
+  type CanvasController,
+  type CanvasItemId,
+} from "@ai-matrx/canvas";
 import { useCanvasIsPresented, useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
 import { reportCanvasOpenDrop, titleForDrop } from "@/features/canvas/openRequest";
 import type { ArtifactDebugTrace, CanvasContent, CanvasContentType } from "@/features/canvas/canvasContent";
-import { artifactOpenInput, contentOf, readArtifactItemData, type ArtifactOpenOptions } from "./artifactItem";
+import { artifactKey, artifactOpenInput, contentOf, readArtifactItemData, type ArtifactOpenOptions } from "./artifactItem";
 
 export interface ArtifactPointerInput {
   artifactId: string;
@@ -156,4 +163,36 @@ function useActiveContent(): CanvasContent | null {
   const active = useOptionalCanvasState(selectCanvasActiveItem, null);
   const data = active ? readArtifactItemData(active.data) : null;
   return data ? contentOf(data) : null;
+}
+
+/**
+ * AN "OPEN IN CANVAS" BUTTON IS A TOGGLE (2026-10-03). A message's artifact
+ * opener had no pressed state and a second press opened nothing new — unlike
+ * every launcher, whose press is absent → open, behind → bring forward,
+ * in front → close (`toggleKind`). This names the tab the content opens as
+ * (the SAME kind + key `artifactOpenInput` gives it) so the button can show
+ * `aria-pressed` while that tab is in front and close it on the next press.
+ * Opening still goes through the caller's own opener (it may persist first).
+ */
+export function useArtifactContentToggle(content: CanvasContent | null): {
+  isVisible: boolean;
+  /** Closes the tab when it is in front; false when there was nothing to close. */
+  closeIfVisible: () => boolean;
+} {
+  const canvas = useOptionalCanvas();
+  const kind = content?.type ?? null;
+  const key = content ? artifactKey(content) : null;
+  const isVisible = useOptionalCanvasState(
+    (state) => (kind && key ? selectCanvasKindVisibility(state, kind, key) === "visible" : false),
+    false,
+  );
+  return {
+    isVisible,
+    closeIfVisible: () => {
+      if (!canvas || !kind || !key) return false;
+      if (selectCanvasKindVisibility(canvas.getState(), kind, key) !== "visible") return false;
+      toggleKind(canvas, { kind, key });
+      return true;
+    },
+  };
 }

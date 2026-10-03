@@ -10,6 +10,8 @@ import { ArtifactVersionHistory } from "@/features/canvas/components/ArtifactVer
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { useArtifactContentToggle } from "@/features/canvas/host/useArtifactCanvas";
+import { cn } from "@/lib/utils";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
 import type { CanvasContentType } from "@/features/canvas/canvasContent";
@@ -162,7 +164,22 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
     await unbind();
   };
 
+  // The tab this block opens as — the same identity both open paths give it
+  // (a saved artifact's id, else this block's task key) — so the button shows
+  // pressed while that tab is in front and the next press closes it.
+  const canvasToggle = useArtifactContentToggle({
+    type: canvasType,
+    data: canvasData,
+    metadata: {
+      title: artifactTitle,
+      sourceMessageId: messageId,
+      sourceTaskId: dedupKey,
+      canvasItemId: isMaterializedArtifactId(artifactId) ? artifactId : undefined,
+    },
+  });
+
   const handleOpenCanvas = () => {
+    if (canvasToggle.closeIfVisible()) return;
     const rawPayload =
       typeof canvasData === "string" ? canvasData : JSON.stringify(canvasData);
     const def = getArtifactDef(canvasType);
@@ -315,8 +332,15 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
           )}
           {isCanvasAvailable && (
             <button
+              type="button"
               onClick={handleOpenCanvas}
-              className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100"
+              aria-pressed={canvasToggle.isVisible}
+              className={cn(
+                "rounded p-0.5 transition-opacity focus-visible:opacity-100 group-hover/artifact:opacity-100",
+                canvasToggle.isVisible
+                  ? "bg-accent text-foreground opacity-100"
+                  : "text-muted-foreground opacity-0 hover:text-foreground",
+              )}
               title="Open in canvas"
               aria-label="Open in canvas"
             >
