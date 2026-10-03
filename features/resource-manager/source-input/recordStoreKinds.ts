@@ -1,0 +1,98 @@
+/**
+ * "Datasets" and "Pick lists" in Use existing — kinds the RECORD STORE holds.
+ *
+ * Since @ai-matrx/associations 0.13.135 no entity type backs a table or a pick list, so the kind
+ * inventory (one registry token each) cannot count or list them. They are read through the store's
+ * own list doors, the ones their pages use:
+ *   - tables:     `custom.table_list_everywhere` (`listTablesEverywhere`, the org Tables page's door);
+ *   - pick lists: `custom.pick_list_index[_everywhere]` (`readPickListIndexOrThrow`, THE LIST INDEX).
+ * A picked row is sent as the Source token the server resolves from the store: a table as
+ * `dataset`, a pick list as `structured_list`.
+ *
+ * The scope (All / Mine / an organization) is a FILTER, never permission: the store's own access
+ * rules are the ceiling; `mine` keeps what the person created.
+ */
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabase } from "@/utils/supabase/client";
+import { listTablesEverywhere } from "@/features/data-tables/service";
+import { readPickListIndexOrThrow } from "@/features/user-lists/pick-list-index";
+import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
+
+export type RecordStoreKind = "table" | "pick_list";
+
+/** The Source token a picked row of each record-store kind is sent as. */
+export const RECORD_STORE_TOKEN: Record<RecordStoreKind, string> = {
+  table: "dataset",
+  pick_list: "structured_list",
+};
+
+interface StoreRow extends KindItem {
+  createdBy: string | null;
+}
+
+function organizationOf(scope: KindScope): string | null {
+  if (scope.kind === "organization") return scope.organizationId;
+  if (scope.kind === "mine") return scope.organizationId ?? null;
+  return null;
+}
+
+async function readAll(kind: RecordStoreKind, scope: KindScope): Promise<StoreRow[]> {
+  const organizationId = organizationOf(scope);
+  if (kind === "table") {
+    const answered = await listTablesEverywhere(organizationId ? { organizationId } : {});
+    if (!answered.success) throw new Error(`Your tables could not be listed: ${answered.error}`);
+    return answered.data.map((t) => ({
+      id: String(t.id),
+      title: (t.table_name ?? "").trim() || "Untitled table",
+      updatedAt: t.last_activity_at ?? t.updated_at ?? null,
+      createdBy: t.user_id ?? null,
+    }));
+  }
+  const { lists } = await readPickListIndexOrThrow(
+    supabase as unknown as SupabaseClient,
+    organizationId ? { organizationId } : { everywhere: true },
+  );
+  return lists.map((l) => ({ id: l.id, title: l.listName, updatedAt: l.updatedAt, createdBy: l.createdBy }));
+}
+
+/** Every row of the kind the scope keeps, searched by title, newest first, once per id. */
+export async function listRecordStoreItems(
+  kind: RecordStoreKind,
+  scope: KindScope,
+  userId: string,
+  query = "",
+): Promise<KindItem[]> {
+  const rows = await readAll(kind, scope);
+  const needle = query.trim().toLowerCase();
+  const seen = new Set<string>();
+  return rows
+    .filter((r) => (scope.kind === "mine" ? r.createdBy === userId : true))
+    .filter((r) => (needle ? r.title.toLowerCase().includes(needle) : true))
+    .filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)))
+    .sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")))
+    .map(({ id, title, updatedAt }) => ({ id, title, updatedAt }));
+}
+
+/** How many the scope holds; null = could not count (the tile shows a dash and still opens). */
+export async function countRecordStoreItems(kind: RecordStoreKind, scope: KindScope, userId: string): Promise<number | null> {
+  try {
+    return (await listRecordStoreItems(kind, scope, userId)).length;
+  } catch (error) {
+    console.error(`[recordStoreKinds] could not count ${kind}s:`, error);
+    return null;
+  }
+}
+
+/** One page, in `useKindItems`'s `fetchPage` shape. The store's doors answer whole, so this slices. */
+export async function fetchRecordStorePage(args: {
+  kind: RecordStoreKind;
+  scope: KindScope;
+  userId: string;
+  query?: string;
+  offset: number;
+  limit: number;
+}): Promise<KindItem[]> {
+  const all = await listRecordStoreItems(args.kind, args.scope, args.userId, args.query ?? "");
+  return all.slice(args.offset, args.offset + args.limit);
+}

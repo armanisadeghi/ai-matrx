@@ -13,8 +13,10 @@
  * (`useKindCounts` / `useKindItems`, server-searched, recent first, paged by
  * the `resources.inventory/page_size` knob). Websites has no token — it lists
  * the web pages the person saved as Sources (`savedWebPages.ts`), picked as
- * `processed_document`. The scope (All / Mine / an organization) is a FILTER,
- * never permission.
+ * `processed_document`. Datasets and Pick lists have no token either — the
+ * record store holds them; they are read through the store's own list doors
+ * (`recordStoreKinds.ts`) and picked as `dataset` / `structured_list`. The
+ * scope (All / Mine / an organization) is a FILTER, never permission.
  *
  * Also the answer to the input's one search box: with words typed, every kind
  * that has items shows its first matches, each kind openable for the rest.
@@ -41,6 +43,12 @@ import {
   SAVED_SOURCE_TOKEN,
   type SavedSourceGroup,
 } from "@/features/resource-manager/source-input/savedWebPages";
+import {
+  countRecordStoreItems,
+  fetchRecordStorePage,
+  RECORD_STORE_TOKEN,
+  type RecordStoreKind,
+} from "@/features/resource-manager/source-input/recordStoreKinds";
 import { MiddleTruncate } from "@/components/official/MiddleTruncate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadGate, type ReadStatus } from "@/components/read-state/ReadGate";
@@ -70,6 +78,8 @@ export interface OfferedKind {
   Icon: ComponentType<{ className?: string }>;
   /** Set when the kind is listed from the person's saved Sources (Websites). */
   savedSourceGroup?: SavedSourceGroup;
+  /** Set when the kind is listed from the record store (Datasets, Pick lists). */
+  recordStoreKind?: RecordStoreKind;
   /** The stored Source kind a picked row is (its card's noun), for saved-Source kinds. */
   sourceKind?: string;
 }
@@ -77,8 +87,8 @@ export interface OfferedKind {
 /**
  * The kinds offered: the grid's Sources + Sources & Outputs entries, in the
  * grid's order. The grid's definition decides, never a list here. A grid entry
- * with neither a token nor a saved-Source group cannot be listed — the guard
- * test fails on it, never a silent drop.
+ * with no token, saved-Source group or record-store kind cannot be listed —
+ * the guard test fails on it, never a silent drop.
  */
 export function offeredKinds(): OfferedKind[] {
   return sourceRoleEntries().flatMap((e): OfferedKind[] => {
@@ -93,18 +103,32 @@ export function offeredKinds(): OfferedKind[] {
         },
       ];
     }
+    if (e.recordStoreKind) {
+      return [{ ...base, token: RECORD_STORE_TOKEN[e.recordStoreKind], recordStoreKind: e.recordStoreKind }];
+    }
     if (e.token) return [{ ...base, token: e.token }];
     console.error(`[UseExisting] grid kind "${e.key}" has no way to be listed`);
     return [];
   });
 }
 
-/** The kind inventory's counts plus the saved-Source counts, as one map keyed by kind key. */
+/** Listed through its own reader (saved Sources or the record store), not the kind inventory. */
+function readsOwnList(k: OfferedKind): boolean {
+  return Boolean(k.savedSourceGroup || k.recordStoreKind);
+}
+
+/** One own-reader kind's count; null = could not count. */
+function countOwnList(k: OfferedKind, scope: KindScope, userId: string): Promise<number | null> {
+  if (k.recordStoreKind) return countRecordStoreItems(k.recordStoreKind, scope, userId);
+  return countSavedSources(k.savedSourceGroup!, scope, userId);
+}
+
+/** The kind inventory's counts plus the own-reader kinds' counts, as one map keyed by kind key. */
 function useOfferedCounts(scope: KindScope, offered: OfferedKind[]) {
   const userId = useAppSelector(selectUserId);
-  const inventoryKinds = offered.filter((k) => !k.savedSourceGroup);
+  const inventoryKinds = offered.filter((k) => !readsOwnList(k));
   const inventory = useKindCounts(scope, { tokens: inventoryKinds.map((k) => k.token) });
-  const groups = offered.filter((k) => k.savedSourceGroup);
+  const groups = offered.filter(readsOwnList);
   const groupsKey = groups.map((k) => k.key).join(",");
   const scopeKey = JSON.stringify(scope);
   const [saved, setSaved] = useState<{ key: string; counts: Map<string, number | null> }>({
@@ -117,7 +141,7 @@ function useOfferedCounts(scope: KindScope, offered: OfferedKind[]) {
     let cancelled = false;
     const kinds = groupsKey.split(",").map((key) => offered.find((k) => k.key === key)!);
     void Promise.all(
-      kinds.map(async (k) => [k.key, await countSavedSources(k.savedSourceGroup!, scope, userId)] as const),
+      kinds.map(async (k) => [k.key, await countOwnList(k, scope, userId)] as const),
     ).then((pairs) => {
       if (!cancelled) setSaved({ key: requestKey, counts: new Map(pairs) });
     });
@@ -142,23 +166,24 @@ function useOfferedCounts(scope: KindScope, offered: OfferedKind[]) {
   };
 }
 
-/** One kind's list — the kind inventory, or the person's saved Sources for Websites. */
+/** One kind's list — the kind inventory, the person's saved Sources (Websites), or the record store. */
 function useOfferedKindItems(kind: OfferedKind, scope: KindScope, query: string) {
   const userId = useAppSelector(selectUserId);
   const group = kind.savedSourceGroup;
-  const fetchSaved = useCallback(
+  const store = kind.recordStoreKind;
+  const fetchOwn = useCallback(
     (args: { scope: KindScope; query?: string; offset: number; limit: number }) =>
-      fetchSavedSourcesPage({
-        group: group!,
-        scope: args.scope,
-        userId: userId ?? "",
-        query: args.query,
-        offset: args.offset,
-        limit: args.limit,
-      }),
-    [group, userId],
+      store
+        ? fetchRecordStorePage({ kind: store, scope: args.scope, userId: userId ?? "", ...pageOf(args) })
+        : fetchSavedSourcesPage({ group: group!, scope: args.scope, userId: userId ?? "", ...pageOf(args) }),
+    [group, store, userId],
   );
-  return useKindItems(group && !userId ? null : kind.token, scope, query, group ? { fetchPage: fetchSaved } : undefined);
+  const own = Boolean(group || store);
+  return useKindItems(own && !userId ? null : kind.token, scope, query, own ? { fetchPage: fetchOwn } : undefined);
+}
+
+function pageOf(args: { query?: string; offset: number; limit: number }) {
+  return { query: args.query, offset: args.offset, limit: args.limit };
 }
 
 function shortDate(iso: string | null): string {

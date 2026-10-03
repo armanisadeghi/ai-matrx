@@ -215,6 +215,13 @@ export interface OrgResourceEntry {
    * existing" lists the web pages the person saved.
    */
   savedSourceGroup?: "web_page";
+  /**
+   * A kind with no registry token whose items the RECORD STORE holds: `"table"` (Datasets, read by
+   * `custom.table_list_everywhere`) or `"pick_list"` (Pick lists, read by THE LIST INDEX). The Source
+   * input's "Use existing" counts and lists it through those doors
+   * (`features/resource-manager/source-input/recordStoreKinds.ts`).
+   */
+  recordStoreKind?: "table" | "pick_list";
 
   /**
    * The canonical entity token stored in `permissions.resource_type` for grants
@@ -410,6 +417,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     // A table lives in the record store; the org's Tables page lists them (`orgRoute`).
     table: null,
     hasOrgColumn: false,
+    recordStoreKind: "table",
     shareKey: null,
     titleColumn: null,
     orgRoute: "tables",
@@ -428,6 +436,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     table: null,
     hasOrgColumn: false,
     alsoInTheNewSystem: "pick_lists",
+    recordStoreKind: "pick_list",
     shareKey: "structured_list",
     titleColumn: null,
     orgRoute: null,

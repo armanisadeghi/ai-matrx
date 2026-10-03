@@ -26,6 +26,11 @@ jest.mock("@/features/resource-manager/source-input/savedWebPages", () => ({
   countSavedSources: () => Promise.resolve(4),
   fetchSavedSourcesPage: () => Promise.resolve([]),
 }));
+jest.mock("@/features/resource-manager/source-input/recordStoreKinds", () => ({
+  RECORD_STORE_TOKEN: { table: "dataset", pick_list: "structured_list" },
+  countRecordStoreItems: (kind: string) => Promise.resolve(kind === "table" ? 3 : null),
+  fetchRecordStorePage: () => Promise.resolve([]),
+}));
 jest.mock("@/features/resource-manager/source-input/itemStage", () => ({ useKindItemStages: () => new Map() }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
@@ -63,4 +68,7 @@ it("shows every kind with a dash instead of one red error block", async () => {
   expect(tiles.some((t) => t.startsWith("Notes") && t.endsWith("—"))).toBe(true);
   // A kind counted another way still shows its number.
   expect(tiles.some((t) => t.startsWith("Websites") && t.endsWith("4"))).toBe(true);
+  // The record store's kinds count through their own doors: a number, or a dash when it failed.
+  expect(tiles.some((t) => t.startsWith("Datasets") && t.endsWith("3"))).toBe(true);
+  expect(tiles.some((t) => t.startsWith("Pick lists") && t.endsWith("—"))).toBe(true);
 });
