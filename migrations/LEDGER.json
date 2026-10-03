@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T08:01:36.732Z",
+  "generated_at": "2026-10-03T08:14:22.541Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4880,11 +4880,29 @@
       "checksum": "76a29ffefd5fb05a04661660cff59c40435838ff7b688e81553d7e39ba379912",
       "applied_at": "2026-10-02 19:03:58.727527+00"
     },
+    "migrations/campaign/scopesw2w_a_scope_type_under_a_type_keeps_its_parent_in_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2w_a_scope_type_under_a_type_keeps_its_parent_in_the_store.sql",
+      "checksum": "9d15852ea4cbdf7a6fa5d107c60854012210b2f26bbaf0fd43b0ce6769b2b922",
+      "applied_at": "2026-10-03 08:12:39.611519+00"
+    },
     "migrations/campaign/scopesw2w_a_tag_set_refuses_a_scope_it_cannot_tag.sql": {
       "source": "matrx-frontend",
       "filename": "scopesw2w_a_tag_set_refuses_a_scope_it_cannot_tag.sql",
       "checksum": "b4830319a970fe2a2bf6607c4807dbf1dc539ab483a5fb4a269c4dbce51a79f8",
       "applied_at": "2026-10-03 04:01:05.834204+00"
+    },
+    "migrations/campaign/scopesw2w_the_scope_door_writes_the_store_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2w_the_scope_door_writes_the_store_first.sql",
+      "checksum": "d557f451b7240b4e435dddc2a5cfca4689c293b7062413d72bab04af322806d1",
+      "applied_at": "2026-10-03 08:14:21.278629+00"
+    },
+    "migrations/campaign/scopesw2w_the_scope_type_door_writes_the_store_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2w_the_scope_type_door_writes_the_store_first.sql",
+      "checksum": "f6098f9f51b3429d52b4200c6a2227c366e02c73caeabeb92aa41e41615d4491",
+      "applied_at": "2026-10-03 08:13:34.320304+00"
     },
     "migrations/campaign/scopeswt_a_template_applies_and_a_value_brings_its_field.sql": {
       "source": "matrx-frontend",
