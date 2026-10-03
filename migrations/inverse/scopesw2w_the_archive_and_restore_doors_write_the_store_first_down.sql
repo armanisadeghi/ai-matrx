@@ -2,7 +2,7 @@
 -- lane: SCOPES-ON-THE-STORE
 -- based-on: custom.context_scope_archive(uuid) 47eb54051cc0639204eb1c2c0f22e179b618d5b5c9400ec9701883f1c16f4f2b
 -- based-on: custom.context_scope_restore(uuid) 1a498d1d57cf2a59bf942cc45a7ba19fa2b2ac497a1ee58bda48ce8e4285b595
--- based-on: custom.context_type_archive(uuid) 963e49f85a5b9df91f19e7d4d3b64f1472c294c1f0dbfeeeb44ba1550c06d725
+-- based-on: custom.context_type_archive(uuid) 5cad9df015f2ad3e050ee4c1691e581035bc37e71a134d542e0fafa283002eea
 -- based-on: custom.context_type_restore(uuid) f666c820a4992641738cf754568aa2ce88c9d4d74302d781e4bede3c07d9ed34
 -- lock: custom
 
