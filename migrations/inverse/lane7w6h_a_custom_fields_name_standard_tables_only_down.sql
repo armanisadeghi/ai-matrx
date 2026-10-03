@@ -1,4 +1,10 @@
 -- inverse of lane7w6h_a_custom_fields_name_standard_tables_only.sql — the six bodies back byte for byte (production's at authoring) and the two foreign keys.
+-- based-on: platform.extensibility_knob(text,uuid,text,uuid) d66e2382c99e70964dc5ca0b649ba9c4fb0487450a6d485da3a6bdad06507313
+-- based-on: platform.find_custom_references_to(uuid,text,uuid) 762415fc5759e6b20ade7ee652a38cada85ff24177c854524db599c6c75edac2
+-- based-on: platform.promote_custom_field_index(uuid,boolean) aa867a8d7b916ff8adf5504ac0a9f7ca37484be95d2d629f11351097af938c67
+-- based-on: platform.custom_field_index_ddl(uuid,boolean) eeb93fcb5f1a98f43bc310f2559553f4ad52015de9746949b3b48c912b91e349
+-- based-on: platform.backfill_record_names(uuid,integer) bd794ffe570243b9eaf4dcb514b80445fb702a6310b3f1f7a16821f3a20740e9
+-- based-on: platform._custom_field_definition_guard() 466390585a6a8a42b2db01137b60bafdc337fef107b9a858a6db4a8051faace9
 set local lock_timeout = '3s';
 
 CREATE OR REPLACE FUNCTION platform.extensibility_knob(p_key text, p_organization_id uuid DEFAULT NULL::uuid, p_target_token text DEFAULT NULL::text, p_definition_id uuid DEFAULT NULL::uuid)
