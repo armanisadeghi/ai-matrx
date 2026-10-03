@@ -85,16 +85,17 @@ export async function approvalPageSize(
    * and refuse only once it has settled, in the words that match WHY it
    * settled that way (nothing chosen vs. we could not check).
    */
+  //
+  // 🚨 NO ORGANIZATION CHOSEN IS NOT A FAILURE OF THIS LIST (lane VISION-REACH W4, 2026-10-03).
+  // What waits on a person is the person's; the active organization is never a list filter. With
+  // none chosen, the knob is read at the person's own layer over the platform default
+  // (`platform.knob_snapshot` with `p_organization_id` null) — it used to refuse, and every
+  // Google and CMS section of `/approvals` turned into a red "could not load" strip for a person
+  // who simply had no organization selected.
   let effectiveOrganizationId = organizationId ?? null;
   if (!effectiveOrganizationId) {
     const resolved = await awaitOrganizationForRecordRead();
-    if (resolved.status !== "ready") {
-      throw new Error(
-        `[approvals] ${APPROVAL_PAGE_SIZE_KNOB.feature}.${APPROVAL_PAGE_SIZE_KNOB.key} could not ` +
-          `be resolved: ${resolved.reason}`,
-      );
-    }
-    effectiveOrganizationId = resolved.organizationId;
+    effectiveOrganizationId = resolved.status === "ready" ? resolved.organizationId : null;
   }
   const raw = await ensureEffectiveKnob(
     effectiveOrganizationId,
