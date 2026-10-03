@@ -28,7 +28,6 @@ import { PromoteToSystemMandateButton } from "@/features/mandates/admin/mandate-
 import { useStartMandateWorkflow } from "@ai-matrx/chat/mandates/useStartMandateWorkflow";
 import {
   SurfaceRuntimeProvider,
-  getRegisteredSurfaceScopeContributions,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MANDATE_WORKSPACE_SURFACE_NAME,
@@ -137,7 +136,6 @@ function MandateRecordPageInner({
           mandate_key: mandateKeyOrId,
           selection: window.getSelection()?.toString() || undefined,
         }),
-        ...getRegisteredSurfaceScopeContributions(MANDATE_WORKSPACE_SURFACE_NAME),
       })}
     >
       <div className="h-full overflow-y-auto pb-safe">
