@@ -27,7 +27,12 @@ export function validateSupabaseScopedMcpEndpointOverride(
     );
   }
 
-  const expectedKeys = ["features", "project_ref", "read_only"];
+  // project_ref is optional: without it the person's own Supabase sign-in
+  // decides which projects are reachable. read_only + features always apply.
+  const hasProjectRef = candidate.searchParams.has("project_ref");
+  const expectedKeys = hasProjectRef
+    ? ["features", "project_ref", "read_only"]
+    : ["features", "read_only"];
   const actualKeys = [...new Set(candidate.searchParams.keys())].sort();
   if (
     actualKeys.length !== expectedKeys.length ||
@@ -37,8 +42,10 @@ export function validateSupabaseScopedMcpEndpointOverride(
     throw new Error("The Supabase MCP endpoint has unsupported scope parameters");
   }
 
-  const projectRef = candidate.searchParams.get("project_ref") ?? "";
-  if (!SUPABASE_PROJECT_REF_RE.test(projectRef)) {
+  if (
+    hasProjectRef &&
+    !SUPABASE_PROJECT_REF_RE.test(candidate.searchParams.get("project_ref") ?? "")
+  ) {
     throw new Error("Enter a valid 20-character Supabase project reference");
   }
   if (candidate.searchParams.get("read_only") !== "true") {
@@ -53,19 +60,23 @@ export function validateSupabaseScopedMcpEndpointOverride(
   return candidate.toString();
 }
 
-/** Build the deliberately narrow hosted Supabase MCP endpoint. */
+/**
+ * Build the deliberately narrow hosted Supabase MCP endpoint: always read-only
+ * and limited to Docs/Database/Debugging; locked to one project only when the
+ * person names one (empty = every project their Supabase sign-in allows).
+ */
 export function buildSupabaseScopedMcpEndpoint(
   catalogEndpoint: string,
-  projectRef: string,
+  projectRef = "",
 ): string {
   const normalizedRef = projectRef.trim().toLowerCase();
-  if (!SUPABASE_PROJECT_REF_RE.test(normalizedRef)) {
+  if (normalizedRef && !SUPABASE_PROJECT_REF_RE.test(normalizedRef)) {
     throw new Error("Enter a valid 20-character Supabase project reference");
   }
 
   const endpoint = new URL(catalogEndpoint);
   endpoint.search = "";
-  endpoint.searchParams.set("project_ref", normalizedRef);
+  if (normalizedRef) endpoint.searchParams.set("project_ref", normalizedRef);
   endpoint.searchParams.set("read_only", "true");
   endpoint.searchParams.set("features", "docs,database,debugging");
   return validateSupabaseScopedMcpEndpointOverride(
