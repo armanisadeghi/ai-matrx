@@ -192,7 +192,14 @@ function useActiveOrganizationId(): string | null {
             store ? selectOrganizationId(store.getState() as RootState) : null,
         [store],
     );
-    return React.useSyncExternalStore(subscribe, read, read);
+    // Hydrate against the state the server rendered (StoreProvider's `serverState`), never the
+    // live store: the active org restored from storage before this boundary hydrates would
+    // otherwise change what hydrates.
+    const readServer = React.useCallback(() => {
+        const server = context?.getServerState?.() as RootState | undefined;
+        return server ? selectOrganizationId(server) : read();
+    }, [context, read]);
+    return React.useSyncExternalStore(subscribe, read, readServer);
 }
 
 const announced = new Set<string>();

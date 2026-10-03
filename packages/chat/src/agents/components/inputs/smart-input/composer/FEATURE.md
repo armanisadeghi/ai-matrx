@@ -170,6 +170,8 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-10-03** — The chip's hydration frame is gone: the class is fixed at `<ChatProvider>`, which now hands its react-redux `<Provider>` the host store's `serverState` (StoreProvider's pre-restore snapshot), so every package `useAppSelector` hydrates against the server HTML wherever a boundary hydrates. Guard: `host/__tests__/chat-provider-hydrates-what-the-server-rendered.test.tsx` (red before).
+
 - **2026-10-03** — The meta row fits a narrow column: at a ~260px chat column (canvas 900 on 1440) the right cluster (`min-w-0` + `justify-end`) spilled its Agent pill out of its LEFT edge over the Output pill ("TexGen…"). The cluster is start-justified now (`ml-auto` keeps it right), so the overflow runs into the row's sideways scroll, and the row is `@container/composer-meta` so the Scope chip folds to its icon under 20rem, as on a phone (`LensChip`).
 
 - **2026-10-03** — The value-group chip renders a numberless frame in the server HTML and during hydration, then the real chip: its rows read the active organization the browser rehydrates from storage before the composer's Suspense boundary hydrates, so `/chat/new` threw a hydration error on every reload ("4 included" server vs "5 included" client).
