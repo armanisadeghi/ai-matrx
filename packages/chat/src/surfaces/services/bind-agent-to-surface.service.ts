@@ -45,6 +45,8 @@ import { ensureOrgAvailability } from "@host/utils/permissions/service";
 // to store in a mapping, for every system that stores one.
 import { assertMappingsAreAnswerable } from "@host/features/mandates/provision-shapes";
 import { ensureOrgId } from "../../host/org";
+import { createClient as createHostClient } from "@host/utils/supabase/client";
+import { projectsDb } from "@host/utils/supabase/projectsDb";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -418,14 +420,22 @@ export async function bindAgentToSurface(
     version: 1,
   };
 
+  // The edge lives in the organization its scope lives in, and this caller
+  // names it: the org tier's own org, a project/task binding's project or
+  // task org, else the caller's access org (user/global). The database checks
+  // it and refuses any other (no-db-assigned-org) — it never picks one.
+  const edgeOrgId =
+    scope.organizationId ??
+    (await scopeRecordOrganizationId(bindingTier, scope)) ??
+    accessOrgId;
+
   const result = await associationsService.add({
     sourceType: "agent",
     sourceId: agentId,
     targetType: "surface",
     targetId: surface.id,
-    // Explicit org from the picker (org tier) or the caller's access org
-    // (personal/global). Never read passive appContextSlice here (P3).
-    orgId: scope.organizationId ?? accessOrgId,
+    // Never read passive appContextSlice here (P3).
+    orgId: edgeOrgId,
     role: bindingRoleForScope(scope),
     metadata,
     payloadKind: "surface_binding",
@@ -450,6 +460,43 @@ export async function bindAgentToSurface(
     valueMappings,
     autoRun: autoRun === true,
   };
+}
+
+/**
+ * The organization a project- or task-tier binding's scope record lives in;
+ * null for every other tier. A missing record is refused here by name.
+ */
+async function scopeRecordOrganizationId(
+  tier: BindingTier,
+  scope: ScopeInput,
+): Promise<string | null> {
+  if (tier !== "project" && tier !== "task") return null;
+  const id = tier === "project" ? scope.projectId : scope.taskId;
+  if (!id) return null;
+  const db = projectsDb(createHostClient());
+  const { data, error } =
+    tier === "project"
+      ? await db
+          .from("projects")
+          .select("organization_id")
+          .eq("id", id)
+          .maybeSingle()
+      : await db
+          .from("tasks")
+          .select("organization_id")
+          .eq("id", id)
+          .maybeSingle();
+  if (error) throw error;
+  if (!data?.organization_id) {
+    throw recordUnavailable({
+      entity: tier,
+      reason: "unknown",
+      recordId: id,
+      token: tier,
+      relation: tier === "project" ? "projects.projects" : "projects.tasks",
+    });
+  }
+  return data.organization_id;
 }
 
 /**
