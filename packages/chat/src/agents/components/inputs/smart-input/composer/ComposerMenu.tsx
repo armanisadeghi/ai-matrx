@@ -17,8 +17,11 @@
 import {
   createContext,
   useContext,
+  useId,
+  useRef,
   useState,
   type ComponentType,
+  type PointerEvent,
   type ReactNode,
 } from "react";
 import { Check, ChevronRight } from "lucide-react";
@@ -74,11 +77,25 @@ export function ComposerMenuRow({
   disabled,
   title,
   onClick,
-}: ComposerMenuRowProps) {
+  onPointerEnter,
+  onPointerLeave,
+}: ComposerMenuRowProps & {
+  onPointerEnter?: (event: PointerEvent) => void;
+  onPointerLeave?: (event: PointerEvent) => void;
+}) {
+  const level = useContext(ComposerMenuLevelContext);
   return (
     <button
       type="button"
       onClick={onClick}
+      onPointerEnter={
+        onPointerEnter ??
+        ((event) => {
+          // A plain row: hovering it closes whatever cascade is open beside it.
+          if (event.pointerType === "mouse") level?.request(null);
+        })
+      }
+      onPointerLeave={onPointerLeave ?? (() => level?.cancel())}
       disabled={disabled}
       title={title}
       aria-expanded={chevron ? Boolean(active) : undefined}
@@ -123,8 +140,13 @@ export function ComposerMenuSwitchRow({
   disabled?: boolean;
   onCheckedChange: (next: boolean) => void;
 }) {
+  const level = useContext(ComposerMenuLevelContext);
   return (
     <label
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") level?.request(null);
+      }}
+      onPointerLeave={() => level?.cancel()}
       className={cn(
         "flex w-full min-w-0 shrink-0 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 text-sm text-foreground hover:bg-accent",
         description ? "py-1.5" : "h-9",
@@ -200,6 +222,47 @@ export const ComposerMenuCloseAllContext = createContext<(() => void) | null>(
 );
 
 /**
+ * HOVER OPENS, HOVER MOVES ON (Arman, 2026-10-03: "open on hover and
+ * automatically close"). One level of a menu owns which of its cascades is
+ * open: hovering a cascade row opens it after a short intent delay, hovering
+ * a sibling row switches (or closes) after the same delay, and entering the
+ * open panel cancels a pending switch — so a diagonal move toward the panel
+ * never closes it. Click still toggles (touch, keyboard).
+ */
+const HOVER_INTENT_MS = 120;
+
+interface ComposerMenuLevel {
+  openId: string | null;
+  setOpenId: (id: string | null) => void;
+  request: (id: string | null) => void;
+  cancel: () => void;
+}
+
+const ComposerMenuLevelContext = createContext<ComposerMenuLevel | null>(null);
+
+/** Wrap one menu level (the root menu, or a cascade panel's own rows). */
+export function ComposerMenuLevel({ children }: { children: ReactNode }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancel = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+  const request = (id: string | null) => {
+    cancel();
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      setOpenId(id);
+    }, HOVER_INTENT_MS);
+  };
+  return (
+    <ComposerMenuLevelContext.Provider value={{ openId, setOpenId, request, cancel }}>
+      {children}
+    </ComposerMenuLevelContext.Provider>
+  );
+}
+
+/**
  * A row that opens a cascading panel beside the menu. The panel is a nested
  * Popover anchored to the row, so Radix treats it as a child layer: clicking
  * inside it never dismisses the parent menu.
@@ -218,10 +281,16 @@ export function ComposerSubmenu({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const id = useId();
+  const level = useContext(ComposerMenuLevelContext);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
-  const open = controlledOpen ?? uncontrolledOpen;
+  const levelOpen = level ? level.openId === id : uncontrolledOpen;
+  const open = controlledOpen ?? levelOpen;
   const setOpen = (next: boolean) => {
-    if (controlledOpen === undefined) setUncontrolledOpen(next);
+    if (controlledOpen === undefined) {
+      if (level) level.setOpenId(next ? id : level.openId === id ? null : level.openId);
+      else setUncontrolledOpen(next);
+    }
     onOpenChange?.(next);
   };
   const close = () => setOpen(false);
@@ -230,7 +299,20 @@ export function ComposerSubmenu({
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverAnchor asChild>
         <div>
-          <ComposerMenuRow {...row} chevron active={open} onClick={() => setOpen(!open)} />
+          <ComposerMenuRow
+            {...row}
+            chevron
+            active={open}
+            onClick={() => {
+              level?.cancel();
+              setOpen(!open);
+            }}
+            onPointerEnter={(event) => {
+              if (event.pointerType !== "mouse" || row.disabled) return;
+              if (level && controlledOpen === undefined) level.request(id);
+            }}
+            onPointerLeave={() => level?.cancel()}
+          />
         </div>
       </PopoverAnchor>
       <PopoverContent
@@ -243,6 +325,7 @@ export function ComposerSubmenu({
           closeAll?.();
         }}
         onPointerDownOutside={ignoreOwnWrapper}
+        onPointerEnter={() => level?.cancel()}
         onOpenAutoFocus={(event) => {
           // A cascade that holds a text field (a picker's search, a URL box)
           // focuses THAT field on open, in the same tick Radix would focus the
@@ -261,7 +344,9 @@ export function ComposerSubmenu({
           panelClassName ?? "w-72",
         )}
       >
-        {typeof children === "function" ? children(close) : children}
+        <ComposerMenuLevel>
+          {typeof children === "function" ? children(close) : children}
+        </ComposerMenuLevel>
       </PopoverContent>
     </Popover>
   );

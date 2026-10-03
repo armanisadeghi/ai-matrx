@@ -28,6 +28,7 @@ import { useState, type ReactNode } from "react";
 import {
   AppWindow,
   Brain,
+  Boxes,
   Cloud,
   Eye,
   CornerDownLeft,
@@ -35,10 +36,8 @@ import {
   FileText,
   FolderOpen,
   Globe,
-  Layers,
   Lightbulb,
   Link2,
-  Mic,
   Monitor,
   NotebookPen,
   Plug,
@@ -53,7 +52,11 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { ResourcePickerMenu } from "@host/features/resource-manager/resource-picker/ResourcePickerMenu";
-import type { ResourcePickerViewId } from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
+import {
+  flattenResourcePickerItems,
+  type ResourcePickerViewId,
+} from "@host/features/resource-manager/resource-picker/resource-picker-menu-items";
+import { useKnowledgeAttachSearch } from "@host/features/resource-manager/resource-picker/useKnowledgeAttachSearch";
 import { useRunControlCounts } from "@host/features/resource-manager/resource-picker/useRunControlCounts";
 import {
   useAttachResource,
@@ -99,6 +102,7 @@ import {
   ComposerMenuCloseAllContext,
   ComposerMenuDivider,
   ComposerMenuLabel,
+  ComposerMenuLevel,
   ComposerMenuRow,
   ComposerMenuSwitchRow,
   ComposerSubmenu,
@@ -111,8 +115,10 @@ import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
 import { RunConfigOverrides } from "../../../run-controls/RunConfigOverrides";
 import { RunInputCapabilities } from "../../../run-controls/RunInputCapabilities";
 
-/** Picker cascades need a definite height for their internal scroll chains. */
-const PICKER_PANEL = "w-[380px] h-[min(70dvh,520px)] p-0";
+/** Picker cascades need a definite height for their internal scroll chains;
+ *  the available-height cap keeps the bottom on screen. */
+const PICKER_PANEL =
+  "w-[420px] h-[min(600px,80dvh,var(--radix-popover-content-available-height))] p-0";
 
 interface ComposerPlusMenuProps {
   conversationId: string;
@@ -183,7 +189,13 @@ export function ComposerPlusMenu({
     onRequestInputExpand?.();
   };
 
-  const supportsAudio = attachmentCapabilities?.supportsAudio === true;
+  // Search hands off to the ⌘K bar — the modern search, not a picker list.
+  const openAttachSearch = useKnowledgeAttachSearch({
+    conversationId,
+    onResourceSelected: (resource: Resource) => attachResource(resource),
+    onResourceDeselected: detachResource,
+    attachmentCapabilities,
+  });
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
@@ -197,41 +209,41 @@ export function ComposerPlusMenu({
         className={`flex w-[300px] max-h-[var(--radix-popover-content-available-height)] flex-col overflow-y-auto p-1 ${COMPOSER_MENU_NO_ENTRANCE}`}
       >
         <ComposerMenuCloseAllContext.Provider value={close}>
+        <ComposerMenuLevel>
         {/* Attach — every mode */}
         <ComposerSubmenu row={{ icon: FolderOpen, label: "Add files or photos" }} panelClassName={PICKER_PANEL}>
           {(closeCascade) => picker("files", closeCascade)}
         </ComposerSubmenu>
-        {supportsAudio ? (
-          <ComposerSubmenu row={{ icon: Mic, label: "Record voice" }} panelClassName={PICKER_PANEL}>
-            {(closeCascade) => picker("audio", closeCascade)}
-          </ComposerSubmenu>
-        ) : null}
         <ComposerSubmenu row={{ icon: Link2, label: "Add a link" }} panelClassName={PICKER_PANEL}>
           {(closeCascade) => picker("webpage", closeCascade)}
         </ComposerSubmenu>
-        <ComposerSubmenu row={{ icon: Layers, label: "From your workspace" }} panelClassName="w-60">
+        <ComposerSubmenu row={{ icon: Boxes, label: "From your workspace" }} panelClassName="w-64">
           <ComposerMenuLabel>Attach from AI Matrx</ComposerMenuLabel>
           {WORKSPACE_ROWS.map((row) => (
-            <ComposerSubmenu key={row.view} row={{ label: row.label }} panelClassName={PICKER_PANEL}>
+            <ComposerSubmenu
+              key={row.view}
+              row={{ icon: row.icon, label: row.label }}
+              panelClassName={PICKER_PANEL}
+            >
               {(closeCascade) => picker(row.view, closeCascade)}
             </ComposerSubmenu>
           ))}
         </ComposerSubmenu>
-        {/* The classic attach list in full — knowledge search (⌘K) first, then
-            every source (image / file / YouTube URLs, cloud browser, …): nothing
-            the old + offered is out of reach. */}
-        <ComposerSubmenu row={{ icon: Search, label: "Search your knowledge" }} panelClassName={PICKER_PANEL}>
-          {() => (
-            <ResourcePickerMenu
-              conversationId={conversationId}
-              fillHost
-              onResourceSelected={(resource: Resource) => attachResource(resource)}
-              onResourceDeselected={detachResource}
-              onClose={close}
-              attachmentCapabilities={attachmentCapabilities}
-            />
-          )}
+        <ComposerSubmenu
+          row={{ icon: CONTEXT_VALUES_ITEM.icon, label: CONTEXT_VALUES_ITEM.label }}
+          panelClassName={PICKER_PANEL}
+        >
+          {(closeCascade) => picker("context_values", closeCascade)}
         </ComposerSubmenu>
+        <ComposerMenuRow
+          icon={Search}
+          label="Search your knowledge"
+          detail="⌘K"
+          onClick={() => {
+            close();
+            openAttachSearch();
+          }}
+        />
 
         {/* At compact width Scope and Output live here (A5). */}
         {!metaRowHoldsScopeAndOutput(size) ? (
@@ -413,21 +425,32 @@ export function ComposerPlusMenu({
             openRunControlsWindow({ conversationId });
           }}
         />
+        </ComposerMenuLevel>
         </ComposerMenuCloseAllContext.Provider>
       </PopoverContent>
     </Popover>
   );
 }
 
-const WORKSPACE_ROWS: { view: Exclude<ResourcePickerViewId, null>; label: string }[] = [
-  { view: "conversations", label: "Chats" },
-  { view: "tables", label: "Tables" },
-  { view: "notes", label: "Notes" },
-  { view: "tasks", label: "Tasks" },
-  { view: "workbooks", label: "Workbooks" },
-  { view: "documents", label: "Documents" },
-  { view: "context_values", label: "Context values" },
+/** Workspace records — label and icon from the ONE item list. */
+const WORKSPACE_VIEWS: Exclude<ResourcePickerViewId, null>[] = [
+  "conversations",
+  "tables",
+  "notes",
+  "tasks",
+  "workbooks",
+  "documents",
 ];
+function pickerItem(view: Exclude<ResourcePickerViewId, null>) {
+  const item = flattenResourcePickerItems().find((i) => i.id === view);
+  if (!item) throw new Error(`ComposerPlusMenu: no picker item "${view}"`);
+  return item;
+}
+const WORKSPACE_ROWS = WORKSPACE_VIEWS.map((view) => {
+  const { label, icon } = pickerItem(view);
+  return { view, label, icon };
+});
+const CONTEXT_VALUES_ITEM = pickerItem("context_values");
 
 /**
  * Environment (brief §6) — where the agent runs, as ONE flat list: Cloud, then

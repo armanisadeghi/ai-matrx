@@ -42,11 +42,7 @@ import {
 } from "./resource-picker-menu-items";
 import { useRunControlCounts } from "./useRunControlCounts";
 import type { Resource } from "@ai-matrx/chat/agents/resources/types";
-import { useOpenKnowledgeCommandBar } from "@/features/overlays/openers/knowledgeCommandBar";
-import { useOpenResourcePickerWindow } from "@/features/overlays/openers/resourcePickerWindow";
-import { useKnowledgeAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
-import type { KnowledgeCommand } from "@/features/knowledge/command-bar/commands";
-import type { LucideIcon } from "lucide-react";
+import { useKnowledgeAttachSearch } from "./useKnowledgeAttachSearch";
 import { useAttachedFileIds } from "@ai-matrx/chat/agents/components/inputs/resources/useAttachedFileIds";
 
 type FilesPickerProps = React.ComponentProps<typeof FilesResourcePicker>;
@@ -67,35 +63,6 @@ function AttachedFilesPicker({
   const attached = useAttachedFileIds(conversationId);
   return <FilesResourcePicker {...props} selectedFileIds={attached} />;
 }
-
-/**
- * The search steps the ⌘K bar replaces: a person looking for one of THEIR
- * notes, chats, files or documents searches for it there (one search over
- * everything). Each is also a hit kind the bar can attach here.
- */
-const KNOWLEDGE_ATTACH_VIEW_FOR_ENTITY: Record<string, Exclude<ResourcePickerViewId, null>> = {
-  note: "notes",
-  conversation: "conversations",
-  file: "files",
-  processed_document: "files",
-};
-
-/** Views that are not a search: capture, URL entry, voice, run toggles. They
- *  stay their own commands in the bar (Raycast: commands beside results). */
-const COMMAND_VIEW_IDS: ReadonlySet<Exclude<ResourcePickerViewId, null>> = new Set([
-  "files",
-  "webpage",
-  "youtube",
-  "image_url",
-  "file_url",
-  "audio",
-  "google",
-  "tables",
-  "context_values",
-  "tools",
-  "connections",
-  "skills",
-]);
 
 
 interface ResourcePickerMenuProps {
@@ -197,52 +164,19 @@ export function ResourcePickerMenu({
     attachmentCapabilities,
     { conversationId, allowedViewIds },
   );
-  const visibleViewIds = new Set(
-    visibleCategories.flatMap((c) => c.items.map((i) => i.id)),
-  );
-
-  // The search step hands off to ⌘K: one search over everything, with
-  // "Attach to this chat" as the primary action for this composer.
-  const openKnowledgeBar = useOpenKnowledgeCommandBar();
-  const openPickerWindow = useOpenResourcePickerWindow();
-  const knowledgeAttach = useKnowledgeAttachTarget({
+  // The search step hands off to ⌘K (useKnowledgeAttachSearch).
+  const openAttachSearch = useKnowledgeAttachSearch({
     conversationId,
     onResourceSelected,
-    label: "Attach here",
-    accepts: (hit) => {
-      const view = KNOWLEDGE_ATTACH_VIEW_FOR_ENTITY[hit.entity];
-      return Boolean(view && visibleViewIds.has(view));
-    },
+    onResourceDeselected,
+    attachmentCapabilities,
+    allowedViewIds,
+    selectionMode,
+    onReopenAt,
   });
   const openKnowledgeSearch = () => {
-    const reopenAt = (view: Exclude<ResourcePickerViewId, null>) =>
-      onReopenAt
-        ? onReopenAt(view)
-        : openPickerWindow({
-            initialView: view,
-            onResourceSelected,
-            onResourceDeselected,
-            conversationId,
-            attachmentCapabilities,
-            allowedViewIds,
-            selectionMode,
-          });
-    const commands: KnowledgeCommand[] = menuItems
-      .filter((item) => COMMAND_VIEW_IDS.has(item.id) && visibleViewIds.has(item.id))
-      .map((item) => ({
-        id: `picker:${item.id}`,
-        label: item.id === "files" ? "Upload or browse files" : item.label,
-        group: "Attach",
-        icon: item.icon as LucideIcon,
-        keywords: ["attach", "add", item.id],
-        run: () => reopenAt(item.id),
-      }));
     onClose();
-    openKnowledgeBar({
-      primaryAction: "attach",
-      ...(knowledgeAttach ? { attach: knowledgeAttach } : {}),
-      commands,
-    });
+    openAttachSearch();
   };
   /**
    * Attached Google files ride the reserved `__google_files` context key rather
