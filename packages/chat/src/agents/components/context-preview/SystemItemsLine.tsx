@@ -30,7 +30,7 @@ export function SystemItemsLine({ items }: { items?: SystemItems | null }) {
               className="text-muted-foreground"
               data-system-item={n.key ?? ""}
             >
-              <span className="text-foreground">{humanizeIdentifier(n.key)}</span>
+              <span className="text-foreground">{humanizeIdentifier(n.key ?? "")}</span>
               {" — named by "}
               {(n.named_by ?? []).join(", ")}
               {" · "}

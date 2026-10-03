@@ -468,7 +468,7 @@ export function AddScopeModal({
                   id={variableKeyId}
                   value={variableKeyInput}
                   onChange={(e) => setVariableKeyInput(e.target.value)}
-                  className="font-mono"
+                  className="flex-1 font-mono"
                   data-identifier
                   placeholder="e.g. budget_code"
                   onKeyDown={(e) => {
@@ -479,7 +479,6 @@ export function AddScopeModal({
                   }}
                   style={{ fontSize: "16px" }}
                   disabled={busy}
-                  className="flex-1"
                 />
                 <Button
                   type="button"
