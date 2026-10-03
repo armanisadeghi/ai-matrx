@@ -91,4 +91,19 @@ export function recordsRenderKind(args: KindArgs): ReactNode {
   return <KindValueButton {...args} />;
 }
 
-export const RECORDS_REFERENCES = { renderReference: recordsRenderReference, renderKind: recordsRenderKind };
+/**
+ * WHERE A PAGE BUILT FROM TABLES OPENS (records-ui `host.pageHref`, v6 lane 11 wave D): an existing
+ * page at /data-v2/pages/<id>, a new one on a table at /data-v2/pages/new?table=<id>. A page names
+ * itself like any other reference, so it travels with the reference ports into every host.
+ */
+export function recordsPageHref(target: { pageId: string } | { newOnTable: string }): string {
+  return "pageId" in target
+    ? `/data-v2/pages/${target.pageId}`
+    : `/data-v2/pages/new?table=${encodeURIComponent(target.newOnTable)}`;
+}
+
+export const RECORDS_REFERENCES = {
+  renderReference: recordsRenderReference,
+  renderKind: recordsRenderKind,
+  pageHref: recordsPageHref,
+};
