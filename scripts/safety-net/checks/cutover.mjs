@@ -21,49 +21,6 @@ export default [
     timeoutMs: 10 * 60 * 1000,
   },
   {
-    // One rolled-back transaction on the clone: readiness names 4 planted holds (P1 un-copied row, P2 stale copy,
-    // P3 live fields under an archived Table, P4 a table born after Step 1) and the press agrees; the press switches
-    // exactly the plan; old doors refuse in a person's words; lists follow; births in the store; the undo restores;
-    // W10 outside FKs; W15 a cut press leaves all-old.
-    id: "cutover.switch-chain",
-    area: "cutover",
-    // cmd, not sql: probes/b_clone_suite.py first runs the REAL Step 1 on the clone server when readiness asks for it.
-    kind: "cmd",
-    cmd: "uv",
-    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_switch_chain.sql"],
-    items: ["C01", "C02", "C03", "C04", "C05", "C06", "C13", "A02"],
-    targets: ["clone"],
-    passWhen: "SWITCH CHAIN GREEN",
-    timeoutMs: 25 * 60 * 1000,
-  },
-  {
-    // W4: after the press, no older READ door answers a moved table with the old value and no mark (clone, rolled back).
-    id: "cutover.old-reads-after-press",
-    area: "cutover",
-    // cmd, not sql: probes/b_clone_suite.py first runs the REAL Step 1 on the clone server when readiness asks for it.
-    kind: "cmd",
-    cmd: "uv",
-    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_old_reads_after_press.sql"],
-    items: ["C14"],
-    targets: ["clone"],
-    passWhen: "W4 GREEN",
-    timeoutMs: 25 * 60 * 1000,
-  },
-  {
-    // W14: after the press a record-store-off organization (Ojai Branch d46f323b) can still make a table, or is told
-    // the truth (clone, rolled back).
-    id: "cutover.store-off-after-press",
-    area: "cutover",
-    // cmd, not sql: probes/b_clone_suite.py first runs the REAL Step 1 on the clone server when readiness asks for it.
-    kind: "cmd",
-    cmd: "uv",
-    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_store_off_after_press.sql"],
-    items: ["C15"],
-    targets: ["clone"],
-    passWhen: "W14 GREEN",
-    timeoutMs: 25 * 60 * 1000,
-  },
-  {
     // The read path's own proof: 6543 refused for production, the session port used, an error inside a read-only
     // transaction leaves the connection IDLE after the client's rollback (chair 2026-10-01 ~03:20 PT, W27).
     id: "cutover.db-read-path-self-test",

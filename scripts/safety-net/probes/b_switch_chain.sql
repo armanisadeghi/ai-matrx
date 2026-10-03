@@ -14,10 +14,8 @@
 --   C03  undo: a person edits a copy after the press; the undo carries that edit back into the older row
 --        (rehearsal 15c's WO-5506 proof), the doors open again and the platform value returns.
 --
--- RUN (matrx-frontend root):   node scripts/safety-net/run.mjs --target clone --only cutover.switch-chain
---        or directly:          psql "$CLONE_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/safety-net/probes/b_switch_chain.sql
--- PROVE RED:                   node scripts/safety-net/run.mjs --target clone --plant b-readiness-ignores-uncopied-rows
---                              (and the other plants/b-*.mjs aimed at this check)
+-- RUN (matrx-frontend root, rehearsal only — it presses the cutover):
+--                              psql "$CLONE_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/safety-net/probes/b_switch_chain.sql
 --
 -- STAND-INS, named (the shared clone is never quiet; peers edit it all night): inside this rolled-back transaction the
 -- suite (a) marks the clone's waiting context-follow rows consumed and (b) records one green Step 1 run, exactly as

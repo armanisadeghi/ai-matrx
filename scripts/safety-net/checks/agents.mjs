@@ -31,7 +31,7 @@ export default [
   // NOT REGISTERED by default (it would read FAIL on every clone run before a press):
   //   {
   //     // AFTER-THE-PRESS ONLY: it SKIPS (= FAIL here, honestly) until admin's Workspace is moved; run it on a clone that
-  //     // has been pressed (rehearsal / PRESS-AT-SIZE window). Before the press A02 is proven by cutover.switch-chain
+  //     // has been pressed (rehearsal / PRESS-AT-SIZE window). Before the press A02 is proven by probes/b_switch_chain.sql
   //     // (custom.where_tables_live: older before, store after — the door the dataset tool asks).
   //     // The agents' dataset tool on a moved table reads and writes the store (aidream clone test; `-m red` is its red twin).
   //     id: "agents.dataset-tool",

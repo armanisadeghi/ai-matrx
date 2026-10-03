@@ -7,7 +7,7 @@
 -- there. The owner asks for a new table both ways (the older door the Data page's older half uses, and the store's
 -- own door). PASS when one of them makes it, or every refusal is a person's sentence (no door names, register codes
 -- or sqlstates). RED names each raw refusal.
---   node scripts/safety-net/run.mjs --target clone --only cutover.store-off-after-press
+--   psql "$CLONE_DATABASE_URL" -X -f scripts/safety-net/probes/b_store_off_after_press.sql   (rehearsal only)
 \set ON_ERROR_STOP on
 \timing off
 \pset tuples_only on

@@ -5,7 +5,7 @@
 -- (scripts/check-old-system-unreachable.ts OLD_READ_DOORS) that is asked for that table must either refuse, mark the
 -- answer moved (`moved_to`), or answer the NEW value. A door that answers the OLD value with no mark is a missed
 -- reader showing a stale value with no error (W4) — RED, naming each such door.
---   node scripts/safety-net/run.mjs --target clone --only cutover.old-reads-after-press
+--   psql "$CLONE_DATABASE_URL" -X -f scripts/safety-net/probes/b_old_reads_after_press.sql   (rehearsal only)
 -- Stand-ins as in b_switch_chain.sql (named there).
 \set ON_ERROR_STOP on
 \timing off
