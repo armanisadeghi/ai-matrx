@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T01:57:50.479Z",
+  "generated_at": "2026-10-03T02:05:57.412Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4736,6 +4736,12 @@
       "checksum": "40207af534f9d11a76243471df5b5d826ad1d60e4801b031b7b23c25b219b12d",
       "applied_at": "2026-09-30 02:51:50.536116+00"
     },
+    "migrations/campaign/scopesoneswitch_b_the_read_switch_says_it_in_one_line.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesoneswitch_b_the_read_switch_says_it_in_one_line.sql",
+      "checksum": "ab7755b501af2d285e68ce27048d2510ad34ee62b5e8f53f399ececd84f21cc9",
+      "applied_at": "2026-10-03 02:02:29.915109+00"
+    },
     "migrations/campaign/scopesoneswitch_the_scope_read_switch_answers_per_person.sql": {
       "source": "matrx-frontend",
       "filename": "scopesoneswitch_the_scope_read_switch_answers_per_person.sql",
@@ -6691,6 +6697,12 @@
       "filename": "viewlook_a_look_at_a_view_is_yours_until_you_save_it.sql",
       "checksum": "9fbb6ddae3676878b9ab811a7bc3689b981f98e96b2a2a3ba613bad5efa7d8af",
       "applied_at": "2026-09-25 19:19:06.239241+00"
+    },
+    "migrations/campaign/viewsfields_f4_a_formula_speaks_seven_more_airtable_functions.sql": {
+      "source": "matrx-frontend",
+      "filename": "viewsfields_f4_a_formula_speaks_seven_more_airtable_functions.sql",
+      "checksum": "3e944761ba507bae62c2174edd3dfe0edd4c6e891de3ee59cc1c9b3e40f60914",
+      "applied_at": "2026-10-03 02:05:55.228+00"
     },
     "migrations/campaign/viewswitch_a_look_at_a_table_never_changes_how_it_opens.sql": {
       "source": "campaign",
