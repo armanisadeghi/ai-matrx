@@ -108,8 +108,11 @@ export function ComposerConnectorsPanel({
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-foreground">{s.entry.name}</span>
           {broken ? (
-            <span title={presentation.reason ?? undefined} className="truncate text-xs text-destructive">
-              {presentation.status}
+            <span className="flex min-w-0 items-center gap-1">
+              <span title={presentation.reason ?? undefined} className="truncate text-xs text-destructive">
+                {presentation.status}
+              </span>
+              <ErrorAlchemyMenu error={presentation.reason ?? presentation.status} />
             </span>
           ) : null}
         </span>
@@ -119,11 +122,10 @@ export function ComposerConnectorsPanel({
             type="button"
             onClick={() => void connect(s.entry)}
             disabled={connectingSlug === s.entry.slug}
-            className="flex h-7 shrink-0 items-center rounded-md border border-border px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-60 pointer-coarse:h-9"
+            className="flex h-7 shrink-0 items-center rounded-md border border-border px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-60 "
           >
             {connectingSlug === s.entry.slug ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reconnect"}
           </button>
-          <ErrorAlchemyMenu error={presentation.reason ?? presentation.status} />
           </>
         ) : on && chooser ? (
           <button
@@ -175,7 +177,7 @@ export function ComposerConnectorsPanel({
         )}
         {active.length > 0 ? <ComposerMenuLabel>Active in this chat</ComposerMenuLabel> : null}
         {active.map((s) => row(s, true))}
-        {connectedOff.length > 0 ? <ComposerMenuLabel>Connections · off in this chat</ComposerMenuLabel> : null}
+        {connectedOff.length > 0 ? <ComposerMenuLabel>Off in this chat</ComposerMenuLabel> : null}
         {connectedOff.map((s) => row(s, false))}
         {catalogStatus === "failed" ? (
           <p className="px-2 py-3 text-sm text-muted-foreground">
