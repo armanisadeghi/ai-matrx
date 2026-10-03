@@ -21,7 +21,7 @@
 // `FinishInterviewDialog`, which states what the run does and what it costs.
 
 import { useState } from "react";
-import { ArrowRight, Check, Flag, Pencil, X } from "lucide-react";
+import { ArrowRight, Check, Flag, Pencil, Users, X } from "lucide-react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
@@ -32,10 +32,14 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  selectActiveRoleTab,
   selectRoomSession,
   selectRunPhase,
   sessionMerged,
 } from "../redux/vision-interview.slice";
+import { useToolToggle } from "@/features/canvas/host/toolCanvas";
+import { INTERVIEW_ANCHOR_TYPE } from "../group-chat/api";
+import { groupChatInspectorToggleInput } from "../group-chat/canvas/groupChatInspectorKind";
 import { renameSession } from "../service";
 import { normalizeStage, STAGES } from "../types";
 import { FinishInterviewDialog } from "./FinishInterviewDialog";
@@ -62,6 +66,11 @@ export function RoomHeader({
   const [draft, setDraft] = useState("");
   const [advancing, setAdvancing] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
+  const activeRole = useAppSelector(selectActiveRoleTab);
+  // The Group Chat inspector: a canvas tab beside the room (who sees what, per expert).
+  const inspector = useToolToggle(
+    groupChatInspectorToggleInput({ anchorType: INTERVIEW_ANCHOR_TYPE, anchorId: session?.id ?? "", focusKey: activeRole }),
+  );
 
   const stage = session ? STAGES[normalizeStage(session.stage)] : null;
   const canAdvance =
@@ -215,6 +224,19 @@ export function RoomHeader({
                 >
                   <span className="hidden sm:inline">Advance</span>
                   <ArrowRight className="h-3 w-3 sm:ml-1" aria-hidden />
+                </Button>
+              )}
+              {!isMobile && (
+                <Button
+                  variant={inspector.isVisible ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-7 w-7"
+                  title="Group chat: who sees what"
+                  aria-label="Group chat inspector"
+                  aria-pressed={inspector.isVisible}
+                  onClick={inspector.toggle}
+                >
+                  <Users className="h-3.5 w-3.5" aria-hidden />
                 </Button>
               )}
               {/* FINISH ALWAYS CARRIES ITS WORD. It is the one door to the

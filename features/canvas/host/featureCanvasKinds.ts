@@ -29,6 +29,7 @@ import { CLOUD_FILE_EDITOR_CANVAS_KIND } from "@/features/files/canvas/cloudFile
 import { AGENT_PAYLOAD_CANVAS_KIND } from "@/features/marketing/content-plan/canvas/agentPayloadKind";
 import { WAR_ROOM_RESOURCES_CANVAS_KIND } from "@/features/war-room/canvas/warRoomResourcesKind";
 import { COMMENT_THREAD_CANVAS_KIND } from "@/features/rich-document/annotations/canvas/commentThreadKind";
+import { GROUP_CHAT_INSPECTOR_CANVAS_KIND } from "@/features/vision-interview/group-chat/canvas/groupChatInspectorKind";
 import { PAGE_PANEL_CANVAS_KIND } from "./pagePanel";
 
 export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
@@ -58,6 +59,8 @@ export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   WAR_ROOM_RESOURCES_CANVAS_KIND,
   // A record's comment threads (the Notes & comments panel), keyed by entity:id.
   COMMENT_THREAD_CANVAS_KIND,
+  // A room's Group Chat inspector: who sees what, and what each participant was shown.
+  GROUP_CHAT_INSPECTOR_CANVAS_KIND,
   // A page's own live panel (a table's row detail, an admin form) — see pagePanel.tsx.
   PAGE_PANEL_CANVAS_KIND,
 ];

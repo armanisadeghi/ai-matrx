@@ -137,6 +137,97 @@ export function MessageContextReceiptTable({
         />
       ) : null}
       {block ? <ContextReceiptBlockDetail block={block} load={load} className="px-2 py-2" /> : null}
+      {receipt.room_view ? <RoomViewManifestTable roomView={receipt.room_view} /> : null}
+    </div>
+  );
+}
+
+type RoomView = NonNullable<ContextReceiptData["room_view"]>;
+
+/** The receipt's Group chat block id (aidream `group_chat.models.ROOM_VIEW_SLOT`). */
+export const ROOM_VIEW_BLOCK_ID = "room_view";
+
+/** The server's withheld rule (`sees`, `reveal.after_round`, `budget`…) as a short label. */
+export function withheldRuleLabel(rule: string): string {
+  if (rule === "sees") return "Not in sees";
+  if (rule === "reveal.after_round") return "Before reveal round";
+  if (rule === "reveal.every_rounds") return "Off-reveal round";
+  if (rule === "budget") return "Over budget";
+  return rule;
+}
+
+/**
+ * A Group Chat turn's manifest (the receipt's `room_view`): the round and policy version it was
+ * built at, how many messages were shown verbatim / digested, and every withheld message with
+ * its speaker and the rule that withheld it. `speakerName` maps a participant key to its label;
+ * `withheldText` (message id → words) adds what each withheld message said, when the host read it.
+ */
+export function RoomViewManifestTable({
+  roomView,
+  speakerName = (key) => key,
+  withheldText,
+}: {
+  roomView: RoomView;
+  speakerName?: (key: string) => string;
+  withheldText?: Readonly<Record<string, string>>;
+}) {
+  const withheld = roomView.withheld ?? [];
+  return (
+    <div className="flex min-w-0 flex-col text-xs" data-room-view={roomView.participant_key}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-2 py-1 tabular-nums text-muted-foreground">
+        <span>Round {roomView.round}</span>
+        <span>Policy v{roomView.policy_version}</span>
+        <span>{(roomView.included ?? []).length} shown</span>
+        <span>{(roomView.digested ?? []).length} digested</span>
+        <span className={withheld.length ? "text-foreground" : undefined}>{withheld.length} withheld</span>
+      </div>
+      {roomView.error ? <p className="px-2 py-1 text-destructive">{roomView.error}</p> : null}
+      {withheld.length > 0 ? (
+        <table className="w-full table-fixed border-t border-border">
+          <tbody>
+            {withheld.map((item) => (
+              <tr key={`${item.message_id}:${item.rule}`} className="border-b border-border/60 align-top" data-withheld={item.message_id}>
+                <td className="w-28 truncate px-2 py-1 font-medium text-foreground">{speakerName(item.speaker)}</td>
+                <td className="w-36 truncate px-2 py-1 text-muted-foreground">{withheldRuleLabel(item.rule)}</td>
+                <td className="truncate px-2 py-1 text-muted-foreground" title={withheldText?.[item.message_id]}>
+                  {withheldText?.[item.message_id] ?? "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * What a Group Chat participant was shown on one sent turn: the receipt's "Group chat" block —
+ * the exact text, on demand, through the turn's viewer door — over its manifest.
+ */
+export function RoomViewReceipt({
+  conversationId,
+  messageId,
+  receipt,
+  speakerName,
+  withheldText,
+}: {
+  conversationId: string;
+  messageId: string;
+  receipt: ContextReceiptData;
+  speakerName?: (key: string) => string;
+  withheldText?: Readonly<Record<string, string>>;
+}) {
+  const load = useSentTurnContextView(conversationId, messageId);
+  const block = (receipt.blocks ?? []).find((b) => b.id === ROOM_VIEW_BLOCK_ID) ?? null;
+  return (
+    <div className="flex min-w-0 flex-col">
+      {block ? <ContextReceiptBlockDetail block={block} load={load} className="px-2 py-2" /> : null}
+      {receipt.room_view ? (
+        <RoomViewManifestTable roomView={receipt.room_view} speakerName={speakerName} withheldText={withheldText} />
+      ) : (
+        <p className="px-2 py-1 text-xs text-muted-foreground">No group view on this turn</p>
+      )}
     </div>
   );
 }
