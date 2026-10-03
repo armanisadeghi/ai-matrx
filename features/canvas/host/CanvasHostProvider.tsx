@@ -7,7 +7,7 @@
  * refused opens are announced through the canvas open-drop reporter.
  */
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useStore } from "react-redux";
 import { bindCanvasToReduxStore, type CanvasErrorReport } from "@ai-matrx/canvas";
 import { CanvasProvider } from "@ai-matrx/canvas/react";
@@ -34,11 +34,47 @@ function onCanvasError(report: CanvasErrorReport) {
   console.error(`[canvas] ${report.code}: ${report.message}`, report.detail ?? "");
 }
 
+/**
+ * THE CANVAS SHRINKS FIRST — measured against the MAIN column, not the window.
+ *
+ * The package keeps `centreMinWidth` for "the content beside the canvas", and by
+ * default that content is the whole window. In the shell it is not: the sidebar
+ * and the docked chat sit left of the page, so a 1440px window with the chat
+ * open and a 900px canvas left the page 56px and every route header scrolled
+ * under its clip. The region the canvas shares is everything right of the
+ * page's left edge (`.shell-main`), so the page itself keeps the minimum. Null
+ * (the window) where there is no shell — the public and link layouts.
+ */
+function useShellRegionWidth(): number | null {
+  const [region, setRegion] = useState<number | null>(null);
+  useEffect(() => {
+    const main = document.querySelector<HTMLElement>(".shell-main");
+    if (!main) return;
+    const measure = () => {
+      const next = Math.round(window.innerWidth - main.getBoundingClientRect().left);
+      setRegion((prev) => (prev === next ? prev : next));
+    };
+    measure();
+    // The page's left edge moves when the sidebar or the chat changes width,
+    // and each of those resizes the page; the canvas moving only its right
+    // edge leaves the region unchanged, so this never feeds back.
+    const ro = new ResizeObserver(measure);
+    ro.observe(main);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+  return region;
+}
+
 export function CanvasHostProvider({ children }: { children: ReactNode }) {
   const store = useStore<RootState>();
   const [binding] = useState(() => bindCanvasToReduxStore(store, (root) => root.canvasHost));
+  const regionWidth = useShellRegionWidth();
   return (
-    <CanvasProvider store={binding} onError={onCanvasError}>
+    <CanvasProvider store={binding} onError={onCanvasError} regionWidth={regionWidth}>
       {children}
     </CanvasProvider>
   );
