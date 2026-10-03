@@ -185,6 +185,29 @@ try {
     await seed(LOSE, { date_of_birth: null }).catch(() => undefined);
   }
 
+  // ── § d (lane7conf_d1/d2): an HR workflow request (pay change) is read by its people, not by any member.
+  {
+    const OAK = "2643e470-b275-47f3-95f3-ae275ad3ca47"; // Oak Street Studio (admin@admin.com owns; HR runs here)
+    const PAY = "2b9bc444-b790-4674-a178-9b72817161ae"; // a pay_change request in Oak Street Studio
+    // test@test.com joins Oak Street Studio as a plain member the way a person does (the owner invites,
+    // she accepts), for this check only; the owner removes her again below.
+    const inv = await admin.sb.rpc("inv_create", { p_target_type: "organization", p_target_id: OAK, p_email: member.email, p_role: "member", p_org_id: OAK });
+    const join = inv.error ? inv : await member.sb.rpc("inv_accept", { p_token: inv.data?.token });
+    try {
+      const mWf = await member.sb.schema("custom").rpc("entity_record_read", { p_organization_id: OAK, p_token: "hr_workflow_instance", p_record_id: PAY });
+      const leakedWf = !!mWf.data?.columns?.payload;
+      check("d1 a plain member does NOT read a pay-change request (payload) through the record door", !leakedWf,
+        join.error ? `join failed: ${join.error.message}` : leakedWf ? "payload returned" : `withheld (${mWf.error?.code ?? "no error"})`);
+      const aWf = await admin.sb.schema("custom").rpc("entity_record_read", { p_organization_id: OAK, p_token: "hr_workflow_instance", p_record_id: PAY });
+      check("d2 the HR owner still reads it", !!aWf.data?.columns?.payload, aWf.error?.message);
+      const inbox = await admin.sb.rpc("hr_wf_instance", { p_instance_id: PAY });
+      check("d3 HR's own decision panel door still opens it", !inbox.error && !!inbox.data, inbox.error?.message);
+    } finally {
+      const out = await admin.sb.rpc("org_admin_remove_member", { p_org_id: OAK, p_user_id: member.uid, p_reassign_to: null });
+      if (out.error) console.log(`cleanup: removing the member failed: ${out.error.message}`);
+    }
+  }
+
   // 8. HR — the employee herself (admin@admin.com) still reads her row.
   const aRec = await admin.sb.schema("custom").rpc("entity_record_read", { p_organization_id: ORG, p_token: "hr_employee", p_record_id: empId });
   check("the employee still reads her own row", !aRec.error && JSON.stringify(aRec.data).includes("legal_first_name"), aRec.error?.message);
