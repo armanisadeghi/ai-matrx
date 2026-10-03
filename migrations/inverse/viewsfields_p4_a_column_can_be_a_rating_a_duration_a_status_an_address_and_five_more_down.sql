@@ -2,10 +2,11 @@
 -- lane: VIEWS-AND-FIELDS
 -- based-on: custom._duration_seconds_of(text) 90df73341eaa6aa3d5a514671a3ce5836d6373fe9bc0c423e8a0bec0658615cf
 -- based-on: custom._entity_decoded(text) 04c788810b3760ecfc59f4711913b022672d42be36ad196f8a6cc439dabc724f
--- based-on: custom._field_document_for(uuid, uuid, jsonb) a3473d709c71d9289cd8c2db71594975edda6c19c1890287a189d25b0a3443f5
+-- based-on: custom._field_document_for(uuid, uuid, jsonb) fca1ff470b45414214e20cc39a0f41c4c1e12e2edceeadc6a4a8d4ecb7fe9682
 -- based-on: custom._field_kind_shape_ok(jsonb, text) 8ca01d8184666edf1c93c79d7e3c3865d0558967b228d2515448279c7bc0aaf6
--- based-on: custom._field_type_parity_guard() 38c7e030f21f7fc4f07b6c3b593c7371592ef1e2b67a499132c3e0f43d14ac52
+-- based-on: custom._field_type_parity_guard() 2c582acb994aa075200ebc0f01b01fe45b365add06621ee4d877f89a70fea696
 -- based-on: custom._field_value_carry(uuid, jsonb, jsonb, jsonb) dc46bffd9149bec7f8514b175b1d01227d4fa84c98c86fc6a9e7507da5b47463
+-- based-on: custom._field_type_converts_values() 6cd18db356180f2b7fed51fce06179fb92867f439cabf423cde4d1fbe7ffa82f
 -- based-on: custom._field_value_carry_base(uuid, jsonb, jsonb, jsonb) e18630e6e2eea59e8e5835f8b47c709400f84bd03286810ed315871cb8cd9f11
 -- based-on: custom._gs1_check_ok(text) cf4de731915632fde7f192f7681d9538e588835051b54f7b3593316f7073052d
 -- based-on: custom._kind_value_fit(jsonb, jsonb, jsonb) f8e76a2e8fa7c901c5737587afef045b4cbc127795eb04ba3c552093feda97ff
@@ -16,19 +17,32 @@
 -- based-on: custom.display_format_ids() 6155275908c787eedf65fc1de0edb709ff9b90967314797ba8255f4a03da90f2
 -- based-on: custom.field_kind_of(jsonb) 2e36c9a9b8280794d1f36a709633cfb5a1430294a08ed8948e4e2b272fc59fdb
 -- based-on: custom.field_kinds() 5e6cfdbdb1b6d88744b824fc784b0fc1f3fc4ea7b7378e082b3abd5f9a4bbf1f
--- based-on: custom.field_update(uuid, uuid, jsonb) 7841e7d1a811b5b83be89df8a6b1219dac3fdb28af0bc0395f4ac3ae7cf4663f
--- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 9a629e9f9c4b8ecb011183f24fbf2759e87e2849b746acc4052fcb9d85ef2f42
+-- based-on: custom.field_update(uuid, uuid, jsonb) 661d137d60355368543bc3528e75f8058a2f6db91e4787773108dadda3e16802
+-- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 2182120bdf047f2b0564c779a335afd2a8af508348e0e42b28c83db2d5244fb6
 -- based-on: custom.status_groups_keyed(uuid, uuid, jsonb, jsonb, text) f7c7b83f591bddd0d2ef6e2543ca61d9f95e7b48d72972afe1743794c8fbe156
 -- based-on: custom.status_groups_of(jsonb) d018d97be86764da71615461c63bc11a4a70dfc7cbc58e4d5919d8316b17e020
--- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 70649c93ecf3d84abe77a30d5c158d55d2b9ae020fe8b284a288f7bc9e47dcff
+-- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 2d13a3252cd5478299ffd7b2f42552c52fffd29b54c6e1f8979b161de0706730
 -- chair-step: the inverse of viewsfields_p4_a_column_can_be_a_rating_a_duration_a_status_an_address_and_five_more.sql.
 -- It puts back, byte for byte, custom.field_kinds, custom.display_format_ids,
 -- custom._field_document_for, custom._field_type_parity_guard, custom.validate_values,
 -- custom.formula_value, custom.field_update and custom._field_value_carry as the main database
--- held them before (2026-10-02), and drops the thirteen P4 helpers. What it undoes: the nine kinds leave the menu and the door;
+-- held them before P4 (re-based on production's bodies of 2026-10-03, after chairdoors3a and
+-- CHAIR-MATH), and drops the thirteen P4 helpers. What it undoes: the nine kinds leave the menu and the door;
 -- a column already declared as one keeps its document and reads as its behaviour (a rating as a
 -- number, an address as text), and Created by / Last modified by read empty.
-
+--
+-- THE TRIGGER custom_record_field_type_converts_values (AFTER UPDATE on custom.record) runs
+-- custom._field_type_converts_values, which calls custom._field_value_carry. P4 never replaces the
+-- trigger body; it replaces _field_value_carry with a wrapper over custom._field_value_carry_base.
+-- So the order below is load-bearing: _field_value_carry is put back first (its pre-P4 body calls
+-- no P4 helper), and the trigger body is PINNED to production's own body (byte-identical, its
+-- based-on line above), BEFORE any helper is dropped. A later file that moves the trigger body onto
+-- a P4 helper (P4b, or a P4c-shaped draft) makes this inverse refuse by its based-on line, so the
+-- trigger can never be left attached over a dropped function: run that file's inverse first.
+--
+-- ground-standing-ok: d — custom.field_kind_of is read by custom.table_kind_facts (chairdoors3a)
+-- only behind `if to_regprocedure('custom.field_kind_of(jsonb)') is not null`; production ran
+-- without it before P4, so dropping it puts back exactly that state and breaks nothing.
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.field_kinds()
@@ -348,6 +362,17 @@ begin
 
   d := d || jsonb_build_object('parity_type', v_parity);
 
+  -- LANE7-SEC-ARCHIVE (2026-10-03): a standard table (no Table id: custom.entity_field_declare /
+  -- entity_field_update) takes no worked-out field, said in field words BEFORE a formula is parsed
+  -- against columns it does not have. custom._field_shape_guard holds the same line for every
+  -- other way a definition is written.
+  if p_table_id is null and (v_parity in ('formula', 'lookup', 'rollup') or v_system is not null) then
+    raise exception 'A field on a standard table cannot be worked out from other values yet, so "%" cannot be a formula, lookup, rollup, count, record number or time stamp here; add it to a custom table instead.',
+                    coalesce(v_label, v_key, 'this field')
+      using errcode = '23514',
+            hint = 'LANE7-SEC-ARCHIVE: worked-out fields run only through the store''s record doors. Nothing was written.';
+  end if;
+
   case v_parity
     -- ── the two list types ───────────────────────────────────────────────────
     when 'select', 'multi_select' then
@@ -408,7 +433,15 @@ begin
         'config',     v_config || jsonb_strip_nulls(jsonb_build_object(
                         'via', nullif(p_spec ->> 'via', ''),
                         'agg', nullif(p_spec ->> 'agg', ''),
-                        'of',  nullif(p_spec ->> 'of', ''))));
+                        'of',  nullif(p_spec ->> 'of', ''),
+                        -- CHAIR-MATH (b): WHICH of the linked records it adds up. The same shape a
+                        -- saved view's filter has (custom.record_filter_sql: a flat map of far-side
+                        -- column keys, or a Rule expression over far-side field ids); validated
+                        -- against the far table by custom._field_type_parity_guard on write.
+                        -- Carried whenever it was sent (any shape but JSON null): a shape that is
+                        -- not a set of conditions is REFUSED by the guard, never dropped here.
+                        'filter', case when p_spec ? 'filter' and jsonb_typeof(p_spec -> 'filter') <> 'null'
+                                       then p_spec -> 'filter' end)));
     when 'formula' then
       -- ── GRID-PRIMITIVES G3 / G5, 2026-09-22. ────────────────────────────────────────────
       -- A system kind carries its system expression and says which it is; nothing else it
@@ -529,6 +562,10 @@ declare
   v_edef     uuid;
   v_via      text;
   v_via_fld  jsonb;
+  v_far      uuid;
+  v_far_lbl  text;
+  v_filter   jsonb;
+  v_fkey     text;
   v_leaf     text;
   v_store_on boolean;
 begin
@@ -721,6 +758,57 @@ begin
         using errcode = '23514',
               hint = 'FLD-11: config.of names a field key on the far side. Only count needs no field, because it counts the records themselves.';
     end if;
+    -- CHAIR-MATH (b): THE FILTER IS CHECKED WHERE THE FIELD IS DECLARED, never at read time.
+    -- config.filter narrows the linked records the roll-up adds up, in the SAME grammar a saved
+    -- view's filter uses (custom.record_filter_sql over the far table: {"status": "open"}, a
+    -- window {"due": {"before": …}}, or a Rule expression {"op": "eq", "args": [{"field": "<far
+    -- field id>"}, {"const": "open"}]}). An unknown column, an unknown op or a shape the far table
+    -- cannot answer is refused here, by the field's name, with the compiler's own sentence.
+    if d -> 'config' ? 'filter' and jsonb_typeof(d -> 'config' -> 'filter') <> 'null' then
+      v_filter := d -> 'config' -> 'filter';
+      if jsonb_typeof(v_filter) <> 'object' then
+        raise exception 'the field % narrows the records it adds up with a filter, and a filter is a set of conditions like {"status": "open"}, not a %',
+                        v_label, jsonb_typeof(v_filter)
+          using errcode = '23514',
+                hint = 'FLD-11 / CHAIR-MATH: config.filter uses the same shape a saved view''s filter does, written against the columns of the table the relation points at.';
+      end if;
+      if v_via_fld is not null then
+        v_far := nullif(v_via_fld ->> 'relation_target', '')::uuid;
+        if v_far is null then
+          raise exception 'the field % narrows the records it adds up, but the relation it reads through (%) does not say which table it points at',
+                          v_label, v_via
+            using errcode = '23514', hint = 'FLD-11: give the relation a relation_target first.';
+        end if;
+        select coalesce(nullif(t.data ->> 'label_plural', ''), nullif(t.data ->> 'name', ''), 'linked')
+          into v_far_lbl
+          from custom.record t where t.organization_id = new.organization_id and t.id = v_far;
+        if not custom.filter_is_rule(v_filter) then
+          for v_fkey in select split_part(k, '.', 1) from jsonb_object_keys(v_filter) k loop
+            if not exists (select 1 from custom.record f
+                            where f.organization_id = new.organization_id
+                              and f.table_id = custom.field_kernel_id()
+                              and f.deleted_at is null
+                              and f.data ->> 'entity_definition_id' = v_far::text
+                              and f.data ->> 'key' = v_fkey) then
+              raise exception 'the field % narrows the records it adds up by "%", and the % table has no column with that key',
+                              v_label, v_fkey, coalesce(v_far_lbl, 'linked')
+                using errcode = '23514',
+                      hint = 'FLD-11 / CHAIR-MATH: config.filter names columns of the table the relation points at, by key — {"status": "open"} — or points at them by id in a Rule expression.';
+            end if;
+          end loop;
+        end if;
+        begin
+          perform custom.record_filter_sql(new.organization_id, v_far,
+                    case when custom.filter_is_rule(v_filter) then v_filter
+                         else custom.choice_filter_normalize(custom.choice_field_map(new.organization_id, v_far), v_filter) end);
+        exception when others then
+          raise exception 'the field % narrows the records it adds up with a filter the % table cannot answer: %',
+                          v_label, coalesce(v_far_lbl, 'linked'), sqlerrm
+            using errcode = '23514',
+                  hint = 'FLD-11 / CHAIR-MATH: config.filter is read exactly as a saved view''s filter on that table is; fix it the way that sentence says.';
+        end;
+      end if;
+    end if;
     -- ANNOUNCED, NOT SILENT (rule 16). A rollup stamped at write time goes stale the moment
     -- a contained record moves, and nothing in this campaign yet propagates a child's write
     -- to its parents. So the declaration is refused rather than quietly wrong.
@@ -819,7 +907,11 @@ begin
     -- REQUIRED. An absent key and a null value are the same absence and are said the same way.
     if v_val is null or jsonb_typeof(v_val) = 'null'
        or (v_multi and jsonb_typeof(v_val) = 'array' and jsonb_array_length(v_val) = 0) then
-      if coalesce((d ->> 'required')::boolean, false) then
+      -- A RESTORE IS NOT AN EDIT (TABLE-ACTIONS ruling, 2026-10-03): a row brought back exactly as
+      -- it was archived is never refused by a `required` declared after it went (a bookings page's
+      -- "Appointment"); custom._record_field_validation names that write in custom.validating_restore.
+      if coalesce((d ->> 'required')::boolean, false)
+         and coalesce(current_setting('custom.validating_restore', true), '') <> '1' then
         raise exception '% is required', v_label
           using errcode = '23514', hint = format('REC-51: the field %s of this table.', v_key);
       end if;
@@ -989,7 +1081,28 @@ begin
                             and s.id = nullif(current_setting('custom.validating_record', true), '')::uuid
                             and (s.data -> v_key = v_one
                                  or (jsonb_typeof(s.data -> v_key) = 'array'
-                                     and s.data -> v_key @> jsonb_build_array(v_one))))) then
+                                     and s.data -> v_key @> jsonb_build_array(v_one)))))
+           -- A POINTER MOVED IN FROM THE OLD STORE AT A RECORD THAT IS NOW ARCHIVED (CHAIR-DOORS-3A,
+           -- asked by lane 9, scopes-b ruling 1). References survive an archive: the old scope value
+           -- named a scope that was archived afterwards, and a copy that lands the value AFTER the
+           -- archive is not making a new link, it is carrying one that existed. So when this key's
+           -- value envelope names a source of kind `move` (the copy's own provenance, interned in
+           -- the record's `_sources`), a pointer at an ARCHIVED record of this organization, in the
+           -- one table this relation points at, stands. A person's write carries no such source and is
+           -- refused a new pointer at an archived record exactly as before.
+           and not (
+             -- the source as the writer handed it (an object), or as the store interned it (a pointer)
+             -- (coalesced to false: with no envelope at all this must be FALSE, never NULL, or the
+             --  whole refusal below would be skipped by three-valued logic)
+             coalesce(coalesce(case when jsonb_typeof(p_values -> '_values' -> v_key -> 'src') = 'object'
+                                    then p_values -> '_values' -> v_key -> 'src' ->> 'kind' end,
+                               p_values -> '_sources' -> (p_values -> '_values' -> v_key ->> 'src') ->> 'kind') = 'move',
+                      false)
+             and exists (select 1 from custom.record t
+                          where t.organization_id = p_organization_id
+                            and t.id = (v_one #>> '{}')::uuid
+                            and t.deleted_at is not null
+                            and t.table_id = nullif(d ->> 'relation_target', '')::uuid)) then
           raise exception '% points at something that is not there', v_label
             using errcode = '23514',
                   hint = 'REC-51 / REL-8 / REC-29: a relation field points at a live record of a table it declares — or, across organizations, only where the table allows it and both organizations have turned on links to other organizations.';
@@ -1001,7 +1114,10 @@ begin
       -- its own applies_to_types: T8's Width applies to a rectangle and to a square, and the
       -- "the sides are equal" Rule attached to it applies to the SQUARE alone. A Rule with an
       -- empty list applies wherever its Field does.
-      for v_rule in select r from jsonb_array_elements(coalesce(d -> 'rules', '[]'::jsonb)) r loop
+      -- A RESTORE IS NOT AN EDIT: the value rules (at least, at most, length, pattern…) judge what a
+      -- write changes; a row brought back exactly as it was is not judged by them again.
+      for v_rule in select r from jsonb_array_elements(coalesce(d -> 'rules', '[]'::jsonb)) r
+                     where coalesce(current_setting('custom.validating_restore', true), '') <> '1' loop
         if jsonb_array_length(coalesce(v_rule -> 'applies_to_types', '[]'::jsonb)) > 0
            and not (p_record_type is not null and (v_rule -> 'applies_to_types') ?| v_types) then
           continue;
@@ -1086,6 +1202,11 @@ CREATE OR REPLACE FUNCTION custom.formula_value(p_organization_id uuid, p_record
 AS $function$
 declare
   v_values jsonb := coalesce(p_values, custom.record_values(p_organization_id, p_record_id));
+  v_rec    custom.record;
+  v_rtype  text;
+  v_tf     text;
+  v_key    text;
+  v_keys   text[];
 begin
   -- REC-15's evaluator, not a second one: every Rule node, every refusal and REC-17's
   -- "by id, never by name" still come from custom.rule_eval, which custom.formula_eval hands
@@ -1093,6 +1214,41 @@ begin
   -- the three facts only a formula about ITS OWN record can use (its id, its column, its table:
   -- autonumber and the created / modified stamps). They ride under fx_* keys so no Rule node
   -- that reads the context (stage_count, sibling_count read `table_id`) answers differently.
+  --
+  -- CHAIR-MATH (a): A WORKED-OUT COLUMN THIS FORMULA READS IS WORKED OUT FIRST. The values a
+  -- caller hands in are the stored row, the Rule layer's block and what was stamped at write
+  -- time; a roll-up, a lookup or another read-time formula is none of those, so its key is
+  -- absent and the evaluator read it as blank (0). Each such key is resolved here through
+  -- custom.far_value — the one reader that refuses a circle by sentence instead of recursing —
+  -- and only when it is absent, so a caller that already worked it out (custom.derived_values_of
+  -- in dependency order) pays nothing more.
+  if p_values is not null and p_record_id is not null then
+    v_keys := custom.formula_field_keys(p_organization_id, p_field_data -> 'config' -> 'expr');
+    if cardinality(v_keys) > 0 then
+      select * into v_rec from custom.record
+       where organization_id = p_organization_id and id = p_record_id;
+      if v_rec.id is not null and v_rec.table_id is not null
+         and v_rec.data_class not in ('kernel', 'relation') then
+        v_tf := custom.table_type_field(v_rec.organization_id, v_rec.table_id);
+        if v_tf is not null then
+          v_rtype := v_rec.data ->> v_tf;
+        end if;
+        for v_key in
+          select a.data ->> 'key'
+            from custom.applicable_fields(v_rec.organization_id, v_rec.table_id, v_rtype) a
+           where (a.data ->> 'key') = any (v_keys)
+             and (a.data ->> 'key') is distinct from (p_field_data ->> 'key')
+             and custom.parity_type(a.data) in ('lookup', 'rollup', 'formula')
+             and coalesce(a.data ->> 'compute_on', '') = 'read'
+             and not (v_values ? (a.data ->> 'key'))
+        loop
+          v_values := v_values || jsonb_build_object(v_key,
+                        custom.far_value(p_organization_id, p_record_id, v_key, p_field_data));
+        end loop;
+      end if;
+    end if;
+  end if;
+
   return custom.formula_eval(p_organization_id, p_field_data -> 'config' -> 'expr',
                              v_values,
                              coalesce(custom.rule_context(p_organization_id, p_record_id), '{}'::jsonb)
@@ -1138,7 +1294,11 @@ declare
     -- CHOICE-COLUMN-EDIT: choices added to the ones a column already has (the cell's "Add").
     'options_add',
     -- DATA-V2-BASICS-2: what a new record this column is not named in starts with.
-    'default'];
+    'default',
+    -- CHAIR-MATH (b), 2026-10-03: what a lookup or roll-up reads (via, pick, agg, of) and which
+    -- linked records a roll-up adds up (filter). Before this they were refused here by name on a
+    -- retype, and `filter` did not exist.
+    'via', 'pick', 'agg', 'of', 'filter'];
   v_unknown  text[];
   v_parsed   jsonb;
   -- CHOICE-COLUMN-EDIT: the choices exactly as they were sent (words, or {id, words}).
@@ -1267,6 +1427,16 @@ begin
       'depends_on',     coalesce(p_patch -> 'depends_on', v_old -> 'depends_on'),
       'unit',           coalesce(p_patch ->> 'unit', v_old ->> 'unit'),
       'expr',           coalesce(p_patch -> 'expr', v_old -> 'config' -> 'expr'),
+      -- CHAIR-MATH (b), 2026-10-03: WHAT A LOOKUP OR ROLL-UP READS rides a change of kind too.
+      -- This fixed key list never carried via / pick / agg / of, so a column retyped to a rollup
+      -- through this door was refused by the guard as "has to say which relation it reads
+      -- through" however the caller spelled it; and the new filter rides beside them.
+      'via',            coalesce(nullif(p_patch ->> 'via', ''),  v_old -> 'config' ->> 'via'),
+      'pick',           coalesce(nullif(p_patch ->> 'pick', ''), v_old -> 'config' ->> 'pick'),
+      'agg',            coalesce(nullif(p_patch ->> 'agg', ''),  v_old -> 'config' ->> 'agg'),
+      'of',             coalesce(nullif(p_patch ->> 'of', ''),   v_old -> 'config' ->> 'of'),
+      'filter',         case when p_patch ? 'filter' then p_patch -> 'filter'
+                             else v_old -> 'config' -> 'filter' end,
       -- TAILS-2, 2026-09-21: WHEN a worked-out column works itself out is part of what the
       -- column IS, and this builder's fixed key list did not carry it — so a caller who
       -- retyped a formula and said `compute_on` got `custom._field_document_for`'s default
@@ -1523,6 +1693,24 @@ begin
               hint = 'FLD-2: send parity_type "select" for one answer or "multi_select" for several; multi alone is not a setting on a list.';
     end if;
     v_next := jsonb_set(v_next, '{multi}', to_jsonb(coalesce((p_patch ->> 'multi')::boolean, false)));
+  end if;
+  -- CHAIR-MATH (b), 2026-10-03: WHICH LINKED RECORDS A ROLL-UP ADDS UP IS A SETTING LIKE ANY
+  -- OTHER. `{"filter": {"status": "open"}}` on an existing roll-up lands in config.filter and is
+  -- validated against the far table by custom._field_type_parity_guard on this very write;
+  -- `{"filter": null}` takes it off. On anything that is not a roll-up it is refused by name.
+  if p_patch ? 'filter' then
+    if custom.parity_type(v_old) is distinct from 'rollup' then
+      raise exception 'Only a column that adds up linked records can narrow which ones it adds up, and "%" is not one.',
+        coalesce(v_old ->> 'label', v_old ->> 'key')
+        using errcode = '23514',
+              hint = 'FLD-11: make it a roll-up first (type "rollup" with via and agg), then send filter.';
+    end if;
+    if jsonb_typeof(p_patch -> 'filter') = 'null' then
+      v_next := jsonb_set(v_next, '{config}', coalesce(v_next -> 'config', '{}'::jsonb) - 'filter');
+    else
+      v_next := jsonb_set(v_next, '{config}', coalesce(v_next -> 'config', '{}'::jsonb)
+                  || jsonb_build_object('filter', p_patch -> 'filter'));
+    end if;
   end if;
   -- REC-51: A RELATION'S CARDINALITY LIVES IN TWO KEYS AND BOTH MUST MOVE. `custom.validate_values`
   -- counts the links against `relation_max` and `custom.relation_declaration` calls the column
@@ -1979,6 +2167,248 @@ begin
                        from jsonb_array_elements(v_words) with ordinality t(e, ord)));
   end if;
   return null;                              -- several choices are not one number, date or tick
+end;
+$function$;
+
+-- THE TRIGGER BODY, pinned to production's own (see the chair-step note).
+CREATE OR REPLACE FUNCTION custom._field_type_converts_values()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_key       text;
+  v_label     text;
+  v_table     uuid;
+  v_was       text;
+  v_now       text;
+  v_converted integer := 0;
+  v_retired_n integer := 0;
+  r           record;
+  v_val       jsonb;
+  v_new       jsonb;
+  v_data      jsonb;
+  v_retired   jsonb;
+  v_alts      jsonb;
+  v_keep_alts jsonb;
+  v_alt       jsonb;
+  v_conv_alt  jsonb;
+  v_alts_retired integer := 0;
+  -- DATA-V2-BASICS-2: values an earlier change set aside that fit again.
+  v_back_n    integer := 0;
+  v_entry     jsonb;
+  v_ord       bigint;
+  -- DATA-V2-BASICS-2: the column as it was, enough to read a choice's key as its words later.
+  v_then      jsonb;
+begin
+  -- THE DOOR. custom.assert_store_door resolves custom/system_enabled and, while it is false,
+  -- this store takes writes only from the role that owns custom.record. The switch never
+  -- removes a check: everything below runs exactly as before.
+  if not custom.store_is_open(new.organization_id) then
+    perform custom.assert_store_door(new.organization_id, 'custom.record');
+  end if;
+
+  if new.table_id is distinct from custom.field_kernel_id() or new.data_class = 'kernel' then
+    return null;
+  end if;
+
+  v_was := custom.field_behaviour(old.data);
+  v_now := custom.field_behaviour(new.data);
+  if v_was is not distinct from v_now then
+    return null;                          -- the Field still asks for the same thing
+  end if;
+
+  v_key   := new.data ->> 'key';
+  v_then  := jsonb_strip_nulls(jsonb_build_object('type', old.data -> 'type', 'multi', old.data -> 'multi',
+               'config', case when old.data ->> 'type' = 'list'
+                              then jsonb_build_object('options_table_id', old.data -> 'config' -> 'options_table_id') end));
+  v_label := coalesce(nullif(new.data ->> 'label', ''), v_key, 'this field');
+  v_table := nullif(new.data ->> 'entity_definition_id', '')::uuid;
+  if v_key is null or v_table is null then
+    return null;
+  end if;
+
+  for r in
+    select x.id, x.data from custom.record x
+     where x.organization_id = new.organization_id
+       and x.table_id = v_table
+       and x.deleted_at is null
+       and x.data ? v_key
+  loop
+    v_val := r.data -> v_key;
+    if v_val is null or jsonb_typeof(v_val) = 'null' then
+      continue;
+    end if;
+    -- DATA-V2-BASICS-2: a choice goes by its words, and words find their choice (custom._field_value_carry).
+    v_new := custom._field_value_carry(new.organization_id, old.data, new.data, v_val);
+
+    if v_new is not null then
+      -- THE ALTERNATES COME TOO. VAL-3: an alternate is a candidate for the SAME field, so
+      -- custom.validate_value_envelope judges it by the SAME behaviour — and a converted value
+      -- sitting beside an unconverted alternate is a document that cannot be written at all.
+      -- (Measured: converting Phone to a number while a merge's "222" alternate stayed a
+      -- string failed the very write that was doing the converting.) One that does not convert
+      -- is kept in _retired as what it was, with its rank and its source.
+      v_data := r.data;
+      v_alts := coalesce(v_data -> '_values' -> v_key -> 'alternates', '[]'::jsonb);
+      if jsonb_typeof(v_alts) = 'array' and jsonb_array_length(v_alts) > 0 then
+        v_keep_alts := '[]'::jsonb;
+        v_retired   := coalesce(v_data -> '_retired', '[]'::jsonb);
+        if jsonb_typeof(v_retired) <> 'array' then
+          v_retired := '[]'::jsonb;
+        end if;
+        for v_alt in select e from jsonb_array_elements(v_alts) e loop
+          v_conv_alt := custom._field_value_carry(new.organization_id, old.data, new.data, v_alt -> 'value');
+          if v_conv_alt is not null then
+            v_keep_alts := v_keep_alts || jsonb_build_array(v_alt || jsonb_build_object('value', v_conv_alt));
+          else
+            v_retired := v_retired || jsonb_build_object(
+              'key', v_key, 'label', v_label, 'value', v_alt -> 'value',
+              'was_an_alternate_ranked', v_alt -> 'rank', 'envelope', v_alt -> 'src',
+              'field_then', v_then,
+              'reason', format('%s changed what it holds and this other candidate for it does not convert, so it is kept here as it was (FLD-4 / T12)', v_label),
+              'at', to_jsonb(now()));
+            v_alts_retired := v_alts_retired + 1;
+          end if;
+        end loop;
+        if jsonb_array_length(v_keep_alts) > 0 then
+          v_data := jsonb_set(v_data, array['_values', v_key, 'alternates'], v_keep_alts);
+        else
+          v_data := jsonb_set(v_data, array['_values', v_key],
+                              (v_data -> '_values' -> v_key) - 'alternates');
+        end if;
+        if jsonb_array_length(v_retired) > 0 then
+          v_data := v_data || jsonb_build_object('_retired', v_retired);
+        end if;
+      end if;
+      if v_new is distinct from v_val then
+        v_data := v_data || jsonb_build_object(v_key, v_new);
+        v_converted := v_converted + 1;
+      end if;
+      if v_data is distinct from r.data then
+        update custom.record x set data = v_data
+         where x.organization_id = new.organization_id and x.id = r.id;
+      end if;
+    else
+      -- IT DOES NOT CONVERT. The same place, the same shape and the same reason T8's retype
+      -- already uses: the value and its envelope are kept in `_retired`, and the key leaves
+      -- the document so the record can be written again.
+      v_data    := r.data;
+      v_retired := coalesce(v_data -> '_retired', '[]'::jsonb);
+      if jsonb_typeof(v_retired) <> 'array' then
+        v_retired := '[]'::jsonb;
+      end if;
+      v_retired := v_retired || jsonb_build_object(
+        'key',      v_key,
+        'label',    v_label,
+        'value',    v_val,
+        'envelope', v_data -> '_values' -> v_key,
+        -- What the column was when this was set aside, so a choice's key comes back as its words.
+        'field_then', v_then,
+        'reason',   format('%s now holds %s, and %s is not one — this value was kept here when the field changed, neither coerced nor deleted (FLD-4 / T12)',
+                           v_label,
+                           case when new.data ->> 'type' = 'range'
+                                     and custom.said(new.data -> 'config' ->> 'kind', 'number') in ('date','datetime')
+                                then 'dates'
+                                when new.data ->> 'type' = 'range' then 'numbers'
+                                when new.data ->> 'type' = 'boolean' then 'a tick or nothing'
+                                when new.data ->> 'type' = 'text' then 'words'
+                                when new.data ->> 'type' = 'list' then 'one of its choices'
+                                when new.data ->> 'type' = 'relation' then 'a link to a record'
+                                else custom.said(new.data ->> 'type', 'something else') end,
+                           coalesce('"' || (v_val #>> '{}') || '"', 'that value')),
+        'at',       to_jsonb(now()));
+      v_data := v_data - v_key;
+      if jsonb_typeof(v_data -> '_values') = 'object' then
+        v_data := jsonb_set(v_data, '{_values}', (v_data -> '_values') - v_key);
+      end if;
+      v_data := v_data || jsonb_build_object('_retired', v_retired);
+      update custom.record x set data = v_data
+       where x.organization_id = new.organization_id and x.id = r.id;
+      v_retired_n := v_retired_n + 1;
+    end if;
+  end loop;
+
+  -- ── DATA-V2-BASICS-2 (2026-09-27): A VALUE SET ASIDE COMES BACK WHEN IT FITS AGAIN. ──────
+  -- MEASURED on Harbor Dental's "Operatory Supply Orders": Operatory (Op 1 · Op 2 · Op 3) changed to
+  -- a Number set all three aside in `_retired`, and changing it back to Text — by hand or by the
+  -- migration's own undo — brought none of them back: the undo patches the Field and this trigger
+  -- converted only the values still in place. Now a record with no value for this column takes back
+  -- the newest value an earlier change set aside for it, when that value fits what the column now
+  -- holds; it leaves `_retired`. Alternates keep their own path above.
+  for r in
+    select x.id, x.data from custom.record x
+     where x.organization_id = new.organization_id
+       and x.table_id = v_table
+       and x.deleted_at is null
+       and not (x.data ? v_key)
+       and jsonb_typeof(x.data -> '_retired') = 'array'
+       and exists (select 1 from jsonb_array_elements(x.data -> '_retired') e
+                    where e ->> 'key' = v_key and not (e ? 'was_an_alternate_ranked'))
+  loop
+    select t.e, t.ord into v_entry, v_ord
+      from jsonb_array_elements(r.data -> '_retired') with ordinality t(e, ord)
+     where t.e ->> 'key' = v_key and not (t.e ? 'was_an_alternate_ranked')
+     order by t.ord desc
+     limit 1;
+    v_new := custom._field_value_carry(new.organization_id, coalesce(v_entry -> 'field_then', '{}'::jsonb), new.data, v_entry -> 'value');
+    if v_new is null or jsonb_typeof(v_new) = 'null' then
+      continue;
+    end if;
+    v_retired := (select coalesce(jsonb_agg(t.e order by t.ord), '[]'::jsonb)
+                    from jsonb_array_elements(r.data -> '_retired') with ordinality t(e, ord)
+                   where t.ord <> v_ord);
+    v_data := r.data || jsonb_build_object(v_key, v_new);
+    v_data := case when jsonb_array_length(v_retired) = 0 then v_data - '_retired'
+                   else jsonb_set(v_data, '{_retired}', v_retired) end;
+    update custom.record x set data = v_data
+     where x.organization_id = new.organization_id and x.id = r.id;
+    v_back_n := v_back_n + 1;
+  end loop;
+  if v_back_n > 0 then
+    raise notice 'custom: "%" took back % value(s) an earlier change had set aside, because they fit again.', v_label, v_back_n;
+  end if;
+
+  -- 🚨 VIS-2 (2026-09-19) — AND IT WRITES ITS MIGRATION ROW, IN THIS SAME TRANSACTION.
+  -- MEASURED: `custom.migrate_retype` records a `history.migration_log` row before it patches
+  -- the Field, but the CONVERSION is this trigger's, and this trigger is what runs when the
+  -- same Field is retyped through the ordinary write door. So a type change made the normal
+  -- way rewrote every value of the table, moved what would not convert into `_retired`, and
+  -- left NOTHING in the migration log: HIS-8's undo did not exist for it and the Migrations
+  -- screen did not know it had happened. The row is written here, where the rewrite is, so
+  -- both routes leave the same trace.
+  --
+  -- The inverse is the Field's own previous shape, which is a `patch` on the Field record -
+  -- the identical inverse `custom.migrate_retype` stores, and `custom.record_update` on the
+  -- Field is what puts it back, firing this trigger again to convert the values the other way.
+  --
+  -- ONE ROW, NOT TWO. When `custom.migrate_retype` is the caller it has already recorded its
+  -- row a few statements earlier IN THIS TRANSACTION, and `now()` is the transaction
+  -- timestamp, so `applied_at >= now()` is exactly "recorded by this transaction" - it cannot
+  -- match an older row and there are no newer ones.
+  if not exists (select 1 from history.migration_log m
+                  where m.organization_id = new.organization_id
+                    and m.verb = 'retype'
+                    and m.target_kind = 'field'
+                    and m.target_id = new.id
+                    and m.applied_at >= now()) then
+    perform history.migration_record(
+      new.organization_id, 'retype', 'field', new.id,
+      jsonb_build_object(
+        'kind', 'patch',
+        'record_id', new.id::text,
+        'patch', jsonb_strip_nulls(jsonb_build_object(
+                   'type',   old.data ->> 'type',
+                   'config', old.data -> 'config'))),
+      format('%s behaves as %s instead of %s; %s value(s) converted, %s kept in _retired with the reason, %s other candidate(s) kept too. Recorded by the conversion itself, so a retype through the ordinary write door leaves the same trace as one through custom.migrate_retype (FLD-4 / T12 / HIS-8).',
+             v_label, v_now, v_was, v_converted, v_retired_n, v_alts_retired));
+  end if;
+
+  if v_converted > 0 or v_retired_n > 0 or v_alts_retired > 0 then
+    raise notice 'custom: "%" changed what it holds (% -> %): % value(s) converted, % kept in _retired with the reason, % other candidate(s) kept too.',
+      v_label, v_was, v_now, v_converted, v_retired_n, v_alts_retired;
+  end if;
+  return null;
 end;
 $function$;
 

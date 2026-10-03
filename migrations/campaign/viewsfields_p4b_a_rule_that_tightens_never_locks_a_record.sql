@@ -14,10 +14,10 @@
 -- based-on: custom._rich_text_problem(text) b49e4dbbe06ffce67e3e4021d5a3ab1b97354dc205bc7b18f137c6da4780febe
 -- based-on: custom.status_groups_of(jsonb) d018d97be86764da71615461c63bc11a4a70dfc7cbc58e4d5919d8316b17e020
 -- based-on: custom.status_groups_keyed(uuid, uuid, jsonb, jsonb, text) f7c7b83f591bddd0d2ef6e2543ca61d9f95e7b48d72972afe1743794c8fbe156
--- based-on: custom._field_document_for(uuid, uuid, jsonb) a3473d709c71d9289cd8c2db71594975edda6c19c1890287a189d25b0a3443f5
--- based-on: custom.field_update(uuid, uuid, jsonb) 7841e7d1a811b5b83be89df8a6b1219dac3fdb28af0bc0395f4ac3ae7cf4663f
--- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 9a629e9f9c4b8ecb011183f24fbf2759e87e2849b746acc4052fcb9d85ef2f42
--- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 70649c93ecf3d84abe77a30d5c158d55d2b9ae020fe8b284a288f7bc9e47dcff
+-- based-on: custom._field_document_for(uuid, uuid, jsonb) fca1ff470b45414214e20cc39a0f41c4c1e12e2edceeadc6a4a8d4ecb7fe9682
+-- based-on: custom.field_update(uuid, uuid, jsonb) 661d137d60355368543bc3528e75f8058a2f6db91e4787773108dadda3e16802
+-- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 2182120bdf047f2b0564c779a335afd2a8af508348e0e42b28c83db2d5244fb6
+-- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 2d13a3252cd5478299ffd7b2f42552c52fffd29b54c6e1f8979b161de0706730
 -- based-on: custom._field_value_carry(uuid, jsonb, jsonb, jsonb) dc46bffd9149bec7f8514b175b1d01227d4fa84c98c86fc6a9e7507da5b47463
 -- based-on: custom._field_type_converts_values() 6cd18db356180f2b7fed51fce06179fb92867f439cabf423cde4d1fbe7ffa82f
 -- based-on: custom._value_envelope() 52643f906b25684b2b77515d5ee41b498ba0af3c9ed5bcc309f3380ebb75b9af
@@ -968,6 +968,17 @@ begin
 
   d := d || jsonb_build_object('parity_type', v_parity);
 
+  -- LANE7-SEC-ARCHIVE (2026-10-03): a standard table (no Table id: custom.entity_field_declare /
+  -- entity_field_update) takes no worked-out field, said in field words BEFORE a formula is parsed
+  -- against columns it does not have. custom._field_shape_guard holds the same line for every
+  -- other way a definition is written.
+  if p_table_id is null and (v_parity in ('formula', 'lookup', 'rollup') or v_system is not null) then
+    raise exception 'A field on a standard table cannot be worked out from other values yet, so "%" cannot be a formula, lookup, rollup, count, record number or time stamp here; add it to a custom table instead.',
+                    coalesce(v_label, v_key, 'this field')
+      using errcode = '23514',
+            hint = 'LANE7-SEC-ARCHIVE: worked-out fields run only through the store''s record doors. Nothing was written.';
+  end if;
+
   -- LANE 10 P4: A COUNT is a roll-up that counts, whatever else it was sent: no `of`, agg count.
   if v_kind = 'count' then
     p_spec := (p_spec - 'of') || jsonb_build_object('agg', 'count');
@@ -1037,7 +1048,15 @@ begin
         'config',     v_config || jsonb_strip_nulls(jsonb_build_object(
                         'via', nullif(p_spec ->> 'via', ''),
                         'agg', nullif(p_spec ->> 'agg', ''),
-                        'of',  nullif(p_spec ->> 'of', ''))));
+                        'of',  nullif(p_spec ->> 'of', ''),
+                        -- CHAIR-MATH (b): WHICH of the linked records it adds up. The same shape a
+                        -- saved view's filter has (custom.record_filter_sql: a flat map of far-side
+                        -- column keys, or a Rule expression over far-side field ids); validated
+                        -- against the far table by custom._field_type_parity_guard on write.
+                        -- Carried whenever it was sent (any shape but JSON null): a shape that is
+                        -- not a set of conditions is REFUSED by the guard, never dropped here.
+                        'filter', case when p_spec ? 'filter' and jsonb_typeof(p_spec -> 'filter') <> 'null'
+                                       then p_spec -> 'filter' end)));
     when 'formula' then
       -- ── GRID-PRIMITIVES G3 / G5, 2026-09-22. ────────────────────────────────────────────
       -- A system kind carries its system expression and says which it is; nothing else it
@@ -1200,6 +1219,10 @@ declare
     'options_add',
     -- DATA-V2-BASICS-2: what a new record this column is not named in starts with.
     'default',
+    -- CHAIR-MATH (b), 2026-10-03: what a lookup or roll-up reads (via, pick, agg, of) and which
+    -- linked records a roll-up adds up (filter). Before this they were refused here by name on a
+    -- retype, and `filter` did not exist.
+    'via', 'pick', 'agg', 'of', 'filter',
     -- LANE 10 P4: a status column's groups and a barcode column's symbology.
     'status_groups', 'symbology',
     -- LANE 10 P4 round 3 (V11 #4): a rating's top star, as custom.field_declare takes it.
@@ -1359,6 +1382,16 @@ begin
                                       then v_old ->> 'unit' end),
       'max',            p_patch -> 'max',
       'expr',           coalesce(p_patch -> 'expr', v_old -> 'config' -> 'expr'),
+      -- CHAIR-MATH (b), 2026-10-03: WHAT A LOOKUP OR ROLL-UP READS rides a change of kind too.
+      -- This fixed key list never carried via / pick / agg / of, so a column retyped to a rollup
+      -- through this door was refused by the guard as "has to say which relation it reads
+      -- through" however the caller spelled it; and the new filter rides beside them.
+      'via',            coalesce(nullif(p_patch ->> 'via', ''),  v_old -> 'config' ->> 'via'),
+      'pick',           coalesce(nullif(p_patch ->> 'pick', ''), v_old -> 'config' ->> 'pick'),
+      'agg',            coalesce(nullif(p_patch ->> 'agg', ''),  v_old -> 'config' ->> 'agg'),
+      'of',             coalesce(nullif(p_patch ->> 'of', ''),   v_old -> 'config' ->> 'of'),
+      'filter',         case when p_patch ? 'filter' then p_patch -> 'filter'
+                             else v_old -> 'config' -> 'filter' end,
       -- TAILS-2, 2026-09-21: WHEN a worked-out column works itself out is part of what the
       -- column IS, and this builder's fixed key list did not carry it — so a caller who
       -- retyped a formula and said `compute_on` got `custom._field_document_for`'s default
@@ -1634,6 +1667,24 @@ begin
               hint = 'FLD-2: send parity_type "select" for one answer or "multi_select" for several; multi alone is not a setting on a list.';
     end if;
     v_next := jsonb_set(v_next, '{multi}', to_jsonb(coalesce((p_patch ->> 'multi')::boolean, false)));
+  end if;
+  -- CHAIR-MATH (b), 2026-10-03: WHICH LINKED RECORDS A ROLL-UP ADDS UP IS A SETTING LIKE ANY
+  -- OTHER. `{"filter": {"status": "open"}}` on an existing roll-up lands in config.filter and is
+  -- validated against the far table by custom._field_type_parity_guard on this very write;
+  -- `{"filter": null}` takes it off. On anything that is not a roll-up it is refused by name.
+  if p_patch ? 'filter' then
+    if custom.parity_type(v_old) is distinct from 'rollup' then
+      raise exception 'Only a column that adds up linked records can narrow which ones it adds up, and "%" is not one.',
+        coalesce(v_old ->> 'label', v_old ->> 'key')
+        using errcode = '23514',
+              hint = 'FLD-11: make it a roll-up first (type "rollup" with via and agg), then send filter.';
+    end if;
+    if jsonb_typeof(p_patch -> 'filter') = 'null' then
+      v_next := jsonb_set(v_next, '{config}', coalesce(v_next -> 'config', '{}'::jsonb) - 'filter');
+    else
+      v_next := jsonb_set(v_next, '{config}', coalesce(v_next -> 'config', '{}'::jsonb)
+                  || jsonb_build_object('filter', p_patch -> 'filter'));
+    end if;
   end if;
   -- REC-51: A RELATION'S CARDINALITY LIVES IN TWO KEYS AND BOTH MUST MOVE. `custom.validate_values`
   -- counts the links against `relation_max` and `custom.relation_declaration` calls the column
@@ -1993,6 +2044,11 @@ declare
   v_who    uuid;
   v_env    jsonb;
   v_born   timestamptz;
+  v_rec    custom.record;
+  v_rtype  text;
+  v_tf     text;
+  v_key    text;
+  v_keys   text[];
 begin
   -- LANE 10 P4: WHO MADE IT AND WHO LAST CHANGED IT, the way Created time and Last changed time
   -- are filled: from the record's own stamps (custom.record.created_by / updated_by, which
@@ -2054,6 +2110,41 @@ begin
   -- the three facts only a formula about ITS OWN record can use (its id, its column, its table:
   -- autonumber and the created / modified stamps). They ride under fx_* keys so no Rule node
   -- that reads the context (stage_count, sibling_count read `table_id`) answers differently.
+  --
+  -- CHAIR-MATH (a): A WORKED-OUT COLUMN THIS FORMULA READS IS WORKED OUT FIRST. The values a
+  -- caller hands in are the stored row, the Rule layer's block and what was stamped at write
+  -- time; a roll-up, a lookup or another read-time formula is none of those, so its key is
+  -- absent and the evaluator read it as blank (0). Each such key is resolved here through
+  -- custom.far_value — the one reader that refuses a circle by sentence instead of recursing —
+  -- and only when it is absent, so a caller that already worked it out (custom.derived_values_of
+  -- in dependency order) pays nothing more.
+  if p_values is not null and p_record_id is not null then
+    v_keys := custom.formula_field_keys(p_organization_id, p_field_data -> 'config' -> 'expr');
+    if cardinality(v_keys) > 0 then
+      select * into v_rec from custom.record
+       where organization_id = p_organization_id and id = p_record_id;
+      if v_rec.id is not null and v_rec.table_id is not null
+         and v_rec.data_class not in ('kernel', 'relation') then
+        v_tf := custom.table_type_field(v_rec.organization_id, v_rec.table_id);
+        if v_tf is not null then
+          v_rtype := v_rec.data ->> v_tf;
+        end if;
+        for v_key in
+          select a.data ->> 'key'
+            from custom.applicable_fields(v_rec.organization_id, v_rec.table_id, v_rtype) a
+           where (a.data ->> 'key') = any (v_keys)
+             and (a.data ->> 'key') is distinct from (p_field_data ->> 'key')
+             and custom.parity_type(a.data) in ('lookup', 'rollup', 'formula')
+             and coalesce(a.data ->> 'compute_on', '') = 'read'
+             and not (v_values ? (a.data ->> 'key'))
+        loop
+          v_values := v_values || jsonb_build_object(v_key,
+                        custom.far_value(p_organization_id, p_record_id, v_key, p_field_data));
+        end loop;
+      end if;
+    end if;
+  end if;
+
   return custom.formula_eval(p_organization_id, p_field_data -> 'config' -> 'expr',
                              v_values,
                              coalesce(custom.rule_context(p_organization_id, p_record_id), '{}'::jsonb)
@@ -2128,10 +2219,14 @@ begin
     -- REQUIRED. An absent key and a null value are the same absence and are said the same way.
     if v_val is null or jsonb_typeof(v_val) = 'null'
        or (v_multi and jsonb_typeof(v_val) = 'array' and jsonb_array_length(v_val) = 0) then
+      -- A RESTORE IS NOT AN EDIT (TABLE-ACTIONS ruling, 2026-10-03): a row brought back exactly as
+      -- it was archived is never refused by a `required` declared after it went (a bookings page's
+      -- "Appointment"); custom._record_field_validation names that write in custom.validating_restore.
       -- V11 #1: TURNING "REQUIRED" ON NEVER LOCKS A RECORD. A record that already had no value
       -- here when this write began is not refused for it — that blank is not this write's doing,
       -- and the record stays editable; a NEW record, or a write that clears the value, still is.
       if coalesce((d ->> 'required')::boolean, false)
+         and coalesce(current_setting('custom.validating_restore', true), '') <> '1'
          and not (nullif(current_setting('custom.validating_record', true), '') is not null
                   and exists (select 1 from custom.record s
                                where s.organization_id = p_organization_id
@@ -2314,7 +2409,28 @@ begin
                             and s.id = nullif(current_setting('custom.validating_record', true), '')::uuid
                             and (s.data -> v_key = v_one
                                  or (jsonb_typeof(s.data -> v_key) = 'array'
-                                     and s.data -> v_key @> jsonb_build_array(v_one))))) then
+                                     and s.data -> v_key @> jsonb_build_array(v_one)))))
+           -- A POINTER MOVED IN FROM THE OLD STORE AT A RECORD THAT IS NOW ARCHIVED (CHAIR-DOORS-3A,
+           -- asked by lane 9, scopes-b ruling 1). References survive an archive: the old scope value
+           -- named a scope that was archived afterwards, and a copy that lands the value AFTER the
+           -- archive is not making a new link, it is carrying one that existed. So when this key's
+           -- value envelope names a source of kind `move` (the copy's own provenance, interned in
+           -- the record's `_sources`), a pointer at an ARCHIVED record of this organization, in the
+           -- one table this relation points at, stands. A person's write carries no such source and is
+           -- refused a new pointer at an archived record exactly as before.
+           and not (
+             -- the source as the writer handed it (an object), or as the store interned it (a pointer)
+             -- (coalesced to false: with no envelope at all this must be FALSE, never NULL, or the
+             --  whole refusal below would be skipped by three-valued logic)
+             coalesce(coalesce(case when jsonb_typeof(p_values -> '_values' -> v_key -> 'src') = 'object'
+                                    then p_values -> '_values' -> v_key -> 'src' ->> 'kind' end,
+                               p_values -> '_sources' -> (p_values -> '_values' -> v_key ->> 'src') ->> 'kind') = 'move',
+                      false)
+             and exists (select 1 from custom.record t
+                          where t.organization_id = p_organization_id
+                            and t.id = (v_one #>> '{}')::uuid
+                            and t.deleted_at is not null
+                            and t.table_id = nullif(d ->> 'relation_target', '')::uuid)) then
           raise exception '% points at something that is not there', v_label
             using errcode = '23514',
                   hint = 'REC-51 / REL-8 / REC-29: a relation field points at a live record of a table it declares — or, across organizations, only where the table allows it and both organizations have turned on links to other organizations.';
@@ -2326,7 +2442,10 @@ begin
       -- its own applies_to_types: T8's Width applies to a rectangle and to a square, and the
       -- "the sides are equal" Rule attached to it applies to the SQUARE alone. A Rule with an
       -- empty list applies wherever its Field does.
-      for v_rule in select r from jsonb_array_elements(coalesce(d -> 'rules', '[]'::jsonb)) r loop
+      -- A RESTORE IS NOT AN EDIT: the value rules (at least, at most, length, pattern…) judge what a
+      -- write changes; a row brought back exactly as it was is not judged by them again.
+      for v_rule in select r from jsonb_array_elements(coalesce(d -> 'rules', '[]'::jsonb)) r
+                     where coalesce(current_setting('custom.validating_restore', true), '') <> '1' loop
         if jsonb_array_length(coalesce(v_rule -> 'applies_to_types', '[]'::jsonb)) > 0
            and not (p_record_type is not null and (v_rule -> 'applies_to_types') ?| v_types) then
           continue;
