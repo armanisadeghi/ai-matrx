@@ -17,9 +17,9 @@ that cannot perform this job and say why.
 
 ## STEPS — this half is handed to the runner as its own file. Nothing below the line is.
 
-**Who you are:** `admin@admin.com` on your own preview hostname (`pnpm dev-login /<route>` prints
-the URL). The preview must be in clone mode. Use only the in-app browser and the read queries
-named here, against clone project `<ref from operations/clone/CURRENT.md>`.
+**Who you are:** `admin@admin.com` on your own localhost hostname (`pnpm dev-login /<route>` prints
+the URL), against the live database. Use only the in-app browser and the read queries
+named here.
 
 **Start state:** <the real-use-case dataset by name, and how the runner reaches the state — e.g.
 "open the Harbor Dental note 'New-patient intake checklist'; attach the file `intake-2026-10.md`
@@ -35,7 +35,7 @@ state by any means other than the product's own screens.
 
 **Capture (raw, no judgment):**
 - C1 — the full text of <the note> after step 5, copied exactly.
-- C2 — the result of this query on the clone: `select … from … where …;`
+- C2 — the result of this query on the live database: `select … from … where …;`
 - C3 — the list of tool calls shown in the conversation, in order, with each tool's name.
 - C4 — a screenshot of <panel>.
 - Anything that stopped you: "could not complete step N because …".

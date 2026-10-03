@@ -22,7 +22,7 @@ They're blocking because if they fail, you stop and address it, not because some
 one passing test means hundreds of things had to have worked perfectly."*
 
 A **real test** is a playbook: a plain-language procedure that a fresh, cheap agent walks in the live
-product against the clone database, plus a **sealed check-sheet** that agent never sees. It is
+product against the live database as `admin@admin.com`, plus a **sealed check-sheet** that agent never sees. It is
 written **before** the change, **proven to fail** on a break it was not told about, run on the
 unchanged product, and run again after the change. Pass → ship. Fail → you stop and fix the product.
 
@@ -36,7 +36,7 @@ nothing here blocks anyone. The playbooks are documents, and the discipline is y
 | Finding every consumer and trigger path, including rows that are configuration | `safe-cutover` Step 1 |
 | Briefs that can return what you do not already believe | reality-is-the-referee · `subagent-dispatch` §1 |
 | Realistic data and people | test-data-looks-real · `@ai-matrx/records/use-cases` · persona factory |
-| The database tests run on | the nightly clone (`operations/clone/CURRENT.md`); the preview in clone mode |
+| The database tests run on | the live database, as `admin@admin.com`, on disposable records (Arman, 2026-10-03). The nightly clone is only for rehearsing destructive migrations or jobs that lock live 10+ minutes (`operations/clone/CURRENT.md`) |
 
 ## 0. When, and how much
 
@@ -109,7 +109,7 @@ One file per playbook, two halves under one id, template beside this skill: `pla
 
 **STEPS — the half the runner gets.**
 - Precondition: which real-use-case dataset, and how the state is reached — created by the runner
-  through the product, or seeded on the clone by you before the run and named here.
+  through the product, or seeded on live by you (as `admin@admin.com`, disposable records) before the run and named here.
 - The steps in the language a person would use: what to open, what to type, what to attach, what to
   click, what to wait for.
 - What to **capture** afterward, as raw observations: the exact text of this note, the list of tool calls
@@ -151,11 +151,11 @@ reply as the sink. Not expanded here.
 
 - A **fresh agent** with no part in the change. Lane `quick` (Sonnet) by default; raise it only when
   a baseline run is INCONCLUSIVE for reasons of the runner, never of the product.
-- **Gets:** the STEPS half, its own preview hostname and the dev-login route, the clone's project id
-  for the read queries the steps name. **Never gets:** the checks, the markers' expected placement,
+- **Gets:** the STEPS half, its own localhost hostname and the dev-login route, signed in as `admin@admin.com`, plus the
+  read queries the steps name. **Never gets:** the checks, the markers' expected placement,
   whether a fault is planted, the diff, or the change's purpose.
 - **Tools:** the provider's in-app browser on the runner's own hostname, and read-only queries on the
-  clone. No write tools, no file edits, no API calls outside the product. With only the product in
+  live database. No write tools, no file edits, no API calls outside the product. With only the product in
   hand, the end state can be made true only by the product doing its job.
 - **Returns** raw observations in the ledger's run shape, or "could not complete step N because…".
   It never returns PASS or FAIL.
@@ -163,12 +163,10 @@ reply as the sink. Not expanded here.
   produced the wrong state), or **INCONCLUSIVE** (the runner did not finish). INCONCLUSIVE is never a
   pass. Twice on one playbook means the steps are unclear or the product is unusable at that step,
   and you find out which.
-- The preview serves the **clone**, never live (`pnpm preview:status` shows the mode) — in clone mode the page,
-  the local aidream at :8200 and the database are all the nightly copy, so a chat run is honest there too; the
-  2026-10-01 "chat runs live" exception is withdrawn (2026-10-02: a live-mode run was cut in half when another
-  session flipped the shared preview back to clone — a mode flip mid-run is INCONCLUSIVE, and nobody flips the
-  default). Fixture resets on the clone need `BEGIN READ WRITE` (the clone URL's role defaults to read-only). Never
-  Arman's Chrome. Never a sign-in or sign-out on a Matrx host outside the runner's own hostname.
+- The product under test is localhost (the page, the local aidream, the one database at `https://db.matrxserver.com`), signed in as
+  `admin@admin.com` (Arman, 2026-10-03: test on live; the clone is no longer a test target). The runner touches only
+  that account's disposable records. A run during which another session changed the shared localhost server's build is
+  INCONCLUSIVE. Never Arman's Chrome. Never a sign-in or sign-out on a Matrx host outside the runner's own hostname.
 
 **The fix loop is cheap or it does not happen.** After the first run that reaches the end, the runner's own
 transcript is the script: a browser-only `quick` agent replays the same sheet for every fix and every fault
@@ -180,7 +178,7 @@ values, chips) and PROVES it with the same queries the sealed checks use, before
 dirty start state is INCONCLUSIVE whatever it shows (2026-10-01: a fault proof ran on a note still holding the
 previous run's finished line; the agent "corrected" it instead of filling it, and the proof had to be repeated).
 A shared preview that other lanes are editing hot-reloads the runner's page mid-run; sequence runs after fixes
-land, or run on production, and treat "page changed by itself" as INCONCLUSIVE.
+land, and treat "page changed by itself" as INCONCLUSIVE.
 
 ## 5. Fault proof — a test is trusted only after it catches a break it was not told about
 
@@ -190,9 +188,8 @@ land, or run on production, and treat "page changed by itself" as INCONCLUSIVE.
   resource's content replaced by the previous version, a tool silently absent from the agent's set,
   a denied write that returns as if it succeeded, channel A's payload delivered to channel B. A crash
   or a blank page proves nothing, because anything catches those.
-- **Prefer breaking data on the clone over breaking code.** Detach the resource, remove the tool from
-  the agent's definition, flip the binding, point the mandate at the old version. Reversible, never
-  near production, no edit on the shared checkout. Restore it and read it back before the next run.
+- **Prefer breaking disposable data over breaking code** (`admin@admin.com`'s own records on live, never anyone else's). Detach the resource, remove the tool from
+  the agent's definition, flip the binding, point the mandate at the old version. Reversible, no edit on the shared checkout. Restore it and read it back before the next run.
 - **Code faults only through `plant.py`**, with the runner dispatch as the planted command. It holds
   the repository lock, restores in `finally`, and screams with exit 5 if a peer commit captured the
   mutation. The preview hot-reloads, so the fault is live the moment it lands and gone the moment it
@@ -203,16 +200,15 @@ land, or run on production, and treat "page changed by itself" as INCONCLUSIVE.
   that channel: rewrite it before anything else counts.
 - **Every attempt is a ledger row**, caught or missed.
 
-**Where the fixtures live.** A chat or agent run goes through the production server whatever database the
-preview reads, so a real test of chat runs against production, as the test admin, on disposable records in a
-test-fixture organization (the nightly clone also wipes anything created on it). Faults that touch data stay on
-the clone or on those disposable records only. Check the organization is not archived before installing
-(a 2026-10-01 install went into an archived twin; the server admitted it and the doors refused it).
+**Where the fixtures live.** A chat or agent run goes through the production server, so a real test of chat runs on live, as the
+test admin (`admin@admin.com`), on disposable records in a test-fixture organization. Faults that touch data touch only those
+disposable records. Check the organization is not archived before installing (a 2026-10-01 install went into an archived
+twin; the server admitted it and the doors refused it).
 
 **The channel is part of the test — a rehearsal that runs as a privileged database role proves nothing
 about the production channel.** On 2026-10-01 the production final switch was refused twice (the copy
 fence refused the press's own writes because the server presses as `app.actor_tier=code`, then an
-organization wall refused the presser, who was not a member) after every clone rehearsal had passed: the
+organization wall refused the presser, who was not a member) after every clone rehearsal (a migration rehearsal, which is still what the clone is for) had passed: the
 rehearsal synthesised the person's token and called the database functions as the store-owner role, which
 every fence and wall lets through. A dress rehearsal drives the SAME doors the person's click reaches
 (the server route, with a real session from the product's own auth) as a person shaped like the real one
@@ -285,5 +281,5 @@ trigger · what is UNTESTABLE and why. End with **"shipped"** or **"stopped, bec
 Tests written after the change · one agent writing, running and grading · a runner with write tools
 or the sealed checks · PASS or FAIL from the runner's mouth · INCONCLUSIVE counted as a pass ·
 editing a playbook to make it pass · an obvious fault offered as proof · a hand-edited fault left on
-the shared checkout · a fault that touches live data · more than six playbooks · placeholder-looking
+the shared checkout · a fault that touches anything but `admin@admin.com`'s disposable records · more than six playbooks · placeholder-looking
 markers · "tests pass" as the report · turning any of this into something that runs on its own.
