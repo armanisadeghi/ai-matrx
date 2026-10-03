@@ -11,6 +11,7 @@ import {
   customFieldSearchClauses,
   customFiltersToTable,
   displayCustomValue,
+  groupFilterFor,
   keyOfColumnId,
   mergeFieldDefinitions,
   parseCustomFieldFilters,
@@ -93,18 +94,26 @@ describe("column ids, filter bags and saved views", () => {
     expect(customFieldOrderColumn("display_name")).toBeNull();
   });
 
-  it("shows a choice's label whether the cell holds its key or its label", () => {
+  it("shows a choice's label for the key the cell holds", () => {
     expect(displayCustomValue(CLINIC, "westside")).toBe("Westside");
-    expect(displayCustomValue(CLINIC, "Westside")).toBe("Westside");
     expect(displayCustomValue({ ...CLINIC, behavior: "boolean", options: [] }, true)).toBe("Yes");
   });
 });
 
 describe("every custom filter is a server predicate", () => {
-  it("Choice = Westside matches the stored key or label", () => {
+  it("Choice = Westside matches the option KEY the cell holds, exactly", () => {
     const { builder, calls } = recorder();
     applyCustomFieldFilters(builder as never, { preferred_clinic_location: { kind: "select", value: "westside", values: ["westside"] } }, [CLINIC]);
-    expect(calls).toEqual([{ method: "in", args: ["custom_fields->>preferred_clinic_location", ["westside", "Westside"]] }]);
+    expect(calls).toEqual([{ method: "in", args: ["custom_fields->>preferred_clinic_location", ["westside"]] }]);
+  });
+
+  it("a group's count asks for the RAW cell value — yes/no counts true, not 'Yes'", () => {
+    const { builder, calls } = recorder();
+    applyCustomFieldFilters(builder as never, { insurance_verified: groupFilterFor(true), home_clinic: groupFilterFor(null) });
+    expect(calls).toEqual([
+      { method: "in", args: ["custom_fields->>insurance_verified", ["true"]] },
+      { method: "is", args: ["custom_fields->>home_clinic", null] },
+    ]);
   });
 
   it("text contains, has-no-value, numbers and yes/no", () => {
@@ -152,7 +161,7 @@ describe("the CRM people list's own predicates carry the custom filter and searc
   it("filters server-side and searches the field's words", () => {
     const { builder, calls } = recorder();
     applyPartyListPredicates(builder as never, query, { userId: "u", orgIds: ["o"] } as never, [CLINIC]);
-    expect(calls).toContainEqual({ method: "in", args: ["custom_fields->>preferred_clinic_location", ["westside", "Westside"]] });
+    expect(calls).toContainEqual({ method: "in", args: ["custom_fields->>preferred_clinic_location", ["westside"]] });
     const search = calls.filter((c) => c.method === "or").map((c) => c.args[0] as string);
     expect(search.some((s) => s.includes("custom_fields->>preferred_clinic_location.ilike.%Costa Mesa%"))).toBe(true);
   });

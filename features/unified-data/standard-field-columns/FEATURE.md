@@ -14,11 +14,14 @@ is a column and a filter at once, on every object); Salesforce list views.
    `customFiltersToTable` into `filters.custom`; saved views parse it with `parseCustomFieldFilters`.
 3. Service: `applyCustomFieldFilters(q, f.custom, fields)` in the predicate builder,
    `customFieldSearchClauses(fields, term)` in the search `or()`, `customFieldOrderColumn(sort)`
-   in the order. Group-by: `grouping` over `custom.groupableColumnIds`, `readCell` through
-   `custom.labelOf`, true counts from `useServerGroupCounts` with the list's own count query.
+   in the order. Group-by: `useStandardFieldGrouping({ source, rows, queryKey, countWith })` gives
+   the table's `grouping` prop (groups read the RAW cell; counts are the whole result's).
+   Columns: `columnState={standardColumnState(declaredIds, custom.columnIds, prefs, setPrefs)}` —
+   kept in the list's own `useListViewPrefs` blob; custom columns start hidden.
 
-Consumers: `/crm` (`party`), `/crm/deals` (`crm_deal`). Guard:
-`__tests__/standard-lists-use-the-column-source.test.ts` (the list registry G1 will replace).
+Consumers: `/crm` (`party`), `/crm/deals` (`crm_deal`). Guard (behaviour, renders the real page):
+`features/crm/components/__tests__/crm-list-offers-custom-fields.test.tsx`, red on a planted copy
+with the source given no organizations.
 
 ## Rules
 
@@ -26,7 +29,11 @@ Consumers: `/crm` (`party`), `/crm/deals` (`crm_deal`). Guard:
   the list spans, as the person). `confidential` / `restricted` fields, relation and formula fields
   are never columns.
 - Every filter, sort and search is a PostgREST predicate on `custom_fields` — never a client pass
-  over the loaded page. A Choice filter matches the option key or its label (cells hold either).
+  over the loaded page. A Choice cell holds the option KEY (the store resolves every write to it —
+  `custom._entity_choice_keys` from `custom._entity_custom_fields_guard`), and the Choice picker
+  filters on keys, exactly.
+- A group count that could not be read is said on its header; the page's number is never passed off
+  as the group's.
 - The organizations are the list's (the person's memberships), never the active organization.
 - Export is the table's own toolbar export of the columns on screen.
 
@@ -34,8 +41,10 @@ Consumers: `/crm` (`party`), `/crm/deals` (`crm_deal`). Guard:
 
 - RPC-backed standard lists (HR directory `hr_directory_list`) need a `p_custom` filter parameter in
   their RPC before they can mount the source.
-- Column visibility does not persist across reloads on lists that do not persist table columns.
 
 ## Change log
 
+- 2026-10-02 — fix round 1: keys not spellings; grouping on raw cells (yes/no counted `true`);
+  failed counts said; column choices persisted; options from the Field's own column; behaviour
+  guard.
 - 2026-10-02 — created (lane 7 W2): source, server group counts, CRM people + deals wired.

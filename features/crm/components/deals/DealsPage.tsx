@@ -74,12 +74,12 @@ import { DealsBoard } from "./DealsBoard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   customFiltersToTable,
-  keyOfColumnId,
   splitCustomFilters,
   type StandardFieldColumn,
 } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 import { useStandardFieldColumns } from "@/features/unified-data/standard-field-columns/useStandardFieldColumns";
-import { useServerGroupCounts } from "@/features/unified-data/standard-field-columns/useServerGroupCounts";
+import { useStandardFieldGrouping } from "@/features/unified-data/standard-field-columns/useStandardFieldGrouping";
+import { standardColumnState } from "@/features/unified-data/standard-field-columns/standardColumnState";
 import { countDealList } from "../../deals/service";
 
 const SURFACE_KEY = "crm-deals";
@@ -141,13 +141,6 @@ function toTableFilters(filters: DealListFilters): ColumnFiltersState {
   return out;
 }
 
-/** One custom value of a deal row (`custom_fields` is a jsonb document). */
-function customFieldValue(row: DealListRow, key: string): unknown {
-  const doc = row.custom_fields;
-  return doc && typeof doc === "object" && !Array.isArray(doc)
-    ? (doc as Record<string, unknown>)[key]
-    : undefined;
-}
 
 type BoardState = {
   rows: DealListRow[];
@@ -178,34 +171,20 @@ export function DealsPage() {
   useEffect(() => {
     setDealFields(customColumns.fields);
   }, [customColumns.fields]);
-  const [groupColumnId, setGroupColumnId] = useState<string | null>(null);
-  const activeGroup =
-    groupColumnId && customColumns.groupableColumnIds.includes(groupColumnId)
-      ? groupColumnId
-      : null;
-  const groupKey = activeGroup ? keyOfColumnId(activeGroup) : null;
-  const groupCounts = useServerGroupCounts(
-    activeGroup,
-    groupKey
-      ? list.rows.map((row) => customColumns.labelOf(activeGroup!, customFieldValue(row, groupKey)) ?? null)
-      : [],
-    JSON.stringify(list.query),
-    (columnId, value) => {
-      const key = keyOfColumnId(columnId);
-      if (!key || !list.ctx) return Promise.resolve(0);
-      return countDealList(
-        {
-          ...list.query,
-          filters: {
-            ...list.query.filters,
-            custom: { ...list.query.filters.custom, [key]: { kind: "select", value, values: [value] } },
-          },
-        },
-        list.ctx,
-        customColumns.fields,
-      );
-    },
-  );
+  const grouping = useStandardFieldGrouping<DealListRow>({
+    source: customColumns,
+    rows: list.rows,
+    queryKey: JSON.stringify(list.query),
+    rowNoun: "deal",
+    countWith: (extra) =>
+      list.ctx
+        ? countDealList(
+            { ...list.query, filters: { ...list.query.filters, custom: { ...list.query.filters.custom, ...extra } } },
+            list.ctx,
+            customColumns.fields,
+          )
+        : Promise.reject(new Error("The list has not loaded yet.")),
+  });
   const {
     pipelines,
     stageById,
@@ -680,23 +659,13 @@ export function DealsPage() {
                     },
                   ],
                 }}
-                {...(customColumns.groupableColumnIds.length
-                  ? {
-                      grouping: {
-                        columnId: activeGroup,
-                        onColumnIdChange: setGroupColumnId,
-                        groupableColumnIds: customColumns.groupableColumnIds,
-                        rowNoun: "deal",
-                        readCell: (row: DealListRow, columnId: string) => {
-                          const key = keyOfColumnId(columnId);
-                          return key
-                            ? (customColumns.labelOf(columnId, customFieldValue(row, key)) ?? null)
-                            : null;
-                        },
-                        groupFacts: groupCounts.groupFacts,
-                      },
-                    }
-                  : {})}
+                {...(grouping ? { grouping } : {})}
+                columnState={standardColumnState(
+                  [...columns, ...customColumns.columns].map((c) => c.id ?? String(c.accessorKey ?? "")),
+                  customColumns.columnIds,
+                  prefs,
+                  setPrefs,
+                )}
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
                 getRowHref={(row) => `/crm/deals/${row.id}`}

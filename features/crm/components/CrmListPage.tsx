@@ -124,23 +124,16 @@ import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigati
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   customFiltersToTable,
-  keyOfColumnId,
   splitCustomFilters,
   type StandardFieldColumn,
 } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 import { useStandardFieldColumns } from "@/features/unified-data/standard-field-columns/useStandardFieldColumns";
-import { useServerGroupCounts } from "@/features/unified-data/standard-field-columns/useServerGroupCounts";
+import { useStandardFieldGrouping } from "@/features/unified-data/standard-field-columns/useStandardFieldGrouping";
+import { standardColumnState } from "@/features/unified-data/standard-field-columns/standardColumnState";
 import { countPartyList } from "../service";
 
 const SURFACE_KEY = "crm-parties";
 
-/** One custom value of a party row (`custom_fields` is a jsonb document). */
-function customFieldValue(row: PartyListRow, key: string): unknown {
-  const doc = row.custom_fields;
-  return doc && typeof doc === "object" && !Array.isArray(doc)
-    ? (doc as Record<string, unknown>)[key]
-    : undefined;
-}
 const SURFACE_DEFAULTS = {
   version: 1,
   sort: "updated_at",
@@ -580,38 +573,30 @@ export function CrmListPage({
   }, [customColumns.fields]);
   const tableColumns = [...PARTY_COLUMNS, ...customColumns.columns];
 
-  // GROUP BY a custom field: the table groups the page it holds; every header's
-  // count is the whole result's, asked of the same query plus that value.
-  const [groupColumnId, setGroupColumnId] = useState<string | null>(null);
-  const activeGroup =
-    groupColumnId && customColumns.groupableColumnIds.includes(groupColumnId)
-      ? groupColumnId
-      : null;
-  const groupKey = activeGroup ? keyOfColumnId(activeGroup) : null;
-  const groupCounts = useServerGroupCounts(
-    activeGroup,
-    groupKey
-      ? list.rows.map((row) => customColumns.labelOf(activeGroup!, customFieldValue(row, groupKey)) ?? null)
-      : [],
-    JSON.stringify(list.query),
-    (columnId, value) => {
-      const key = keyOfColumnId(columnId);
-      if (!key || !list.ctx) return Promise.resolve(0);
-      return countPartyList(
-        {
-          ...list.query,
-          filters: {
-            ...list.query.filters,
-            custom: {
-              ...list.query.filters.custom,
-              [key]: { kind: "select", value, values: [value] },
+  // GROUP BY a custom field (the table's own grouping; counts are the whole result's)
+  // and the column choices kept in this list's own view prefs.
+  const grouping = useStandardFieldGrouping<PartyListRow>({
+    source: customColumns,
+    rows: list.rows,
+    queryKey: JSON.stringify(list.query),
+    rowNoun: "record",
+    countWith: (extra) =>
+      list.ctx
+        ? countPartyList(
+            {
+              ...list.query,
+              filters: { ...list.query.filters, custom: { ...list.query.filters.custom, ...extra } },
             },
-          },
-        },
-        list.ctx,
-        customColumns.fields,
-      );
-    },
+            list.ctx,
+            customColumns.fields,
+          )
+        : Promise.reject(new Error("The list has not loaded yet.")),
+  });
+  const columnState = standardColumnState(
+    tableColumns.map((c) => c.id ?? String(c.accessorKey ?? "")),
+    customColumns.columnIds,
+    prefs,
+    setPrefs,
   );
   // New records land in the EXPLICIT active org — never a personal-workspace
   // fallback (a record silently stamped personal is the incident documented in
@@ -1309,25 +1294,8 @@ export function CrmListPage({
                   ],
                 }}
                 // Row click opens the record; the "…" menu is the ONE row affordance.
-                {...(customColumns.groupableColumnIds.length
-                  ? {
-                      grouping: {
-                        columnId: activeGroup,
-                        onColumnIdChange: setGroupColumnId,
-                        groupableColumnIds: customColumns.groupableColumnIds,
-                        rowNoun: "record",
-                        // Group by what a person reads, so a choice stored as its key
-                        // and as its label is one group.
-                        readCell: (row: PartyListRow, columnId: string) => {
-                          const key = keyOfColumnId(columnId);
-                          return key
-                            ? (customColumns.labelOf(columnId, customFieldValue(row, key)) ?? null)
-                            : null;
-                        },
-                        groupFacts: groupCounts.groupFacts,
-                      },
-                    }
-                  : {})}
+                {...(grouping ? { grouping } : {})}
+                columnState={columnState}
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
                 onRowOpen={openRow}

@@ -64,6 +64,7 @@ export interface StandardFieldDefinition {
   multi?: unknown;
   sensitivity?: unknown;
   config?: unknown;
+  options_table_id?: unknown;
   deleted_at?: unknown;
 }
 
@@ -147,17 +148,22 @@ export function displayCustomValue(column: StandardFieldColumn, raw: unknown): s
     if (raw === false || raw === "false") return "No";
   }
   if (column.behavior === "list") {
-    const option = column.options.find((o) => o.key === raw || o.label === raw);
+    // A choice cell holds the option's KEY (the store resolves every write to it).
+    const option = column.options.find((o) => o.key === raw);
     if (option) return option.label;
   }
   if (typeof raw === "object") return JSON.stringify(raw);
   return String(raw);
 }
 
-/** Every stored spelling one chosen value may have: the option key and its label. */
-function storedSpellings(column: StandardFieldColumn | undefined, value: string): string[] {
-  const option = column?.options.find((o) => o.key === value || o.label === value);
-  return option ? [...new Set([value, option.key, option.label])] : [value];
+/**
+ * The filter that narrows a list to one group's value — what the group header counts. A raw
+ * cell value compared as text (`custom_fields->>key`), so a choice key, a yes/no (`true`) and a
+ * word all match exactly; an empty cell is the has-no-value sentinel.
+ */
+export function groupFilterFor(value: unknown): ColumnFilterValue {
+  const word = value === null || value === undefined || value === "" ? CUSTOM_NONE_VALUE : String(value);
+  return { kind: "select", value: word, values: [word] };
 }
 
 /** Table filter state → (custom-field filters, everything else). */
@@ -262,8 +268,7 @@ function likeTerm(term: string): string {
 
 /**
  * Apply custom-field filters to a list's own PostgREST builder — real server predicates over the
- * row's `custom_fields` document. `columns` supplies option labels so a Choice filter matches a
- * value stored as its key or as its label.
+ * row's `custom_fields` document. `columns` says which fields are multi-choice (an array cell).
  */
 export function applyCustomFieldFilters<Q extends CustomFieldPredicateBuilder<Q>>(
   builder: Q,
@@ -289,7 +294,8 @@ export function applyCustomFieldFilters<Q extends CustomFieldPredicateBuilder<Q>
         const chosen = filter.values ?? (filter.value ? [filter.value] : []);
         const wantsNone = chosen.includes(CUSTOM_NONE_VALUE);
         const values = chosen.filter((v) => v !== CUSTOM_NONE_VALUE);
-        const spellings = [...new Set(values.flatMap((v) => storedSpellings(column, v)))];
+        // A choice cell holds its option KEY, and the picker offers keys: matched exactly.
+        const spellings = [...new Set(values)];
         if (column?.multi) {
           // A multi-choice cell is an array: a row matches when it holds any chosen value.
           const clauses = spellings.map((v) => `${jsonPath}.cs.${JSON.stringify([v])}`);
