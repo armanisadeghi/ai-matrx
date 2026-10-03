@@ -936,12 +936,6 @@ export type AssembledAgentStartRequest = Partial<
    * here until the generated OpenAPI schema carries it.
    */
   initiation?: "user" | "auto";
-  /**
-   * The surface each mounted screen's context value sits under
-   * (`contextSurfacesFor`) — additive aidream field; folds into the generated
-   * contract when `@ai-matrx/agents` ≥ the release carrying it is adopted.
-   */
-  context_surfaces?: Record<string, string> | null;
 };
 
 /**
@@ -966,8 +960,6 @@ export type AssembledConversationRequest = Partial<
   active_scope_type_ids?: string[];
   /** Provenance attestation — see `AssembledAgentStartRequest.initiation`. */
   initiation?: "user" | "auto";
-  /** See `AssembledAgentStartRequest.context_surfaces`. */
-  context_surfaces?: Record<string, string> | null;
 };
 
 /** The generated user-input union — one definition, in @ai-matrx/agents/message-parts (P15). */

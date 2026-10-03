@@ -17,9 +17,7 @@
 import type { ConversationContinueRequest } from "../../../types/agent-api-types";
 import type { AssembledAgentStartRequest } from "../../../types/request.types";
 
-// `context_surfaces` is in the server contract from @ai-matrx/agents 0.43.12;
-// named here so the field rides before that release is adopted.
-type ContinueKey = keyof ConversationContinueRequest | "context_surfaces";
+type ContinueKey = keyof ConversationContinueRequest;
 
 /** `true` = forwarded from the assembled payload when set; a string = why not. */
 export const CONTINUATION_FIELD_ROUTING = {
