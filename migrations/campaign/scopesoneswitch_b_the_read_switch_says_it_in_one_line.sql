@@ -7,5 +7,5 @@ set local lock_timeout = '3s';
 set local statement_timeout = '30s';
 
 update platform.feature_knob
-   set description = 'Scope screens read from the record store instead of the old tables.'
+   set description = 'Scope screens read from the record store.'
  where feature = 'custom' and key = 'scope_readers_read_the_store';
