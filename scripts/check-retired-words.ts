@@ -129,7 +129,7 @@ function selfTest(spec: Spec): number {
   try {
     execFileSync("git", ["init", "-q", dir]);
     mkdirSync(join(dir, "migrations"));
-    writeFileSync(join(dir, "migrations", "clean.sql"), "select * from deprecated.udt_datasets;\nselect * from projects.tasks;\n");
+    writeFileSync(join(dir, "migrations", "clean.sql"), "select * from deprecated.retired_example;\nselect * from projects.tasks;\n");
     execFileSync("git", ["-C", dir, "add", "-A"]);
     const green = compare(scanText(dir, spec), { static: {} }).added;
     writeFileSync(join(dir, "migrations", "planted.sql"), "select * from graveyard.x;\ncreate schema workspace;\n");
