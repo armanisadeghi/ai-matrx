@@ -1,13 +1,14 @@
--- chair-step: the inverse of migrations/campaign/viewsfields_fd_a_table_can_be_marked_foundation.sql. It puts custom._table_shape_guard, custom.table_placement, custom.data_home and custom.record_headers back byte for byte as they stood before it, re-makes the view custom.table without its `foundation` column (drop and re-make: a view cannot lose a column in place; nothing depends on it; its comment is set again and the schema's default privilege gives service_role its read back), re-makes custom.table_facts(uuid) without its `foundation` result column with EXECUTE granted again to exactly the roles that held it, then drops custom.table_is_foundation(jsonb), which nothing reads any more. A Table document that still says `foundation: true` keeps the key; nothing reads it.
+-- chair-step: the inverse of migrations/campaign/viewsfields_fd_a_table_can_be_marked_foundation.sql. It puts custom._table_shape_guard, custom.table_placement, custom.data_home, custom.record_headers, and custom.table_from_example back byte for byte as they stood before it, re-makes the view custom.table without its `foundation` column (drop and re-make: a view cannot lose a column in place; nothing depends on it; its comment is set again and the schema's default privilege gives service_role its read back), re-makes custom.table_facts(uuid) without its `foundation` result column with EXECUTE granted again to exactly the roles that held it, then drops custom.table_is_foundation(jsonb), which nothing reads any more. A Table document that still says `foundation: true` keeps the key; nothing reads it.
 -- lane: VIEWS-AND-FIELDS
 -- lock: custom
 -- window-class: function bodies, one view re-made, one function re-made in place; no DDL on any table.
--- based-on: custom._table_shape_guard() 8766eb559976431acc622a4a61f162faa232bcafe3b2bad0b380191c6b88c7c9
+-- based-on: custom._table_shape_guard() e517af9efa9b4e2afc3c931ee289ae2dc76a7a1560daac23ebd6264ce382910c
 -- based-on: custom.table_placement(uuid, uuid, jsonb, boolean) 9c5211b9fb5638371b22f7b4ea472bd3043b0cd879cdc730bb34b67d276741ff
--- based-on: custom.data_home(uuid, text, boolean) 51b005bc0b36317c6fe903a5264fef4f9ae2e9a9e1920e185db546b50166c81a
+-- based-on: custom.data_home(uuid, text, boolean) ad6ac81b41a2c41dac46c3a20b0f02a7aa535d0f57f169de268eae5689e59bfd
 -- based-on: custom.table_facts(uuid) 99dfa9feb0382a3991ad4632857bd0123b5585be19e4811880c8be8e98eedd45
 -- based-on: view custom.table 2a746d83a63e782bbe2b3883e575f446697cc803ea5bbbcf2c82e9f43370bbe4
 -- based-on: custom.record_headers(uuid, uuid[]) 943e052108cd87a14a0a86b39c91d05f976a4d6d7f4d2487ee80c0278ae67735
+-- based-on: custom.table_from_example(uuid, uuid, jsonb) 560e015c16029be90790660025a0c7aa338d021d81c2f4e9124ce5b2f2f992f3
 
 set local lock_timeout = '2s';
 set local statement_timeout = '60s';
@@ -599,6 +600,212 @@ begin
          and r.id = any(p_ids)
          and r.id in (select v from custom.query_visible_ids(p_organization_id, v_t, 'viewer') v);
   end loop;
+end
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.table_from_example(p_organization_id uuid, p_home_id uuid, p_example jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_t       jsonb;
+  v_f       jsonb;
+  v_r       jsonb;
+  v_tables  jsonb := '{}'::jsonb;     -- token -> table id
+  v_rows    jsonb := '{}'::jsonb;     -- token.rowkey -> record id
+  v_out     jsonb := '[]'::jsonb;
+  v_id      uuid;
+  v_rid     uuid;
+  v_spec    jsonb;
+  v_vals    jsonb;
+  v_rel     jsonb;
+  v_n       integer;
+  v_nf      integer;
+  v_max     integer := coalesce((platform.knob_resolve('custom', 'example_rows_max', p_organization_id) #>> '{}')::integer, 500);
+  v_why     text;
+  v_type    text;
+  v_note    text;
+  v_key     text;
+  v_val     jsonb;
+  v_target  text;
+  v_done    text[];
+  v_pass    integer;
+  v_progress boolean;
+begin
+  perform custom.assert_store_door(p_organization_id, 'custom.table_from_example');
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.table_from_example');
+  -- Making a table is what custom.table_declare decides; every call below goes through it, so
+  -- the right to make tables in this organization is asked there, table by table.
+
+  if jsonb_typeof(p_example -> 'tables') is distinct from 'array' or jsonb_array_length(p_example -> 'tables') = 0 then
+    raise exception 'An example is a business''s tables, and this one has none.'
+      using errcode = '22023', hint = 'Send one use case from @ai-matrx/records/use-cases (the client method tableFromExample does). Nothing was created.';
+  end if;
+  v_why := custom._example_placeholder(p_example ->> 'business');
+  if v_why is not null then
+    raise exception 'This example''s business is called "%", which is % — examples are real businesses.', p_example ->> 'business', v_why
+      using errcode = '23514', hint = 'The owner''s law, 2026-09-21: no placeholder data. Nothing was created.';
+  end if;
+
+  -- ── 1. every table and every column but the relations ─────────────────────────────────
+  for v_t in select e from jsonb_array_elements(p_example -> 'tables') e loop
+    v_why := coalesce(custom._example_placeholder(v_t ->> 'name'), custom._example_placeholder(v_t ->> 'token'));
+    if v_why is not null then
+      raise exception 'The example table "%" has % for a name.', v_t ->> 'name', v_why using errcode = '23514';
+    end if;
+    if jsonb_array_length(coalesce(v_t -> 'rows', '[]'::jsonb)) > v_max then
+      raise exception 'The example table "%" carries % rows; an example seeds at most %.', v_t ->> 'name',
+                      jsonb_array_length(v_t -> 'rows'), v_max
+        using errcode = '54000', hint = 'The ceiling is the organization knob custom/example_rows_max. Nothing was created.';
+    end if;
+    v_type := coalesce(nullif(v_t ->> 'type', ''), 'entity');
+    v_note := null;
+    if v_type not in ('entity', 'detail') then
+      v_note := format('The example calls this a %s table; the store makes it an entity table, which holds the same records.', v_type);
+      v_type := 'entity';
+    elsif v_type = 'detail' then
+      -- A detail table is contained in its parent Table's records. An example says so with its
+      -- relation column, which is built below; the table itself is made an entity table and the
+      -- link is that column, so every record lands exactly where the example put it.
+      v_note := 'The example keeps this table as a detail of another; here its records are linked to their parent by the relation column.';
+      v_type := 'entity';
+    end if;
+    -- A use case names the VIEW it opens in (grid, board, calendar); the store's `display` is
+    -- list or page. The view is kept, said, and becomes the table's default view word.
+    if coalesce(v_t ->> 'display', 'list') not in ('list', 'page') then
+      v_note := concat_ws(' ', v_note, format('The example opens this table as a %s; it is a list table here, and %s is how its view opens.',
+                                               v_t ->> 'display', v_t ->> 'display'));
+    end if;
+    v_spec := jsonb_build_object(
+      'name', v_t ->> 'name', 'slug', v_t ->> 'token', 'type', v_type,
+      'label_singular', coalesce(v_t ->> 'labelSingular', v_t ->> 'name'),
+      'label_plural', coalesce(v_t ->> 'labelPlural', v_t ->> 'name'),
+      'title_field', v_t ->> 'titleField',
+      'display', case when v_t ->> 'display' in ('list', 'page') then v_t ->> 'display' else 'list' end,
+      'weight', coalesce(nullif(v_t ->> 'weight', ''), 'light'),
+      'ordered', coalesce((v_t ->> 'ordered')::boolean, false),
+      'row_order', 'sorted', 'agent_writable', true, 'retention_days', 3650,
+      'default_sort', jsonb_build_array(jsonb_build_object('field', v_t ->> 'titleField', 'direction', 'asc')),
+      'parent_id', p_home_id::text,
+      'fields', (select jsonb_agg(jsonb_build_object('name', f ->> 'key')) from jsonb_array_elements(v_t -> 'fields') f));
+    if nullif(v_t ->> 'describes', '') is not null then
+      v_spec := v_spec || jsonb_build_object('description', v_t ->> 'describes');
+    end if;
+    v_id := custom.table_declare(p_organization_id, v_spec);
+    v_tables := v_tables || jsonb_build_object(v_t ->> 'token', v_id);
+    v_nf := 0;
+    for v_f in select e from jsonb_array_elements(v_t -> 'fields') e loop
+      continue when coalesce(v_f ->> 'parityType', v_f ->> 'type') = 'relation';
+      perform custom.field_declare(p_organization_id, v_id, jsonb_strip_nulls(jsonb_build_object(
+        'key', v_f ->> 'key', 'label', v_f ->> 'label',
+        'type', coalesce(v_f ->> 'parityType', v_f ->> 'type', 'text'),
+        'multi', (v_f ->> 'multi')::boolean, 'dated', (v_f ->> 'dated')::boolean,
+        'required', (v_f ->> 'required')::boolean, 'unit', v_f ->> 'unit',
+        'rules', v_f -> 'rules', 'options', v_f -> 'choices',
+        'source', v_f ->> 'source', 'compute_on', v_f ->> 'computeOn',
+        'sensitivity', v_f ->> 'sensitivity', 'context_policy', v_f ->> 'contextPolicy',
+        'formula_text', v_f ->> 'formulaText', 'display_format', v_f -> 'displayFormat',
+        'sort', (v_nf + 1) * 10)));
+      v_nf := v_nf + 1;
+    end loop;
+    v_out := v_out || jsonb_build_array(jsonb_strip_nulls(jsonb_build_object(
+      'token', v_t ->> 'token', 'table_id', v_id, 'name', v_t ->> 'name', 'note', v_note)));
+  end loop;
+
+  -- ── 2. the relations, now that every table they may point at exists ────────────────────
+  for v_t in select e from jsonb_array_elements(p_example -> 'tables') e loop
+    v_nf := 100;
+    for v_f in select e from jsonb_array_elements(v_t -> 'fields') e loop
+      continue when coalesce(v_f ->> 'parityType', v_f ->> 'type') <> 'relation';
+      v_target := v_tables ->> (v_f ->> 'relationTarget');
+      if v_target is null then
+        raise exception 'The example column "%" of "%" points at a table "%" the example does not have.',
+                        v_f ->> 'label', v_t ->> 'name', coalesce(v_f ->> 'relationTarget', 'nothing')
+          using errcode = '23503', hint = 'A relation points at another table of the same example, by its token. Nothing was created.';
+      end if;
+      perform custom.field_declare(p_organization_id, (v_tables ->> (v_t ->> 'token'))::uuid, jsonb_strip_nulls(jsonb_build_object(
+        'key', v_f ->> 'key', 'label', v_f ->> 'label', 'type', 'relation', 'relation_target', v_target,
+        'multi', (v_f ->> 'multi')::boolean, 'relation_max', (v_f ->> 'relationMax')::integer,
+        'required', (v_f ->> 'required')::boolean,
+        'sensitivity', v_f ->> 'sensitivity', 'context_policy', v_f ->> 'contextPolicy', 'sort', v_nf)));
+      v_nf := v_nf + 10;
+    end loop;
+  end loop;
+
+  -- ── 3. the rows, a table only after every table its relation columns point at ───────────
+  -- so a required relation ("every visit belongs to a patient") is written WITH the record, as a
+  -- person would, never filled in afterwards. A cycle between two tables is refused by name.
+  v_done := '{}'::text[];
+  for v_pass in 1 .. jsonb_array_length(p_example -> 'tables') + 1 loop
+    v_progress := false;
+    for v_t in select e from jsonb_array_elements(p_example -> 'tables') e loop
+      continue when (v_t ->> 'token') = any (v_done);
+      continue when exists (select 1 from jsonb_array_elements(v_t -> 'fields') f
+                             where coalesce(f ->> 'parityType', f ->> 'type') = 'relation'
+                               and (f ->> 'relationTarget') is distinct from (v_t ->> 'token')
+                               and not ((f ->> 'relationTarget') = any (v_done)));
+      v_n := 0;
+      for v_r in select e from jsonb_array_elements(coalesce(v_t -> 'rows', '[]'::jsonb)) e loop
+        v_vals := '{}'::jsonb;
+        for v_key, v_val in select k, v from jsonb_each(coalesce(v_r -> 'values', '{}'::jsonb)) x(k, v) loop
+          select f into v_f from jsonb_array_elements(v_t -> 'fields') f where f ->> 'key' = v_key;
+          if coalesce(v_f ->> 'parityType', v_f ->> 'type') = 'relation' then
+            continue when v_val is null or jsonb_typeof(v_val) = 'null';
+            continue when (v_f ->> 'relationTarget') = (v_t ->> 'token');   -- a self-link is set after
+            select coalesce(jsonb_agg(v_rows -> ((v_f ->> 'relationTarget') || '.' || (x #>> '{}'))), '[]'::jsonb) into v_rel
+              from jsonb_array_elements(case when jsonb_typeof(v_val) = 'array' then v_val else jsonb_build_array(v_val) end) x;
+            if exists (select 1 from jsonb_array_elements(v_rel) x where jsonb_typeof(x) = 'null') then
+              raise exception 'Row "%" of "%" points at a % row the example does not have.', v_r ->> 'key', v_t ->> 'name', v_f ->> 'relationTarget'
+                using errcode = '23503', hint = 'A relation value is the key of a row of the target table. Nothing was created.';
+            end if;
+            v_val := case when coalesce((v_f ->> 'multi')::boolean, false) or jsonb_typeof(v_val) = 'array' then v_rel else v_rel -> 0 end;
+          else
+            v_why := case when jsonb_typeof(v_val) = 'string' then custom._example_placeholder(v_val #>> '{}') end;
+            if v_why is not null then
+              raise exception 'Row "%" of the example table "%" holds "%" in %, which is %.', v_r ->> 'key', v_t ->> 'name', v_val #>> '{}', v_key, v_why
+                using errcode = '23514', hint = 'The owner''s law, 2026-09-21: no placeholder data. Nothing was created.';
+            end if;
+          end if;
+          v_vals := v_vals || jsonb_build_object(v_key, v_val);
+        end loop;
+        v_rid := custom.record_write(p_organization_id, (v_tables ->> (v_t ->> 'token'))::uuid, v_vals);
+        v_rows := v_rows || jsonb_build_object((v_t ->> 'token') || '.' || (v_r ->> 'key'), v_rid);
+        v_n := v_n + 1;
+      end loop;
+      v_out := (select jsonb_agg(case when o ->> 'token' = v_t ->> 'token' then o || jsonb_build_object('records', v_n) else o end)
+                  from jsonb_array_elements(v_out) o);
+      v_done := v_done || (v_t ->> 'token');
+      v_progress := true;
+    end loop;
+    exit when not v_progress;
+  end loop;
+  if cardinality(v_done) < jsonb_array_length(p_example -> 'tables') then
+    raise exception 'The example''s tables point at each other in a circle (%), so no table''s records can be written first.',
+      (select string_agg(e ->> 'name', ', ') from jsonb_array_elements(p_example -> 'tables') e where not ((e ->> 'token') = any (v_done)))
+      using errcode = '23514', hint = 'Make one side of the circle optional in the use case. Nothing was created.';
+  end if;
+
+  -- ── 4. a table's links to its OWN records, now that they all exist ──────────────────────
+  for v_t in select e from jsonb_array_elements(p_example -> 'tables') e loop
+    for v_f in select e from jsonb_array_elements(v_t -> 'fields') e
+                where coalesce(e ->> 'parityType', e ->> 'type') = 'relation' and (e ->> 'relationTarget') = (v_t ->> 'token') loop
+      for v_r in select e from jsonb_array_elements(coalesce(v_t -> 'rows', '[]'::jsonb)) e loop
+        v_val := v_r -> 'values' -> (v_f ->> 'key');
+        continue when v_val is null or jsonb_typeof(v_val) = 'null';
+        select coalesce(jsonb_agg(v_rows -> ((v_t ->> 'token') || '.' || (x #>> '{}'))), '[]'::jsonb) into v_rel
+          from jsonb_array_elements(case when jsonb_typeof(v_val) = 'array' then v_val else jsonb_build_array(v_val) end) x;
+        perform custom.record_update(p_organization_id, (v_rows ->> ((v_t ->> 'token') || '.' || (v_r ->> 'key')))::uuid,
+          jsonb_build_object(v_f ->> 'key',
+            case when coalesce((v_f ->> 'multi')::boolean, false) or jsonb_typeof(v_val) = 'array' then v_rel else v_rel -> 0 end));
+      end loop;
+    end loop;
+  end loop;
+
+  return jsonb_build_object('business', p_example ->> 'business', 'tables', v_out,
+    'says', format('%s is ready: %s table(s) with their real rows. Every one is an ordinary table of this organization now — rename, change or archive it like any other.',
+                   coalesce(p_example ->> 'business', 'The example'), jsonb_array_length(v_out)));
 end
 $function$;
 
