@@ -880,7 +880,9 @@ function ComposerBody({
         )}
         {destination === "claude-code-hosted" && !ownPlanReady && (
           <span className="text-xs text-muted-foreground">
-            Connect your Claude account first.
+            {ownPlanStatus?.state === "signed_in_not_plan"
+              ? "Sign in with a Claude plan, or use AI Matrx credits."
+              : "Connect your Claude account first."}
           </span>
         )}
         <HostedRunControls

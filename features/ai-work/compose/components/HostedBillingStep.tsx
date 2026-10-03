@@ -20,6 +20,7 @@
 import { useState } from "react";
 import {
   CheckCircle2,
+  CircleAlert,
   ExternalLink,
   KeyRound,
   Loader2,
@@ -133,7 +134,11 @@ export function HostedBillingStep({
           ) : state === "signed_in" || state === "signed_in_not_plan" ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="flex items-center gap-1.5 text-xs text-foreground">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                {state === "signed_in" ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                ) : (
+                  <CircleAlert className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
                 {state === "signed_in"
                   ? "Signed in to Claude"
                   : "Signed in, but not on a Claude plan"}
