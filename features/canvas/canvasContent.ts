@@ -197,6 +197,20 @@ export function getDefaultTitle(type: string): string {
   return titles[type] || "Canvas View";
 }
 
+/**
+ * The display label for a stored canvas type, for badges and filters. Known
+ * types read their canvas title; anything else is humanized from its key
+ * (`structured_info` → "Structured info"), never shown raw.
+ */
+export function getCanvasTypeLabel(type: string): string {
+  const title = getDefaultTitle(type);
+  if (title !== "Canvas View") return title;
+  const words = type.trim().split(/[\s_-]+/).filter(Boolean);
+  if (words.length === 0) return "Canvas";
+  const sentence = words.join(" ").toLowerCase();
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+}
+
 /** Short subtitle per type — surfaces as the kind-of-thing label. */
 export function getSubtitle(type: string): string | undefined {
   const subtitles: Record<string, string> = {

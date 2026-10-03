@@ -7,17 +7,7 @@ import React, { useEffect, useState } from "react";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useCanvasItems } from "@/features/canvas/hooks/useCanvasItems";
 import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
-import {
-  Star,
-  Archive,
-  Trash2,
-  Share2,
-  Globe,
-  Search,
-  Filter,
-  RefreshCw,
-  Eye,
-} from "lucide-react";
+import { Archive, Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
 import {
@@ -29,7 +19,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { getCanvasTypeLabel } from "@/features/canvas/canvasContent";
+import { SavedCanvasItemCard } from "@/features/canvas/core/SavedCanvasItemCard";
 import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsService";
 
 /**
@@ -48,6 +39,13 @@ import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsServic
  * to reach from here. The prop is gone. The query now loads both and the
  * "Archived (N)" disclosure below the grid reveals them in one click.
  */
+/**
+ * Columns follow the PANE, not the viewport (a container query on the list):
+ * one column under ~420px of pane, two up to ~900px, three past that.
+ */
+export const SAVED_GRID_CLASS =
+  "grid grid-cols-1 gap-4 @[24rem]/saved-grid:grid-cols-2 @[54rem]/saved-grid:grid-cols-3";
+
 export function SavedCanvasItems() {
   const { openItem } = useOpenCanvasItem();
   const {
@@ -120,178 +118,44 @@ export function SavedCanvasItems() {
     setEditingTitle("");
   };
 
-  const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      quiz: "Quiz",
-      iframe: "Web View",
-      slideshow: "Slideshow",
-      recipe: "Recipe",
-      diagram: "Diagram",
-      flashcards: "Flashcards",
-      decision_tree: "Decision Tree",
-    };
-    return labels[type] || type.charAt(0).toUpperCase() + type.slice(1);
-  };
-
-  const getTypeBadgeColor = (type: string): string => {
-    const colors: Record<string, string> = {
-      quiz: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
-      iframe: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300",
-      slideshow: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300",
-      recipe: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300",
-      diagram: "bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300",
-      flashcards: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300",
-    };
-    return colors[type] || "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300";
-  };
-
   // Active is what the surface shows; archived rides one click below it.
   const activeItems = items.filter((item) => !item.is_archived);
   const archivedItems = items.filter((item) => item.is_archived);
 
   const uniqueTypes = Array.from(new Set(activeItems.map(item => item.type)));
 
+  const handleDelete = async (id: string) => {
+    const ok = await confirmDialog({
+      title: "Delete this item?",
+      description: "This removes the saved canvas item permanently.",
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (ok) remove(id);
+  };
+
   const renderItem = (item: CanvasItemRow) => (
-
-              <div
-                key={item.id}
-                className="group relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 hover:shadow-md dark:hover:shadow-zinc-950/50 transition-all"
-              >
-                {/* Type Badge */}
-                <Badge className={cn("absolute top-3 right-3", getTypeBadgeColor(item.type))}>
-                  {getTypeLabel(item.type)}
-                </Badge>
-
-                {/* Title */}
-                <div className="pr-20 mb-3">
-                  {editingId === item.id ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={editingTitle}
-                        onChange={(e) => setEditingTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleSaveEdit(item.id);
-                          if (e.key === "Escape") handleCancelEdit();
-                        }}
-                        autoFocus
-                        className="h-8 text-sm"
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() => handleSaveEdit(item.id)}
-                        className="h-8 px-2"
-                      >
-                        Save
-                      </Button>
-                    </div>
-                  ) : (
-                    <h3
-                      className="font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
-                      onClick={() => handleStartEdit(item)}
-                    >
-                      {item.title || "Untitled"}
-                    </h3>
-                  )}
-                </div>
-
-                {/* Metadata */}
-                <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400 mb-4">
-                  <p>
-                    Created {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
-                  </p>
-                  {item.description && (
-                    <p className="line-clamp-2">{item.description}</p>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenInCanvas(item)}
-                    className="flex-1"
-                  >
-                    <Eye className="w-3.5 h-3.5 mr-1.5" />
-                    Open
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleFavorite(item.id, !item.is_favorited)}
-                    className="h-7 w-7 p-0 rounded-full"
-                  >
-                    <Star
-                      className={cn(
-                        "w-3.5 h-3.5",
-                        item.is_favorited
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-400 dark:text-gray-600"
-                      )}
-                    />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => share(item.id)}
-                    className="h-7 w-7 p-0 rounded-full"
-                  >
-                    <Share2 className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleArchive(item.id, !item.is_archived)}
-                    className="h-7 w-7 p-0 rounded-full"
-                  >
-                    <Archive
-                      className={cn(
-                        "w-3.5 h-3.5",
-                        item.is_archived
-                          ? "text-orange-500 dark:text-orange-400"
-                          : "text-gray-400 dark:text-gray-600"
-                      )}
-                    />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={async () => {
-                      const ok = await confirmDialog({
-                        title: "Delete this item?",
-                        description:
-                          "This removes the saved canvas item permanently.",
-                        confirmLabel: "Delete",
-                        variant: "destructive",
-                      });
-                      if (ok) remove(item.id);
-                    }}
-                    className="h-7 w-7 p-0 rounded-full hover:text-red-600 dark:hover:text-red-400"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-
-                {/* Share indicator */}
-                {item.published_to_web && (
-                  <div className="absolute bottom-3 left-3">
-                    <Badge variant="secondary" className="text-xs">
-                      <Globe className="w-3 h-3 mr-1" />
-                      Shared
-                    </Badge>
-                  </div>
-                )}
-              </div>
+    <SavedCanvasItemCard
+      key={item.id}
+      item={item}
+      isEditing={editingId === item.id}
+      editingTitle={editingTitle}
+      onEditingTitleChange={setEditingTitle}
+      onStartEdit={() => handleStartEdit(item)}
+      onSaveEdit={() => void handleSaveEdit(item.id)}
+      onCancelEdit={handleCancelEdit}
+      onOpen={() => handleOpenInCanvas(item)}
+      onToggleFavorite={() => toggleFavorite(item.id, !item.is_favorited)}
+      onShare={() => share(item.id)}
+      onToggleArchive={() => toggleArchive(item.id, !item.is_archived)}
+      onDelete={() => void handleDelete(item.id)}
+    />
   );
 
   if (isLoading && items.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-6 h-6 animate-spin text-gray-400 dark:text-gray-600" />
+        <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -299,11 +163,11 @@ export function SavedCanvasItems() {
   return (
     <div className="flex flex-col h-full">
       {/* Header with Search and Filters */}
-      <div className="flex-shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <div className="flex items-center gap-3">
+      <div className="@container/saved-head flex-shrink-0 p-4 border-b border-border bg-card">
+        <div className="flex items-center gap-2 @[30rem]/saved-head:gap-3">
           {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-600" />
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search saved items..."
@@ -315,14 +179,14 @@ export function SavedCanvasItems() {
 
           {/* Type Filter */}
           <Select value={typeFilter} onValueChange={handleTypeFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-28 shrink-0 @[30rem]/saved-head:w-40" aria-label="Filter by type">
               <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
               {uniqueTypes.map(type => (
                 <SelectItem key={type} value={type}>
-                  {getTypeLabel(type)}
+                  {getCanvasTypeLabel(type)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -334,40 +198,42 @@ export function SavedCanvasItems() {
             size="sm"
             onClick={() => load()}
             disabled={isLoading}
+            aria-label="Refresh"
+            className="shrink-0"
           >
             <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
           </Button>
         </div>
 
         {/* Stats */}
-        <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+        <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
           <span>
             <UntrustedCount value={activeItems.length} read={readOf({ isLoading, error: loadError })} label="Items" /> item
             {activeItems.length !== 1 ? 's' : ''}
           </span>
           {typeFilter !== "all" && (
-            <Badge variant="secondary">{getTypeLabel(typeFilter)}</Badge>
+            <Badge variant="secondary">{getCanvasTypeLabel(typeFilter)}</Badge>
           )}
         </div>
       </div>
 
       {/* Items List */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+      <div className="@container/saved-grid flex-1 overflow-y-auto scrollbar-thin p-4">
         {loadError != null && items.length === 0 ? (
           <ReadFailure error={loadError} what="your saved canvas items" onRetry={() => load()} />
         ) : activeItems.length === 0 && archivedItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <Archive className="w-12 h-12 text-gray-300 dark:text-gray-700 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">
+            <Archive className="w-12 h-12 text-muted-foreground/50 mb-3" />
+            <p className="text-muted-foreground">
               No saved canvas items yet
             </p>
-            <p className="text-sm text-gray-400 dark:text-gray-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Create and save canvas items to see them here
             </p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className={SAVED_GRID_CLASS}>
               {activeItems.map(renderItem)}
             </div>
             <ArchivedDisclosure
@@ -375,7 +241,7 @@ export function SavedCanvasItems() {
               open={showArchived}
               onOpenChange={setShowArchived}
               className="mt-4"
-              contentClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              contentClassName={SAVED_GRID_CLASS}
             >
               {archivedItems.map(renderItem)}
             </ArchivedDisclosure>

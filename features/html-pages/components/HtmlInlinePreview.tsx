@@ -48,6 +48,47 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Phase = "idle" | "converting" | "preview" | "error";
 
+/**
+ * THE sandbox for a published html page. The page is served from the html
+ * site (`NEXT_PUBLIC_HTML_SITE_URL`, mymatrx.com) — a different site from the
+ * app — so `allow-same-origin` hands the page ITS OWN origin, never ours, and
+ * its scripts cannot read aimatrx.com cookies or storage. The pair
+ * allow-scripts + allow-same-origin is only safe while that holds, so
+ * `pageSandbox` drops `allow-same-origin` if the page URL ever resolves to the
+ * app's own origin (a misconfigured env), leaving an opaque origin.
+ */
+const PAGE_SANDBOX =
+  "allow-scripts allow-same-origin allow-popups allow-forms allow-presentation";
+/**
+ * The canvas runs generated pages as APPS: dialogs (alert/confirm), links and
+ * popups that open as normal tabs, downloads and pointer lock (games). Never
+ * allow-top-navigation — an app may not navigate the app shell away.
+ */
+const APP_SANDBOX = `${PAGE_SANDBOX} allow-modals allow-popups-to-escape-sandbox allow-downloads allow-pointer-lock`;
+const PAGE_ALLOW =
+  "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen";
+
+export function pageSandbox(
+  url: string | null,
+  base: string,
+  appOrigin: string | null = typeof window === "undefined"
+    ? null
+    : window.location.origin,
+): string {
+  if (!url || !appOrigin) return base;
+  let origin: string;
+  try {
+    origin = new URL(url, appOrigin).origin;
+  } catch {
+    return base;
+  }
+  if (origin !== appOrigin) return base;
+  return base
+    .split(" ")
+    .filter((flag) => flag !== "allow-same-origin")
+    .join(" ");
+}
+
 interface HtmlInlinePreviewProps {
   code: string;
   language?: string;
@@ -57,6 +98,12 @@ interface HtmlInlinePreviewProps {
   messageId?: string;
   conversationId?: string;
   onCodeChange?: (newCode: string) => void;
+  /**
+   * The canvas presentation: the page runs edge-to-edge filling its parent
+   * (height included) as an app — no card, no fade, no Expand / Open in
+   * canvas / Code controls (the canvas tab header owns the source toggle).
+   */
+  fill?: boolean;
 }
 
 const ToolbarButton: React.FC<{
@@ -87,6 +134,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   messageId,
   conversationId,
   onCodeChange,
+  fill = false,
 }) => {
   const user = useAppSelector(selectUser);
   const { open: openCanvas } = useCanvas();
@@ -179,6 +227,49 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     [code, language, onCodeChange, isComplete],
   );
 
+  if (fill) {
+    if (isComplete && analysis.previewable && user?.id && phase === "preview") {
+      return (
+        <iframe
+          src={url ?? undefined}
+          title={title}
+          data-html-app-frame=""
+          className={cn("block h-full w-full border-0 bg-white", className)}
+          sandbox={pageSandbox(url, APP_SANDBOX)}
+          allow={PAGE_ALLOW}
+          allowFullScreen
+        />
+      );
+    }
+    if (
+      isComplete &&
+      analysis.previewable &&
+      user?.id &&
+      (phase === "converting" || phase === "idle")
+    ) {
+      return (
+        <div
+          role="status"
+          className={cn("flex h-full items-center justify-center", className)}
+        >
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="sr-only">Rendering webpage</span>
+        </div>
+      );
+    }
+    return (
+      <div className={cn("h-full overflow-auto px-3", className)}>
+        {renderCodeBlock()}
+        {phase === "error" && errorMessage ? (
+          <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            {errorMessage}
+            <ErrorAlchemyMenu error={errorMessage} />
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   // 1. Not ready / not previewable → plain code block.
   if (!isComplete || !analysis.previewable || !user?.id) {
     return renderCodeBlock();
@@ -263,8 +354,8 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           title={title}
           className="w-full rounded-lg bg-black"
           style={{ aspectRatio: String(aspectRatio) }}
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+          sandbox={pageSandbox(url, PAGE_SANDBOX)}
+          allow={PAGE_ALLOW}
           allowFullScreen
           loading="lazy"
         />
@@ -322,8 +413,8 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
             style={{
               height: expanded ? "min(85dvh, 1400px)" : "min(70dvh, 720px)",
             }}
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+            sandbox={pageSandbox(url, PAGE_SANDBOX)}
+            allow={PAGE_ALLOW}
             allowFullScreen
             loading="lazy"
           />
