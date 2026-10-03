@@ -1,3 +1,4 @@
+-- window-class: drops the same-org trigger on canvas.canvas_items (supautils set: 23 auth/storage/realtime relations held to COMMIT) — apply 01:00-04:00 Pacific only
 -- chair-step: the inverse of migrations/canvas_version_chain_same_owner.sql — drops the
 --   same-owner version-chain foreign key, its covering index and its same-org trigger, and restores the two chain readers to the exact bodies
 --   that file replaced (they again return every row whose parent is the root, whoever owns it).

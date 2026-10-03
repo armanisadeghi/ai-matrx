@@ -1,4 +1,5 @@
 -- draft: canvas-chain-owner-lane proven on the clone only; held until the owning session applies it to live
+-- window-class: adds a same-org trigger on canvas.canvas_items (supautils set: 23 auth/storage/realtime relations held to COMMIT) — apply 01:00-04:00 Pacific only
 -- based-on: public.cx_canvas_get_version_history(uuid) e6d546c7ee4c8c1cf5e7b6e23e6ac2a527ad621c4a0ce6dd213aede3047c5a7d
 -- based-on: public.cx_canvas_get_conversation_latest(uuid) 416717903f24dcd02b0006c84d4baecf9f863bebfc7d2d94a703c517f9b30fbd
 --
