@@ -1,12 +1,15 @@
 -- INVERSE of migrations/campaign/kindsglue_f_a_kind_is_never_made_from_a_name_alone.sql (lane KINDS-GLUE):
--- entity_row_create exactly as it was before the file (pg_get_functiondef, 2026-10-02), and content_ir_kind back to
--- create_via = 'refuse'.
--- based-on: public.entity_row_create(text, text, uuid) d49d645179e87bc4cd05e1c5c5b680007e027273faa3fb847c6c605f5f1bdd8b
+-- entity_row_create exactly as it was before the file (pg_get_functiondef, 2026-10-02), and content_ir_kind's entry taken back
+-- out of the knob table_api/standard_tables (api_facts answers create_via 'refuse' for a token it does not name).
+-- based-on: public.entity_row_create(text, text, uuid) 94e29ac50fc3954fca357f27729c60ae4b610cd6e7aa037f5d729bf4c8849735
 -- lane: KINDS-GLUE
 
 select set_config('app.actor_system', 'migration/kindsglue_f', true);
 
-update platform.entity_types set create_via = 'refuse' where token = 'content_ir_kind';
+update platform.feature_knob
+   set value = value - 'content_ir_kind'
+ where feature = 'table_api' and key = 'standard_tables'
+   and value -> 'content_ir_kind' = '{"create_via": "content_ir.kind_create"}'::jsonb;
 
 CREATE OR REPLACE FUNCTION public.entity_row_create(p_token text, p_title text, p_organization_id uuid)
  RETURNS jsonb

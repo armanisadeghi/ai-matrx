@@ -4,26 +4,29 @@
 -- public.entity_row_create('content_ir_kind', '<name>', <org>) inserted a bare kind_definition row — no schema,
 -- no disposition. kindsglue_c's trigger now refuses that insert, but with "The kind <NULL> does not say…" (the
 -- door never sets the slug). The registry already has the word for "made through its own door":
--- platform.entity_types.create_via ("insert, refuse, or a named server door"; 1,080 tokens say 'refuse', read
--- today only by the Table API). This file:
---   1. names content_ir_kind's door: create_via = 'content_ir.kind_create' (the agent tool and the Shapes studio,
---      both of which require a disposition);
+-- the Table API's facts, create_via ("insert, refuse, or a named server door"), kept by lane 7 in the knob
+-- table_api/standard_tables (chair ruling: a knob, not registry columns) and read only through
+-- platform.api_facts(token). This file:
+--   1. names content_ir_kind's door in that knob: create_via = 'content_ir.kind_create' (the agent tool and the
+--      Shapes studio, both of which require a disposition). The token gets no reach (api_facts answers 'none'
+--      for a key that says nothing else), so the Table API does not start reaching kinds;
 --   2. teaches entity_row_create to honour a NAMED door: a token whose create_via is neither 'insert' nor 'refuse'
 --      is refused with a plain sentence before any insert. Every other token keeps today's behaviour (all are
 --      'refuse', which this door has never read and still does not).
 -- NEEDS THE CHAIR'S CONSENT before production: entity_row_create is a chair-owned store door and
 -- platform.entity_types a chair-owned registry.
--- Locks: pg_proc row lock; one row lock on platform.entity_types.
+-- Locks: pg_proc row lock; one row lock on platform.feature_knob.
 -- based-on: public.entity_row_create(text, text, uuid) 5190c99e16b37313b8c23c51af5f3e5cec0ed50a0c3e5876155954a3167cbc8f
 -- lane: KINDS-GLUE
 -- INVERSE: migrations/inverse/kindsglue_f_a_kind_is_never_made_from_a_name_alone_down.sql
 
 select set_config('app.actor_system', 'migration/kindsglue_f', true);
 
-update platform.entity_types
-   set create_via = 'content_ir.kind_create'
- where token = 'content_ir_kind'
-   and create_via is distinct from 'content_ir.kind_create';
+update platform.feature_knob
+   set value = jsonb_set(value, '{content_ir_kind}',
+                         coalesce(value -> 'content_ir_kind', '{}'::jsonb) || '{"create_via": "content_ir.kind_create"}'::jsonb)
+ where feature = 'table_api' and key = 'standard_tables'
+   and value -> 'content_ir_kind' ->> 'create_via' is distinct from 'content_ir.kind_create';
 
 CREATE OR REPLACE FUNCTION public.entity_row_create(p_token text, p_title text, p_organization_id uuid)
  RETURNS jsonb
@@ -53,7 +56,8 @@ begin
             detail = jsonb_build_object('organization_id', p_organization_id)::text;
   end if;
 
-  select et.schema_name, et.table_name, et.title_column, et.audit_class, et.label, et.create_via
+  select et.schema_name, et.table_name, et.title_column, et.audit_class, et.label,
+         (select f.create_via from platform.api_facts(p_token) f) as create_via
     into v_et
     from platform.entity_types et
    where et.token = p_token and et.is_active and et.reference_pickable;
@@ -71,13 +75,13 @@ begin
     raise exception 'entity_row_create: % is access machinery and is never created from a picker.', coalesce(v_et.label, p_token)
       using errcode = '42501';
   end if;
-  -- A TOKEN WHOSE REGISTRY ROW NAMES ITS OWN SERVER DOOR (create_via is neither 'insert' nor
+  -- A TOKEN WHOSE API FACTS NAME ITS OWN SERVER DOOR (create_via is neither 'insert' nor
   -- 'refuse') is never made from a name alone: that door asks the questions a bare row cannot
   -- answer (a kind must say what its output is — KINDS-GLUE).
   if coalesce(v_et.create_via, 'refuse') not in ('insert', 'refuse') then
     raise exception 'entity_row_create: a % is not made from a name alone — create it where it is built.', coalesce(v_et.label, p_token)
       using errcode = '22023',
-            hint = format('Its registry row names its own door: %s.', v_et.create_via);
+            hint = format('Its API facts name its own door: %s.', v_et.create_via);
   end if;
   -- 🚨 A TABLE WITH NO `organization_id` CANNOT CARRY ONE, and the direct path has been
   -- sending it anyway and getting 42703. `iam.organizations` is that table: creating an
