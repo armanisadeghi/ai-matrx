@@ -56,6 +56,7 @@ import {
 } from "@/features/matrx-envelope/conversationReceipts";
 import DirectiveReceiptBlock from "@/components/mardown-display/blocks/data-events/DirectiveReceiptBlock";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -193,8 +194,8 @@ export function ProposedDirectivesZone({
  * The proposal card used to exist only for as long as the stream event that
  * created it: refresh, and an action the agent had proposed could no longer be
  * approved at all, with nothing on screen to say so (V-24). The shell was never
- * lost — it IS the assistant message's stored text — so on mount this reads the
- * conversation's messages back, asks the SERVER which of those shells are still
+ * lost — it IS the assistant message's stored text — so the first view of the
+ * conversation reads its messages back, asks the SERVER which of those shells are still
  * approvable (`POST /directives/apply_state`; the apply key is frozen and hashes
  * the validated item model, so this client must never compute it), and puts the
  * still-open ones back in the inbox.
@@ -213,84 +214,54 @@ function useRehydratedProposals(
   baseUrl: string | undefined,
 ): string | null {
   const dispatch = useAppDispatch();
-  const [error, setError] = useState<string | null>(null);
+  // Asked ONCE per conversation, kept in Redux (`useStoreRead`): a remount or a
+  // wake of the chat renders the inbox and reads nothing. The proposals go to
+  // the proposed-directives slice; the stored answer is only what was unreadable.
+  const read = useStoreRead<{ unreadable: string[] }>(
+    conversationId && baseUrl ? `chat.directive-proposals:${conversationId}` : null,
+    async () => {
+      const { proposals, unreadable } = await fetchConversationProposals(baseUrl, conversationId);
+      for (const proposal of proposals) dispatch(proposeDirective(proposal));
+      return { unreadable };
+    },
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    setError(null);
-    if (!conversationId || !baseUrl) return;
-    void fetchConversationProposals(baseUrl, conversationId)
-      .then(({ proposals, unreadable }) => {
-        if (cancelled) return;
-        for (const proposal of proposals) dispatch(proposeDirective(proposal));
-        if (unreadable.length > 0) {
-          setError(
-            `This conversation has ${unreadable.length === 1 ? "an action" : `${unreadable.length} actions`} ` +
-              `we could not read, so ${unreadable.length === 1 ? "it is" : "they are"} not offered here: ` +
-              unreadable.join(" "),
-          );
-        }
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Could not check whether this conversation has actions waiting for you.",
-        );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [conversationId, baseUrl, dispatch]);
-
-  return error;
+  if (read.error) {
+    return read.error || "Could not check whether this conversation has actions waiting for you.";
+  }
+  const unreadable = read.data?.unreadable ?? [];
+  if (unreadable.length === 0) return null;
+  return (
+    `This conversation has ${unreadable.length === 1 ? "an action" : `${unreadable.length} actions`} ` +
+    `we could not read, so ${unreadable.length === 1 ? "it is" : "they are"} not offered here: ` +
+    unreadable.join(" ")
+  );
 }
 
 /**
  * The conversation's already-applied directives, read from the ledger.
  *
- * Read ONCE on mount, deliberately: a confirm made later in this session is
- * shown by its own card, and re-reading on every render would put the same apply
- * on screen twice. `refresh` is the ONE deliberate exception (DD-145) — the zone
- * calls it only while a card is waiting for a receipt another request is still
- * writing, and that card removes itself the moment the read produces it, so the
- * "never twice" rule holds through the exception rather than around it.
+ * Read ONCE per conversation into Redux (`useStoreRead`): a confirm made later
+ * in this session is shown by its own card, and a remount or a wake renders the
+ * stored receipts and reads nothing — the same apply is never put on screen
+ * twice. `refresh` is the ONE deliberate exception (DD-145) — the zone calls it
+ * only while a card is waiting for a receipt another request is still writing,
+ * and that card removes itself the moment the read produces it, so the "never
+ * twice" rule holds through the exception rather than around it.
  */
 function useConversationReceipts(conversationId: string) {
-  const [receipts, setReceipts] = useState<ConversationDirectiveReceipt[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const live = useRef(true);
-
-  const read = async (id: string) => {
-    try {
-      const rows = await fetchConversationReceipts(id);
-      if (live.current) setReceipts(rows);
-    } catch (err: unknown) {
-      if (!live.current) return;
-      setLoadError(
-        err instanceof Error
-          ? err.message
-          : "Could not load what this conversation's actions did.",
-      );
-    }
+  const read = useStoreRead<ConversationDirectiveReceipt[]>(
+    conversationId ? `chat.directive-receipts:${conversationId}` : null,
+    () => fetchConversationReceipts(conversationId),
+  );
+  return {
+    receipts: read.data ?? NO_RECEIPTS,
+    loadError: read.error,
+    refresh: read.refresh,
   };
-
-  useEffect(() => {
-    live.current = true;
-    setReceipts([]);
-    setLoadError(null);
-    if (conversationId) void read(conversationId);
-    return () => {
-      live.current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
-
-  const refresh = () => (conversationId ? read(conversationId) : Promise.resolve());
-
-  return { receipts, loadError, refresh };
 }
+
+const NO_RECEIPTS: ConversationDirectiveReceipt[] = [];
 
 function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   const dispatch = useAppDispatch();

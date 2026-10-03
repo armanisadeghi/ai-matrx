@@ -94,6 +94,18 @@ export const projectRow = {
 function seedRecordDoors(): void {
   // features/unified-data/hub/doors.ts `RecordHomeAnswer`
   seedRpc("entity_record_home", { organization_id: ORGANIZATION.id });
+  // features/unified-data/hub/doors.ts `entityRecordReadable` — the custom-fields
+  // section's own first read (a SECURITY INVOKER read); no custom values yet.
+  seedRpc("entity_record_read", {});
+  // migrations/campaign/entityfields_the_add_control_is_absent_or_honest.sql —
+  // the person owns the organization, so they may add a column.
+  seedRpc("entity_field_rights", (args: unknown) => ({
+    token: (args as { p_token?: string }).p_token ?? null,
+    label: (args as { p_token?: string }).p_token === "project" ? "Projects" : "Tasks",
+    may_declare: true,
+    reason: null,
+    may_fill_in: true,
+  }));
   // features/rich-document/annotations/service.ts — no comment threads yet.
   seedRpc("cmt_list", []);
 }

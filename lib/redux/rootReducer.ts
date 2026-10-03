@@ -33,6 +33,7 @@ import themeReducer from "@/styles/themes/themeSlice";
 
 
 import overlaySlice from "./slices/overlaySlice";
+import storeReadsReducer from "./slices/storeReadsSlice";
 import overlayDataReducer from "./slices/overlayDataSlice";
 import voicePadReducer from "./slices/voicePadSlice";
 // The chat package owns its slices and mounts them under the same keys (P2).
@@ -268,6 +269,10 @@ export const slimReducerMap = {
   scopesTree: scopesTreeReducer,
   contextValues: contextValuesReducer,
   scopeTemplates: scopeTemplatesReducer,
+  // Reads kept by key and read once (`lib/redux/store-reads/useStoreRead.ts`):
+  // a remount, a wake or a second view renders the answer and reads nothing.
+  storeReads: storeReadsReducer,
+
 
   hierarchy: hierarchyReducer,
 

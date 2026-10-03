@@ -20,9 +20,10 @@ import type {
 import type { SourceImportance } from "../ranking";
 import type { CurationData } from "../service";
 import { extractErrorMessage } from "@/utils/errors";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 
 // ============================================================================
-// Generic fetch hook
+// Generic fetch hooks
 // ============================================================================
 
 interface UseQueryResult<T> {
@@ -32,7 +33,29 @@ interface UseQueryResult<T> {
   refresh: () => void;
 }
 
+/**
+ * A research read kept in Redux by `name` + its deps (`useStoreRead`): read
+ * once, rendered from the store on every remount and in every other view of
+ * the same record; `refresh` is the deliberate re-read. The answer must be
+ * plain JSON — a Map goes through `useLocalServiceQuery`.
+ */
 function useServiceQuery<T>(
+  name: string,
+  fetcher: () => Promise<T>,
+  deps: unknown[],
+  enabled = true,
+): UseQueryResult<T> {
+  const read = useStoreRead<T>(`research.${name}:${JSON.stringify(deps)}`, fetcher, { enabled });
+  return {
+    data: read.data ?? null,
+    isLoading: read.isLoading,
+    error: read.error,
+    refresh: () => void read.refresh(),
+  };
+}
+
+/** A read whose answer is not plain JSON (a Map) — kept by the view. */
+function useLocalServiceQuery<T>(
   fetcher: () => Promise<T>,
   deps: unknown[],
   enabled = true,
@@ -40,10 +63,6 @@ function useServiceQuery<T>(
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  // Loading is DERIVED (`settledKey !== fetchKey`), never set synchronously
-  // inside the effect — the react-hooks lint forbids the setState cascade the
-  // old `setIsLoading(true)`-on-run pattern caused. Stale data stays visible
-  // while a refetch is in flight, exactly as before.
   const [settledKey, setSettledKey] = useState<string | null>(null);
   const fetchKey = JSON.stringify([refreshKey, ...deps]);
 
@@ -93,6 +112,7 @@ function useServiceQuery<T>(
  */
 export function useAllTopics(enabled = true) {
   return useServiceQuery<ResearchTopic[]>(
+    "useAllTopics",
     () => service.getAllTopics(),
     [],
     enabled,
@@ -101,6 +121,7 @@ export function useAllTopics(enabled = true) {
 
 export function useTopic(topicId: string | undefined) {
   return useServiceQuery<ResearchTopic | null>(
+    "useTopic",
     () => {
       if (!topicId) return Promise.resolve(null);
       return service.getTopic(topicId);
@@ -116,6 +137,7 @@ export function useTopic(topicId: string | undefined) {
 
 export function useResearchKeywords(topicId: string) {
   return useServiceQuery<ResearchKeyword[]>(
+    "useResearchKeywords",
     () => service.getKeywords(topicId),
     [topicId],
     !!topicId,
@@ -128,6 +150,7 @@ export function useResearchKeywords(topicId: string) {
 
 export function useResearchSource(sourceId: string | undefined) {
   return useServiceQuery<ResearchSource | null>(
+    "useResearchSource",
     () => {
       if (!sourceId) return Promise.resolve(null);
       return service.getSource(sourceId);
@@ -143,6 +166,7 @@ export function useResearchSources(
 ) {
   const filterKey = filters ? JSON.stringify(filters) : "all";
   return useServiceQuery<ResearchSource[]>(
+    "useResearchSources",
     () => service.getSources(topicId, filters),
     [topicId, filterKey],
     !!topicId,
@@ -188,7 +212,7 @@ export function useYouTubeVideoIndex(sources: ResearchSource[]) {
 export function useYouTubeVideoIdentityIndex(videoIds: string[]) {
   const uniqueVideoIds = [...new Set(videoIds.filter(Boolean))].sort();
   const key = uniqueVideoIds.join(",");
-  const { data, isLoading, error, refresh } = useServiceQuery<
+  const { data, isLoading, error, refresh } = useLocalServiceQuery<
     Map<string, service.YouTubeVideoIdentity>
   >(
     () => service.getYouTubeVideoIdentities(uniqueVideoIds),
@@ -205,6 +229,7 @@ export function useYouTubeVideoIdentityIndex(videoIds: string[]) {
 
 export function useSourceContent(topicId: string, sourceId: string) {
   return useServiceQuery<ResearchContent[]>(
+    "useSourceContent",
     () => service.getSourceContent(topicId, sourceId),
     [topicId, sourceId],
     !!topicId && !!sourceId,
@@ -214,6 +239,7 @@ export function useSourceContent(topicId: string, sourceId: string) {
 /** Whether a page's Source shows a person's edit (what "Restore original" undoes). */
 export function useSourceEditState(processedDocumentId: string | null | undefined) {
   return useServiceQuery<{ edited: boolean }>(
+    "useSourceEditState",
     () =>
       processedDocumentId
         ? service.getSourceEditState(processedDocumentId)
@@ -229,6 +255,7 @@ export function useSourceEditState(processedDocumentId: string | null | undefine
 
 export function useSourceAnalysis(contentId: string | undefined) {
   return useServiceQuery<ResearchAnalysis[]>(
+    "useSourceAnalysis",
     () => {
       if (!contentId) return Promise.resolve([]);
       return service.getSourceAnalysis(contentId);
@@ -240,6 +267,7 @@ export function useSourceAnalysis(contentId: string | undefined) {
 
 export function useAnalysisForSource(sourceId: string | undefined) {
   return useServiceQuery<ResearchAnalysis[]>(
+    "useAnalysisForSource",
     () => {
       if (!sourceId) return Promise.resolve([]);
       return service.getAnalysisForSource(sourceId);
@@ -251,6 +279,7 @@ export function useAnalysisForSource(sourceId: string | undefined) {
 
 export function useAnalysesForTopic(topicId: string) {
   return useServiceQuery<ResearchAnalysis[]>(
+    "useAnalysesForTopic",
     () => service.getAnalysesForTopic(topicId),
     [topicId],
     !!topicId,
@@ -267,6 +296,7 @@ export function useResearchSynthesis(
 ) {
   const paramsKey = params ? JSON.stringify(params) : "all";
   return useServiceQuery<ResearchSynthesis[]>(
+    "useResearchSynthesis",
     () => service.getSynthesis(topicId, params),
     [topicId, paramsKey],
     !!topicId,
@@ -279,6 +309,7 @@ export function useResearchSynthesis(
 
 export function useResearchTags(topicId: string) {
   return useServiceQuery<ResearchTag[]>(
+    "useResearchTags",
     () => service.getTags(topicId),
     [topicId],
     !!topicId,
@@ -289,6 +320,7 @@ export function useResearchTags(topicId: string) {
  *  Sources list tag chips + per-row picker without one query per row. */
 export function useTopicSourceTags(topicId: string) {
   return useServiceQuery<Record<string, { id: string; name: string }[]>>(
+    "useTopicSourceTags",
     () => service.getTopicSourceTags(topicId),
     [topicId],
     !!topicId,
@@ -297,6 +329,7 @@ export function useTopicSourceTags(topicId: string) {
 
 export function useSourceTags(sourceId: string | undefined) {
   return useServiceQuery<SourceTag[]>(
+    "useSourceTags",
     () => {
       if (!sourceId) return Promise.resolve([]);
       return service.getSourceTags(sourceId);
@@ -307,7 +340,7 @@ export function useSourceTags(sourceId: string | undefined) {
 }
 
 export function useSourceImportance(topicId: string) {
-  return useServiceQuery<Map<string, SourceImportance>>(
+  return useLocalServiceQuery<Map<string, SourceImportance>>(
     () => service.getSourceImportance(topicId),
     [topicId],
     !!topicId,
@@ -316,6 +349,7 @@ export function useSourceImportance(topicId: string) {
 
 export function useCurationData(topicId: string) {
   return useServiceQuery<CurationData>(
+    "useCurationData",
     () => service.getCurationData(topicId),
     [topicId],
     !!topicId,
@@ -328,6 +362,7 @@ export function useCurationData(topicId: string) {
 
 export function useResearchDocument(topicId: string) {
   return useServiceQuery<ResearchDocument | null>(
+    "useResearchDocument",
     () => service.getDocument(topicId),
     [topicId],
     !!topicId,
@@ -337,6 +372,7 @@ export function useResearchDocument(topicId: string) {
 /** Newest SUCCESSFUL report — the AI-grounding read (see service note). */
 export function useLatestSuccessfulResearchDocument(topicId: string) {
   return useServiceQuery<ResearchDocument | null>(
+    "useLatestSuccessfulResearchDocument",
     () => service.getLatestSuccessfulDocument(topicId),
     [topicId],
     !!topicId,
@@ -345,6 +381,7 @@ export function useLatestSuccessfulResearchDocument(topicId: string) {
 
 export function useDocumentVersions(topicId: string) {
   return useServiceQuery<ResearchDocument[]>(
+    "useDocumentVersions",
     () => service.getDocumentVersions(topicId),
     [topicId],
     !!topicId,
@@ -357,6 +394,7 @@ export function useDocumentVersions(topicId: string) {
 
 export function useResearchMedia(topicId: string) {
   return useServiceQuery<ResearchMedia[]>(
+    "useResearchMedia",
     () => service.getMedia(topicId),
     [topicId],
     !!topicId,
@@ -368,5 +406,5 @@ export function useResearchMedia(topicId: string) {
 // ============================================================================
 
 export function useResearchTemplates() {
-  return useServiceQuery<ResearchTemplate[]>(() => service.getTemplates(), []);
+  return useServiceQuery<ResearchTemplate[]>("useResearchTemplates", () => service.getTemplates(), []);
 }

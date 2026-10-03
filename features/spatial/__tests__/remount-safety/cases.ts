@@ -28,12 +28,7 @@ export type RemountStatus =
     };
 
 export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
-  "chat": {
-    status: "failing",
-    owner: "chat lane",
-    why: "wake/remount re-read the transcript's assistant messages (ProposedDirectivesZone → fetchStoredDirectiveShells, chat.message)",
-    sleepsAnyway: "browser-checked 2026-10-02; the re-read is a read, nothing is lost or written",
-  },
+  "chat": { status: "passing" },
   "chat:quiet": {
     status: "failing",
     owner: "chat lane",
@@ -75,12 +70,7 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
     owner: "unified-data lane",
     why: "wake/remount re-read row actions, table_copy_evaluation_state, iam.organizations, record_change_actions",
   },
-  "task": {
-    status: "failing",
-    owner: "tasks lane",
-    why: "wake/remount re-read the task's subtasks (projects.tasks where parent_task_id = task)",
-    sleepsAnyway: "browser-checked 2026-10-02; the re-read is a read, nothing is lost or written",
-  },
+  "task": { status: "passing" },
   "task:quiet": {
     status: "failing",
     owner: "tasks lane",
@@ -100,23 +90,13 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   },
   "workflow-run": { status: "passing" },
   "workflow-run:quiet": { status: "passing" },
-  "research": {
-    status: "failing",
-    owner: "research lane",
-    why: "wake/remount re-read research.rs_topic, get_topic_overview and research.rs_document (x2)",
-    sleepsAnyway: "browser-checked 2026-10-02; the re-read is a read, nothing is lost or written",
-  },
+  "research": { status: "passing" },
   "research:quiet": {
     status: "failing",
     owner: "research lane",
     why: "wake/remount re-read the topic, its overview and its document",
   },
-  "project": {
-    status: "failing",
-    owner: "projects lane",
-    why: "remount loses the half-typed quick-add task (component state) and re-reads the project's tasks",
-    sleepsAnyway: "browser-checked 2026-10-02 for wake; the quick-add draft is lost only on a full remount",
-  },
+  "project": { status: "passing" },
   "project:quiet": {
     status: "failing",
     owner: "projects lane",

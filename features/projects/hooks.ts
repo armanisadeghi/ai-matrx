@@ -14,6 +14,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatchThunk } from "@/lib/redux/hooks";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import type { NavOrganization } from "@/features/agent-context/redux/hierarchySlice";
@@ -129,36 +130,26 @@ export function useUserProjects() {
   };
 }
 
+/**
+ * One project, read ONCE into Redux by id (`useStoreRead`, key
+ * `projects.project:<id>`): a remount, a wake or a second view of the same
+ * project renders the stored row and reads nothing. `refresh` re-reads.
+ */
+export function useProjectRead(projectId: string | undefined) {
+  return useStoreRead<Project | null>(
+    projectId ? `projects.project:${projectId}` : null,
+    () => getProject(projectId as string),
+  );
+}
+
 export function useProject(projectId: string | undefined) {
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchProject = useCallback(async () => {
-    if (!projectId) {
-      setProject(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getProject(projectId);
-      setProject(data);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to fetch project";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    fetchProject();
-  }, [fetchProject]);
-
-  return { project, loading, error, refresh: fetchProject };
+  const read = useProjectRead(projectId);
+  return {
+    project: read.data ?? null,
+    loading: projectId ? read.isLoading : false,
+    error: read.error,
+    refresh: read.refresh,
+  };
 }
 
 // ============================================================================
