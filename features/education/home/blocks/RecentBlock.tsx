@@ -29,7 +29,7 @@ import { EducationLibraryRows } from "../../library/components/EducationLibraryR
 import { educationLibraryHref } from "../../library/types";
 import { educationLibraryMenuFor } from "../../library/useEducationLibraryRowActions";
 import type { EducationSnapshot } from "../types";
-import { EDU_STUDY_MY_FILES_HREF } from "../../onboard/startRoutes";
+import { EDU_START_HREF } from "../../onboard/startRoutes";
 
 export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
   const { prefs, setView } = useListViewPrefs("education-home-recent", {
@@ -83,7 +83,7 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
             </Button>
           </div>
           <Link
-            href={EDU_STUDY_MY_FILES_HREF}
+            href={EDU_START_HREF}
             className="inline-flex min-h-10 items-center gap-1 px-1 text-xs text-primary"
           >
             <FolderOpen className="h-3 w-3" />

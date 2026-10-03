@@ -1,40 +1,10 @@
 // features/education/onboard/types.ts
 //
-// Types for the Universal Ingest / Study Kit flow (P9). Ingest normalizes ANY
-// input to `NormalizedIngest`; the kit orchestrator fans it out through the
-// converter contract (`features/education/convert`).
+// Types for the Study Kit flow (P9). The picked Sources (the one Source input)
+// are read into a `NormalizedIngest`; the kit orchestrator fans it out through
+// the converter contract (`features/education/convert`).
 
 import type { SourceRef, TargetKind } from "@/features/education/convert/types";
-
-/** The raw input the user handed us at the front door. */
-export type IngestInputKind = "paste" | "file" | "stored" | "url" | "youtube";
-
-/**
- * A file the learner ALREADY owns (picked from their files through the one
- * canonical file picker). It is never uploaded again: the kit anchors on this
- * exact `files.files` id, and when the platform already made it a Knowledge
- * Source (`canonical_processed_document_id`) the kit reads that text instead of
- * extracting it a second time.
- */
-export interface StoredFileInput {
-  fileId: string;
-  fileName: string;
-  mimeType: string;
-}
-
-export interface RawIngestInput {
-  kind: IngestInputKind;
-  /** For `file`. */
-  file?: File;
-  /** For `stored`. */
-  stored?: StoredFileInput;
-  /** For `paste`. */
-  text?: string;
-  /** For `url` / `youtube`. */
-  url?: string;
-  /** Optional user-supplied title override. */
-  title?: string;
-}
 
 /**
  * A normalized source: extracted text + a durable `cld_files` anchor every
@@ -51,7 +21,10 @@ export interface NormalizedIngest {
     chars: number;
     extractionMethod?: string;
     truncated?: boolean;
-    inputKind: IngestInputKind;
+    /** How many Sources the text was read from. */
+    sourceCount: number;
+    /** Every stand-in announces itself: a Source left out, a raw fallback. */
+    notes: string[];
   };
 }
 

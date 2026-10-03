@@ -1,10 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+// /education/kits/new — the manual kit creator: group saved study aids under
+// one piece of material, nothing generated. The material is picked in THE one
+// Source input (`features/resource-manager/source-input`, the same input as
+// /education/start and /education/flashcards/new). A kit IS its anchor file:
+// one picked file (or a Source read from one) anchors the kit on that file;
+// anything else is read through the server resolver and kept as one `.md`
+// file (`useIngest().normalizeSources`, the same step /education/start uses).
+// Opened on an existing kit (`?source=&from=`) it only adds saved aids.
+
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { createSourceRef } from "@ai-matrx/agents/sources";
+import type { SourceTileId } from "@ai-matrx/agents/sources/runtime";
+import { SourceInput } from "@/features/resource-manager/source-input/components/SourceInput";
+import { useSourceSet } from "@/features/resource-manager/source-input/useSourceSet";
+import { useIngest } from "@/features/education/onboard/useIngest";
+import { pickedFileAnchor } from "@/features/education/onboard/kitSources";
 import { getFileMetadata } from "@/features/files/api/files";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
 import type { EducationLibraryRow } from "@/features/education/library/types";
@@ -22,12 +36,18 @@ import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writ
 import { recoverManualKitDraft } from "./manualKitDraftRecovery";
 
 const PAGE_SIZE = 25;
+/** The Source input's key on this page — picks are held and kept under it. */
+export const MANUAL_KIT_SOURCES_KEY = "education:kits:new";
+/** Every door but "Topic": a kit is grouped under real material. */
+const KIT_SOURCE_KINDS: readonly SourceTileId[] = ["upload", "paste", "web", "youtube", "audio", "image", "existing"];
 
 export function ManualKitCreator() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedSourceId = searchParams.get("source");
   const requestedSourceType = searchParams.get("from") ?? "file";
+  const set = useSourceSet(MANUAL_KIT_SOURCES_KEY);
+  const { normalizeSources } = useIngest();
   const [title, setTitle] = useState("");
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [sourceType, setSourceType] = useState<ManualKitSourceType>("file");
@@ -48,14 +68,18 @@ export function ManualKitCreator() {
   const recoveryQueryRef = useRef(draftKey);
   const existingKitRef = useRef(false);
   const recoveryReady = recoveryReadyKey === draftKey;
-  const queryMatchesSelectedSource = !requestedSourceId || (
-    sourceId === requestedSourceId && sourceType === requestedSourceType
-  );
-  const saveReady = sourceReady && queryMatchesSelectedSource && isManualKitSourceType(requestedSourceType);
+  const pickedReady = set.sources.filter((c) => c.status === "ready" && c.draft.ref);
+  const pickedLanding = set.sources.some((c) => c.status === "pending" || c.status === "resolving");
+  // The file the new kit will anchor on, when the picks name one without a server read.
+  const pickedFileId = pickedFileAnchor(set.sources);
+  const saveReady = isExistingKit
+    ? sourceReady && sourceId === requestedSourceId && sourceType === requestedSourceType
+    : sourceReady && isManualKitSourceType(requestedSourceType) && pickedReady.length > 0 && !pickedLanding;
 
-  useEffect(() => {
-    if (requestedSourceId && !sourceId) queueMicrotask(() => setSourceId(requestedSourceId));
-  }, [requestedSourceId, sourceId]);
+  const seedFile = useEffectEvent((fileId: string, name: string) => {
+    if (set.hasRef("file", fileId)) return;
+    set.addReady({ kind: "files", label: name, ref: createSourceRef("file", fileId), fileId });
+  });
   useEffect(() => {
     let active = true;
     if (!requestedSourceId) {
@@ -114,7 +138,10 @@ export function ManualKitCreator() {
       if (requestedSourceType !== "file") throw new Error("This kit no longer exists.");
       const file = await getFileMetadata(requestedSourceId);
       if (!active) return;
-      setSourceName(file.data.file_name);
+      // A new kit from a file handed over in the link: that file is the first pick.
+      seedFile(requestedSourceId, file.data.file_name);
+      setSourceId(null);
+      setSourceName(null);
       setIsExistingKit(false);
       setSourceReady(true);
     }).catch((cause) => {
@@ -176,7 +203,7 @@ export function ManualKitCreator() {
         // A URL-selected anchor owns its title. Its draft can restore selected
         // aids, but may not replace the title loaded from that anchor's kit.
         if (!requestedSourceId || !existingKitRef.current) setTitle(draft.title);
-        if (!requestedSourceId && draft.source) { setSourceId(draft.source.id); setSourceName(draft.source.name); setSourceType("file"); }
+        // The material itself comes back with the Source input's own draft.
         setSelected(draft.selected);
         if (draft.restored) toast.info("Your unsaved kit was restored.");
       }).catch((cause) => {
@@ -187,10 +214,10 @@ export function ManualKitCreator() {
   }, [draftKey, requestedSourceId, requestedSourceType]);
   useEffect(() => {
     if (!recoveryReady) return;
-    const dirty = Boolean(title || sourceId || selected.length);
+    const dirty = Boolean(title || selected.length);
     try {
       if (!dirty) { sessionStorage.removeItem(draftKey); return; }
-      sessionStorage.setItem(draftKey, JSON.stringify({ title, sourceId, sourceName, selected: selected.map((row) => ({ kind: row.kind, id: row.id })) }));
+      sessionStorage.setItem(draftKey, JSON.stringify({ title, selected: selected.map((row) => ({ kind: row.kind, id: row.id })) }));
     } catch {
       toast.error("Could not save your kit draft in this browser. You can still create the kit.");
       return;
@@ -198,7 +225,7 @@ export function ManualKitCreator() {
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [recoveryReady, sourceId, sourceName, selected, title]);
+  }, [draftKey, recoveryReady, selected, title]);
 
   useEffect(() => {
     let active = true;
@@ -208,28 +235,38 @@ export function ManualKitCreator() {
     return () => { active = false; };
   }, [page, search]);
 
-  const chooseFile = async () => {
-    try {
-      const ids = await openFilePicker({ title: "Choose source material", multi: false });
-      if (!ids?.[0]) return;
-      const result = await getFileMetadata(ids[0]);
-      setSourceId(ids[0]); setSourceName(result.data.file_name); setSourceType("file");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not choose the source file."); }
+  /**
+   * The new kit's anchor file: the one picked file (no server read), else the
+   * picks read through the server resolver and kept as one file — the same
+   * step /education/start uses, so both pages anchor a kit the same way.
+   */
+  const resolveNewKitAnchor = async (): Promise<string> => {
+    if (pickedFileId) return pickedFileId;
+    const read = await normalizeSources(() => set.resolve());
+    if (!read.ref.fileId) throw new Error("Could not keep a copy of this material to hold the kit. Try again.");
+    return read.ref.fileId;
   };
   const toggle = (row: EducationLibraryRow) => setSelected((current) =>
     current.some((item) => item.id === row.id && item.kind === row.kind) ? current.filter((item) => item.id !== row.id || item.kind !== row.kind) : [...current, row]);
   const clearDraft = () => {
+    for (const card of set.sources) set.remove(card.id);
     try { sessionStorage.removeItem(draftKey); }
     catch { setError("Could not clear your saved kit draft. You can still leave this page."); }
   };
   const save = async () => {
     setSaving(true); setError(null);
-    try { await createManualKit({ sourceId: sourceId ?? "", sourceType, title, artifacts: selected, allowExisting: isExistingKit, expectedFingerprint: existingFingerprint ?? undefined }); clearDraft(); router.push(kitHref(sourceType, sourceId ?? "")); }
+    try {
+      const anchorId = isExistingKit ? sourceId ?? "" : await resolveNewKitAnchor();
+      const anchorType = isExistingKit ? sourceType : "file";
+      await createManualKit({ sourceId: anchorId, sourceType: anchorType, title, artifacts: selected, allowExisting: isExistingKit, expectedFingerprint: existingFingerprint ?? undefined });
+      clearDraft();
+      router.push(kitHref(anchorType, anchorId));
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create this kit."); }
     finally { setSaving(false); }
   };
   const candidates = [...new Map([...rows, ...selected].map((row) => [`${row.kind}:${row.id}`, row])).values()];
-  const getScope = () => createEducationKitsScope({ view: "new", kit_draft_title: title, kit_source_id: sourceId ?? undefined, kit_source_type: sourceId ? sourceType : undefined, kit_source_file_id: sourceType === "file" ? sourceId ?? undefined : undefined, kit_membership_fingerprint: existingFingerprint ?? undefined, kit_member_candidates: candidates.map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })) });
+  const getScope = () => createEducationKitsScope({ view: "new", kit_draft_title: title, kit_source_id: sourceId ?? undefined, kit_source_type: sourceId ? sourceType : undefined, kit_source_file_id: isExistingKit ? (sourceType === "file" ? sourceId ?? undefined : undefined) : pickedFileId ?? undefined, kit_sources: isExistingKit ? undefined : set.sources.map((card) => ({ name: card.draft.label, status: card.status })), kit_membership_fingerprint: existingFingerprint ?? undefined, kit_member_candidates: candidates.map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })) });
   const getWriteHandlers = () => {
     const create = collectionWriteHandlers({ plural: "kits", singular: "kit", create: {
     parse: (value) => readCollectionList("create_kits", "kits", value, 25).map((raw, index) => {
@@ -239,7 +276,10 @@ export function ManualKitCreator() {
       if (typeof item.title !== "string" || !item.title.trim()) throw new Error(`create_kits[${index}].title needs text.`);
       if (isExistingKit) {
         if (item.source_id !== sourceId || item.source_type !== sourceType) throw new Error(`create_kits[${index}].source_id and source_type must identify the open kit.`);
-      } else if (item.source_file_id !== sourceId) throw new Error(`create_kits[${index}].source_file_id must be the file selected in this creator.`);
+      } else {
+        if (!pickedReady.length || pickedLanding) throw new Error(`create_kits[${index}] needs the material picked first; kit_sources lists what is picked.`);
+        if (item.source_file_id !== undefined && item.source_file_id !== pickedFileId) throw new Error(`create_kits[${index}].source_file_id must equal kit_source_file_id, or be left out.`);
+      }
       if (isExistingKit && item.expected_membership_fingerprint !== existingFingerprint) throw new Error(`create_kits[${index}].expected_membership_fingerprint is stale. Reload this kit before adding aids.`);
       if (!Array.isArray(item.artifact_refs) || !item.artifact_refs.length) throw new Error(`create_kits[${index}].artifact_refs needs one or more visible study aids.`);
       const refs = item.artifact_refs;
@@ -248,9 +288,14 @@ export function ManualKitCreator() {
       if (new Set(keys).size !== keys.length) throw new Error(`create_kits[${index}].artifact_refs must be distinct kind and id pairs.`);
       const artifacts = refs.map((ref) => candidates.find((row) => `${row.kind}:${row.id}` === `${(ref as Record<string, string>).kind}:${(ref as Record<string, string>).id}`));
       if (artifacts.some((row) => !row)) throw new Error(`create_kits[${index}] includes an aid that is not in the current picker.`);
-      return { title: item.title.trim(), sourceId: sourceId ?? "", sourceType, artifacts: artifacts.filter((row): row is EducationLibraryRow => !!row), expectedFingerprint: existingFingerprint ?? undefined };
+      return { title: item.title.trim(), artifacts: artifacts.filter((row): row is EducationLibraryRow => !!row), expectedFingerprint: existingFingerprint ?? undefined };
     }),
-    run: async (plan) => { await createManualKit({ sourceId: plan.sourceId, sourceType: plan.sourceType, title: plan.title, artifacts: plan.artifacts, allowExisting: isExistingKit, expectedFingerprint: plan.expectedFingerprint }); return { id: plan.sourceId, name: plan.title }; },
+    run: async (plan) => {
+      const anchorId = isExistingKit ? sourceId ?? "" : await resolveNewKitAnchor();
+      const anchorType = isExistingKit ? sourceType : "file";
+      await createManualKit({ sourceId: anchorId, sourceType: anchorType, title: plan.title, artifacts: plan.artifacts, allowExisting: isExistingKit, expectedFingerprint: plan.expectedFingerprint });
+      return { id: anchorId, name: plan.title };
+    },
     nameOf: (plan) => plan.title,
     } }, refuseSurfaceWrite);
     if (!isExistingKit) return create;
@@ -258,10 +303,9 @@ export function ManualKitCreator() {
   };
   return <SurfaceRuntimeProvider surfaceName={EDUCATION_KITS_SURFACE_NAME} getScope={getScope} getWriteHandlers={getWriteHandlers}><main className="mx-auto w-full max-w-3xl space-y-5 p-4">
     <h1 className="text-xl font-semibold">{isExistingKit ? "Add saved aids" : "Create a study kit"}</h1>
-    <p className="text-sm text-muted-foreground">Group saved study aids under one saved source. Your aids are not copied or changed.</p>
     <label className="block text-sm font-medium">Kit title<Input className="mt-1" value={title} readOnly={isExistingKit} onChange={(event) => setTitle(event.target.value)} /></label>
-    {!isExistingKit && <Button variant="outline" onClick={() => void chooseFile()}>{sourceId ? "Change source file" : "Choose source file"}</Button>}
-    {sourceId && <p className="text-xs text-muted-foreground">Source: <EntityRef token={sourceType} id={sourceId} name={sourceName ?? "Selected source"} openInNewTab showIcon={false} /></p>}
+    {!isExistingKit && <SourceInput surfaceKey={MANUAL_KIT_SOURCES_KEY} title="Material" purpose="your study kit" required kinds={KIT_SOURCE_KINDS} />}
+    {isExistingKit && sourceId && <p className="text-xs text-muted-foreground">Source: <EntityRef token={sourceType} id={sourceId} name={sourceName ?? "Selected source"} openInNewTab showIcon={false} /></p>}
     <label className="block text-sm font-medium">Find saved study aids<Input className="mt-1" placeholder="Search by name or type, like flashcards" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} /></label>
     <p className="text-xs text-muted-foreground">Choose any saved study aid, including a deck made in chat.</p>
     <div className="space-y-2 rounded-xl border border-border p-3">

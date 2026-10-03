@@ -2,34 +2,33 @@
 
 // features/education/onboard/components/StartHero.tsx
 //
-// The Upload Hero flow — the front door of the Education Hub (P9). Drop/paste
-// ANY input → pick what to make → one grounded, cited study kit. Ingest owns
-// raw→text (useIngest), the converter owns text→artifact (useContentConverter),
-// this component owns the flow + progressive UI. Targets light up as their
-// generators register (isTargetAvailable) — no change here needed.
+// The study-kit front door of the Education Hub (P9). The person picks their
+// material in the ONE Source input (`features/resource-manager/source-input`,
+// the same input as /education/flashcards/new: Upload · Paste text · Web page ·
+// YouTube · Recording · Image, and Use existing) → picks what to make → one
+// grounded, cited study kit. The picked Sources travel as ONE `SourceSet` and
+// are read by the server resolver (useSourceSet().resolve, inside
+// useKitGeneration → useIngest); the converter owns text→artifact
+// (useContentConverter); this component owns the flow + progressive UI.
+// Targets light up as their generators register (isTargetAvailable).
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useState } from "react";
 import {
-  Upload,
-  FileText,
-  Link2,
   Loader2,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
   PackageOpen,
   ShieldCheck,
-  FolderOpen,
-  BookOpenCheck,
-  Eye,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { createSourceRef } from "@ai-matrx/agents/sources";
+import { youtubeId } from "@/lib/media/youtube";
+import type { SourceTileId } from "@ai-matrx/agents/sources/runtime";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { formatFileSize } from "@ai-matrx/kit/format";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
@@ -37,28 +36,17 @@ import { getGenerator, isTargetAvailable } from "@/features/education/convert/re
 import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
 import type { CoverageDepth } from "@/features/education/convert/coverage";
+import { SourceInput } from "@/features/resource-manager/source-input/components/SourceInput";
+import { useSourceSet } from "@/features/resource-manager/source-input/useSourceSet";
+import { useSourceIntake } from "@/features/resource-manager/source-input/useSourceIntake";
 import { useKitGeneration } from "../useKitGeneration";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { KitBoard } from "./KitBoard";
 import { KitDepthPicker } from "./KitDepthPicker";
-import {
-  INGEST_ACCEPT,
-  describeIngestSupport,
-  describeUrlSupport,
-  classifyIngestUrl,
-  type IngestFileLike,
-} from "../formatSupport";
-import { ProTextarea } from "@/components/official/ProTextarea";
-import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
-import { lookupFileDocument } from "@/features/files/api/document-lookup";
 import { filesDb } from "@/features/files/filesDb";
 import { supabase } from "@/utils/supabase/client";
-import type { StoredFileInput } from "../types";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -66,14 +54,41 @@ import { EDUCATION_START_SURFACE_NAME } from "@/features/surfaces/manifests/educ
 import { parseKitRequestDraftValue } from "../startAgentWrites";
 import { buildEducationStartScope } from "../startSurfaceScope";
 
+/** The Source input's key on this page — picks are held and kept under it. */
+export const EDUCATION_START_SOURCES_KEY = "education:start";
+
 /**
- * Look up a file the learner owns, exactly as the "Choose from my files"
- * picker does. Throws a sentence the person (or an agent) can act on.
+ * What the kit can be made from: every Add new door and Use existing. Not
+ * "Topic" — a study kit is grounded in material; the focus line carries a topic.
  */
-async function loadOwnedFile(fileId: string): Promise<StoredFileInput> {
+const KIT_SOURCE_KINDS: readonly SourceTileId[] = [
+  "upload",
+  "paste",
+  "web",
+  "youtube",
+  "audio",
+  "image",
+  "existing",
+];
+
+/**
+ * How a kit can use a Source: its TEXT, handed over up front. The kit's
+ * generators read the resolved text and nothing else, so "Let the AI look it
+ * up" would reach them as nothing (same reason as flashcards).
+ */
+const KIT_SOURCE_DELIVERIES = ["direct"] as const;
+
+/** How often a held build re-reads whether its Sources are clean yet. */
+const WAIT_POLL_MS = 5_000;
+
+/**
+ * Look up a file the learner owns (an agent's `file_id`). Throws a sentence
+ * the agent can act on.
+ */
+async function loadOwnedFile(fileId: string): Promise<{ fileId: string; fileName: string }> {
   const { data, error } = await filesDb(supabase)
     .from("files")
-    .select("id, file_name, mime_type")
+    .select("id, file_name")
     .eq("id", fileId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -81,18 +96,8 @@ async function loadOwnedFile(fileId: string): Promise<StoredFileInput> {
   if (!data) {
     throw new Error("That file is no longer available — choose another.");
   }
-  return {
-    fileId: data.id,
-    fileName: data.file_name,
-    mimeType: data.mime_type ?? "",
-  };
+  return { fileId: data.id, fileName: data.file_name };
 }
-
-
-// "files" = material the learner ALREADY has. Picking it never uploads the
-// bytes again: the kit anchors on that exact file, and when the platform has
-// already made it a Knowledge Source its text is used as-is.
-export type InputMode = "files" | "upload" | "paste" | "link";
 
 // THE HEADLINE FLOW'S PAYLOAD, taken from the vision verbatim: "a student drops
 // in a PDF, records a lecture, pastes a link or photographs their notes, and gets
@@ -115,12 +120,7 @@ const DEFAULT_TARGETS: TargetKind[] = [
   "notes",
 ];
 
-export function StartHero({
-  initialMode = "upload",
-}: {
-  /** Which input tab opens first — `?from=files` lands on "My files". */
-  initialMode?: InputMode;
-} = {}) {
+export function StartHero() {
   const kit = useKitGeneration();
   const ingestGuard = useEntitlementGuard("education.ingest_document");
   // School-safe COPPA gate: an under-13 account with no active guardian link is
@@ -136,13 +136,14 @@ export function StartHero({
   const { organizationState, organizationId } = useOrganizationRequired();
   const [heldForWorkspace, setHeldForWorkspace] = useState(false);
 
-  const [mode, setMode] = useState<InputMode>(initialMode);
-  const [file, setFile] = useState<File | null>(null);
-  const [stored, setStored] = useState<StoredFileInput | null>(null);
-  const [picking, setPicking] = useState(false);
-  const [pickError, setPickError] = useState<string | null>(null);
-  const [pasteText, setPasteText] = useState("");
-  const [url, setUrl] = useState("");
+  // The material: THE one Source input's picks (kept across a reload by the
+  // input itself). The intake is for the agent's kit_request_draft fills.
+  const set = useSourceSet(EDUCATION_START_SOURCES_KEY, {
+    deliveries: KIT_SOURCE_DELIVERIES,
+  });
+  const intake = useSourceIntake(set, {});
+  const [holdingForClean, setHoldingForClean] = useState(false);
+
   const [selected, setSelected] = useState<Set<TargetKind>>(
     () => new Set(DEFAULT_TARGETS),
   );
@@ -151,8 +152,6 @@ export function StartHero({
   // number for a student who knows what they want (blank = size to the source).
   const [depth, setDepth] = useState<CoverageDepth>("standard");
   const [count, setCount] = useState("");
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleTarget = useCallback((kind: TargetKind) => {
     setSelected((prev) => {
@@ -163,45 +162,15 @@ export function StartHero({
     });
   }, []);
 
-  const isYouTube = classifyIngestUrl(url) === "youtube";
-
-  // An unsupported file (Office / HEIC / unknown) is honestly blocked up front —
-  // FileSupportNote already explains why — so we never start a doomed run or
-  // spend the entitlement check on it.
-  const fileSupported = !file || describeIngestSupport(file).supported;
-  const storedSupported =
-    !!stored &&
-    describeIngestSupport({ name: stored.fileName, type: stored.mimeType })
-      .supported;
-
-  // Choose material the learner already owns through THE one file picker
-  // (`openFilePicker` → the canonical FilePickerWindow; its upload area also
-  // lands a durable file, so both roads end at a file id — never a copy).
-  const pickFromFiles = useCallback(async () => {
-    if (picking) return;
-    setPicking(true);
-    setPickError(null);
-    try {
-      const ids = await openFilePicker({
-        title: "Choose material from your files",
-      });
-      const fileId = ids?.[0];
-      if (!fileId) return; // closed without choosing
-      setStored(await loadOwnedFile(fileId));
-    } catch (e) {
-      setPickError(
-        e instanceof Error ? e.message : "Couldn't open that file — try again.",
-      );
-    } finally {
-      setPicking(false);
-    }
-  }, [picking]);
-
-  const hasInput =
-    (mode === "files" && storedSupported) ||
-    (mode === "upload" && !!file && fileSupported) ||
-    (mode === "paste" && pasteText.trim().length > 0) ||
-    (mode === "link" && url.trim().length > 0);
+  const ready = set.sources.filter((c) => c.status === "ready" && c.draft.ref);
+  const landing = set.sources.filter(
+    (c) => c.status === "pending" || c.status === "resolving",
+  );
+  const waitingForClean = ready.filter(
+    (c) => c.draft.waitForClean && c.manifest?.state !== "ready",
+  );
+  // Every picked Source has landed: a build never starts without one of them.
+  const hasInput = ready.length > 0 && landing.length === 0;
 
   const canGenerate = hasInput && selected.size > 0 && !kit.busy;
 
@@ -221,21 +190,9 @@ export function StartHero({
     // the respectful contextual paywall and never starts the kit build.
     await ingestGuard.guard(async () => {
       const kinds = [...selected].filter(isTargetAvailable);
-      const input =
-        mode === "files"
-          ? ({ kind: "stored", stored: stored! } as const)
-          : mode === "upload"
-          ? ({ kind: "file", file: file! } as const)
-          : mode === "paste"
-            ? ({ kind: "paste", text: pasteText } as const)
-            : ({
-                kind: isYouTube ? "youtube" : "url",
-                url,
-              } as const);
-
       const requested = Number.parseInt(count, 10);
       // Meter only a real ingest; an empty selection / failed ingest burns nothing.
-      const ok = await kit.run(input, kinds, {
+      const ok = await kit.run(() => set.resolve(), kinds, {
         focus: focus.trim() || undefined,
         depth,
         count: Number.isFinite(requested) && requested > 0 ? requested : undefined,
@@ -246,12 +203,7 @@ export function StartHero({
     canGenerate,
     ingestGuard,
     selected,
-    mode,
-    file,
-    stored,
-    pasteText,
-    url,
-    isYouTube,
+    set,
     focus,
     depth,
     count,
@@ -261,13 +213,42 @@ export function StartHero({
     organizationId,
   ]);
 
+  // "Wait for the clean version" on a Source: the press is held, visibly, and
+  // the build starts by itself once every such Source is clean.
+  const onBuild = () => {
+    if (!canGenerate) return;
+    if (waitingForClean.length > 0) {
+      setHoldingForClean(true);
+      return;
+    }
+    void onGenerate();
+  };
+  const waitingCount = waitingForClean.length;
+  const pollClean = useEffectEvent(() => void set.manifest());
+  const releaseClean = useEffectEvent(() => {
+    setHoldingForClean(false);
+    void onGenerate();
+  });
+  useEffect(() => {
+    if (!holdingForClean) return;
+    if (waitingCount === 0) {
+      queueMicrotask(releaseClean);
+      return;
+    }
+    const t = setInterval(pollClean, WAIT_POLL_MS);
+    return () => clearInterval(t);
+  }, [holdingForClean, waitingCount]);
+
   // Replay the held press the moment a workspace is chosen (hold-and-replay).
+  const releaseWorkspace = useEffectEvent(() => {
+    setHeldForWorkspace(false);
+    void onGenerate();
+  });
   useEffect(() => {
     if (!heldForWorkspace || organizationState !== "ready" || !organizationId)
       return;
-    setHeldForWorkspace(false);
-    void onGenerate();
-  }, [heldForWorkspace, organizationState, organizationId, onGenerate]);
+    queueMicrotask(releaseWorkspace);
+  }, [heldForWorkspace, organizationState, organizationId]);
   const showWorkspaceNotice =
     organizationState !== "ready" &&
     organizationState !== "resolving" &&
@@ -291,11 +272,7 @@ export function StartHero({
   }));
   const getScope = () =>
     buildEducationStartScope({
-      mode,
-      file,
-      stored,
-      pasteText,
-      url,
+      sources: set.sources,
       selected,
       options: outputOptions,
       depth,
@@ -322,7 +299,7 @@ export function StartHero({
     const owned = fields.fileId
       ? await loadOwnedFile(fields.fileId).catch(() =>
           refuseSurfaceWrite(
-            `No file ${fields.fileId} is available to this person. Use the id of a file they own, or ask them to choose one on the My files tab.`,
+            `No file ${fields.fileId} is available to this person. Use the id of a file they own, or ask them to pick it under Use existing.`,
           ),
         )
       : null;
@@ -335,12 +312,26 @@ export function StartHero({
       },
       apply: async (value: unknown) => {
         const { fields, owned } = await checkKitDraft(value);
-        if (fields.mode !== undefined) setMode(fields.mode);
-        if (fields.pasteText !== undefined) setPasteText(fields.pasteText);
-        if (fields.url !== undefined) setUrl(fields.url);
-        if (owned) {
-          setStored(owned);
-          setPickError(null);
+        // Each input ADDS a Source through the input's own doors — the same
+        // landing (and the same card) as the person adding it by hand.
+        const adding: Promise<void>[] = [];
+        if (fields.pasteText?.trim()) adding.push(intake.addPastedText(fields.pasteText));
+        if (fields.url) {
+          adding.push(
+            youtubeId(fields.url) ? intake.addYouTube(fields.url) : intake.addWebPage(fields.url),
+          );
+        }
+        if (owned && !set.hasRef("file", owned.fileId)) {
+          set.addReady({
+            kind: "files",
+            label: owned.fileName,
+            ref: createSourceRef("file", owned.fileId),
+            fileId: owned.fileId,
+          });
+        }
+        // Landing continues on the cards; the fill does not wait for it.
+        for (const p of adding) {
+          p.catch((err: unknown) => console.error("[StartHero] agent-added Source failed:", err));
         }
         if (fields.outputs !== undefined) setSelected(new Set(fields.outputs));
         if (fields.depth !== undefined) setDepth(fields.depth);
@@ -351,18 +342,14 @@ export function StartHero({
         const filled = Object.keys(value as Record<string, unknown>);
         // The agent's page snapshot predates this fill, so say what the form
         // now holds (the same shape as the kit_request_draft value).
-        const nextMode = fields.mode ?? mode;
         return {
           summary: `Filled the Create a study kit form (${filled.join(", ")}). Nothing is built until the person presses Build my study kit.`,
           data: {
-            input_mode: nextMode,
-            paste_chars: (fields.pasteText ?? pasteText).length,
-            url: fields.url ?? url,
-            file: owned
-              ? { file_id: owned.fileId, file_name: owned.fileName }
-              : stored
-                ? { file_id: stored.fileId, file_name: stored.fileName }
-                : null,
+            sources: [
+              ...set.sources.map((c) => ({ name: c.draft.label, status: c.status })),
+              ...(fields.pasteText?.trim() ? [{ name: "Pasted text", status: "pending" }] : []),
+              ...(fields.url ? [{ name: fields.url, status: "pending" }] : []),
+            ],
             outputs: ALL_TARGET_KINDS.filter((k) =>
               (fields.outputs ? new Set(fields.outputs) : selected).has(k),
             ),
@@ -402,36 +389,20 @@ export function StartHero({
         <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
           Turn your material into a grounded study kit
         </h1>
-        <p className="mx-auto max-w-xl text-sm text-muted-foreground">
-          {/* The promise is the vision's, word for word (VISION §5), and it
-              matches DEFAULT_TARGETS exactly — copy that understates what the
-              button does is the same defect as copy that overstates it. */}
-          Use something already in your files, drop a PDF, image, audio, or
-          video — paste your notes, or link a page.
-          We build flashcards, a summary, a quiz, a mind map and an audio
-          overview — everything cited back to your own material.
-        </p>
       </header>
 
       {!showResults && (
         <>
-          <InputPanel
-            mode={mode}
-            onMode={setMode}
-            file={file}
-            onFile={setFile}
-            stored={stored}
-            onPickStored={pickFromFiles}
-            picking={picking}
-            pickError={pickError}
-            pasteText={pasteText}
-            onPaste={setPasteText}
-            url={url}
-            onUrl={setUrl}
-            dragOver={dragOver}
-            onDragOver={setDragOver}
-            fileInputRef={fileInputRef}
-          />
+          <div data-surface-value="kit_request_draft">
+            <SourceInput
+              surfaceKey={EDUCATION_START_SOURCES_KEY}
+              title="Material"
+              purpose="your study kit"
+              required
+              kinds={KIT_SOURCE_KINDS}
+              deliveries={KIT_SOURCE_DELIVERIES}
+            />
+          </div>
 
           {kit.phase === "error" && kit.error && (
             <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
@@ -487,12 +458,20 @@ export function StartHero({
           <Button
             size="lg"
             className="w-full"
-            disabled={!canGenerate || ingestGuard.isChecking}
-            onClick={onGenerate}
+            disabled={!canGenerate || ingestGuard.isChecking || holdingForClean}
+            onClick={onBuild}
           >
             {kit.busy ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" /> Building your kit…
+              </>
+            ) : landing.length > 0 ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Adding your sources…
+              </>
+            ) : holdingForClean ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Waiting for the clean version…
               </>
             ) : heldForWorkspace ? (
               <>
@@ -521,290 +500,6 @@ export function StartHero({
     </div>
     </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
-  );
-}
-
-// ─── Input panel ─────────────────────────────────────────────────────────────
-
-function InputPanel({
-  fileInputRef,
-  ...props
-}: {
-  mode: InputMode;
-  onMode: (m: InputMode) => void;
-  file: File | null;
-  onFile: (f: File | null) => void;
-  stored: StoredFileInput | null;
-  onPickStored: () => void;
-  picking: boolean;
-  pickError: string | null;
-  pasteText: string;
-  onPaste: (t: string) => void;
-  url: string;
-  onUrl: (u: string) => void;
-  dragOver: boolean;
-  onDragOver: (b: boolean) => void;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-}) {
-  const modes: { id: InputMode; label: string; icon: LucideIcon }[] = [
-    { id: "files", label: "My files", icon: FolderOpen },
-    { id: "upload", label: "Upload", icon: Upload },
-    { id: "paste", label: "Paste", icon: FileText },
-    { id: "link", label: "Link", icon: Link2 },
-  ];
-  return (
-    <div
-      className="rounded-xl border border-border bg-card"
-      data-surface-value="kit_request_draft"
-    >
-      <div className="flex gap-1 border-b border-border p-1.5">
-        {modes.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => props.onMode(m.id)}
-            className={cn(
-              "flex min-h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-2 text-xs font-medium transition-colors sm:px-3 sm:text-sm",
-              props.mode === m.id
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <m.icon className="h-4 w-4 shrink-0" /> {m.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="p-4">
-        {props.mode === "files" && (
-          <StoredFilePanel
-            stored={props.stored}
-            onPick={props.onPickStored}
-            picking={props.picking}
-            error={props.pickError}
-          />
-        )}
-
-        {props.mode === "upload" && (
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              props.onDragOver(true);
-            }}
-            onDragLeave={() => props.onDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              props.onDragOver(false);
-              const f = e.dataTransfer.files?.[0];
-              if (f) props.onFile(f);
-            }}
-            onClick={() => fileInputRef.current?.click()}
-            className={cn(
-              "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-10 text-center transition-colors",
-              props.dragOver
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-muted-foreground/40 hover:bg-muted/50",
-            )}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={INGEST_ACCEPT}
-              className="hidden"
-              onChange={(e) => props.onFile(e.target.files?.[0] ?? null)}
-            />
-            {props.file ? (
-              <>
-                <FileText className="h-8 w-8 text-primary" />
-                <p className="text-sm font-medium text-foreground">
-                  {props.file.name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatFileSize(props.file.size)} · click to change
-                </p>
-                <FileSupportNote file={props.file} />
-              </>
-            ) : (
-              <>
-                <Upload className="h-8 w-8 text-muted-foreground" />
-                <p className="text-sm font-medium text-foreground">
-                  Drop a file or click to browse
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  PDF, Word, PowerPoint, Excel, image, audio, video, text, Markdown, or CSV
-                </p>
-              </>
-            )}
-          </div>
-        )}
-
-        {props.mode === "paste" && (
-          <ProTextarea
-            value={props.pasteText}
-            onChange={(e) => props.onPaste(e.target.value)}
-            placeholder="Paste your notes, an article, a transcript — anything you want to study."
-            className="min-h-[180px] resize-y text-base"
-          />
-        )}
-
-        {props.mode === "link" && (
-          <div className="space-y-2">
-            <Input
-              value={props.url}
-              onChange={(e) => props.onUrl(e.target.value)}
-              placeholder="https://… or a YouTube link"
-              className="text-base"
-            />
-            <p className="text-xs text-muted-foreground">
-              {describeUrlSupport(props.url).note}
-              {classifyIngestUrl(props.url) === "youtube" ? (
-                <IntelligenceIndicator
-                  feature="media"
-                  mandateKeys={[MANDATE_KEYS.media__youtube_analyzer]}
-                  label="Transcribes the video"
-                  className="ml-1.5 h-4 w-4 align-text-bottom"
-                />
-              ) : null}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Material the learner already owns ───────────────────────────────────────
-
-/**
- * The "My files" door. Choosing opens THE one file picker; the chosen file is
- * named, opens in place (the canonical preview window — never a dead end), and
- * says plainly whether it is already a Knowledge Source (its text is reused, no
- * second extraction) or will be read now.
- */
-function StoredFilePanel({
-  stored,
-  onPick,
-  picking,
-  error,
-}: {
-  stored: StoredFileInput | null;
-  onPick: () => void;
-  picking: boolean;
-  error: string | null;
-}) {
-  const [isSource, setIsSource] = useState<boolean | null>(null);
-  const fileId = stored?.fileId;
-  useEffect(() => {
-    if (!fileId) return;
-    let live = true;
-    void lookupFileDocument(fileId).then((state) => {
-      if (live) setIsSource(state.kind === "found");
-    });
-    return () => {
-      live = false;
-      setIsSource(null);
-    };
-  }, [fileId]);
-
-  if (!stored) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border px-4 py-10 text-center">
-        <FolderOpen className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm font-medium text-foreground">
-          Study something you've already added
-        </p>
-        <p className="max-w-sm text-xs text-muted-foreground">
-          Pick any PDF, document, recording or note from your files. Nothing is
-          uploaded again — the kit is built from the file you already have.
-        </p>
-        <Button onClick={onPick} disabled={picking} className="min-h-11">
-          {picking ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <FolderOpen className="h-4 w-4" />
-          )}
-          Choose from my files
-        </Button>
-        {error && (
-          <p className="flex items-center gap-1.5 text-xs text-destructive">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            <span>
-              {error}
-              <ErrorAlchemyMenu error={error} />
-            </span>
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-border px-4 py-8 text-center">
-      <FileText className="h-8 w-8 text-primary" />
-      <button
-        type="button"
-        onClick={() => openFilePreview(stored.fileId)}
-        className="inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-foreground underline-offset-2 hover:underline"
-        title="Open this file"
-      >
-        <span className="truncate">{stored.fileName}</span>
-        <Eye className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      </button>
-      {isSource === true ? (
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <BookOpenCheck className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-500" />
-          Already a Knowledge Source — we'll use its text as-is.
-        </p>
-      ) : (
-        <FileSupportNote
-          file={{ name: stored.fileName, type: stored.mimeType }}
-        />
-      )}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onPick}
-        disabled={picking}
-        className="mt-1 min-h-9"
-      >
-        {picking && <Loader2 className="h-4 w-4 animate-spin" />}
-        Choose a different file
-      </Button>
-      {error && (
-        <p className="flex items-center gap-1.5 text-xs text-destructive">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-          <span>
-            {error}
-            <ErrorAlchemyMenu error={error} />
-          </span>
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ─── Per-file honest status ──────────────────────────────────────────────────
-
-/**
- * The one-line "how we'll read this" status shown the moment a file is chosen —
- * supported kinds explain the pipeline (OCR / transcription / extraction),
- * unsupported kinds say so plainly instead of failing only at generate time.
- * Reads the SAME `formatSupport` truth table the ingest branch uses.
- */
-function FileSupportNote({ file }: { file: IngestFileLike }) {
-  const support = describeIngestSupport(file);
-  if (support.supported) {
-    return (
-      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-500" />
-        <span>{support.note}</span>
-      </p>
-    );
-  }
-  return (
-    <p className="mt-1 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-500">
-      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-      <span>{support.note}</span>
-    </p>
   );
 }
 

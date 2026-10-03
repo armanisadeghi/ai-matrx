@@ -56,7 +56,7 @@ const groups: SurfaceValueGroup[] = [
     label: "New kit",
     sortOrder: 400,
     description:
-      "The new view: the manual kit creator — its chosen source file, draft title, and the saved study aids that can join the kit.",
+      "The new view: the manual kit creator — its picked material, draft title, and the saved study aids that can join the kit.",
   },
 ];
 
@@ -242,11 +242,22 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kit_source_file_id",
     label: "Source file",
     description:
-      "The id of the source file chosen for a new kit; create_kits sends it as source_file_id. Absent until a file is chosen and outside the new view.",
+      "The file a new kit will anchor on when the picked material is exactly one file (or a Source read from one). Absent otherwise — the kit is then anchored on a kept copy of the picked material — and outside the new view.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
     sortOrder: 400,
+    group: "new_kit",
+  },
+  {
+    name: "kit_sources",
+    label: "Picked material",
+    description:
+      'The material picked in the creator\'s Source input for a new kit, in order, as [{ name, status }] — status "pending" | "resolving" is still being added, "ready" can be used, "error" failed. Only the person picks material. Present in the new view of a new kit.',
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 405,
     group: "new_kit",
   },
   {
@@ -274,7 +285,7 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 const writeTargets: SurfaceWriteTarget[] = [
-  { name: "create_kits", label: "Create study kits", description: "Available only in the manual kit creator after a source file and visible study aids load. Value is an ARRAY of exactly one { title: string, source_file_id: string, artifact_refs: [{ kind: string, id: string }] }. Each reference must match a current kit_member_candidate by both kind and id, and source_file_id must equal kit_source_file_id. Creates member associations only; it never asserts generated-from provenance.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 90 },
+  { name: "create_kits", label: "Create study kits", description: "Available only in the manual kit creator once the picked material (kit_sources) is ready and visible study aids load. Value is an ARRAY of exactly one { title: string, source_file_id?: string, artifact_refs: [{ kind: string, id: string }] }. Each reference must match a current kit_member_candidate by both kind and id; source_file_id is optional and, when sent, must equal kit_source_file_id. The kit anchors on the picked material. Creates member associations only; it never asserts generated-from provenance.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 90 },
   { name: "add_kit_members", label: "Add saved study aids", description: "Available only in existing Kit add mode. Value is an ARRAY of exactly one { title: string, source_id: string, source_type: string, expected_membership_fingerprint: string, artifact_refs: [{ kind: string, id: string }] }. source_id and source_type must equal kit_source_id and kit_source_type. Adds flagged member edges only; stale membership is refused before writing.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 95 },
   { name: "remove_kit_members", label: "Remove saved study aids", description: "Available on an open Kit. Value is { expected_membership_fingerprint: string, artifact_refs: [{ kind: string, id: string }] }. The complete qualified set is checked against one fresh membership snapshot before any removal. A write failure reports exactly how many removals completed. It removes or hides only the Kit membership; saved aids and generated provenance remain available elsewhere.", valueType: "object", updatesValue: "study_aids", mode: "entity", applyPolicy: "ask", group: "open_kit", sortOrder: 115 },
   {
@@ -360,6 +371,7 @@ export function createEducationKitsScope(values: {
   kit_membership_fingerprint?: string;
   kit_draft_title?: string;
   kit_source_file_id?: string;
+  kit_sources?: { name: string; status: string }[];
   kit_member_candidates?: { id: string; title: string; kind: string; subtype: string | null }[];
   kit_created_at?: string;
   study_aids?: KitStudyAidEntry[];

@@ -4,7 +4,7 @@ const AVAILABLE = ["deck", "summary", "quiz", "mind_map", "audio", "notes"] as c
 const parse = (v: unknown) => parseKitRequestDraftValue(v, [...AVAILABLE]);
 
 describe("kit_request_draft value", () => {
-  it("fills every field and infers the tab from the input", () => {
+  it("fills every field; each input adds a Source", () => {
     expect(
       parse({
         paste_text: "Photosynthesis",
@@ -14,32 +14,32 @@ describe("kit_request_draft value", () => {
         focus: "chapter 3",
       }),
     ).toEqual({
-      mode: "paste",
       pasteText: "Photosynthesis",
       outputs: ["deck", "quiz"],
       depth: "quick",
       count: 20,
       focus: "chapter 3",
     });
-    expect(parse({ url: "https://example.com/a" }).mode).toBe("link");
+    expect(parse({ url: "https://example.com/a" }).url).toBe("https://example.com/a");
     expect(
-      parse({ file_id: "0f8fad5b-d9cb-469f-a165-70867728950e" }).mode,
-    ).toBe("files");
+      parse({ file_id: "0f8fad5b-d9cb-469f-a165-70867728950e" }).fileId,
+    ).toBe("0f8fad5b-d9cb-469f-a165-70867728950e");
     expect(parse({ count: null }).count).toBeNull();
     expect(parse({ count: "12" }).count).toBe(12);
   });
 
-  it("keeps an explicit input_mode when several inputs are sent", () => {
-    expect(
-      parse({ input_mode: "link", paste_text: "x", url: "https://a.com" }).mode,
-    ).toBe("link");
+  it("takes several inputs at once — the kit reads every Source", () => {
+    expect(parse({ paste_text: "x", url: "https://a.com" })).toEqual({
+      pasteText: "x",
+      url: "https://a.com",
+    });
   });
 
   it("refuses what the form cannot take", () => {
     expect(() => parse("text")).toThrow(/JSON object/);
     expect(() => parse([])).toThrow(/JSON object/);
     expect(() => parse({})).toThrow(/at least one/);
-    expect(() => parse({ input_mode: "upload" })).toThrow(/Only the person/);
+    expect(() => parse({ input_mode: "paste" })).toThrow(/Unknown field input_mode/);
     expect(() => parse({ url: "not a url" })).toThrow(/not a web address/);
     expect(() => parse({ url: "ftp://a.com" })).toThrow(/http/);
     expect(() => parse({ file_id: "abc" })).toThrow(/not a file id/);
@@ -52,9 +52,6 @@ describe("kit_request_draft value", () => {
     expect(() => parse({ count: 151 })).toThrow(/1 to 150/);
     expect(() => parse({ count: 2.5 })).toThrow(/1 to 150/);
     expect(() => parse({ title: "x" })).toThrow(/Unknown field title/);
-    expect(() =>
-      parse({ paste_text: "x", url: "https://a.com" }),
-    ).toThrow(/only one/);
   });
 });
 

@@ -3,7 +3,8 @@
 // Validation for the `kit_request_draft` agent write target on
 // /education/start (`matrx-user/education-start`). Pure: the page passes in
 // which outputs are available, and the handler in StartHero applies the
-// result through the form's own state setters. The WHOLE value is checked
+// result through the form's own state setters — pasted text, a link and a
+// file id each ADD a Source to the page's one Source input. The WHOLE value is checked
 // before anything changes, and a refusal lists EVERY problem at once, each a
 // sentence the agent can act on.
 
@@ -12,10 +13,7 @@ import { isCoverageDepth, type CoverageDepth } from "@/features/education/conver
 import { ProblemList } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-export type AgentInputMode = "paste" | "link" | "files";
-
 export interface KitRequestDraftFields {
-  mode?: AgentInputMode;
   pasteText?: string;
   url?: string;
   fileId?: string;
@@ -27,7 +25,6 @@ export interface KitRequestDraftFields {
 }
 
 const KNOWN_KEYS = new Set([
-  "input_mode",
   "paste_text",
   "url",
   "file_id",
@@ -71,20 +68,6 @@ export function parseKitRequestDraftValue(
 
   const out: KitRequestDraftFields = {};
 
-  problems.check(() => {
-    const mode = obj.input_mode;
-    if (mode === undefined) return;
-    if (mode === "upload") {
-      fail(
-        "Only the person can drop a new file to upload. Use file_id for a file they already have, or ask them to drop the file on the Upload tab.",
-      );
-    }
-    if (mode !== "paste" && mode !== "link" && mode !== "files") {
-      fail('input_mode must be "paste", "link" or "files".');
-    }
-    out.mode = mode;
-  });
-
   const pasteText = problems.check(() => stringField(obj, "paste_text"));
   if (pasteText !== undefined) out.pasteText = pasteText;
 
@@ -112,19 +95,6 @@ export function parseKitRequestDraftValue(
     if (!isUuidShape(fileId.trim())) fail(`file_id "${fileId}" is not a file id.`);
     out.fileId = fileId.trim();
   });
-
-  // Which tab the input switches to when no input_mode is sent.
-  const inputs = [
-    out.pasteText !== undefined && out.pasteText.trim() !== "" ? "paste" : null,
-    out.url !== undefined && out.url !== "" ? "link" : null,
-    out.fileId !== undefined ? "files" : null,
-  ].filter((m): m is AgentInputMode => m !== null);
-  if (out.mode === undefined && obj.input_mode === undefined) {
-    if (inputs.length > 1) {
-      problems.add("Send only one of paste_text, url and file_id, or also send input_mode to say which tab to open.");
-    }
-    if (inputs.length === 1) out.mode = inputs[0];
-  }
 
   if (obj.outputs !== undefined) {
     if (!Array.isArray(obj.outputs)) problems.add("outputs must be an array of kinds, e.g. [\"deck\", \"quiz\"].");

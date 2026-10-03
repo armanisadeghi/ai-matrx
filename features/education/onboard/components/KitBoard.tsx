@@ -236,6 +236,9 @@ function SourceStage({
               "This can take a moment for big files — it's working.")
             ) : kit.source ? (
               <>
+                {kit.source.meta.sourceCount > 1
+                  ? `${kit.source.meta.sourceCount} sources · `
+                  : ""}
                 {kit.source.meta.pages
                   ? `${kit.source.meta.pages} pages · `
                   : ""}
@@ -268,6 +271,18 @@ function SourceStage({
         </p>
       )}
 
+      {/* Every stand-in announces itself: a Source left out, a raw fallback. */}
+      {!ingesting &&
+        kit.source?.meta.notes.map((note) => (
+          <p
+            key={note}
+            className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground"
+          >
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>{note}</span>
+          </p>
+        ))}
+
       {/* A document we could not read all of is a WARNING, not a footnote. The
           student is deciding whether to trust this kit as complete; "trimmed to
           fit" appended to a character count is not enough to make that call. */}
@@ -275,9 +290,9 @@ function SourceStage({
         <p className="mt-2 flex items-start gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-xs text-amber-700 dark:text-amber-400">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
-            Your document is longer than one kit can read, so this kit covers
-            only the first {kit.source.meta.chars.toLocaleString()} characters
-            of it. Split the rest into a second upload to cover the whole thing.
+            This kit covers only the first{" "}
+            {kit.source.meta.chars.toLocaleString()} characters. Put the rest in
+            a second kit.
           </span>
         </p>
       )}

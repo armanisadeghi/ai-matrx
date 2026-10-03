@@ -1,6 +1,6 @@
 // features/education/onboard/useKitGeneration.ts
 //
-// The Study Kit orchestrator: one input → (ingest normalize) → (converter
+// The Study Kit orchestrator: the picked Sources → (resolve + anchor) → (converter
 // fan-out) → live per-target state. This is the engine behind the Upload Hero
 // flow. It owns NO generation logic of its own — ingest owns raw→text, the
 // converter owns text→artifact. It just sequences them and surfaces progress.
@@ -16,12 +16,12 @@ import type {
   TargetKind,
 } from "@/features/education/convert/types";
 import { useContentConverter } from "@/features/education/convert/useContentConverter";
+import type { ResolvedSourceSet } from "@ai-matrx/agents/sources";
 import { useIngest } from "./useIngest";
 import type {
   IngestProgress,
   KitTargetState,
   NormalizedIngest,
-  RawIngestInput,
 } from "./types";
 
 export type KitPhase = "idle" | "ingesting" | "generating" | "done" | "error";
@@ -58,7 +58,8 @@ export interface UseKitGeneration {
    * this one organization from the first byte.
    */
   run: (
-    input: RawIngestInput,
+    /** Reads the picked Sources — the page's `useSourceSet().resolve`. */
+    sources: () => Promise<ResolvedSourceSet>,
     kinds: TargetKind[],
     options: ConvertOptions | undefined,
     orgId: string,
@@ -69,7 +70,7 @@ export interface UseKitGeneration {
 }
 
 export function useKitGeneration(): UseKitGeneration {
-  const { normalize } = useIngest();
+  const { normalizeSources } = useIngest();
   const { convertMany } = useContentConverter();
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -120,7 +121,7 @@ export function useKitGeneration(): UseKitGeneration {
   // selection or a failed ingest returns false and never burns quota.
   const run = useCallback(
     async (
-      input: RawIngestInput,
+      sources: () => Promise<ResolvedSourceSet>,
       kinds: TargetKind[],
       options: ConvertOptions | undefined,
       orgId: string,
@@ -149,7 +150,7 @@ export function useKitGeneration(): UseKitGeneration {
 
       let normalized: NormalizedIngest;
       try {
-        normalized = await normalize(input, setIngestProgress);
+        normalized = await normalizeSources(sources, setIngestProgress);
         setSource(normalized);
         setIngestFinishedAt(Date.now());
       } catch (e) {
@@ -224,7 +225,7 @@ export function useKitGeneration(): UseKitGeneration {
       setPhase("done");
       return true;
     },
-    [convertMany, normalize, patchTarget, dispatch, store],
+    [convertMany, normalizeSources, patchTarget, dispatch, store],
   );
 
   return {

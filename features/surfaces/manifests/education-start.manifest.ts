@@ -1,9 +1,10 @@
 /**
  * Surface manifest — Create a study kit (`matrx-user/education-start`).
  *
- * `/education/start` (and `?from=files`): the study-kit front door. The person
- * gives ONE piece of material (a file they already own, an upload, pasted
- * text, or a link), picks what to make from it (flashcards, summary, quiz,
+ * `/education/start`: the study-kit front door. The person picks their
+ * material in the ONE Source input (anything they already have, an upload,
+ * pasted text, a web page, a YouTube video, a recording, an image), picks
+ * what to make from it (flashcards, summary, quiz,
  * mind map, audio, notes, memory aids, practice test), how much (depth and an
  * optional exact count) and an optional focus, then presses "Build my study
  * kit". The page then becomes the live kit board: reading the material,
@@ -13,9 +14,8 @@
  * (`matrx-user/education`), which declares none of the form or the run.
  *
  * Write half: ONE draft target, `ask`.
- *  - `kit_request_draft` fills the form — input kind, pasted text, link, a
- *    file the person owns (by id, looked up exactly as the "Choose from my
- *    files" button does), the outputs, depth, count and focus. NOTHING is
+ *  - `kit_request_draft` fills the form — pasted text, a link and a file the
+ *    person owns (by id) each ADD a Source; plus the outputs, depth, count and focus. NOTHING is
  *    built: building spends the person's kit allowance and passes the
  *    guardian-consent and plan checks, so the person presses the button.
  *    Validation (whole value, before the approval card):
@@ -61,34 +61,12 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "kit_request_draft",
     label: "Kit request",
-    description: `Everything the form holds, as { input_mode, paste_text, url, file_id, outputs, depth, count, focus }. input_mode is the open tab: "files" (a file they already own), "upload", "paste" or "link". paste_text / url / file_id are that tab's input ("" or null when empty; the other tabs keep what was typed). outputs are the chosen kinds (${OUTPUT_KINDS}); depth is "quick" | "standard" | "thorough"; count is the exact number of cards/questions or null (sized to the material); focus is the optional focus line. The read twin of the kit_request_draft write target. Always present.`,
+    description: `Everything the form holds, as { sources, outputs, depth, count, focus }. sources are the picked Sources in order, as [{ name, kind, status, resource_type, resource_id, error }] — status "pending" | "resolving" means it is still being added, "ready" means the kit can read it, "error" carries the reason. outputs are the chosen kinds (${OUTPUT_KINDS}); depth is "quick" | "standard" | "thorough"; count is the exact number of cards/questions or null (sized to the material); focus is the optional focus line. The read twin of the kit_request_draft write target. Always present.`,
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 600,
     inlineUpTo: 2000,
     sortOrder: 100,
-    group: "request",
-  },
-  {
-    name: "chosen_file",
-    label: "File to upload",
-    description:
-      'The file dropped or browsed on the Upload tab, as { name, size_bytes, supported, note } — supported false means the page will not build from it, and note says why (the line the page shows). Absent when none is chosen.',
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 150,
-    sortOrder: 110,
-    group: "request",
-  },
-  {
-    name: "stored_file",
-    label: "File from my files",
-    description:
-      "The file picked on the My files tab, as { file_id, file_name, mime_type, supported }. Nothing is uploaded again; the kit is built from this file. Absent when none is picked.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 150,
-    sortOrder: 120,
     group: "request",
   },
   {
@@ -172,7 +150,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "source_summary",
     label: "Material read",
     description:
-      "What was read from the material, as { title, input_kind, pages, chars, truncated, extraction_method, file_id }. Absent until reading finishes.",
+      "What was read from the Sources, as { title, source_count, pages, chars, truncated, extraction_method, file_id }. Absent until reading finishes.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 200,
@@ -206,7 +184,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "kit_request_draft",
     label: "Fill the kit form",
-    description: `Fills the Create a study kit form. NOTHING is built — the person reviews it and presses Build my study kit (building spends their kit allowance). Value is a JSON OBJECT (not a string, not an array) with any of: { input_mode?: "paste" | "link" | "files", paste_text?: string (the notes or text to study), url?: string (an http(s) page or YouTube link), file_id?: string (a file the person owns, e.g. from their files; checked before the card), outputs?: string[] (REPLACES the chosen outputs; kinds: ${OUTPUT_KINDS}; only kinds listed in available_outputs), depth?: "quick" | "standard" | "thorough", count?: integer 1-150 or null (null = size to the material), focus?: string ("" clears it) }. Only the fields you send change. paste_text, url and file_id each switch to their tab when input_mode is not given; send only one of them unless you also send input_mode. Refused, with nothing changed: "upload" (only the person can drop a file — use file_id for a file they already own), a bad URL, an unknown file id, an unknown or unavailable output, an empty outputs list, a count outside 1-150, unknown fields, and any fill while a build is running or its results are showing. Example: { "paste_text": "Photosynthesis turns light into…", "outputs": ["deck", "quiz"], "depth": "quick", "focus": "exam on chapter 3" }.`,
+    description: `Fills the Create a study kit form. NOTHING is built — the person reviews it and presses Build my study kit (building spends their kit allowance). Value is a JSON OBJECT (not a string, not an array) with any of: { paste_text?: string (notes or text to study — added as a Source), url?: string (an http(s) page or YouTube link — added as a Source), file_id?: string (a file the person owns — added as a Source; checked before the card), outputs?: string[] (REPLACES the chosen outputs; kinds: ${OUTPUT_KINDS}; only kinds listed in available_outputs), depth?: "quick" | "standard" | "thorough", count?: integer 1-150 or null (null = size to the material), focus?: string ("" clears it) }. Only the fields you send change; paste_text, url and file_id ADD to the Sources already picked. Refused, with nothing changed: a bad URL, an unknown file id, an unknown or unavailable output, an empty outputs list, a count outside 1-150, unknown fields, and any fill while a build is running or its results are showing. Only the person can upload a new file. Example: { "paste_text": "Photosynthesis turns light into…", "outputs": ["deck", "quiz"], "depth": "quick", "focus": "exam on chapter 3" }.`,
     valueType: "object",
     updatesValue: "kit_request_draft",
     mode: "draft",
@@ -228,9 +206,9 @@ export const educationStartManifest: SurfaceManifest = {
   label: "Create a study kit",
   urlPattern: "/education/start",
   intro: `<surface_intro>
-You are on Create a study kit at /education/start. The person gives one piece of material and picks what to make from it; the page builds a grounded, cited study kit.
+You are on Create a study kit at /education/start. The person picks their material as Sources and picks what to make from it; the page builds a grounded, cited study kit.
 kit_request_draft is everything the form holds; available_outputs lists the outputs that can be made (output_options has their labels); can_build says whether the Build button is enabled; kit_phase and kit_outputs show a build in progress or finished.
-To set up a kit for the person, use the kit_request_draft target: it fills the form (pasted text, a link, or a file they own by id, plus outputs, depth, count and focus). It does not build — tell the person to press Build my study kit. Its result lists the form as it stands after the fill; trust that over the values you were given at the start of your run. Only the person can upload a new file.
+To set up a kit for the person, use the kit_request_draft target: it fills the form (pasted text, a link, or a file they own by id — each added as a Source — plus outputs, depth, count and focus). It does not build — tell the person to press Build my study kit. Its result lists the form as it stands after the fill; trust that over the values you were given at the start of your run. Only the person can upload a new file.
 Do not create flashcards, quizzes or summaries with other tools for this: the page's build grounds and cites every item in the material and files them as one kit.
 </surface_intro>`,
   groups,
@@ -239,10 +217,14 @@ Do not create flashcards, quizzes or summaries with other tools for this: the pa
 };
 
 export interface KitRequestDraftScope {
-  input_mode: string;
-  paste_text: string;
-  url: string;
-  file_id: string | null;
+  sources: {
+    name: string;
+    kind: string;
+    status: string;
+    resource_type: string | null;
+    resource_id: string | null;
+    error: string | null;
+  }[];
   outputs: string[];
   depth: string;
   count: number | null;
@@ -258,14 +240,12 @@ export function createEducationStartScope(values: {
   kit_phase: string;
   selection?: string;
   context?: Record<string, unknown>;
-  chosen_file?: { name: string; size_bytes: number; supported: boolean; note: string };
-  stored_file?: { file_id: string; file_name: string; mime_type: string; supported: boolean };
   kit_error?: string;
   ingest_progress?: { phase: string; message: string; ratio: number | null; detail: string | null };
   kit_title?: { title: string; named: boolean };
   source_summary?: {
     title: string;
-    input_kind: string;
+    source_count: number;
     pages: number | null;
     chars: number;
     truncated: boolean;
