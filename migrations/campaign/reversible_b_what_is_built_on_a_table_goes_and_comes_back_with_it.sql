@@ -1,4 +1,3 @@
--- draft: claude reversible-action lane — rehearse on the clone, then remove this line and apply to production
 -- lane: TABLE-ACTIONS
 -- lock: custom,platform
 -- based-on: custom.table_archive(uuid, uuid, integer, boolean) 81828a9c7db3affff415a516d4981bad1a2953b26fff5a68f952212af2a2d45c
