@@ -1,7 +1,8 @@
 -- chair-step: replaces two bodies (same signatures, security and grants): custom.work_approval_request refuses `origin = 'agent'` (42501) unless the connection declares the agent tier (platform.declared_actor_tier() = 'agent' — the server's app.actor_tier, or an agent client's x-matrx-actor-tier header on the client channel), and custom.work_approval_decide refuses a decision made from an agent-declared connection (42501). No table, trigger, policy, grant or row is touched. ORDER: apply AFTER visionreach_w4_c_…, and only once the aidream commit that makes matrx_records file its waits inside `declaring(actor)` (origin from the actor) is LIVE on the server — before it, the agent client files undeclared and every agent proposal would be refused.
 -- lane: VISION-REACH
--- based-on: custom.work_approval_request(uuid, uuid, jsonb, text, uuid, text, uuid) 3758337ff76f551e3e1a906dac4e37eca5b65c14f908c9994eae4af40c10469e
--- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) fa9907b0a934deddadd3a48466378888d0c8e8240fbfd4f025f883c52014960e
+-- based-on: custom.work_approval_request(uuid, uuid, jsonb, text, uuid, text, uuid) 26a731a5863ece3c1ce114650c5d6b6046b4def99edf9f6ff9c4daa0af28be29
+-- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) 76f03c2754fd11bf8608eb04417e81e83f189155ffb28cbead078c6f4f8fc668
+-- RE-BASED 2026-10-03 on CHAIR-SELF-APPROVAL (chairselfapproval_a_decision_is_made_at_its_own_door.sql, live): work_approval_decide / work_approval_request keep its custom.decision_door mark around the one statement that writes the approval row; this file's changes are otherwise unchanged.
 --
 -- LANE 5 VISION-REACH, WAVE 4 (d) — ONLY AN AGENT FILES AS AN AGENT, AND ONLY A PERSON DECIDES.
 -- The chair's CHAIR-DOORS-2 E (2026-10-02 20:11Z, "who wrote a row is read off the channel") made the TIER
@@ -240,6 +241,7 @@ begin
             hint = 'Name an approver, or ask an owner of the organization to give somebody admin on it. A request nobody can answer is worse than no request.';
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:request', true);
   insert into custom.record (organization_id, table_id, data_class, data)
   values (p_organization_id, null, 'work_approval', jsonb_strip_nulls(jsonb_build_object(
     'subject_id',      p_subject_id::text,
@@ -255,6 +257,7 @@ begin
     'requested_at',    to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
     'state',           'pending')))
   returning id into v_id;
+  perform set_config('custom.decision_door', '', true);
 
   if p_approver_id is not null and not custom.query_is_store_owner() then
     perform custom.share_grant(p_organization_id, v_id, 'person', p_approver_id,
@@ -610,6 +613,7 @@ begin
                                coalesce(v_row.data ->> 'subject_title', 'That record')) end;
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:decide', true);
   update custom.record r
      set data = r.data || jsonb_strip_nulls(jsonb_build_object(
            'state',         case when p_approve then 'approved' else 'declined' end,
@@ -622,6 +626,7 @@ begin
                                       then to_jsonb(v_written) end,
            'outcome',       v_outcome))
    where r.organization_id = p_organization_id and r.id = p_approval_id;
+  perform set_config('custom.decision_door', '', true);
 
   return jsonb_build_object(
     'approval_id', p_approval_id,

@@ -1,8 +1,9 @@
 -- chair-step: replaces three bodies (same signatures, security and grants): custom.work_approval_kinds() adds `record_restore_version` and `subscription_add` to the kinds the one approval queue holds; custom.work_approval_request(uuid, uuid, jsonb, text, uuid, text, uuid) checks their shape (a version to go back to; who hears a notification) and their subject (a record; a table) before filing; custom.work_approval_decide(uuid, uuid, boolean, text) gains an arm for each — approving runs custom.record_restore_version / custom.value_restore (the record, or one value, put back as a NEW version) and custom.view_declare + custom.subscription_declare per `tell` entry (exactly the unasked path), as the approver, credited to the agent for an agent's request (file b). `signature_request` stays refused by the queue on purpose: the agent client stops filing it and tells the person to ask for the signature themselves (aidream matrx_records, same change). No table, trigger, policy, grant or row is touched. Apply AFTER visionreach_w4_b_…
 -- lane: VISION-REACH
 -- based-on: custom.work_approval_kinds() 215b6b92be208e7171af82fe2de90941d5f1bfa1aefeabd4408dfe94c4c4e2fe
--- based-on: custom.work_approval_request(uuid, uuid, jsonb, text, uuid, text, uuid) 1c7ec23f69e50ccbf6778bdc88a63f40588b65f2bf0a180be415d527381a187a
--- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) 836e1f2602a954bc25eadb8d6d61e04ac8a5b7b4a6600249acc7d94de34d97cc
+-- based-on: custom.work_approval_request(uuid, uuid, jsonb, text, uuid, text, uuid) 8aefc2d6ea49ed9dac2396eb79be0174bf4ae3354940c2ad4d73da5f33c4ffb1
+-- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) 930d3b8aa5f7233013a07ed08ec261f960090be4d4ecc19053096d02ef080d9e
+-- RE-BASED 2026-10-03 on CHAIR-SELF-APPROVAL (chairselfapproval_a_decision_is_made_at_its_own_door.sql, live): work_approval_decide / work_approval_request keep its custom.decision_door mark around the one statement that writes the approval row; this file's changes are otherwise unchanged.
 --
 -- LANE 5 VISION-REACH, WAVE 4 (c) — EVERY KIND THE AGENT FILES CAN BE APPLIED.
 -- MEASURED BEFORE THIS FILE (clone, scripts/campaign-tests/visionreach_w4_every_filed_kind_applies.sql): the
@@ -248,6 +249,7 @@ begin
             hint = 'Name an approver, or ask an owner of the organization to give somebody admin on it. A request nobody can answer is worse than no request.';
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:request', true);
   insert into custom.record (organization_id, table_id, data_class, data)
   values (p_organization_id, null, 'work_approval', jsonb_strip_nulls(jsonb_build_object(
     'subject_id',      p_subject_id::text,
@@ -263,6 +265,7 @@ begin
     'requested_at',    to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
     'state',           'pending')))
   returning id into v_id;
+  perform set_config('custom.decision_door', '', true);
 
   if p_approver_id is not null and not custom.query_is_store_owner() then
     perform custom.share_grant(p_organization_id, v_id, 'person', p_approver_id,
@@ -610,6 +613,7 @@ begin
                                coalesce(v_row.data ->> 'subject_title', 'That record')) end;
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:decide', true);
   update custom.record r
      set data = r.data || jsonb_strip_nulls(jsonb_build_object(
            'state',         case when p_approve then 'approved' else 'declined' end,
@@ -622,6 +626,7 @@ begin
                                       then to_jsonb(v_written) end,
            'outcome',       v_outcome))
    where r.organization_id = p_organization_id and r.id = p_approval_id;
+  perform set_config('custom.decision_door', '', true);
 
   return jsonb_build_object(
     'approval_id', p_approval_id,

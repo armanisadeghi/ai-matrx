@@ -1,7 +1,8 @@
 -- chair-step: undo visionreach_w4_d_only_an_agent_files_as_an_agent.sql — restores custom.work_approval_request and custom.work_approval_decide as file c left them. Reopens: a person may file a request as an agent's and approve it themselves; an agent-declared connection may decide an approval. Run BEFORE undoing file c.
 -- lane: VISION-REACH
--- based-on: custom.work_approval_request(uuid, uuid, jsonb, text, uuid, text, uuid) f255aa400fd76c15b7bfec7158242bcd41b789e32f935cbd62bcd21da76b2335
--- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) a5d315c8a39388e330ae8ce1cf2a071893f6958a0329ab384f0c407f33f113bd
+-- based-on: custom.work_approval_request(uuid, uuid, jsonb, text, uuid, text, uuid) fd6fadbf5deab9a030bda4a4e174b84f94da3b6a4a398c6b7caee796d5b44cc0
+-- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) 0cb2c730b346093b70f143544fe45f8c4c4753640144c108c60118423adf1cba
+-- RE-BASED 2026-10-03 on CHAIR-SELF-APPROVAL (chairselfapproval_a_decision_is_made_at_its_own_door.sql, live): work_approval_decide / work_approval_request keep its custom.decision_door mark around the one statement that writes the approval row; this file's changes are otherwise unchanged.
 
 CREATE OR REPLACE FUNCTION custom.work_approval_request(p_organization_id uuid, p_subject_id uuid, p_change jsonb, p_note text DEFAULT NULL::text, p_approver_id uuid DEFAULT NULL::uuid, p_origin text DEFAULT 'person'::text, p_conversation_id uuid DEFAULT NULL::uuid)
  RETURNS jsonb
@@ -221,6 +222,7 @@ begin
             hint = 'Name an approver, or ask an owner of the organization to give somebody admin on it. A request nobody can answer is worse than no request.';
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:request', true);
   insert into custom.record (organization_id, table_id, data_class, data)
   values (p_organization_id, null, 'work_approval', jsonb_strip_nulls(jsonb_build_object(
     'subject_id',      p_subject_id::text,
@@ -236,6 +238,7 @@ begin
     'requested_at',    to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
     'state',           'pending')))
   returning id into v_id;
+  perform set_config('custom.decision_door', '', true);
 
   if p_approver_id is not null and not custom.query_is_store_owner() then
     perform custom.share_grant(p_organization_id, v_id, 'person', p_approver_id,
@@ -583,6 +586,7 @@ begin
                                coalesce(v_row.data ->> 'subject_title', 'That record')) end;
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:decide', true);
   update custom.record r
      set data = r.data || jsonb_strip_nulls(jsonb_build_object(
            'state',         case when p_approve then 'approved' else 'declined' end,
@@ -595,6 +599,7 @@ begin
                                       then to_jsonb(v_written) end,
            'outcome',       v_outcome))
    where r.organization_id = p_organization_id and r.id = p_approval_id;
+  perform set_config('custom.decision_door', '', true);
 
   return jsonb_build_object(
     'approval_id', p_approval_id,

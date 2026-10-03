@@ -1,9 +1,10 @@
--- chair-step: undo visionreach_w4_b_an_approved_agent_change_is_the_agents.sql — restores custom.work_approval_decide, custom.history_actor, custom.record_history and custom.field_history exactly as they were on production 2026-10-02. Reopens: an approved agent change is written and shown as the approving person's own edit, and History names no approver.
+-- chair-step: undo visionreach_w4_b_an_approved_agent_change_is_the_agents.sql — restores custom.work_approval_decide, custom.history_actor, custom.record_history and custom.field_history exactly as they are on production 2026-10-03 (work_approval_decide carrying CHAIR-SELF-APPROVAL's decision mark; field_history carrying the "Only me" listing predicate). Reopens: an approved agent change is written and shown as the approving person's own edit, and History names no approver.
 -- lane: VISION-REACH
--- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) 836e1f2602a954bc25eadb8d6d61e04ac8a5b7b4a6600249acc7d94de34d97cc
--- based-on: custom.history_actor(text, jsonb, uuid, jsonb) 96bab40d8e0e1e2a078557fed495bad5419ef65f03d18f362704215a318161b2
+-- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) 930d3b8aa5f7233013a07ed08ec261f960090be4d4ecc19053096d02ef080d9e
+-- based-on: custom.history_actor(text, jsonb, uuid, jsonb) 66667b1fdedaa5701ff6454cbbc17dc5e2caf96ccd1d475c835339112193ebe8
 -- based-on: custom.record_history(uuid, uuid, integer, integer) bf9e1ff866b0ecf4069ef4d3bef273825ea789f7dcb3fc86faf305a6e34e882f
--- based-on: custom.field_history(uuid, uuid, text, integer, integer, uuid) 9bba5e59e7882e5194921d8110fea85e52ad3e7ce8872313eccd5b24c7743aff
+-- based-on: custom.field_history(uuid, uuid, text, integer, integer, uuid) c63ddc244db970d00a5455cf17e5484499c9f48bc1f4ba3c95d1c1a5bb05ca9c
+-- RE-BASED 2026-10-03 on CHAIR-SELF-APPROVAL (chairselfapproval_a_decision_is_made_at_its_own_door.sql, live): work_approval_decide / work_approval_request keep its custom.decision_door mark around the one statement that writes the approval row; this file's changes are otherwise unchanged.
 
 CREATE OR REPLACE FUNCTION custom.work_approval_decide(p_organization_id uuid, p_approval_id uuid, p_approve boolean, p_note text DEFAULT NULL::text)
  RETURNS jsonb
@@ -239,6 +240,7 @@ begin
                                coalesce(v_row.data ->> 'subject_title', 'That record')) end;
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:decide', true);
   update custom.record r
      set data = r.data || jsonb_strip_nulls(jsonb_build_object(
            'state',         case when p_approve then 'approved' else 'declined' end,
@@ -251,6 +253,7 @@ begin
                                       then to_jsonb(v_written) end,
            'outcome',       v_outcome))
    where r.organization_id = p_organization_id and r.id = p_approval_id;
+  perform set_config('custom.decision_door', '', true);
 
   return jsonb_build_object(
     'approval_id', p_approval_id,
@@ -441,7 +444,7 @@ begin
     'select array_agg(r.id) from custom.record r
       where r.organization_id = %L::uuid and r.table_id = %L::uuid and %s %s',
     p_organization_id, p_table_id,
-    custom.visible_predicate_sql(v_me, p_organization_id, p_table_id,
+    custom.listed_predicate_sql(v_me, p_organization_id, p_table_id,
                                  'viewer'::public.permission_level, 'r'),
     case when p_record_id is null then ''
          else format('and r.id = %L::uuid', p_record_id) end);

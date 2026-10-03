@@ -1,9 +1,10 @@
--- chair-step: replaces four bodies (same signatures, security and grants): custom.work_approval_decide(uuid, uuid, boolean, text) — for a request filed by an agent (origin = 'agent') an approved record_add / record_patch writes its values with `_actor = agent` and `_on_behalf_of = the requester` (the store's own envelope keys), and every version the approved change writes is marked `approved agent change` in history.row_versions.operation_name (the existing history.mark_* mechanism, held for that one decision and cleared before the approval row itself is updated); custom.history_actor(text, jsonb, uuid, jsonb) — a version carrying that mark reads kind `agent`, `on_behalf_of` the requester and a new `approved_by` {user_id, name} naming the person who said yes; custom.record_history and custom.field_history — hand the version's operation_name to history_actor as `_operation`. A person's own request, a decline and every other kind behave exactly as before. No table, trigger, policy, grant or row is touched.
+-- chair-step: replaces four bodies (same signatures, security and grants): custom.work_approval_decide(uuid, uuid, boolean, text) — for a request filed by an agent (origin = 'agent') an approved record_add / record_patch writes its values with `_actor = agent` and `_on_behalf_of = the requester` (the store's own envelope keys), and every version the approved change writes is marked `approved agent change` in history.row_versions.operation_name (the existing history.mark_* mechanism, held for that one decision and cleared before the approval row itself is updated); custom.history_actor(text, jsonb, uuid, jsonb) — a version carrying that mark reads kind `agent`, `on_behalf_of` the requester and a new `approved_by` {user_id, name} naming the person who said yes; custom.record_history and custom.field_history — hand the version's operation_name to history_actor as `_operation`. history_actor reads who acted, and for whom, from the version's newest-stamped value rather than whichever key comes first (an approved patch to an existing record named the approver as the person it worked for). A person's own request, a decline and every other kind behave exactly as before. No table, trigger, policy, grant or row is touched.
 -- lane: VISION-REACH
--- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) e3ef058019d584309c3080dce9f0ab655d1a825d347064ced826cfb4cef6023c
+-- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) c9e2461d739fe3e6397a9959cc9ab7947b04a0342320dbbb56ae78292fdd6e27
 -- based-on: custom.history_actor(text, jsonb, uuid, jsonb) 2c693020950d47f74b46d4bbbcfd216b51085781d555fbfa1d8a19e934dc0944
 -- based-on: custom.record_history(uuid, uuid, integer, integer) 45daea1f5128021464489262c815ea6ec5f610f1cbf3ac0b51e276fab1b25e2a
--- based-on: custom.field_history(uuid, uuid, text, integer, integer, uuid) c9051494abeff5b0b8527c864d49e788c77db9c96fafc764cf83d32e9b6cc2f8
+-- based-on: custom.field_history(uuid, uuid, text, integer, integer, uuid) 834768dc39dff847d9a4269e3aafff1ea5941f2bb09b15b07c1317f868938ba6
+-- RE-BASED 2026-10-03 on CHAIR-SELF-APPROVAL (chairselfapproval_a_decision_is_made_at_its_own_door.sql, live): work_approval_decide / work_approval_request keep its custom.decision_door mark around the one statement that writes the approval row; this file's changes are otherwise unchanged.
 --
 -- LANE 5 VISION-REACH, WAVE 4 (b) — AN APPROVED AGENT CHANGE IS THE AGENT'S, AND HISTORY NAMES WHO SAID YES.
 -- Approved in principle by the chair 2026-10-02 10:40 PT.
@@ -11,6 +12,9 @@
 -- an agent's record_add on Cedar Ridge's Treatment Rooms, approved by admin@admin.com, wrote the room with
 -- every value stamped `actor: user` and custom.record_history answered kind `user`, name admin — the
 -- person's own edit. The agent vanished from History and nothing said a person had approved it.
+-- RE-BASED 2026-10-03: custom.field_history was replaced on production at 00:58:56Z by
+-- visionreach_only_me_is_listed_for_nobody_else.sql; this body is that live body (custom.listed_predicate_sql, so an
+-- "Only me" row is listed for nobody else) plus the one W4 (b) change (the version's operation reaches history_actor).
 -- Inverse: migrations/inverse/visionreach_w4_b_an_approved_agent_change_is_the_agents_down.sql
 
 CREATE OR REPLACE FUNCTION custom.work_approval_decide(p_organization_id uuid, p_approval_id uuid, p_approve boolean, p_note text DEFAULT NULL::text)
@@ -278,6 +282,7 @@ begin
                                coalesce(v_row.data ->> 'subject_title', 'That record')) end;
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:decide', true);
   update custom.record r
      set data = r.data || jsonb_strip_nulls(jsonb_build_object(
            'state',         case when p_approve then 'approved' else 'declined' end,
@@ -290,6 +295,7 @@ begin
                                       then to_jsonb(v_written) end,
            'outcome',       v_outcome))
    where r.organization_id = p_organization_id and r.id = p_approval_id;
+  perform set_config('custom.decision_door', '', true);
 
   return jsonb_build_object(
     'approval_id', p_approval_id,
@@ -317,6 +323,10 @@ AS $function$
                            then p_document -> '_values' else '{}'::jsonb end) e
      where jsonb_typeof(e.value) = 'object'
        and e.value ? 'actor'
+     -- VISION-REACH W4 (b): THE VALUE THIS VERSION WROTE speaks for it — the newest stamp, never
+     -- whichever key comes first. An agent's approved patch to an existing room carries its
+     -- envelope on the one column it changed; the room's other columns still carry older stamps.
+     order by e.value ->> 'at' desc nulls last, e.key
      limit 1
   ),
   said as (
@@ -505,7 +515,7 @@ begin
     'select array_agg(r.id) from custom.record r
       where r.organization_id = %L::uuid and r.table_id = %L::uuid and %s %s',
     p_organization_id, p_table_id,
-    custom.visible_predicate_sql(v_me, p_organization_id, p_table_id,
+    custom.listed_predicate_sql(v_me, p_organization_id, p_table_id,
                                  'viewer'::public.permission_level, 'r'),
     case when p_record_id is null then ''
          else format('and r.id = %L::uuid', p_record_id) end);

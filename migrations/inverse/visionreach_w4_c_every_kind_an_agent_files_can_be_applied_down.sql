@@ -1,8 +1,9 @@
--- chair-step: undo visionreach_w4_c_every_kind_an_agent_files_can_be_applied.sql — restores custom.work_approval_kinds and custom.work_approval_request as they were on production 2026-10-02, and custom.work_approval_decide as file b left it. Reopens: an agent's put-back or notification request is refused by the queue (22023) and neither applied nor waiting. Run BEFORE undoing file b.
+-- chair-step: undo visionreach_w4_c_every_kind_an_agent_files_can_be_applied.sql — restores custom.work_approval_kinds and custom.work_approval_request as they are on production 2026-10-03 (request carrying CHAIR-SELF-APPROVAL's decision mark), and custom.work_approval_decide as file b left it. Reopens: an agent's put-back or notification request is refused by the queue (22023) and neither applied nor waiting. Run BEFORE undoing file b.
 -- lane: VISION-REACH
 -- based-on: custom.work_approval_kinds() 37157b377f0e1e3365cee1d28b8ea0e1f3edf0e66b5db4cd1c228ffbb7a8d26d
--- based-on: custom.work_approval_request(uuid, uuid, jsonb, text, uuid, text, uuid) 3758337ff76f551e3e1a906dac4e37eca5b65c14f908c9994eae4af40c10469e
--- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) fa9907b0a934deddadd3a48466378888d0c8e8240fbfd4f025f883c52014960e
+-- based-on: custom.work_approval_request(uuid, uuid, jsonb, text, uuid, text, uuid) 26a731a5863ece3c1ce114650c5d6b6046b4def99edf9f6ff9c4daa0af28be29
+-- based-on: custom.work_approval_decide(uuid, uuid, boolean, text) 76f03c2754fd11bf8608eb04417e81e83f189155ffb28cbead078c6f4f8fc668
+-- RE-BASED 2026-10-03 on CHAIR-SELF-APPROVAL (chairselfapproval_a_decision_is_made_at_its_own_door.sql, live): work_approval_decide / work_approval_request keep its custom.decision_door mark around the one statement that writes the approval row; this file's changes are otherwise unchanged.
 
 CREATE OR REPLACE FUNCTION custom.work_approval_kinds()
  RETURNS text[]
@@ -209,6 +210,7 @@ begin
             hint = 'Name an approver, or ask an owner of the organization to give somebody admin on it. A request nobody can answer is worse than no request.';
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:request', true);
   insert into custom.record (organization_id, table_id, data_class, data)
   values (p_organization_id, null, 'work_approval', jsonb_strip_nulls(jsonb_build_object(
     'subject_id',      p_subject_id::text,
@@ -224,6 +226,7 @@ begin
     'requested_at',    to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
     'state',           'pending')))
   returning id into v_id;
+  perform set_config('custom.decision_door', '', true);
 
   if p_approver_id is not null and not custom.query_is_store_owner() then
     perform custom.share_grant(p_organization_id, v_id, 'person', p_approver_id,
@@ -509,6 +512,7 @@ begin
                                coalesce(v_row.data ->> 'subject_title', 'That record')) end;
   end if;
 
+  perform set_config('custom.decision_door', 'work_approval:decide', true);
   update custom.record r
      set data = r.data || jsonb_strip_nulls(jsonb_build_object(
            'state',         case when p_approve then 'approved' else 'declined' end,
@@ -521,6 +525,7 @@ begin
                                       then to_jsonb(v_written) end,
            'outcome',       v_outcome))
    where r.organization_id = p_organization_id and r.id = p_approval_id;
+  perform set_config('custom.decision_door', '', true);
 
   return jsonb_build_object(
     'approval_id', p_approval_id,

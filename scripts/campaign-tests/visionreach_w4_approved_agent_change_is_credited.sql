@@ -14,6 +14,7 @@
 --   B5  CONTROL — test's OWN request (origin person) approved by admin: the value says user, History kind user,
 --       no approved_by (a person's request is never marked)
 --   B6  the approval row itself is not marked (its newest version is the decider's, no approved_by)
+--   B7  the column's timeline (custom.field_history) names agent, for test, approved by admin on the approved patch
 -- THE VERDICT IS THE EXIT CODE. Everything is rolled back.
 --
 -- RUN IT (dev clone only), session pooler:
@@ -109,6 +110,16 @@ begin
   select r.actor into h from custom.record_history(c, (select val from ids where k = 'field')::uuid) r order by r.version desc limit 1;
   insert into res values ('B4 approved agent field_add: History says agent, approved by admin',
     h ->> 'kind' = 'agent' and h #>> '{approved_by,user_id}' = a, coalesce(h::text, 'NULL'));
+  -- B7: the column's own timeline ("Who changed this?" on Patient capacity) — custom.field_history, re-based
+  -- 2026-10-03 on the live body that lists through custom.listed_predicate_sql — names the agent, the person
+  -- it worked for (test, not the approver) and the approver on the approved change (the version whose value became 7).
+  select jsonb_build_object('actor', f.actor, 'after', f.after) into h
+    from custom.field_history(c, current_setting('t.rooms')::uuid, 'patient_capacity', 20, 0, (select val from ids where k = 'row1')::uuid) f
+   order by f.version desc limit 1;
+  insert into res values ('B7 the column''s timeline names the approver of the approved change',
+    h #>> '{after}' = '7' and h #>> '{actor,kind}' = 'agent' and h #>> '{actor,on_behalf_of,user_id}' = t
+      and h #>> '{actor,approved_by,user_id}' = a,
+    coalesce(h::text, 'NULL'));
   -- B5: the control
   reset role;
   select r.data -> '_values' into v_doc from custom.record r where r.id = (select val from ids where k = 'own')::uuid;
