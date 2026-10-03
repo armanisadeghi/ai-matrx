@@ -19,19 +19,12 @@
  * only refresh.
  */
 
-import { tableRenderSchema, type TableKindFacts } from "@ai-matrx/records/core";
-// `tableKindFacts` and `onTableStructureChanged` arrive in @ai-matrx/records 0.61.0 (published by
-// the train after this commit). Read through the namespace until the install catches up, so a
-// build against 0.60.x never fails on a missing named export; the reads below say so loudly.
-import * as recordsCore from "@ai-matrx/records/core";
-
-type RecordsCoreWave3 = {
-  tableKindFacts?: (dataSource: unknown, table: string) => Promise<
-    { ok: true; data: TableKindFacts } | { ok: false; error: { message: string } }
-  >;
-  onTableStructureChanged?: (listener: (tableId: string | null) => void) => () => void;
-};
-const wave3 = recordsCore as unknown as RecordsCoreWave3;
+import {
+  onTableStructureChanged,
+  tableKindFacts,
+  tableRenderSchema,
+  type TableKindFacts,
+} from "@ai-matrx/records/core";
 import {
   withControlKeyFields,
   type KindSchema,
@@ -62,10 +55,7 @@ export function optionsTableIdsOf(facts: TableKindFacts): string[] {
 
 /** Read one Table as a kind, as the signed-in person. Never throws. */
 export async function readTableKind(_kind: string, tableId: string): Promise<TableKindAnswer> {
-  if (!wave3.tableKindFacts) {
-    throw new Error("@ai-matrx/records is older than 0.61.0 — tableKindFacts is missing; run pnpm sync-types.");
-  }
-  const answer = await wave3.tableKindFacts(createClient(), tableId);
+  const answer = await tableKindFacts(createClient(), tableId);
   if (!answer.ok) {
     return {
       ok: false,
@@ -138,9 +128,5 @@ export function joinTableLive(
 
 /** This page's own structure changes (a rename in /data-v2 in the same tab). */
 export function hearTableStructure(listener: (tableId: string | null) => void): () => void {
-  if (!wave3.onTableStructureChanged) {
-    console.warn("[content-ir] @ai-matrx/records is older than 0.61.0 — a Field change on this page will not repaint table cards until reload.");
-    return () => undefined;
-  }
-  return wave3.onTableStructureChanged(listener);
+  return onTableStructureChanged(listener);
 }

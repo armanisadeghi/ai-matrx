@@ -49,7 +49,7 @@
  */
 
 import React from "react";
-import { Database, EyeOff, Info, Lock, PanelRight } from "lucide-react";
+import { Database, EyeOff, Info, Lock } from "lucide-react";
 import { isTableKind, type Field } from "@ai-matrx/records";
 import { RecordsProvider } from "@ai-matrx/records/react";
 import {
@@ -64,7 +64,7 @@ import {
   useRecordLabels,
 } from "@ai-matrx/records-ui";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { PanelRightTapButton } from "@ai-matrx/tap-target/buttons";
 import InfoHint from "@/components/official/InfoHint";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -249,12 +249,7 @@ const TableRecordBody: React.FC<{
         tableName={table.name}
         trailing={
           openInCanvas ? (
-            <TapTargetButton
-              variant="transparent"
-              icon={<PanelRight className="h-4 w-4" />}
-              ariaLabel="Open in canvas"
-              onClick={openInCanvas}
-            />
+            <PanelRightTapButton variant="transparent" ariaLabel="Open in canvas" onClick={openInCanvas} />
           ) : null
         }
       />

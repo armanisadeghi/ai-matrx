@@ -107,6 +107,15 @@ export const FINDING_CATALOG: Record<FindingCode, FindingCodeSpec> = {
     how: "Add the key to the block dispatch table in this repo, or repoint the component row at a key that exists.",
     measuredOnBoard: true,
   },
+  "one-record-card": {
+    code: "one-record-card",
+    label: "Second record card",
+    severity: "red",
+    lane: "code-change",
+    what: "A table record no longer draws as the one record card: a second renderer imports the records-ui value drawers, a table: value misses the card or the canvas kind_value def, the render schema loses its control keys, or a registry row claims a table: slug.",
+    how: "Run pnpm check:shapes:components and fix what it names — route the value through PlatformRecordBlock, restore the table: prefix rule or the withControlKeyFields wrap, or retire the registry row.",
+    measuredOnBoard: false,
+  },
   "manual-data-only-flag": {
     code: "manual-data-only-flag",
     label: "Manual data-only flag returned",
