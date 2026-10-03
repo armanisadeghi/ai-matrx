@@ -112,7 +112,7 @@ describe("the fence in the answer", () => {
     const line = host.querySelector<HTMLButtonElement>('button[data-comment-reply="c3"]')!;
     expect(line.textContent).toBe("Reply in thread · c3");
     act(() => line.click());
-    const tab = items()["comment-thread::message:answer-1" as never] as { data: { focus: string | null } } | undefined;
+    const tab = items()["comment-thread::message:answer-1" as never] as unknown as { data: { focus: string | null } } | undefined;
     expect(tab?.data.focus).toBe("root-7");
     // c4 (a choice) has no comment yet: its thread opens on the answer, unfocused.
     expect(host.querySelector('button[data-comment-reply="c4"]')).not.toBeNull();

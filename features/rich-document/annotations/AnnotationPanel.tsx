@@ -38,6 +38,7 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ContinueInNewChatItem } from "./ContinueInNewChatItem";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RichContent } from "@/components/rich-content/RichContent";
@@ -646,7 +647,7 @@ function ThreadActions({
             {item.resolvedAt ? "Reopen" : "Resolve"}
           </Button>
         )}
-        {item.mine && (
+        {(item.mine || item.kind === "comment") && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" variant="ghost" className="ml-auto h-7 w-7" aria-label="More">
@@ -654,12 +655,15 @@ function ThreadActions({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              {item.author.agent ? null : (
+              {item.kind === "comment" ? <ContinueInNewChatItem item={item} source={source} /> : null}
+              {item.mine && !item.author.agent ? (
                 <DropdownMenuItem onSelect={() => { setBase({ body: item.body, version: item.version ?? null }); setEditing(true); }}>Edit</DropdownMenuItem>
-              )}
-              <DropdownMenuItem className="text-destructive" onSelect={() => void removeWithUndo(api.deleteComment(id), item.kind === "suggestion" ? "Suggestion deleted." : "Comment deleted.", () => api.restoreComment(id), item.kind === "suggestion" ? "Suggestion restored." : "Comment restored.")}>
+              ) : null}
+              {item.mine ? (
+                <DropdownMenuItem className="text-destructive" onSelect={() => void removeWithUndo(api.deleteComment(id), item.kind === "suggestion" ? "Suggestion deleted." : "Comment deleted.", () => api.restoreComment(id), item.kind === "suggestion" ? "Suggestion restored." : "Comment restored.")}>
                 <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />Delete
               </DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         )}

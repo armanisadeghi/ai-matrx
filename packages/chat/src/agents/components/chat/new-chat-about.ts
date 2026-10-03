@@ -4,14 +4,20 @@
  * came from. The same route hop the Alchemy "chat" destination uses — the
  * default new-chat job, a single-use draft transfer, a fresh session — with the
  * passage carried as a remark (a chip the person can X), never as typed text.
+ *
+ * "Continue in new chat" on a comment thread is the same door with a THREAD:
+ * one comment remark carrying the root comment's id and a snapshot of the
+ * thread, handed to the agent that replied there (else the conversation's
+ * agent, else the default new-chat agent), and sent at once — the agent takes
+ * the thread over. Its replies land in the ORIGINAL thread (same comment id).
  */
 
 import type { ChatDispatch } from "../../../store/root-state";
 import { clearFocus } from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
 import { bumpFreshSession } from "../../redux/chat/chat-route.slice";
 import { generateResourceId } from "../../redux/execution-system/utils/ids";
-import type { StoredRemark } from "../../redux/execution-system/instance-resources/remarks";
-import { chatRouteSurfaceKey } from "./begin-fresh-chat";
+import type { RemarkThreadEntry, StoredRemark } from "../../redux/execution-system/instance-resources/remarks";
+import { chatRouteSurfaceKey, getFreshChatHref } from "./begin-fresh-chat";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { ensureOrgId } from "../../../host/org";
@@ -39,30 +45,68 @@ export function passageRemark(passage: NewChatPassage): StoredRemark {
   };
 }
 
+/** A comment thread, as "Continue in new chat" hands it over. */
+export interface NewChatThread {
+  /** The root comment (platform.comments id). */
+  rootCommentId: string;
+  /** The answer the thread is on (a chat answer); null for any other record. */
+  messageId: string | null;
+  /** The conversation that answer lives in. */
+  conversationId: string | null;
+  /** The passage the root comment is anchored to. */
+  quote: string | null;
+  /** The root comment's words. */
+  body: string;
+  /** Every reply after the root, oldest first. */
+  replies: RemarkThreadEntry[];
+}
+
+/** The ONE comment remark a thread becomes: the root's id, its words, the thread so far. */
+export function threadRemark(thread: NewChatThread): StoredRemark {
+  return {
+    resourceId: generateResourceId(),
+    coalesceKey: `thread:${thread.rootCommentId}`,
+    item: {
+      kind: "comment",
+      target: { conversationId: thread.conversationId, messageId: thread.messageId },
+      commentId: thread.rootCommentId,
+      quote: thread.quote,
+      body: thread.body,
+      ...(thread.replies.length ? { thread: thread.replies } : {}),
+    },
+  };
+}
+
 export async function openNewChatAbout({
   passage,
+  thread,
+  agentId,
   identity,
   dispatch,
   navigate,
 }: {
-  passage: NewChatPassage;
   identity: { userId: string | null; organizationId: string | null };
   dispatch: ChatDispatch;
   navigate: (href: string) => void;
-}): Promise<void> {
+  /** The agent to hand it to; absent = the default new-chat agent. */
+  agentId?: string | null;
+} & ({ passage: NewChatPassage; thread?: undefined } | { thread: NewChatThread; passage?: undefined })): Promise<void> {
   // The person just acted: with no workspace selected, the host asks for one
   // (the default new-chat job depends on it) instead of failing.
   const organizationId = await ensureOrgId(identity.organizationId);
   const { resolveMandate } = await import("../../../mandates/service");
   const mandate = await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
+  const targetAgentId = agentId || mandate.agentId;
   stashChatDraftTransfer({
-    targetAgentId: mandate.agentId,
+    targetAgentId,
     text: "",
-    remarks: [passageRemark(passage)],
+    remarks: [thread ? threadRemark(thread) : passageRemark(passage)],
+    // A passage waits for the person's words; a thread is handed over and answered at once.
+    ...(thread ? { autoSend: true } : {}),
     userId: identity.userId,
     organizationId,
   });
-  dispatch(clearFocus(chatRouteSurfaceKey(mandate.agentId)));
+  dispatch(clearFocus(chatRouteSurfaceKey(targetAgentId)));
   dispatch(bumpFreshSession());
-  navigate("/chat/new");
+  navigate(getFreshChatHref(targetAgentId, mandate.agentId));
 }

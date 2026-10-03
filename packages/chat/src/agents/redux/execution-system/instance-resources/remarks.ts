@@ -66,6 +66,17 @@ export interface CommentRemark {
   quote: string | null;
   /** The person's words (may be empty: the passage itself is the point). */
   body: string;
+  /**
+   * The thread as it stood when the person continued it in a new chat — every
+   * reply after the root, oldest first, with who wrote it. Absent on a fresh comment.
+   */
+  thread?: RemarkThreadEntry[];
+}
+
+export interface RemarkThreadEntry {
+  /** "You", a person's name, or the agent's name. */
+  author: string;
+  body: string;
 }
 
 export interface ChoiceRemark {

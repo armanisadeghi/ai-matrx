@@ -33,6 +33,8 @@ export interface ChatDraftTransfer {
    * by the receiver with `readStoredRemarks`.
    */
   remarks?: unknown[];
+  /** Send the first turn as soon as the staged content is in ("Continue in new chat"). */
+  autoSend?: boolean;
   /** The transfer is valid only for the identity that created it. */
   userId?: string | null;
   organizationId?: string | null;
