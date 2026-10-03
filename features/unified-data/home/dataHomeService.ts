@@ -373,11 +373,14 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
     pageOf(rows, { ...query, page: 1 }, { ...sort, pageSize: Number.MAX_SAFE_INTEGER }).rows;
   const openEndedPage = async (query: EntityListQuery, sort: EntityListSort) => {
     const before = query.archived === "all" ? activeHalf(await all(), query, sort) : [];
-    for (;;) {
+    for (let reads = 0; ; reads++) {
       const page = archivePageInHand(query, sort, before);
       if (page) return page;
-      // As many as this page still needs, so a 100-row page is one read, not two.
-      await readMoreArchive(query.page * sort.pageSize + 1 - before.length - archiveMatches(query).length);
+      // First read: as many as this page still needs, so a 100-row page is one read, not two. A
+      // search or filter that the first read could not fill reads on in the largest steps.
+      await readMoreArchive(
+        reads === 0 ? query.page * sort.pageSize + 1 - before.length - archiveMatches(query).length : ARCHIVE_READ_MAX,
+      );
     }
   };
   // No count is made here (see above); the organization filter lists its choices without numbers.

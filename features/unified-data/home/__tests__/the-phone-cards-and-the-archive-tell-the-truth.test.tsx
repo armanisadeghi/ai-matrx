@@ -41,7 +41,7 @@ jest.mock("@/features/unified-data/hub/doors", () => ({
 // eslint-disable-next-line import/first
 import { readArchivedDataHomePage } from "../dataHomeArchived";
 // eslint-disable-next-line import/first
-import { ARCHIVE_READ, createDataHomeService } from "../dataHomeService";
+import { ARCHIVE_READ, ARCHIVE_READ_MAX, createDataHomeService } from "../dataHomeService";
 // eslint-disable-next-line import/first
 import { DEFAULT_ENTITY_LIST_QUERY, type EntityListQuery } from "@/lib/entity-list/types";
 
@@ -187,6 +187,7 @@ describe("W4 — the Archived filter pages like the store pages it", () => {
   });
 
   it("a later page reads the store only when the rows in hand run out", async () => {
+    // (pages 1 and 3 fit the first read of 100; page 6 needs one more)
     const readArchived = storeArchive(130);
     const service = homeService(readArchived);
     await service.fetchPage(query("archived"), SORT);
@@ -208,7 +209,11 @@ describe("W4 — the Archived filter pages like the store pages it", () => {
     const page = await homeService(readArchived).fetchPage(query("archived", { orgId: ORGS.titanium.id }), SORT);
     expect(page.rows).toHaveLength(25);
     expect(page.rows.every((r) => r.organizationId === ORGS.titanium.id)).toBe(true);
-    expect(readArchived).toHaveBeenCalledTimes(3);
+    // One read sized to the page, then the largest steps — never 100 at a time through a narrow filter.
+    expect(readArchived.mock.calls.map((c) => c[0])).toEqual([
+      { offset: 0, limit: ARCHIVE_READ },
+      { offset: ARCHIVE_READ, limit: ARCHIVE_READ_MAX },
+    ]);
   });
 
   it("Show all lists the live rows, then the archive, open-ended", async () => {
