@@ -99,6 +99,24 @@ async function call<T>(
   return { ok: true, data: (answered.data ?? []) as T };
 }
 
+/**
+ * Lane 7 W5 — the organization of one standard row, read AS THE PERSON (`custom.entity_record_home`,
+ * SECURITY INVOKER). Answers `{organization_id}` or `{refused, reason}`; never raises. The
+ * custom-fields section on every record view asks it, never the active organization.
+ */
+export interface RecordHomeAnswer {
+  organization_id?: string;
+  refused?: string;
+  reason?: string;
+}
+export function entityRecordHome(
+  dataSource: RecordsDataSource,
+  token: string,
+  recordId: string,
+): Promise<DoorAnswer<RecordHomeAnswer>> {
+  return call<RecordHomeAnswer>(dataSource, "entity_record_home", { p_token: token, p_record_id: recordId });
+}
+
 /** REC-27's Table kernel. Every Table of an organization is a record in it. */
 export function tableKernelId(dataSource: RecordsDataSource): Promise<DoorAnswer<string>> {
   return call<string>(dataSource, "table_kernel_id", {});

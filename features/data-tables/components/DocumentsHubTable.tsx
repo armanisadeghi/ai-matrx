@@ -13,7 +13,7 @@
 // through `getRowHref` — both from the ONE registry entry, which screams when it has no route.
 
 import { Trash } from "lucide-react";
-import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";

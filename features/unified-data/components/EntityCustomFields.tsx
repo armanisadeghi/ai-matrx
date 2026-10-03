@@ -42,6 +42,7 @@ import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } fro
 import { Button } from "@/components/ui/button";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { NewTableDialog } from "@/features/make/MakeMount";
+import { entityRecordHome } from "@/features/unified-data/hub/doors";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -83,21 +84,6 @@ type RecordHome =
   | { state: "refused"; sentence: string; reason: string | null }
   | { state: "error" };
 
-interface RecordHomeAnswer {
-  organization_id?: string;
-  refused?: string;
-  reason?: string;
-}
-
-interface RecordHomeCaller {
-  schema(name: "custom"): {
-    rpc(
-      fn: "entity_record_home",
-      args: { p_token: string; p_record_id: string },
-    ): PromiseLike<{ data: RecordHomeAnswer | null; error: { message: string } | null }>;
-  };
-}
-
 /** The row's organization, asked as the person. Never the active organization. */
 function useRecordHome(token: string, recordId: string): { home: RecordHome; retry: () => void } {
   const [home, setHome] = useState<RecordHome>({ state: "loading" });
@@ -105,21 +91,18 @@ function useRecordHome(token: string, recordId: string): { home: RecordHome; ret
   useEffect(() => {
     let live = true;
     setHome({ state: "loading" });
-    const client = createClient() as unknown as RecordHomeCaller;
-    void Promise.resolve(
-      client.schema("custom").rpc("entity_record_home", { p_token: token, p_record_id: recordId }),
-    ).then(
-      ({ data, error }) => {
+    void entityRecordHome(recordsDataSource(createClient()), token, recordId).then(
+      (answer) => {
         if (!live) return;
-        if (error || !data) {
-          console.error("[EntityCustomFields] custom.entity_record_home failed", { token, recordId, error });
+        if (!answer.ok) {
+          console.error("[EntityCustomFields] custom.entity_record_home failed", { token, recordId, error: answer.error });
           setHome({ state: "error" });
-        } else if (data.organization_id) setHome({ state: "home", organizationId: data.organization_id });
+        } else if (answer.data.organization_id) setHome({ state: "home", organizationId: answer.data.organization_id });
         else
           setHome({
             state: "refused",
-            sentence: data.refused ?? "This record takes no custom fields.",
-            reason: data.reason ?? null,
+            sentence: answer.data.refused ?? "This record takes no custom fields.",
+            reason: answer.data.reason ?? null,
           });
       },
       (error: unknown) => {

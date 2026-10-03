@@ -210,8 +210,6 @@ export const TOUCHES_THE_STORE: Record<string, string> = {
     "move: public booking lane (booking_public/hold/confirm/manage/cancel/reschedule) → new records booking doors (server-only data source)",
   "features/data-tables/data-source/record-store-grid.ts":
     "move: migrate_retype → RecordsClient.migrateRetype (exists); view_keys → new door viewKeys",
-  "features/data-tables/data-source/record-store.ts":
-    "ready to move: field_restore → RecordsClient.fieldRestore",
   "features/data-tables/service.ts":
     "ready to move: table_list_everywhere → RecordsClient.tableListEverywhere",
   "features/esign/service.ts":
