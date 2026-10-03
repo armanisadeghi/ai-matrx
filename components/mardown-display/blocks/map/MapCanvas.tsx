@@ -38,8 +38,33 @@ function FitBounds({ markers, hasExplicitCenter }: { markers: MapMarker[]; hasEx
   useEffect(() => {
     if (hasExplicitCenter) return;
     const pts = markers.map((m) => [m.lat, m.lng] as [number, number]);
-    if (pts.length === 1) map.setView(pts[0], 13);
-    else if (pts.length > 1) map.fitBounds(pts, { padding: [30, 30] });
+    const fit = () => {
+      if (pts.length === 1) map.setView(pts[0], 13);
+      else if (pts.length > 1) map.fitBounds(pts, { padding: [30, 30] });
+    };
+    fit();
+    // Leaflet measures its box once. A map that mounts before its pane has a
+    // size (a canvas pane sliding in, a list toggled beside it) fitted to a
+    // zero box and landed at street level. Re-measure and re-fit on every
+    // resize until the person moves the map themselves.
+    let personMoved = false;
+    const onDrag = () => {
+      personMoved = true;
+    };
+    map.on("dragstart", onDrag);
+    const el = map.getContainer();
+    const ro =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(() => {
+            map.invalidateSize();
+            if (!personMoved) fit();
+          });
+    ro?.observe(el);
+    return () => {
+      ro?.disconnect();
+      map.off("dragstart", onDrag);
+    };
   }, [map, key, hasExplicitCenter, markers]);
   return null;
 }

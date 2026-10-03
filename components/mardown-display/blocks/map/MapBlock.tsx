@@ -230,7 +230,8 @@ export const MapBlock: React.FC<MapBlockProps> = ({
           >
             <div
               className={cn(
-                "w-full min-w-0 flex-1 overflow-hidden rounded-md border border-border",
+                "w-full min-w-0 overflow-hidden rounded-md border border-border",
+                placesList === "side" && "flex-1",
                 placesList ? "h-96" : "h-72",
               )}
             >
