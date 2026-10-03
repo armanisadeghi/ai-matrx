@@ -123,6 +123,7 @@ jest.mock("../../../../../host/org", () => {
 import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import conversationsReducer, {
   createInstance,
+  setInstanceStatus,
 } from "../../conversations/conversations.slice";
 import conversationFocusReducer from "../../conversation-focus/conversation-focus.slice";
 import instanceModelOverridesReducer from "../../instance-model-overrides/instance-model-overrides.slice";
@@ -349,6 +350,24 @@ describe("a second message typed while the first is being sent is never lost", (
     expect(composer(store, id)?.text).toBe(LINE_A);
     expect(composer(store, id)?.submissionPhase).toBe("idle");
     expect(userRows(store, id)).toEqual([]);
+  });
+
+  it("a message sent while the run waits on a person (paused) is QUEUED into that run — never a colliding turn", async () => {
+    // Owner proof on /chat 2026-10-03: the run was suspended on the canvas
+    // edit's approval card (status "paused"); `selectIsExecuting` reads only
+    // running/streaming, so the send was treated as idle and never reached the
+    // run's queue.
+    const id = "conv-paused-on-approval";
+    const store = makeStore(id);
+    store.dispatch(setInstanceStatus({ conversationId: id, status: "paused" }));
+    type(store, id, LINE_B);
+    pressEnter(store, id);
+    for (let i = 0; i < 20 && inboxPosts.length === 0; i++) await tick(30);
+
+    expect(inboxPosts).toEqual([{ text: LINE_B, delivery: "turn_end" }]);
+    expect(queueCards(store, id).map((c) => c.text)).toEqual([LINE_B]);
+    expect(userRows(store, id)).toEqual([]);
+    expect(composer(store, id)?.text).toBe("");
   });
 
   it("the same draft submitted twice goes once", async () => {

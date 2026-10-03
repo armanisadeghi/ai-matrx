@@ -13,6 +13,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import pendingAsksReducer, {
   enqueuePendingAsk,
+  selectActivePendingAsksForConversation,
   type PendingAsk,
 } from "../pending-asks.slice";
 import {
@@ -142,5 +143,35 @@ describe("resolvePendingAsksWithInput — card answers survive a composer submit
     const again = enqueue(store2, ask("reused"));
     expect(submit(store2, "")).toBe(true);
     expect(again.get()).toEqual({ ...EMPTY_ASK_RESPONSE, cancelled: true });
+  });
+});
+
+describe("a decision card is answered only on its card — a composer message never decides it", () => {
+  // Owner proof on /chat 2026-10-03 (conversation 9373b95d): with the canvas
+  // edit's approval card open, a follow-up typed in the composer declined the
+  // edit ("declined_with_instructions") and the message vanished from the
+  // transcript. The message is the person's next message, not their verdict.
+  it.each(["approval", "plan_approval", "email_review"] as const)(
+    "a pending %s card is left pending and the submit is not consumed",
+    (kind) => {
+      const store = makeStore();
+      const card = enqueue(store, ask("call-card", { kind, toolName: "apply_surface_write" }));
+      expect(submit(store, "After that, also tell me the page title.")).toBe(false);
+      expect(card.get()).toBeUndefined();
+      expect(
+        selectActivePendingAsksForConversation(CONVERSATION)(
+          store.getState() as unknown as ChatRootState,
+        ).map((a) => a.callId),
+      ).toEqual(["call-card"]);
+    },
+  );
+
+  it("a question beside a decision card still takes the composer text; the card stays pending", () => {
+    const store = makeStore();
+    const question = enqueue(store, ask("call-q"));
+    const card = enqueue(store, ask("call-card", { kind: "approval", toolName: "apply_surface_write" }));
+    expect(submit(store, "Blue")).toBe(true);
+    expect(question.get()).toMatchObject({ wrote_instead: true, freeform: "Blue" });
+    expect(card.get()).toBeUndefined();
   });
 });

@@ -25,6 +25,13 @@
  *   - not answered + text empty → cancel it (an empty, non-error tool result) so
  *     nothing dangles.
  *
+ * DECISION CARDS ARE ANSWERED ONLY ON THEIR CARD (2026-10-03). An approval of a
+ * change (`approval`, `plan_approval`, `email_review`) is never decided by the
+ * composer: a follow-up typed while the canvas edit's card was open declined
+ * the edit as "instructions" and the message vanished from the transcript. The
+ * card stays pending and the caller queues the message into the run
+ * (`smartExecute` — a paused run is a live run).
+ *
  * Resolving fires each ask's awaiting handler → `submitToolResult` →
  * `continuation_needed` → `resumeInstance`, so the conversation continues with
  * the user's message embedded in the tool result. No separate turn is started —
@@ -52,13 +59,21 @@ import { EMPTY_ASK_RESPONSE, type AskUserResponse } from "../tools/schemas";
  *   when there were no pending asks (or none had a live resolver), in which case
  *   the normal turn should proceed.
  */
+/** Kinds that decide a change; only their own card answers them. */
+export const ASK_KINDS_DECIDED_ONLY_ON_THEIR_CARD: ReadonlySet<string> = new Set([
+  "approval",
+  "plan_approval",
+  "email_review",
+]);
+
 export function resolvePendingAsksWithInput(
   conversationId: string,
   text: string,
 ) {
   return (dispatch: ChatDispatch, getState: () => ChatRootState): boolean => {
-    const asks =
-      selectActivePendingAsksForConversation(conversationId)(getState());
+    const asks = selectActivePendingAsksForConversation(conversationId)(
+      getState(),
+    ).filter((ask) => !ASK_KINDS_DECIDED_ONLY_ON_THEIR_CARD.has(ask.kind));
     if (asks.length === 0) return false;
 
     const trimmed = text.trim();

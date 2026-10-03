@@ -24,7 +24,10 @@ import { ensureConversationScopesOrAsk } from "@host/features/scopes/redux/thunk
 import {
   selectAllResourcesResolved,
 } from "../instance-resources/instance-resources.selectors";
-import { selectIsExecuting } from "../selectors/aggregate.selectors";
+import {
+  selectIsAwaitingTools,
+  selectIsExecuting,
+} from "../selectors/aggregate.selectors";
 import {
   enqueueInboxMessage,
   returnQueuedToComposer,
@@ -432,7 +435,13 @@ export const smartExecute = createAsyncThunk<
       // — we opened the stream. This keys on THIS conversation being live, so
       // the autoclear split (input focus already moved to a fresh, idle
       // conversation) keeps its parallel-iteration behavior untouched.
-      if (selectIsExecuting(conversationId)(state)) {
+      // A run PAUSED on a person (an approval card, a delegated tool) is still
+      // live: the server holds its turn. Treating it as idle sent the message
+      // nowhere useful (2026-10-03, canvas edit approval) — it queues too.
+      if (
+        selectIsExecuting(conversationId)(state) ||
+        selectIsAwaitingTools(conversationId)(state)
+      ) {
         const surfaceName =
           state.conversations.byConversationId[conversationId]?.surfaceName;
         if (
