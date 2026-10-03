@@ -1726,104 +1726,32 @@ const userPreferencesSlice = createSlice({
       // so a stale value can't masquerade as a user choice or shadow-revive.
       const loaded = sanitizeLoadedPreferences(rawLoaded);
 
-      if (loaded.favorites)
-        state.favorites = { ...state.favorites, ...loaded.favorites };
-      if (loaded.display)
-        state.display = { ...state.display, ...loaded.display };
-      if (loaded.prompts)
-        state.prompts = { ...state.prompts, ...loaded.prompts };
-      if (loaded.voice) state.voice = { ...state.voice, ...loaded.voice };
-      if (loaded.textToSpeech)
-        state.textToSpeech = { ...state.textToSpeech, ...loaded.textToSpeech };
-      if (loaded.assistant)
-        state.assistant = { ...state.assistant, ...loaded.assistant };
-      if (loaded.email) state.email = { ...state.email, ...loaded.email };
-      if (loaded.videoConference)
-        state.videoConference = {
-          ...state.videoConference,
-          ...loaded.videoConference,
+      // EVERY MODULE LOADS, BY CONSTRUCTION (2026-10-02). This merge used to name its modules one by
+      // one, and three had been left out — `assists`, `connectors` and `reversible`: each was saved
+      // and then never read back, so a person's dock position, "not now" on the connector card and
+      // reversible-action history all came back as defaults on every load (the reversible action
+      // taught the same person "first time" on every visit). It walks the one persisted-module
+      // record now, the same one the engine saves, so a module cannot be saved and not loaded.
+      for (const key of PREFERENCE_MODULE_KEYS) {
+        const incoming = loaded[key];
+        if (!incoming) continue;
+        if (key === "aiModels") {
+          const models = incoming as UserPreferences["aiModels"];
+          state.aiModels = {
+            ...state.aiModels,
+            ...models,
+            favoriteModels: mergeFavoriteModelIds(
+              models.favoriteModels,
+              state.aiModels.favoriteModels,
+            ),
+          };
+          continue;
+        }
+        (state as unknown as Record<string, unknown>)[key] = {
+          ...(state[key] as object),
+          ...(incoming as object),
         };
-      if (loaded.photoEditing)
-        state.photoEditing = { ...state.photoEditing, ...loaded.photoEditing };
-      if (loaded.imageGeneration)
-        state.imageGeneration = {
-          ...state.imageGeneration,
-          ...loaded.imageGeneration,
-        };
-      if (loaded.textGeneration)
-        state.textGeneration = {
-          ...state.textGeneration,
-          ...loaded.textGeneration,
-        };
-      if (loaded.coding) state.coding = { ...state.coding, ...loaded.coding };
-      if (loaded.sandbox)
-        state.sandbox = { ...state.sandbox, ...loaded.sandbox };
-      if (loaded.flashcard)
-        state.flashcard = { ...state.flashcard, ...loaded.flashcard };
-      if (loaded.tutor) state.tutor = { ...state.tutor, ...loaded.tutor };
-      if (loaded.playground)
-        state.playground = { ...state.playground, ...loaded.playground };
-      if (loaded.aiModels)
-        state.aiModels = {
-          ...state.aiModels,
-          ...loaded.aiModels,
-          favoriteModels: mergeFavoriteModelIds(
-            loaded.aiModels.favoriteModels,
-            state.aiModels.favoriteModels,
-          ),
-        };
-      if (loaded.system) state.system = { ...state.system, ...loaded.system };
-      if (loaded.messaging)
-        state.messaging = { ...state.messaging, ...loaded.messaging };
-      if (loaded.agentContext)
-        state.agentContext = { ...state.agentContext, ...loaded.agentContext };
-      if (loaded.agentConnections)
-        state.agentConnections = {
-          ...state.agentConnections,
-          ...loaded.agentConnections,
-        };
-      if (loaded.mermaid)
-        state.mermaid = { ...state.mermaid, ...loaded.mermaid };
-      if (loaded.conversationFilters)
-        state.conversationFilters = {
-          ...state.conversationFilters,
-          ...loaded.conversationFilters,
-        };
-      if (loaded.mediaDevices)
-        state.mediaDevices = {
-          ...state.mediaDevices,
-          ...loaded.mediaDevices,
-        };
-      if (loaded.organization)
-        state.organization = {
-          ...state.organization,
-          ...loaded.organization,
-        };
-      if (loaded.scratchpad)
-        state.scratchpad = {
-          ...state.scratchpad,
-          ...loaded.scratchpad,
-        };
-      if (loaded.notes)
-        state.notes = {
-          ...state.notes,
-          ...loaded.notes,
-        };
-      if (loaded.siteWorkbench)
-        state.siteWorkbench = {
-          ...state.siteWorkbench,
-          ...loaded.siteWorkbench,
-        };
-      if (loaded.listViews)
-        state.listViews = {
-          ...state.listViews,
-          ...loaded.listViews,
-        };
-      if (loaded.lists)
-        state.lists = {
-          ...state.lists,
-          ...loaded.lists,
-        };
+      }
 
       // Snapshot the loaded state so `resetToLoadedPreferences` still works —
       // and so the sync engine's write base (`remote.baseline`) is the record
