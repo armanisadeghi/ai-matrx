@@ -20,6 +20,7 @@ import {
 } from "@host/features/resource-manager/webpage/webpage-snapshot";
 import { resolveContextItemDef } from "./registry";
 import { hasContextItemDef } from "./context-item-block-types";
+import { REMARKS_BLOCK_TYPE } from "../../redux/execution-system/instance-resources/remarks";
 import { referenceRoleCaption } from "@ai-matrx/agents";
 import type { FileIdentityHint, Visibility } from "@host/features/files/types";
 import type {
@@ -459,6 +460,9 @@ export function attachmentBlockTypeOf(part: MessagePart): string | null {
 export function isAttachmentMessagePart(part: MessagePart): boolean {
   const blockType = attachmentBlockTypeOf(part);
   if (!blockType || blockType === "text") return false;
+  // A remark is a composer chip before send and a card in the bubble after:
+  // its persisted part is message body (RemarksTranscriptView), never a chip.
+  if (blockType === REMARKS_BLOCK_TYPE) return false;
   return hasContextItemDef(blockType);
 }
 

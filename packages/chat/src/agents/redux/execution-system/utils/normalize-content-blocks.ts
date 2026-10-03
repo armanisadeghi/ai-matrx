@@ -380,6 +380,20 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
         metadata: raw.metadata,
       };
 
+    case "input_remarks":
+      // The person's remarks on earlier answers (comments, choices, edits,
+      // answers) that rode along with this turn — a compact card in the user
+      // bubble, never an attachment chip.
+      return {
+        blockId: newId("db_input_remarks"),
+        blockIndex: index,
+        type: "input_remarks",
+        status: "complete",
+        content: null,
+        data: { payload: raw as unknown as Record<string, unknown> },
+        metadata: raw.metadata,
+      };
+
     case "speech_script":
       // The text-to-speech ASK on a user turn. Its editor lives in the agent
       // builder; in a transcript it is the script that was performed.

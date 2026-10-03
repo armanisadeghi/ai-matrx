@@ -47,6 +47,7 @@ import { NestedRichContent } from "@/components/rich-content/standard/NestedRich
 import React, { Fragment } from "react";
 import { ReferenceRoleCaption } from "@ai-matrx/chat/agents/image-roles/ReferenceRoleCaption";
 import { DecisionQuestionsTranscriptView } from "@/features/agents/decision-questions/DecisionQuestionsTranscriptView";
+import { RemarksTranscriptView } from "@ai-matrx/chat/agents/components/messages-display/user/RemarksTranscriptView";
 import { SpeechScriptTranscriptView } from "@ai-matrx/chat/agents/speech-script/SpeechScriptTranscriptView";
 import { BlockComponents } from "./BlockComponentRegistry";
 import { InlineStatusIndicator } from "../internal-handlers/InlineStatusIndicator";
@@ -484,6 +485,7 @@ export type FeSynthesizedBlockType =
   // questions that were put and the speech script that was performed.
   | "decision_questions"
   | "speech_script"
+  | "input_remarks"
   | "media_block"
   | "video_prompt_options"
   | "map_topic_proposal"
@@ -663,6 +665,7 @@ export type ShapeBlockType =
   | ServerShapeRenderBlock["type"]
   | "decision_questions"
   | "speech_script"
+  | "input_remarks"
   | "flashcards"
   | "quiz"
   | "presentation"
@@ -1927,6 +1930,14 @@ const SHAPE_BLOCK_DISPATCH = {
   // The payload rides `serverData.payload` (normalize-content-blocks.ts).
   decision_questions: ({ block, index }) => (
     <DecisionQuestionsTranscriptView
+      key={index}
+      payload={(block.serverData?.payload as Record<string, unknown> | undefined) ?? null}
+    />
+  ),
+  // The person's remarks that rode along with a user turn (quote + words /
+  // choice / diff / answers), one compact row each.
+  input_remarks: ({ block, index }) => (
+    <RemarksTranscriptView
       key={index}
       payload={(block.serverData?.payload as Record<string, unknown> | undefined) ?? null}
     />

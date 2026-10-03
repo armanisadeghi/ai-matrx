@@ -49,7 +49,9 @@ function makeStore() {
     middleware: (getDefault) => getDefault().concat(composerDraftMiddleware as any),
   });
 }
-type S = ReturnType<typeof makeStore>;
+// The thunks are typed for the full chat store; this store carries only the slices they touch.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type S = any;
 
 /** A fresh /chat/new mount: new store, new in-memory state, a NEW conversation id. */
 function mount(cid: string): S {
@@ -61,8 +63,10 @@ function mount(cid: string): S {
 
 function quotes(s: S, cid: string): (string | null)[] {
   return Object.values(s.getState().instanceResources.byConversationId[cid] ?? {})
-    .filter((r) => r.blockType === REMARKS_BLOCK_TYPE)
-    .map((r) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((r: any) => r.blockType === REMARKS_BLOCK_TYPE)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((r: any) => {
       const remark = remarkSourceOf(r)?.remark;
       return remark?.kind === "comment" ? remark.quote : null;
     });

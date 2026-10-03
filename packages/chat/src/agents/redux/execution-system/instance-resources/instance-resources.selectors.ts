@@ -26,6 +26,7 @@ import {
 } from "../../../utils/editor-resource-xml";
 import { isEditableCapableBlockType } from "./editable-resource-types";
 import { createResourceReference } from "../../../agent-context/resource-reference";
+import { remarksWirePart } from "./remarks-wire";
 
 const EMPTY_RESOURCES: ManagedResource[] = [];
 const EMPTY_EDITOR_RESOURCES: ManagedResource[] = [];
@@ -609,8 +610,7 @@ function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
     case "editor_error":
     case "editor_code_snippet":
       return null;
-    // Staged remarks are held out of the request until the server accepts the
-    // `input_remarks` part (an unknown part fails the whole request).
+    // Staged remarks travel as ONE part for all of them (selectResourcePayloads).
     case "input_remarks":
       return null;
   }
@@ -737,6 +737,14 @@ export const selectResourcePayloads = (conversationId: string) =>
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map(buildResourcePayload)
         .filter((part): part is UserInputPart => part !== null);
+      // Every staged remark (comment, choice, edit…) rides as ONE input_remarks
+      // part, in chip order; the server places its text after the typed text.
+      const remarks = remarksWirePart(
+        Object.values(resources)
+          .filter((r) => r.status === "ready")
+          .sort((a, b) => a.sortOrder - b.sortOrder),
+      );
+      if (remarks) arr.push(remarks);
 
       return arr.length === 0 ? EMPTY_PAYLOADS : arr;
     },

@@ -59,6 +59,7 @@ const KNOWN_MESSAGE_PART_TYPES = {
   decision_questions: true,
   decision_answers: true,
   speech_script: true,
+  input_remarks: true,
 } as const satisfies Record<MessagePart["type"], true>;
 
 export function isKnownMessagePartType(type: string): boolean {
