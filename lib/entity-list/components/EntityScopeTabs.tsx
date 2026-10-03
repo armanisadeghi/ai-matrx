@@ -86,6 +86,11 @@ export interface EntityScopeTabsProps {
   exact?: boolean;
   /** The lanes the surface's type can never hold (`EntityListConfig.lanes`); absent, not empty. */
   lanes?: LaneSupport;
+  /**
+   * A narrow host (a side panel) whose width is a phone's at every screen size: the lanes are
+   * the one select at every width, never a tab row that scrolls out of sight.
+   */
+  compact?: boolean;
   onChange: (scope: ListScope) => void;
 }
 
@@ -182,6 +187,7 @@ export function EntityScopeTabs({
   countsLoading,
   exact = false,
   lanes,
+  compact = false,
   onChange,
 }: EntityScopeTabsProps) {
   // A row wider than the screen fades at the edge that has more tabs past it
@@ -222,7 +228,7 @@ export function EntityScopeTabs({
   // phone five or more scope tabs never fit (at 375 /transcripts showed two of
   // five, "Shared" and "Public" past the edge), so the SAME slot holds a
   // select there; wider screens keep the tabs.
-  const phoneSelect = kinds.length >= 5;
+  const phoneSelect = compact || kinds.length >= 5;
   const activeNarrowId =
     scope.kind === "industry" ? scopeIndustryId(scope) : scopeNarrowId(scope);
   const countOf = (kind: ListScopeKind): number | null => {
@@ -242,7 +248,7 @@ export function EntityScopeTabs({
           onChange(at === -1 ? makeScope(v as ListScopeKind) : makeScope(v.slice(0, at) as ListScopeKind, v.slice(at + 1)));
         }}
       >
-        <SelectTrigger aria-label="List scope" className="h-7 w-auto min-w-0 max-w-full gap-1.5 text-xs sm:hidden">
+        <SelectTrigger aria-label="List scope" className={cn("h-7 w-auto min-w-0 max-w-full gap-1.5 text-xs", !compact && "sm:hidden")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -289,6 +295,7 @@ export function EntityScopeTabs({
         // ring overflowed, the strip scrolled and faded its only tab on a phone.
         "pointer-coarse:-my-2 pointer-coarse:py-2 inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0",
         phoneSelect && "max-sm:hidden",
+        compact && "hidden",
         fade,
       )}
       role="tablist"

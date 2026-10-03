@@ -43,12 +43,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EntityScopeTabs, scopeKindLabel } from "@/lib/entity-list/components/EntityScopeTabs";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
+import { useLaneParam } from "@/lib/entity-list/useLaneParam";
+import { laneCounts, laneIds, type LaneRow } from "@/lib/entity-list/laneRows";
+import { makeScope, withStandardLanes, type LaneSupport, type ListScopeKind } from "@/lib/list-scope/types";
 import { listTablesEverywhere, type UserTableListItem } from "@/features/data-tables/service";
 import {
   createWebhook,
   declareTableWebhook,
   deleteWebhook,
   listDeliveries,
+  listWebhookLanes,
   listWebhooks,
   redeliverWebhookDelivery,
   rotateWebhookSecret,
@@ -361,8 +368,18 @@ function WebhookCard({
   );
 }
 
+/** The lanes a webhook can sit in: no share path and no publish path, so no Shared or Public. */
+const WEBHOOK_SCOPES: ListScopeKind[] = ["mine", "orgs"];
+const WEBHOOK_LANE_SUPPORT: LaneSupport = { shared: false, public: false };
+const WEBHOOK_LANES = withStandardLanes(WEBHOOK_SCOPES, { lanes: WEBHOOK_LANE_SUPPORT });
+
 export function WebhooksManager() {
   const [webhooks, setWebhooks] = useState<Webhook[] | null>(null);
+  // The list header: lane (`?scope=`, opens on All via `lists.landing_tab/webhooks`) and the
+  // organization filter (`?org_filter=`). Never the active organization.
+  const [lane, setLane] = useLaneParam("webhooks", WEBHOOK_LANES);
+  const [orgFilter, setOrgFilter] = useOrgFilterParam([]);
+  const [laneRows, setLaneRows] = useState<LaneRow[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
@@ -394,10 +411,13 @@ export function WebhooksManager() {
 
   const reload = useCallback(async () => {
     try {
-      setWebhooks(await listWebhooks());
+      const [rows, lanes] = await Promise.all([listWebhooks(), listWebhookLanes()]);
+      setWebhooks(rows);
+      setLaneRows(lanes);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to load webhooks");
       setWebhooks([]);
+      setLaneRows(null);
     }
   }, []);
 
@@ -458,12 +478,27 @@ export function WebhooksManager() {
     }
   };
 
+  const counts = laneCounts(laneRows ?? [], WEBHOOK_LANES, orgFilter);
+  const inLane = laneRows ? laneIds(laneRows, lane, orgFilter) : null;
+  const shown = webhooks && inLane ? webhooks.filter((w) => inLane.has(w.id)) : webhooks;
+
   return (
     <div className="mx-auto max-w-3xl p-4 pt-[calc(var(--shell-header-h)+1rem)]">
-      <div className="mb-4 flex items-center justify-end">
-        <Button size="sm" onClick={() => setCreating((c) => !c)}>
-          <Plus className="size-4" /> New webhook
-        </Button>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <EntityScopeTabs
+          scope={makeScope(lane)}
+          scopes={WEBHOOK_SCOPES}
+          lanes={WEBHOOK_LANE_SUPPORT}
+          counts={counts}
+          countsLoading={laneRows === null}
+          onChange={(next) => setLane(next.kind)}
+        />
+        <div className="flex items-center gap-2">
+          <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} counts={counts} countsLoading={laneRows === null} />
+          <Button size="sm" onClick={() => setCreating((c) => !c)}>
+            <Plus className="size-4" /> New webhook
+          </Button>
+        </div>
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
         Get a signed HTTPS callback when your events fire — a file is shared, a
@@ -590,7 +625,7 @@ export function WebhooksManager() {
         </div>
       )}
 
-      {webhooks === null ? (
+      {shown === null ? (
         <div className="space-y-3">
           {[0, 1].map((i) => (
             <div
@@ -599,7 +634,11 @@ export function WebhooksManager() {
             />
           ))}
         </div>
-      ) : webhooks.length === 0 ? (
+      ) : shown.length === 0 && webhooks !== null && webhooks.length > 0 ? (
+        <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          No webhooks in {scopeKindLabel(lane)}
+        </p>
+      ) : shown.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-8 text-center">
           <WebhookIcon className="mx-auto mb-2 size-8 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground">No webhooks yet</p>
@@ -609,7 +648,7 @@ export function WebhooksManager() {
         </div>
       ) : (
         <div className="space-y-3">
-          {webhooks.map((w) => (
+          {shown.map((w) => (
             <WebhookCard
               key={w.id}
               webhook={w}

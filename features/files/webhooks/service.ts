@@ -18,6 +18,8 @@ import type {
 } from "./types";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
+import type { LaneRow } from "@/lib/entity-list/laneRows";
 // 🚨 THE SIGNING SECRET IS MINTED WHERE IT IS VERIFIED — not here. (SECURITY-SWEEP, 2026-09-21.)
 // This file used to carry `generateWebhookSecret()`: 24 bytes of `crypto.getRandomValues` in
 // the page, POSTed straight into `files.webhooks.secret` at create and at rotate. The
@@ -45,6 +47,21 @@ export async function listWebhooks(): Promise<Webhook[]> {
     .order("created_at", { ascending: false })
     .returns<Webhook[]>();
   if (error) throw new Error(`Failed to load webhooks: ${error.message}`);
+  return data ?? [];
+}
+
+/**
+ * Which list lanes each readable webhook sits in (All / Mine / My team / My Orgs), from
+ * `public.webhook_list_lanes` — SECURITY INVOKER, so row security stays the ceiling. Read once
+ * with no organization; the page narrows by its organization filter (lib/entity-list/laneRows.ts).
+ */
+export async function listWebhookLanes(): Promise<LaneRow[]> {
+  const { data, error } = await readListRpc<LaneRow>(
+    "webhook_list_lanes",
+    { p_org_id: null },
+    { order: ["lane", "id"] },
+  );
+  if (error) throw new Error(`Failed to load webhook lanes: ${error.message}`);
   return data ?? [];
 }
 

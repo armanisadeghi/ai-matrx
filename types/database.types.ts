@@ -8193,7 +8193,7 @@ export type Database = {
       canvas_comment_likes: {
         Row: {
           comment_id: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -8207,7 +8207,7 @@ export type Database = {
         }
         Insert: {
           comment_id: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -8221,7 +8221,7 @@ export type Database = {
         }
         Update: {
           comment_id?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -8248,7 +8248,7 @@ export type Database = {
           avatar_url: string | null
           canvas_id: string
           content: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -8262,7 +8262,7 @@ export type Database = {
           organization_id: string
           parent_comment_id: string | null
           reply_count: number | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string | null
           username: string
@@ -8272,7 +8272,7 @@ export type Database = {
           avatar_url?: string | null
           canvas_id: string
           content: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -8286,7 +8286,7 @@ export type Database = {
           organization_id: string
           parent_comment_id?: string | null
           reply_count?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           username: string
@@ -8296,7 +8296,7 @@ export type Database = {
           avatar_url?: string | null
           canvas_id?: string
           content?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -8310,7 +8310,7 @@ export type Database = {
           organization_id?: string
           parent_comment_id?: string | null
           reply_count?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           username?: string
@@ -8395,7 +8395,7 @@ export type Database = {
           content: Json
           content_hash: string | null
           conversation_id: string | null
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -8424,7 +8424,7 @@ export type Database = {
           task_id: string | null
           title: string | null
           type: string
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string
           version: number
@@ -8435,7 +8435,7 @@ export type Database = {
           content: Json
           content_hash?: string | null
           conversation_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -8464,7 +8464,7 @@ export type Database = {
           task_id?: string | null
           title?: string | null
           type: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id: string
           version?: number
@@ -8475,7 +8475,7 @@ export type Database = {
           content?: Json
           content_hash?: string | null
           conversation_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -8504,7 +8504,7 @@ export type Database = {
           task_id?: string | null
           title?: string | null
           type?: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string
           version?: number
@@ -8523,7 +8523,7 @@ export type Database = {
       canvas_likes: {
         Row: {
           canvas_id: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -8537,7 +8537,7 @@ export type Database = {
         }
         Insert: {
           canvas_id: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -8551,7 +8551,7 @@ export type Database = {
         }
         Update: {
           canvas_id?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -8733,7 +8733,7 @@ export type Database = {
           categories: string[] | null
           comment_count: number | null
           completion_rate: number | null
-          created_at: string | null
+          created_at: string
           created_by: string | null
           creator_display_name: string | null
           creator_username: string | null
@@ -8767,7 +8767,7 @@ export type Database = {
           title: string
           total_attempts: number | null
           trending_score: number | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           version: number
           version_number: number | null
@@ -8782,7 +8782,7 @@ export type Database = {
           categories?: string[] | null
           comment_count?: number | null
           completion_rate?: number | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           creator_display_name?: string | null
           creator_username?: string | null
@@ -8816,7 +8816,7 @@ export type Database = {
           title: string
           total_attempts?: number | null
           trending_score?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           version_number?: number | null
@@ -8831,7 +8831,7 @@ export type Database = {
           categories?: string[] | null
           comment_count?: number | null
           completion_rate?: number | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           creator_display_name?: string | null
           creator_username?: string | null
@@ -8865,7 +8865,7 @@ export type Database = {
           title?: string
           total_attempts?: number | null
           trending_score?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           version_number?: number | null
@@ -30872,14 +30872,33 @@ export type Database = {
         Args: { p_v: Json; p_what: string }
         Returns: Record<string, unknown>
       }
+      _fx_datetime_format: {
+        Args: { p_format: string; p_ts: string }
+        Returns: string
+      }
       _fx_iso: { Args: { p_date_only: boolean; p_ts: string }; Returns: string }
+      _fx_items: {
+        Args: {
+          p_context: Json
+          p_node: Json
+          p_organization_id: string
+          p_values: Json
+        }
+        Returns: Json
+      }
       _fx_loose: { Args: { p_v: Json }; Returns: number }
       _fx_num: { Args: { p_v: Json; p_what: string }; Returns: number }
       _fx_num_text: { Args: { p_n: number }; Returns: string }
+      _fx_ordinal: { Args: { p_n: number }; Returns: string }
+      _fx_regex: { Args: { p_fn: string; p_pattern: string }; Returns: string }
       _fx_text: { Args: { p_v: Json }; Returns: string }
       _fx_truthy: { Args: { p_v: Json }; Returns: boolean }
       _fx_unit: {
         Args: { p_allowed: string[]; p_fn: string; p_v: Json }
+        Returns: string
+      }
+      _fx_workday: {
+        Args: { p_days: number; p_holidays: Json; p_start: string }
         Returns: string
       }
       _fxp_level: {
@@ -31162,6 +31181,7 @@ export type Database = {
         Args: { p_field: Json; p_organization_id: string }
         Returns: Json
       }
+      _public_pictures: { Args: { p_organization_id: string }; Returns: Json }
       _read_record_with: {
         Args: {
           p_by_id: boolean
@@ -33155,13 +33175,10 @@ export type Database = {
           type: string
         }[]
       }
-      entity_row_write: {
+      entity_value_write: {
         Args: {
-          p_archive?: boolean
-          p_columns?: Json
-          p_custom?: Json
-          p_expected_version?: number
           p_organization_id: string
+          p_patch: Json
           p_record_id: string
           p_token: string
         }
@@ -33431,6 +33448,10 @@ export type Database = {
           saved_at: string
           state: string
         }[]
+      }
+      form_look_options: {
+        Args: { p_organization_id: string; p_presentation?: Json }
+        Returns: Json
       }
       form_notify: {
         Args: {
@@ -76699,8 +76720,10 @@ export type Database = {
           request_id: string | null
           retry_count: number
           status_code: number | null
+          updated_at: string
           updated_by: string | null
           user_id: string | null
+          version: number
           was_recovered: boolean
         }
         Insert: {
@@ -76721,8 +76744,10 @@ export type Database = {
           request_id?: string | null
           retry_count?: number
           status_code?: number | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
+          version?: number
           was_recovered?: boolean
         }
         Update: {
@@ -76743,8 +76768,10 @@ export type Database = {
           request_id?: string | null
           retry_count?: number
           status_code?: number | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
+          version?: number
           was_recovered?: boolean
         }
         Relationships: [
@@ -77198,8 +77225,10 @@ export type Database = {
           retry_count: number
           table_target: string
           traceback: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string | null
+          version: number
         }
         Insert: {
           conversation_id?: string | null
@@ -77222,8 +77251,10 @@ export type Database = {
           retry_count?: number
           table_target: string
           traceback?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Update: {
           conversation_id?: string | null
@@ -77246,8 +77277,10 @@ export type Database = {
           retry_count?: number
           table_target?: string
           traceback?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -98505,6 +98538,13 @@ export type Database = {
         Args: { p_org_id: string; p_type_id?: string }
         Returns: Json
       }
+      get_scope_trees: {
+        Args: { p_org_ids: string[]; p_type_id?: string }
+        Returns: {
+          answer: Json
+          org_id: string
+        }[]
+      }
       get_share_capabilities: {
         Args: { p_resource_type: string }
         Returns: Json
@@ -101848,6 +101888,14 @@ export type Database = {
         }
         Returns: Json
       }
+      sandbox_instance_list_lanes: {
+        Args: { p_org_id?: string }
+        Returns: {
+          id: string
+          lane: string
+          organization_id: string
+        }[]
+      }
       saved_view_archive: {
         Args: {
           p_expected_version?: number
@@ -101855,6 +101903,14 @@ export type Database = {
           p_surface_key: string
         }
         Returns: Json
+      }
+      saved_view_list_lanes: {
+        Args: { p_org_id?: string; p_surface_key: string }
+        Returns: {
+          id: string
+          lane: string
+          organization_id: string
+        }[]
       }
       saved_view_save: {
         Args: {
@@ -102945,6 +103001,14 @@ export type Database = {
         Args: { room_id: string }
         Returns: {
           thread_id: string
+        }[]
+      }
+      webhook_list_lanes: {
+        Args: { p_org_id?: string }
+        Returns: {
+          id: string
+          lane: string
+          organization_id: string
         }[]
       }
       wfx_bucket_matches: {
@@ -107287,7 +107351,7 @@ export type Database = {
           analyses_per_keyword: number
           autonomy_level: string
           consecutive_refresh_failures: number
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           default_search_params: Json
@@ -107325,7 +107389,7 @@ export type Database = {
           tag_suggestions: Json | null
           template_id: string | null
           tone_profile: string | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           version: number
           videos_per_keyword: number
@@ -107336,7 +107400,7 @@ export type Database = {
           analyses_per_keyword?: number
           autonomy_level?: string
           consecutive_refresh_failures?: number
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           default_search_params?: Json
@@ -107374,7 +107438,7 @@ export type Database = {
           tag_suggestions?: Json | null
           template_id?: string | null
           tone_profile?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           videos_per_keyword?: number
@@ -107385,7 +107449,7 @@ export type Database = {
           analyses_per_keyword?: number
           autonomy_level?: string
           consecutive_refresh_failures?: number
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           default_search_params?: Json
@@ -107423,7 +107487,7 @@ export type Database = {
           tag_suggestions?: Json | null
           template_id?: string | null
           tone_profile?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           version?: number
           videos_per_keyword?: number
@@ -131131,7 +131195,7 @@ export type Database = {
       }
       heatmap_saves: {
         Row: {
-          created_at: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           data: Json
@@ -131145,7 +131209,7 @@ export type Database = {
           published_to_web_by: string | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           title: string
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string | null
           version: number
@@ -131153,7 +131217,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           data: Json
@@ -131167,7 +131231,7 @@ export type Database = {
           published_to_web_by?: string | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
@@ -131175,7 +131239,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           data?: Json
@@ -131189,7 +131253,7 @@ export type Database = {
           published_to_web_by?: string | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           title?: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
