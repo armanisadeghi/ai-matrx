@@ -23,6 +23,7 @@ type ChipProps = {
   onOpenFullView: () => void;
   onOpenRow?: (key: string) => void;
   className?: string;
+  pressed?: boolean;
   label?: string;
 };
 const chip: { props: ChipProps | null } = { props: null };
