@@ -463,16 +463,25 @@ BEGIN
 END $function$;
 
 -- The two access declarations the up added stay: the restored bodies are SECURITY DEFINER too and need them.
--- The registry requires a covering index for a NEW foreign key (the originals predate that rule); the tables are empty.
+-- The registry requires a covering index and a same-organization trigger for a NEW nullable foreign key (the
+-- originals predate those rules); the tables are empty.
 CREATE INDEX IF NOT EXISTS custom_field_definition_target_definition_id_idx ON platform.custom_field_definition (target_definition_id);
 CREATE INDEX IF NOT EXISTS custom_field_definition_reference_target_definition_id_idx ON platform.custom_field_definition (reference_target_definition_id);
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'custom_field_definition_target_definition_id_fkey' AND conrelid = 'platform.custom_field_definition'::regclass) THEN
     ALTER TABLE platform.custom_field_definition ADD CONSTRAINT custom_field_definition_target_definition_id_fkey FOREIGN KEY (target_definition_id) REFERENCES platform.custom_entity_definition(id);
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_same_org_cfd_target_definition_id' AND tgrelid = 'platform.custom_field_definition'::regclass) THEN
+    CREATE TRIGGER trg_same_org_cfd_target_definition_id BEFORE INSERT OR UPDATE OF target_definition_id ON platform.custom_field_definition
+      FOR EACH ROW EXECUTE FUNCTION platform.assert_same_org('target_definition_id', 'platform.custom_entity_definition');
+  END IF;
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'custom_field_definition_reference_target_definition_id_fkey' AND conrelid = 'platform.custom_field_definition'::regclass) THEN
     ALTER TABLE platform.custom_field_definition ADD CONSTRAINT custom_field_definition_reference_target_definition_id_fkey FOREIGN KEY (reference_target_definition_id) REFERENCES platform.custom_entity_definition(id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_same_org_cfd_reference_target_definition_id' AND tgrelid = 'platform.custom_field_definition'::regclass) THEN
+    CREATE TRIGGER trg_same_org_cfd_reference_target_definition_id BEFORE INSERT OR UPDATE OF reference_target_definition_id ON platform.custom_field_definition
+      FOR EACH ROW EXECUTE FUNCTION platform.assert_same_org('reference_target_definition_id', 'platform.custom_entity_definition');
   END IF;
 END $$;
