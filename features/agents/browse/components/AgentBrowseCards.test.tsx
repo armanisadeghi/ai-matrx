@@ -63,6 +63,7 @@ const sharedAgent: AgentBrowseRow = {
   model_id: "model-id",
   name: "Shared Agent",
   // No class pin: the database answers null (the generator types it string).
+  custom_fields: {},
   offering_id: null as unknown as string,
   organization_id: "organization-id",
   organization_name: "Test Organization",
