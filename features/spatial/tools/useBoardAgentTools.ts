@@ -628,7 +628,6 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
         const index = itemSurfacesRef.current;
         if (!index || !store) return null;
         const state = handed();
-        if (state.items.size === 0) console.warn("[board] nothing handed for the agent's write", { targetName: query.targetName });
         const now = Date.now();
         const liveId = store.getFocused() ?? store.getEditing() ?? store.getSelected();
         const onBoard = new Set(tilesRef.current().map((t) => t.id));
