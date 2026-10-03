@@ -213,11 +213,16 @@ export function OrganizationGateDialog() {
             </p>
           ) : error && organizations.length === 0 && !usingPrefetched ? (
             <div role="alert" className="space-y-2 px-1 py-6">
-              <p className="text-sm text-destructive">{error}</p>
+              {/* The menu rides the error's own line. As a direct child of this
+                  space-y-2 column it picked up the column's 8px top margin,
+                  which the dev tap guard reports as TAP BUTTON MISUSE. */}
+              <p className="text-sm text-destructive">
+                {error}
+                <ErrorAlchemyMenu />
+              </p>
               <Button variant="outline" onClick={() => void refresh()}>
                 Try again
               </Button>
-              <ErrorAlchemyMenu className="ml-auto" />
             </div>
           ) : loading ? (
             <p className="px-1 py-6 text-sm text-muted-foreground">
