@@ -108,6 +108,7 @@ import {
   ComposerSubmenu,
 } from "./ComposerMenu";
 import { ComposerOutputPanel } from "./ComposerOutput";
+import { ComposerMenuSheet } from "./ComposerMenuSheet";
 import { composerShows, metaRowHoldsScopeAndOutput } from "./composer-mode-visibility";
 import type { ComposerMode, ComposerSize } from "./composer-types";
 import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
@@ -129,6 +130,11 @@ interface ComposerPlusMenuProps {
   /** The host's surface key — auto-clear keeps its display slot in step. */
   surfaceKey?: string;
   onRequestInputExpand?: () => void;
+  /** "sheet" = the phone presentation (ComposerMenuSheet); same rows. */
+  presentation?: "popover" | "sheet";
+  /** Controlled open (the phone host's trigger owns its own click). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function ComposerPlusMenu({
@@ -139,10 +145,18 @@ export function ComposerPlusMenu({
   size,
   side,
   onRequestInputExpand,
+  presentation = "popover",
+  open: openProp,
+  onOpenChange,
 }: ComposerPlusMenuProps) {
   const dispatch = useAppDispatch();
   const touchOnly = useTouchOnlyDevice();
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (next: boolean) => {
+    if (openProp === undefined) setOpenState(next);
+    onOpenChange?.(next);
+  };
   const counts = useRunControlCounts(conversationId);
   const attachmentCapabilities = useAppSelector(selectAttachmentCapabilities(conversationId));
   const attachResource = useAttachResource(conversationId);
@@ -197,17 +211,7 @@ export function ComposerPlusMenu({
     attachmentCapabilities,
   });
 
-  return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent
-        /* sizing: fixed — the + menu is 300px by the brief (§2 text rule) */
-        side={side}
-        align="start"
-        sideOffset={8}
-        onPointerDownOutside={ignoreOwnWrapper}
-        className={`flex w-[300px] max-h-[var(--radix-popover-content-available-height)] flex-col overflow-y-auto p-1 ${COMPOSER_MENU_NO_ENTRANCE}`}
-      >
+  const body = (
         <ComposerMenuCloseAllContext.Provider value={close}>
         <ComposerMenuLevel>
         {/* Attach — every mode */}
@@ -238,7 +242,7 @@ export function ComposerPlusMenu({
         <ComposerMenuRow
           icon={Search}
           label="Search your knowledge"
-          detail="⌘K"
+          detail={touchOnly ? undefined : "⌘K"}
           onClick={() => {
             close();
             openAttachSearch();
@@ -427,6 +431,31 @@ export function ComposerPlusMenu({
         />
         </ComposerMenuLevel>
         </ComposerMenuCloseAllContext.Provider>
+  );
+
+  if (presentation === "sheet") {
+    return (
+      <>
+        {trigger}
+        <ComposerMenuSheet open={open} onOpenChange={setOpen}>
+          {body}
+        </ComposerMenuSheet>
+      </>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent
+        /* sizing: fixed — the + menu is 300px by the brief (§2 text rule) */
+        side={side}
+        align="start"
+        sideOffset={8}
+        onPointerDownOutside={ignoreOwnWrapper}
+        className={`flex w-[300px] max-h-[var(--radix-popover-content-available-height)] flex-col overflow-y-auto p-1 ${COMPOSER_MENU_NO_ENTRANCE}`}
+      >
+        {body}
       </PopoverContent>
     </Popover>
   );

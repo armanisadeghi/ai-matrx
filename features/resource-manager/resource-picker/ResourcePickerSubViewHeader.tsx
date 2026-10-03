@@ -13,9 +13,17 @@
  * Sizes: rows 36px (44px on touch), text-sm labels, text-xs secondary lines.
  */
 
-import { forwardRef, type ComponentType, type CSSProperties, type KeyboardEventHandler, type ReactNode } from "react";
+import { createContext, forwardRef, useContext, useEffect, type ComponentType, type CSSProperties, type KeyboardEventHandler, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Link2, Loader2, Search, X } from "lucide-react";
 import { cn } from "@/utils/cn";
+
+/**
+ * Inside a phone sheet the sheet's own iOS nav bar owns Back (and the title),
+ * so a view's header hands its Back to the sheet and draws only its field.
+ */
+export const PickerBackOverrideContext = createContext<
+  ((onBack: (() => void) | null) => void) | null
+>(null);
 
 interface ResourcePickerSubViewHeaderProps {
   onBack: () => void;
@@ -38,6 +46,21 @@ export function ResourcePickerSubViewHeader({
   actions,
   disabled,
 }: ResourcePickerSubViewHeaderProps) {
+  const registerBack = useContext(PickerBackOverrideContext);
+  useEffect(() => {
+    if (!registerBack) return;
+    registerBack(disabled ? () => {} : onBack);
+    return () => registerBack(null);
+  }, [registerBack, onBack, disabled]);
+  if (registerBack) {
+    if (!search && !actions) return null;
+    return (
+      <div className="flex shrink-0 items-center gap-1.5 pb-2">
+        {search ? <div className="min-w-0 flex-1">{search}</div> : <div className="flex-1" />}
+        {actions}
+      </div>
+    );
+  }
   return (
     <div className="flex shrink-0 items-center gap-1.5 border-b border-border p-1.5">
       <button

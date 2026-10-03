@@ -31,7 +31,50 @@ import { cn } from "@ai-matrx/design-system";
 
 type IconType = ComponentType<{ className?: string }>;
 
+/**
+ * ONE MENU, TWO PRESENTATIONS (Arman, 2026-10-03). The same rows render as
+ * desktop hover cascades ("popover") or as the phone sheet ("sheet") — the
+ * Claude iOS + sheet: inset-grouped iOS-settings rows where a cascade row
+ * PUSHES its panel as a page with Back. No phone copy of any menu exists.
+ *
+ * Sheet grouping needs no wrappers: a divider or a label is a `sheet-gap`, a
+ * row is a `sheet-row`; a row after a gap rounds its top, a row before a gap
+ * rounds its bottom, and a row after a row draws the hairline.
+ */
+export type ComposerMenuPresentation = "popover" | "sheet";
+export const ComposerMenuPresentationContext =
+  createContext<ComposerMenuPresentation>("popover");
+
+export interface ComposerSheetPage {
+  title: string;
+  render: () => ReactNode;
+}
+export const ComposerSheetNavContext = createContext<{
+  push: (page: ComposerSheetPage) => void;
+  pop: () => void;
+} | null>(null);
+
+const SHEET_ROW =
+  "sheet-row flex w-full min-w-0 shrink-0 items-center gap-3 bg-card px-3 text-left text-base text-foreground transition-colors active:bg-accent first:rounded-t-xl last:rounded-b-xl [.sheet-gap+&]:rounded-t-xl [&:has(+.sheet-gap)]:rounded-b-xl [.sheet-row+&]:border-t [.sheet-row+&]:border-border/60";
+
+/** iOS-settings icon squircle. */
+function SheetIcon({ icon: Icon }: { icon: IconType }) {
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+      <Icon className="h-[18px] w-[18px] text-foreground" />
+    </span>
+  );
+}
+
 export function ComposerMenuLabel({ children }: { children: ReactNode }) {
+  const presentation = useContext(ComposerMenuPresentationContext);
+  if (presentation === "sheet") {
+    return (
+      <div className="sheet-gap truncate px-3 pb-1.5 pt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground first:pt-0">
+        {children}
+      </div>
+    );
+  }
   return (
     <div className="truncate px-2.5 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
       {children}
@@ -40,6 +83,8 @@ export function ComposerMenuLabel({ children }: { children: ReactNode }) {
 }
 
 export function ComposerMenuDivider() {
+  const presentation = useContext(ComposerMenuPresentationContext);
+  if (presentation === "sheet") return <div className="sheet-gap h-6 shrink-0" role="separator" />;
   return <div className="mx-1 my-1 h-px shrink-0 bg-border" role="separator" />;
 }
 
@@ -84,6 +129,30 @@ export function ComposerMenuRow({
   onPointerLeave?: (event: PointerEvent) => void;
 }) {
   const level = useContext(ComposerMenuLevelContext);
+  const presentation = useContext(ComposerMenuPresentationContext);
+  if (presentation === "sheet") {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        title={title}
+        className={cn(SHEET_ROW, description ? "min-h-14 py-2" : "min-h-12", "disabled:opacity-50")}
+      >
+        {Icon ? <SheetIcon icon={Icon} /> : null}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate">{label}</span>
+          {description ? <span className="truncate text-sm text-muted-foreground">{description}</span> : null}
+        </span>
+        {badge !== undefined && badge !== null ? (
+          <span className="shrink-0 text-base tabular-nums text-muted-foreground">{badge}</span>
+        ) : null}
+        {detail ? <span className="shrink-0 whitespace-nowrap text-base text-muted-foreground">{detail}</span> : null}
+        {checked ? <Check className="h-5 w-5 shrink-0 text-primary" /> : null}
+        {chevron ? <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/60" /> : null}
+      </button>
+    );
+  }
   return (
     <button
       type="button"
@@ -141,6 +210,32 @@ export function ComposerMenuSwitchRow({
   onCheckedChange: (next: boolean) => void;
 }) {
   const level = useContext(ComposerMenuLevelContext);
+  const presentation = useContext(ComposerMenuPresentationContext);
+  if (presentation === "sheet") {
+    return (
+      <label
+        className={cn(
+          SHEET_ROW,
+          "cursor-pointer",
+          description ? "min-h-14 py-2" : "min-h-12",
+          disabled && "cursor-not-allowed opacity-50",
+        )}
+      >
+        {Icon ? <SheetIcon icon={Icon} /> : null}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate">{label}</span>
+          {description ? <span className="truncate text-sm text-muted-foreground">{description}</span> : null}
+        </span>
+        <Switch
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={onCheckedChange}
+          aria-label={label}
+          className="shrink-0"
+        />
+      </label>
+    );
+  }
   return (
     <label
       onPointerEnter={(event) => {
@@ -295,6 +390,23 @@ export function ComposerSubmenu({
   };
   const close = () => setOpen(false);
   const closeAll = useContext(ComposerMenuCloseAllContext);
+  const presentation = useContext(ComposerMenuPresentationContext);
+  const sheetNav = useContext(ComposerSheetNavContext);
+  if (presentation === "sheet" && sheetNav) {
+    // The phone sheet: the cascade's panel becomes a pushed page.
+    return (
+      <ComposerMenuRow
+        {...row}
+        chevron
+        onClick={() =>
+          sheetNav.push({
+            title: typeof row.label === "string" ? row.label : "",
+            render: () => (typeof children === "function" ? children(sheetNav.pop) : children),
+          })
+        }
+      />
+    );
+  }
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverAnchor asChild>

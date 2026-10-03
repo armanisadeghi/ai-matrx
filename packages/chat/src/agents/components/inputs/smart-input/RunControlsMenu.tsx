@@ -218,6 +218,24 @@ export function RunControlsMenu({
     return triggerButton;
   }
 
+  if (isMobile && variant === "plus" && composer) {
+    // The phone + is the SAME menu as the desktop +, as the iOS sheet.
+    return (
+      <ComposerPlusMenu
+        conversationId={conversationId}
+        trigger={triggerButton}
+        mode={composer.mode}
+        size={composer.size}
+        side={side}
+        surfaceKey={composer.surfaceKey}
+        onRequestInputExpand={onRequestInputExpand}
+        presentation="sheet"
+        open={open}
+        onOpenChange={handleOpenChange}
+      />
+    );
+  }
+
   if (isMobile) {
     return (
       <>
