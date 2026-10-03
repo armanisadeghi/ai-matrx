@@ -1,3 +1,6 @@
+-- chair-step: new server-only function; its REVOKE/GRANT only narrow EXECUTE on the one function this
+-- file creates (Postgres grants EXECUTE to PUBLIC on every new function, so locking a new door is a
+-- REVOKE with no additive spelling). No DROP, no table, no policy, no change to an existing body.
 -- ops_check_items_seed_page_2026_10_03.sql
 --
 -- WHY. ops.check_items_apply_run judges a whole run in ONE statement. Its expensive part is the

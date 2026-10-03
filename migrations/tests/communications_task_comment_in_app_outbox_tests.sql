@@ -7,6 +7,7 @@ declare
   v_admin uuid;
   v_org uuid;
   v_task uuid;
+  v_note uuid;
   v_comment uuid;
   v_count integer;
 begin
@@ -43,11 +44,29 @@ begin
     raise exception 'One saved comment must create one exact owner notice; got %', v_count;
   end if;
 
+  if 'email' = any (hr._notify_channels('comment.added', v_org, v_admin, null))
+     and not exists (select 1 from users.user_email_preferences p
+                      where p.user_id = v_admin and p.comment_notifications is false) then
+    select count(*) into v_count from communication.notification
+     where dedupe_key = format('comment.added:%s:email', v_comment)
+       and channel = 'email' and recipient_user_id = v_admin
+       and organization_id = v_org and target_id = v_task
+       and payload -> 'comment' ->> 'text' = 'The figures need one more pass.';
+    if v_count <> 1 then
+      raise exception 'One saved comment must create one exact email intent; got %', v_count;
+    end if;
+  end if;
+
   update platform.comments set body = 'Edited figures.' where id = v_comment;
   select count(*) into v_count from communication.notification
    where target_id = v_task and event_key = 'comment.added' and channel = 'in_app';
   if v_count <> 1 then
     raise exception 'Editing a comment created % notices', v_count;
+  end if;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('comment.added:%s:email', v_comment);
+  if v_count > 1 then
+    raise exception 'Editing a comment duplicated its email intent';
   end if;
 
   insert into communication.notification_preference
@@ -82,6 +101,39 @@ begin
    where target_id = v_task and event_key = 'comment.added' and channel = 'sms';
   if v_count <> 0 then
     raise exception 'Task comment created % SMS intents', v_count;
+  end if;
+
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('app.actor_system', 'communications_clone_fixture', true);
+  insert into workbench.notes (organization_id, label, created_by)
+  values (v_org, 'Quarterly summary', v_admin) returning id into v_note;
+  insert into platform.comments (organization_id, entity_type, entity_id, body)
+  values (v_org, 'note', v_note, 'Please check the figures.')
+  returning id into v_comment;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('comment.added:%s:in_app', v_comment)
+     and target_kind = 'note' and target_id = v_note
+     and deep_link like '/notes/' || v_note::text || '%';
+  if v_count <> 1 then
+    raise exception 'Saved note comment did not create an exact owner notice';
+  end if;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('comment.added:%s:email', v_comment)
+     and target_kind = 'note' and target_id = v_note
+     and channel = 'email';
+  if v_count <> 1 then
+    raise exception 'Saved note comment did not create one email intent';
+  end if;
+
+  update users.user_email_preferences
+     set comment_notifications = false where user_id = v_admin;
+  insert into platform.comments (organization_id, entity_type, entity_id, body)
+  values (v_org, 'note', v_note, 'This owner disabled comment email.')
+  returning id into v_comment;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('comment.added:%s:email', v_comment);
+  if v_count <> 0 then
+    raise exception 'Disabled comment email created an intent';
   end if;
 end;
 $test$;

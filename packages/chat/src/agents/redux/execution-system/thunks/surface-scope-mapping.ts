@@ -131,6 +131,14 @@ export class LaunchCancelledByPerson extends Error {
   }
 }
 
+/**
+ * Surface values that only exist when the person selected something. A mapping
+ * fed by one needs it even when the row never says `required` (legacy
+ * `scope_mappings` cannot): an empty selection is not input. Same set the menu
+ * hides items by (`SELECTION_DEPENDENT_KEYS`, useUnifiedAgentContextMenu).
+ */
+const SELECTION_FED_TARGETS: ReadonlySet<string> = new Set(["selection"]);
+
 function isBlank(value: unknown): boolean {
   return (
     value === undefined ||
@@ -180,7 +188,7 @@ export async function prepareLaunchMappings(args: {
   for (const [key, mapping] of Object.entries(out)) {
     if (
       mapping.mapType === "surface_value" &&
-      mapping.required &&
+      (mapping.required || SELECTION_FED_TARGETS.has(mapping.target)) &&
       isBlank(
         readSurfaceScopeValue(
           applicationScope as ApplicationScope,

@@ -189,9 +189,10 @@ this directory.
   a wiring module — grow the package.
 - `host/` — the ONE `@ai-matrx/associations` binding: `associationsStore.ts` (store
   singleton over supabase + `requireUserId`/`ensureOrgId` + errorSink + the
-  `ENTITY_OVERLAY`; its dataSource carries the **`cmt_add` tap** — the task
-  "someone commented" notification fires from this one seam, never a per-composer
-  helper), `AssociationsHost.tsx` (the provider mount in `app/Providers.tsx`
+  `ENTITY_OVERLAY`; its dataSource forwards `cmt_add` without a browser
+  notification side effect. The draft saved-comment trigger creates one
+  in-app notice and optional email intent from the committed row),
+  `AssociationsHost.tsx` (the provider mount in `app/Providers.tsx`
   carrying the six UI ports: toast notifier, lazy WindowPanel shell, capture openers,
   the `file` picker override, EntityRef/door components, and `authorDisplay` —
   current-user comment-author enrichment from the `selectActiveUser*` selectors;
@@ -700,8 +701,8 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   the `cmt_*` chokepoint is `@ai-matrx/associations/core` bound at
   `service/commentsService.ts`; `CommentThread`/`useComments` are the canonical
   comment UI (tasks panel/editor/popover swapped); `authorDisplay` port bound on
-  the provider; `cmt_add` tap on the host dataSource carries the task
-  comment-added notification.
+  the provider. The former `cmt_add` browser notification tap was removed
+  2026-10-03; the draft saved-comment outbox now owns notification intent.
 - 2026-08-30 — Demanded-schema probe answers no longer file production repair incidents:
   only the package's exact impossible sentinels are local/non-persisting; ordinary RPC
   failures stay red.

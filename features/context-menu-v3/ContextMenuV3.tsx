@@ -547,7 +547,30 @@ export function ContextMenuV3({
       target instanceof HTMLTextAreaElement ||
       target instanceof HTMLInputElement
     ) {
-      const { start, end } = getEditableSelectionOffsets(target);
+      // THE SELECTION THE MENU OPENED ON IS THE ONE EVERY READER SEES. A right
+      // mousedown outside the highlight moves the caret AFTER the mousedown
+      // capture: the header said "Selected: …" while a surface's live scope
+      // builder (notes reads the field's selectionStart/End) saw a caret, so
+      // selection shortcuts vanished or ran on nothing (2026-10-02). Put the
+      // captured range back on the field so the header, the scope, and the
+      // restore-on-close all name the same text.
+      const remembered =
+        captured?.editable &&
+        captured.editable.element === target &&
+        captured.editable.start !== captured.editable.end
+          ? captured.editable
+          : null;
+      const { start, end } = remembered ?? getEditableSelectionOffsets(target);
+      if (remembered) {
+        const live = getEditableSelectionOffsets(target);
+        if (live.start !== start || live.end !== end) {
+          try {
+            target.setSelectionRange(start, end);
+          } catch {
+            // A field without a selection API keeps its whole-value range.
+          }
+        }
+      }
       setSelectedText(captured?.text || "");
       setSelectionRange({
         type: "editable",

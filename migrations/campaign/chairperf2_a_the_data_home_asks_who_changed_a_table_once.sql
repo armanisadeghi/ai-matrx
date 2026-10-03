@@ -38,6 +38,7 @@
 --   select (select count(*) from new) new_rows, (select count(*) from old) old_rows,
 --          (select count(*) from (select * from new except select * from old) q) only_new,
 --          (select count(*) from (select * from old except select * from new) q) only_old;
+-- (new_rows = old_rows too: one row a Table, as the asks were always a set.)
 
 CREATE OR REPLACE FUNCTION custom.data_home(p_organization_id uuid DEFAULT NULL::uuid, p_search text DEFAULT NULL::text, p_include_app_tables boolean DEFAULT false)
  RETURNS jsonb
@@ -259,18 +260,19 @@ begin
   select coalesce(jsonb_agg(r.e || jsonb_build_object('created_by_name', p.m #>> array[r.e ->> 'created_by', 'name'],
                                                       'synced_from', r.synced_from)
                   order by r.o), '[]'::jsonb),
-         coalesce(jsonb_agg(jsonb_build_object('organization_id', r.org, 'id', r.id, 'at', r.at,
-                                               'who', p.m #>> array[r.changer::text, 'name'])
-                            order by r.org, r.id) filter (where r.answered), '[]'::jsonb)
+         -- one row a Table, however many lanes listed it (the asks below were always a set)
+         (select coalesce(jsonb_agg(jsonb_build_object('organization_id', c.org, 'id', c.id, 'at', c.at,
+                                                       'who', cp.m #>> array[c.changer::text, 'name'])
+                                    order by c.org, c.id), '[]'::jsonb)
+            from (select distinct a.org, a.id, a.at, a.changer from rows_ a where a.answered) c
+            left join people cp on cp.org = c.org)
     into v_tables, v_changed
     from rows_ r
     left join people p on p.org = r.org;
 
-  with ids as (
+  with listed as (
     select x.organization_id as org, 'structure'::text as k, x.table_id as id
       from jsonb_to_recordset(v_tables) as x(organization_id uuid, table_id uuid)
-     where not exists (select 1 from jsonb_to_recordset(v_changed) as a(organization_id uuid, id uuid)
-                        where a.organization_id = x.organization_id and a.id = x.table_id)
     union
     select x.organization_id,
            case x.kind when 'form' then 'form' when 'booking' then 'form' when 'portal' then 'portal'
@@ -278,6 +280,13 @@ begin
            x.item_id
       from jsonb_to_recordset(v_items) as x(kind text, organization_id uuid, item_id uuid)
      where x.kind <> 'share'
+  ), ids as (
+    -- a structure answered above (a Table, or an item that IS that Table) is not asked again
+    select l.org, l.k, l.id
+      from listed l
+     where not (l.k = 'structure'
+                and exists (select 1 from jsonb_to_recordset(v_changed) as a(organization_id uuid, id uuid)
+                             where a.organization_id = l.org and a.id = l.id))
   ), chunked as (
     select org, k, id, (row_number() over (partition by org, k order by id) - 1) / 500 as c from ids
   )

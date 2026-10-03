@@ -14,6 +14,15 @@ describe("scoped MCP OAuth endpoints", () => {
     );
   });
 
+  it("builds an unscoped read-only endpoint when no project is named", () => {
+    expect(buildSupabaseScopedMcpEndpoint(base)).toBe(
+      "https://mcp.supabase.com/mcp?read_only=true&features=docs%2Cdatabase%2Cdebugging",
+    );
+    expect(buildSupabaseScopedMcpEndpoint(base, "  ")).toBe(
+      "https://mcp.supabase.com/mcp?read_only=true&features=docs%2Cdatabase%2Cdebugging",
+    );
+  });
+
   it("rejects invalid project references", () => {
     expect(() => buildSupabaseScopedMcpEndpoint(base, "production"))
       .toThrow("20-character");
@@ -34,6 +43,9 @@ describe("scoped MCP OAuth endpoints", () => {
     "https://mcp.supabase.com/mcp?project_ref=njrhgywnadxveyvjzjcu&read_only=false&features=docs%2Cdatabase%2Cdebugging",
     "https://mcp.supabase.com/mcp?project_ref=njrhgywnadxveyvjzjcu&read_only=true&features=docs%2Cdatabase%2Cdebugging%2Cdevelopment",
     "https://mcp.supabase.com/mcp?project_ref=njrhgywnadxveyvjzjcu&read_only=true&features=docs%2Cdatabase%2Cdebugging&extra=true",
+    "https://mcp.supabase.com/mcp?features=docs%2Cdatabase%2Cdebugging",
+    "https://mcp.supabase.com/mcp?read_only=false&features=docs%2Cdatabase%2Cdebugging",
+    "https://mcp.supabase.com/mcp?project_ref=&read_only=true&features=docs%2Cdatabase%2Cdebugging",
   ])("rejects a widened Supabase scope: %s", (candidate) => {
     expect(() =>
       validateSupabaseScopedMcpEndpointOverride(base, candidate),

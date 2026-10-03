@@ -346,7 +346,10 @@ server-side; the same Realtime subscription updates the panel with no delegation
   with THAT answer, the composer text riding as `additional_instructions` on the
   last drafted ask per group; an undrafted ask goes out as write-instead freeform
   when text is present, or cancel — an empty, non-error result — when empty.
-  Card answers are never dropped by a composer submit (guard:
+  A DECISION card (`approval`, `plan_approval`, `email_review`) is the
+  exception: only its own card decides it; the composer message is queued into
+  the paused run and the card stays (`ASK_KINDS_DECIDED_ONLY_ON_THEIR_CARD`,
+  2026-10-03). Card answers are never dropped by a composer submit (guard:
   `redux/__tests__/resolve-asks-with-input.test.ts`). That resolves the tool calls and lets
   the normal `continuation_needed → resumeInstance` flow continue the
   conversation with the user's message embedded. For `approval`-kind asks a

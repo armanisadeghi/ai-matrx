@@ -136,3 +136,53 @@ describe("prepareLaunchMappings — a missing required value", () => {
     expect(out).toEqual(merged);
   });
 });
+
+/**
+ * A VALUE FED BY THE SELECTION NEEDS A SELECTION (2026-10-02). "Extract Key
+ * Points" maps `selection` → `text` through the legacy column, which never says
+ * `required`. With the selection empty at launch it ran in silence and the
+ * agent received "Extract the key points from the following content: --- ---".
+ * The menu already hides selection items when nothing is selected
+ * (SELECTION_DEPENDENT_KEYS); a launch that still arrives empty is asked.
+ */
+describe("prepareLaunchMappings — a selection-fed value with no selection", () => {
+  const selectionFed: ValueMappingMap = {
+    text: { mapType: "surface_value", target: "selection" },
+  };
+
+  test("interactive: the person is told and asked, never a silent empty run", async () => {
+    mockPromptForValues.mockResolvedValue(null);
+    await expect(
+      prepareLaunchMappings({
+        merged: selectionFed,
+        applicationScope: { selection: "", content: "" },
+        interactive: true,
+        title: "Extract Key Points",
+      }),
+    ).rejects.toBeInstanceOf(LaunchCancelledByPerson);
+    expect(mockPromptForValues).toHaveBeenCalledTimes(1);
+  });
+
+  test("non-interactive: runs with a visible notice", async () => {
+    await prepareLaunchMappings({
+      merged: selectionFed,
+      applicationScope: { selection: "  " },
+      interactive: false,
+      title: "Extract Key Points",
+    });
+    expect(mockToast.info).toHaveBeenCalledTimes(1);
+  });
+
+  test("a real selection runs without asking", async () => {
+    const out = await prepareLaunchMappings({
+      merged: selectionFed,
+      applicationScope: { selection: "confirm insurance" },
+      interactive: true,
+      title: "Extract Key Points",
+    });
+    expect(mockPromptForValues).not.toHaveBeenCalled();
+    expect(resolveErrors(out, { selection: "confirm insurance" }).variableValues.text).toBe(
+      "confirm insurance",
+    );
+  });
+});

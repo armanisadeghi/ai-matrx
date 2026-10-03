@@ -9,7 +9,7 @@ client. Two paths, two Resend keys: see `features/email/FEATURE.md`.
 
 - **client.ts** - Core email sending via Resend, email templates for welcome, invitations, sharing
 - **exportService.ts** - "Email to me" features for exporting content (chat responses, table exports, share links)
-- **notificationService.ts** - Legacy notification emails with user preference checking (task-assignment fallback, comments, messages, due dates)
+- **notificationService.ts** - Legacy notification emails with user preference checking (task-assignment fallback, messages, due dates)
 
 ## Environment Variables
 
@@ -37,11 +37,15 @@ CRON_SECRET=              # optional — cron endpoints
 | Endpoint | Auth | Description |
 |----------|------|-------------|
 | `POST /api/notifications/task-assigned` | Required | Send assignment DM and legacy email fallback until the transactional outbox row exists |
-| `POST /api/notifications/comment-added` | Required | Send comment notification |
 | `POST /api/notifications/message-received` | Required | Send offline message notification |
 | `GET /api/cron/due-date-reminders` | Cron Secret | Process and send due date reminders |
 
 ## User Preferences
+
+Comment email intents now come from the saved task or note comment transaction
+through `communications_p1_task_comment_in_app_outbox.sql`. The dispatcher sends
+them once the draft migration is activated; canvas-item comments await a valid
+record destination.
 
 Email notifications respect user preferences stored in `user_email_preferences`:
 

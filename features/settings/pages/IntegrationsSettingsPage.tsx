@@ -1,7 +1,7 @@
 "use client";
 
 import { failureLine } from "@/lib/failure/transport";
-import React, { Suspense, useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -903,15 +903,12 @@ function ServerCard({
   const iconUrl = providerArtworkUrls(entry).find((url) => !failedIconUrls.includes(url));
 
   const isSupabase = entry.slug === "supabase";
-  const supabaseRefInputRef = useRef<HTMLInputElement>(null);
+  const [showSupabaseProjectLock, setShowSupabaseProjectLock] = useState(false);
 
+  // One click: Supabase's own sign-in decides which projects are reachable.
+  // The connection is always read-only; a project lock is an optional extra.
   const handleSupabaseOAuth = () => {
     if (!entry.endpointUrl) return;
-    if (!supabaseProjectRef.trim()) {
-      setSupabaseError("Enter the Supabase project reference first");
-      supabaseRefInputRef.current?.focus();
-      return;
-    }
     try {
       const endpoint = buildSupabaseScopedMcpEndpoint(
         entry.endpointUrl,
@@ -1146,15 +1143,15 @@ function ServerCard({
               className="h-11 min-w-0 flex-1 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
               onClick={handleSupabaseOAuth}
               disabled={isConnecting}
-              aria-label={needsRecovery ? "Reconnect project" : "Connect read-only project"}
+              aria-label={needsRecovery ? "Reconnect Supabase" : "Connect Supabase"}
             >
               {isConnecting ? (
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
               ) : (
                 <Lock className="h-3 w-3 mr-1" />
               )}
-              <span className="sm:hidden">{needsRecovery ? "Reconnect project" : "Connect project"}</span>
-              <span className="hidden sm:inline">{needsRecovery ? "Reconnect project" : "Connect read-only project"}</span>
+              <span className="sm:hidden">{needsRecovery ? "Reconnect" : "Connect"}</span>
+              <span className="hidden sm:inline">{needsRecovery ? "Reconnect" : "Connect read-only"}</span>
             </Button>
           ) : canConnect && needsToken ? (
             <Button
@@ -1248,35 +1245,38 @@ function ServerCard({
           )}
         </div>
 
-        {isSupabase && !isConnected && canConnect && (
+        {isSupabase && !isConnected && canConnect && !showSupabaseProjectLock && (
+          <button
+            type="button"
+            className="mt-2 text-xs text-muted-foreground underline-offset-2 hover:underline"
+            onClick={() => setShowSupabaseProjectLock(true)}
+          >
+            Lock to one project (optional)
+          </button>
+        )}
+
+        {isSupabase && !isConnected && canConnect && showSupabaseProjectLock && (
           <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/30 p-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-              <Settings2 className="h-3.5 w-3.5" />
-              Advanced settings
-            </div>
             <label className="block text-xs font-medium text-foreground">
-              Supabase project reference
+              Supabase project reference (optional)
             </label>
             <Input
-              ref={supabaseRefInputRef}
               value={supabaseProjectRef}
               onChange={(event) => {
                 setSupabaseProjectRef(event.target.value);
                 setSupabaseError(null);
               }}
-              placeholder="20-character project ref"
+              placeholder="Leave empty for all your projects"
               className="h-11 font-mono text-base sm:h-8 sm:text-xs"
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && supabaseProjectRef.trim()) {
-                  handleSupabaseOAuth();
-                }
+                if (event.key === "Enter") handleSupabaseOAuth();
               }}
             />
             <p className="text-[11px] text-muted-foreground">
-              Read-only and locked to this project
+              Read-only either way
             </p>
             {supabaseError && (
               <ErrorNotice size="inline" className="text-[11px]" message={supabaseError} />
