@@ -38,21 +38,26 @@ create temp table w2s_fx (k text primary key, v uuid) on commit drop;
 insert into w2s_fx values
   ('test', '4060701e-706a-4c76-b3ca-0bbc69fa5a14'), ('admin', '87a6e699-3622-4869-8843-d0867456c0dd'),
   ('cedar', '0a54df90-eab8-4d07-ab29-81a45fb41e04'), ('castellano', '7cd12da2-2213-4378-8fba-a9e2dc4ea657'),
-  ('practice', '7fe0bdd8-b758-450b-a81e-767111e4b909'), ('sports', 'dff514a6-c1fc-4470-97d4-d979145356e6'),
-  ('ortho', '9243f75e-07e1-4ea8-bd6b-8c907562a841'), ('matter_type', '1aaba65d-68de-457e-8a0c-0f2731161d13'),
+  ('matter_type', '1aaba65d-68de-457e-8a0c-0f2731161d13'),
   ('doe', '2645730c-97a9-4080-9471-2546d0ce2b66'),
   ('workspace', '884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f'), ('dataset_type', '1127fe62-ccda-415e-a693-07ee0fa3e731'),
   ('north_park', '711dc551-3b54-4fbf-839d-abd50733ca78'), ('store_only', 'e93c8bcc-638f-4425-b022-8ed6e8e16b3e');
 
--- The setup both runs share: a second Practice Area, so a scope can move under a sibling.
+-- The setup both runs share, made through the doors as they stand (the suite owns its fixtures, so a change to
+-- the copy's data never moves them): a Specialty Clinic type with Sports rehab and Youth athletics, and a Care Team
+-- type with Outpatient orthopedics (the other type a parent must not come from).
 do $setup$
-declare f jsonb := (select jsonb_object_agg(k, v) from w2s_fx); v jsonb;
+declare f jsonb := (select jsonb_object_agg(k, v) from w2s_fx); o uuid := (f->>'cedar')::uuid; tp uuid; tc uuid;
 begin
   perform set_config('request.jwt.claims', jsonb_build_object('sub', f->>'admin', 'role', 'authenticated')::text, true);
   perform set_config('role', 'authenticated', true);
-  v := custom.context_scope_write((f->>'cedar')::uuid, null, (f->>'practice')::uuid, '{"name":"Youth athletics"}');
+  tp := (custom.context_type_write(o, null, '{"label_singular":"Specialty Clinic","label_plural":"Specialty Clinics"}') -> 'row' ->> 'id')::uuid;
+  tc := (custom.context_type_write(o, null, '{"label_singular":"Care Team","label_plural":"Care Teams"}') -> 'row' ->> 'id')::uuid;
+  insert into w2s_fx values ('practice', tp),
+    ('sports', (custom.context_scope_write(o, null, tp, '{"name":"Sports rehab"}') -> 'row' ->> 'id')::uuid),
+    ('youth', (custom.context_scope_write(o, null, tp, '{"name":"Youth athletics"}') -> 'row' ->> 'id')::uuid),
+    ('ortho', (custom.context_scope_write(o, null, tc, '{"name":"Outpatient orthopedics"}') -> 'row' ->> 'id')::uuid);
   perform set_config('role', 'none', true);
-  insert into w2s_fx values ('youth', (v -> 'row' ->> 'id')::uuid);
 end $setup$;
 
 create temp table w2s_seen on commit drop as
