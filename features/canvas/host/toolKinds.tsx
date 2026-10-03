@@ -29,7 +29,6 @@ import { contextItemsKind } from "./conversation/contextItemsKind";
 import { messageContextReceiptKind } from "./conversation/messageContextReceiptKind";
 import { contextValueKind } from "./conversation/contextValueKind";
 import { workingDocumentHistoryKind } from "./conversation/workingDocumentHistoryKind";
-import { chatDocumentsKind } from "./conversation/chatDocumentsKind";
 
 export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   quickChatKind,
@@ -39,7 +38,6 @@ export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   quickDataKind,
   quickScribeKind,
   documentsKind,
-  chatDocumentsKind,
   contextPreviewKind,
   conversationContextKind,
   conversationListsKind,

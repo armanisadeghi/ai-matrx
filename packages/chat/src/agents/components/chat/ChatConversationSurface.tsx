@@ -17,6 +17,8 @@
 
 import type { ReactNode } from "react";
 import { useAppDispatch, useAppStore } from "../../../store/hooks";
+import { useCanvasLauncherEntry } from "@ai-matrx/canvas/react";
+import { CONVERSATION_DOCUMENTS_KIND } from "../../../host/canvas-tabs";
 import { waitForConversationPersisted } from "../../redux/execution-system/conversations/conversation-persistence";
 import { setUserInputText } from "../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
@@ -113,6 +115,15 @@ export function ChatConversationSurface({
 }: ChatConversationSurfaceProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+
+  // The canvas "New tab" launcher offers THIS chat's documents while a chat is
+  // mounted — and only then (generic canvas machinery; no host port needed).
+  useCanvasLauncherEntry({
+    kind: CONVERSATION_DOCUMENTS_KIND,
+    key: conversationId,
+    data: { conversationId, initialKind: "working" },
+    title: "This chat's documents",
+  });
 
   // Header Agents chrome — live Run scope from Redux at click time (draft +
   // transcript + agent). Plain fn; React Compiler memoizes. DOM selection in

@@ -34,7 +34,8 @@ import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { configureStore } from "@reduxjs/toolkit";
 import { CANVAS_MAIN_WINDOW, canvasPresentation, type CanvasState } from "@ai-matrx/canvas";
-import { useCanvas } from "@ai-matrx/canvas/react";
+import { useCanvas, useCanvasLauncherEntries } from "@ai-matrx/canvas/react";
+import { ChatConversationSurface } from "@ai-matrx/chat/agents/components/chat/ChatConversationSurface";
 import { ChatProvider } from "@ai-matrx/chat/host/react";
 import type { ChatHost } from "@ai-matrx/chat/host";
 import { _resetChatHostForTests } from "@ai-matrx/chat/host/configure";
@@ -48,11 +49,6 @@ import {
 import { useChatCanvasView } from "@ai-matrx/chat/host/canvas";
 import { clearFocus, setFocus } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { registerSurface } from "@ai-matrx/chat/agents/redux/surfaces/surfaces.slice";
-import {
-  CHAT_DOCUMENTS_LAUNCHER_KIND,
-  chatDocumentsKind,
-} from "@/features/canvas/host/conversation/chatDocumentsKind";
-import ChatDocumentsCanvasView from "@/features/canvas/host/conversation/ChatDocumentsCanvasView";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { CanvasHostProvider } from "@/features/canvas/host/CanvasHostProvider";
 import { TOOL_CANVAS_KINDS } from "@/features/canvas/host/toolKinds";
@@ -63,12 +59,6 @@ import { useQuickToolToggle } from "@/features/canvas/host/toolKinds";
 import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
-
-let mockPathname = "/chat";
-jest.mock("next/navigation", () => ({
-  ...jest.requireActual("next/navigation"),
-  usePathname: () => mockPathname,
-}));
 
 const CONVERSATION_ID = "6f1e2d3c-4b5a-4968-8776-655443322110";
 
@@ -124,46 +114,30 @@ function SourceProbe({ probe }: { probe: Partial<Probe> }) {
 }
 
 /**
- * The empty pane's launcher entry, as the canvas column renders it: picking
- * "This chat's documents" opens the launcher tab, whose body then runs.
+ * The empty pane's launcher, as the canvas column renders it: the contextual
+ * entries a mounted page registered. `pick` opens the first one's tab.
  */
-const LAUNCHER_ITEM_ID = `${CHAT_DOCUMENTS_LAUNCHER_KIND}::current`;
-function LauncherTab() {
+function LauncherDoor({ probe }: { probe: Partial<Probe> & { pick?: () => void; entries?: readonly { kind: string; key: string; title?: string | null }[] } }) {
   const canvas = useCanvas();
-  const state = canvas.getState();
-  const item = state.items[LAUNCHER_ITEM_ID];
-  if (!item) return null;
-  return (
-    <ChatDocumentsCanvasView
-      item={item}
-      data={null}
-      paneId={state.focusedPaneId}
-      isFocused
-      isVisible
-      canvas={canvas}
-      windowId={CANVAS_MAIN_WINDOW}
-      presentation={canvasPresentation({ width: 640, height: 800, isFullscreen: false, paneCount: 1 })}
-    />
-  );
-}
-
-/** Re-renders the launcher tab whenever the canvas changes, as the column does. */
-function LauncherWatcher({ store }: { store: Store }) {
-  const [, force] = React.useReducer((n: number) => n + 1, 0);
-  useEffect(() => store.subscribe(force), [store]);
-  return <LauncherTab />;
-}
-
-function LauncherDoor({ probe }: { probe: Partial<Probe> & { pick?: () => void } }) {
-  const canvas = useCanvas();
-  const launcher = chatDocumentsKind.launcher;
+  const entries = useCanvasLauncherEntries();
+  probe.entries = entries;
   probe.pick = () => {
-    if (launcher) canvas.open({ kind: CHAT_DOCUMENTS_LAUNCHER_KIND, key: launcher.key, data: launcher.data });
+    const entry = entries[0];
+    if (entry) canvas.open({ kind: entry.kind, key: entry.key, data: entry.data, title: entry.title ?? undefined });
   };
   return null;
 }
 
-function mount(store: Store) {
+/** A chat on screen: the chat package's own surface, as every chat mounts it. */
+function MountedChat({ conversationId }: { conversationId: string }) {
+  return (
+    <ChatConversationSurface conversationId={conversationId} agentId="agent-under-test" surfaceKey="chat:agent-under-test">
+      {null}
+    </ChatConversationSurface>
+  );
+}
+
+function mount(store: Store, chatConversationId: string | null = null) {
   const probe: Partial<Probe> = {};
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -176,7 +150,7 @@ function mount(store: Store) {
             <PresentedColumn />
             <ChatHostUnderTest store={store} probe={probe}>
               <LauncherDoor probe={probe} />
-              <LauncherWatcher store={store} />
+              {chatConversationId ? <MountedChat conversationId={chatConversationId} /> : null}
               <SourceProbe probe={probe} />
             </ChatHostUnderTest>
           </CanvasHostProvider>
@@ -186,7 +160,7 @@ function mount(store: Store) {
   });
   return {
     container,
-    probe: probe as Probe & { pick: () => void },
+    probe: probe as Probe & { pick: () => void; entries: readonly { kind: string; key: string; title?: string | null }[] },
     unmount: () => {
       act(() => root.unmount());
       container.remove();
@@ -208,9 +182,8 @@ describe("a conversation's documents are one canvas kind", () => {
 
 describe("every door opens the same Documents tab", () => {
   it("the launcher's This chat's documents opens the conversation's Documents tab, and the chat sees it", () => {
-    mockPathname = `/chat/${CONVERSATION_ID}`;
     const store = makeStore();
-    const { probe, unmount } = mount(store);
+    const { probe, unmount } = mount(store, CONVERSATION_ID);
     act(() => probe.pick());
 
     expect(itemIds(store)).toEqual([conversationDocumentsTabId(CONVERSATION_ID)]);
@@ -224,31 +197,16 @@ describe("every door opens the same Documents tab", () => {
     unmount();
   });
 
-  it("on a brand-new chat it opens the conversation /chat/new already reserved — never a refusal", () => {
-    mockPathname = "/chat/new";
-    const store = makeStore();
-    // As live on 2026-10-02: the mounted chat page is a registered `chat:` surface
-    // holding its reserved conversation, and nothing is the last-focused surface.
-    store.dispatch(registerSurface({ surfaceKey: "chat:default-agent", kind: "page", basePath: "/chat/[conversationId]" }));
-    store.dispatch(setFocus({ surfaceKey: "chat:default-agent", conversationId: CONVERSATION_ID }));
-    store.dispatch(setFocus({ surfaceKey: "quick-chat:panel:default", conversationId: "other" }));
-    store.dispatch(clearFocus("quick-chat:panel:default"));
-    const { probe, unmount } = mount(store);
-    act(() => probe.pick());
+  it("the launcher offers the documents ONLY while a chat is mounted", () => {
+    const off = mount(makeStore());
+    expect(off.probe.entries).toEqual([]);
+    off.unmount();
 
-    expect(itemIds(store)).toEqual([conversationDocumentsTabId(CONVERSATION_ID)]);
-    unmount();
-  });
-
-  it("off a chat route the launcher tab stays and says so", () => {
-    mockPathname = "/notes";
-    const store = makeStore();
-    const { container, probe, unmount } = mount(store);
-    act(() => probe.pick());
-
-    expect(itemIds(store)).toEqual([LAUNCHER_ITEM_ID]);
-    expect(container.querySelector("[data-chat-documents-empty]")).not.toBeNull();
-    unmount();
+    const on = mount(makeStore(), CONVERSATION_ID);
+    expect(on.probe.entries).toEqual([
+      expect.objectContaining({ kind: CONVERSATION_DOCUMENTS_KIND, key: CONVERSATION_ID, title: "This chat's documents" }),
+    ]);
+    on.unmount();
   });
 
   it("the chat's Scratch pill and Quick Access are the same scratchpad tab", () => {
