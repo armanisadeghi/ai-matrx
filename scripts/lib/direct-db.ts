@@ -105,7 +105,7 @@ export interface ConnectDirectOptions {
  * On PRODUCTION the client carries the production guard (`./production-guard.ts`, incident
  * 2026-09-26): every transaction is capped (10 min / 60 s idle / 30 s statement / 5 s lock) and a
  * statement that loosens a cap or takes REPEATABLE READ/SERIALIZABLE is refused before it is sent.
- * Heavy comparisons and benchmarks go to the clone (`loadCloneDbEnv`).
+ * Tests and checks run on live inside those caps; only DDL rehearsal goes to the clone (`loadCloneDbEnv`).
  */
 export async function connectDirect(
   env: DbEnv,

@@ -17,10 +17,13 @@
  *      a bare statement runs in its own stamped transaction (gate-db's `governTransactions`);
  *   2. a statement that tries to loosen them — `SET`/`SET LOCAL`/`SET SESSION`/`set_config`/
  *      `ALTER … SET` above the limit, `0`, `DEFAULT`, `RESET <guc>`, `RESET ALL` — or to take
- *      `REPEATABLE READ`/`SERIALIZABLE` is refused before it is sent, naming the clone;
+ *      `REPEATABLE READ`/`SERIALIZABLE` is refused before it is sent, naming the bounded way to do it;
  *   3. any GRANT / REVOKE / CREATE (a temp table, dynamic `execute '…'` in a DO block included) is
  *      refused before it is sent — it fires the DDL event triggers that lock auth/storage/realtime until
- *      the transaction ends, rollback or not (incident 2026-09-27; `ddlRefusalFor`). Proofs run on the clone.
+ *      the transaction ends, rollback or not (incident 2026-09-27; `ddlRefusalFor`). A proof that must
+ *      plant DDL is a rehearsal and runs on the nightly clone.
+ *
+ * Tests and checks run on LIVE (owner ruling 2026-10-03); these caps are what keeps that safe.
  *
  * The migration runners (`pnpm db:apply`, `pnpm db:rehearse`) set their own per-file ceilings and
  * are the one sanctioned exception: they open with `connectDirect(..., { migrationRunner: true })`.
@@ -39,12 +42,12 @@ export const PRODUCTION_LIMITS_MS = {
 type Guc = keyof typeof PRODUCTION_LIMITS_MS;
 const GUCS = Object.keys(PRODUCTION_LIMITS_MS) as Guc[];
 
-export const CLONE_REMEDY =
-  "Heavy comparisons, equivalence checks and benchmarks run on the CLONE, never on live: point the " +
-  "script at the clone (`--target clone`, loadCloneDbEnv(); ref, host and password file in " +
-  "common-docs/operations/clone/CURRENT.md). On production run single, bounded statements only.";
+export const LIMITS_REMEDY =
+  "On live, split the work into single bounded statements (each inside the caps) — checks and tests " +
+  "run on live (owner ruling 2026-10-03). Only a DDL rehearsal or a job that locks for 10+ minutes " +
+  "belongs on the nightly clone (`--target clone`; common-docs/operations/clone/CURRENT.md).";
 
-/** A statement would have loosened production's limits. It was not sent. Move the work to the clone. */
+/** A statement would have loosened production's limits. It was not sent. Bound the work instead. */
 export class ProductionGuardRefusal extends Error {
   constructor(message: string) {
     super(message);
@@ -89,8 +92,8 @@ function strongIso(value: string): boolean {
 // provision_shape_guard, which write platform.entity_types even for a bare CREATE TEMP TABLE — measured
 // on the clone 2026-09-28), holding locks on auth/storage/realtime/platform relations until the
 // transaction ends. A rolled-back agent proof held them 15–27 s four times; Realtime waited 7–14 s and
-// files.files reads hit lock timeouts. Schema changes are migrations (the runners are exempt); proofs
-// run on the clone. Mirror of aidream `db/production_guard.py` `ddl_refusal_for`.
+// files.files reads hit lock timeouts. Schema changes are migrations (the runners are exempt); a proof
+// that must plant DDL is a rehearsal on the clone. Mirror of aidream `db/production_guard.py` `ddl_refusal_for`.
 const DDL_VERB = String.raw`(create|grant|revoke)\b`;
 const DDL_AT_STATEMENT = new RegExp(
   String.raw`(?:^|;|\$[a-z_]*\$|\bbegin\b|\bthen\b|\belse\b|\bloop\b)\s*${DDL_VERB}`,
@@ -99,8 +102,9 @@ const DDL_AT_STATEMENT = new RegExp(
 const DDL_DYNAMIC = new RegExp(String.raw`\bexecute\s+(?:format\s*\(\s*)?(?:e)?'\s*${DDL_VERB}`, "gi");
 
 export const DDL_REMEDY =
-  "Run the proof on the CLONE (ref, host and password file in common-docs/operations/clone/CURRENT.md); " +
-  "a schema change is a migration applied by its runner. On production run single, bounded DML/reads only.";
+  "A schema change is a migration applied by its runner. A proof that must plant DDL is a rehearsal: run " +
+  "it on the CLONE (`--target clone`; common-docs/operations/clone/CURRENT.md). On live run single, " +
+  "bounded DML/reads only.";
 
 /** Why this (comment-stripped) text may not reach live because it carries GRANT / REVOKE / CREATE. */
 export function ddlRefusalFor(text: string): string | null {
@@ -140,7 +144,7 @@ export function productionRefusalFor(sql: string): string | null {
   return (
     `PRODUCTION GUARD REFUSED (not sent): ${found.join("; ")}. On live every transaction is capped at ` +
     "transaction_timeout 10min, idle_in_transaction 60s, statement_timeout 30s, lock_timeout 5s, READ " +
-    `COMMITTED — and nothing may loosen that. ${CLONE_REMEDY}`
+    `COMMITTED — and nothing may loosen that. ${LIMITS_REMEDY}`
   );
 }
 
@@ -173,8 +177,7 @@ export function governProduction<T extends { query: QueryFn; end: () => Promise<
  * For a script that builds its own `pg.Client` (a raw client reads whatever it was handed): if the
  * client's connection is production's (`isLiveConnection` on its user/host), it gets the guard; a
  * clone or branch client is returned untouched. Call it right after `new pg.Client(...)`, before
- * `connect()`. `pnpm check:heavy-checks-target-the-clone` names every raw client that reaches live
- * without it (2026-09-27, incident 2026-09-27-per-connection-memory).
+ * `connect()` (2026-09-27, incident 2026-09-27-per-connection-memory).
  */
 export function guardIfProduction<T extends object>(client: T, applicationName: string): T {
   const c = client as unknown as { user?: unknown; host?: unknown };

@@ -48,10 +48,11 @@ const ALLOWED = [
 ];
 
 describe("productionRefusalFor", () => {
-  it.each(REFUSED)("refuses %s and names the clone", (sql) => {
+  it.each(REFUSED)("refuses %s and names the bounded way to do it on live", (sql) => {
     const why = productionRefusalFor(sql);
     expect(why).toMatch(/PRODUCTION GUARD REFUSED/);
-    expect(why).toMatch(/CLONE/);
+    expect(why).toMatch(/single bounded statements/);
+    expect(why).not.toMatch(/never on live/);
     expect(why).toMatch(/CURRENT\.md/);
   });
   it.each(ALLOWED)("allows %s", (sql) => {
