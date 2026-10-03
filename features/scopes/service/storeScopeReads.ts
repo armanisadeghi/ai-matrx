@@ -43,7 +43,10 @@ export type ContextReadDoor =
   | "context_values"
   | "context_archived_types"
   | "context_system_items"
-  | "context_templates";
+  | "context_templates"
+  // The archive's one read door (a scope is a Record of its type's Table): the scopes a person
+  // archived are reached here, because every context_* door answers live scopes only.
+  | "read_records_archived";
 
 /** The store's doors live in the `custom` schema; the generated types do not list them yet. */
 function customDoor(): SupabaseClient {
@@ -216,6 +219,46 @@ export async function wholeScopeValues(
       }
     }),
   );
+}
+
+/** The archive answers at most this many rows a call (`custom.page_size` ceiling). */
+export const ARCHIVED_SCOPES_PAGE = 200;
+
+/**
+ * Of these scope ids, the ones that are ARCHIVED scopes of this type (a Table of this organization),
+ * paged through the archive's read door until every id is found or the archive is exhausted. A scope
+ * archived away still names what was filed under it (references survive archive).
+ */
+export async function readArchivedScopesOfType(
+  organizationId: string,
+  scopeTypeId: string,
+  wanted: ReadonlySet<string>,
+): Promise<ScopesRpcResult<Array<{ id: string; name: string | null; slug: string | null; archived_at: string | null }>>> {
+  const out: Array<{ id: string; name: string | null; slug: string | null; archived_at: string | null }> = [];
+  for (let offset = 0; out.length < wanted.size; offset += ARCHIVED_SCOPES_PAGE) {
+    const res = await callContextDoor<
+      Array<{ id: string; document?: { name?: unknown; slug?: unknown } | null; archived_at?: string | null }>
+    >("read_records_archived", {
+      p_organization_id: organizationId,
+      p_table_id: scopeTypeId,
+      p_lane: "org",
+      p_by_id: false,
+      p_limit: ARCHIVED_SCOPES_PAGE,
+      p_offset: offset,
+    });
+    if (!res.ok) return res;
+    const rows = res.data ?? [];
+    for (const r of rows)
+      if (wanted.has(r.id))
+        out.push({
+          id: r.id,
+          name: typeof r.document?.name === "string" ? r.document.name : null,
+          slug: typeof r.document?.slug === "string" ? r.document.slug : null,
+          archived_at: r.archived_at ?? null,
+        });
+    if (rows.length < ARCHIVED_SCOPES_PAGE) break;
+  }
+  return ok(out);
 }
 
 export async function readArchivedScopeTypes(
