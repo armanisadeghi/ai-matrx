@@ -31,7 +31,8 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import { recordsDataSource } from "@ai-matrx/records-ui";
+import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { RecordsProvider, useTable } from "@ai-matrx/records/react";
 import {
   RecordPicker,
   TableScope,
@@ -53,6 +54,7 @@ import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
+import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -134,9 +136,35 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   const tab = searchParams.get("tab") === "runs" ? "runs" : "build";
 
   const [dataSource] = useState(() => recordsDataSource(createClient()));
-  const tables = useTablesAnywhere(dataSource);
-  const table = tables.rows.find((t) => t.table_id === tableId) ?? null;
-  const organizationId = table?.organization_id ?? null;
+  // THIS table's organization comes from its own id (custom.where_id_opens, one cheap read) and
+  // its name from the store; the list of every table is only for the pickers, and a slow or
+  // refused list never holds the builder (it is the heaviest read on the page).
+  const object = useObjectOrganization(dataSource, tableId);
+  const [tableRead, setTableRead] = useState<string | null>(null);
+  const everyTable = useTablesAnywhere(dataSource);
+  const organizationId =
+    object.state === "found" ? object.organizationId : null;
+  const ownRow = organizationId
+    ? {
+        table_id: tableId,
+        table_name:
+          tableRead ??
+          everyTable.rows.find((t) => t.table_id === tableId)?.table_name ??
+          "Table",
+        organization_id: organizationId,
+        organization_name: "",
+        kind: null,
+        kept_by_the_app: false,
+      }
+    : null;
+  const tables = {
+    loading: everyTable.loading,
+    error: everyTable.error,
+    rows: ownRow
+      ? [ownRow, ...everyTable.rows.filter((t) => t.table_id !== tableId)]
+      : everyTable.rows,
+  };
+  const table = ownRow;
 
   // ── The list ──
   const [rows, setRows] = useState<TableWorkflowRow[] | null>(null);
@@ -374,7 +402,9 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   const header = (
     <EntityModeHeader
       backHref={`/data-v2/${tableId}`}
-      entityLabel={view ? view.name : organizationId ? "New workflow" : "Workflows"}
+      entityLabel={
+        view ? view.name : organizationId ? "New workflow" : "Workflows"
+      }
       entityStatus={status}
       entityOptions={builderRows.map((r) => {
         const id = (r.open as { workflow_id?: string }).workflow_id ?? "";
@@ -462,12 +492,12 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
 
   // ── The right side ──
   let main: ReactNode;
-  if (tables.error)
-    main = <p className="text-sm text-destructive">{tables.error}</p>;
+  if (object.state === "unavailable")
+    main = <p className="text-sm text-destructive">{object.why}</p>;
   else if (!table)
     main = (
       <p className="text-sm text-muted-foreground">
-        {tables.loading
+        {object.state === "resolving"
           ? "Opening the table…"
           : "This table isn't one you can open."}
       </p>
@@ -555,6 +585,15 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   return (
     <div className="h-full overflow-hidden">
       {header}
+      {organizationId ? (
+        <TableNameProbe
+          dataSource={dataSource}
+          userId={userId}
+          organizationId={organizationId}
+          tableId={tableId}
+          onName={setTableRead}
+        />
+      ) : null}
       {view && organizationId ? (
         <TestWithRecord
           open={testOpen}
@@ -758,4 +797,42 @@ function TestWithRecord({
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Reports the table's own name, read through the store as the person (`useTable`). */
+function TableNameProbe({
+  dataSource,
+  userId,
+  organizationId,
+  tableId,
+  onName,
+}: {
+  dataSource: ReturnType<typeof recordsDataSource>;
+  userId: string | null;
+  organizationId: string;
+  tableId: string;
+  onName: (name: string) => void;
+}) {
+  return (
+    <RecordsProvider
+      config={{ dataSource, actor: personActor(userId), organizationId }}
+    >
+      <NameOf tableId={tableId} onName={onName} />
+    </RecordsProvider>
+  );
+}
+
+function NameOf({
+  tableId,
+  onName,
+}: {
+  tableId: string;
+  onName: (name: string) => void;
+}) {
+  const table = useTable(tableId);
+  const name = table.data?.name;
+  useEffect(() => {
+    if (name) onName(name);
+  }, [name, onName]);
+  return null;
 }
