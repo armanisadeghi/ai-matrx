@@ -217,6 +217,27 @@ export const reconnectServerOperation = createAsyncThunk<
         checkedAt: new Date().toISOString(),
       };
       dispatch(patchConversation({ conversationId, serverOperation }));
+      if (waitingInput) restorePausedStatus();
+    };
+
+    // A turn the server holds WAITING (an approval card, a delegated tool, a
+    // Continue) is a live, paused run — exactly as it was before the reload.
+    // The hydrate lands the conversation as "ready", and a send from a "ready"
+    // conversation starts a FRESH turn beside the held one instead of queueing
+    // into it (smartExecute routes on `selectIsAwaitingTools`). Restore the
+    // paused status the live stream had set; a live stream (running/streaming)
+    // or a Stop (cancelled) owns the status and is never overwritten.
+    const restorePausedStatus = () => {
+      const current = getState().conversations.byConversationId[conversationId]?.status;
+      if (
+        current === "running" ||
+        current === "streaming" ||
+        current === "paused" ||
+        current === "cancelled"
+      ) {
+        return;
+      }
+      dispatch(setInstanceStatus({ conversationId, status: "paused" }));
     };
 
     let waitingRecoveryInFlight = false;

@@ -1,17 +1,13 @@
 /**
  * features/connectors/import/types.ts
  *
- * The `/google-import/*` contracts, as STAND-IN types.
+ * Contact-import stand-ins plus canonical generated Tasks aliases.
  *
- * 🚨 These are `*Pending` stand-ins, not hand-mirrored truth. The generated
- * contract (`@ai-matrx/agents/generated/api-types`) does not carry
- * `/google-import/*` yet: regenerating it needs a live aidream checkout with DB
- * env, which this container does not have (register
- * `common-docs/projects/google-native/REGISTER.md` § Facts, 2026-09-17).
+ * 🚨 The Contact `*Pending` shapes remain stand-ins. Tasks listing/import and
+ * reviewed write shapes come from `@ai-matrx/agents/generated/api-types`.
  *
- * REMEDY, for the first session that has it: run `pnpm sync-types`, then delete
- * every type in this file and import the generated operation types through
- * `lib/api/typed-client` (`apiPost`) exactly as
+ * REMEDY when the remaining Contact paths are generated: delete those local
+ * Contact shapes and import the operation types through `lib/api/typed-client` exactly as
  * `features/crm/import/connectors/service.ts` already does for
  * `/crm/import/connectors`. The service beside this file is the only consumer,
  * so the swap is one file plus this one.

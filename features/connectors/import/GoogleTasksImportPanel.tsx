@@ -17,7 +17,8 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  * screen that cannot check the arithmetic it prints cannot be accountable for it,
  * and the numbers it clamps are right here. The server keeps `count_line` for its
  * own callers; this panel does not read it.
- * Read-only toward Google.
+ * Imports remain read-only toward Google. Eligible reviewers can separately
+ * create a task or change one selected task's status after an explicit review.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -158,7 +159,7 @@ export function GoogleTasksImportPanel({
       setReadFailure(null);
       setListing(result);
       setActiveListId((current) => current ?? result.task_lists[0]?.task_list_id ?? null);
-      result.warnings.forEach((warning) => toast.warning(warning));
+      (result.warnings ?? []).forEach((warning) => toast.warning(warning));
     } catch (cause) {
       if (controller.signal.aborted) return;
       // 🚨 A FAILED READ IS NOT AN EMPTY READ (F-113): the refusal gets its
@@ -172,6 +173,8 @@ export function GoogleTasksImportPanel({
   }, [effectiveOrganizationId, googleAccount]);
 
   useEffect(() => {
+    // This effect owns the external Google read and its abort lifetime.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
     return () => abortRef.current?.abort();
   }, [load]);
@@ -210,8 +213,7 @@ export function GoogleTasksImportPanel({
   const writeCapability = capabilities.data?.find(
     (capability) => capability.key === "tasks_write",
   );
-  const writeEligible = writeCapability?.rollout_phase === "internal_test" &&
-    writeCapability.eligible && Boolean(writeConnection);
+  const writeEligible = writeCapability?.eligible && Boolean(writeConnection);
   const selectedWriteTask = active && chosen.length === 1
     ? active.tasks.find((task) => task.task_id === chosen[0]) ?? null
     : null;
@@ -252,7 +254,7 @@ export function GoogleTasksImportPanel({
     setSelected((current) => ({
       ...current,
       [active.task_list_id]: active.tasks
-        .filter((task) => task.already_imported && task.changes.length > 0)
+        .filter((task) => task.already_imported && (task.changes ?? []).length > 0)
         .map((task) => task.task_id),
     }));
   };
@@ -272,7 +274,7 @@ export function GoogleTasksImportPanel({
         dryRun: false,
       });
       setDone(result);
-      result.warnings.forEach((warning) => toast.warning(warning));
+      (result.warnings ?? []).forEach((warning) => toast.warning(warning));
       onImported?.(
         result.results
           .map((outcome) => outcome.matrx_task_id)
@@ -338,14 +340,14 @@ export function GoogleTasksImportPanel({
               <p className="mt-1 text-xs text-muted-foreground">{outcome.note}</p>
               {/* The SERVER's note is the sentence; these two name the FIELDS in
                   words, never as column keys (D9). */}
-              {outcome.changed_fields.length > 0 ? (
+              {(outcome.changed_fields ?? []).length > 0 ? (
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  Updated {importFieldList(outcome.changed_fields).text}.
+                  Updated {importFieldList(outcome.changed_fields ?? []).text}.
                 </p>
               ) : null}
-              {outcome.kept_local_fields.length > 0 ? (
+              {(outcome.kept_local_fields ?? []).length > 0 ? (
                 <p className="mt-0.5 text-[11px] text-amber-600 dark:text-amber-400">
-                  Kept your {importFieldList(outcome.kept_local_fields).text}.
+                  Kept your {importFieldList(outcome.kept_local_fields ?? []).text}.
                 </p>
               ) : null}
               {outcome.unrecorded_fields && outcome.unrecorded_fields.length > 0 ? (
@@ -516,12 +518,12 @@ export function GoogleTasksImportPanel({
                         : "Already here (import date not recorded)"}
                     </Badge>
                   ) : null}
-                  {task.changes.length > 0 ? (
+                  {(task.changes ?? []).length > 0 ? (
                     <Badge variant="outline" className="text-[11px]">
                       {/* Field KEYS become words through the one label map
                           shared with the Contacts panel — a person never reads
                           "due_date" (VERIFY-B1-B2 D9). */}
-                      Google changed {importFieldList(task.changes).text}
+                      Google changed {importFieldList(task.changes ?? []).text}
                     </Badge>
                   ) : null}
                 </div>
@@ -539,11 +541,11 @@ export function GoogleTasksImportPanel({
                       .join(" · ")}
                   </p>
                 ) : null}
-                {task.kept_local.length > 0 ? (
+                {(task.kept_local ?? []).length > 0 ? (
                   <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                    {importFieldList(task.kept_local).text}{" "}
-                    {importFieldList(task.kept_local).verb} edited here since the
-                    import — a re-import leaves {task.kept_local.length === 1 ? "it" : "them"} alone.
+                    {importFieldList(task.kept_local ?? []).text}{" "}
+                    {importFieldList(task.kept_local ?? []).verb} edited here since the
+                    import — a re-import leaves {(task.kept_local ?? []).length === 1 ? "it" : "them"} alone.
                   </p>
                 ) : null}
                 {/* Differs with NO record of what the import wrote. It is NOT a
@@ -606,6 +608,10 @@ export function GoogleTasksImportPanel({
           <p className="border-t border-border p-4 text-xs text-muted-foreground">
             {writeCapability.limitation || writeCapability.remedy}
           </p>
+        ) : active && writeCapability?.eligible && !connectionInventory.isLoading && !writeConnection ? (
+          <p className="border-t border-border p-4 text-xs text-muted-foreground">
+            This listed account cannot change Google Tasks.
+          </p>
         ) : null}
       </div>
       {/* 🚨 NO CONTROLS OVER A LIST NOBODY READ (F-113). With no list in hand —
@@ -630,7 +636,7 @@ export function GoogleTasksImportPanel({
           className="h-7 px-2 text-xs"
           onClick={selectChanged}
           disabled={
-            !active || active.tasks.every((task) => task.changes.length === 0)
+            !active || active.tasks.every((task) => (task.changes ?? []).length === 0)
           }
         >
           Select the changed ones

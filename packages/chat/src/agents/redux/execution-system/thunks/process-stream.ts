@@ -135,6 +135,8 @@ import { StreamingJsonTracker } from "@ai-matrx/kit/json-extract";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
 import { deriveAnswerText } from "../active-requests/active-requests.selectors";
 import { captureError } from "../../../../host/diagnostics";
+import type { Json } from "../../../../host/db-types";
+import { readReceiptThread, withReceiptHandle } from "../instance-resources/remark-handles";
 import type { ExtractedJsonSnapshot } from "../../../types/request.types";
 import {
   setConversationLabel,
@@ -150,6 +152,7 @@ import {
 } from "../message-crud/refetch-single-message.thunk";
 import { removeInboxItem } from "../inbox/inbox.slice";
 import {
+  selectConversationMessages,
   selectMessageCount,
   selectNextMessagePosition,
 } from "../messages/messages.selectors";
@@ -1212,6 +1215,22 @@ export async function processStream({
           const thread = receipt ? (d as { thread?: unknown }).thread : undefined;
           if (receipt && thread && typeof thread === "object") {
             (receipt as typeof receipt & { thread?: unknown }).thread = thread;
+            // The optimistic user message has no server-minted handles; the
+            // receipt names the one this reply answered, so the answer's
+            // "Reply in thread · cN" line is a door now, not after a reload.
+            const link = readReceiptThread(thread);
+            if (link) {
+              const stamped = withReceiptHandle(selectConversationMessages(conversationId)(getState()), link);
+              if (stamped) {
+                dispatch(
+                  updateMessageRecord({
+                    conversationId,
+                    messageId: stamped.messageId,
+                    patch: { content: stamped.content as Json },
+                  }),
+                );
+              }
+            }
           }
           if (receipt) {
             const blockId = `directive_receipt_${totalEvents}`;

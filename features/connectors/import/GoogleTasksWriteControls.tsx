@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { BackendApiError, getUserMessage } from "@/lib/api/errors";
@@ -47,6 +47,18 @@ function statusLabel(status: "completed" | "needsAction"): string {
   return status === "completed" ? "Completed" : "Open";
 }
 
+function sessionStorageDoor(): StorageDoor {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return {
+      getItem() { throw new Error("session storage unavailable"); },
+      setItem() { throw new Error("session storage unavailable"); },
+      removeItem() { throw new Error("session storage unavailable"); },
+    };
+  }
+}
+
 export function GoogleTasksWriteControls({
   actorId,
   organizationId,
@@ -70,7 +82,7 @@ export function GoogleTasksWriteControls({
   transport?: GoogleTasksWriteTransport;
   storage?: StorageDoor;
 }) {
-  const storageDoor = storage ?? window.sessionStorage;
+  const storageDoor = storage ?? sessionStorageDoor();
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -83,6 +95,12 @@ export function GoogleTasksWriteControls({
   const [busy, setBusy] = useState<"create" | "status" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const epoch = useRef(0);
+  const busyRef = useRef(false);
+
+  useEffect(() => () => {
+    epoch.current += 1;
+    busyRef.current = false;
+  }, []);
 
   const scope = { actorId, organizationId, connectionId, taskListId };
   const recoveryMatches = createRecovery
@@ -116,7 +134,7 @@ export function GoogleTasksWriteControls({
   };
 
   const submitCreate = async () => {
-    if (!createRecovery || !recoveryMatches || busy) return;
+    if (!createRecovery || !recoveryMatches || busyRef.current) return;
     if (createRecovery.phase !== "reviewed_unattempted" && createRecovery.phase !== "known_unsent") return;
     const attempting = { ...createRecovery, phase: "attempting" as const };
     if (!writeGoogleTaskCreateRecovery(storageDoor, attempting)) {
@@ -125,6 +143,7 @@ export function GoogleTasksWriteControls({
     }
     setCreateRecovery(attempting);
     const callEpoch = ++epoch.current;
+    busyRef.current = true;
     setBusy("create");
     setError(null);
     try {
@@ -143,7 +162,7 @@ export function GoogleTasksWriteControls({
     } catch (cause) {
       if (callEpoch !== epoch.current) return;
       const phase = cause instanceof BackendApiError &&
-        cause.code === "google_task_create_storage_unavailable"
+        cause.code === "google_task_create_storage_unavailable" && cause.status === 503
         ? "known_unsent" as const
         : "uncertain" as const;
       const failed = { ...attempting, phase };
@@ -153,7 +172,10 @@ export function GoogleTasksWriteControls({
       setCreateRecovery(failed);
       setError(getUserMessage(cause));
     } finally {
-      if (callEpoch === epoch.current) setBusy(null);
+      if (callEpoch === epoch.current) {
+        busyRef.current = false;
+        setBusy(null);
+      }
     }
   };
 
@@ -168,8 +190,9 @@ export function GoogleTasksWriteControls({
   };
 
   const reviewStatus = async (desiredStatus: "completed" | "needsAction") => {
-    if (!selectedTask || busy) return;
+    if (!selectedTask || busyRef.current) return;
     const callEpoch = ++epoch.current;
+    busyRef.current = true;
     setBusy("status");
     setError(null);
     setStatusPreview(null);
@@ -186,14 +209,18 @@ export function GoogleTasksWriteControls({
     } catch (cause) {
       if (callEpoch === epoch.current) setError(getUserMessage(cause));
     } finally {
-      if (callEpoch === epoch.current) setBusy(null);
+      if (callEpoch === epoch.current) {
+        busyRef.current = false;
+        setBusy(null);
+      }
     }
   };
 
   const applyStatus = async () => {
-    if (!statusPreview || busy) return;
+    if (!statusPreview || busyRef.current) return;
     const reviewed = statusPreview;
     const callEpoch = ++epoch.current;
+    busyRef.current = true;
     setStatusPreview(null);
     setBusy("status");
     setError(null);
@@ -210,8 +237,22 @@ export function GoogleTasksWriteControls({
     } catch (cause) {
       if (callEpoch === epoch.current) setError(getUserMessage(cause));
     } finally {
-      if (callEpoch === epoch.current) setBusy(null);
+      if (callEpoch === epoch.current) {
+        busyRef.current = false;
+        setBusy(null);
+      }
     }
+  };
+
+  const refreshSource = () => {
+    epoch.current += 1;
+    busyRef.current = false;
+    setBusy(null);
+    setError(null);
+    setStatusPreview(null);
+    setStatusResult(null);
+    setCreateResult(null);
+    onRefresh();
   };
 
   const createBlocked = Boolean(createRecovery && createRecovery.phase !== "reviewed_unattempted");
@@ -250,7 +291,7 @@ export function GoogleTasksWriteControls({
               {createRecovery.phase === "reviewed_unattempted" ? (
                 <Button size="sm" variant="outline" disabled={busy !== null} onClick={cancelCreate}>Cancel review</Button>
               ) : null}
-              <Button size="sm" variant="outline" onClick={onRefresh}>Refresh source</Button>
+              <Button size="sm" variant="outline" onClick={refreshSource}>Refresh source</Button>
             </div>
           </div>
         ) : (
@@ -264,7 +305,7 @@ export function GoogleTasksWriteControls({
         {createResult ? (
           <div className="space-y-2 text-xs">
             <p>Google confirmed task ID: <code>{createResult.remote_task_id}</code></p>
-            <Button size="sm" variant="outline" onClick={onRefresh}>Refresh source</Button>
+            <Button size="sm" variant="outline" onClick={refreshSource}>Refresh source</Button>
           </div>
         ) : null}
       </div>
@@ -273,7 +314,7 @@ export function GoogleTasksWriteControls({
         <p className="text-sm font-medium">Change selected task status</p>
         {!selectedTask ? <p className="text-xs text-muted-foreground">Select one task to review a status change.</p> : null}
         {selectedTask && !selectedKnownStatus ? (
-          <div className="space-y-2 text-xs"><p>This task has an unknown Google status.</p><Button size="sm" variant="outline" onClick={onRefresh}>Refresh source</Button></div>
+          <div className="space-y-2 text-xs"><p>This task has an unknown Google status.</p><Button size="sm" variant="outline" onClick={refreshSource}>Refresh source</Button></div>
         ) : null}
         {selectedTask && selectedKnownStatus && !statusPreview && !statusResult ? (
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -293,7 +334,7 @@ export function GoogleTasksWriteControls({
         {statusResult ? (
           <div className="space-y-2 text-xs">
             <p>Google verified {statusResult.title} as {statusLabel(statusResult.desired_status)}.</p>
-            <Button size="sm" variant="outline" onClick={onRefresh}>Refresh source</Button>
+            <Button size="sm" variant="outline" onClick={refreshSource}>Refresh source</Button>
           </div>
         ) : null}
       </div>

@@ -27,6 +27,11 @@ jest.mock("@/features/organizations/useOrganizationRequired", () => ({
     organizationState: "ready",
   }),
 }));
+jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
+jest.mock("@/features/marketing/google/hooks", () => ({
+  useGoogleConnectionInventory: () => ({ data: { connections: [] } }),
+  useGoogleCapabilities: () => ({ data: [] }),
+}));
 
 jest.mock("./service", () => ({
   listGoogleTasks: (...args: unknown[]) => mockList(...args),
@@ -52,6 +57,7 @@ let root: Root;
 beforeEach(() => {
   mockList.mockReset();
   mockList.mockResolvedValue({
+    connection_id: "connection-1",
     google_account: "me@example.com",
     task_lists: [
       {

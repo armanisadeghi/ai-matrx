@@ -74,3 +74,77 @@ export function remarkByHandle(messages: readonly { content: unknown }[], handle
   const found = remarksWithHandle(messages, handle);
   return found.length === 1 ? found[0]! : null;
 }
+
+/** A `comment_reply` receipt's thread link (aidream `ThreadLink`), as the stream sends it. */
+export interface ReceiptThreadLink {
+  handle: string;
+  root_id?: string | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+}
+
+export function readReceiptThread(value: unknown): ReceiptThreadLink | null {
+  if (!isRecord(value) || !isRemarkHandle(value.handle)) return null;
+  return {
+    handle: value.handle,
+    root_id: str(value.root_id),
+    entity_type: str(value.entity_type),
+    entity_id: str(value.entity_id),
+  };
+}
+
+/**
+ * THE HANDLE A LIVE RUN LEARNS FROM ITS RECEIPT. The server mints handles when it
+ * stores the person's message; the client's optimistic copy of that message never
+ * has them, so during the run a "Reply in thread · c3" line could not resolve
+ * (and was not a door) until a reload re-read the stored row (live, 2026-10-03).
+ * The receipt names the thread it wrote into — its handle, its root comment and
+ * the record it lives on — which identifies the remark exactly.
+ *
+ * Returns the message whose content gains the handle, with that new content, or
+ * null when the handle is already known here or the receipt does not name ONE
+ * handle-less remark (never a guess: an ambiguous match stamps nothing).
+ */
+export function withReceiptHandle(
+  messages: readonly { id: string; role?: string; content: unknown }[],
+  thread: ReceiptThreadLink,
+): { messageId: string; content: unknown[] } | null {
+  if (remarksWithHandle(messages, thread.handle).length > 0) return null;
+  type Hit = { messageId: string; partIndex: number; itemIndex: number };
+  const byComment: Hit[] = [];
+  const byTarget: Hit[] = [];
+  for (const message of messages) {
+    if (message.role && message.role !== "user") continue;
+    const parts = Array.isArray(message.content) ? message.content : [];
+    parts.forEach((part, partIndex) => {
+      if (!isRecord(part) || part.type !== REMARKS_BLOCK_TYPE || !Array.isArray(part.items)) return;
+      part.items.forEach((item, itemIndex) => {
+        if (!isRecord(item) || item.handle) return;
+        const hit = { messageId: message.id, partIndex, itemIndex };
+        if (thread.root_id && item.comment_id === thread.root_id) byComment.push(hit);
+        const target = isRecord(item.target) ? item.target : null;
+        const onTarget =
+          thread.entity_type === "message"
+            ? !!thread.entity_id && target?.message_id === thread.entity_id
+            : !!thread.entity_id &&
+              target?.record_token === thread.entity_type &&
+              target?.record_id === thread.entity_id;
+        if (onTarget && !item.comment_id) byTarget.push(hit);
+      });
+    });
+  }
+  const hit = byComment.length === 1 ? byComment[0] : byComment.length === 0 && byTarget.length === 1 ? byTarget[0] : null;
+  if (!hit) return null;
+  const message = messages.find((m) => m.id === hit.messageId)!;
+  const content = (message.content as unknown[]).map((part, partIndex) => {
+    if (partIndex !== hit.partIndex) return part;
+    const p = part as Record<string, unknown>;
+    return {
+      ...p,
+      items: (p.items as unknown[]).map((item, itemIndex) =>
+        itemIndex === hit.itemIndex ? { ...(item as Record<string, unknown>), handle: thread.handle } : item,
+      ),
+    };
+  });
+  return { messageId: hit.messageId, content };
+}

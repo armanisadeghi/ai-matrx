@@ -29,10 +29,14 @@ const store = {
 const listCalls: { organizationId: string }[] = [];
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (s: unknown) => unknown) => selector({ appContext: store }),
+  useAppSelector: (selector: (s: unknown) => unknown) => selector({ appContext: store, userAuth: { id: null } }),
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
+jest.mock("@/features/marketing/google/hooks", () => ({
+  useGoogleConnectionInventory: () => ({ data: { connections: [] } }),
+  useGoogleCapabilities: () => ({ data: [] }),
+}));
 jest.mock("@/features/connectors/import/service", () => ({
   listGoogleTasks: async (args: { organizationId: string }) => {
     listCalls.push({ organizationId: args.organizationId });

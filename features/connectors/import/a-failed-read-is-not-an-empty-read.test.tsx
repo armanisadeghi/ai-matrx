@@ -48,7 +48,9 @@ jest.mock("@/features/organizations/useOrganizationRequired", () => ({
 }));
 jest.mock("@/features/marketing/google/hooks", () => ({
   useGoogleConnectionInventory: () => ({ data: { connections: [] } }),
+  useGoogleCapabilities: () => ({ data: [] }),
 }));
+jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
 
 jest.mock("./service", () => ({
   importGoogleContacts: (...args: unknown[]) => mockImport(...args),

@@ -1,14 +1,12 @@
 /**
  * features/connectors/import/service.ts
  *
- * Client half of `/google-import/*` — the two import panels' only door to the
- * server. Read-only toward Google: nothing here can change a contact or a task
- * in the person's Google account.
+ * Client doors for the Google import panels. Import reads remain read-only
+ * toward Google; the Tasks panel also exposes separately reviewed status and
+ * create mutations through `/google-integrations/tasks/*`.
  *
- * It calls `postJson`/`getJson` with the `*Pending` stand-in types from
- * `./types` rather than `lib/api/typed-client`, because the generated contract
- * does not carry these paths yet — see the header of `./types.ts` for why and
- * for the one-file swap that removes this exception.
+ * The current generated contract supplies every Tasks type. Contact-import
+ * shapes remain the explicit `*Pending` exception documented in `./types.ts`.
  */
 
 import { getJson, postJson } from "@/lib/python-client";
