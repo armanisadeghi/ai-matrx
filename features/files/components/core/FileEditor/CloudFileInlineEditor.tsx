@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileWorkingCopy } from "@/features/files/hooks/useFileWorkingCopy";
+import { WorkingCopyAlert } from "@/lib/working-copy/WorkingCopyAlert";
 import {
   clearFileDraft,
   fileWorkingCopy,
@@ -141,7 +142,11 @@ export function CloudFileInlineEditor({
     const onPageHide = () => {
       const current = fileWorkingCopy.entry(fileId);
       if (current?.value !== undefined && current.dirty) {
-        storeFileDraft(fileId, { text: current.value, baseVersion: current.baseVersion });
+        storeFileDraft(fileId, {
+          text: current.value,
+          baseVersion: current.baseVersion,
+          base: current.base ?? null,
+        });
       }
       void fileWorkingCopy.flush(fileId);
     };
@@ -239,6 +244,7 @@ export function CloudFileInlineEditor({
           </button>
         </div>
       </div>
+      <WorkingCopyAlert kind={fileWorkingCopy} id={fileId} showFailure={false} />
       {saveError ? (
         <div className="border-b border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {saveError}

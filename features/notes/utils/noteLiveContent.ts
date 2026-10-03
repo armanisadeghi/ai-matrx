@@ -16,12 +16,30 @@
 // `notesDrafts.ts`, the delete thunk) use `getNoteLiveContent`; components use
 // `selectWorkingCopyValue(state, noteWorkingCopy.key(id))`. Undefined means
 // "nothing newer than the note record".
+//
+// NO SILENT LOST UPDATE (2026-10-03). The base an edit starts from is held
+// from the FIRST keystroke: the copy going unsaved marks the note record's body
+// as edited (`noteContentEditPending`), so a collaborator's row arriving in the
+// debounce window is kept as an observation and the commit saves on the old
+// version — the CAS rejects it and the note's own conflict window opens. And
+// right before every commit the primitive compares the record's body with that
+// base (`source`): a move under unsaved words is a working-copy conflict with a
+// visible choice, never a commit on top. Retry of the DB write stays the
+// record's (autoSaveMiddleware): this kind's save is a synchronous Redux
+// commit that cannot fail on the network.
 
-import { defineWorkingCopyKind, type WorkingCopyStoreLike } from "@/lib/working-copy/workingCopyKind";
+import {
+  defineWorkingCopyKind,
+  type WorkingCopyKind,
+  type WorkingCopyStoreLike,
+} from "@/lib/working-copy/workingCopyKind";
+import { announceWorkingCopyConflict, dismissWorkingCopyConflict } from "@/lib/working-copy/announce";
 import { getReduxSyncDelay } from "../redux/notes.types";
-import { updateNoteContent } from "../redux/slice";
+import { noteContentEditPending, noteContentEditSettled, updateNoteContent } from "../redux/slice";
 
-export const noteWorkingCopy = defineWorkingCopyKind({
+type WithNoteBodies = { notes?: { notes?: Record<string, { content?: string | null; version?: number | null } | undefined> } };
+
+export const noteWorkingCopy: WorkingCopyKind<never> = defineWorkingCopyKind({
   entity: "note",
   delay: (entry) => getReduxSyncDelay(entry?.value?.length ?? 0),
   // The commit is the note record's own edit; persistence is autoSaveMiddleware's.
@@ -30,6 +48,17 @@ export const noteWorkingCopy = defineWorkingCopyKind({
     store.dispatch(updateNoteContent({ id, content: entry.value }));
     return { value: entry.value, savedAt: null };
   },
+  source: (id, store) => {
+    const record = (store.getState() as WithNoteBodies).notes?.notes?.[id];
+    return typeof record?.content === "string"
+      ? { value: record.content, version: record.version ?? null }
+      : undefined;
+  },
+  onDirtyChanged: (id, dirty, store) => {
+    store.dispatch(dirty ? noteContentEditPending({ id }) : noteContentEditSettled({ id }));
+  },
+  onConflict: (id, conflict) => announceWorkingCopyConflict(noteWorkingCopy, id, "Note", conflict),
+  onConflictResolved: (id) => dismissWorkingCopyConflict(noteWorkingCopy, id),
 });
 
 /** A view holds this note's working copy. Returns the release (the last one commits). */

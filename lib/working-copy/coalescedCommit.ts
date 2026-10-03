@@ -18,10 +18,11 @@
  *    everything requested so far has been written.
  *  - A commit that throws leaves the record pending (`hasPending()` stays
  *    true), so a later flush retries and nothing reports "clean" over unsaved
- *    work.
+ *    work. WHEN it retries is the working copy's (backoff, reconnect).
  */
 
-export type CommitReason = "debounced" | "flush" | "manual";
+/** `retry`: the primitive re-running a save that failed (`./workingCopyKind.ts`). */
+export type CommitReason = "debounced" | "flush" | "manual" | "retry";
 
 export interface CoalescedCommitOptions<V> {
   /** Milliseconds from the last `schedule()` to the commit. */

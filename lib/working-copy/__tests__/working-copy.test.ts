@@ -203,16 +203,25 @@ describe("defineWorkingCopyKind (Redux-backed)", () => {
     expect(commits).toHaveLength(1);
   });
 
-  it("a moved source never clobbers pending typing, and is taken once it is committed", () => {
-    const { kind, store, value } = makeKind();
+  // Changed 2026-10-03: this used to commit "local words" over "remote words"
+  // after the debounce and then follow the next source — the silent lost
+  // update. A source moving under pending typing is now a conflict: nothing
+  // commits until the person chooses (lib/working-copy/__tests__/working-copy-guarantees.test.ts).
+  it("a moved source never clobbers pending typing, and never commits over it unasked", async () => {
+    const { kind, store, commits, value } = makeKind();
     const release = kind.attach("n2", store);
     kind.load("n2", "stored words");
     kind.edit("n2", "local words");
     kind.load("n2", "remote words");
     expect(value("n2")).toBe("local words");
     jest.advanceTimersByTime(300);
+    expect(commits).toEqual([]);
     kind.load("n2", "remote words again");
+    expect(value("n2")).toBe("local words");
+    expect(store.getState().workingCopies.byKey[kind.key("n2")]?.conflict?.theirs).toBe("remote words again");
+    await kind.resolveConflict("n2", "theirs");
     expect(value("n2")).toBe("remote words again");
+    expect(commits).toEqual([]);
     release();
   });
 

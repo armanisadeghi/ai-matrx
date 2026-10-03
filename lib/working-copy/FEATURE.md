@@ -15,6 +15,27 @@ feature slice, and never runs its own save timer.
 | `recordSessions.ts` | The keyed, ref-counted session registry under the kind: the last view leaving runs the flush; a view returning before it settles re-attaches to the SAME session; dropped only when nothing is pending. |
 | `coalescedCommit.ts` | The scheduler under the kind (`schedule` / `mark` / `flush` / serialized runs). |
 
+## Guarantees every kind inherits (2026-10-03)
+
+- **A failed save is retried here**, view or no view: backoff 1s → 30s (parks after 10 passes at the
+  cap), no write while `navigator.onLine` is false, at once on `online` / the tab becoming visible.
+  `isPermanentSaveFailure` (403/404/409/412/422, `42501`, permission / RLS / conflict words) stops it:
+  the entry shows `failure.permanent` and waits for `kind.retry(id)` or `kind.discard(id)`. The session
+  is held (`canDrop`) until the edit is saved or the person resolved it. Kinds report via
+  `onSaveFailed(id, message, reason, { permanent, attempts })` — toast once per streak.
+- **No silent lost update.** `base` / `baseVersion` stay what the edit started from. A stored state
+  that moves under unsaved work becomes `entry.conflict` (status `conflict`) — from `load`, from the
+  kind's `source(id, store)` read right before every save, or from an engine's `handle.conflict(...)`.
+  Our own write's echo (`entry.writing`) and a source equal to the base or to the person's text are not
+  conflicts. Nothing is written until `kind.resolveConflict(id, "mine" | "theirs" | "merge", merged)`;
+  `mergeText` is a line three-way merge that refuses overlapping edits. A reload draft carries
+  `draftBaseVersion` / `draftBase`; another version loaded = conflict.
+- **On screen:** `WorkingCopyAlert` (one row: Merge · Keep mine · Take theirs, or Retry · Discard).
+  With no view: `announce.ts` (`announceWorkingCopyConflict`, a toast that stays until chosen).
+- **Notes** additionally mark the record's body edited at the first keystroke (`onDirtyChanged` →
+  `noteContentEditPending`), so the realtime row is an observation and the note's own CAS conflict
+  window handles it; the DB-write retry stays `autoSaveMiddleware`'s (the kind's save is a sync commit).
+
 ## Kinds (one per record type)
 
 | Kind | Where | Save | Engine |
@@ -33,8 +54,17 @@ clobbers typing, reset drops pending, `autosave: false`). Consumer seams:
 `features/notes/__tests__/one-note-many-views.test.tsx`,
 `features/data-tables/__tests__/one-document-many-views.test.tsx`,
 `features/files/components/core/FileEditor/__tests__/CloudFileInlineEditor.working-copy.test.tsx`.
+`__tests__/working-copy-guarantees.test.ts` (retry after the last view, offline/online, permanent
+failure, load / `source` / draft / engine conflicts, merge, echo), plus
+`features/notes/__tests__/working-copy-no-lost-update.test.ts` and
+`features/data-tables/__tests__/document-conflict.test.ts`.
 
 ## Change Log
+
+- 2026-10-03 — Retry with backoff for every kind; permanent failures wait for the person; conflict
+  state (`conflict`, `resolveConflict`, `mergeText`, `WorkingCopyAlert`, `announce.ts`); notes hold
+  their base from the first keystroke; documents route "changed elsewhere" into the conflict; file
+  drafts compare their version on adopt.
 
 - 2026-10-03 — Converged to ONE Redux-backed primitive (`workingCopySlice` + `defineWorkingCopyKind`);
   the module-level value store is deleted; notes, files (from `cloudFiles.workingCopies`) and documents

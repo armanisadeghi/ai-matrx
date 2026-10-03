@@ -11,7 +11,8 @@
  * id + version) the first time, and again only when NEW bytes arrive (a new
  * version): a clean copy follows them, a dirty copy keeps the person's text.
  * After a reload, unsaved text kept by the last pagehide comes back as the
- * copy (`readFileDraft`).
+ * copy (`readFileDraft`) — or, when the file moved to a newer version since,
+ * as a conflict the person resolves.
  */
 
 "use client";
@@ -55,9 +56,13 @@ export function useFileWorkingCopy(fileId: string): UseFileWorkingCopyResult {
       blobsInWorkingCopy.set(blob, fileId);
       const draft = readFileDraft(fileId);
       if (draft && draft.text === text) clearFileDraft(fileId);
+      // A draft typed on another version than this one is a conflict (the
+      // primitive compares `draftBaseVersion` with `version` on adopt).
       fileWorkingCopy.load(fileId, text, {
         version,
         draft: draft && draft.text !== text ? draft.text : null,
+        draftBaseVersion: draft?.baseVersion ?? null,
+        draftBase: draft?.base ?? null,
       });
     });
     return () => {

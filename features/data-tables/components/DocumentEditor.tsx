@@ -90,6 +90,7 @@ import type { AwarenessState } from "../collab/types";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { WorkingCopyAlert } from "@/lib/working-copy/WorkingCopyAlert";
 
 type Props = {
   documentId: string;
@@ -444,6 +445,7 @@ export default function DocumentEditor({
           </Button>
         </div>
       </div>
+      <WorkingCopyAlert kind={documentWorkingCopy} id={documentId} />
       <div className="relative min-h-0 flex-1">
         <div ref={containerRef} className="absolute inset-0" />
       </div>
@@ -585,6 +587,12 @@ function statusPillFor(s: WorkingCopyStatus): {
         text: "Save failed",
         icon: null,
         className: "text-destructive",
+      };
+    case "conflict":
+      return {
+        text: "Changed elsewhere",
+        icon: null,
+        className: "text-amber-600 dark:text-amber-500",
       };
     default:
       return { text: "", icon: null, className: "" };

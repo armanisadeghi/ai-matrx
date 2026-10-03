@@ -1210,6 +1210,32 @@ const notesSlice = createSlice({
       applyFieldEdit(record, "content", action.payload.content);
     },
 
+    /**
+     * Words are pending in the note's working copy (lib/working-copy) but not
+     * yet committed here. The record holds its body's base from the FIRST
+     * keystroke: the body counts as edited (no value change, no undo entry,
+     * no save), so a realtime row arriving in the debounce window is retained
+     * as an observation instead of moving the base under the person's typing
+     * — the commit then saves on the base the edit started from and a
+     * collaborator's edit surfaces as the CAS conflict, never a silent loss.
+     */
+    noteContentEditPending(state, action: PayloadAction<{ id: string }>) {
+      const record = state.notes[action.payload.id];
+      if (!record || record._dirtyFields.has("content")) return;
+      (record._fieldHistory as NoteFieldSnapshot).content = record.content;
+      record._dirtyFields.add("content");
+      record._dirty = true;
+    },
+
+    /** The working copy settled without committing a change: drop the pending mark. */
+    noteContentEditSettled(state, action: PayloadAction<{ id: string }>) {
+      const record = state.notes[action.payload.id];
+      if (!record || !record._dirtyFields.has("content")) return;
+      if (record.content !== (record._fieldHistory as NoteFieldSnapshot).content) return;
+      record._dirtyFields.delete("content");
+      record._dirty = record._dirtyFields.size > 0;
+    },
+
     /** Update note label — shorthand for setNoteField with field="label" */
     updateNoteLabel(
       state,
@@ -1907,6 +1933,8 @@ export const {
   removeTab,
   reorderTabs,
   updateNoteContent,
+  noteContentEditPending,
+  noteContentEditSettled,
   updateNoteLabel,
   updateNoteFolder,
   updateNoteTags,

@@ -295,19 +295,22 @@ export class DocumentModel {
     this.realtimeClose = open((snapshotId) => void this.onRemoteSnapshot(snapshotId));
   }
 
-  /** A snapshot was committed (here or elsewhere): show a foreign one in every view, unless we have unsaved edits. */
-  async onRemoteSnapshot(snapshotId: string): Promise<void> {
+  /**
+   * A snapshot was committed (here or elsewhere): show a foreign one in every
+   * view. Over unsaved edits it is a CONFLICT — the working copy holds it and
+   * no save runs (one would overwrite the collaborator's snapshot) until the
+   * person chooses; `overUnsaved` is "Take theirs" (`./documentModels.ts`).
+   */
+  async onRemoteSnapshot(snapshotId: string, { overUnsaved = false }: { overUnsaved?: boolean } = {}): Promise<void> {
     if (this.collab) return; // the room is the live channel; snapshots are checkpoints
     if (this.knownSnapshots.has(snapshotId)) return; // ours, or already shown
     if (this.saving) return; // our own save's echo, ahead of its response
-    if (this.hasUnsaved()) {
-      console.warn(
-        `[document-model] ${this.documentId} changed elsewhere while this tab has unsaved edits — keeping this tab's edits; the next save writes them`,
-      );
+    if (this.hasUnsaved() && !overUnsaved) {
+      this.handle.conflict({ ref: snapshotId });
       return;
     }
     const row = await this.deps.loadLatest(this.documentId);
-    if (!row || this.hasUnsaved() || this.knownSnapshots.has(row.id)) return;
+    if (!row || (this.hasUnsaved() && !overUnsaved) || this.knownSnapshots.has(row.id)) return;
     this.knownSnapshots.add(row.id);
     this.savedFingerprint = contentFingerprint(row.snapshot);
     this.stored = row.snapshot;
