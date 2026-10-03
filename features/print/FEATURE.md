@@ -116,6 +116,8 @@ Migrated out of `(dev)` on 2026-09-11. The demo routes `/demos/print-studio` and
 
 ## Change log
 
+- **2026-10-02** — Document preview works in browsers with no inline PDF viewer (Chrome with "Download PDFs" on, Android, touch devices), which showed only a file name and an Open button and printed nothing. `@ai-matrx/print` 0.8.67 `DocumentPrintPreview` takes `renderPages`/`printPages`; `features/print/document/pdfPages.tsx` supplies the canonical `PdfDocumentRenderer` and a pdf.js page printer (200 DPI, exact page size). Both consumers (`/print/documents`, markdown studio print view) pass them.
+
 - **2026-09-25 (RC-B10)** — `/print/documents` is the document studio: markdown editor + `DocumentPrintPreview` from `@ai-matrx/print/react` 0.7.0 (real PDF pages, web view, Print, PDF/Word/EPUB/HTML/Markdown downloads, notices with remedies). Settings ride in the markdown frontmatter (page size, margins, cover, TOC, header/footer "Page X of Y", columns, section breaks, captions, cross-refs, APA/MLA/Chicago citations). `?note=<id>` opens a note (plain notes get a default settings block); the notes row menu has "Print or export as document…". The html2canvas download path here is gone.
 
 - `2026-09-17` — Luna: Registered `/print/documents` as `matrx-user/markdown-pdf`, added live surface scope and canonical editable context-menu wiring while preserving the existing browser PDF conversion and download behavior. The focused live mirror sync/check passed. Authenticated browser integration and independent acceptance remain pending.

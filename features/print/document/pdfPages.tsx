@@ -23,12 +23,13 @@ export function renderDocumentPdfPages(pdfUrl: string) {
 const PRINT_SCALE = 200 / 72;
 
 export async function printDocumentPdfPages(pdfUrl: string): Promise<void> {
-  // Importing the renderer module sets pdf.js's same-origin worker source.
-  const [{ pdfjs }] = await Promise.all([
-    import("react-pdf"),
-    import("@/features/pdf/components/viewer/PdfDocumentRenderer"),
-  ]);
-  const pdf = await pdfjs.getDocument(pdfUrl).promise;
+  const { pdfjs } = await import("react-pdf");
+  // The same-origin worker PdfDocumentRenderer uses (mirrored into /public by
+  // scripts/copy-pdfjs-worker.ts). react-pdf defaults it to a bare
+  // "pdf.worker.mjs" that does not resolve, so set it every time.
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs";
+  const task = pdfjs.getDocument({ url: pdfUrl });
+  const pdf = await task.promise;
   const pageUrls: string[] = [];
   let pageSize = "";
   try {
@@ -42,13 +43,13 @@ export async function printDocumentPdfPages(pdfUrl: string): Promise<void> {
       const canvas = document.createElement("canvas");
       canvas.width = Math.ceil(viewport.width);
       canvas.height = Math.ceil(viewport.height);
-      await page.render({ canvas, viewport }).promise;
+      await page.render({ canvas, viewport, intent: "print" }).promise;
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
       if (!blob) throw new Error(`Page ${n} could not be drawn for printing.`);
       pageUrls.push(URL.createObjectURL(blob));
     }
   } finally {
-    void pdf.destroy();
+    void task.destroy();
   }
 
   const frame = document.createElement("iframe");
