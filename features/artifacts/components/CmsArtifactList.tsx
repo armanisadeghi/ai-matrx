@@ -117,6 +117,8 @@ function statusTone(status: ArtifactStatus): string {
   return "text-muted-foreground";
 }
 
+const getArtifactRowId = (artifact: CxArtifactRecord) => artifact.id;
+
 function ArtifactListSkeleton() {
   return (
     <div className="divide-y divide-border/60" aria-hidden>
@@ -313,6 +315,57 @@ export function CmsArtifactList() {
     ],
     [],
   );
+
+  /**
+   * 🚨 EVERY FUNCTION THE TABLE'S BODY DRAWS FROM IS STABLE BY VALUE.
+   * `MatrxDataTable` redraws a memoised row only when a body-cell function
+   * (`cell`, `customActions`), `rowClassName` or the columns array changes
+   * identity. These used to be written inline in the JSX, so the React
+   * Compiler cached them together with the element — and any re-render of this
+   * list (opening an artifact in the canvas re-renders it twice: the canvas
+   * state and the `?open=` address) handed the table new functions and
+   * redrew EVERY row: 1,120 row renders and ~2.1s to open one artifact with
+   * 560 rows. They now change only when what they draw changes — the row that
+   * is navigating. The handlers are read at click time from `rowHandlersRef`,
+   * so a fresh handler never redraws a row.
+   */
+  const rowHandlersRef = useRef({
+    navigate: (_id: string) => {},
+    archive: (_artifact: CxArtifactRecord) => {},
+    openEditor: (_artifact: CxArtifactRecord) => {},
+  });
+  useEffect(() => {
+    rowHandlersRef.current = {
+      navigate: handleNavigate,
+      archive: (artifact) => void handleArchive(artifact),
+      openEditor: handleOpenEditor,
+    };
+  });
+  const tableColumns = useMemo<MatrxColumnDef<CxArtifactRecord>[]>(
+    () => [
+      ...columns,
+      {
+        id: "custom-actions",
+        header: "Actions",
+        sortable: false,
+        filter: false,
+        customActions: (artifact) => (
+          <div className="flex items-center gap-0.5">
+            {navigatingId === artifact.id && <Loader2 className="size-4 animate-spin text-primary" />}
+            <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => rowHandlersRef.current.navigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => rowHandlersRef.current.openEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>
+            {artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}
+            <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => rowHandlersRef.current.archive(artifact)} title="Move to Trash"><ArchiveIcon className="size-3.5" /></Button>
+          </div>
+        ),
+      },
+    ],
+    [columns, navigatingId, navigationPending],
+  );
+  const rowClassName = useMemo(
+    () => () => (navigationPending ? "pointer-events-none opacity-60" : undefined),
+    [navigationPending],
+  );
   const statusButtonLabel =
     filters.status === "all"
       ? "Active"
@@ -453,8 +506,8 @@ export function CmsArtifactList() {
         <MatrxDataTable<CxArtifactRecord>
           tableId="artifacts/content-library"
           data={filtered}
-          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (artifact) => <div className="flex items-center gap-0.5">{navigatingId === artifact.id && <Loader2 className="size-4 animate-spin text-primary" />}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>{artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Move to Trash"><ArchiveIcon className="size-3.5" /></Button></div> }]}
-          getRowId={(artifact) => artifact.id}
+          columns={tableColumns}
+          getRowId={getArtifactRowId}
           isLoading={isLoading}
           density="condensed"
           pageSize={0}
@@ -480,7 +533,7 @@ export function CmsArtifactList() {
           window={{ enabled: false }}
           getRowHref={(artifact) => `/artifacts/${artifact.id}`}
           onRowOpen={(artifact) => { if (!navigationPending) handleOpen(artifact); }}
-          rowClassName={() => navigationPending ? "pointer-events-none opacity-60" : undefined}
+          rowClassName={rowClassName}
           // new-tab-icon: row disables ALL row actions together while a navigation is pending (transient busy-state, not "nothing to open" — the row's <a target="_blank"> itself is correct)
 
         />

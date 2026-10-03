@@ -43,6 +43,14 @@ the node's `STATE.md` in the same session.
 
 ## Change log
 
+- 2026-10-03 — **Opening an artifact no longer redraws every row of `/artifacts`.** `CmsArtifactList` wrote
+  the actions column, `rowClassName` and `getRowId` inline in its JSX; the React Compiler cached them with
+  the element, so each re-render of the list (opening in the canvas re-renders it twice) handed
+  `MatrxDataTable` new body functions and redrew all rows. With 560 artifacts: 1,120 row renders, ~2.6s of
+  long tasks, ~2.1s from click to the `?open=` address moving. They are now stable by value (`useMemo` on
+  `navigatingId`; handlers read at click time from a ref): 0 rows redraw, no long task, 0.3–0.76s.
+  Guard: `components/__tests__/CmsArtifactList.row-stability.test.tsx` (red on the old code).
+
 - 2026-09-25 — **The Content Library is agent-readable: `matrx-user/artifacts` emits on both routes.**
   `CmsArtifactList` and `CmsArtifactDetail` each mount `SurfaceRuntimeProvider` around the
   canonical `NonEditableContextMenu`, building through `lib/artifacts-scope.ts` (pure, no fetch —
