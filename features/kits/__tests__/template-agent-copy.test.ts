@@ -189,3 +189,17 @@ describe("template agent copy", () => {
     expect(rows.get(agentId)!.is_archived).toBe(true);
   });
 });
+
+// THE BINDING IS THE "FROM MY DATA" BINDING. A template copy must open in the agent's own
+// custom-data picker as an ordinary whole-table binding — the same shape the picker starts
+// from — never a second binding dialect the picker cannot edit.
+import { emptyCustomDataBinding, isCompleteBinding } from "@/features/agents/components/variables-management/custom-data/customDataBinding";
+import { templateBinding } from "../templateAgentCopy";
+
+describe("template binding = the From my data binding", () => {
+  it("is the picker's whole-table binding with only the table and row cap filled in", () => {
+    const b = templateBinding(REQUEST.bindings[0], TEMPLATE_AGENT_COLLECTION_LIMIT);
+    expect(b).toEqual({ ...emptyCustomDataBinding(), table_id: APPOINTMENTS, limit: TEMPLATE_AGENT_COLLECTION_LIMIT });
+    expect(isCompleteBinding(b)).toBe(true);
+  });
+});

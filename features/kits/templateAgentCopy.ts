@@ -32,8 +32,8 @@
 // copier against the clone with its own ports; the browser wiring is
 // `templateAgentCopyHost.ts`.
 import type { Json } from "@/types/database.types";
+import type { CustomDataBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { AgentRow } from "./installer";
-import type { MergeFieldBinding } from "./types";
 
 // ─── the contract (structurally identical to @ai-matrx/records templates/install.ts) ──
 // The package does not export its templates entry yet, so the request is declared here
@@ -79,8 +79,13 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-/** The merge-field binding one template variable gets: the whole installed table. */
-export function templateBinding(binding: TemplateAgentBinding, limit: number): MergeFieldBinding {
+/**
+ * The binding one template variable gets: the whole installed table. It IS the "From my
+ * data" binding (`CustomDataBinding`, the shape `CustomDataBindingPicker` writes and
+ * `emptyCustomDataBinding()` starts from), typed against it so the two can never drift —
+ * the person opens the copy and edits the same binding in the same picker.
+ */
+export function templateBinding(binding: TemplateAgentBinding, limit: number): CustomDataBinding {
   return {
     kind: "merge_field",
     source: "record",
