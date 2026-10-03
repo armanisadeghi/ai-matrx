@@ -12,6 +12,7 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { useArtifactContentToggle } from "@/features/canvas/host/useArtifactCanvas";
 import { cn } from "@/lib/utils";
+import { artifactTitleRepeatsCard } from "./artifact-own-title";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
 import type { CanvasContentType } from "@/features/canvas/canvasContent";
@@ -97,6 +98,13 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
 
   const canvasType: CanvasContentType =
     resolveCanvasType("artifact", artifactType) || "html";
+  // The finished card prints the payload's own title: the muted label above it would repeat it.
+  const payloadTitle =
+    (structuredServerData?.title as unknown) ??
+    (safeJsonParse(content) as { title?: unknown } | null)?.title;
+  const showTitleLabel = !(
+    isComplete && artifactTitleRepeatsCard(canvasType, artifactTitle, payloadTitle)
+  );
   const dedupKey = taskId || `artifact:${artifactId}`;
 
   /** Build the canvas data shape. JSON types get parsed, strings pass through. */
@@ -293,9 +301,11 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
                 (the content provides its own structure). */}
       <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-xs font-medium text-muted-foreground">
-            {artifactTitle}
-          </span>
+          {showTitleLabel && (
+            <span className="truncate text-xs font-medium text-muted-foreground">
+              {artifactTitle}
+            </span>
+          )}
           {!isComplete && isStreamActive && (
             <span className="shrink-0 animate-pulse text-xs text-muted-foreground">
               streaming…
