@@ -45,7 +45,7 @@ BEGIN
   end if;
 
   -- LANE7-W6H (2026-10-03): CUSTOM OBJECTS ARE RETIRED. The definition rung (limits read off a
-  -- platform.custom_entity_definition row) is gone with them; p_definition_id is accepted and ignored so
+  -- custom-object definition row) is gone with them; p_definition_id is accepted and ignored so
   -- no caller breaks, and the token, organization and platform rungs answer exactly as before.
   IF p_target_token IS NOT NULL THEN
     SELECT is_enabled, validation_mode, max_fields, max_custom_bytes, ai_exposure_ceiling
@@ -237,7 +237,7 @@ CREATE OR REPLACE FUNCTION platform.backfill_record_names(p_definition_id uuid, 
 AS $function$
 BEGIN
   -- LANE7-W6H (2026-10-03): CUSTOM OBJECTS ARE RETIRED (they moved to the record store, custom.*, whose
-  -- records name themselves). This door named records of platform.custom_entity_definition, which holds
+  -- records name themselves). This door named the records of the retired custom-object tables, which hold
   -- none; it now says so instead of reading the retired tables. Signature kept so no caller breaks.
   RAISE EXCEPTION 'Custom objects moved to the record store, so there are no record names to backfill here (asked for %).', p_definition_id
     USING ERRCODE = '0A000',
