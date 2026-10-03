@@ -18,6 +18,8 @@
  *
  *   [WARN] APP TABLE MISSING   — a global table with no copy in the platform organization
  *   [WARN] APP TABLE ARCHIVED  — organizations whose copy is archived and that have no live one
+ *   [WARN] APP TABLE UNMARKED  — a live copy without the `code_depends` mark, so the store does not
+ *                                guard it against archive / rename / move (lane 12 P5)
  *   [WARN] APP TABLE DRIFTED   — a live copy whose columns differ from the definition (aspects named)
  *   [WARN] APP TABLE SIZE      — rows across every live copy ≥ 50,000, and every further 10,000
  *                                above the last step Arman acknowledged
@@ -176,6 +178,8 @@ export interface Copy {
   tableId: string;
   organizationId: string;
   archived: boolean;
+  /** The document carries `code_depends: true` (the store's archive / rename / move guard holds it). */
+  marked: boolean;
   /** Live rows in this copy; `null` for an archived copy. */
   rows: number | null;
   sizeAck: SizeAck | null;
@@ -194,13 +198,14 @@ with wanted as (
 ),
 t as (
   select r.id, r.organization_id, r.data ->> 'slug' as slug, r.data ->> 'kept_for' as kept_for,
-         r.deleted_at is not null as archived, r.data -> 'size_ack' as size_ack
+         r.deleted_at is not null as archived, r.data -> 'size_ack' as size_ack,
+         r.data @> '{"code_depends": true}'::jsonb as marked
     from custom.record r
     join wanted w on r.data ->> 'slug' = w.slug and nullif(btrim(r.data ->> 'kept_for'), '') = w.kept_for
    where r.table_id = custom.table_kernel_id()
      and r.data_class = 'table'
 )
-select t.id as table_id, t.organization_id, t.slug, t.kept_for, t.archived, t.size_ack,
+select t.id as table_id, t.organization_id, t.slug, t.kept_for, t.archived, t.size_ack, t.marked,
        case when t.archived then null else
          (select count(*) from custom.record x
            where x.organization_id = t.organization_id and x.table_id = t.id and x.deleted_at is null)
@@ -249,6 +254,7 @@ export async function readCopies(db: Queryable, declarations: readonly Declarati
     tableId: String(r.table_id),
     organizationId: String(r.organization_id),
     archived: r.archived === true,
+    marked: r.marked === true,
     rows: r.rows === null || r.rows === undefined ? null : Number(r.rows),
     sizeAck: asAck(r.size_ack),
     fields: (Array.isArray(r.fields) ? r.fields : []) as StoredField[],
@@ -343,7 +349,7 @@ export function nextSizeStep(ackRows: number | null): number {
   return Math.floor(ackRows / SIZE_STEP) * SIZE_STEP + SIZE_STEP;
 }
 
-export type FindingState = "missing" | "archived" | "drifted" | "size" | "unreadable";
+export type FindingState = "missing" | "archived" | "unmarked" | "drifted" | "size" | "unreadable";
 export interface Finding {
   state: FindingState;
   slug: string;
@@ -393,6 +399,17 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
         signature: `app_table.archived.${def.slug}`,
         line: `[WARN] APP TABLE ARCHIVED ${def.slug} — ${orgs(archivedOrgs.length)} — ${where} — restore it from Archived tables`,
         detail: { declared_in: declaredIn, organization_ids: archivedOrgs },
+      });
+    }
+
+    const unmarkedOrgs = [...new Set(live.filter((c) => !c.marked).map((c) => c.organizationId))];
+    if (unmarkedOrgs.length > 0) {
+      findings.push({
+        state: "unmarked",
+        slug: def.slug,
+        signature: `app_table.unmarked.${def.slug}`,
+        line: `[WARN] APP TABLE UNMARKED ${def.slug} — ${orgs(unmarkedOrgs.length)} — ${where} — not guarded against archive, rename or move until its next ensure marks it`,
+        detail: { declared_in: declaredIn, organization_ids: unmarkedOrgs },
       });
     }
 
@@ -559,6 +576,7 @@ function copy(def: DeclaredTable, org: string, over: Partial<Copy> = {}): Copy {
     tableId: `00000000-0000-4000-8000-${String(tableSeq).padStart(12, "0")}`,
     organizationId: org,
     archived: false,
+    marked: true,
     rows: 12,
     sizeAck: null,
     fields: def === CALLBACKS ? CALLBACK_COLUMNS : LIBRARY_COLUMNS,
@@ -591,6 +609,17 @@ function offlineCases(): Case[] {
       ],
       states: ["archived"],
       lines: [/^\[WARN\] APP TABLE ARCHIVED patient_callbacks — 2 organizations — declared in features\/front-desk\/patient-callbacks\.app-table\.ts — restore it from Archived tables$/],
+    },
+    {
+      name: "UNMARKED: a live copy without the code-depends mark (an archived unmarked copy is ARCHIVED only)",
+      copies: [
+        copy(CALLBACKS, ORG.cedarRidge),
+        copy(CALLBACKS, ORG.harborDental, { marked: false }),
+        copy(CALLBACKS, ORG.northsideRecycling, { archived: true, marked: false, rows: null, fields: [] }),
+        healthyLibrary,
+      ],
+      states: ["archived", "unmarked"],
+      lines: [/^\[WARN\] APP TABLE UNMARKED patient_callbacks — 1 organization — declared in features\/front-desk\/patient-callbacks\.app-table\.ts — not guarded/],
     },
     {
       name: "DRIFTED: a field's stored type differs from the definition",
@@ -789,6 +818,7 @@ function ensureSpec(def: DeclaredTable): Record<string, unknown> {
     default_sort: [{ field: title, direction: "asc" }],
     kept_by_the_app: true,
     kept_for: def.kept_for,
+    code_depends: true,
     app_table: { scope: def.scope, spec_hash: "self-test" },
     fields: def.specs.map((s, i) => ({
       key: s.key,
@@ -807,7 +837,7 @@ function ensureSpec(def: DeclaredTable): Record<string, unknown> {
 /**
  * THE REAL QUERIES, ON THE CLONE, IN ONE ROLLED-BACK TRANSACTION: make Cedar Ridge's copy through
  * custom.table_ensure, require it to judge clean (the shape map matches the store), change a field
- * type in the definition and require DRIFTED, archive the copy through custom.table_archive and
+ * type in the definition and require DRIFTED, archive the copy through custom.table_archive_deliberately and
  * require ARCHIVED, record it and read the error row back. Nothing is committed.
  */
 async function dbSelfTest(argv: string[]): Promise<number> {
@@ -847,11 +877,12 @@ async function dbSelfTest(argv: string[]): Promise<number> {
         const drifted = judge([retyped], live, null);
         expect(drifted.length === 1 && drifted[0]!.state === "drifted" && /callback_at type \(stored datetime, declared text\)/.test(drifted[0]!.line),
           "changing callback_at's type in the definition → DRIFTED", drifted.map((f) => f.line).join(" | ") || "no finding");
-        await db.query(`select custom.table_archive($1::uuid, $2::uuid)`, [ORG.cedarRidge, ensured.table_id]);
+        // The copy is marked `code_depends` (lane 12 P5): only the deliberate door archives it.
+        await db.query(`select custom.table_archive_deliberately($1::uuid, $2::uuid, $3, 'check:app-tables self-test')`, [ORG.cedarRidge, ensured.table_id, CALLBACKS.slug]);
         const after = own(await readCopies(db, [decl]));
         const archived = judge([decl], after, null);
         expect(archived.length === 1 && archived[0]!.state === "archived" && /APP TABLE ARCHIVED patient_callbacks — 1 organization/.test(archived[0]!.line),
-          "archiving the copy through custom.table_archive → ARCHIVED line", archived.map((f) => f.line).join(" | ") || "no finding");
+          "archiving the copy through custom.table_archive_deliberately → ARCHIVED line", archived.map((f) => f.line).join(" | ") || "no finding");
         await recordFindings(db, archived);
         const row = (await db.query(
           `select count(*)::int as n from ops.system_error where kind = 'app_table' and error_type = 'app_table.archived.patient_callbacks' and resolved_at is null`,
