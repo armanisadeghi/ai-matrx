@@ -56,6 +56,7 @@ import {
   type ValueChoice,
 } from "./builderSpec";
 import { ValueText } from "./ValueText";
+import { workflowSummary } from "./workflowSummary";
 
 interface Seat {
   dataSource: RecordsDataSource;
@@ -219,6 +220,18 @@ function EditorBody({
 
   return (
     <fieldset disabled={readOnly} className="flex min-w-0 flex-col gap-3">
+      {/* What it will do, in one line, composed from the cards below. */}
+      <p className="text-sm text-muted-foreground" data-workflow-summary="">
+        {workflowSummary(spec, {
+          tableName,
+          fieldName: (ref) => {
+            const f = all.find((x) => String(x.id) === ref || x.key === ref);
+            return f ? fieldName(f) : null;
+          },
+          otherTableName: (id) =>
+            seat.tables.rows.find((t) => t.table_id === id)?.table_name ?? null,
+        })}
+      </p>
       {/* ── The trigger ── */}
       <Card title="When">
         <div className="flex flex-wrap items-center gap-2 text-sm">

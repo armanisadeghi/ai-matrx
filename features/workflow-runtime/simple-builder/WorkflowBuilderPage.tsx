@@ -72,7 +72,7 @@ import {
   type TableWorkflowKind,
   type TableWorkflowRow,
 } from "./builderApi";
-import { emptySpec, specForSave, type BuilderSpec } from "./builderSpec";
+import { TRIGGER_LABEL, emptySpec, specForSave, type BuilderSpec } from "./builderSpec";
 import { BuilderEditor } from "./BuilderEditor";
 import { BuilderRunsList } from "./BuilderRunsList";
 
@@ -316,6 +316,24 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
       setView(saved);
       setName(saved.name);
       setDirty(false);
+      // The list shows it at once; the re-read below only confirms (it can take a while).
+      setRows((held) => {
+        const row: TableWorkflowRow = {
+          kind: "workflow",
+          name: saved.name,
+          is_on: Boolean(saved.is_on),
+          open: { editor: "workflow_builder", workflow_id: saved.workflow_id },
+        };
+        const list = held ?? [];
+        const at = list.findIndex(
+          (r) =>
+            (r.open as { workflow_id?: string }).workflow_id ===
+            saved.workflow_id,
+        );
+        return at >= 0
+          ? list.map((r, i) => (i === at ? { ...r, ...row } : r))
+          : [row, ...list];
+      });
       setListNonce((n) => n + 1);
       if (!view) go({ workflow: saved.workflow_id });
       return saved;
@@ -495,7 +513,8 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
       unavailable={unavailable}
       tableId={tableId}
       selectedId={selectedId}
-      newOpen={workflowParam === "new"}
+      selectedTrigger={`${tableName} record ${TRIGGER_LABEL[spec.trigger.event]}`}
+      newOpen={workflowParam === "new" && !view}
       onNew={() => go({ workflow: "new", tab: "build" })}
     />
   );
@@ -656,6 +675,7 @@ function WorkflowList({
   unavailable,
   tableId,
   selectedId,
+  selectedTrigger,
   newOpen,
   onNew,
 }: {
@@ -664,6 +684,8 @@ function WorkflowList({
   unavailable: string[];
   tableId: string;
   selectedId: string | null;
+  /** The open workflow's trigger, in words — the second line of its row. */
+  selectedTrigger: string;
   newOpen: boolean;
   onNew: () => void;
 }) {
@@ -701,7 +723,18 @@ function WorkflowList({
         const content = (
           <>
             <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 flex-1 truncate">{row.name}</span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate" title={row.name}>
+                {row.name}
+              </span>
+              <span className="truncate text-xs font-normal text-muted-foreground">
+                {active
+                  ? selectedTrigger
+                  : row.last_run_at
+                    ? `Ran ${new Date(row.last_run_at).toLocaleDateString()}`
+                    : "Not run yet"}
+              </span>
+            </span>
             <StatusBadge
               label={row.is_on ? "On" : "Off"}
               tone={row.is_on ? "success" : "neutral"}
