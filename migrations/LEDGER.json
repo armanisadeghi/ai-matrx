@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T13:50:38.726Z",
+  "generated_at": "2026-10-03T14:34:40.341Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -452,6 +452,12 @@
       "checksum": "17226ff2004ad6204f1914969d69e87f06f0b328de1a0c400e28b2c70c56db9b",
       "applied_at": "2026-10-03 12:08:46.635255+00"
     },
+    "migrations/campaign/chairaccess_d_a_bookings_tables_slots_go_with_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairaccess_d_a_bookings_tables_slots_go_with_it.sql",
+      "checksum": "aeebc6cb7599cb728ed42a92cbb7c3898002ffdbb25fa97e2d48943ed5140803",
+      "applied_at": "2026-10-03 14:31:02.213746+00"
+    },
     "migrations/campaign/chaircensus13_a_the_census_ceiling_counts_the_pairs_it_will_judge.sql": {
       "source": "matrx-frontend",
       "filename": "chaircensus13_a_the_census_ceiling_counts_the_pairs_it_will_judge.sql",
@@ -637,6 +643,30 @@
       "filename": "chairgrid_c_a_search_finds_a_date_a_phone_and_an_amount_as_a_person_writes_them.sql",
       "checksum": "b47190f4d92af8d92ebf299d9a55b96c432cf20466f98793e68fd5bd17db87f5",
       "applied_at": "2026-10-03 11:58:32.546099+00"
+    },
+    "migrations/campaign/chairmath_a_a_formula_reads_a_worked_out_column.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairmath_a_a_formula_reads_a_worked_out_column.sql",
+      "checksum": "4a4c1dc35db29dfe5373fb5b58dcd659809090465071d65518e4a49ea6180a75",
+      "applied_at": "2026-10-03 14:32:08.332654+00"
+    },
+    "migrations/campaign/chairmath_b_a_rollup_counts_only_the_records_that_match.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairmath_b_a_rollup_counts_only_the_records_that_match.sql",
+      "checksum": "8ecdc295486a98064d2c184118a74534e7b9ca1cf4111045a1fc675cd6b7e0a2",
+      "applied_at": "2026-10-03 14:32:19.529486+00"
+    },
+    "migrations/campaign/chairmath_c_an_output_keeps_what_the_agent_said_about_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairmath_c_an_output_keeps_what_the_agent_said_about_it.sql",
+      "checksum": "d88af38aebf88c0a7eb2223784fbf7d57ae3d38749e75e50aa37b16201617bb3",
+      "applied_at": "2026-10-03 14:32:31.129521+00"
+    },
+    "migrations/campaign/chairmath_d_a_price_is_read_as_money.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairmath_d_a_price_is_read_as_money.sql",
+      "checksum": "32ba00a41ec27be637f388af71bf067ee079bafefe8b64fa59ad01b5a71b6f8e",
+      "applied_at": "2026-10-03 14:32:40.04162+00"
     },
     "migrations/campaign/chairrc_a_record_changed_carries_its_change.sql": {
       "source": "matrx-frontend",
@@ -7039,6 +7069,12 @@
       "filename": "visionreach_w3_query_doors_mask_fields.sql",
       "checksum": "1830be0c33246ad518d057604ce627717f5757237d6e7f5be44c966fcdf68472",
       "applied_at": "2026-10-02 18:47:12.23644+00"
+    },
+    "migrations/campaign/visionreach_w6_an_outside_table_is_synced_and_read_only.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_w6_an_outside_table_is_synced_and_read_only.sql",
+      "checksum": "8a49e8e9ccfc993f6cdc1a9112271340f97a4fe1381414107727c0ab4e06ad6c",
+      "applied_at": "2026-10-03 14:34:38.671368+00"
     },
     "migrations/campaign/vk_a_calendar_keeps_where_a_record_ends_and_a_timeline_is_a_view.sql": {
       "source": "matrx-frontend",
