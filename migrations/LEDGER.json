@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T00:37:16.425Z",
+  "generated_at": "2026-10-03T00:58:59.291Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -6727,6 +6727,12 @@
       "filename": "visionreach_g1_a_relation_is_filled_by_its_name.sql",
       "checksum": "154c81feab4ad41a0f762fade9ad76a4d5571747fe41fdf098f6ab255f7fdde3",
       "applied_at": "2026-10-02 23:57:00.682039+00"
+    },
+    "migrations/campaign/visionreach_only_me_is_listed_for_nobody_else.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_only_me_is_listed_for_nobody_else.sql",
+      "checksum": "63bf78eb195f88d1a1de068089da46bfc10f6923da6db4628292167af54be1ec",
+      "applied_at": "2026-10-03 00:58:56.364524+00"
     },
     "migrations/campaign/visionreach_w2_formula_columns_are_measured_as_they_are_read.sql": {
       "source": "matrx-frontend",
