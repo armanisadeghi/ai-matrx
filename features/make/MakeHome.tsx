@@ -76,11 +76,16 @@ import { MakeMount, NewTableBody, SavesTo } from "./MakeMount";
 
 type HomeRead =
   | { phase: "reading" }
-  | { phase: "failed"; why: string }
+  | { phase: "failed"; why: string; retry: () => void }
   | { phase: "read"; answer: doors.DataHomeAnswer; recent: DataHomeRow[] };
 
 function useMakeHomeRead(userId: string | null, testOrganizationIds: ReadonlySet<string>, ready: boolean): HomeRead {
   const [read, setRead] = useState<HomeRead>({ phase: "reading" });
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => {
+    setRead({ phase: "reading" });
+    setAttempt((n) => n + 1);
+  };
   const testKey = [...testOrganizationIds].sort().join(",");
   useEffect(() => {
     if (!userId || !ready) return;
@@ -90,7 +95,7 @@ function useMakeHomeRead(userId: string | null, testOrganizationIds: ReadonlySet
       const answered = await doors.dataHome(source, null);
       if (!alive) return;
       if (!answered.ok) {
-        setRead({ phase: "failed", why: doors.doorFailureLine(answered.error) });
+        setRead({ phase: "failed", why: doors.doorFailureLine(answered.error), retry });
         return;
       }
       const client = createRecordsClient({ dataSource: source, actor: { actor: "user", user_id: userId }, organizationId: null });
@@ -102,13 +107,13 @@ function useMakeHomeRead(userId: string | null, testOrganizationIds: ReadonlySet
       if (!alive) return;
       setRead({ phase: "read", answer: answered.data, recent: recentlyChanged(built.rows) });
     })().catch((err: unknown) => {
-      if (alive) setRead({ phase: "failed", why: err instanceof Error ? err.message : String(err) });
+      if (alive) setRead({ phase: "failed", why: err instanceof Error ? err.message : String(err), retry });
     });
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the set is keyed by its contents
-  }, [userId, ready, testKey]);
+  }, [userId, ready, testKey, attempt]);
   return read;
 }
 
@@ -166,7 +171,7 @@ export default function MakeHome({ platformKits, platformOrganizationId }: MakeH
               </h1>
               <SavesTo />
             </div>
-            <ul className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4" data-make-tiles="">
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3" data-make-tiles="">
               {MAKE_TILES.map((tile) => (
                 <li key={tile.id} className="min-w-0">
                   <button
@@ -234,7 +239,7 @@ function RecentSection({ home }: { home: HomeRead }) {
       {home.phase === "reading" ? (
         <Skeleton className="h-24 w-full" />
       ) : home.phase === "failed" ? (
-        <p className="text-sm text-destructive">{home.why}</p>
+        <ReadFailed home={home} />
       ) : home.recent.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nothing changed yet</p>
       ) : (
@@ -254,6 +259,18 @@ function RecentSection({ home }: { home: HomeRead }) {
         </ul>
       )}
     </section>
+  );
+}
+
+/** A read that did not answer: the store's sentence (in a person's words) and Try again. */
+function ReadFailed({ home }: { home: Extract<HomeRead, { phase: "failed" }> }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm" role="alert">
+      <span className="text-destructive">{home.why}</span>
+      <Button size="sm" variant="outline" onClick={home.retry}>
+        Try again
+      </Button>
+    </div>
   );
 }
 
@@ -394,32 +411,6 @@ function TableChoice({ home, testOrganizationIds, activeOrganizationId, activeSt
   const [refused, setRefused] = useState<string | null>(null);
   const [askOrganization, setAskOrganization] = useState(false);
 
-  if (home.phase === "reading") return <Skeleton className="h-10 w-64" />;
-  if (home.phase === "failed") return <p className="text-sm text-destructive">{home.why}</p>;
-
-  // The person's own tables in every organization she reaches (never the app's bookkeeping), the
-  // most recently changed first and test organizations last; each names its organization.
-  const tables = home.answer.tables
-    .filter((t) => t.kind === "table" && !t.kept_by_the_app)
-    .slice()
-    .sort(
-      (a, b) =>
-        Number(testOrganizationIds.has(a.organization_id)) - Number(testOrganizationIds.has(b.organization_id)) ||
-        Date.parse(b.updated_at ?? "") - Date.parse(a.updated_at ?? ""),
-    );
-  const q = search.trim().toLowerCase();
-  const items = tables
-    .filter((t) => !q || t.table_name.toLowerCase().includes(q) || t.organization_name.toLowerCase().includes(q))
-    .slice(0, 200)
-    .map((t) => ({
-      id: t.table_id,
-      label: t.table_name,
-      detail: t.organization_name,
-      picked: false,
-      attrs: { "data-make-table-choice": t.table_id },
-    }));
-  const byId = new Map(tables.map((t) => [t.table_id, t]));
-
   const makeTable = async () => {
     const name = search.trim();
     if (!name) return;
@@ -445,11 +436,47 @@ function TableChoice({ home, testOrganizationIds, activeOrganizationId, activeSt
     const made = await declareTable(client, { name, slug: tokenFor(name) });
     setMaking(false);
     if (!made.ok) {
-      setRefused(made.error.message);
+      // The store's own sentence; a statement timeout is said in a person's words (doorFailureLine).
+      setRefused(doors.doorFailureLine({ message: made.error.message }));
       return;
     }
     onChoose(made.data, activeOrganizationId);
   };
+
+  // The organization asked for on the first make has been chosen: make the table she named (ask and replay).
+  useEffect(() => {
+    if (!askOrganization || !activeOrganizationId) return;
+    setAskOrganization(false);
+    void makeTable();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- replays once, when the organization lands
+  }, [askOrganization, activeOrganizationId]);
+
+  if (home.phase === "reading") return <Skeleton className="h-10 w-64" />;
+  if (home.phase === "failed") return <ReadFailed home={home} />;
+
+  // The person's own tables in every organization she reaches (never the app's bookkeeping), the
+  // most recently changed first and test organizations last; each names its organization.
+  const tables = home.answer.tables
+    .filter((t) => t.kind === "table" && !t.kept_by_the_app)
+    .slice()
+    .sort(
+      (a, b) =>
+        Number(testOrganizationIds.has(a.organization_id)) - Number(testOrganizationIds.has(b.organization_id)) ||
+        Date.parse(b.updated_at ?? "") - Date.parse(a.updated_at ?? ""),
+    );
+  const q = search.trim().toLowerCase();
+  const items = tables
+    .filter((t) => !q || t.table_name.toLowerCase().includes(q) || t.organization_name.toLowerCase().includes(q))
+    .slice(0, 200)
+    .map((t) => ({
+      id: t.table_id,
+      label: t.table_name,
+      detail: t.organization_name,
+      picked: false,
+      attrs: { "data-make-table-choice": t.table_id },
+    }));
+  const byId = new Map(tables.map((t) => [t.table_id, t]));
+
 
   return (
     <div className="flex flex-col gap-3" data-make-table-choice-step="">
@@ -465,7 +492,7 @@ function TableChoice({ home, testOrganizationIds, activeOrganizationId, activeSt
           const t = byId.get(id);
           if (t) onChoose(t.table_id, t.organization_id);
         }}
-        empty={<p className="px-2 py-1.5 text-xs text-muted-foreground">No tables yet</p>}
+        empty={<p className="px-2 py-1.5 text-xs text-muted-foreground">{q ? "No table by that name" : "No tables yet"}</p>}
         add={search.trim() ? { label: `New table “${search.trim()}”`, onAdd: () => void makeTable(), disabled: making } : null}
       />
       {making ? <Skeleton className="h-6 w-48" /> : null}
