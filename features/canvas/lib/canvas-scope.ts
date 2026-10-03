@@ -90,14 +90,18 @@ export function buildCanvasScope(
     ? (items.find((item) => item.id === currentItemId) ?? null)
     : null;
 
-  if (!currentItem) return {} as SurfaceScopePayload;
+  // Nothing open → nothing to say. A NON-ITEM tab in focus (Agent context,
+  // Values to send) is not "nothing open": every item is still listed with its
+  // reference, so the agent can read and edit it (2026-10-03 — the whole scope
+  // used to vanish, and the agent said it had no open_items).
+  if (items.length === 0) return {} as SurfaceScopePayload;
 
   const openItems: CanvasOpenItemSummary[] = items.map((item) => {
     const reference = referenceFor(item);
     return {
       title: resolveTitle(item),
       type: item.content.type,
-      is_current: item.id === currentItem.id,
+      is_current: item.id === currentItem?.id,
       ...(reference ? { item: reference } : {}),
     };
   });
@@ -106,23 +110,23 @@ export function buildCanvasScope(
     ? (items.find((item) => item.id === secondaryItemId) ?? null)
     : null;
 
-  const currentReference = referenceFor(currentItem);
+  const currentReference = currentItem ? referenceFor(currentItem) : undefined;
 
   // A session-only item has no record to reference; its own object payload is
   // all there is, so it is sent as itself. An item WITH a record is never sent
   // as its payload (for a saved artifact that is only a pointer).
-  const data = currentItem.content.data;
+  const data = currentItem?.content.data;
   const canvasJson =
     !currentReference && data && typeof data === "object" && !Array.isArray(data)
       ? (data as Record<string, unknown>)
       : undefined;
 
-  const title = resolveTitle(currentItem);
+  const title = currentItem ? resolveTitle(currentItem) : "";
   const secondaryReference = secondaryItem ? referenceFor(secondaryItem) : undefined;
 
   return createCanvasScope({
     current_canvas_item: currentReference,
-    current_canvas_type: currentItem.content.type,
+    current_canvas_type: currentItem?.content.type,
     current_canvas_title: title || undefined,
     current_canvas_is_saved: !!currentReference,
     canvas_json: canvasJson,

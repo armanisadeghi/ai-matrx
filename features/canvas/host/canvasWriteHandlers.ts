@@ -102,6 +102,7 @@ const NOTHING_CHANGED = "Nothing was changed.";
  */
 function openItem(canvas: CanvasController, address?: SurfaceWriteAddress): OpenItem {
   const state = canvas.getState();
+  if (!state.isOpen) throw new Error(`The canvas is closed, so no item is open. ${NOTHING_CHANGED}`);
   const all = Object.values(state.items ?? {})
     .map((item) => (item ? candidate(item.id, item.data) : null))
     .filter((item): item is CandidateItem => item !== null);
@@ -126,7 +127,7 @@ function openItem(canvas: CanvasController, address?: SurfaceWriteAddress): Open
     );
   }
 
-  const pane = state.isOpen ? state.panes[state.focusedPaneId] : undefined;
+  const pane = state.panes[state.focusedPaneId];
   const focusedRaw = pane?.activeItemId ? state.items[pane.activeItemId] : undefined;
   const focused = focusedRaw ? candidate(focusedRaw.id, focusedRaw.data) : null;
   if (focused?.record) return { ...focused, record: focused.record };

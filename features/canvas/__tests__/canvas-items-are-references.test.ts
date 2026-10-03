@@ -315,3 +315,33 @@ describe("canvas_item_content edits ANY open item, named by its reference", () =
     await expect(handler.readCurrent!()).rejects.toThrow(/name the one to change with `item`/);
   });
 });
+
+describe("a non-item tab in focus never hides the open items", () => {
+  it("still lists every open item with its reference; nothing is 'current'", () => {
+    // Owner proof on /chat 2026-10-03: with "Values to send" focused the canvas
+    // sent NOTHING, and the agent answered it had no open_items to read.
+    const scope = buildCanvasScope({
+      items: [
+        { id: "canvas-tab-1", content: pageItem },
+        { id: "canvas-tab-2", content: savedCode, savedItemId: ITEM_ID },
+      ],
+      currentItemId: "agent-context",
+      secondaryItemId: null,
+      renderMode: "global",
+      isSplit: false,
+    }) as Record<string, unknown>;
+    expect(scope.current_canvas_item).toBeUndefined();
+    expect(scope.current_canvas_is_saved).toBe(false);
+    expect(scope.item_count).toBe(2);
+    expect(scope.open_items).toEqual([
+      expect.objectContaining({ is_current: false, item: expect.objectContaining({ resource_id: PAGE_ID }) }),
+      expect.objectContaining({ is_current: false, item: expect.objectContaining({ resource_id: ITEM_ID }) }),
+    ]);
+  });
+
+  it("an empty canvas still sends nothing", () => {
+    expect(
+      buildCanvasScope({ items: [], currentItemId: "agent-context", secondaryItemId: null, renderMode: "global", isSplit: false }),
+    ).toEqual({});
+  });
+});

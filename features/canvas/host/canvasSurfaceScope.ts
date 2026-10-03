@@ -17,6 +17,9 @@ export function useCanvasSurfaceScope() {
   return () => {
     const state = canvas.getState();
     const items: CanvasScopeItem[] = [];
+    // A closed canvas shows nothing; an open one lists every item whichever tab
+    // has focus (a non-item tab such as Agent context included).
+    if (!state.isOpen) return buildCanvasScope({ items, currentItemId: null, secondaryItemId: null, renderMode: "global", isSplit: false });
     for (const item of Object.values(state.items)) {
       const data = readArtifactItemData(item.data);
       if (!data) continue;

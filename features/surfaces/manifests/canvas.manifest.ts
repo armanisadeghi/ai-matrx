@@ -73,9 +73,9 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_canvas_type",
     label: "Current canvas type",
     description:
-      'Artifact type rendered in the primary pane — one of the `CanvasContentType` values (e.g. "mermaid", "table", "code", "quiz", "html", "chart", "flashcards", "working_document"). Always present while the pane is open.',
+      'Artifact type rendered in the primary pane — one of the `CanvasContentType` values (e.g. "mermaid", "table", "code", "quiz", "html", "chart", "flashcards", "working_document"). Absent while the focused tab is not an item (Agent context, Values to send) — the open items are still listed in `open_items`.',
     valueType: "string",
-    alwaysAvailable: true,
+    alwaysAvailable: false,
     typicalCharCount: 12,
     group: "canvas_item",
     sortOrder: 305,
@@ -119,7 +119,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "open_items",
     label: "Open canvas items",
     description:
-      "Every item open on the canvas, as `{ title, type, is_current, item? }`. `item` is the same kind of reference as `current_canvas_item` (absent for a session-only item); each referenced item is also readable on its own through the context tool. Always present and never empty while the pane is open.",
+      "Every item open on the canvas, as `{ title, type, is_current, item? }`. `item` is the same kind of reference as `current_canvas_item` (absent for a session-only item); each referenced item is also readable on its own through the context tool, and editable through `canvas_item_content` with `item` set to it. Always present and never empty while an item is open, even when the focused tab is not an item.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 400,
@@ -247,7 +247,8 @@ export interface CanvasOpenItemSummary {
  *
  * Required (no `?`) keys mirror every `alwaysAvailable: true` value — the
  * emitter mounts only once an item is open, which is what makes
- * `current_canvas_type` / `open_items` / `item_count` guaranteed.
+ * `open_items` / `item_count` guaranteed. `current_canvas_type` is absent while
+ * a non-item tab (Agent context) has focus.
  */
 export function createCanvasScope(values: {
   selection?: string;
@@ -256,7 +257,7 @@ export function createCanvasScope(values: {
 
   // Open canvas item
   current_canvas_item?: CanvasItemReference;
-  current_canvas_type: string;
+  current_canvas_type?: string;
   current_canvas_title?: string;
   current_canvas_is_saved: boolean;
   canvas_json?: Record<string, unknown>;
