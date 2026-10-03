@@ -1,5 +1,5 @@
--- draft: claude-w2w clone-proven pattern door; production waits on the lane manager's ruling (chair record doors vs the lane-9 store halves) and CA1
--- chair-step: it REPLACES the body of one lane-9 scope door, custom.context_scope_write (signature, SECURITY DEFINER, search_path and grants unchanged). The door no longer calls public.create_scope / public.update_scope and no longer reads context.scopes or context.scope_types to decide anything: the organization, the type, the parent, the sort order and the current values come from the record store; the access predicate is the one the old functions applied, word for word (a platform admin, or iam.has_org_access on the scope's organization — no move to the store ladder, which is chair item CA1). The store Record is written FIRST through the lane-9 store half custom._ctx_store_scope (marked as a scope door, so the follow trigger does not copy it a second time); the old context.scopes row is then written as the IMAGE, carrying the store's words for every column the door writes, so every old trigger and every reader not yet moved sees the same row; and the store half is handed the image row once more, which in steady state changes nothing (proven 'current' by the suite) and otherwise takes the old triggers' words, exactly as the write-through does today. No new door, no grant, no change to the chair's record doors or the access ladder.
+-- draft: claude-w2w H1-H6 fixes in clone proof
+-- chair-step: it REPLACES the body of one lane-9 scope door, custom.context_scope_write (signature, SECURITY DEFINER, search_path and grants unchanged). The door no longer calls public.create_scope / public.update_scope and no longer reads context.scopes or context.scope_types to decide anything: the organization, the type, the parent, the sort order and the current values come from the record store; the access predicate is the one the old functions applied, word for word (a platform admin, or iam.has_org_access on the scope's organization — no move to the store ladder, which is chair item CA1). The store Record is written FIRST through the lane-9 store half custom._ctx_store_scope (marked as a scope door, so the follow trigger does not copy it a second time, and named in custom.context_door_row, so the store's side-effect twin holds it back); the old context.scopes row is then written as the IMAGE, carrying the store's words for every column the door writes, so its own triggers queue the suggestion sweep, sync the search index and provision datasets exactly as before; the store half is handed the image row once more (in steady state it changes nothing); and the twin then runs for the row after the old triggers — one sweep, one notification, provisioning with its provenance. The parent rule refuses in the old trigger's class (P0001) and words. A word sent as JSON null keeps the word. A Record copied before its slug and sort order had a home in the store is written old row first, once, so those words are never rewritten. A scope only the store holds answers "not authorized to update scope" as before. Needs scopesw2w_the_scope_type_door_writes_the_store_first.sql (custom._context_side_effects) applied first. No new door, no grant, no change to the chair's record doors or the access ladder.
 -- lane: SCOPES-ON-THE-STORE
 -- based-on: custom.context_scope_write(uuid, uuid, uuid, jsonb) e22357d3d6e1de646eaae962a6307865c140f629fe7874f06d58b18f9ef715f7
 -- lock: custom
@@ -33,6 +33,10 @@ declare
   v_was    text;
   v_actor  text;
   v_label  text;
+  v_did    text;
+  v_heal   boolean := false;
+  v_slug   text;
+  v_place  smallint;
 begin
   -- LANE 9 W2-W (SCOPES-ON-THE-STORE): THE STORE DECIDES AND IS WRITTEN FIRST; THE OLD ROW IS ITS IMAGE.
   if p_scope_id is null then
@@ -116,9 +120,16 @@ begin
      where f.organization_id = v_org and f.id = custom._ctx_id('scope-column-field', v_type::text, 'description');
     v_desc := coalesce(v_desc, 'description');
     v_cur := custom._ctx_scope_settings(v_org, v_type, v_rec.data);
+    -- A RECORD COPIED BEFORE THE SCOPE'S SLUG AND SORT ORDER HAD A HOME IN THE STORE (lane SCOPES-STORE-HOMES)
+    -- does not hold them yet; its old row still does. Such a scope is written old row first, once, and the
+    -- store half takes those words from it (the write-through's order), so nothing it holds is rewritten.
+    v_heal := not (v_rec.data ? 'slug' and v_rec.data ? 'sort_order');
+    v_slug := custom._ctx_scope_slug(coalesce(nullif(s ->> 'slug', ''), v_rec.data ->> 'slug'));
+    v_place := coalesce((s ->> 'sort_order')::smallint, nullif(v_rec.data ->> 'sort_order', '')::smallint);
     v_spec := jsonb_build_object(
       'id', p_scope_id, 'organization_id', v_org, 'scope_type_id', v_type, 'parent_scope_id', v_parent,
-      'name', coalesce(s -> 'name', v_rec.data -> 'name'),
+      -- A word sent as JSON null keeps the word, as update_scope's COALESCE did.
+      'name', coalesce(nullif(s -> 'name', 'null'::jsonb), v_rec.data -> 'name'),
       'description', coalesce(s ->> 'description', v_rec.data ->> v_desc, ''),
       'settings', case when s ? 'settings' then coalesce(nullif(s -> 'settings', 'null'::jsonb), v_cur) else v_cur end,
       'slug', custom._ctx_scope_slug(coalesce(nullif(s ->> 'slug', ''), v_rec.data ->> 'slug')),
@@ -126,14 +137,27 @@ begin
       'created_by', v_rec.created_by, 'deleted_at', v_rec.deleted_at);
   end if;
 
-  -- 1. THE STORE, FIRST. Marked as a scope door, so the old tables' follow trigger does not copy it again.
+  -- THE PARENT RULE, in the old trigger's own class (P0001) and words (lane manager ruling H6): the refusal
+  -- contract stays what it was. The store half asks the same rule again below and finds it holds.
+  begin
+    perform custom._ctx_scope_parent_holds(v_org, v_type, v_parent);
+  exception when check_violation then
+    raise exception '%', sqlerrm using errcode = 'P0001';
+  end;
+
+  -- 1. THE STORE, FIRST. Marked as a scope door, so the old tables' follow trigger does not copy it again, and
+  -- named in custom.context_door_row, so the store's side-effect twin holds this row back until step 4.
   v_was := custom._ctx_mark('door');
   v_actor := coalesce(current_setting('app.actor_system', true), '');
-  if v_actor = '' then
-    perform set_config('app.actor_system', 'custom.context_write_through', true);
+  if not v_heal then
+    if v_actor = '' then
+      perform set_config('app.actor_system', 'custom.context_write_through', true);
+    end if;
+    perform set_config('custom.context_door_row', coalesce(v_id, p_scope_id)::text, true);
+    perform custom._ctx_store_scope(v_org, v_type, coalesce(v_id, p_scope_id), v_spec);
+    perform set_config('custom.context_door_row', '', true);
+    perform set_config('app.actor_system', v_actor, true);
   end if;
-  perform custom._ctx_store_scope(v_org, v_type, coalesce(v_id, p_scope_id), v_spec);
-  perform set_config('app.actor_system', v_actor, true);
 
   -- 2. THE IMAGE: the old row, written with today's statements, so every old trigger and reader sees it.
   if p_scope_id is null then
@@ -150,24 +174,31 @@ begin
            name = v_spec ->> 'name',
            description = v_spec ->> 'description',
            settings = v_spec -> 'settings',
-           slug = v_spec ->> 'slug',
-           sort_order = (v_spec ->> 'sort_order')::smallint,
+           slug = case when v_heal then coalesce(v_slug, sc.slug) else v_spec ->> 'slug' end,
+           sort_order = case when v_heal then coalesce(v_place, sc.sort_order) else (v_spec ->> 'sort_order')::smallint end,
            updated_at = now()
      where sc.id = p_scope_id
     returning * into v_row;
   end if;
   if v_row.id is null then
-    raise exception 'The scope % is in the record store but not in the older scope tables, so its image could not be kept.', p_scope_id
-      using errcode = 'P0002',
-            hint = 'Lane 9 W2-W: until wave 3 every scope Record has its old row. Nothing was saved.';
+    -- A scope only the store holds answers as update_scope always answered it (the store write above goes back
+    -- with this refusal).
+    raise exception 'not authorized to update scope' using errcode = '42501',
+            detail = jsonb_build_object('scope_id', p_scope_id)::text;
   end if;
 
   -- 3. THE IMAGE'S OWN WORDS BACK (the old triggers fill a few columns). In steady state this changes nothing.
   if v_actor = '' then
     perform set_config('app.actor_system', 'custom.context_write_through', true);
   end if;
-  perform custom._ctx_store_scope(v_org, v_type, v_row.id, to_jsonb(v_row));
+  v_did := custom._ctx_store_scope(v_org, v_type, v_row.id, to_jsonb(v_row)) ->> 'did';
   perform custom._ctx_mark(v_was);
+  -- 4. THE STORE'S OWN SIDE EFFECTS, AFTER THE OLD ROW'S (the order of the days the old row was the writer):
+  -- the twin was held back for this row in step 1; when step 3 changed nothing it has not run, so it runs now.
+  if v_did is not distinct from 'current' then
+    perform custom._context_side_effects(jsonb_build_array(jsonb_build_array(
+      v_org, v_row.id, v_type, case when p_scope_id is null then 'created' else 'updated' end)));
+  end if;
 
   if p_scope_id is not null then
     perform custom.assert_client_may_reach(v_org, 'custom.context_scope_write');

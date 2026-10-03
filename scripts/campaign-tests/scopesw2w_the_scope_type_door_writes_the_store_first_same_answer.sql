@@ -8,6 +8,8 @@
 -- its own rolled-back sub-transaction; answer (ok, SQLSTATE, message, JSON with the new id normalised) and
 -- effect (the context.scope_types image row, the store Table record, its column Fields) compared per case.
 -- No refusal is expected to change. RED on any difference, or when a seat class compared nothing.
+-- Round 2 (after scopes-verify-w2w.md): the effect also holds the sweep queue, the search index, history and the
+-- Fields made (_scopesw2w_side_effects.sql), and the cases hold JSON-null words and a store-only type.
 -- Needs migrations/campaign/scopesw2w_a_scope_type_under_a_type_keeps_its_parent_in_the_store.sql live.
 
 \set ON_ERROR_STOP on
@@ -39,10 +41,19 @@ begin
   v := custom.context_type_write((f->>'cedar')::uuid, null, '{"label_singular":"Referral Source","label_plural":"Referral Sources","icon":"share-2"}');
   perform set_config('role', 'none', true);
   insert into w2t_fx values ('referral', (v -> 'row' ->> 'id')::uuid);
+  -- A scope type that exists only in the store (no old row): a copy of Referral Source's Table document.
+  insert into w2t_fx values ('store_only_type', pg_catalog.gen_random_uuid());
+  insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
+  select (select x.v from w2t_fx x where x.k = 'store_only_type'), t.organization_id, t.table_id, 'table',
+         t.data || '{"name":"Intake Channel","slug":"intake_channels","label_singular":"Intake Channel","label_plural":"Intake Channels"}'::jsonb,
+         t.created_by
+    from custom.record t where t.organization_id = (f->>'cedar')::uuid and t.id = (v -> 'row' ->> 'id')::uuid;
 end $setup$;
 
+\i scripts/campaign-tests/_scopesw2w_side_effects.sql
 create or replace function pg_temp.w2t_effect(p_org uuid, p_id uuid) returns text language sql as $e$
   select jsonb_build_object(
+    'side_effects', pg_temp.w2w_side_effects(p_org, p_id, p_id),
     'image', (select to_jsonb(st) - 'id' from context.scope_types st where st.id = p_id),
     'store', (select jsonb_build_object('version', r.version, 'data', r.data - 'fields', 'fields', r.data -> 'fields',
                                         'created_by', r.created_by, 'archived', r.deleted_at is not null,
@@ -84,6 +95,11 @@ begin
       ('test',  'test',  'U5 under itself',        null, (f->>'referral')::uuid, jsonb_build_object('parent_type_id', f->>'referral')),
       ('admin', 'admin', 'U6 clear the parent',    null, (f->>'referral')::uuid, '{"parent_type_id":null,"color":"amber"}'::jsonb),
       ('test',  'test',  'U7 slug only',           null, (f->>'referral')::uuid, '{"slug":"referral-sources-2026"}'::jsonb),
+      ('test',  'test',  'J1 null plural keeps it', null, (f->>'referral')::uuid, '{"label_plural":null,"color":"rose"}'::jsonb),
+      ('admin', 'admin', 'J2 null icon keeps it',  null, (f->>'referral')::uuid, '{"icon":null}'::jsonb),
+      ('admin', 'admin', 'J3 null description keeps it', null, (f->>'referral')::uuid, '{"description":null,"sort_order":2}'::jsonb),
+      ('test',  'test',  'J4 null singular on the parent path', null, (f->>'referral')::uuid, jsonb_build_object('label_singular', null, 'parent_type_id', f->>'practice')),
+      ('admin', 'admin', 'A2 update a store-only type', null, (f->>'store_only_type')::uuid, '{"label_singular":"Renamed"}'::jsonb),
       ('admin', 'admin', 'U8 an invented type',    null, '3c9e2a7b-1d4f-4e6a-8b5c-7f2d9e1a4b60'::uuid, '{"label_singular":"Nothing"}'::jsonb),
       ('non-member', 'test', 'N1 create in a firm she is not in', (f->>'castellano')::uuid, null, '{"label_singular":"Witness","label_plural":"Witnesses"}'::jsonb),
       ('non-member', 'test', 'N2 rename a firm''s type', null, (f->>'matter_type')::uuid, '{"label_singular":"Case"}'::jsonb),
@@ -97,7 +113,7 @@ begin
       v_out := custom.context_type_write(c.org, c.type_id, c.spec);
       perform set_config('role', 'none', true);
       v_id := coalesce((v_out -> 'row' ->> 'id')::uuid, c.type_id);
-      v_eff := pg_temp.w2t_effect(coalesce(c.org, (f->>'cedar')::uuid), v_id);
+      v_eff := pg_temp.w2t_effect(coalesce(c.org, (select r.organization_id from custom.record r where r.id = v_id limit 1)), v_id);
       raise exception using errcode = 'P0W2T', message = 'rolled back';
     exception
       when sqlstate 'P0W2T' then null;
