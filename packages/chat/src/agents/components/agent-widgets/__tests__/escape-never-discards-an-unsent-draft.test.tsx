@@ -79,16 +79,16 @@ function makeStore() {
 
 type Shell = React.ComponentType<{ conversationId: string; onClose: () => void }>;
 
-/** [name, shell, has a backdrop / outside-click dismissal] */
-const SHELLS: Array<[string, Shell, boolean]> = [
-  ["side drawer (sidebar)", AgentSidebarOverlay, true],
-  ["side panel (panel)", AgentPanelOverlay, true],
-  ["full modal (modal-full)", AgentFullModal, true],
-  ["compact modal (modal-compact)", AgentCompactModal, true],
-  ["inline result card (inline)", AgentInlineOverlay, false],
+/** [name, shell, has a backdrop / outside-click dismissal, is a FloatingSheet] */
+const SHELLS: Array<[string, Shell, boolean, boolean]> = [
+  ["side drawer (sidebar)", AgentSidebarOverlay, true, true],
+  ["side panel (panel)", AgentPanelOverlay, true, true],
+  ["full modal (modal-full)", AgentFullModal, true, false],
+  ["compact modal (modal-compact)", AgentCompactModal, true, false],
+  ["inline result card (inline)", AgentInlineOverlay, false, false],
 ];
 
-describe.each(SHELLS)("%s — a stray key or click never discards an unsent draft", (_name, ShellComponent, hasBackdrop) => {
+describe.each(SHELLS)("%s — a stray key or click never discards an unsent draft", (_name, ShellComponent, hasBackdrop, isSheet) => {
   let container: HTMLDivElement;
   let root: Root;
   let store: ReturnType<typeof makeStore>;
@@ -162,9 +162,9 @@ describe.each(SHELLS)("%s — a stray key or click never discards an unsent draf
         backdrop.click();
         return;
       }
-      document.body.dispatchEvent(
-        new MouseEvent("pointerdown", { bubbles: true, cancelable: true }),
-      );
+      const down = new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0 });
+      Object.defineProperty(down, "pointerType", { value: "mouse" });
+      document.body.dispatchEvent(down);
       document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       await new Promise((r) => setTimeout(r, 10));
     });
@@ -202,10 +202,13 @@ describe.each(SHELLS)("%s — a stray key or click never discards an unsent draf
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  (hasBackdrop ? it : it.skip)("still closes on an outside click when the composer is empty", async () => {
+  // Empty composer: unchanged. The sheets close on a backdrop click; the
+  // design-system Dialog (full + compact modals) is windowed by default and
+  // never dismisses on an outside click at all, so it stays open either way.
+  (hasBackdrop ? it : it.skip)("an outside click on an empty composer behaves as before", async () => {
     const onClose = render();
     await clickOutside();
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(isSheet ? 1 : 0);
   });
 
   it("keeps the shell open when the composer holds unsent text", () => {
