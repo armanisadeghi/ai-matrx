@@ -15,7 +15,7 @@
  *   REF  the body before the file (scopesi: the archive door paged once per type), from its inverse, put in place
  *        INSIDE this transaction and asked the same way.
  * GREEN when ON = REF and OFF = REF byte for byte for every (seat, organization), and every ON call that counted
- * more than one type walked containment once. The reference is ruling 4's own definition (each count is
+ * a type asked custom.count_records_archived exactly once (the reference never asks it). The reference is ruling 4's own definition (each count is
  * custom.read_records_archived paged and counted, asked as the seat), so the oracle is independent of the count door.
  *
  * --plant NAME puts a faulty copy of the file's body in place inside the transaction after REF and compares it to
@@ -116,7 +116,7 @@ async function main() {
 
     const walksSoFar = async () =>
       Number((await client.query(
-        "select coalesce(sum(calls), 0)::int as n from pg_stat_xact_user_functions where schemaname = 'custom' and funcname = 'carrying_edges_in'",
+        "select coalesce(sum(calls), 0)::int as n from pg_stat_xact_user_functions where schemaname = 'custom' and funcname = 'count_records_archived'",
       )).rows[0].n);
     async function ask(uid: string, org: string): Promise<{ ans: string; walks: number; counted: number }> {
       const before = await walksSoFar();
@@ -161,12 +161,14 @@ async function main() {
     } else {
       compare("ON  (memos on)", on);
       compare("OFF (memos off)", off);
-      const multi = [...on.values()].filter((x) => x.counted > 1);
-      const once = multi.filter((x) => x.walks === 1).length;
-      const offWalks = [...off.values()].filter((x) => x.counted > 1).map((x) => x.walks);
-      if (once !== multi.length) red++;
-      console.log(`${once === multi.length ? "GREEN" : "RED  "} ON walked once in ${once} of ${multi.length} calls counting more than one type` +
-        ` (OFF walked ${Math.min(...offWalks)}-${Math.max(...offWalks)} times in the same calls)`);
+      // ONE CALL: every answer that counted a type asked the count door exactly once (memos on and off);
+      // the reference body never asks it.
+      const counting = [...on.values(), ...off.values()].filter((x) => x.counted > 0);
+      const once = counting.filter((x) => x.walks === 1).length;
+      const refAsks = [...ref.values()].reduce((n, x) => n + x.walks, 0);
+      if (counting.length === 0 || once !== counting.length || refAsks !== 0) red++;
+      console.log(`${counting.length && once === counting.length && refAsks === 0 ? "GREEN" : "RED  "} the count door asked once in ${once} of ` +
+        `${counting.length} answers that counted a type (the reference asked it ${refAsks} times)`);
       const shown = [...ref.values()];
       console.log(`# REF: ${shown.filter((x) => x.ans.startsWith("ERR")).length} refusals, ` +
         `${shown.filter((x) => !x.ans.startsWith("ERR") && x.ans !== "[]").length} non-empty answers, ` +
