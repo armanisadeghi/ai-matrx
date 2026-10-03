@@ -53,6 +53,12 @@
    - /education/flashcards/a55a0b20-a6e9-47e4-a47d-bf4c74677cc3 — a great feature page; improve it with the primitives;
    - /agents/506a20fc-34a9-4038-b38b-6c71ab09b173/build — **FORBIDDEN to change in the real app without the owner's explicit approval**; pixel-perfect by design. Propose improvements as a demo copy only.
 
+## DONE 2026-10-03 (after the feedback above)
+- Cursor law: common-docs/policies/cursor-law.md; design-system 0.60.0 base layer; `pnpm check:cursor-law` (baseline ~51 disabled pointer-events-none sites, shrink-only).
+- Daily check: `scripts/ui-drift/check-ui-drift.mjs` (row `ui-drift`), one item per rule+file with count ratchet (~12.1k), paged ingest via `ops.check_items_seed_page` (migration applies on next release). OPEN: signed-in non-admins can read all ops check runs/findings on the clone — asked Arman whether to lock to admins.
+- Table: toolbar gaps/radius/padding/search width restored in lib/entity-list; design-system 0.60.1 actions column fits its controls. Pager solid-dot + joined header row kept (deliberate) — Arman to say if those are what he misses.
+- Honest samples live: samples/{agents-all,education-overview,education-kit,education-flashcards,agent-builder}; page-top kit in samples/_components/page-top/{feature-cards,kpi-row,promo-banner}.tsx. Builder: 8 proposals in the demo, awaiting Arman's pick — real builder untouched.
+
 ## OPEN / NEXT
 - **The rollout, after the owner finalises the pages above:**
   - the system moves into `@ai-matrx/design-system` at the proper CSS layer (the prototype's unlayered `uc-*` beats Tailwind utilities, and the density scope's `!important` padding fights pages);
