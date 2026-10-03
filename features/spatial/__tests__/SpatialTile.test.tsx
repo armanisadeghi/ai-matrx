@@ -354,3 +354,36 @@ describe("SpatialTile frame edge", () => {
     expect(must(container.querySelector<HTMLElement>("[data-spatial-body]")).style.touchAction).toBe("pan-x pan-y");
   });
 });
+
+describe("SpatialTile crash isolation", () => {
+  it("a tile whose body throws shows its own notice; its siblings keep rendering", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const store = onScreenStore({ x: 0, y: 0, z: 1 });
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const root = createRoot(el);
+    const quiet = jest.spyOn(console, "error").mockImplementation(() => {});
+    function Boom(): null {
+      throw new Error("records grid rejected its row actions");
+    }
+    act(() =>
+      root.render(
+        <SpatialStoreContext.Provider value={store}>
+          <FocusHostContext.Provider value={null}>
+            <SpatialTile id="bad" rect={{ x: 0, y: 0, w: 300, h: 200 }} title="Vendor table" onResize={null}>
+              {() => <Boom />}
+            </SpatialTile>
+            <SpatialTile id="good" rect={{ x: 400, y: 0, w: 300, h: 200 }} title="Q4 pricing notes" onResize={null}>
+              {() => <div data-good-body>Still here</div>}
+            </SpatialTile>
+          </FocusHostContext.Provider>
+        </SpatialStoreContext.Provider>,
+      ),
+    );
+    expect(el.querySelector("[data-good-body]")?.textContent).toBe("Still here");
+    expect(el.querySelector('[data-spatial-tile="bad"] [role="alert"]')).not.toBeNull();
+    quiet.mockRestore();
+    act(() => root.unmount());
+    el.remove();
+  });
+});

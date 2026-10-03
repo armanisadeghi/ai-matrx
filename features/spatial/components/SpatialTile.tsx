@@ -57,6 +57,9 @@ import {
 } from "../engine/throw";
 import { startPointerGesture } from "../engine/pointer-gesture";
 import { TileNavigationBoundary } from "../engine/tile-navigation";
+import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { Button } from "@/components/ui/button";
 import { type StatusFrom, type TileStatus, useTileStatus } from "../streams/useSourceStatus";
 
 const IDLE_STATUS: StatusFrom = { kind: "static", value: { status: "idle", progress: null } };
@@ -438,7 +441,31 @@ export function SpatialTile({
             // store subscriptions, channels and timers are torn down until it
             // is needed again (React's Activity, Chrome's tab freezing).
             <Activity mode={sleeps && life !== "live" && !focused ? "hidden" : "visible"}>
-              <TileNavigationBoundary>{children(tier)}</TileNavigationBoundary>
+              <TileNavigationBoundary>
+                {/* One tile's crash stays in that tile: the board and every other
+                    tile keep working, and this one offers a retry. */}
+                <ErrorBoundaryWithCapture
+                  boundary="BoardTile"
+                  relation={id}
+                  fallback={(error, reset) => (
+                    <div className="p-3">
+                      <ErrorNotice
+                        size="compact"
+                        title="This tile could not be shown"
+                        error={error}
+                        operation={`Show ${title}`}
+                        actions={
+                          <Button type="button" size="sm" variant="outline" onClick={reset}>
+                            Try again
+                          </Button>
+                        }
+                      />
+                    </div>
+                  )}
+                >
+                  {children(tier)}
+                </ErrorBoundaryWithCapture>
+              </TileNavigationBoundary>
             </Activity>
           )}
         </div>
