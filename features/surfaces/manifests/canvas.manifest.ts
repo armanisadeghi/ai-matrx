@@ -177,7 +177,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "canvas_item_content",
     label: "Open item content",
     description:
-      'Changes the body of the item open in the primary pane and SAVES it: a published HTML page is republished at its address immediately; a saved canvas artifact gets a new version. The tab refreshes to show it. For a small change send ONLY the edit: {"command": "str_replace", "old_str": "<exact text now in the item, unique>", "new_str": "<replacement>"} — read the item first with the context tool on `current_canvas_item`. Send a whole new body as a plain string only for a genuine rewrite; for an HTML page that must be a complete document (doctype, head, body), never a fragment. Refused while the open item is session-only (no `current_canvas_item`).',
+      'Changes the body of ANY open canvas item that is a stored record and SAVES it: a published HTML page is republished at its address immediately; a saved canvas artifact gets a new version. Its tab refreshes to show it. Name the item with `item`: its reference from `open_items[].item` or `current_canvas_item` ({"resource_type", "resource_id"}) — required when the item is not the one in focus (another tab, such as Agent context, may have focus). For a small change send ONLY the edit: {"command": "str_replace", "old_str": "<exact text now in the item, unique>", "new_str": "<replacement>"} — read the item first with the context tool. Send a whole new body as a plain string only for a genuine rewrite; for an HTML page that must be a complete document (doctype, head, body), never a fragment. A session-only item (no reference) cannot be changed.',
     valueType: "string",
     updatesValue: "current_canvas_item",
     patchable: true,
@@ -216,10 +216,11 @@ its full body with the context tool on that key before describing or changing
 it — never answer from the title alone. open_items lists every tab; each one
 with an item reference is readable the same way.
 
-To change the open item, use apply_surface_write with canvas_item_content: send
-a str_replace edit (or a whole new body for a rewrite). The person approves the
-change, it saves, and the tab refreshes. A session-only item (no
-current_canvas_item) has no record to edit.
+To change any open item, use apply_surface_write with canvas_item_content and
+item set to that item's reference (from open_items or current_canvas_item —
+the item need not be in focus): send a str_replace edit (or a whole new body
+for a rewrite). The person approves the change, it saves, and its tab
+refreshes. A session-only item (no reference) has no record to edit.
 </surface_intro>`,
   groups,
   writeTargets,

@@ -11,7 +11,7 @@
 // Standalone by design (value/onChange), like EntityOrgFilter, so a page outside the shell can render
 // the same control.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Check, ChevronDown, ChevronRight, Layers, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -47,6 +47,7 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
   const [opened, setOpened] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [needle, setNeedle] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const q = needle.trim();
   const dims = useListDimensions(opened, valueId, q);
   const hits = dims.hits;
@@ -90,9 +91,18 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
           <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", !valueId && "max-sm:hidden")} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-[60dvh] min-w-64 overflow-y-auto">
+      <DropdownMenuContent
+        align="end"
+        className="max-h-[60dvh] min-w-64 overflow-y-auto"
+        // The search box takes focus on open (Radix would focus the menu), so typing searches.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          searchRef.current?.focus();
+        }}
+      >
         <div className="px-1 pb-1">
           <input
+            ref={searchRef}
             value={needle}
             onChange={(e) => setNeedle(e.target.value)}
             // Keep Radix's typeahead from stealing the keystrokes.

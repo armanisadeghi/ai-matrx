@@ -121,3 +121,40 @@ describe("canvas_item_content: an anchored edit resolves against the handler's l
     }
   });
 });
+
+describe("an ADDRESSED write reaches every handler phase with its item", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("the patch resolves against, and applies to, the named record — not the focused one", async () => {
+    const OTHER = "<!doctype html><html><body><h1>Other page</h1></body></html>";
+    const item = { resourceType: "html_page", resourceId: "aaaaaaaa-0000-4000-8000-000000000001" };
+    const apply = jest.fn();
+    const reads: unknown[] = [];
+    const readCurrent = jest.fn(async (context?: { item?: typeof item }) => {
+      reads.push(context?.item);
+      return context?.item?.resourceId === item.resourceId ? OTHER : PAGE;
+    });
+    const unregister = mountCanvas(apply, readCurrent);
+    let proposal: SurfaceWriteApprovalProposal | undefined;
+    try {
+      const result = await applySurfaceWrite(
+        "canvas_item_content",
+        { command: "str_replace", old_str: "Other page", new_str: "Other page, edited" },
+        {
+          origin: "agent",
+          item,
+          requestApproval: async (p) => {
+            proposal = p;
+            return { kind: "approved" };
+          },
+        },
+      );
+      expect(result.ok).toBe(true);
+      expect(proposal?.currentValue).toBe(OTHER);
+      expect(apply).toHaveBeenCalledWith(OTHER.replace("Other page", "Other page, edited"), { item });
+      expect(reads.every((read) => read === item)).toBe(true);
+    } finally {
+      unregister();
+    }
+  });
+});

@@ -17,9 +17,6 @@ import type { ShellNavItem } from "../../constants/nav-data";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock("next/navigation", () => ({ usePathname: () => "/notes" }));
-jest.mock("@/features/shell/navigation/useShellNavGates", () => ({
-  useShellNavGates: () => ({}),
-}));
 jest.mock("../../navigation/navActions", () => ({ useNavActions: () => ({}) }));
 jest.mock("../../navigation/navPanelActions", () => ({
   useNavPanelActions: () => ({}),

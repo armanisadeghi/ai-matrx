@@ -24493,6 +24493,36 @@ export type ChatDatabase = {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: boolean
       }
+      api_facts: {
+        Args: { p_token: string }
+        Returns: {
+          api_reach: string
+          api_reach_reason: string
+          api_writable_columns: string[]
+          create_via: string
+          default_list_where: Json
+          search_columns: string[]
+        }[]
+      }
+      api_reach_census: {
+        Args: never
+        Returns: {
+          api_reach: string
+          eligible: boolean
+          token: string
+          why: string
+        }[]
+      }
+      api_sample_rows: { Args: { p_token: string }; Returns: string[] }
+      api_tables: {
+        Args: never
+        Returns: {
+          api_reach: string
+          description: string
+          label: string
+          token: string
+        }[]
+      }
       apply_dated_change: { Args: { p_change_id: string }; Returns: Json }
       apply_due_dated_changes: { Args: never; Returns: Json }
       archived_parent_of: {

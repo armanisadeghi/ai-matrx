@@ -48,7 +48,10 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../../store/root-state";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { submitToolResult } from "../../../api/submit-tool-results";
-import { applySurfaceWrite } from "../../../../surfaces/runtime/surface-writeback";
+import {
+  applySurfaceWrite,
+  readSurfaceWriteAddress,
+} from "../../../../surfaces/runtime/surface-writeback";
 import { surfaceWriteToolOutput } from "../../../../surfaces/runtime/surface-write-tool-output";
 import { createSurfaceToolCall } from "./surface-tool-call";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
@@ -120,6 +123,20 @@ export const dispatchSurfaceWrite = createAsyncThunk<
       return;
     }
 
+    // The record the write is addressed to (one of several open on the page).
+    // A malformed address is refused — silently dropping it would change the
+    // record in focus instead of the one the agent named.
+    const item =
+      args.item === undefined || args.item === null
+        ? null
+        : readSurfaceWriteAddress(args.item);
+    if (args.item !== undefined && args.item !== null && !item) {
+      const message =
+        "apply_surface_write `item` must be the record's reference: { resource_type, resource_id }, exactly as the page values list it. Nothing was changed.";
+      finish({ ok: false, reason: "invalid_arguments", message }, message);
+      return;
+    }
+
     // Honest state while the seam runs — an `ask` target awaits the user.
     dispatch(setInstanceStatus({ conversationId, status: "paused" }));
 
@@ -142,6 +159,7 @@ export const dispatchSurfaceWrite = createAsyncThunk<
           : {};
       const result = await applySurfaceWrite(target, args.value, {
         ...surfaceArg,
+        ...(item ? { item } : {}),
         ...call.agentWrite,
       });
 

@@ -243,3 +243,75 @@ describe("canvas_item_content writes through the record's own save path", () => 
     await expect(handler.validate!("x")).rejects.toThrow(/not been saved/);
   });
 });
+
+// ── any open item, by its reference ─────────────────────────────────────────
+
+/**
+ * Two records open (a published page and a saved artifact) and a NON-item tab
+ * in focus — the Agent context tab. Owner proof on /chat 2026-10-03: with that
+ * tab focused the handler read "no item is open" and refused every edit.
+ */
+function twoItemsAndAgentContextFocused() {
+  const items: Record<string, { id: string; data: unknown }> = {
+    "canvas-tab-1": { id: "canvas-tab-1", data: { content: pageItem, savedItemId: null, view: "preview" } },
+    "canvas-tab-2": { id: "canvas-tab-2", data: { content: savedCode, savedItemId: ITEM_ID, view: "preview" } },
+    "agent-context": { id: "agent-context", data: { panel: "agent-context" } },
+  };
+  const updates: Array<{ id: string; data: unknown }> = [];
+  const canvas = {
+    getState: () => ({
+      isOpen: true,
+      focusedPaneId: "pane-1",
+      panes: { "pane-1": { id: "pane-1", activeItemId: "agent-context" } },
+      items,
+    }),
+    update: (id: string, patch: { data: unknown }) => {
+      updates.push({ id, data: patch.data });
+      items[id].data = patch.data;
+      return true;
+    },
+    rekey: () => true,
+  } as unknown as CanvasController;
+  return { canvas, updates };
+}
+
+describe("canvas_item_content edits ANY open item, named by its reference", () => {
+  const page = { item: { resourceType: "html_page", resourceId: PAGE_ID } };
+  const code = { item: { resourceType: "canvas_item", resourceId: ITEM_ID } };
+
+  it("reads and republishes the page while Agent context has focus", async () => {
+    const { canvas, updates } = twoItemsAndAgentContextFocused();
+    const { svc, calls } = services();
+    const handler = canvasItemContentHandler(canvas, svc);
+    expect(await handler.readCurrent!(page)).toBe(HTML);
+    const next = HTML.replace("Mix two liquids", "Mix three liquids");
+    await handler.validate!(next, page);
+    await handler.apply(next, page);
+    expect(calls).toContain(`saveHtmlPage:${PAGE_ID}:${next.length}`);
+    expect(updates.map((u) => u.id)).toEqual(["canvas-tab-1"]);
+  });
+
+  it("saves a new version of the artifact tab, not the page tab", async () => {
+    const { canvas, updates } = twoItemsAndAgentContextFocused();
+    const { svc, calls } = services();
+    const handler = canvasItemContentHandler(canvas, svc);
+    expect(await handler.readCurrent!(code)).toBe("let t = 1;");
+    await handler.apply("let t = 2;", code);
+    expect(calls).toContain(`saveCanvasItemVersion:${ITEM_ID}:let t = 2;`);
+    expect(updates.map((u) => u.id)).toEqual(["canvas-tab-2"]);
+  });
+
+  it("a reference no open tab shows is refused, listing the open ones", async () => {
+    const { canvas } = twoItemsAndAgentContextFocused();
+    const handler = canvasItemContentHandler(canvas, services().svc);
+    await expect(
+      handler.validate!("x", { item: { resourceType: "html_page", resourceId: "nope" } }),
+    ).rejects.toThrow(new RegExp(`No open canvas item shows html_page nope.*${PAGE_ID}.*${ITEM_ID}`));
+  });
+
+  it("no reference, several records, none focused: refused with every reference — never guessed", async () => {
+    const { canvas } = twoItemsAndAgentContextFocused();
+    const handler = canvasItemContentHandler(canvas, services().svc);
+    await expect(handler.readCurrent!()).rejects.toThrow(/name the one to change with `item`/);
+  });
+});

@@ -25,6 +25,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, ChevronRight } from "lucide-react";
 import { createRecordsClient, supabaseDataSource } from "@ai-matrx/records/core";
 import { bookingPath, publicFormPath } from "@ai-matrx/records";
+import { useRecordsClient } from "@ai-matrx/records/react";
 import {
   BookingBuilder,
   ChecklistTemplateEditor,
@@ -362,6 +363,8 @@ export interface MakeFlowSheetProps {
 
 export function MakeFlowSheet(props: MakeFlowSheetProps) {
   const { tile, tableId, organizationId, onBack } = props;
+  // The made thing's own name, once it exists, replaces "New …" in the title.
+  const [madeName, setMadeName] = useState<string | null>(null);
   const chosen = tile.asksForTable && tableId && organizationId ? { tableId, organizationId } : null;
   return (
     <>
@@ -371,18 +374,22 @@ export function MakeFlowSheet(props: MakeFlowSheetProps) {
         </Button>
         <KindIcon kind={tile.kind} className="h-4 w-4 text-muted-foreground" />
         <DialogTitle className="truncate text-base font-medium">
-          {tile.asksForTable && !chosen ? "Which table, or make one?" : `New ${tile.label.toLowerCase()}`}
+          {tile.asksForTable && !chosen
+            ? "Which table, or make one?"
+            : props.madeId && madeName
+              ? madeName
+              : `New ${tile.label.toLowerCase()}`}
         </DialogTitle>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" data-make-flow={tile.flow}>
-        <FlowBody {...props} chosen={chosen} />
+        <FlowBody {...props} chosen={chosen} onName={setMadeName} />
       </div>
     </>
   );
 }
 
-function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organizationId: string } | null }) {
-  const { tile, chosen, activeOrganizationId, activeState, onLand, onClose, madeId, onMade } = props;
+function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organizationId: string } | null; onName: (name: string | null) => void }) {
+  const { tile, chosen, activeOrganizationId, activeState, onLand, onClose, madeId, onMade, onName } = props;
   if (tile.asksForTable && !chosen) return <TableChoice {...props} />;
   if (chosen) {
     return (
@@ -393,6 +400,7 @@ function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organ
         onMade={onMade ?? (() => undefined)}
         onLand={onLand}
         onClose={onClose}
+        onName={onName}
       />
     );
   }
@@ -403,13 +411,13 @@ function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organ
     return <OrganizationContextNotice state={activeState === "ready" ? "required" : activeState} what="New client portals" description={SAVED_WHERE_CHOSEN} compact />;
   }
   if (tile.flow === "portal") {
-    return <PortalFlow organizationId={activeOrganizationId} madeId={madeId ?? null} onMade={onMade ?? (() => undefined)} />;
+    return <PortalFlow organizationId={activeOrganizationId} madeId={madeId ?? null} onMade={onMade ?? (() => undefined)} onName={onName} />;
   }
   return null;
 }
 
 /** The portal flow: its id goes into the address once saved, and a reload reopens THAT portal. */
-function PortalFlow({ organizationId, madeId, onMade }: { organizationId: string; madeId: string | null; onMade: (id: string) => void }) {
+function PortalFlow({ organizationId, madeId, onMade, onName }: { organizationId: string; madeId: string | null; onMade: (id: string) => void; onName: (name: string | null) => void }) {
   const [saved, setSaved] = useState(Boolean(madeId));
   return (
     <div className="flex flex-col gap-3">
@@ -419,6 +427,7 @@ function PortalFlow({ organizationId, madeId, onMade }: { organizationId: string
         </div>
       ) : null}
       <MakeMount organizationId={organizationId}>
+        <MadeName flow="portal" tableId={null} madeId={madeId} onName={onName} />
         <PortalBuilder
           {...(madeId ? { portalId: madeId } : {})}
           onSaved={(id: string) => {
@@ -429,6 +438,37 @@ function PortalFlow({ organizationId, madeId, onMade }: { organizationId: string
       </MakeMount>
     </div>
   );
+}
+
+/** Reads the made thing's own name (inside the mount, where the store client is) and reports it for the title. */
+function MadeName({ flow, tableId, madeId, onName }: { flow: MakeFlow; tableId: string | null; madeId: string | null; onName: (name: string | null) => void }) {
+  const client = useRecordsClient();
+  useEffect(() => {
+    if (!madeId) return;
+    let alive = true;
+    const say = (name: string | null | undefined) => {
+      if (alive && name && name.trim()) onName(name.trim());
+    };
+    void (async () => {
+      if (flow === "portal") {
+        const card = await client.portalCard({ portal_id: madeId as never });
+        if (card.ok) say(card.data.title);
+      } else if (flow === "form" && tableId) {
+        const forms = await client.forms({ table_id: tableId as never });
+        if (forms.ok) say(forms.data.find((f) => f.id === madeId)?.name);
+      } else if (flow === "booking" && tableId) {
+        const pages = await client.bookings({ table_id: tableId as never });
+        if (pages.ok) say(pages.data.find((b) => b.form_id === madeId)?.title);
+      } else if (flow === "checklist" && tableId) {
+        const templates = await client.checklistTemplates({ about_table_id: tableId as never });
+        if (templates.ok) say(templates.data.find((t) => t.template_id === madeId)?.name);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [client, flow, tableId, madeId, onName]);
+  return null;
 }
 
 /** The one "it is saved" mark every flow shows once the made thing exists. */
@@ -561,6 +601,7 @@ function BuilderFor({
   onMade,
   onLand,
   onClose,
+  onName,
 }: {
   flow: MakeFlow;
   tableId: string;
@@ -569,6 +610,7 @@ function BuilderFor({
   onMade: (id: string) => void;
   onLand: (href: string) => void;
   onClose: () => void;
+  onName: (name: string | null) => void;
 }) {
   const tableHref = `/data-v2/${tableId}`;
   // Made and saved: from the address on a reload, or the moment the builder answers its id.
@@ -593,7 +635,7 @@ function BuilderFor({
       builder = (
         <FormBuilder
           tableId={tableId}
-          {...(madeId ? { activeFormId: madeId } : { createOnMount: true })}
+          {...(madeId ? { activeFormId: madeId } : { startWithOne: true })}
           onActiveForm={(form) => {
             keep(form.id);
             setMade(form.state === "draft" ? { href: null, label: "" } : { href: publicFormPath(form.id), label: "Public link" });
@@ -654,7 +696,10 @@ function BuilderFor({
           Open table
         </Link>
       </div>
-      <MakeMount organizationId={organizationId}>{builder}</MakeMount>
+      <MakeMount organizationId={organizationId}>
+        <MadeName flow={flow} tableId={tableId} madeId={madeId} onName={onName} />
+        {builder}
+      </MakeMount>
     </div>
   );
 }

@@ -16,10 +16,20 @@
  * Built per call (the `getWriteHandlers` contract), reading the canvas store at
  * call time — the tab that is open when the write APPLIES is the one changed,
  * and a tab closed meanwhile refuses rather than writing somewhere unseen.
+ *
+ * ANY OPEN ITEM, BY ITS REFERENCE (2026-10-03). The write names its record
+ * (`SurfaceWriteContext.item` — the `resource_ref` the agent read it by), and
+ * the handler finds the open tab showing that record, whichever tab has focus.
+ * Before this, focusing a non-item tab (Agent context) made every open item
+ * read as "no item is open" and edits were refused. Without an address the
+ * focused item is used, else the only open record; several open records and
+ * none named is refused with their references, never guessed.
  */
 
 import type { CanvasController, CanvasItemId, CanvasJson } from "@ai-matrx/canvas";
 import type {
+  SurfaceWriteAddress,
+  SurfaceWriteContext,
   SurfaceWriteHandlerEntry,
   SurfaceWriteHandlers,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -65,22 +75,78 @@ interface OpenItem {
   record: CanvasItemRecord;
 }
 
-function openItem(canvas: CanvasController): OpenItem {
-  const state = canvas.getState();
-  const pane = state.isOpen ? state.panes[state.focusedPaneId] : undefined;
-  const item = pane?.activeItemId ? state.items[pane.activeItemId] : undefined;
-  const data = item ? readArtifactItemData(item.data) : null;
-  if (!item || !data) {
-    throw new Error("No item is open on the canvas. Nothing was changed.");
-  }
+interface CandidateItem {
+  itemId: CanvasItemId;
+  data: ArtifactItemData;
+  content: CanvasContent;
+  record: CanvasItemRecord | null;
+}
+
+function candidate(itemId: CanvasItemId, raw: CanvasJson): CandidateItem | null {
+  const data = readArtifactItemData(raw);
+  if (!data) return null;
   const content = contentOf(data);
-  const record = canvasItemRecord(content, data.savedItemId);
-  if (!record) {
+  return { itemId, data, content, record: canvasItemRecord(content, data.savedItemId) };
+}
+
+function describeRecord(record: CanvasItemRecord, content: CanvasContent): string {
+  const title = titleToString(content.metadata?.title);
+  return `${title ? `"${title}" ` : ""}{ resource_type: "${record.resourceType}", resource_id: "${record.id}" }`;
+}
+
+const NOTHING_CHANGED = "Nothing was changed.";
+
+/**
+ * The open item a write changes: the one showing the addressed record, or —
+ * with no address — the focused item, else the only open record.
+ */
+function openItem(canvas: CanvasController, address?: SurfaceWriteAddress): OpenItem {
+  const state = canvas.getState();
+  const all = Object.values(state.items ?? {})
+    .map((item) => (item ? candidate(item.id, item.data) : null))
+    .filter((item): item is CandidateItem => item !== null);
+  const records = all.filter(
+    (item): item is CandidateItem & { record: CanvasItemRecord } => item.record !== null,
+  );
+
+  if (address) {
+    const match = records.find(
+      (item) =>
+        item.record.resourceType === address.resourceType &&
+        item.record.id === address.resourceId,
+    );
+    if (match) return match;
+    const open = records.map((item) => describeRecord(item.record, item.content));
     throw new Error(
-      "The open canvas item has not been saved, so there is no stored record to change. Nothing was changed.",
+      `No open canvas item shows ${address.resourceType} ${address.resourceId}. ` +
+        (open.length
+          ? `The open records are: ${open.join("; ")}. `
+          : "No stored record is open on the canvas. ") +
+        NOTHING_CHANGED,
     );
   }
-  return { itemId: item.id, data, content, record };
+
+  const pane = state.isOpen ? state.panes[state.focusedPaneId] : undefined;
+  const focusedRaw = pane?.activeItemId ? state.items[pane.activeItemId] : undefined;
+  const focused = focusedRaw ? candidate(focusedRaw.id, focusedRaw.data) : null;
+  if (focused?.record) return { ...focused, record: focused.record };
+  if (focused && !focused.record) {
+    throw new Error(
+      `The open canvas item has not been saved, so there is no stored record to change. ${NOTHING_CHANGED}`,
+    );
+  }
+  if (records.length === 1) return records[0];
+  if (records.length === 0) {
+    throw new Error(
+      all.length
+        ? `No open canvas item has been saved, so there is no stored record to change. ${NOTHING_CHANGED}`
+        : `No item is open on the canvas. ${NOTHING_CHANGED}`,
+    );
+  }
+  throw new Error(
+    `Several canvas items are open and none is in focus — name the one to change with \`item\`: ` +
+      `${records.map((item) => describeRecord(item.record, item.content)).join("; ")}. ${NOTHING_CHANGED}`,
+  );
 }
 
 /** A canvas row's body as the text an edit replaces (mirrors the server resolver). */
@@ -148,25 +214,25 @@ export function canvasItemContentHandler(
   services: CanvasRecordServices,
 ): SurfaceWriteHandlerEntry {
   return {
-    async validate(value) {
-      const { record } = openItem(canvas);
+    async validate(value, context?: SurfaceWriteContext) {
+      const { record } = openItem(canvas, context?.item);
       if (typeof value !== "string" || !value.trim()) {
         throw new Error("Send the new content as text. Nothing was changed.");
       }
       if (record.resourceType === "html_page") assertCompleteHtmlDocument(value);
     },
 
-    async readCurrent() {
-      const { record } = openItem(canvas);
+    async readCurrent(context?: SurfaceWriteContext) {
+      const { record } = openItem(canvas, context?.item);
       if (record.resourceType === "html_page") return services.readHtmlPage(record.id);
       const row = await services.readCanvasItem(record.id);
       if (!row) throw new Error("This canvas item could not be read. Reopen it and try again.");
       return canvasBodyText(row.content);
     },
 
-    async apply(value) {
+    async apply(value, context?: SurfaceWriteContext) {
       const text = String(value);
-      const { itemId, data, content, record } = openItem(canvas);
+      const { itemId, data, content, record } = openItem(canvas, context?.item);
       const title = titleToString(content.metadata?.title);
 
       if (record.resourceType === "html_page") {

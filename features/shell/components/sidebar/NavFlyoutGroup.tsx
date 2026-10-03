@@ -20,7 +20,6 @@
 // rows) never closes it. Escape / ArrowLeft step back one level.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useShellNavGates } from "@/features/shell/navigation/useShellNavGates";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
@@ -106,7 +105,6 @@ export default function NavFlyoutGroup({
   const children = item.children ?? [];
   const pathname = usePathname() ?? "";
   // Gated destinations (Make, Records, Kits) appear where their switch is on.
-  const gates = useShellNavGates();
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
 
@@ -639,7 +637,7 @@ export default function NavFlyoutGroup({
     allowSubAreas: boolean,
   ) => {
     // Destinations up top (grouped), create actions collected at the bottom.
-    const { sections, panels, actions } = partitionNavChildren(menuChildren, gates);
+    const { sections, panels, actions } = partitionNavChildren(menuChildren);
     return (
       <>
         <div className="shell-nav-flyout-header">{label}</div>

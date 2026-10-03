@@ -85,7 +85,6 @@ function flattenPrimaryNav(items: ShellNavItem[]): NavigationLink[] {
     out.push(shellItemToNavigationLink(item));
     // Third-level rows (an industry's or a sub-area's menu) are walked too.
     for (const child of expandNavChildren(item.children, { leavesOnly: true })) {
-      if (child.gate !== undefined) continue;
       // Action children (create/add affordances) are menu-only — they're not
       // navigation destinations, so they never enter flattened link lists
       // (dashboard tiles, profile menu, 404 suggestions, flat sidebars).
@@ -123,11 +122,8 @@ export interface NavigationLink {
 function flattenForFlatSidebar(items: ShellNavItem[]): NavigationLink[] {
   const out: NavigationLink[] = [];
   for (const item of items) {
-    // A GATED CHILD NEVER REACHES A FLAT LIST. These surfaces are built
-    // synchronously and cannot wait for a switch to answer, so a destination
-    // that only exists where a switch is on is left to the sidebar, which can.
     const children = expandNavChildren(item.children, { leavesOnly: true }).filter(
-      (c) => !isNavActionChild(c) && c.gate === undefined,
+      (c) => !isNavActionChild(c),
     );
     if (children.length > 0 && item.dashboard === false) {
       for (const child of children) {

@@ -54,9 +54,27 @@ export interface SurfaceWriteOutcome {
   data?: unknown;
 }
 
+/**
+ * The ONE record a write is addressed to, when the target edits one of several
+ * records the page holds open (the canvas's open tabs). The agent names it by
+ * the same `resource_ref` the page values carry (`resource_type` +
+ * `resource_id`); the seam hands it to every phase of the handler. Absent =
+ * the page's own default (usually the record in focus).
+ */
+export interface SurfaceWriteAddress {
+  resourceType: string;
+  resourceId: string;
+}
+
+/** What every handler phase is told about the write besides its value. */
+export interface SurfaceWriteContext {
+  item?: SurfaceWriteAddress;
+}
+
 /** Applies the value into the page. May throw; may return an outcome. */
 export type SurfaceWriteApply = (
   value: unknown,
+  context?: SurfaceWriteContext,
 ) => void | SurfaceWriteOutcome | Promise<void | SurfaceWriteOutcome>;
 
 /**
@@ -67,7 +85,7 @@ export type SurfaceWriteApply = (
  * approval (or immediately for `auto` / user-origin writes).
  */
 export interface SurfaceWriteHandlerEntry {
-  validate?: (value: unknown) => void | Promise<void>;
+  validate?: (value: unknown, context?: SurfaceWriteContext) => void | Promise<void>;
   apply: SurfaceWriteApply;
   /**
    * The CURRENT text this target replaces, read live, for a target whose read
@@ -77,7 +95,7 @@ export interface SurfaceWriteHandlerEntry {
    * instead of `scope[comparisonValue ?? updatesValue]`, so the page never has
    * to ship a record's body as a value just to make it editable.
    */
-  readCurrent?: () => Promise<string | null>;
+  readCurrent?: (context?: SurfaceWriteContext) => Promise<string | null>;
 }
 
 /** A plain apply function, or `{ validate?, apply }`. */

@@ -4,9 +4,8 @@
 //
 // THE TWO PIECES EVERY "MAKE" SURFACE SHARES:
 //   · `MakeMount` — the record store mounted for ONE organization through the real host
-//     (`recordsUiHostFor` + `useRecordsUiPorts`, the ports every table surface binds), behind that
-//     organization's store switch (UNIFIED_DATA_CAMPAIGN.check), with the honest switch notice
-//     when it is off.
+//     (`recordsUiHostFor` + `useRecordsUiPorts`, the ports every table surface binds). The store
+//     is never off (CHAIR-ALWAYS-ON, 2026-10-03), so nothing is asked before it mounts.
 //   · `NewTableDialog` — THE one place a new table's name box opens (G5 b): both data homes' header
 //     "New table" / "Start from an example" and /make's Table tile. It says where the table will be
 //     saved (the active organization, changeable in place) and, with none chosen, asks for one
@@ -27,9 +26,6 @@ import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import {
   recordsUiHostFor,
   useRecordsDataSource,
@@ -45,12 +41,6 @@ export function MakeMount({ organizationId, children }: { organizationId: string
   const dataSource = useRecordsDataSource();
   const ports = useRecordsUiPorts({ organizationId, dataSource });
   const realtime = useMemo(() => createRecordsRealtimePort(organizationId), [organizationId]);
-  const campaign = useUnifiedDataCampaign({
-    organizationId,
-    organizationState: "ready",
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-  });
-  if (campaign.state !== "on") return <UnifiedDataSwitchNotice gate={campaign} what="Data records" />;
   return (
     // org-filter: write-target the mount is where the made thing lives: the chosen table's organization, or where new things are saved
     <RecordsMount

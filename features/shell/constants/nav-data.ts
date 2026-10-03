@@ -153,22 +153,6 @@ export interface ShellNavChild {
    */
   actionItem?: boolean;
   /**
-   * A destination that only exists where a switch is on. The sidebar resolves
-   * the switch and drops the child when it is off; every other surface (the
-   * dashboard tiles, the profile menu, the flattened destination list) never
-   * shows a gated child at all, because those surfaces are built synchronously
-   * and cannot wait for an answer. One field, one filter — NOT a second
-   * navigation system.
-   *
-   * `unified-data-campaign` is the ONE switch: does the organization on screen
-   * keep its data in the unified record store (`custom.system_enabled`, set on
-   * the unified data ramp screen)? Read by `useShellNavGates` through
-   * `useUnifiedDataCampaign`. It is an ORGANIZATION's decision, so the entry
-   * appears for every member of an organization that is on it and for nobody
-   * else — there is no per-person rung (lane NAV-FIX, 19 September).
-   */
-  gate?: ShellNavGateId;
-  /**
    * THE THIRD LEVEL. A child that carries its own `children` is a SUB-AREA
    * (an industry, a part of a big domain): its `href` is its landing page and
    * its children are its full menu, grouped by `group` exactly like a top-level
@@ -201,21 +185,6 @@ export function expandNavChildren(
     if (nested.length > 0) out.push(...expandNavChildren(nested, { leavesOnly }));
   }
   return out;
-}
-
-/** The switches a nav child may hang on. One id per switch, and no more. */
-export type ShellNavGateId = "unified-data-campaign";
-
-/** Which gates are currently on, as the sidebar resolved them. */
-export type ShellNavGates = Partial<Record<ShellNavGateId, boolean>>;
-
-/**
- * A child with no gate always shows. A gated child shows only where its switch
- * answered TRUE — an unanswered gate is OFF, because a destination that appears
- * for a second and then vanishes is worse than one that arrives a moment late.
- */
-export function navChildPassesGates(child: ShellNavChild, gates: ShellNavGates = {}): boolean {
-  return child.gate === undefined || gates[child.gate] === true;
 }
 
 /**
@@ -550,7 +519,12 @@ export const WORKSPACES_NAV_GROUP: ShellNavGroupDef = {
   ],
 };
 
-/** Tables, Workbooks and Pick Lists — the former "Data" menu, gates included. */
+/**
+ * Tables, Workbooks and Pick Lists — the former "Data" menu. NO ROW HERE IS EVER HIDDEN BEHIND A
+ * SWITCH (Arman, 2026-10-03: "EVERYTHING IS ON by default … Don't limit what users can do"): the
+ * record store is the only data system, so Make, Records and Kits always show, with or without an
+ * active organization. Guard: features/shell/__tests__/no-nav-row-is-gated.test.ts.
+ */
 export const DATA_NAV_CHILDREN: ShellNavChild[] = [
   {
     label: "Tables",
@@ -562,37 +536,28 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
     dashboard: true,
   },
   {
-    // The /make hub (lane MAKE-HOME): every thing the record store makes, in one place. It
-    // carries the record store's gate, like Records and Kits beside it.
+    // The /make hub (lane MAKE-HOME): every thing the record store makes, in one place.
     label: "Make",
     href: "/make",
     iconName: "LayoutGrid",
     description: "Make a table, form, booking page or dashboard",
     color: "cyan",
-    gate: "unified-data-campaign",
   },
   {
-    // The unified record store's tables. It appears for every member of an
-    // organization whose record store is on, which is why it carries a
-    // gate: everywhere else the screens behind it answer with the switch's
-    // own sentence, and a destination that only says "not yet" is not a
-    // destination.
+    // The unified record store's tables.
     label: "Records",
     href: "/data-v2",
     iconName: "Table",
     description: "Tables, fields and records on the unified store",
     color: "cyan",
-    gate: "unified-data-campaign",
   },
   {
-    // Installable bundles — tables + an agent bound to them + a workflow. They
-    // install into the record store, so they carry the same gate as Records.
+    // Installable bundles — tables + an agent bound to them + a workflow.
     label: KIT_WORD.many,
     href: KIT_ROUTES.gallery,
     iconName: "PackagePlus",
     description: "Install a working example: tables, an agent that reads them, and a workflow",
     color: "cyan",
-    gate: "unified-data-campaign",
   },
   {
     label: "Data Tables Window",
@@ -1967,11 +1932,8 @@ export interface PartitionedNavChildren {
  */
 export function partitionNavChildren(
   children: ShellNavChild[],
-  gates: ShellNavGates = {},
 ): PartitionedNavChildren {
-  // A gated child is dropped BEFORE anything is grouped, so an empty group
-  // never renders a heading with nothing under it.
-  const visible = children.filter((c) => navChildPassesGates(c, gates));
+  const visible = children;
   const navChildren = visible.filter(
     (c) => !isNavActionChild(c) && !isNavPanelChild(c),
   );

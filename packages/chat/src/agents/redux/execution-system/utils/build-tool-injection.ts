@@ -182,6 +182,20 @@ async function buildSurfaceWriteInlineSpec(
             "its line). Only needed when two open screens list the same target, " +
             "or to file `surface_feedback` for an open surface other than the one its line names.",
         },
+        item: {
+          type: "object",
+          description:
+            "Optional: the record to change, for a target that edits one of " +
+            "several open records (its line says so). Pass that record's " +
+            "reference exactly as the page values list it: " +
+            '{"resource_type": "...", "resource_id": "..."}. Omitted = the ' +
+            "record in focus.",
+          properties: {
+            resource_type: { type: "string" },
+            resource_id: { type: "string" },
+          },
+          required: ["resource_type", "resource_id"],
+        },
         value: {
           type: ["string", "number", "boolean", "array", "object", "null"],
           description:

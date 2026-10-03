@@ -58,10 +58,43 @@ async function rpc(
   args: Record<string, unknown>,
   options: { fallsBack?: boolean } = {},
 ): Promise<UntypedRpcResult> {
+  // A door already proven absent this session is not asked again: one probe,
+  // not a 404 on every page and every poll.
+  if (options.fallsBack && triageDoorKnownAbsent()) {
+    return { data: null, error: { code: "PGRST202", message: `communication.${name} is absent`, details: "", hint: "", name: "PostgrestError" } as PostgrestError };
+  }
   const call = communication().rpc(name as never, args as never);
   const answered = (await (options.fallsBack ? allowAbsentDoor(call) : call)) as UntypedRpcResult;
-  if (options.fallsBack && isMissingDoor(answered.error)) announceStandIn();
+  if (options.fallsBack && isMissingDoor(answered.error)) {
+    rememberTriageDoorAbsent();
+    announceStandIn();
+  }
   return answered;
+}
+
+const ABSENT_KEY = "notifications.triageDoorAbsentAt";
+const ABSENT_TTL_MS = 10 * 60 * 1000;
+let absentAt = 0;
+function triageDoorKnownAbsent(): boolean {
+  if (absentAt && Date.now() - absentAt < ABSENT_TTL_MS) return true;
+  try {
+    const stored = Number(globalThis.sessionStorage?.getItem(ABSENT_KEY) ?? 0);
+    if (stored && Date.now() - stored < ABSENT_TTL_MS) {
+      absentAt = stored;
+      return true;
+    }
+  } catch {
+    /* storage unavailable: probe again */
+  }
+  return false;
+}
+function rememberTriageDoorAbsent(): void {
+  absentAt = Date.now();
+  try {
+    globalThis.sessionStorage?.setItem(ABSENT_KEY, String(absentAt));
+  } catch {
+    /* storage unavailable: module flag still holds */
+  }
 }
 
 let standInAnnounced = false;

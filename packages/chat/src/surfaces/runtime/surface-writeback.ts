@@ -87,7 +87,9 @@ import {
   getSurfaceRuntimeStack,
   type SurfaceRegistry,
   type SurfaceRuntimeValue,
+  type SurfaceWriteAddress,
   type SurfaceWriteApply,
+  type SurfaceWriteContext,
   type SurfaceWriteHandler,
   type SurfaceWriteHandlers,
   type SurfaceWriteOutcome,
@@ -120,21 +122,44 @@ function resolveHandlers(
  * no pre-approval `validate`. Null when the entry is not a usable handler (an
  * object with no `apply` function) — treated exactly like a missing handler.
  */
-function splitHandler(entry: SurfaceWriteHandler | undefined): {
+function splitHandler(
+  entry: SurfaceWriteHandler | undefined,
+  context: SurfaceWriteContext = {},
+): {
   validate?: (value: unknown) => void | Promise<void>;
-  apply: SurfaceWriteApply;
+  apply: (value: unknown) => ReturnType<SurfaceWriteApply>;
   readCurrent?: () => Promise<string | null>;
 } | null {
+  // Every phase is bound to the write's ADDRESS (`opts.item`), so a target
+  // over several open records reads, checks and changes the one named — never
+  // whichever happens to be in focus when a phase runs.
+  // An unaddressed write calls the handler exactly as before (value only).
   if (!entry) return null;
-  if (typeof entry === "function") return { apply: entry };
+  if (!context.item) {
+    if (typeof entry === "function") return { apply: (value) => entry(value) };
+    if (typeof entry === "object" && typeof entry.apply === "function") {
+      return {
+        apply: (value) => entry.apply(value),
+        ...(typeof entry.validate === "function"
+          ? { validate: entry.validate }
+          : {}),
+        ...(typeof entry.readCurrent === "function"
+          ? { readCurrent: () => entry.readCurrent!() }
+          : {}),
+      };
+    }
+    return null;
+  }
+  if (typeof entry === "function") return { apply: (value) => entry(value, context) };
   if (typeof entry === "object" && typeof entry.apply === "function") {
+    const { apply, validate, readCurrent } = entry;
     return {
-      apply: entry.apply,
-      ...(typeof entry.validate === "function"
-        ? { validate: entry.validate }
+      apply: (value) => apply(value, context),
+      ...(typeof validate === "function"
+        ? { validate: (value: unknown) => validate(value, context) }
         : {}),
-      ...(typeof entry.readCurrent === "function"
-        ? { readCurrent: entry.readCurrent }
+      ...(typeof readCurrent === "function"
+        ? { readCurrent: () => readCurrent(context) }
         : {}),
     };
   }
@@ -173,8 +198,9 @@ function handlerTextReader(
   target: SurfaceWriteTarget,
   runtime: SurfaceRuntimeValue,
   registry: SurfaceRegistry,
+  context: SurfaceWriteContext = {},
 ): (() => Promise<string | null>) | null {
-  return splitHandler(resolveHandlers(runtime, registry)[target.name])?.readCurrent ?? null;
+  return splitHandler(resolveHandlers(runtime, registry)[target.name], context)?.readCurrent ?? null;
 }
 
 /**
@@ -573,6 +599,28 @@ export interface ApplySurfaceWriteOptions {
    */
   conversationId?: string;
   agentId?: string;
+  /**
+   * The record this write changes, for a target over several open records
+   * (the canvas's tabs): the `resource_ref` the agent read it by. Every handler
+   * phase receives it (`SurfaceWriteContext.item`). Omitted = the page's
+   * default record (usually the one in focus).
+   */
+  item?: SurfaceWriteAddress;
+}
+
+/**
+ * A `resource_ref`-shaped value (`{ resource_type, resource_id }`, as page
+ * values carry it — or the camelCase form) as a write address; null for
+ * anything else, so a malformed address is refused rather than ignored.
+ */
+export function readSurfaceWriteAddress(value: unknown): SurfaceWriteAddress | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const resourceType = record.resource_type ?? record.resourceType;
+  const resourceId = record.resource_id ?? record.resourceId;
+  if (typeof resourceType !== "string" || !resourceType.trim()) return null;
+  if (typeof resourceId !== "string" || !resourceId.trim()) return null;
+  return { resourceType: resourceType.trim(), resourceId: resourceId.trim() };
 }
 
 export interface SurfaceWriteApprovalProposal {
@@ -789,6 +837,7 @@ async function agentWriteAllowed(
   registry: SurfaceRegistry = getGlobalSurfaceRegistry(),
   patch?: SurfaceWriteApprovalProposal["patch"],
   atApply?: ApprovedWriteAtApply,
+  context: SurfaceWriteContext = {},
 ): Promise<SurfaceWriteResult | true> {
   const policy = resolveApplyPolicy(target, surfaceName);
   if (policy === "auto") return true;
@@ -825,7 +874,7 @@ async function agentWriteAllowed(
     originalName !== undefined &&
     (originalDefinition?.valueType === "string" ||
       originalDefinition?.valueType === "document" ||
-      handlerTextReader(target, runtime, registry) !== null) &&
+      handlerTextReader(target, runtime, registry, context) !== null) &&
     typeof value === "string" &&
     !/^(append|insert)/.test(target.name);
   let currentValue: string | null | undefined;
@@ -834,7 +883,7 @@ async function agentWriteAllowed(
   ): Promise<string | null> {
     if (!originalName)
       throw new Error("The original text source is not declared.");
-    const reader = handlerTextReader(target, from, registry);
+    const reader = handlerTextReader(target, from, registry, context);
     if (reader) return reader();
     const scope = await from.getScope();
     const current = scope[originalName];
@@ -1081,6 +1130,7 @@ async function resolveTargetPatch(
   runtime: SurfaceRuntimeValue,
   patch: SurfaceWritePatch,
   registry: SurfaceRegistry = getGlobalSurfaceRegistry(),
+  context: SurfaceWriteContext = {},
 ): Promise<
   | { ok: true; value: string; excerpt: { before: string; after: string } | null }
   | { ok: false; error: string }
@@ -1111,7 +1161,7 @@ async function resolveTargetPatch(
   }
   let current: unknown;
   try {
-    const reader = handlerTextReader(target, runtime, registry);
+    const reader = handlerTextReader(target, runtime, registry, context);
     if (reader) {
       current = await reader();
     } else {
@@ -1212,13 +1262,16 @@ async function applySurfaceWriteNow(
     );
   }
 
+  // The record this write is addressed to, bound into every handler phase.
+  const writeContext: SurfaceWriteContext = opts?.item ? { item: opts.item } : {};
+
   // Deepest-first: first surface that DECLARES the target owns the write.
   for (const runtime of stack) {
     const target = findDeclaredTarget(runtime.surfaceName, targetName);
     if (!target) continue;
 
     const handlers = resolveHandlers(runtime, registry);
-    const handler = splitHandler(handlers[targetName]);
+    const handler = splitHandler(handlers[targetName], writeContext);
     if (!handler) {
       // Declared but not wired — a real defect on the page, not the caller.
       return fail(
@@ -1242,7 +1295,13 @@ async function applySurfaceWriteNow(
     let value: unknown = patchInput;
     let patchExcerpt: SurfaceWriteApprovalProposal["patch"];
     if (isSurfaceWritePatch(patchInput)) {
-      const resolved = await resolveTargetPatch(target, runtime, patchInput, registry);
+      const resolved = await resolveTargetPatch(
+        target,
+        runtime,
+        patchInput,
+        registry,
+        writeContext,
+      );
       if (!resolved.ok) {
         return failPatch(resolved.error, {
           targetName: target.name,
@@ -1307,7 +1366,7 @@ async function applySurfaceWriteNow(
       if (isSurfaceWritePatch(patchInput)) {
         const patchValue = patchInput;
         atApply.resolvePatch = (live) =>
-          resolveTargetPatch(target, live, patchValue, registry);
+          resolveTargetPatch(target, live, patchValue, registry, writeContext);
       }
       // Returns `true` to proceed, or the exact result to hand back (already
       // reported for a refusal, deliberately silent for a decline).
@@ -1321,6 +1380,7 @@ async function applySurfaceWriteNow(
         registry,
         patchExcerpt,
         atApply,
+        writeContext,
       );
       if (verdict !== true) return verdict;
       if (atApply.runtime) applyRuntime = atApply.runtime;
@@ -1347,7 +1407,10 @@ async function applySurfaceWriteNow(
       if (!liveRuntime)
         throw new SurfaceWriteRefusalError("The page changed while approval was open. Review the current page before applying this change.");
       applyRuntime = liveRuntime;
-      const currentHandler = splitHandler(resolveHandlers(applyRuntime, registry)[targetName]);
+      const currentHandler = splitHandler(
+        resolveHandlers(applyRuntime, registry)[targetName],
+        writeContext,
+      );
       if (!currentHandler)
         throw new SurfaceWriteRefusalError("This operation is no longer available on the current page.");
       if (currentHandler.validate) {

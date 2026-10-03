@@ -1,0 +1,11 @@
+{
+  "file": "lane7conf_a_confidential_facts_have_their_own_readers.sql",
+  "sha256": "baafc77f1cd1c125d3d4f559eeb801124ed844933c29c07c330c42b69e29ed58",
+  "target": "clone",
+  "firstPolicyDdlToEndMs": 206,
+  "tables": [
+    "hr.employee"
+  ],
+  "measuredAt": "2026-10-03T20:11:28.421Z",
+  "note": "First policy statement to the end of the measure-pass transaction, measured on the dev clone by pnpm db:rehearse. That span is the sign-in freeze. Bound to the file's sha256: edit the file and this record stops answering for it."
+}
