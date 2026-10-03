@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 572 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 573 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "ff4770b42a73";
+export const KIND_REGISTRY_FINGERPRINT = "79280d9e730c";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -967,7 +967,21 @@ export interface BannedStructure {
 /**
  * * Shared by 2 kinds (flashcard_set, study_pack_set).
  */
-export interface BasicCard {
+export interface BasicCard_FlashcardSet {
+  back: string;
+  front: string;
+  topic?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "basic_card";
+  difficulty?: string;
+}
+
+/**
+ * * From kind `q_and_a_set`.
+ */
+export interface BasicCard_QAndASet {
   back: string;
   front: string;
   topic?: string;
@@ -1650,7 +1664,7 @@ export interface DamageFlag {
 /**
  * One column: what it is called, and — when anyone knows — what it holds.
  *  *
- *  * From kind `data_table`.
+ *  * Shared by 5 kinds (data_table, parsed_table, pdf_table_extraction, sql_query_result, …).
  */
 export interface DataColumn {
   /**
@@ -2100,6 +2114,24 @@ export interface EnhancedFlashcard_FlashcardSet {
 }
 
 /**
+ * * From kind `q_and_a_set`.
+ */
+export interface EnhancedFlashcard_QAndASet {
+  back: string;
+  tags?: string[];
+  front: string;
+  topic?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "enhanced_flashcard";
+  card_kind?: string;
+  difficulty?: string;
+  audio_explanation?: string;
+  detailed_explanation?: string;
+}
+
+/**
  * * From kind `study_pack_set`.
  */
 export interface EnhancedFlashcard_StudyPackSet {
@@ -2417,6 +2449,22 @@ export interface Flashcard_FlashcardSet {
      */
     __kind?: string;
   };
+}
+
+/**
+ * * From kind `q_and_a_set`.
+ */
+export interface Flashcard_QAndASet {
+  back: string;
+  tags?: string[];
+  front: string;
+  topic?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "flashcard";
+  card_kind?: string;
+  difficulty?: string;
 }
 
 /**
@@ -3013,7 +3061,7 @@ export interface JournalistShape {
 }
 
 /**
- * * Shared by 71 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 72 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
  */
 export type JsonValue = unknown;
 
@@ -5744,7 +5792,9 @@ export interface ReviewFinding {
 }
 
 /**
- * * From kind `table_rows`.
+ * One row of a person's own table — the live, closed item shape of ``table_rows``.
+ *  *
+ *  * From kind `table_rows`.
  */
 export interface RowRecord {
   /**
@@ -7338,7 +7388,7 @@ export interface SuggestedTag {
  * every one of the four producers had a different amount of this (the SQL one
  * had NONE: not the table queried, not the filters, not the columns asked for).
  *  *
- *  * From kind `data_table`.
+ *  * Shared by 5 kinds (data_table, parsed_table, pdf_table_extraction, sql_query_result, …).
  */
 export interface TableSource {
   /**
@@ -7429,7 +7479,24 @@ export interface TieredFlashcard_FlashcardSet {
    * The registered kind this payload is an instance of.
    */
   __kind: "tiered_flashcard";
-  subcards: BasicCard[];
+  subcards: BasicCard_FlashcardSet[];
+  card_kind?: string;
+  difficulty?: string;
+}
+
+/**
+ * * From kind `q_and_a_set`.
+ */
+export interface TieredFlashcard_QAndASet {
+  back: string;
+  tags?: string[];
+  front: string;
+  topic?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "tiered_flashcard";
+  subcards: BasicCard_QAndASet[];
   card_kind?: string;
   difficulty?: string;
 }
@@ -7446,7 +7513,7 @@ export interface TieredFlashcard_StudyPackSet {
    * The registered kind this payload is an instance of.
    */
   __kind: "tiered_flashcard";
-  subcards: BasicCard[];
+  subcards: BasicCard_FlashcardSet[];
   card_kind?: string;
   difficulty?: string;
 }
@@ -14912,7 +14979,7 @@ export interface ParsedJson {
 }
 
 /**
- * Kind `parsed_table` (registry v7).
+ * Kind `parsed_table` (registry v8).
  */
 export interface ParsedTable {
   /**
@@ -14923,6 +14990,10 @@ export interface ParsedTable {
    * How many data rows were parsed.
    */
   count: number;
+  /**
+   * The same rows as one data_table (every column text).
+   */
+  table?: DataTable | null;
   /**
    * The registered kind this payload is an instance of.
    */
@@ -14953,7 +15024,7 @@ export interface PartyKindVerdict {
 }
 
 /**
- * Kind `pdf_table_extraction` (registry v8).
+ * Kind `pdf_table_extraction` (registry v9).
  */
 export interface PdfTableExtraction {
   pages?: number;
@@ -14962,9 +15033,25 @@ export interface PdfTableExtraction {
    */
   __kind?: "pdf_table_extraction";
   tables?: DataTable[];
+  /**
+   * The document these came from.
+   */
+  file_id?: string | null;
   detector?: string;
+  /**
+   * Whether tables were cut from this result.
+   */
+  truncated?: boolean;
+  /**
+   * Each extracted table as one typed data_table.
+   */
+  data_tables?: DataTable[];
   table_count?: number;
   tables_path?: string | null;
+  /**
+   * The detector's version.
+   */
+  detector_version?: string | null;
 }
 
 /**
@@ -16334,6 +16421,18 @@ export interface PublishPreflight {
   verdict: string;
   failures?: PreflightFailure[];
   warnings?: string[];
+}
+
+/**
+ * Kind `q_and_a_set` (registry v8).
+ */
+export interface QAndASet {
+  cards?: (Flashcard_QAndASet | EnhancedFlashcard_QAndASet | TieredFlashcard_QAndASet | BasicCard_QAndASet)[];
+  title: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "q_and_a_set";
 }
 
 /**
@@ -20102,7 +20201,7 @@ export interface SpokenPracticeSession {
 }
 
 /**
- * Kind `sql_query_result` (registry v8).
+ * Kind `sql_query_result` (registry v9).
  */
 export interface SqlQueryResult {
   rows?: ({
@@ -20112,6 +20211,10 @@ export interface SqlQueryResult {
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
   })[];
+  /**
+   * The same rows as one typed data_table.
+   */
+  table?: DataTable | null;
   /**
    * The registered kind this payload is an instance of.
    */
@@ -20433,7 +20536,9 @@ export interface StudyTip {
 }
 
 /**
- * Kind `table_rows` (registry v6).
+ * Rows read out of a person's own table (``data.table.lookup``).
+ *  *
+ *  * Kind `table_rows` (registry v7).
  */
 export interface TableRows {
   /**
@@ -20453,9 +20558,13 @@ export interface TableRows {
    */
   found: boolean;
   /**
+   * The same rows as one typed data_table.
+   */
+  table?: DataTable | null;
+  /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "table_rows";
+  __kind?: "table_rows";
   /**
    * Dataset id from which the rows were read.
    */
@@ -25301,6 +25410,7 @@ export type GeneratedKindSlug =
   | "proof_check_status"
   | "provider_run_receipt"
   | "publish_preflight"
+  | "q_and_a_set"
   | "quantity_assessment"
   | "questionnaire"
   | "quiz_item"
@@ -25876,6 +25986,7 @@ export interface KindPayloadBySlug {
   "proof_check_status": ProofCheckStatus;
   "provider_run_receipt": ProviderRunReceipt;
   "publish_preflight": PublishPreflight;
+  "q_and_a_set": QAndASet;
   "quantity_assessment": QuantityAssessment;
   "questionnaire": Questionnaire;
   "quiz_item": QuizItem;
@@ -26455,6 +26566,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "proof_check_status",
   "provider_run_receipt",
   "publish_preflight",
+  "q_and_a_set",
   "quantity_assessment",
   "questionnaire",
   "quiz_item",
