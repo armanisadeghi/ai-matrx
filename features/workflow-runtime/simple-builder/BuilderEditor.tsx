@@ -493,7 +493,7 @@ function ColumnValueRows({
           )}
         </div>
       ))}
-      {readOnly || keys.length >= all.length ? null : (
+      {readOnly || (!fields.loading && keys.length >= all.length) ? null : (
         <CreatablePicker
           value={null}
           options={optionsFor(null)}

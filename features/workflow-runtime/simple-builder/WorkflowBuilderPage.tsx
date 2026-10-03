@@ -374,7 +374,7 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   const header = (
     <EntityModeHeader
       backHref={`/data-v2/${tableId}`}
-      entityLabel={view ? view.name : "New workflow"}
+      entityLabel={view ? view.name : organizationId ? "New workflow" : "Workflows"}
       entityStatus={status}
       entityOptions={builderRows.map((r) => {
         const id = (r.open as { workflow_id?: string }).workflow_id ?? "";
@@ -399,7 +399,7 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
         go({ tab: href.endsWith("tab=runs") ? "runs" : "build" })
       }
       actions={[
-        ...(readOnly
+        ...(readOnly || !organizationId
           ? []
           : [
               {
