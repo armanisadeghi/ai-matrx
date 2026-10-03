@@ -72,10 +72,10 @@ async function main() {
          b2 as (select custom.levels_of($1::uuid, ids) as j, clock_timestamp() as t3 from set, a2)
          select (select count(*) from jsonb_each(a.j)) as n,
                 round(extract(epoch from (b.t1 - a.t0)) * 1000) as ms_before, round(extract(epoch from (b2.t3 - a2.t2)) * 1000) as ms_after,
-                (select count(*) from jsonb_each(a.j) e where (b.j -> e.key) is distinct from e.value) as differ,
+                (select count(*) from jsonb_each(a.j) e where ((b.j -> e.key) - 'o') is distinct from (e.value - 'o')) as differ,
                 (select count(*) from jsonb_each(b.j) e where (a.j -> e.key) is null) as extra,
                 (select string_agg(e.key || ' before ' || e.value::text || ' after ' || coalesce((b.j -> e.key)::text, 'absent'), '; ')
-                   from (select * from jsonb_each(a.j) limit 100000) e where (b.j -> e.key) is distinct from e.value) as sample
+                   from (select * from jsonb_each(a.j) limit 100000) e where ((b.j -> e.key) - 'o') is distinct from (e.value - 'o')) as sample
            from a, b, a2, b2`, [uid, foreign]);
       const row = r.rows[0];
       ids += Number(row.n);
