@@ -44,7 +44,10 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { NewTableDialog } from "@/features/make/MakeMount";
 import { entityRecordHome } from "@/features/unified-data/hub/doors";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
+import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
@@ -206,6 +209,11 @@ export function EntityCustomFields({
   // own label is the registry row's (`Party`), a machine word on screen.
   const entityLabel = tryGetEntityInfo(entityToken)?.labelPlural || undefined;
   const userId = useAppSelector(selectUserId);
+  // org-filter: write-target "Make your own table" saves the new table in the RECORD's organization
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const dispatch = useAppDispatch();
+  // Her organizations as the shell already holds them (no request of its own on every record page).
+  const { organizations: myOrganizations } = useScopeTree();
   // A dormant copy (a board tile that is not live) keeps its door registered
   // but out of the page's agent offer.
   const dormant = useSurfaceDormant();
@@ -306,7 +314,16 @@ export function EntityCustomFields({
         title={title}
         className={className}
         entityLabel={entityLabel}
-        onMakeOwnTable={() => setMakingTable(true)}
+        onMakeOwnTable={() => {
+          // T1.2: her own table starts in the organization this record belongs to — the place new
+          // things are saved is set to it (the dialog shows it and she can change it), never asked
+          // again from a list of every organization she is in.
+          const home = myOrganizations.find((org) => org.id === organizationId);
+          if (home && activeOrganizationId !== organizationId) {
+            void dispatch(chooseActiveOrganization({ id: home.id, name: home.name }));
+          }
+          setMakingTable(true);
+        }}
         agentDoor={(door) => registerCustomFieldsDoor({ ...door, isLive: () => liveRef.current })}
       />
       </div>
