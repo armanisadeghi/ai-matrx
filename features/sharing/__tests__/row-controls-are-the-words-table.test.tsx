@@ -116,6 +116,31 @@ describe("the row controls are the Words table's, and only where they mean somet
     expect(host.querySelector("[data-row-controls]")).toBeNull();
   });
 
+  it("a whole Table (a record that is never published) draws Shown to but no publish switch", async () => {
+    // Access ladder T-40: only a ROW has a page; a Table drew a switch with nothing behind it.
+    caps = ORG_CAPS;
+    await act(async () => {
+      root.render(
+        <RowControls
+          resourceType={"record" as never}
+          resourceId="6a1d0c2b-3e4f-4a5b-9c6d-7e8f9a0b1c2d"
+          canChange
+          shownTo="everyone"
+          isPublic={false}
+          publishable={false}
+          onSetShownTo={noop}
+          onPublish={noop}
+          onStopPublishing={noop}
+        />,
+      );
+    });
+    const section = host.querySelector("[data-row-controls]");
+    expect(section!.textContent).toContain("Shown to");
+    expect(section!.textContent).not.toContain("Published to the web");
+    expect(host.querySelector('[role="switch"]')).toBeNull();
+    expect(host.querySelector("[data-indexed-switch]")).toBeNull();
+  });
+
   it("someone who cannot change sharing reads the state as text, never buttons", async () => {
     caps = ORG_CAPS;
     await draw("everyone", false, false);
