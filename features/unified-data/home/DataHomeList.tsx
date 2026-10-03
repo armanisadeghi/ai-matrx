@@ -41,7 +41,7 @@ import {
 import { ACCESS_WORD, dataHomeKindWord, type DataHomeAccess, type DataHomeRow } from "./dataHomeRows";
 import { createDataHomeService, DATA_HOME_ROW_CAP } from "./dataHomeService";
 import { createDataHomeCorpus } from "./dataHomeCorpus";
-import { readArchivedDataHome } from "./dataHomeArchived";
+import { readArchivedDataHomePage } from "./dataHomeArchived";
 import { ARCHIVED_TABLES_HREF, ARCHIVED_TABLES_SPOT } from "./archivedTablesPlace";
 import { createRecordCountStore } from "./dataHomeRecordCounts";
 import { tableRowCounts } from "@/features/unified-data/hub/doors";
@@ -130,13 +130,13 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       createDataHomeService({
         load: corpus.load,
         loaded: corpus.loaded,
-        // The Archived filter's rows, read only when it asks (TABLE-ACTIONS item 10).
-        loadArchived: () => readArchivedDataHome(dataSource),
+        // The Archived filter's rows, a store page at a time, only when it asks (TABLE-ACTIONS item 10).
+        readArchived: (page) => readArchivedDataHomePage(dataSource, page, userId),
         server: corpus.server,
         isStarred: (row) => starredSet.has(row.id),
         ownerLabel,
       }),
-    [corpus, starredSet, dataSource],
+    [corpus, starredSet, dataSource, userId],
   );
 
   // Defaults stay knobs (person / platform tier; never the active organization).

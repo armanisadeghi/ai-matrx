@@ -189,7 +189,7 @@ describe("census items that are wiring", () => {
 
   it("14 · the archive is the list's Archived filter, and each archived table restores", () => {
     expect(list).toContain("supportsArchived: true");
-    expect(list).toContain("loadArchived:");
+    expect(list).toContain("readArchived:");
     expect(read("useDataHomeRowMenus.tsx")).toContain("recordRestore(");
   });
 

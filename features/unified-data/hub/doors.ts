@@ -428,6 +428,11 @@ export interface ArchivedEverywhereRow {
   archived_by_name: string | null;
   organization_id: string;
   organization_name: string | null;
+  /**
+   * The table's maker, for the Mine lane. The store's archive door does not answer it yet
+   * (`custom.read_records_archived` returns no `created_by`); absent, no archived row is "Mine".
+   */
+  created_by?: string | null;
 }
 
 /**

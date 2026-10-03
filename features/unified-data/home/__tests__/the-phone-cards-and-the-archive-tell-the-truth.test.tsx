@@ -3,11 +3,11 @@
  *   W3 a phone card is two lines (name, then kind · organization · updated), never labelled
  *      fields, an empty line or "2 more fields";
  *   W4 the archive (the list's Archived filter, TABLE-ACTIONS item 10) is read only when that
- *      filter asks, 200 at a time, and a statement timeout (57014) is said in a person's words —
- *      never Postgres's sentence;
+ *      filter asks, ONE store page per list page (the first rows draw after one read), with no
+ *      count made by a full read, and a statement timeout (57014) is said in a person's words;
  *   W5 the cards view reads the SAME lazy Records counter as the table's cells.
- * Break any one (fields density on the home, PAGE back to 1000, the archive read on first paint,
- * the raw message, `row.records` on the card) and its block goes red.
+ * Break any one (fields density on the home, the archive read whole before the first page, a
+ * count made by a full read, the raw message, `row.records` on the card) and its block goes red.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -39,9 +39,9 @@ jest.mock("@/features/unified-data/hub/doors", () => ({
 }));
 
 // eslint-disable-next-line import/first
-import { ARCHIVE_PAGE, readArchivedDataHome } from "../dataHomeArchived";
+import { readArchivedDataHomePage } from "../dataHomeArchived";
 // eslint-disable-next-line import/first
-import { createDataHomeService } from "../dataHomeService";
+import { ARCHIVE_READ, createDataHomeService } from "../dataHomeService";
 // eslint-disable-next-line import/first
 import { DEFAULT_ENTITY_LIST_QUERY, type EntityListQuery } from "@/lib/entity-list/types";
 
@@ -137,55 +137,126 @@ function archivedRows(n: number, from = 0) {
   }));
 }
 
-const SORT = { sort: "updated", direction: "desc" as const, favoritesFirst: false, pageSize: 1000 };
-const query = (archivedAxis: EntityListQuery["archived"]): EntityListQuery => ({ ...DEFAULT_ENTITY_LIST_QUERY, archived: archivedAxis });
+const SORT = { sort: "updated", direction: "desc" as const, favoritesFirst: false, pageSize: 25 };
+const query = (archivedAxis: EntityListQuery["archived"], over: Partial<EntityListQuery> = {}): EntityListQuery => ({
+  ...DEFAULT_ENTITY_LIST_QUERY,
+  archived: archivedAxis,
+  ...over,
+});
 
-function homeService(loadArchived: () => Promise<ReturnType<typeof row>[]>) {
+/** A store archive of `size` tables, newest first, answered a page at a time like the door. */
+function storeArchive(size: number, orgOf: (i: number) => string = () => ORGS.harbor.id) {
+  return jest.fn(async (page: { offset: number; limit: number }) => {
+    const rows = Array.from({ length: Math.max(0, Math.min(page.limit, size - page.offset)) }, (_, i) =>
+      row({ name: `Retired intake form ${page.offset + i}`, archived: true, organizationId: orgOf(page.offset + i) }),
+    );
+    return { rows, ended: page.offset + rows.length >= size };
+  });
+}
+
+function homeService(readArchived: ReturnType<typeof storeArchive>) {
   return createDataHomeService({
     load: async () => [row({ name: "Referral Intake Queue" }), row({ name: "Insurance Plan Accounts" })],
-    loadArchived,
+    readArchived,
     isStarred: () => false,
     ownerLabel: () => null,
   });
 }
 
-describe("W4 — the archive is the list's Archived filter, read only when asked", () => {
-  it("the active list never reads the archive; Archived only shows only archived rows", async () => {
-    const loadArchived = jest.fn(async () => [row({ name: "Retired intake form 1", archived: true })]);
-    const service = homeService(loadArchived);
-    const active = await service.fetchPage(query("active"), SORT);
-    expect(loadArchived).not.toHaveBeenCalled();
+describe("W4 — the Archived filter pages like the store pages it", () => {
+  it("the active list never reads the archive", async () => {
+    const readArchived = storeArchive(1300);
+    const active = await homeService(readArchived).fetchPage(query("active"), SORT);
+    expect(readArchived).not.toHaveBeenCalled();
     expect(active.rows.map((r) => r.name).sort()).toEqual(["Insurance Plan Accounts", "Referral Intake Queue"]);
-    const only = await service.fetchPage(query("archived"), SORT);
-    expect(loadArchived).toHaveBeenCalledTimes(1);
-    expect(only.rows.map((r) => r.name)).toEqual(["Retired intake form 1"]);
   });
 
-  it("Show all holds both halves", async () => {
-    const service = homeService(async () => [row({ name: "Retired intake form 1", archived: true })]);
-    const both = await service.fetchPage(query("all"), SORT);
-    expect(both.rows.map((r) => r.name).sort()).toEqual(["Insurance Plan Accounts", "Referral Intake Queue", "Retired intake form 1"]);
+  it("the first page draws after ONE store read, with no count and a next page", async () => {
+    const readArchived = storeArchive(1300);
+    const first = await homeService(readArchived).fetchPage(query("archived"), SORT);
+    expect(readArchived.mock.calls.map((c) => c[0])).toEqual([{ offset: 0, limit: ARCHIVE_READ }]);
+    expect(first.rows.map((r) => r.name)).toEqual(Array.from({ length: 25 }, (_, i) => `Retired intake form ${i}`));
+    expect(first).toMatchObject({ total: 25, hasMore: true });
   });
 
-  it("asks 200 at a time until a short page, never the whole archive in one call", async () => {
+  it("a later page reads the store only when the rows in hand run out", async () => {
+    const readArchived = storeArchive(130);
+    const service = homeService(readArchived);
+    await service.fetchPage(query("archived"), SORT);
+    const p3 = await service.fetchPage(query("archived", { page: 3 }), SORT);
+    expect(readArchived).toHaveBeenCalledTimes(1);
+    expect(p3.rows[0]?.name).toBe("Retired intake form 50");
+    const p6 = await service.fetchPage(query("archived", { page: 6 }), SORT);
+    expect(readArchived.mock.calls.map((c) => c[0])).toEqual([
+      { offset: 0, limit: ARCHIVE_READ },
+      { offset: ARCHIVE_READ, limit: ARCHIVE_READ },
+    ]);
+    expect(p6).toMatchObject({ total: 130, hasMore: false });
+    expect(p6.rows.map((r) => r.name)).toEqual(Array.from({ length: 5 }, (_, i) => `Retired intake form ${125 + i}`));
+  });
+
+  it("the organization filter keeps reading pages until this page is full", async () => {
+    // Every 10th archived table is Titanium Roofing's; 25 of them need 250 rows read.
+    const readArchived = storeArchive(1300, (i) => (i % 10 === 0 ? ORGS.titanium.id : ORGS.harbor.id));
+    const page = await homeService(readArchived).fetchPage(query("archived", { orgId: ORGS.titanium.id }), SORT);
+    expect(page.rows).toHaveLength(25);
+    expect(page.rows.every((r) => r.organizationId === ORGS.titanium.id)).toBe(true);
+    expect(readArchived).toHaveBeenCalledTimes(3);
+  });
+
+  it("Show all lists the live rows, then the archive, open-ended", async () => {
+    const page = await homeService(storeArchive(1300)).fetchPage(query("all"), SORT);
+    expect(page.rows.slice(0, 2).map((r) => r.name).sort()).toEqual(["Insurance Plan Accounts", "Referral Intake Queue"]);
+    expect(page.rows[2]?.name).toBe("Retired intake form 0");
+    expect(page.hasMore).toBe(true);
+  });
+
+  it("no lane count or facet is made by reading the whole archive", async () => {
+    const readArchived = storeArchive(1300);
+    const service = homeService(readArchived);
+    expect(await service.fetchCounts(query("archived"))).toEqual({ byKind: {}, narrow: {} });
+    expect(await service.fetchFacets(query("archived"))).toEqual({ byKind: {} });
+    expect(readArchived).not.toHaveBeenCalled();
+  });
+
+  it("the reader asks the store for one page and adds the portals only after the tables end", async () => {
     archived.mockImplementation(async (_ds: unknown, page: { limit: number; offset: number }) => ({
       ok: true,
-      data: archivedRows(page.offset >= 400 ? 7 : page.limit, page.offset),
+      data: archivedRows(page.offset >= 100 ? 7 : page.limit, page.offset),
     }));
-    const rows = await readArchivedDataHome({} as never);
-    expect(ARCHIVE_PAGE).toBe(200);
-    expect(archived.mock.calls.map((c) => c[1])).toEqual([
-      { limit: 200, offset: 0 },
-      { limit: 200, offset: 200 },
-      { limit: 200, offset: 400 },
+    archivedPortals.mockResolvedValue({
+      ok: true,
+      data: [{ portal_id: "p-1", title: "Cedar Ridge patient portal", client_table_id: "t-1", client_table: "Patients", organization_id: ORGS.harbor.id, organization_name: ORGS.harbor.name }],
+    });
+    const first = await readArchivedDataHomePage({} as never, { offset: 0, limit: 100 });
+    expect(first).toMatchObject({ ended: false });
+    expect(first.rows).toHaveLength(100);
+    expect(archivedPortals).not.toHaveBeenCalled();
+    const last = await readArchivedDataHomePage({} as never, { offset: 100, limit: 100 });
+    expect(last.ended).toBe(true);
+    expect(last.rows.map((r) => r.kind)).toEqual([...Array(7).fill("table"), "portal"]);
+  });
+
+  it("an archived table I made is Mine; one somebody else made is not", async () => {
+    const DANA = "6c1f0b52-8d3e-4b7a-9f21-3e5d4c2b1a90";
+    const LUIS = "9a2e4d61-7b5c-4f3e-8d2a-1c0b9e8f7a65";
+    archived.mockResolvedValueOnce({
+      ok: true,
+      data: [
+        { ...archivedRows(1)[0], id: "mine-1", created_by: DANA },
+        { ...archivedRows(1, 1)[0], id: "theirs-1", created_by: LUIS },
+      ],
+    });
+    const page = await readArchivedDataHomePage({} as never, { offset: 0, limit: 100 }, DANA);
+    expect(page.rows.map((r) => [r.itemId, r.mine])).toEqual([
+      ["mine-1", true],
+      ["theirs-1", false],
     ]);
-    expect(rows).toHaveLength(407);
-    expect(rows.every((r) => r.archived === true && r.kind === "table")).toBe(true);
   });
 
   it("a planted 57014 is said in a person's words, never the Postgres text", async () => {
     archived.mockResolvedValueOnce({ ok: false, error: { message: "canceling statement due to statement timeout", sqlstate: "57014" } });
-    const failure = await readArchivedDataHome({} as never).then(
+    const failure = await readArchivedDataHomePage({} as never, { offset: 0, limit: 100 }).then(
       () => null,
       (e: unknown) => e as Error,
     );

@@ -334,6 +334,8 @@ export function useEntityList<TRow>({
   const debouncedSearch = searchDebounceMs <= 0 ? query.search : heldSearch;
   const [rows, setRows] = useState<TRow[]>([]);
   const [total, setTotal] = useState(0);
+  /** The open-ended page's "a next page exists" (`EntityListPage.hasMore`); undefined = counted. */
+  const [hasMore, setHasMore] = useState<boolean | undefined>(undefined);
   const [counts, setCounts] = useState<EntityScopeCounts>(EMPTY_SCOPE_COUNTS);
   // Counts have their OWN pending and failure state, because a scope section
   // that has no options yet must be able to tell "still reading" from "read,
@@ -431,7 +433,10 @@ export function useEntityList<TRow>({
       orgId: q.orgId,
       archived: q.archived,
       deep: q.deep,
-      service: serviceKey,
+      // NOT the service key (TABLE-ACTIONS, 2026-10-03): a service re-stating itself (`serviceKey`
+      // — a server search answered, a rename, a star) re-reads the SAME question, so the rows on
+      // screen still answer it and stay while the read runs. Blanking them unmounted every row and
+      // closed a row menu the person had open (guard: an-open-menu-survives-the-lists-next-answer).
     });
   const [rowsAnswer, setRowsAnswer] = useState<string | null>(null);
 
@@ -501,6 +506,7 @@ export function useEntityList<TRow>({
         if (gen !== generation.current) return; // a newer query won
         setRows(page.rows);
         setTotal(page.total);
+        setHasMore(page.hasMore);
         setRowsAnswer(askedQuestion);
         setError(null);
       } catch (err) {
@@ -703,6 +709,8 @@ export function useEntityList<TRow>({
   const [archivedAnswer, setArchivedAnswer] = useState<{
     key: string;
     total: number | null;
+    /** The store pages the archive and named no count: at least `total`, maybe more. */
+    more?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -720,7 +728,7 @@ export function useEntityList<TRow>({
           },
         );
         if (!cancelled)
-          setArchivedAnswer({ key: archivedProbeKey, total: page.total });
+          setArchivedAnswer({ key: archivedProbeKey, total: page.total, ...(page.hasMore ? { more: true } : {}) });
       } catch (err) {
         // NOTHING FAILS SILENTLY, and a failed count is NOT zero: falling back
         // to the static "none yet" copy here would restore the very lie this
@@ -742,7 +750,7 @@ export function useEntityList<TRow>({
       ? { state: "loading" }
       : archivedAnswer.total === null
         ? { state: "failed" }
-        : { state: "known", total: archivedAnswer.total };
+        : { state: "known", total: archivedAnswer.total, ...(archivedAnswer.more ? { more: true } : {}) };
 
   // Plain functions, NOT useCallback: `setQuery` is re-created per render for a
   // URL-backed surface, so an empty dep array here would freeze the very first
@@ -802,6 +810,7 @@ export function useEntityList<TRow>({
     if (!held.shown || !held.page) return false;
     setRows(held.page.rows);
     setTotal(held.page.total);
+    setHasMore(held.page.hasMore);
     setRowsAnswer(null);
     setPeekReleasedFor(held.key);
     return true;
@@ -836,6 +845,7 @@ export function useEntityList<TRow>({
     query,
     rows: showPeek ? peekedPage.rows : rowsAnswerThisQuestion ? rows : [],
     total: showPeek ? peekedPage.total : rowsAnswerThisQuestion ? total : 0,
+    hasMore: showPeek ? peekedPage.hasMore : rowsAnswerThisQuestion ? hasMore : undefined,
     counts: peekedCounts ?? counts,
     countsLoading,
     countsError: peekedCounts !== undefined ? null : countsError,

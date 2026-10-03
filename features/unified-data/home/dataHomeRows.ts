@@ -97,7 +97,10 @@ export interface DataHomeRow {
  * organizations the person belongs to, so the row is an organization row; it says when it was
  * archived and by whom in its facts.
  */
-export function archivedTableRow(table: ArchivedEverywhereRow): DataHomeRow {
+export function archivedTableRow(table: ArchivedEverywhereRow, me: string | null = null): DataHomeRow {
+  // Mine = I made it. Only the store can say so; until its door answers `created_by`, no archived
+  // row claims Mine (a guess would put other people's tables in the lane).
+  const mine = Boolean(me && table.created_by && table.created_by === me);
   const when = table.archived_at ? new Date(table.archived_at).toLocaleDateString() : null;
   return {
     id: `table:${table.organization_id}:${table.id}`,
@@ -109,15 +112,15 @@ export function archivedTableRow(table: ArchivedEverywhereRow): DataHomeRow {
     tableId: table.id,
     parentName: null,
     updatedAt: table.archived_at,
-    createdBy: null,
+    createdBy: table.created_by ?? null,
     createdByName: null,
-    mine: false,
+    mine,
     team: false,
     member: true,
     sharedWithMe: false,
     visibility: null,
     system: false,
-    access: "org",
+    access: mine ? "mine" : "org",
     records: null,
     changedBy: table.archived_by_name,
     details: ["Archived", when, table.archived_by_name ? `by ${table.archived_by_name}` : null].filter(Boolean).join(" "),
