@@ -12,7 +12,7 @@
 //
 // RED ON A PLANT: `MAKE_GALLERY_GUARD_ROOT=<scratch copy of features/make>` points the guard at a copy;
 // a planted `import { ExampleTables } from "@ai-matrx/records-ui"` or `.from("catalog_entries")` in
-// the copy turns it red (proof run recorded in PROGRESS-MAKE-HOME.md). Never plant in the tracked tree.
+// the copy turns it red (proof run in the wave-4 report). Never plant in the tracked tree.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

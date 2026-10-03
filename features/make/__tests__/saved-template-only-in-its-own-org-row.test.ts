@@ -7,8 +7,7 @@
 // Offline half of the guard: the row's filter asks the door for THIS organization only, and the
 // row drops any card another organization owns even if a read widened. The database half — the door
 // itself, as test@test.com and admin, rolled back — is
-// scripts/campaign-tests/make_gallery_org_row_guard.mts (red on a scratch-copy plant, recorded in
-// PROGRESS-MAKE-HOME.md).
+// scripts/campaign-tests/make_gallery_org_row_guard.mts (red on a scratch-copy plant).
 
 import { orgRowCards, orgRowFilter, platformCards, type GalleryCard } from "../gallery/catalogue";
 

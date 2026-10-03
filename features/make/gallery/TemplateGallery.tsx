@@ -24,7 +24,7 @@
 //
 // "SAVE MY SETUP AS A TEMPLATE" IS NOT DRAWN: the family has no door that turns an organization's
 // tables into a template spec (template_declare takes a finished spec + plan). Absent beats dead;
-// the missing door is named to the chair in PROGRESS-MAKE-HOME.md.
+// the missing door goes to the chair (store doors are the chair's).
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
