@@ -4,8 +4,8 @@
 -- based-on: custom.record_write_many(uuid, uuid, jsonb[], uuid[]) 190ebefaea66862c4a4b445ca957aa3f83e571283f9d1e7b5e5f40a80a652465
 -- based-on: custom.record_change_many(uuid, uuid, jsonb) 304ed69ac8fde7755b75d4a7421776f46e24b44feef1d1755edb97ff877e4395
 -- based-on: custom.record_update(uuid, uuid, jsonb, integer) 49b7be76078556b734b5a642a00375de332541de08ccd4ec992df2c1e7620580
--- based-on: custom.record_delete(uuid, uuid) 1dd76361c21118eb1868bbe70b6af812ea9c8f699fb3b9d7cc2818c2ddcee785
--- based-on: custom.field_declare(uuid, uuid, jsonb) 626483477f27f64ae786aee9cfd520db828360b5c915cf046a3a2f46a7da4b9f
+-- based-on: custom.record_delete(uuid, uuid) b0167d72cdf0dd548ae5e5c5b87cae3f085d105bdbee728a7be8ce35567e18f8
+-- based-on: custom.field_declare(uuid, uuid, jsonb) 4b249edffafca52fd33041197e0f7bede5da09d92a421410c949ba0e93d39c02
 -- based-on: custom.table_declare(uuid, jsonb) 560581a71a3549096f202338234abbb962bf304f2210d3eb022a4640283c9a07
 -- based-on: custom._agent_change_gate(uuid, uuid, text, uuid) abc729e9e6d586ed440170bfb36ea62ef4888ce40ef5fc410e0ccdc62203647c
 -- based-on: custom.declared_conversation() b50ac6d59d1a3eec9d44c92b1c33ea7a92a1dbcc12a8234bb8ae3bc2834e4251
@@ -448,6 +448,7 @@ declare
   v_own_event boolean := false;
   v_took      uuid[];
   v_class     text;
+  v_table     uuid;
 begin
   -- THE SWITCH. Every line below is behind custom/system_enabled: custom.assert_store_door
   -- resolves that knob and, while it is false, this store takes writes only from the role that
@@ -490,6 +491,27 @@ begin
                                       'also', '[]'::jsonb, 'took', '[]'::jsonb, 'open', true),
                    'STORE-TAILS-3: a table archived as one unit — its fields, saved views, rules and records with it; restoring the table brings back exactly this set.');
       v_own_event := true;
+    end if;
+  end if;
+  -- A SYNCED TABLE'S ROWS HAVE ONE WRITER (lane VISION-REACH wave 3, REC-N-11 read-only first;
+  -- verifier 2026-10-03: "read-only includes delete"). A row of a Table carrying sync_source is
+  -- archived by custom.table_sync alone (it marks its writes in app.table_sync_writing) when the
+  -- outside table no longer has it. A person — grid, REST, MCP, an approval — is refused in one
+  -- sentence, the same rule the edit door speaks. Exempt: the sync itself; a whole-table archive
+  -- (custom.table_archive opens custom.archive_event first); a cascade from a container (depth > 0),
+  -- which is never a person's single-row delete.
+  if v_depth = 0 and coalesce(current_setting('custom.archive_event', true), '') = '' then
+    select r.table_id into v_table from custom.record r
+     where r.organization_id = p_organization_id and r.id = p_record_id
+       and r.data_class = 'record' and r.deleted_at is null;
+    if v_table is not null
+       and coalesce(current_setting('app.table_sync_writing', true), '') <> v_table::text
+       and exists (select 1 from custom.record t
+                    where t.organization_id = p_organization_id and t.id = v_table
+                      and t.table_id = custom.table_kernel_id() and t.data ? 'sync_source') then
+      raise exception 'This table''s rows are synced from outside AI Matrx, so a row can''t be deleted here.'
+        using errcode = '42501',
+              hint = 'Delete it where it lives, then press Refresh on the table. Nothing was changed.';
     end if;
   end if;
   perform set_config('custom.delete_depth', (v_depth + 1)::text, true);
@@ -616,11 +638,15 @@ declare
 begin
   -- THE DECISION FIRST, BEFORE ANYTHING IS READ OR WRITTEN: the organization's
   -- own off switch, then the organization wall, then the right to change the
-  -- SHAPE of this table, which is an admin's right and not an editor's.
+  -- SHAPE of this table, which is an admin's right and not an editor's -
+  -- EXCEPT on a Table the app keeps for agent outputs (CHAIR-ACCESS a, NC-12): there a
+  -- column is born the way a row is, by the first member whose output carries it (a newer
+  -- kind version, a new data_table column), so a field add asks the Table's ADD rung
+  -- (custom.table_add_rung: viewer, every member who may see it), never admin.
   perform custom.assert_store_door(p_organization_id, 'custom.field_declare');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.field_declare');
   perform custom.assert_client_may_change(p_organization_id, p_table_id, 'custom.field_declare',
-                                          'admin'::public.permission_level, 'table');
+                                          custom.field_add_rung(p_organization_id, p_table_id), 'table');
 
   select r.data -> 'fields' into v_fields
     from custom.record r

@@ -1,6 +1,6 @@
 -- chair-step: undo visionreach_w4_a2_the_store_asks_before_an_agent_changes_a_column.sql — restores custom.field_update(uuid, uuid, jsonb) exactly as it was on production 2026-10-02 (before lane 10's p4). Reopens: an agent-declared change to an existing column lands with nobody asked whenever its caller skipped the client's own check.
 -- lane: VISION-REACH
--- based-on: custom.field_update(uuid, uuid, jsonb) 4062882408d421f1b34defc0fc0af8cd6ed46d6c278bd0b02c121e37f87b45e7
+-- based-on: custom.field_update(uuid, uuid, jsonb) 8d089d20b16b531ba5260c5dc1031902c080c578f53f2d5d1efd186b7b9bfee9
 CREATE OR REPLACE FUNCTION custom.field_update(p_organization_id uuid, p_field_id uuid, p_patch jsonb)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -37,7 +37,11 @@ declare
     -- CHOICE-COLUMN-EDIT: choices added to the ones a column already has (the cell's "Add").
     'options_add',
     -- DATA-V2-BASICS-2: what a new record this column is not named in starts with.
-    'default'];
+    'default',
+    -- CHAIR-MATH (b), 2026-10-03: what a lookup or roll-up reads (via, pick, agg, of) and which
+    -- linked records a roll-up adds up (filter). Before this they were refused here by name on a
+    -- retype, and `filter` did not exist.
+    'via', 'pick', 'agg', 'of', 'filter'];
   v_unknown  text[];
   v_parsed   jsonb;
   -- CHOICE-COLUMN-EDIT: the choices exactly as they were sent (words, or {id, words}).
@@ -166,6 +170,16 @@ begin
       'depends_on',     coalesce(p_patch -> 'depends_on', v_old -> 'depends_on'),
       'unit',           coalesce(p_patch ->> 'unit', v_old ->> 'unit'),
       'expr',           coalesce(p_patch -> 'expr', v_old -> 'config' -> 'expr'),
+      -- CHAIR-MATH (b), 2026-10-03: WHAT A LOOKUP OR ROLL-UP READS rides a change of kind too.
+      -- This fixed key list never carried via / pick / agg / of, so a column retyped to a rollup
+      -- through this door was refused by the guard as "has to say which relation it reads
+      -- through" however the caller spelled it; and the new filter rides beside them.
+      'via',            coalesce(nullif(p_patch ->> 'via', ''),  v_old -> 'config' ->> 'via'),
+      'pick',           coalesce(nullif(p_patch ->> 'pick', ''), v_old -> 'config' ->> 'pick'),
+      'agg',            coalesce(nullif(p_patch ->> 'agg', ''),  v_old -> 'config' ->> 'agg'),
+      'of',             coalesce(nullif(p_patch ->> 'of', ''),   v_old -> 'config' ->> 'of'),
+      'filter',         case when p_patch ? 'filter' then p_patch -> 'filter'
+                             else v_old -> 'config' -> 'filter' end,
       -- TAILS-2, 2026-09-21: WHEN a worked-out column works itself out is part of what the
       -- column IS, and this builder's fixed key list did not carry it — so a caller who
       -- retyped a formula and said `compute_on` got `custom._field_document_for`'s default
@@ -422,6 +436,24 @@ begin
               hint = 'FLD-2: send parity_type "select" for one answer or "multi_select" for several; multi alone is not a setting on a list.';
     end if;
     v_next := jsonb_set(v_next, '{multi}', to_jsonb(coalesce((p_patch ->> 'multi')::boolean, false)));
+  end if;
+  -- CHAIR-MATH (b), 2026-10-03: WHICH LINKED RECORDS A ROLL-UP ADDS UP IS A SETTING LIKE ANY
+  -- OTHER. `{"filter": {"status": "open"}}` on an existing roll-up lands in config.filter and is
+  -- validated against the far table by custom._field_type_parity_guard on this very write;
+  -- `{"filter": null}` takes it off. On anything that is not a roll-up it is refused by name.
+  if p_patch ? 'filter' then
+    if custom.parity_type(v_old) is distinct from 'rollup' then
+      raise exception 'Only a column that adds up linked records can narrow which ones it adds up, and "%" is not one.',
+        coalesce(v_old ->> 'label', v_old ->> 'key')
+        using errcode = '23514',
+              hint = 'FLD-11: make it a roll-up first (type "rollup" with via and agg), then send filter.';
+    end if;
+    if jsonb_typeof(p_patch -> 'filter') = 'null' then
+      v_next := jsonb_set(v_next, '{config}', coalesce(v_next -> 'config', '{}'::jsonb) - 'filter');
+    else
+      v_next := jsonb_set(v_next, '{config}', coalesce(v_next -> 'config', '{}'::jsonb)
+                  || jsonb_build_object('filter', p_patch -> 'filter'));
+    end if;
   end if;
   -- REC-51: A RELATION'S CARDINALITY LIVES IN TWO KEYS AND BOTH MUST MOVE. `custom.validate_values`
   -- counts the links against `relation_max` and `custom.relation_declaration` calls the column

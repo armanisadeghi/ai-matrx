@@ -4,8 +4,8 @@
 -- based-on: custom.record_write_many(uuid, uuid, jsonb[], uuid[]) d9f8b51784053c0b03b73e5c21044e8f6fb97062da13083049cc1a71e8abc86c
 -- based-on: custom.record_change_many(uuid, uuid, jsonb) 22729091e2594ddbb9b2a58c5b549f634480abd3d03e4acda87f55a59980dcfc
 -- based-on: custom.record_update(uuid, uuid, jsonb, integer) f7c0d7515fe21200c0291177808a3b1e526b3ebcaea195862b5ca1b7f9e03a93
--- based-on: custom.record_delete(uuid, uuid) 93794b4c52f131b8c3705b1060b33306898b12e51842bc7454eb37311cd3df1e
--- based-on: custom.field_declare(uuid, uuid, jsonb) 40ac965c6a9da02693a0e60e499a6ebf6af267f6c22ab21a08c94429fc071c33
+-- based-on: custom.record_delete(uuid, uuid) 3462f96414879daa0435878bb1b82fe12c5358d22c6671e2af4cfeaf0f6a9a11
+-- based-on: custom.field_declare(uuid, uuid, jsonb) dfdf4fddbb010baafd7e980daf56e79a0415384c05395caec1c5cd9869c7f01f
 -- based-on: custom.table_declare(uuid, jsonb) d92c9e0250f1776db8efefb0f40d4959db691ace0ee849a8cd0e39d0bc5e2a10
 --
 -- LANE 5 VISION-REACH, WAVE 4 (a) — THE STORE ASKS BEFORE AN AGENT CHANGES A TABLE.
@@ -592,6 +592,7 @@ declare
   v_own_event boolean := false;
   v_took      uuid[];
   v_class     text;
+  v_table     uuid;
 begin
   -- THE SWITCH. Every line below is behind custom/system_enabled: custom.assert_store_door
   -- resolves that knob and, while it is false, this store takes writes only from the role that
@@ -636,6 +637,27 @@ begin
                                       'also', '[]'::jsonb, 'took', '[]'::jsonb, 'open', true),
                    'STORE-TAILS-3: a table archived as one unit — its fields, saved views, rules and records with it; restoring the table brings back exactly this set.');
       v_own_event := true;
+    end if;
+  end if;
+  -- A SYNCED TABLE'S ROWS HAVE ONE WRITER (lane VISION-REACH wave 3, REC-N-11 read-only first;
+  -- verifier 2026-10-03: "read-only includes delete"). A row of a Table carrying sync_source is
+  -- archived by custom.table_sync alone (it marks its writes in app.table_sync_writing) when the
+  -- outside table no longer has it. A person — grid, REST, MCP, an approval — is refused in one
+  -- sentence, the same rule the edit door speaks. Exempt: the sync itself; a whole-table archive
+  -- (custom.table_archive opens custom.archive_event first); a cascade from a container (depth > 0),
+  -- which is never a person's single-row delete.
+  if v_depth = 0 and coalesce(current_setting('custom.archive_event', true), '') = '' then
+    select r.table_id into v_table from custom.record r
+     where r.organization_id = p_organization_id and r.id = p_record_id
+       and r.data_class = 'record' and r.deleted_at is null;
+    if v_table is not null
+       and coalesce(current_setting('app.table_sync_writing', true), '') <> v_table::text
+       and exists (select 1 from custom.record t
+                    where t.organization_id = p_organization_id and t.id = v_table
+                      and t.table_id = custom.table_kernel_id() and t.data ? 'sync_source') then
+      raise exception 'This table''s rows are synced from outside AI Matrx, so a row can''t be deleted here.'
+        using errcode = '42501',
+              hint = 'Delete it where it lives, then press Refresh on the table. Nothing was changed.';
     end if;
   end if;
   perform set_config('custom.delete_depth', (v_depth + 1)::text, true);
@@ -762,11 +784,15 @@ declare
 begin
   -- THE DECISION FIRST, BEFORE ANYTHING IS READ OR WRITTEN: the organization's
   -- own off switch, then the organization wall, then the right to change the
-  -- SHAPE of this table, which is an admin's right and not an editor's.
+  -- SHAPE of this table, which is an admin's right and not an editor's -
+  -- EXCEPT on a Table the app keeps for agent outputs (CHAIR-ACCESS a, NC-12): there a
+  -- column is born the way a row is, by the first member whose output carries it (a newer
+  -- kind version, a new data_table column), so a field add asks the Table's ADD rung
+  -- (custom.table_add_rung: viewer, every member who may see it), never admin.
   perform custom.assert_store_door(p_organization_id, 'custom.field_declare');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.field_declare');
   perform custom.assert_client_may_change(p_organization_id, p_table_id, 'custom.field_declare',
-                                          'admin'::public.permission_level, 'table');
+                                          custom.field_add_rung(p_organization_id, p_table_id), 'table');
   -- VISION-REACH W4 (a): the organization's "Agent changes" setting, enforced here (custom._agent_change_gate).
   perform custom._agent_change_gate(p_organization_id, p_table_id, 'custom.field_declare');
 
