@@ -201,3 +201,8 @@ work/
 .matrx/sync-paused
 # scripts/sync-main.py commit hold (+ its .expired copy): per-checkout, never committed
 .matrx/held-paths.txt*
+
+# Release streak ledger (scripts/release_repeats.py): per-machine state, never committed
+.matrx/release-repeats.json
+.matrx/release-repeats.json.tmp
+.matrx/fixer-ledger.json

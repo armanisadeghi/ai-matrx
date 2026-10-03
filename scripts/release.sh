@@ -657,6 +657,16 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
     ship_mark "migrations done"
     echo "${NEW_TAG}  pushed, build started  (${SHIP_BUILD_SECONDS}s)"
     ship_print_findings
+    # An error that repeats is a different fact from an error that happened (about a
+    # hundred releases reported the same stale generated API types, 2026-09-22 → 10-02,
+    # and nobody was told). Count the streak in a local ledger and say it here; a person
+    # is told once, in the after phase. One tool serves both repos: aidream's
+    # scripts/release_repeats.py, pointed at this checkout.
+    if [[ -f "$AIDREAM_DIR/scripts/release_repeats.py" ]]; then
+        [[ -s "${SHIP_FINDINGS_JSON:-}" ]] || : > "${SHIP_FINDINGS_JSON}"
+        MATRX_REPO_ROOT="$REPO_ROOT" python3 "$AIDREAM_DIR/scripts/release_repeats.py" record \
+            --findings "$SHIP_FINDINGS_JSON" --tag "$NEW_TAG" --source ship 2>/dev/null || true
+    fi
 
     # Everything that is not needed to make the build runs now, detached.
     # RELEASE_AFTER_PHASE=off is the ship-path guard's switch (test-release-ship-path.sh).
@@ -779,6 +789,18 @@ else
         || { RUNNER_OK=false; warn "The check runner itself crashed — nothing was measured. The release is not affected."; }
 fi
 [[ -n "$WATCH_PID" ]] && wait "$WATCH_PID"
+# The checks' own streaks, then tell a person about anything past the threshold. A
+# crashed runner measured nothing, so its file must not clear a standing streak.
+if [[ -f "$AIDREAM_DIR/scripts/release_repeats.py" ]]; then
+    if $RUNNER_OK && [[ -f "$CHECKS_JSON" ]]; then
+        MATRX_REPO_ROOT="$REPO_ROOT" python3 "$AIDREAM_DIR/scripts/release_repeats.py" record \
+            --findings "$CHECKS_JSON" --tag "$NEW_TAG" --source checks >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 || true
+    fi
+    if command -v uv >/dev/null 2>&1; then
+        ( cd "$AIDREAM_DIR" && MATRX_REPO_ROOT="$REPO_ROOT" uv run --frozen python scripts/release_repeats.py file ) \
+            >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 || true
+    fi
+fi
 # Ship-path and rollout findings ride the same dispatch as the checks' findings.
 [[ -s "${SHIP_FINDINGS_JSON:-}" ]] && cat "$SHIP_FINDINGS_JSON" >> "$CHECKS_JSON"
 [[ -s "$ROLLOUT_JSON" ]] && cat "$ROLLOUT_JSON" >> "$CHECKS_JSON"
