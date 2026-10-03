@@ -27,6 +27,7 @@ import {
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { isJsonObject } from "@/types/json";
 import {
+  htmlPageIdOf,
   resolveCanvasSourceFromData,
   type CanvasSourceText,
 } from "./canvasSource";
@@ -197,7 +198,94 @@ function DocumentCanvasSourceLoad({
   return <SourceText source={{ text: state.markdown, language: "markdown" }} />;
 }
 
+/** A published HTML page's source: its stored document, read like its editor does. */
+function HtmlPageCanvasSource({ pageId }: { pageId: string }) {
+  const [attempt, setAttempt] = React.useState(0);
+  return (
+    <HtmlPageCanvasSourceLoad
+      key={`${pageId}:${attempt}`}
+      pageId={pageId}
+      onRetry={() => setAttempt((n) => n + 1)}
+    />
+  );
+}
+
+function HtmlPageCanvasSourceLoad({
+  pageId,
+  onRetry,
+}: {
+  pageId: string;
+  onRetry: () => void;
+}) {
+  const [state, setState] = React.useState<
+    | { phase: "loading" }
+    | { phase: "error"; reason: string }
+    | { phase: "ready"; html: string }
+  >({ phase: "loading" });
+
+  React.useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const { HTMLPageService } = await import(
+          "@/features/html-pages/services/htmlPageService"
+        );
+        const page = (await HTMLPageService.getPage(pageId)) as {
+          html_content?: unknown;
+        };
+        if (!active) return;
+        setState({
+          phase: "ready",
+          html: typeof page?.html_content === "string" ? page.html_content : "",
+        });
+      } catch (error) {
+        if (!active) return;
+        setState({
+          phase: "error",
+          reason: error instanceof Error ? error.message : "unknown error",
+        });
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [pageId]);
+
+  if (state.phase === "loading") {
+    return (
+      <div className="flex h-full items-center justify-center" role="status">
+        <MatrxMiniLoader />
+        <span className="sr-only">Loading page source</span>
+      </div>
+    );
+  }
+  if (state.phase === "error") {
+    return (
+      <SourceUnavailable
+        reason={`The page could not be read (${state.reason}).`}
+        onRetry={onRetry}
+      />
+    );
+  }
+  if (!state.html.trim()) {
+    return <SourceUnavailable reason="This page is empty." />;
+  }
+  return <SourceText source={{ text: state.html, language: "html" }} />;
+}
+
 export function CanvasSourceView({ content }: { content: CanvasContent }) {
+  const pageId = htmlPageIdOf(content);
+  // Keyed by the item's URL too: an edit republishes and bumps it, so the
+  // source re-reads instead of showing the pre-edit document.
+  if (pageId) {
+    return (
+      <HtmlPageCanvasSource
+        key={typeof content.data === "string" ? content.data : pageId}
+        pageId={pageId}
+      />
+    );
+  }
+
   if (content.type === "udt_document") {
     const documentId =
       typeof content.data?.documentId === "string"

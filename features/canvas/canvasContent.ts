@@ -138,6 +138,11 @@ export interface CanvasContent {
     canvasItemId?: string;
     /** Persisted artifact version when known (display chip). */
     artifactVersion?: number;
+    /**
+     * `html_pages.id` when the item shows a published HTML page — its identity
+     * for agents (read + edit through the page), independent of the URL.
+     */
+    htmlPageId?: string;
     /** Per-artifact mermaid render options + diagram identity. */
     mermaid?: Record<string, unknown>;
   };

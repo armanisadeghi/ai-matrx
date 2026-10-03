@@ -14,14 +14,19 @@ import "@ai-matrx/canvas/styles.css";
 import "@ai-matrx/canvas/tokens.css";
 import "./canvas-host.css";
 import { useEffect } from "react";
-import { CanvasColumn, useCanvasColumnWidth } from "@ai-matrx/canvas/react";
+import { CanvasColumn, useCanvas, useCanvasColumnWidth } from "@ai-matrx/canvas/react";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CANVAS_SURFACE_NAME } from "@/features/surfaces/manifests/canvas.manifest";
 import { useCanvasSurfaceScope } from "./canvasSurfaceScope";
+import { canvasWriteHandlers } from "./canvasWriteHandlers";
 
 export function ShellCanvasColumn() {
   const width = useCanvasColumnWidth();
   const getScope = useCanvasSurfaceScope();
+  const canvas = useCanvas();
+  // Fresh handlers per call (the getWriteHandlers contract): each reads the
+  // canvas store when the write applies.
+  const getWriteHandlers = () => canvasWriteHandlers(canvas);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -46,7 +51,11 @@ export function ShellCanvasColumn() {
   );
 
   return (
-    <SurfaceRuntimeProvider surfaceName={CANVAS_SURFACE_NAME} getScope={getScope}>
+    <SurfaceRuntimeProvider
+      surfaceName={CANVAS_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
       <CanvasColumn
         className="shell-canvas-column"
         onLiveWidth={(live) => {

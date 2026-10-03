@@ -269,6 +269,7 @@ export function useCodeEditorBasics({
         data: result.url,
         metadata: {
           title: currentFile.name,
+          htmlPageId: result.pageId,
         },
       });
     } catch (error) {

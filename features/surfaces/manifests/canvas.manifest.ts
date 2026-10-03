@@ -20,11 +20,14 @@
  * column in `SurfaceRuntimeProvider`; the scope is built at run time by
  * `features/canvas/host/canvasSurfaceScope.ts` from the canvas store.
  *
- * NO `writeTargets` — deliberately. See the FEATURE.md Change Log entry for
- * 2026-08-11: the pane owns no authored text, and writing "into the canvas"
- * generically would mean reaching through it into whichever artifact
- * renderer happens to be open — a parallel write path around surfaces that
- * already ship their own targets.
+ * EVERY ITEM IS A REFERENCE (owner report 2026-10-03). An item is sent as a
+ * labeled `resource_ref` to the record it shows — a published HTML page
+ * (`html_page`) or a saved canvas artifact (`canvas_item`) — never as its tab
+ * id or title alone. The server resolves the reference, so the agent reads the
+ * body with `context`, and edits it through `canvas_item_content`, whose
+ * handler (`features/canvas/host/canvasWriteHandlers.ts`) writes through the
+ * record's own save path and refreshes the tab. Before this the agent said it
+ * had "no read path" for an open HTML page.
  */
 
 import type {
@@ -32,7 +35,9 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
+import type { CanvasItemReference } from "@/features/canvas/lib/canvas-item-reference";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -54,13 +59,13 @@ const groups: SurfaceValueGroup[] = [
 const surfaceSpecific: SurfaceValue[] = [
   // ── Open canvas item (300-329) ────────────────────────────────────────
   {
-    name: "current_canvas_id",
-    label: "Current canvas ID",
+    name: "current_canvas_item",
+    label: "Open item",
     description:
-      "`canvas_items` UUID of the artifact in the primary pane. Empty when the open item is session-only and has never been saved to the canvas library.",
-    valueType: "string",
+      'The record the primary pane shows, as a reference the server resolves: `{ __kind: "resource_ref", resource_type: "html_page" | "canvas_item", resource_id, label }`. Read its full body with the context tool on this key — a published HTML page reads as its complete document, a saved canvas artifact as its newest version. Change it with the `canvas_item_content` write target. Empty while the open item is session-only (never saved, so there is no record yet).',
+    valueType: "object",
     alwaysAvailable: false,
-    typicalCharCount: 36,
+    typicalCharCount: 160,
     group: "canvas_item",
     sortOrder: 300,
   },
@@ -90,7 +95,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_canvas_is_saved",
     label: "Saved to library",
     description:
-      "True when the open item is persisted as a `canvas_items` row (so it has a `current_canvas_id`); false while it is session-only. Always present.",
+      "True when the open item is a stored record (a published HTML page or a saved canvas artifact), so `current_canvas_item` references it and it can be read and edited; false while it is session-only. Always present.",
     valueType: "boolean",
     alwaysAvailable: true,
     typicalCharCount: 5,
@@ -101,7 +106,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "canvas_json",
     label: "Canvas item payload",
     description:
-      "Structured `data` payload of the open artifact; its shape is type-specific. For MATERIALIZED artifacts this is only the pointer `{ artifactId }` — the artifact body lives in `canvas_items` and is NOT inlined here, so never treat this as the full content. Empty object when the item carries no data.",
+      "Structured `data` payload of a SESSION-ONLY open item (one with no record yet); its shape is type-specific. Empty whenever the item is a stored record — read that through `current_canvas_item` instead.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 1200,
@@ -114,7 +119,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "open_items",
     label: "Open canvas items",
     description:
-      "Every artifact open in this canvas session as `{ session_id, canvas_id, type, title }`. `session_id` is the ephemeral per-session id used to switch panes; `canvas_id` is the durable `canvas_items` UUID and is empty for unsaved items. Always present and never empty while the pane is open.",
+      "Every item open on the canvas, as `{ title, type, is_current, item? }`. `item` is the same kind of reference as `current_canvas_item` (absent for a session-only item); each referenced item is also readable on its own through the context tool. Always present and never empty while the pane is open.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 400,
@@ -144,13 +149,13 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 410,
   },
   {
-    name: "secondary_canvas_id",
-    label: "Secondary canvas ID",
+    name: "secondary_canvas_item",
+    label: "Second open item",
     description:
-      "`canvas_items` UUID of the artifact in the bottom pane while `is_split` is true. Empty when the view is not split or the secondary item is unsaved.",
-    valueType: "string",
+      "The record shown in the bottom pane while `is_split` is true, as the same kind of reference as `current_canvas_item`. Empty when the view is not split or the second item is session-only.",
+    valueType: "object",
     alwaysAvailable: false,
-    typicalCharCount: 36,
+    typicalCharCount: 160,
     group: "canvas_session",
     sortOrder: 415,
   },
@@ -167,6 +172,23 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "canvas_item_content",
+    label: "Open item content",
+    description:
+      'Changes the body of the item open in the primary pane and SAVES it: a published HTML page is republished at its address immediately; a saved canvas artifact gets a new version. The tab refreshes to show it. For a small change send ONLY the edit: {"command": "str_replace", "old_str": "<exact text now in the item, unique>", "new_str": "<replacement>"} — read the item first with the context tool on `current_canvas_item`. Send a whole new body as a plain string only for a genuine rewrite; for an HTML page that must be a complete document (doctype, head, body), never a fragment. Refused while the open item is session-only (no `current_canvas_item`).',
+    valueType: "string",
+    updatesValue: "current_canvas_item",
+    patchable: true,
+    approvalComparison: "text-replacement",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "canvas_item",
+    sortOrder: 100,
+  },
+];
+
 export const CANVAS_SURFACE_NAME = "matrx-user/canvas";
 
 export const canvasManifest: SurfaceManifest = {
@@ -178,25 +200,26 @@ export const canvasManifest: SurfaceManifest = {
   readiness: "partial",
   readinessNote:
     // access-errors: ok — internal readiness note about a removed editor's vocabulary, verified against the codebase; never rendered to a user as record state
-    "Values re-authored against the live pane (2026-08-11) — the previous set declared diagram-node vocabulary (`selected_node_id`, `selected_nodes`, `current_text_block`) for an editor that does not exist in this codebase, and documented `render_mode` with an edit/preview enum it never had. Emitter: the canvas column (ShellCanvasColumn). Remaining: no `data-surface-value` anchors, and no live non-matching-name binding test.",
+    "Items are sent as references to their records (html_page / canvas_item) and edited through canvas_item_content (2026-10-03). Values re-authored against the live pane (2026-08-11) — the previous set declared diagram-node vocabulary (`selected_node_id`, `selected_nodes`, `current_text_block`) for an editor that does not exist in this codebase, and documented `render_mode` with an edit/preview enum it never had. Emitter: the canvas column (ShellCanvasColumn). Remaining: no `data-surface-value` anchors, and no live non-matching-name binding test.",
   label: "Canvas",
   intro: `<surface_intro>
-The Canvas is a side pane that HOSTS artifacts — a mermaid diagram, a table, a
-code block, a quiz, an HTML view, a working document — opened from a chat
-message or another surface. It slides in over whatever route the user is on.
+The Canvas is a side pane that shows items opened from a chat or another page —
+a published HTML page, a diagram, code, a table, a quiz, a document. Each open
+item is a stored record or a session-only preview.
 
-There are no diagram nodes and no node selection here: the canvas holds a LIST
-of artifact items, one rendered per pane. current_canvas_type tells you which
-kind of artifact is open; canvas_json is that item's data payload, and for a
-materialized artifact it is only a { artifactId } pointer — the body is not
-inlined, so never claim to have read content you were not given.
+current_canvas_item is a REFERENCE to the record in the primary pane (an HTML
+page or a saved canvas artifact), labeled with the name the person sees. Read
+its full body with the context tool on that key before describing or changing
+it — never answer from the title alone. open_items lists every tab; each one
+with an item reference is readable the same way.
 
-The authored content INSIDE an artifact belongs to that artifact's own surface
-(mermaid-editor, html-page, working-document, scratchpad). Operate on what the
-canvas pane itself owns: which items are open, which is current, and how they
-are presented.
+To change the open item, use apply_surface_write with canvas_item_content: send
+a str_replace edit (or a whole new body for a rewrite). The person approves the
+change, it saves, and the tab refreshes. A session-only item (no
+current_canvas_item) has no record to edit.
 </surface_intro>`,
   groups,
+  writeTargets,
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
@@ -204,16 +227,15 @@ are presented.
 };
 
 /**
- * One entry of `open_items`.
- *
- * `session_id` is the ephemeral `CanvasItem.id` (pane switching); `canvas_id`
- * is the durable `canvas_items` UUID, absent until the item is saved.
+ * One entry of `open_items`: what the person sees on the tab, and the record it
+ * shows (absent while the item is session-only). No tab id — agents name an
+ * item by its reference.
  */
 export interface CanvasOpenItemSummary {
-  session_id: string;
-  canvas_id?: string;
-  type: string;
   title: string;
+  type: string;
+  is_current: boolean;
+  item?: CanvasItemReference;
 }
 
 /**
@@ -229,7 +251,7 @@ export function createCanvasScope(values: {
   context?: Record<string, unknown>;
 
   // Open canvas item
-  current_canvas_id?: string;
+  current_canvas_item?: CanvasItemReference;
   current_canvas_type: string;
   current_canvas_title?: string;
   current_canvas_is_saved: boolean;
@@ -239,7 +261,7 @@ export function createCanvasScope(values: {
   open_items: CanvasOpenItemSummary[];
   item_count: number;
   is_split: boolean;
-  secondary_canvas_id?: string;
+  secondary_canvas_item?: CanvasItemReference;
   render_mode: string;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;

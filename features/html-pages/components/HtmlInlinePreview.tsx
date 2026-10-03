@@ -141,6 +141,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [url, setUrl] = useState<string | null>(null);
+  const [pageId, setPageId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
   const [showError, setShowError] = useState(false);
@@ -186,6 +187,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
         );
         if (cancelled) return;
         setUrl(result.url);
+        setPageId(typeof result.pageId === "string" ? result.pageId : null);
         setPhase("preview");
       } catch (err) {
         if (cancelled) return;
@@ -209,9 +211,13 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     openCanvas({
       type: "iframe",
       data: url,
-      metadata: { title, sourceMessageId: messageId },
+      metadata: {
+        title,
+        sourceMessageId: messageId,
+        ...(pageId ? { htmlPageId: pageId } : {}),
+      },
     });
-  }, [url, openCanvas, title, messageId]);
+  }, [url, pageId, openCanvas, title, messageId]);
 
   const renderCodeBlock = useCallback(
     () => (

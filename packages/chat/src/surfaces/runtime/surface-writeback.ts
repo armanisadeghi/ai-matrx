@@ -123,6 +123,7 @@ function resolveHandlers(
 function splitHandler(entry: SurfaceWriteHandler | undefined): {
   validate?: (value: unknown) => void | Promise<void>;
   apply: SurfaceWriteApply;
+  readCurrent?: () => Promise<string | null>;
 } | null {
   if (!entry) return null;
   if (typeof entry === "function") return { apply: entry };
@@ -132,9 +133,25 @@ function splitHandler(entry: SurfaceWriteHandler | undefined): {
       ...(typeof entry.validate === "function"
         ? { validate: entry.validate }
         : {}),
+      ...(typeof entry.readCurrent === "function"
+        ? { readCurrent: entry.readCurrent }
+        : {}),
     };
   }
   return null;
+}
+
+/**
+ * The handler's own live reader of the text a target replaces, when it has
+ * one (`SurfaceWriteHandlerEntry.readCurrent`) — a target whose read twin is a
+ * reference rather than text. Null means "read the scope value as usual".
+ */
+function handlerTextReader(
+  target: SurfaceWriteTarget,
+  runtime: SurfaceRuntimeValue,
+  registry: SurfaceRegistry,
+): (() => Promise<string | null>) | null {
+  return splitHandler(resolveHandlers(runtime, registry)[target.name])?.readCurrent ?? null;
 }
 
 /**
@@ -244,11 +261,21 @@ function sameValue(a: unknown, b: unknown): boolean {
 async function readPageValueBeforeWrite(
   target: SurfaceWriteTarget,
   runtime: SurfaceRuntimeValue,
+  readCurrent?: (() => Promise<string | null>) | null,
 ): Promise<BeforeRead> {
   const key = target.updatesValue;
   if (!key) return NOT_READ;
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
+    if (readCurrent) {
+      const text = await Promise.race([
+        readCurrent(),
+        new Promise<typeof NOT_READ>((resolve) => {
+          timer = setTimeout(() => resolve(NOT_READ), BEFORE_READ_TIMEOUT_MS);
+        }),
+      ]);
+      return text === NOT_READ ? NOT_READ : { value: text };
+    }
     const scope = await Promise.race([
       Promise.resolve(runtime.getScope()),
       new Promise<typeof NOT_READ>((resolve) => {
@@ -774,7 +801,8 @@ async function agentWriteAllowed(
   const compareText =
     originalName !== undefined &&
     (originalDefinition?.valueType === "string" ||
-      originalDefinition?.valueType === "document") &&
+      originalDefinition?.valueType === "document" ||
+      handlerTextReader(target, runtime, registry) !== null) &&
     typeof value === "string" &&
     !/^(append|insert)/.test(target.name);
   let currentValue: string | null | undefined;
@@ -783,6 +811,8 @@ async function agentWriteAllowed(
   ): Promise<string | null> {
     if (!originalName)
       throw new Error("The original text source is not declared.");
+    const reader = handlerTextReader(target, from, registry);
+    if (reader) return reader();
     const scope = await from.getScope();
     const current = scope[originalName];
     if (current !== null && typeof current !== "string") {
@@ -1027,6 +1057,7 @@ async function resolveTargetPatch(
   target: SurfaceWriteTarget,
   runtime: SurfaceRuntimeValue,
   patch: SurfaceWritePatch,
+  registry: SurfaceRegistry = getGlobalSurfaceRegistry(),
 ): Promise<
   | { ok: true; value: string; excerpt: { before: string; after: string } | null }
   | { ok: false; error: string }
@@ -1057,8 +1088,13 @@ async function resolveTargetPatch(
   }
   let current: unknown;
   try {
-    const scope = await runtime.getScope();
-    current = scope[sourceName];
+    const reader = handlerTextReader(target, runtime, registry);
+    if (reader) {
+      current = await reader();
+    } else {
+      const scope = await runtime.getScope();
+      current = scope[sourceName];
+    }
   } catch (error) {
     return {
       ok: false,
@@ -1178,7 +1214,7 @@ async function applySurfaceWriteNow(
     let value: unknown = rawValue;
     let patchExcerpt: SurfaceWriteApprovalProposal["patch"];
     if (isSurfaceWritePatch(rawValue)) {
-      const resolved = await resolveTargetPatch(target, runtime, rawValue);
+      const resolved = await resolveTargetPatch(target, runtime, rawValue, registry);
       if (!resolved.ok) {
         return failPatch(resolved.error, {
           targetName: target.name,
@@ -1243,7 +1279,7 @@ async function applySurfaceWriteNow(
       if (isSurfaceWritePatch(rawValue)) {
         const patchValue = rawValue;
         atApply.resolvePatch = (live) =>
-          resolveTargetPatch(target, live, patchValue);
+          resolveTargetPatch(target, live, patchValue, registry);
       }
       // Returns `true` to proceed, or the exact result to hand back (already
       // reported for a refusal, deliberately silent for a decline).
@@ -1295,15 +1331,22 @@ async function applySurfaceWriteNow(
       }
 
       // Read the receipt after approval and current page validation.
-      const before = await readPageValueBeforeWrite(target, applyRuntime);
+      const before = await readPageValueBeforeWrite(
+        target,
+        applyRuntime,
+        currentHandler.readCurrent,
+      );
       const outcome = toWriteOutcome(await currentHandler.apply(value));
       // Hold the queue until the page shows this write, so a queued sibling
       // edit resolves against the new text, never the pre-write text.
       const textSource = target.comparisonValue ?? target.updatesValue;
+      // A target read through its handler (a reference, not a scope value)
+      // has persisted by the time `apply` returns — its next read is fresh.
       if (
         (opts?.origin ?? "user") === "agent" &&
         textSource &&
-        typeof value === "string"
+        typeof value === "string" &&
+        !currentHandler.readCurrent
       ) {
         await awaitPageShows(registry, applyRuntime, textSource, value);
       }

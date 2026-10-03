@@ -69,6 +69,15 @@ export type SurfaceWriteApply = (
 export interface SurfaceWriteHandlerEntry {
   validate?: (value: unknown) => void | Promise<void>;
   apply: SurfaceWriteApply;
+  /**
+   * The CURRENT text this target replaces, read live, for a target whose read
+   * twin is a REFERENCE the page does not hold the body of (a canvas tab
+   * showing a published page). When present it is the text an anchored edit
+   * resolves against, the "before" of the approval diff and the receipt —
+   * instead of `scope[comparisonValue ?? updatesValue]`, so the page never has
+   * to ship a record's body as a value just to make it editable.
+   */
+  readCurrent?: () => Promise<string | null>;
 }
 
 /** A plain apply function, or `{ validate?, apply }`. */

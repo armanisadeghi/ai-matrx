@@ -62,6 +62,29 @@ export function htmlPageUrl(pageId: string): string {
   return `${HTML_SITE_URL}/p/${pageId}`;
 }
 
+const UUID_PATH = /^\/p\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i;
+
+/**
+ * The inverse of `htmlPageUrl`: the `html_pages.id` a published page URL names,
+ * or null when the URL is not a page on the HTML site. Lets an item opened
+ * before it carried its page id (a canvas tab holding only the URL) still be
+ * referenced as the page it shows.
+ */
+export function htmlPageIdFromUrl(url: unknown): string | null {
+  if (typeof url !== "string" || !url.trim()) return null;
+  let parsed: URL;
+  let site: URL;
+  try {
+    parsed = new URL(url);
+    site = new URL(HTML_SITE_URL);
+  } catch {
+    return null;
+  }
+  if (parsed.host !== site.host) return null;
+  const match = UUID_PATH.exec(parsed.pathname);
+  return match ? match[1].toLowerCase() : null;
+}
+
 export interface ClientPageRouteParams {
   slug: string;
   /** `client_pages.category`. The column DEFAULT is `'general'`, which means "no category". */

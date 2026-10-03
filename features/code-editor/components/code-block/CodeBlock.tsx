@@ -203,6 +203,7 @@ const CodeBlockBody: React.FC<CodeBlockProps> = ({
         data: result.url,
         metadata: {
           title: "HTML Preview",
+          htmlPageId: result.pageId,
         },
       });
     } catch (error) {

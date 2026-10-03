@@ -61,7 +61,7 @@ import {
   titleToString,
   type CanvasContentType,
 } from "@/features/canvas/canvasContent";
-import { canvasTypeHasSource } from "@/features/canvas/core/canvasSource";
+import { canvasContentHasSource } from "@/features/canvas/core/canvasSource";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { artifactKey, contentOf, readArtifactItemData, type ArtifactItemData } from "./artifactItem";
 import { openArtifactPanel, toggleArtifactPanel, useArtifactPanel } from "./artifactPanels";
@@ -125,8 +125,7 @@ function ArtifactHeaderAction({ item, canvas }: CanvasKindProps) {
   const panel = useArtifactPanel(item.id);
   const data = readArtifactItemData(item.data);
   if (!data) return null;
-  const type = contentOf(data).type;
-  const hasSource = canvasTypeHasSource(type);
+  const hasSource = canvasContentHasSource(contentOf(data));
   const showingSource = data.view === "source";
   return (
     <>

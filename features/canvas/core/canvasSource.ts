@@ -35,6 +35,7 @@ import {
   kindValueToMarkdown,
 } from "@/features/canvas/export/exportArtifactMarkdown";
 import { isJsonObject } from "@/types/json";
+import { htmlPageIdFromUrl } from "@/features/cms/utils/pageUrls";
 
 /** The source text plus the language a viewer should highlight it as. */
 export interface CanvasSourceText {
@@ -45,9 +46,33 @@ export interface CanvasSourceText {
 
 /**
  * Passthrough surfaces: the canvas shows someone else's rendering (a remote
- * page, a bitmap). There is no authored text behind them.
+ * page, a bitmap). There is no authored text behind them — EXCEPT an `iframe`
+ * showing one of the person's own published HTML pages, whose source is the
+ * page's document (`htmlPageIdOf`; read by `CanvasSourceView`). Classing every
+ * iframe as sourceless is what told the agent, and the person, that a page
+ * they had just published had no body (owner report 2026-10-03).
  */
 const PASSTHROUGH_TYPES: ReadonlySet<string> = new Set(["image", "iframe"]);
+
+/**
+ * The `html_pages.id` an item shows, or null. Synchronous — the id rides on the
+ * item (`metadata.htmlPageId`) or in its `/p/<id>` URL — so the header can
+ * decide whether `Source` exists without waiting on any read.
+ */
+export function htmlPageIdOf(content: CanvasContent): string | null {
+  const stored = content.metadata?.htmlPageId;
+  if (typeof stored === "string" && stored.trim()) return stored.trim();
+  return content.type === "iframe" ? htmlPageIdFromUrl(content.data) : null;
+}
+
+/**
+ * Does this ITEM offer a `Source` view? The type rule (`canvasTypeHasSource`)
+ * plus the one item-level case: an iframe that shows a published HTML page.
+ */
+export function canvasContentHasSource(content: CanvasContent): boolean {
+  if (htmlPageIdOf(content)) return true;
+  return canvasTypeHasSource(content.type);
+}
 
 /**
  * NON_PERSISTABLE pointer types that nevertheless have a REAL authored source

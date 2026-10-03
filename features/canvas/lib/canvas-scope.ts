@@ -5,8 +5,9 @@
  *
  * Turns the canvas's live state into the declared surface payload. It
  * lives beside the feature (not in the manifest) because the derivation is
- * real work: resolving the DURABLE `canvas_items` id out of two places it can
- * hang, and flattening possibly-ReactNode titles to plain text.
+ * real work: resolving the RECORD each item shows (a published page, a saved
+ * canvas artifact) into a labeled reference, and flattening possibly-ReactNode
+ * titles to plain text. Tab ids never leave the canvas.
  *
  * Everything here describes the PANE and the open item. Nothing reaches
  * inside an artifact renderer — that content belongs to the artifact's own
@@ -19,13 +20,18 @@ import {
 } from "@/features/surfaces/manifests/canvas.manifest";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
+  canvasItemRecord,
+  canvasItemReference,
+  type CanvasItemReference,
+} from "@/features/canvas/lib/canvas-item-reference";
+import {
   titleToString,
   type CanvasContent,
 } from "@/features/canvas/canvasContent";
 
 /** One open canvas tab, as the scope sees it. */
 export interface CanvasScopeItem {
-  /** The tab's identity on the canvas. */
+  /** The tab's identity on the canvas (session only — never sent to agents). */
   id: string;
   content: CanvasContent;
   /** canvas_items.id once the tab was saved. */
@@ -36,20 +42,18 @@ export type CanvasRenderMode = "inline" | "global" | "auto";
 
 type CanvasItem = CanvasScopeItem;
 
-/**
- * The durable `canvas_items` UUID for an open item, or undefined while the
- * item is session-only. It can hang off either `savedItemId` (set by
- * `openArtifactInCanvas` / after a save) or `metadata.canvasItemId` (set when
- * a materialized artifact is opened), so both are checked.
- */
-function resolveCanvasId(item: CanvasItem): string | undefined {
-  const id = item.savedItemId ?? item.content.metadata?.canvasItemId;
-  return typeof id === "string" && id.trim() ? id : undefined;
-}
-
 /** Plain-text title, or "" when the item carries none. */
 function resolveTitle(item: CanvasItem): string {
   return titleToString(item.content.metadata?.title);
+}
+
+/**
+ * The item as a labeled reference to the record it shows, or undefined while
+ * it is session-only. This — never the tab id — is how agents name an item.
+ */
+export function referenceFor(item: CanvasItem): CanvasItemReference | undefined {
+  const record = canvasItemRecord(item.content, item.savedItemId);
+  return record ? canvasItemReference(record, resolveTitle(item)) : undefined;
 }
 
 export interface BuildCanvasScopeInput {
@@ -84,41 +88,45 @@ export function buildCanvasScope(
 
   if (!currentItem) return {} as SurfaceScopePayload;
 
-  const openItems: CanvasOpenItemSummary[] = items.map((item) => ({
-    session_id: item.id,
-    canvas_id: resolveCanvasId(item),
-    type: item.content.type,
-    title: resolveTitle(item),
-  }));
+  const openItems: CanvasOpenItemSummary[] = items.map((item) => {
+    const reference = referenceFor(item);
+    return {
+      title: resolveTitle(item),
+      type: item.content.type,
+      is_current: item.id === currentItem.id,
+      ...(reference ? { item: reference } : {}),
+    };
+  });
 
   const secondaryItem = secondaryItemId
     ? (items.find((item) => item.id === secondaryItemId) ?? null)
     : null;
 
-  // Only a real object payload is emitted — a materialized artifact's `data`
-  // is the pointer `{ artifactId }`, which is honest and declared as such.
+  const currentReference = referenceFor(currentItem);
+
+  // A session-only item has no record to reference; its own object payload is
+  // all there is, so it is sent as itself. An item WITH a record is never sent
+  // as its payload (for a saved artifact that is only a pointer).
   const data = currentItem.content.data;
   const canvasJson =
-    data && typeof data === "object" && !Array.isArray(data)
+    !currentReference && data && typeof data === "object" && !Array.isArray(data)
       ? (data as Record<string, unknown>)
       : undefined;
 
-  const currentCanvasId = resolveCanvasId(currentItem);
   const title = resolveTitle(currentItem);
+  const secondaryReference = secondaryItem ? referenceFor(secondaryItem) : undefined;
 
   return createCanvasScope({
-    current_canvas_id: currentCanvasId,
+    current_canvas_item: currentReference,
     current_canvas_type: currentItem.content.type,
     current_canvas_title: title || undefined,
-    current_canvas_is_saved: !!currentCanvasId,
+    current_canvas_is_saved: !!currentReference,
     canvas_json: canvasJson,
 
     open_items: openItems,
     item_count: items.length,
     is_split: isSplit,
-    secondary_canvas_id: secondaryItem
-      ? resolveCanvasId(secondaryItem)
-      : undefined,
+    secondary_canvas_item: secondaryReference,
     render_mode: renderMode,
   });
 }
