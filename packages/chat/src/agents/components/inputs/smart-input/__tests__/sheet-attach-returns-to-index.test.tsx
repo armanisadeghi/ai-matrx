@@ -24,7 +24,7 @@ describe("phone sheet: Attach returns to Chat options", () => {
     expect(picker).toMatch(/selectionMode === "single"\) finishPick\(\);/);
     expect(picker).toMatch(/appendConversationReference\([\s\S]{0,200}\);\s*finishPick\(\);/);
     // Leaving: knowledge bar opens after the sheet closes.
-    expect(picker).toMatch(/onClose\(\);\s*openKnowledgeBar\(/);
+    expect(picker).toMatch(/onClose\(\);\s*openAttachSearch\(/);
   });
 
   it("the sheet hands showIndex to the Attach picker as onPicked, never onClose", () => {
