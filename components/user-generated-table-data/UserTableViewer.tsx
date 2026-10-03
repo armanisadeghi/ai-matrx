@@ -2476,6 +2476,10 @@ const UserTableViewer = ({
   // The rows on screen NOW (after filters, sort and the page), read when an edit settles (lane
   // DATA-V2-BASICS: an edit keeps the view true).
   const shownNow = useLatest(displayRows);
+  // Whether a cell is open / a new row is taking keys, read by the view's settling (set below, where
+  // the grid and the inline row exist).
+  const sheetEditingNow = useSlot(false);
+  const sheetAddingRowNow = useSlot(false);
   const formulaErrors = computedPage.errors;
   // Formula AND system columns (Created / Last modified time): everything the
   // table fills in itself, which every write path below must skip.
@@ -2619,6 +2623,14 @@ const UserTableViewer = ({
   });
 
   const settleTheView = useEffectEvent(async () => {
+    // NEVER MOVE A ROW OUT FROM UNDER SOMEONE TYPING (grids review 3; Airtable holds a sorted row in
+    // place until you leave it). Measured on the clone: "+ Row", then fast Tab-typing on a table sorted
+    // by Title — the Title's re-sort re-read the page 250 ms later, mid-row, and every value after it
+    // was lost. While a cell is open or a new row is taking its keys, the view waits and settles after.
+    if (sheetEditingNow.get() || sheetAddingRowNow.get()) {
+      setTimeout(() => void settleTheView(), 250);
+      return;
+    }
     const edited: EditedCell[] = viewEdits.map(({ rowId, fieldName }) => ({ rowId, fieldName }));
     const labelOf = new Map(viewEdits.map((cell) => [cell.rowId, cell.label] as const));
     const mine = viewEdits.some((cell) => cell.mine);
@@ -3476,6 +3488,9 @@ const UserTableViewer = ({
       action: { label: "Undo", onClick: () => void cellUndo.undoThis(handle) },
     });
   };
+
+  sheetEditingNow.set(grid.editing !== null);
+  sheetAddingRowNow.set(inlineNewRow.adding);
 
   const addRowInline = () => {
     if (isReadOnly) {
