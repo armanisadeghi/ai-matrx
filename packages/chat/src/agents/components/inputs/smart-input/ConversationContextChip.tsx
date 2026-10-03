@@ -22,7 +22,8 @@
  * chip's own popover; its full-view button then refuses aloud.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { Eye } from "lucide-react";
 import {
   ContextRulesChip,
   type ContextHierarchy,
@@ -253,6 +254,8 @@ export function ConversationContextChip({
   // row delivers. Until its definition is read, the chip shows the count and
   // claims no per-row delivery; it loads it now.
   const agentLayerKnown = useAppSelector((state) => agentContextLayerKnown(state, conversationId));
+  // False in the server HTML and during hydration, true on every client render after.
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const agentReadFailed = useAppSelector((state) => {
     const agentId = state.conversations.byConversationId[conversationId]?.agentId;
     return Boolean(agentId && state.agentDefinition.agents?.[agentId]?._error);
@@ -263,6 +266,27 @@ export function ConversationContextChip({
 
   // Nothing to show and no page to switch: no chip at all (never "Context 0").
   if (!surfaceName && rows.length === 0) return null;
+
+  // THE HYDRATION FRAME. The rows are read from slices the browser fills
+  // before this boundary hydrates — the active organization rehydrates from
+  // storage (appContextPolicy), so the client holds an "Organization" row the
+  // server never had — and the count then differed from the server HTML
+  // ("4 included" vs "5 included": a hydration error on every /chat/new
+  // reload). Until hydration ends the chip renders the same face with its
+  // number held empty; the real chip follows on the next client render.
+  if (!hydrated) {
+    const name = valueGroupName(surfaceName);
+    return (
+      <span
+        aria-hidden
+        className="relative inline-flex h-6 min-w-0 shrink items-center gap-1 rounded-md border border-border bg-card px-1.5 text-xs font-medium text-foreground"
+      >
+        <Eye className="h-3 w-3 shrink-0" />
+        {name ? <span className="min-w-0 truncate">{name}</span> : null}
+        <span className="invisible shrink-0 tabular-nums">0</span>
+      </span>
+    );
+  }
 
   if (!agentLayerKnown) {
     const name = valueGroupName(surfaceName);
@@ -321,3 +345,5 @@ export function ConversationContextChip({
     />
   );
 }
+
+const noopSubscribe = () => () => {};

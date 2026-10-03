@@ -170,6 +170,8 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-10-03** — The value-group chip renders a numberless frame in the server HTML and during hydration, then the real chip: its rows read the active organization the browser rehydrates from storage before the composer's Suspense boundary hydrates, so `/chat/new` threw a hydration error on every reload ("4 included" server vs "5 included" client).
+
 - **2026-10-01** — Attachments and the value-group chip share one row (attachments left, chip far right); the chip and the sent-message badge never show the word "Context". Needs `@ai-matrx/agents` ≥ 0.29.0 for the compact face.
 
 - **2026-10-01** — Phone sheet: Attach tab content is a render function; a pick (note, file, chat) calls `showIndex` through `RunControlsTabPanel` `onPicked`, returning to Chat options instead of closing the sheet (PB-08). Needs `@ai-matrx/design-system` > 0.50.0. Guard: `smart-input/__tests__/sheet-attach-returns-to-index.test.tsx`.
