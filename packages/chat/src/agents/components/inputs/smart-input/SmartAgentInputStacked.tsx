@@ -312,6 +312,8 @@ export function SmartAgentInputStacked({
         )}
         data-composer-size={composer.size}
         data-composer-mode={composer.mode}
+        // The floating assists control never rests on any of the composer's controls.
+        data-assist-dock-avoid=""
       >
         {composerShows(composer.mode, "chips.row") ? (
           <ComposerChipsRow conversationId={conversationId} mode={composer.mode} menuSide={menuSide} />

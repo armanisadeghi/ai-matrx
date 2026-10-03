@@ -182,7 +182,15 @@ const ATTENTION_DOCK_SELECTOR =
 // These controls must stay clickable even when a disabled child is wrapped by
 // a tooltip: hit-testing sees the wrapper first, so they also participate by
 // their visible geometry.
-const GEOMETRY_AVOIDANCE_SELECTOR = `[data-matrx-table-footer], ${ATTENTION_DOCK_SELECTOR}`;
+//
+// A COMPOSER IS NEVER COVERED (2026-10-02): the dock rested on the chat
+// composer's context chip — a small control between the nine hit-test samples,
+// over a card that is not itself interactive — until it was dismissed. Every
+// agent input shell (`data-agent-input-shell`, both layouts) and anything that
+// declares `data-assist-dock-avoid` (the stacked composer's whole column: chips
+// row, card, pills) is avoided by its box, so the dock lifts clear of all of it.
+const COMPOSER_AVOIDANCE_SELECTOR = "[data-agent-input-shell], [data-assist-dock-avoid]";
+const GEOMETRY_AVOIDANCE_SELECTOR = `[data-matrx-table-footer], ${ATTENTION_DOCK_SELECTOR}, ${COMPOSER_AVOIDANCE_SELECTOR}`;
 
 export interface DockRect {
   top: number;
