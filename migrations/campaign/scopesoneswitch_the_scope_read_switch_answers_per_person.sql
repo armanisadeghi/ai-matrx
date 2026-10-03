@@ -1,5 +1,4 @@
--- target: branch,production
--- additive: yes
+-- chair-step: opens the scope read switch's register row to the organization and user rungs (overridable_by) so one person or one organization can see the store path with no rebuild; the platform value stays false, so nobody's path changes; inverse in migrations/inverse/.
 --
 -- SCOPES-ON-THE-STORE, builder E — ONE SWITCH, ANSWERED PER PERSON (lane 9, 2026-10-02).
 --
