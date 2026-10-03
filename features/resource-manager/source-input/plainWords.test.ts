@@ -37,5 +37,3 @@ it("the Files picker's filter bar says plain words at a readable size", () => {
   expect(select).toMatch(/text-sm/);
   expect(select).not.toMatch(/text-\[(9|10|11)px\]/);
 });
-  expect(bar).not.toMatch(/text-\[(9|10|11)px\]/);
-});
