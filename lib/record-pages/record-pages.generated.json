@@ -13,7 +13,8 @@
   "route.manifestRowWithoutFile": 14,
   "table.pending": 241,
   "table.noncanonical": 26,
-  "table.set": 2
+  "table.set": 1,
+  "table.none": 1
  },
  "tokens": [
   "agent",
@@ -6346,6 +6347,6 @@
   "features/window-panels/windows/admin/user-search/UserSearchWindow.tsx": "pending",
   "features/workflow-runtime/components/ReadoutView.tsx": "pending",
   "features/workflow-runtime/discovery/components/RunsList.tsx": "pending",
-  "lib/entity-list/components/EntityListTable.tsx": "set"
+  "lib/entity-list/components/EntityListTable.tsx": "none — EntityListPage adds the custom-field columns to the list config itself, so its one picker offers them"
  }
 }

@@ -38,7 +38,8 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { useListSearchParams } from "../useListSearchParams";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
-import { defaultHiddenColumns } from "../columns";
+import { defaultHiddenColumns, type EntityColumnSpec } from "../columns";
+import { useTableCustomFieldColumns } from "@/features/unified-data/standard-field-columns/useTableCustomFieldColumns";
 import {
   makeScope,
   PERSONAL_SEAT_SCOPES,
@@ -228,6 +229,9 @@ function listRows(pane: HTMLElement): HTMLElement[] {
   return rows;
 }
 
+/** No organizations yet: one stable empty answer, so the column source does not re-ask. */
+const NO_ORGANIZATIONS: readonly string[] = [];
+
 export function EntityListPage<TRow>({
   config,
   notice,
@@ -404,7 +408,37 @@ export function EntityListPage<TRow>({
     list.query.scope.kind === "mine"
       ? config.columns.filter((c) => c.scopedToShared).map((c) => c.id)
       : [];
+  // 🚨 LANE 7 W5 — CUSTOM FIELDS ON EVERY LIST. The organization's own fields of this list's
+  // token (its `door.token`) join the column registry, for the organizations its rows belong to:
+  // the ONE picker offers them, they start hidden (auto-hidden, so a column the person shows stays
+  // shown), and the table draws them. Same column source as the table host's port.
+  const customFieldToken =
+    config.registryToken ?? (typeof config.door?.token === "string" ? config.door.token : null);
+  const customFieldOrgKey = [
+    ...new Set(
+      list.rows
+        .map((row) => (row as { organization_id?: unknown }).organization_id)
+        .filter((org): org is string => typeof org === "string" && org.length > 0),
+    ),
+  ]
+    .sort()
+    .join(",");
+  const customFieldSource = useTableCustomFieldColumns<TRow>(
+    customFieldToken,
+    customFieldOrgKey ? customFieldOrgKey.split(",") : NO_ORGANIZATIONS,
+  );
+  const customFieldSpecs: EntityColumnSpec<TRow>[] = (customFieldSource?.columns ?? [])
+    .filter((column) => column.id && !config.columns.some((c) => c.id === column.id))
+    .map((column) => ({
+      id: column.id as string,
+      label: column.label ?? (typeof column.header === "string" ? column.header : (column.id as string)),
+      column,
+    }));
+  const pageConfig: EntityListConfig<TRow> = customFieldSpecs.length
+    ? { ...config, columns: [...config.columns, ...customFieldSpecs] }
+    : config;
   const autoHidden = [
+    ...customFieldSpecs.map((c) => c.id),
     ...(config.autoHideUniformColumns
       ? uniformColumnIds(config.columns, list.rows, [entityListDoorColumnId(config)], {
           complete: list.query.page <= 1 && list.total <= list.rows.length,
@@ -425,7 +459,7 @@ export function EntityListPage<TRow>({
   // the table's echo of its hidden set is stripped of them before it can be stored.
   const phoneWidth = usePhoneWidth();
   const [listWidth, setListWidth] = useState<number | null>(null);
-  const noRoom = columnsWithoutRoom(config.columns, hiddenColumns, phoneWidth ? null : listWidth);
+  const noRoom = columnsWithoutRoom(pageConfig.columns, hiddenColumns, phoneWidth ? null : listWidth);
   const tableHiddenColumns = noRoom.length > 0 ? [...hiddenColumns, ...noRoom] : hiddenColumns;
   const setHiddenFromTable = (next: string[]) =>
     setHiddenColumns(next.filter((id) => !noRoom.includes(id)));
@@ -1095,7 +1129,7 @@ export function EntityListPage<TRow>({
             // The picker offers the one column set of every lane (fix D).
             showSharedColumns
             noRoomColumns={noRoom}
-            columns={config.columns}
+            columns={pageConfig.columns}
             defaultHidden={defaultHidden}
             facetSections={config.facetSections}
             // The panel narrows the SCOPE through the same setter and the same
@@ -1297,7 +1331,7 @@ export function EntityListPage<TRow>({
 
         {config.filterChips && (
           <EntityFilterChips
-            columns={config.columns}
+            columns={pageConfig.columns}
             filters={list.query.filters}
             toggles={config.searchToggles}
             onFiltersChange={list.setFilters}
@@ -1418,7 +1452,7 @@ export function EntityListPage<TRow>({
           <div data-entity-list-table-pane="" className={footer ? "flex h-[max(16rem,calc(100dvh-var(--entity-list-body-top,9rem)))] shrink-0 flex-col" : "contents"}>
           {/* read-gate-exempt: a failed read swaps resolvedEmptyState for failureEmptyState, and the alert above names the failure once */}
           <EntityListTable
-            config={config}
+            config={pageConfig}
             actions={actions}
             rows={list.rows}
             // read-gate-exempt: totalUnknown below tells the table the read failed, and it prints no row count then
