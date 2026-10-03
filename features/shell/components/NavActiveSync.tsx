@@ -26,7 +26,6 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 import { isDomainPanelPath } from "@/features/shell/constants/route-menu-registry";
 import {
   SHELL_DOMAIN_PANEL_COOKIE,
@@ -45,11 +44,6 @@ function syncNav() {
   if (!root) return;
 
   root.dataset.pathname = pathname;
-  if (isUserSettingsPath(pathname)) {
-    root.setAttribute("data-settings-route", "");
-  } else {
-    root.removeAttribute("data-settings-route");
-  }
   // Crossing into or out of a domain-panel family hands the sidebar checkbox
   // to the other remembered state (the panel's, or the main sidebar's).
   const panel = isDomainPanelPath(pathname);

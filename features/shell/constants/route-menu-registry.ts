@@ -65,6 +65,7 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     pathPattern: USER_SETTINGS_PATH_PATTERN,
     iconName: "Settings",
     label: "Settings",
+    layout: "panel",
     importFn: () => import("@/features/settings/route-menu/SettingsRouteMenu"),
   },
   {

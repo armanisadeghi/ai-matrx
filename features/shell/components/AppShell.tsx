@@ -40,7 +40,6 @@ import type { BaseReduxState } from "@/types/reduxTypes";
 // CJS flag — also read by next.config.js to alias Sidebar/etc. to stubs.
 import { FORCE_EXCLUDE_SIDEMENU } from "@/features/shell/build-flags.js";
 import { SettingsRouteProvider } from "@/features/settings/route-shell/SettingsRouteProvider";
-import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 import { isDomainPanelPath } from "@/features/shell/constants/route-menu-registry";
 
 interface AppShellProps {
@@ -65,7 +64,6 @@ export default async function AppShell({
   pathname,
   sidebarExpanded,
 }: AppShellProps) {
-  const settingsRoute = isUserSettingsPath(pathname);
   // The chat dock's first paint is the person's own remembered choice for this
   // page family (null = not chosen yet → the dock applies the wide-screen default).
   const cookieStore = await cookies();
@@ -93,7 +91,6 @@ export default async function AppShell({
           className="shell-root"
           data-pathname={pathname}
           {...shellChromeAttributes(pathname, isAuthenticated)}
-          {...(settingsRoute ? { "data-settings-route": "" } : {})}
           {...(domainPanel ? { "data-domain-panel": "" } : {})}
           style={chatReserved ? ({ "--shell-chat-w": `${chatWidth}px` } as React.CSSProperties) : undefined}
           {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}

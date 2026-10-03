@@ -26,7 +26,5 @@ describe("the sidebar reserves the account block", () => {
 
   it("never leaves the reservation on the footer alone, which a route can hide", () => {
     expect(css).not.toMatch(/\.shell-sidebar-footer\s*\{\s*padding-bottom:\s*calc\(var\(--shell-user-block-h\)/);
-    // The route that hides it still does — which is exactly why the footer cannot hold it.
-    expect(css).toMatch(/\[data-settings-route\] \.shell-sidebar-footer\s*\{\s*display:\s*none;/);
   });
 });

@@ -1070,56 +1070,6 @@ button.shell-nav-flyout-item {
   flex: 1;
 }
 
-/* Settings is a full navigation surface on desktop. Its route gate forces the
-   complete sidebar presentation without changing the saved checkbox value, so
-   leaving Settings restores the user's usual expanded/collapsed preference. */
-@media (min-width: 1024px) {
-  .shell-root[data-settings-route],
-  .shell-root[data-settings-route]:has(> #shell-sidebar-toggle:checked) {
-    grid-template-columns: calc(15rem + var(--shell-chat-w, 0px)) 1fr;
-  }
-
-  .shell-root[data-settings-route] .shell-sidebar,
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ .shell-sidebar,
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ * .shell-sidebar {
-    width: 15rem;
-    background: var(--shell-sidebar-bg-expanded);
-    border-right-color: var(--shell-sidebar-border-expanded);
-  }
-
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:not(:checked) ~ .shell-nav-item,
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:not(:checked) ~ * .shell-nav-item {
-    gap: 0.75rem;
-  }
-
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ :is(.shell-nav-label, .shell-sidebar-switch-label),
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ * :is(.shell-nav-label, .shell-sidebar-switch-label),
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:not(:checked) ~ :is(.shell-nav-label, .shell-sidebar-switch-label),
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:not(:checked) ~ * :is(.shell-nav-label, .shell-sidebar-switch-label) {
-    width: auto;
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
-  }
-
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:not(:checked) ~ .shell-sidebar-switch,
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:not(:checked) ~ * .shell-sidebar-switch {
-    justify-content: flex-start;
-  }
-
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:not(:checked) ~ .shell-sidebar-brand-logo,
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:not(:checked) ~ * .shell-sidebar-brand-logo {
-    width: auto;
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
-  }
-
-  .shell-root[data-settings-route] .shell-sidebar-footer {
-    display: none;
-  }
-}
-
 /* THE DOMAIN PANEL (owner, 2026-10-01). On a family whose route menu is a
    panel (`layout: "panel"` in route-menu-registry), the main menu stays the
    icon strip and the domain's own menu sits beside it — never in its place.
@@ -1229,22 +1179,6 @@ button.shell-nav-flyout-item {
   display: none;
 }
 
-.shell-sidebar-settings-home {
-  display: none;
-  min-width: 0;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--shell-nav-text);
-  text-decoration: none;
-}
-
-.shell-root[data-settings-route] .shell-sidebar-settings-home {
-  display: flex;
-}
-
-.shell-root[data-settings-route] .shell-sidebar-brand-toggle-control {
-  display: none;
-}
 
 .shell-sidebar-brand-toggle-static {
   cursor: default;
@@ -2827,11 +2761,6 @@ html[data-board-embed] .shell-main {
   left: var(--shell-sidebar-w-expanded);
 }
 
-.shell-root[data-settings-route] .shell-chat-dock,
-.shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ .shell-chat-dock {
-  left: 15rem;
-}
-
 /* Layouts with no sidebar column leave the dock no room: it stands aside. */
 .shell-root[data-no-sidebar] .shell-chat-dock,
 .shell-root[data-no-sidebar] .shell-chat-toggle,
@@ -2875,11 +2804,6 @@ html[data-board-embed] .shell-main {
 
   .shell-root > #shell-sidebar-toggle:checked ~ * .shell-chat-toggle {
     left: calc(var(--shell-sidebar-w-expanded) + var(--shell-chat-toggle-x));
-  }
-
-  .shell-root[data-settings-route] .shell-chat-toggle,
-  .shell-root[data-settings-route] > #shell-sidebar-toggle:checked ~ * .shell-chat-toggle {
-    left: calc(15rem + var(--shell-chat-toggle-x));
   }
 
   .shell-root[data-shell-chat-available] .shell-header {
