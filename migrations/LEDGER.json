@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T08:14:22.541Z",
+  "generated_at": "2026-10-03T08:24:03.003Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -529,6 +529,24 @@
       "filename": "chairdoors3b_b_workflow_messages_have_a_text_rate_knob_and_an_email_price.sql",
       "checksum": "8ba68a12471f5d8b7d9224033c79a55571102e71b40d6d8cd121282870ebfba4",
       "applied_at": "2026-10-03 07:53:59.961956+00"
+    },
+    "migrations/campaign/chairdoors3b_c_a_form_or_a_booking_page_goes_to_trash_and_comes_back.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3b_c_a_form_or_a_booking_page_goes_to_trash_and_comes_back.sql",
+      "checksum": "12bfdc7968f9011ac887e8e1dcccf5b3e7d8f2555e722a9fbe3d27f3783ee98a",
+      "applied_at": "2026-10-03 08:22:22.918317+00"
+    },
+    "migrations/campaign/chairdoors3b_d_a_tables_row_defaults_reach_the_rows_nobody_set_by_hand.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3b_d_a_tables_row_defaults_reach_the_rows_nobody_set_by_hand.sql",
+      "checksum": "2b75bd029598d5e41b02a26d65c54057feac9d7b3270e81804bc9337f6055d76",
+      "applied_at": "2026-10-03 08:23:14.190472+00"
+    },
+    "migrations/campaign/chairdoors3b_e_an_organizations_tables_become_a_template_spec.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3b_e_an_organizations_tables_become_a_template_spec.sql",
+      "checksum": "78667b5dc144070f58d5aebe5002f8b3cf16a32228ed7cbcccbce9e3bd079ddc",
+      "applied_at": "2026-10-03 08:24:00.408907+00"
     },
     "migrations/campaign/chairrc_a_record_changed_carries_its_change.sql": {
       "source": "matrx-frontend",
