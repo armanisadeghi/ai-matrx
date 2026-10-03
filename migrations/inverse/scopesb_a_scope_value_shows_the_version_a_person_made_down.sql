@@ -2,6 +2,8 @@
 --   puts back the two door bodies of 2026-10-02 before lane 9 rulings 2 and 4 (custom.context_values answers
 --   the stamp's ver as `version`; custom.context_archived_types counts every archived row of a type).
 -- lane: SCOPES-ON-THE-STORE
+-- based-on: custom.context_values(uuid[]) 8c37b991ae3083c86d8603150a9d84836a1088af70918efe8d2a2a1452de2bda
+-- based-on: custom.context_archived_types(uuid) 675d78e780e1e242fd68f0af476803e88e34385a718e91a2b95268878a3f988a
 
 CREATE OR REPLACE FUNCTION custom.context_values(p_scope_ids uuid[])
  RETURNS jsonb
