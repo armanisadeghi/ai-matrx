@@ -642,7 +642,8 @@ export function DealsPage() {
           >
             <div className="flex h-full min-h-0 flex-col">
               <MatrxDataTable<DealListRow>
-                data={list.rows}
+                // Grouped, the table holds only a whole-result read: never a page grouped as if whole.
+                data={grouped && !list.isWhole ? [] : list.rows}
                 columns={[...columns, ...customColumns.columns, { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
                   <ItemMenu align="end" config={menuFor(row)}>
                     <button
@@ -656,7 +657,7 @@ export function DealsPage() {
                   </ItemMenu>
                 ) }]}
                 getRowId={(row) => row.id}
-                isLoading={list.isLoading}
+                isLoading={list.isLoading || (grouped && !list.isWhole)}
                 isFetching={list.isFetching}
                 zebra
                 pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}

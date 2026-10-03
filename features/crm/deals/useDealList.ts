@@ -32,6 +32,8 @@ export interface UseDealListResult {
   removeRow: (id: string) => void;
   /** Set when the whole-result read (`wholeResult`) stopped at the store's export ceiling. */
   ceiling: number | null;
+  /** The rows held are the WHOLE result (read with `wholeResult`), not one page. */
+  isWhole: boolean;
 }
 
 export function useDealList(
@@ -45,6 +47,8 @@ export function useDealList(
   const [rows, setRows] = useState<DealListRow[]>([]);
   const [total, setTotal] = useState(0);
   const [ceiling, setCeiling] = useState<number | null>(null);
+  // Whether the rows held are a whole-result read (the grouped view never groups a page).
+  const [isWhole, setIsWhole] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +75,7 @@ export function useDealList(
         setRows(page.rows);
         setTotal(page.total);
         setCeiling(page.ceiling);
+        setIsWhole(wholeResult);
         setIsLoading(false);
       } catch (e) {
         if (generationRef.current !== gen) return;
@@ -122,7 +127,8 @@ export function useDealList(
       patchRow,
       removeRow,
       ceiling,
+      isWhole,
     }),
-    [query, setQuery, rows, total, isLoading, isFetching, error, ctx, refresh, patchRow, removeRow, ceiling],
+    [query, setQuery, rows, total, isLoading, isFetching, error, ctx, refresh, patchRow, removeRow, ceiling, isWhole],
   );
 }

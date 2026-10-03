@@ -56,6 +56,8 @@ export interface UsePartyListResult {
    * stopped it: how many it read is `rows.length`, the true total is `total`.
    */
   ceiling: number | null;
+  /** The rows held are the WHOLE result (read with `wholeResult`), not one page. */
+  isWhole: boolean;
 }
 
 export function usePartyList(
@@ -79,6 +81,8 @@ export function usePartyList(
   const [rows, setRows] = useState<PartyListRow[]>([]);
   const [total, setTotal] = useState(0);
   const [ceiling, setCeiling] = useState<number | null>(null);
+  // Whether the rows held are a whole-result read (the grouped view never groups a page).
+  const [isWhole, setIsWhole] = useState(false);
   const [counts, setCounts] = useState<EntityScopeCounts>(EMPTY_SCOPE_COUNTS);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -128,6 +132,7 @@ export function usePartyList(
         setRows(page.rows);
         setTotal(page.total);
         setCeiling(page.ceiling);
+        setIsWhole(wholeResult);
         setCounts(scopeCounts);
         setIsLoading(false);
       } catch (e) {
@@ -190,6 +195,7 @@ export function usePartyList(
       patchRow,
       removeRow,
       ceiling,
+      isWhole,
     }),
     [
       query,
@@ -206,6 +212,7 @@ export function usePartyList(
       patchRow,
       removeRow,
       ceiling,
+      isWhole,
     ],
   );
 }

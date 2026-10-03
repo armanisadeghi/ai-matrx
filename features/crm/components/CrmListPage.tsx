@@ -1249,7 +1249,8 @@ export function CrmListPage({
           >
             <div className="flex h-full min-h-0 flex-col">
               <MatrxDataTable<PartyListRow>
-                data={list.rows}
+                // Grouped, the table holds only a whole-result read: never a page grouped as if whole.
+                data={grouped && !list.isWhole ? [] : list.rows}
                 columns={[...(tableColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
                   <ItemMenu config={menuFor(row)} align="end">
                     <button
@@ -1263,7 +1264,7 @@ export function CrmListPage({
                   </ItemMenu>
                 ) }]}
                 getRowId={(row) => row.id}
-                isLoading={list.isLoading}
+                isLoading={list.isLoading || (grouped && !list.isWhole)}
                 isFetching={list.isFetching}
                 zebra
                 pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
