@@ -26,6 +26,7 @@ import {
 import {
   readWholeResult,
   type WholeResult,
+  type WholeResultPurpose,
 } from "@/features/unified-data/standard-field-columns/wholeResult";
 import { announceRecordChange } from "@/lib/records/recordChanges";
 import { supabase } from "@/utils/supabase/client";
@@ -167,8 +168,10 @@ export async function fetchDealWholeResult(
   opts: DealSortOpts,
   ctx: CrmQueryContext,
   customFields: readonly StandardFieldColumn[] = [],
+  /** Export or grouped view — each reads under its own ceiling knob. */
+  purpose: WholeResultPurpose = "export",
 ): Promise<WholeResult<DealListRow>> {
-  return readWholeResult((from, to) => fetchDealRange(query, opts, ctx, customFields, from, to));
+  return readWholeResult((from, to) => fetchDealRange(query, opts, ctx, customFields, from, to), purpose);
 }
 
 async function fetchDealRange(

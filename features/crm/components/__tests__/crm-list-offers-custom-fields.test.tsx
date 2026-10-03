@@ -49,6 +49,9 @@ const MARISOL = {
   created_at: "2026-10-02T17:00:00Z",
 };
 
+/** The organizations the seat spans — 450 in the many-organizations case (the door reads 200 per call). */
+let ORGS: string[] = [CR];
+const acrossCalls: number[] = [];
 const pageCalls: { query: { filters: { custom?: Record<string, unknown> } }; fields: { key: string }[] }[] = [];
 
 jest.mock("next/navigation", () => ({
@@ -63,7 +66,7 @@ jest.mock("@/lib/toast", () => ({
   toastErrorAlreadyCaptured: () => undefined,
 }));
 jest.mock("@/features/crm/hooks/useCrmContext", () => ({
-  useCrmContext: () => ({ userId: "87a6e699-3622-4869-8843-d0867456c0dd", orgIds: [CR], orgNames: { [CR]: "Cedar Ridge Physical Therapy" } }),
+  useCrmContext: () => ({ userId: "87a6e699-3622-4869-8843-d0867456c0dd", orgIds: ORGS, orgNames: { [CR]: "Cedar Ridge Physical Therapy" } }),
 }));
 jest.mock("@/features/crm/service", () => ({
   fetchPartyPage: async (query: unknown, _opts: unknown, _ctx: unknown, fields: { key: string }[] = []) => {
@@ -84,7 +87,14 @@ jest.mock("@/features/crm/service", () => ({
 jest.mock("@ai-matrx/records/core", () => ({
   createRecordsClient: () => ({
     // ONE read across the list's organizations: Fields with their choices.
-    entityFieldsAcross: async () => ({
+    entityFieldsAcross: async ({ organization_ids }: { organization_ids: string[] }) => {
+      acrossCalls.push(organization_ids.length);
+      // The door's own cap, refused by name exactly as custom.entity_fields_across does.
+      if (organization_ids.length > 200) {
+        return { ok: false, error: { code: "invalid_input", message: `One read covers at most 200 organizations, and this asked for ${organization_ids.length}.` } };
+      }
+      if (!organization_ids.includes(CR)) return { ok: true, data: { fields: [], unavailable: [] } };
+      return {
       ok: true,
       data: {
         fields: [
@@ -96,7 +106,8 @@ jest.mock("@ai-matrx/records/core", () => ({
         ],
         unavailable: [],
       },
-    }),
+      };
+    },
     entityFields: async () => ({
       ok: true,
       data: [{ id: "f68a3998", key: "home_clinic", label: "Home clinic", type: "list", sensitivity: "internal", config: { options_table_id: "ce3b0c0c" } }],
@@ -164,6 +175,7 @@ async function settle(ms = 400) {
 
 beforeEach(async () => {
   pageCalls.length = 0;
+  acrossCalls.length = 0;
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -218,5 +230,18 @@ describe("the CRM people list offers custom fields as columns", () => {
     await settle(800);
     const custom = pageCalls.at(-1)?.query.filters.custom as Record<string, { values?: string[] }> | undefined;
     expect(custom?.home_clinic?.values).toEqual(["westside"]);
+  });
+});
+
+describe("a person in more organizations than one fields read covers", () => {
+  beforeAll(() => {
+    ORGS = [...Array.from({ length: 449 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`), CR];
+  });
+  afterAll(() => {
+    ORGS = [CR];
+  });
+  it("reads the fields in pages of 200 and still shows the column", () => {
+    expect(acrossCalls).toEqual([200, 200, 50]);
+    expect(byLabel("Sort or filter Home clinic")).not.toBeNull();
   });
 });

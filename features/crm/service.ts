@@ -90,6 +90,7 @@ import {
 import {
   readWholeResult,
   type WholeResult,
+  type WholeResultPurpose,
 } from "@/features/unified-data/standard-field-columns/wholeResult";
 import { announceRecordChange } from "@/lib/records/recordChanges";
 export { normalizeMediumValue };
@@ -267,8 +268,10 @@ export async function fetchPartyWholeResult(
   opts: PartySortOpts,
   ctx: CrmQueryContext,
   customFields: readonly StandardFieldColumn[] = [],
+  /** Export or grouped view — each reads under its own ceiling knob. */
+  purpose: WholeResultPurpose = "export",
 ): Promise<WholeResult<PartyListRow>> {
-  return readWholeResult((from, to) => fetchPartyRange(query, opts, ctx, customFields, from, to));
+  return readWholeResult((from, to) => fetchPartyRange(query, opts, ctx, customFields, from, to), purpose);
 }
 
 /** One range of the list's ordered result + the TRUE total. */

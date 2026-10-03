@@ -107,6 +107,12 @@ describe("every custom filter is a server predicate", () => {
   });
 
 
+  it("a Choice filter of ALL its options is no filter (rows with no value stay)", () => {
+    const { builder, calls } = recorder();
+    applyCustomFieldFilters(builder as never, { preferred_clinic_location: { kind: "select", value: "downtown", values: ["downtown", "westside"] } }, [CLINIC]);
+    expect(calls).toEqual([]);
+  });
+
   it("text contains, has-no-value, numbers and yes/no", () => {
     const { builder, calls } = recorder();
     applyCustomFieldFilters(builder as never, {

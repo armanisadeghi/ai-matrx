@@ -122,7 +122,7 @@ export function usePartyList(
       try {
         const [page, scopeCounts] = await Promise.all([
           wholeResult
-            ? fetchPartyWholeResult(query, opts, resolvedCtx, customFields)
+            ? fetchPartyWholeResult(query, opts, resolvedCtx, customFields, "group")
             : fetchPartyPage(query, opts, resolvedCtx, customFields).then((p) => ({ ...p, ceiling: null })),
           // ONE round trip, org labels included — unless the query narrows by something the
           // counts RPC cannot see; then each lane is counted with the list's own predicates.

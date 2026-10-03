@@ -69,7 +69,7 @@ export function useDealList(
     async function run() {
       try {
         const page = wholeResult
-          ? await fetchDealWholeResult(query, opts, resolvedCtx, customFields)
+          ? await fetchDealWholeResult(query, opts, resolvedCtx, customFields, "group")
           : { ...(await fetchDealPage(query, opts, resolvedCtx, customFields)), ceiling: null };
         if (generationRef.current !== gen) return;
         setRows(page.rows);

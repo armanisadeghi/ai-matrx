@@ -2,9 +2,11 @@
 //
 // EVERY ROW THE LIST SELECTS, NOT THE PAGE ON SCREEN (lane 7 W2, fix round 2). A server-paged
 // standard list (CRM people: 25 of 465) exports and groups over its WHOLE current result — the
-// same filters, search and sort, read from the server page by page in the list's own order. The
-// one ceiling is the store's export knob `custom.export_rows_ceiling` (an export is the whole
-// result on its way out); a read that reaches it returns what it read and says how many it left.
+// same filters, search and sort, read from the server page by page in the list's own order. Each
+// purpose has its own ceiling knob: an export streams to a file (`custom.export_rows_ceiling`,
+// 100,000); a grouped view renders every row in an unvirtualized table (`lists.group_rows_ceiling`,
+// 500 — measured to render near 2 s). A read that reaches its ceiling returns what it read and the
+// screen says how many it left.
 
 import { knobInt } from "@/lib/knobs/featureKnobs";
 
@@ -19,9 +21,11 @@ export interface WholeResult<TRow> {
   ceiling: number | null;
 }
 
-/** The ceiling knob, read once per call (the knob cache keeps it cheap). */
-export async function wholeResultCeiling(): Promise<number> {
-  return knobInt("custom", "export_rows_ceiling");
+export type WholeResultPurpose = "export" | "group";
+
+/** The ceiling knob for this purpose, read once per call (the knob cache keeps it cheap). */
+export async function wholeResultCeiling(purpose: WholeResultPurpose): Promise<number> {
+  return purpose === "group" ? knobInt("lists", "group_rows_ceiling") : knobInt("custom", "export_rows_ceiling");
 }
 
 /**
@@ -31,9 +35,9 @@ export async function wholeResultCeiling(): Promise<number> {
  */
 export async function readWholeResult<TRow>(
   readRange: (from: number, to: number) => Promise<{ rows: TRow[]; total: number }>,
-  ceiling?: number,
+  ceiling: number | WholeResultPurpose = "export",
 ): Promise<WholeResult<TRow>> {
-  const limit = ceiling ?? (await wholeResultCeiling());
+  const limit = typeof ceiling === "number" ? ceiling : await wholeResultCeiling(ceiling);
   const rows: TRow[] = [];
   let total = 0;
   for (let from = 0; ; from += PAGE) {

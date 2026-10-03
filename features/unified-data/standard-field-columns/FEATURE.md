@@ -32,15 +32,19 @@ with the source given no organizations.
 - Definitions come only through the store: `custom.entity_fields_across` (ONE call for every
   organization the list spans, Fields + choices, refusing organizations named under `unavailable`).
   Until that door is on a database (`lane7w2_b_*.sql`, chair's apply) the client answers
-  `door_absent` and the source reads once per organization, saying so in the console.
+  `door_absent` and the source reads once per organization, saying so in the console. The door
+  reads 200 organizations per call; a person in more is read in pages of 200. A failed read shows
+  "Custom fields could not be loaded" on the list, never an empty set of columns. Once the door is on
+  a database, `pnpm records:generate` + a records publish lists it and the client takes it unchanged.
   `confidential` / `restricted` fields, relation and formula fields are never columns.
 - Every filter, sort and search is a PostgREST predicate on `custom_fields` — never a client pass
   over the loaded page. A Choice cell holds the option KEY (the store resolves every write to it —
   `custom._entity_choice_keys` from `custom._entity_custom_fields_guard`), and the Choice picker
   filters on keys, exactly.
+- A Choice filter of every option is no filter (rows with no value stay).
 - Grouping, export and the scope tabs never speak for one page: grouped and exported rows are the
-  whole result (`readWholeResult`, ceiling = the store's knob `custom.export_rows_ceiling`; hitting it
-  is said — "Grouped over the first N of M", "Exported the first N of M"). The CRM tabs count each
+  whole result (`readWholeResult`; export ceiling `custom.export_rows_ceiling` 100,000, grouped-view
+  ceiling `lists.group_rows_ceiling` 500 — the table is not virtualized; hitting either is said — "Grouped over the first N of M", "Exported the first N of M"). The CRM tabs count each
   lane with the list's own predicates whenever the query narrows by something
   `crm_list_scope_counts` cannot see (any column filter, custom filter, or a search reaching a
   custom field); per-organization counts are then absent, never another question's numbers.
@@ -54,6 +58,9 @@ with the source given no organizations.
   their RPC before they can mount the source.
 
 ## Change log
+
+- 2026-10-03 — round 3: grouped-view ceiling knob `lists.group_rows_ceiling` (500, applied live);
+  fields read in pages of 200 organizations; Choice "All" is no filter; failed field read said.
 
 - 2026-10-02 — fix round 2: export and grouping over the whole result (ceiling knob, said when hit);
   scope tabs count with the list's predicates; one fields read across organizations

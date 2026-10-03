@@ -104,30 +104,42 @@ async function loadFields(
     }
     return loadFieldsPerOrganization(token, organizationIds, userId, dataSource);
   }
-  const across = await acrossDoor.call(client, { token, organization_ids: [...organizationIds] });
-  if (across.ok) {
+  // THE DOOR READS AT MOST ACROSS_PAGE ORGANIZATIONS PER CALL (it refuses more, by name): a person
+  // in more is read in pages and the answers merged — never an error that empties every column.
+  const pages: string[][] = [];
+  for (let i = 0; i < organizationIds.length; i += ACROSS_PAGE) pages.push(organizationIds.slice(i, i + ACROSS_PAGE));
+  const answers = await Promise.all(
+    pages.map((ids) => acrossDoor.call(client, { token, organization_ids: ids })),
+  );
+  const refused = answers.find((a): a is Extract<AcrossAnswer, { ok: false }> => !a.ok);
+  if (!refused) {
     const definitions: StandardFieldDefinition[] = [];
     const optionsByField = new Map<string, StandardFieldOption[]>();
-    for (const field of across.data.fields) {
-      definitions.push(field as unknown as StandardFieldDefinition);
-      if (field.options && typeof field.options === "object") {
-        optionsByField.set(
-          field.id,
-          Object.entries(field.options)
-            .filter(([, o]) => !o.retired)
-            .map(([key, o]) => ({ key, label: o.label })),
-        );
+    let unavailableReasons: string[] = [];
+    for (const across of answers) {
+      if (!across.ok) continue;
+      for (const field of across.data.fields) {
+        definitions.push(field as unknown as StandardFieldDefinition);
+        if (field.options && typeof field.options === "object") {
+          optionsByField.set(
+            field.id,
+            Object.entries(field.options)
+              .filter(([, o]) => !o.retired)
+              .map(([key, o]) => ({ key, label: o.label })),
+          );
+        }
       }
+      unavailableReasons = unavailableReasons.concat(across.data.unavailable.map((u) => u.reason ?? "unavailable"));
     }
-    const unavailable = across.data.unavailable.length;
+    const unavailable = unavailableReasons.length;
     return {
       fields: mergeFieldDefinitions(definitions, optionsByField),
       unavailable,
-      error: unavailable === organizationIds.length ? (across.data.unavailable[0]?.reason ?? null) : null,
+      error: unavailable === organizationIds.length ? (unavailableReasons[0] ?? null) : null,
     };
   }
-  if (across.error.code !== "door_absent") {
-    return { fields: [], unavailable: organizationIds.length, error: across.error.message };
+  if (refused.error.code !== "door_absent") {
+    return { fields: [], unavailable: organizationIds.length, error: refused.error.message };
   }
   // THE DOOR IS NOT ON THIS DATABASE YET (it is owed by lane7w2_b, the chair's apply): read once
   // per organization until it lands — said once in the console, never silently.
@@ -141,6 +153,9 @@ async function loadFields(
 }
 
 let warnedPerOrganization = false;
+
+/** The most organizations one `custom.entity_fields_across` call reads (the door's own cap). */
+export const ACROSS_PAGE = 200;
 
 async function loadFieldsPerOrganization(
   token: string,

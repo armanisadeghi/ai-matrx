@@ -52,7 +52,7 @@ import type { StandardFieldColumn } from "../standardFieldColumns";
 
 const HOME: StandardFieldColumn = {
   key: "home_clinic", label: "Home clinic", behavior: "list", multi: false, isDate: false,
-  options: [{ key: "westside", label: "Westside" }], fieldIds: ["f1"],
+  options: [{ key: "westside", label: "Westside" }, { key: "downtown", label: "Downtown" }], fieldIds: ["f1"],
 };
 
 describe("the whole result, not the page", () => {

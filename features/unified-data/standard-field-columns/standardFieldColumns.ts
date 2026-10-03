@@ -284,6 +284,17 @@ export function applyCustomFieldFilters<Q extends CustomFieldPredicateBuilder<Q>
       case "select": {
         const chosen = filter.values ?? (filter.value ? [filter.value] : []);
         const wantsNone = chosen.includes(CUSTOM_NONE_VALUE);
+        // "ALL" IS NO FILTER. The picker's All ticks every choice; matching every choice would hide
+        // the rows that hold none, so a selection of every option (and no exclusion) narrows nothing.
+        if (
+          !filter.negated &&
+          !wantsNone &&
+          column &&
+          column.options.length > 0 &&
+          column.options.every((o) => chosen.includes(o.key))
+        ) {
+          break;
+        }
         const values = chosen.filter((v) => v !== CUSTOM_NONE_VALUE);
         // A choice cell holds its option KEY, and the picker offers keys: matched exactly.
         const spellings = [...new Set(values)];
