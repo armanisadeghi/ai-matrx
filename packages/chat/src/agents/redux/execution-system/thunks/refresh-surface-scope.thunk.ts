@@ -107,7 +107,7 @@ export const refreshSurfaceScope = createAsyncThunk<
     if (isPageOwnConversation(conversationId))
       return refreshCompanionScope(conversationId, state, dispatch);
 
-    const surfaceName = conversation.surfaceName ?? undefined;
+    let surfaceName: string | undefined = conversation.surfaceName ?? undefined;
     if (!surfaceName) return { refreshed: false, reason: "no_surface" };
     // A page's OWN conversation (the main chat, builder, runner, battle lane)
     // never receives the page as context — even when an older launch stamped
@@ -115,7 +115,7 @@ export const refreshSurfaceScope = createAsyncThunk<
     if (isPageOwnConversation(conversationId))
       return { refreshed: false, reason: "own_page_conversation" };
 
-    const runtime = getSurfaceRuntimeForName(surfaceName);
+    let runtime = getSurfaceRuntimeForName(surfaceName);
     if (!runtime) {
       if (getManifest(surfaceName)?.requiresBeforeExecute) {
         const message = `Nothing was sent. Open the ${surfaceName} surface before sending so its current-turn evidence can be prepared.`;
@@ -172,17 +172,18 @@ export const refreshSurfaceScope = createAsyncThunk<
       // mounted one — and re-reads it now. Never a silent drop: a reopened
       // chat used to keep nothing from the transcript on screen (2026-10-03).
       const mounted = getSurfaceRuntime();
-      if (mounted?.surfaceName && mounted.surfaceName !== surfaceName) {
+      if (!mounted?.surfaceName || mounted.surfaceName === surfaceName) {
         console.warn(
-          `[surfaces] "${surfaceName}" has no live provider on this page — conversation "${conversationId}" now follows the mounted "${mounted.surfaceName}"`,
+          `[surfaces] submit-time scope refresh skipped for conversation "${conversationId}" — no live provider is mounted for "${surfaceName}" and none is mounted on this page`,
         );
-        dispatch(patchConversation({ conversationId, surfaceName: mounted.surfaceName }));
-        return dispatch(refreshSurfaceScope({ conversationId, composerText })).unwrap();
+        return { refreshed: false, surfaceName, reason: "no_provider" };
       }
       console.warn(
-        `[surfaces] submit-time scope refresh skipped for conversation "${conversationId}" — no live provider is mounted for "${surfaceName}" and none is mounted on this page`,
+        `[surfaces] "${surfaceName}" has no live provider on this page — conversation "${conversationId}" now follows the mounted "${mounted.surfaceName}"`,
       );
-      return { refreshed: false, surfaceName, reason: "no_provider" };
+      dispatch(patchConversation({ conversationId, surfaceName: mounted.surfaceName }));
+      surfaceName = mounted.surfaceName;
+      runtime = mounted;
     }
 
     let preparation;
