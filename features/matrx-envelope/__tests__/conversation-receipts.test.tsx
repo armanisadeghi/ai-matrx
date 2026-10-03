@@ -163,6 +163,28 @@ describe("the ledger is what a reload reads", () => {
     view.unmount();
   });
 
+  it("a comment reply keeps its door to the thread after a reload (the ledger's receipt.thread)", async () => {
+    rows.push({
+      key: "act:ef8bae1cac559b52847450f54fa4513819383329",
+      kind: "action",
+      type: "comment_reply",
+      message: "Replied in the thread on c4.",
+      receipt: {
+        status: "applied",
+        thread: { entity_type: "message", entity_id: "answer-1", root_id: "root-7", reply_id: "reply-9", handle: "c4" },
+      },
+      created_at: "2026-10-03T20:28:14.356Z",
+    });
+    const receipts = await fetchConversationReceipts(CONVERSATION);
+    expect(receipts.at(-1)?.thread).toEqual({ entity_type: "message", entity_id: "answer-1", root_id: "root-7", reply_id: "reply-9", handle: "c4" });
+    expect(receipts[0]).not.toHaveProperty("thread");
+    const view = mountZone();
+    await settle();
+    const line = view.host.querySelector('[data-directive="directive_v1_action_comment_reply"]');
+    expect(line?.textContent).toBe("Replied in the thread on c4.Open thread");
+    view.unmount();
+  });
+
   it("renders the stored sentence VERBATIM — nothing recomposed from the row", async () => {
     const view = mountZone();
     await settle();

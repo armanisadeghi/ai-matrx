@@ -34,6 +34,8 @@ export interface ConversationDirectiveReceipt {
   /** The server's sentence, verbatim. */
   message: string;
   createdAt: string;
+  /** A `comment_reply` receipt's thread link (`receipt.thread`, server `ThreadLink`), as stored. */
+  thread?: unknown;
 }
 
 /** The classes whose ledger `type` is `"<class>:<noun>"` (aidream naming.py). */
@@ -59,6 +61,12 @@ export function slugForLedgerRow(kind: string, type: string): string | null {
   }
 }
 
+function receiptThread(receipt: unknown): unknown {
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) return null;
+  const thread = (receipt as { thread?: unknown }).thread;
+  return thread && typeof thread === "object" ? thread : null;
+}
+
 /**
  * Every applied directive in this conversation that has words, oldest first.
  *
@@ -73,7 +81,7 @@ export async function fetchConversationReceipts(
   const { data, error } = await supabase
     .schema("platform")
     .from("matrx_action_ledger")
-    .select("key, kind, type, message, created_at")
+    .select("key, kind, type, message, receipt, created_at")
     .eq("conversation_id", conversationId)
     .not("message", "is", null)
     .order("created_at", { ascending: true });
@@ -93,6 +101,8 @@ export async function fetchConversationReceipts(
         directive: slugForLedgerRow(String(row.kind), String(row.type)) ?? String(row.type),
         message,
         createdAt: String(row.created_at),
+        // The reply's thread rides the stored receipt, so a reload keeps the door to it.
+        ...(receiptThread(row.receipt) ? { thread: receiptThread(row.receipt) } : {}),
       },
     ];
   });

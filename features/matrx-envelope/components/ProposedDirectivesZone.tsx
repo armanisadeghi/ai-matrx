@@ -179,6 +179,7 @@ export function ProposedDirectivesZone({
           directive={r.directive}
           outcome="applied"
           message={r.message}
+          thread={r.thread}
         />
       ))}
       {proposals.map((p) => (
