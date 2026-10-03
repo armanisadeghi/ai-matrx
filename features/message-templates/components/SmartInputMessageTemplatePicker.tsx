@@ -131,6 +131,7 @@ export function SmartInputMessageTemplatePicker({
                   ) : null}
                 </div>
                 <EntityDoorControls
+                  size="md"
                   token="message_template"
                   id={template.id}
                   name={template.label}
