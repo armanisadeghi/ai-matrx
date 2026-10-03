@@ -1,11 +1,11 @@
--- draft: VISION-REACH clone rehearsal in progress
 -- target: branch,production
 -- additive: yes
 --   It ADDS four helpers — custom._fxc_apply(text, jsonb[]) (one planned formula node),
 --   custom.formula_result_kind(uuid, jsonb), custom.field_value_kind(uuid, jsonb) and
 --   custom.agg_field_kind(uuid, uuid, text) (what kind of value a column holds) — EXECUTE to
 --   postgres only, as the store's event trigger leaves every new custom function, and REPLACES four
---   bodies, each declared below with the body it was written against. custom.formula_eval, every
+--   bodies, each declared below with the body it was written against (custom.agg_sql re-based
+--   2026-10-03 on CHAIR-GRID's eleven-argument body, p_search / p_time_zone kept). custom.formula_eval, every
 --   _fx_* function, custom.visible_set and custom.listed_predicate_sql are NOT touched. No table,
 --   column, index, trigger, policy, grant or row of anybody's data is touched.
 --   Locks: pg_proc row locks only.
@@ -13,9 +13,15 @@
 -- guard: custom/system_enabled
 -- lock: custom
 -- lane: VISION-REACH
--- based-on: custom.formula_compile_sql(uuid, jsonb, text) 4e86c988f7c4824816547e54c529d5e14c57215339f19da93860e290c93376b2
+-- based-on: custom.formula_compile_sql(uuid, jsonb, text) 7daf5d8d9e252341c9d972853de496d5561c7e51e89e3798767748fece63cae7
+--   (custom.formula_compile_sql: production holds the W3 body above; the clone holds CHAIR-MATH (a)'s
+--   body 7daf5d8d9e252341c9d972853de496d5561c7e51e89e3798767748fece63cae7, rehearsed there 2026-10-03.
+--   This file's body SUPERSEDES BOTH and carries CHAIR-MATH (a)'s rule — a formula that reads a
+--   read-time worked-out column is not planned — so whichever lands second undoes nothing. The
+--   runner recomputes the hash against the database it applies to, so this line is regenerated for
+--   that database before each apply: pnpm db:based-on custom.formula_compile_sql --target <db>.)
 -- based-on: custom.agg_field_value_sql(uuid, uuid, text) 2913f67eb9f0f9dfe4e622a87844d34e27eee4eb7672fad2f0de6f43c00bdcaf
--- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 5e8b41d823bb1e7991419f371b3ec1e2a4a8c60f9b8bd25e451a2f983c842c1b
+-- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb, text, text) 8343591c6f4a9b71148d03933c6f5163743e11afcf7d2044a555b4ef73a96bc4
 -- based-on: custom.record_aggregate_as_of(uuid, uuid, timestamp with time zone, text, text, text, jsonb) 1545cb1bd29c9abd16739212885198a2b504cf781d3f39029bac18769fd0eccc
 --
 -- LANE 5 VISION-REACH, WAVE 5 — EVERY COMMON FORMULA IS WORKED OUT ONCE PER QUESTION, A DATE
@@ -491,6 +497,14 @@ begin
     if v_key is null then
       return 'NULL::jsonb';
     end if;
+    -- CHAIR-MATH (a), carried here: a column worked out on read (compute_on = 'read') is not in
+    -- the row's values, so a Rule that reads one is not planned (SQL NULL: the per-row path).
+    if exists (select 1 from custom.record f
+                where f.organization_id = p_organization_id and f.id = (p_expr ->> 'field')::uuid
+                  and f.table_id = custom.field_kernel_id()
+                  and f.data ->> 'type' = 'formula' and coalesce(f.data ->> 'compute_on', '') = 'read') then
+      return null;
+    end if;
     -- an absent key reads as no value; every Rule node below treats SQL NULL and JSON null alike
     return format('coalesce((%s -> %L), ''null''::jsonb)', p_values_sql, v_key);
   end if;
@@ -572,6 +586,7 @@ declare
   v_spec record;
   v_key  text;
   v_type text;
+  v_when text;
   v_leaf text;
   v_one  text;
   v_sql  text[] := '{}';
@@ -623,12 +638,21 @@ begin
     if v_key is null then
       return v_self;
     end if;
-    select f.data ->> 'type' into v_type
+    select f.data ->> 'type', coalesce(f.data ->> 'compute_on', '') into v_type, v_when
       from custom.record f
      where f.organization_id = p_organization_id and f.id = (p_expr ->> 'field')::uuid
        and f.table_id = custom.field_kernel_id();
     if v_type in ('list', 'relation') then
       return v_self;
+    end if;
+    -- CHAIR-MATH (a), carried here (2026-10-03): A COLUMN WORKED OUT ON READ IS NOT IN THE ROW'S
+    -- VALUES. A roll-up, a lookup or a read-time formula (all Fields of type `formula`,
+    -- compute_on = 'read') has no stored value, so reading `p_values_sql -> key` would read an
+    -- absence (0, ''). Such a formula is NOT planned: NULL hands the WHOLE formula to the per-row
+    -- path, where custom.formula_value works the referenced column out first. A formula stamped at
+    -- write time is in the `_derived` block the caller's `p_values_sql` already includes, and plans.
+    if v_type = 'formula' and v_when = 'read' then
+      return null;
     end if;
     v_leaf := format('(%s -> %L)', p_values_sql, v_key);
     return format('(case when jsonb_typeof(%1$s) in (''array'', ''object'') then to_jsonb((%1$s)::text) '
@@ -887,7 +911,7 @@ end;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION custom.agg_sql(p_organization_id uuid, p_table_id uuid, p_group_by jsonb DEFAULT '[]'::jsonb, p_measures jsonb DEFAULT '[]'::jsonb, p_bucket jsonb DEFAULT NULL::jsonb, p_filter jsonb DEFAULT '{}'::jsonb, p_limit integer DEFAULT 200, p_required text DEFAULT 'viewer'::text, p_window jsonb DEFAULT NULL::jsonb)
+CREATE OR REPLACE FUNCTION custom.agg_sql(p_organization_id uuid, p_table_id uuid, p_group_by jsonb DEFAULT '[]'::jsonb, p_measures jsonb DEFAULT '[]'::jsonb, p_bucket jsonb DEFAULT NULL::jsonb, p_filter jsonb DEFAULT '{}'::jsonb, p_limit integer DEFAULT 200, p_required text DEFAULT 'viewer'::text, p_window jsonb DEFAULT NULL::jsonb, p_search text DEFAULT NULL::text, p_time_zone text DEFAULT NULL::text)
  RETURNS text
  LANGUAGE plpgsql
  STABLE
@@ -1142,6 +1166,7 @@ begin
        and %s
        and %s
        and %s
+       and %s
      %s
      order by %s
      limit %s
@@ -1163,6 +1188,9 @@ begin
     -- S2-PRIME FILTER-GROUPS: the one fragment, in either shape (flat map or Rule expression).
     custom.record_filter_sql(p_organization_id, p_table_id, p_filter),
     v_window_sql,
+    -- CHAIR-GRID (grids review 3, lane H item 5f): THE GRID'S SEARCH — the page door's own predicate
+    -- (custom.record_search_sql), so a summary counts exactly the rows the search shows. 'true' when blank.
+    custom.record_search_sql(p_organization_id, p_table_id, p_search, 'r', p_time_zone),
     -- DRILL-CUSTOM-PARITY: GROUP BY THE EXPRESSIONS, never by position. The select list has ONE
     -- `groups` column, so `group by 1, 2` named `groups` and then `measures` — an aggregate — and
     -- every question with two groups, or a group and a date period, died with "aggregate
