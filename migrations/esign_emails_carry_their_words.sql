@@ -1,5 +1,4 @@
--- draft: esign-email-words — clone-applied and proven; its production apply FOLLOWS dm_soft_expiry_and_dm_pairs_with_email.sql (that file's esign._notify is this file's based-on), so it waits where that file waits.
--- based-on: esign._notify(uuid, text, uuid, uuid, text, uuid, text, text, text, jsonb, text) 5debcdde19ac949d5f140ccbe2096e3abf0b35a7780650328845c525f456f67c
+-- based-on: esign._notify(uuid, text, uuid, uuid, text, uuid, text, text, text, jsonb, text) e7ae88c5b97e78bd3cf05c763fa20fb6da740edc8ba3bf65c2c3c67f29ef7b16
 --
 -- E-SIGNATURE EMAILS CARRY THEIR WORDS.
 --
@@ -29,8 +28,11 @@
 -- re-minted (a resend that reuses an open token) therefore records `render_failed` by name instead
 -- of emailing a signer something they cannot act on.
 --
--- NOTE for the pairing file: its section 6 says `esign._notify` "composes its email and in-app
--- text inline". It never did; after this file, the email words live in the registry too.
+-- ORDER WITH THE PAIRING FILE (2026-10-03): this file was first written on top of
+-- `dm_soft_expiry_and_dm_pairs_with_email.sql`'s body, but that file still awaits its production
+-- apply and this defect stopped every envelope from being sent. So this file now replaces the
+-- PRODUCTION body, and the pairing file's own `esign._notify` (which adds the paired DM leg) carries
+-- this change and declares this file's resulting body as its based-on.
 
 CREATE OR REPLACE FUNCTION esign._notify(p_envelope_id uuid, p_event_key text, p_signer_id uuid DEFAULT NULL::uuid, p_to_user uuid DEFAULT NULL::uuid, p_to_address text DEFAULT NULL::text, p_actor_token_id uuid DEFAULT NULL::uuid, p_subject text DEFAULT NULL::text, p_body text DEFAULT NULL::text, p_deep_link text DEFAULT NULL::text, p_payload jsonb DEFAULT '{}'::jsonb, p_channel text DEFAULT 'email'::text)
  RETURNS uuid
@@ -39,7 +41,7 @@ CREATE OR REPLACE FUNCTION esign._notify(p_envelope_id uuid, p_event_key text, p
  SET search_path TO 'esign', 'public'
 AS $function$
 declare v_org uuid; v_id uuid; v_kind text; v_addr text; v_refusal text; v_occasion text; v_key text;
-        v_paired text[]; v_title text; v_payload jsonb; v_status text;
+        v_title text; v_payload jsonb; v_status text;
 begin
   select organization_id into v_org from esign.envelope where id = p_envelope_id;
   if v_org is null then
@@ -64,7 +66,6 @@ begin
   v_kind := case when p_to_user is not null then 'user'
                  when p_actor_token_id is not null then 'actor_token'
                  else 'address' end;
-
 
   -- 🚨 WHAT MAKES ONE NOTICE THIS NOTICE (1417). The key used to end in
   -- to_char(now(), …ms) — the TRANSACTION's clock, identical for every call in one
@@ -93,44 +94,6 @@ begin
     p_event_key || ':' || p_envelope_id::text || ':' || coalesce(p_signer_id::text, '-') || ':'
       || v_occasion || ':' || coalesce(p_channel, 'email')
   end;
-
-  -- 🚨 THE PAIRING RULE (communication.notification_pair_channels): an email to a platform user
-  -- never goes without its DM, and the DM is queued FIRST. The DM's words are the event's `dm`
-  -- template, rendered by the one render lane (`render_pending`) from `envelope.title` — never
-  -- composed here. A person who turned this notice's DM off has turned its email off too: the
-  -- email becomes a named `opted_out` skip, never a silent absence. An outsider (actor_token /
-  -- address) has no inbox, so nothing changes for them.
-  if p_channel = 'email' and v_kind = 'user' then
-    v_paired := communication.notification_pair_channel_list(p_event_key, v_org, p_to_user, array['email']);
-    if 'dm' = any (v_paired) then
-      insert into communication.notification
-        (organization_id, event_key, channel, recipient_kind, recipient_user_id, to_address,
-         status, subject, payload, target_kind, target_id, deep_link, dedupe_key)
-      values (v_org, p_event_key, 'dm', 'user', p_to_user, p_to_user::text,
-              'render_pending', p_subject, v_payload,
-              'esign_envelope', p_envelope_id, p_deep_link,
-              case when v_occasion is not null then
-                p_event_key || ':' || p_envelope_id::text || ':' || coalesce(p_signer_id::text, '-')
-                  || ':' || v_occasion || ':dm' end)
-      on conflict (dedupe_key) where dedupe_key is not null do nothing;
-    end if;
-    if not ('email' = any (v_paired)) then
-      insert into communication.notification
-        (organization_id, event_key, channel, recipient_kind, recipient_user_id, to_address,
-         status, error_code, error_message, subject, payload, target_kind, target_id, dedupe_key)
-      values (v_org, p_event_key, 'email', 'user', p_to_user, null, 'skipped', 'opted_out',
-              'They turned off messages for this notice, so its email is off too — an email never goes without its message.',
-              p_subject,
-              v_payload,
-              'esign_envelope', p_envelope_id, v_key)
-      on conflict (dedupe_key) where dedupe_key is not null do nothing
-      returning id into v_id;
-      if v_id is null and v_key is not null then
-        select n.id into v_id from communication.notification n where n.dedupe_key = v_key;
-      end if;
-      return v_id;
-    end if;
-  end if;
   -- 🚨 THE ADDRESS IS RESOLVED FOR THIS ROW'S CHANNEL (1415). The caller's literal used to
   -- be written as-is, whatever channel the row was for. It now goes through the one
   -- resolver: a literal the channel cannot use is a named `skipped` row, never a send.
