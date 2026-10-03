@@ -27,20 +27,25 @@ export function ComposerMenuSheet({
   open,
   onOpenChange,
   title,
+  accessibleName = "Menu",
   children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Root title; omit for the + sheet (Claude's has none). */
   title?: string;
+  /** The dialog's name for screen readers when the root has no title. */
+  accessibleName?: string;
   children: ReactNode;
 }) {
   const [stack, setStack] = useState<ComposerSheetPage[]>([]);
   const pageBack = useRef<(() => void) | null>(null);
   const top = stack[stack.length - 1];
-  // However the sheet closed (a pick, Escape, a swipe), it reopens at its root.
+  // However the sheet closed (a pick, Escape, a swipe), it reopens at its
+  // root — reset on OPEN, so the closing slide keeps showing the page it was
+  // on instead of flipping to the root rows mid-animation.
   useEffect(() => {
-    if (!open) setStack([]);
+    if (open) setStack([]);
   }, [open]);
 
   const pop = () => {
@@ -58,6 +63,7 @@ export function ComposerMenuSheet({
     <BottomSheet
       open={open}
       onOpenChange={setOpen}
+      title={top?.title ?? title ?? accessibleName}
       size={top && top.fit !== "content" ? "full" : "adaptive"}
       surface="solid"
       contentClassName="bg-muted dark:bg-background"

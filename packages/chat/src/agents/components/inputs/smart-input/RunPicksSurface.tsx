@@ -105,6 +105,7 @@ export function RunPicksSurface({
         secondary={item.secondary || undefined}
         title={item.title || undefined}
         selected={selected}
+        pressed={item.locked || selected}
         disabled={item.locked}
         trailing={
           selected ? (

@@ -122,7 +122,8 @@ export function ComposerConnectorsPanel({
             type="button"
             onClick={() => void connect(s.entry)}
             disabled={connectingSlug === s.entry.slug}
-            className="flex h-7 shrink-0 items-center rounded-md border border-border px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-60 "
+            aria-label={`Reconnect ${s.entry.name}`}
+            className="flex h-7 shrink-0 items-center rounded-md border border-border px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-60 pointer-coarse:h-9"
           >
             {connectingSlug === s.entry.slug ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reconnect"}
           </button>

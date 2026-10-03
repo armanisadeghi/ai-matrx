@@ -21,9 +21,21 @@ it("the Files picker's filter bar says plain words at a readable size", () => {
     join(__dirname, "../resource-picker/FilesResourcePicker.tsx"),
     "utf8",
   );
-  const bar = picker.slice(picker.indexOf('id="cloud-files-filter"'), picker.indexOf('id="cloud-files-sort"') + 400);
-  const options = [...bar.matchAll(/<option value="[^"]+">([^<]+)<\/option>/g)].map((m) => m[1]!);
+  // The filter's options are a data list rendered by the kit's PickerSelect.
+  const list = picker.slice(
+    picker.indexOf("const FILE_FILTER_OPTIONS"),
+    picker.indexOf("];", picker.indexOf("const FILE_FILTER_OPTIONS")),
+  );
+  const options = [...list.matchAll(/label: "([^"]+)"/g)].map((m) => m[1]!);
   expect(options.length).toBeGreaterThan(5);
   for (const label of options) expect({ label, jargon: JARGON.test(label) }).toEqual({ label, jargon: false });
+  const kit = readFileSync(
+    join(__dirname, "../resource-picker/ResourcePickerSubViewHeader.tsx"),
+    "utf8",
+  );
+  const select = kit.slice(kit.indexOf("export function PickerSelect"), kit.indexOf("/** The scroll area"));
+  expect(select).toMatch(/text-sm/);
+  expect(select).not.toMatch(/text-\[(9|10|11)px\]/);
+});
   expect(bar).not.toMatch(/text-\[(9|10|11)px\]/);
 });

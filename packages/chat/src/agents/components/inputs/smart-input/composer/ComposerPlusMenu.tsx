@@ -459,7 +459,7 @@ export function ComposerPlusMenu({
     return (
       <>
         {trigger}
-        <ComposerMenuSheet open={open} onOpenChange={setOpen}>
+        <ComposerMenuSheet open={open} onOpenChange={setOpen} accessibleName="Add to chat">
           {body}
         </ComposerMenuSheet>
       </>

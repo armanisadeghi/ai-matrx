@@ -223,6 +223,7 @@ export function PickerRow({
   trailing,
   chevron,
   selected,
+  pressed,
   busy,
   disabled,
   title,
@@ -236,6 +237,8 @@ export function PickerRow({
   trailing?: ReactNode;
   chevron?: boolean;
   selected?: boolean;
+  /** A toggle row (add / remove): announced as pressed / not pressed. */
+  pressed?: boolean;
   busy?: boolean;
   disabled?: boolean;
   title?: string;
@@ -247,6 +250,7 @@ export function PickerRow({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-pressed={pressed}
       className={cn(
         "group flex w-full min-w-0 items-center gap-2.5 rounded-lg px-1.5 text-left transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60",
         secondary ? "min-h-11 py-1.5 pointer-coarse:min-h-14" : "h-9 pointer-coarse:h-11",

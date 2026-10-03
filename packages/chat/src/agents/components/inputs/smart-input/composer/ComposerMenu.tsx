@@ -337,6 +337,16 @@ interface ComposerMenuLevel {
 
 const ComposerMenuLevelContext = createContext<ComposerMenuLevel | null>(null);
 
+function typedInOpenPanel(): boolean {
+  if (typeof document === "undefined") return false;
+  const active = document.activeElement;
+  return (
+    (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) &&
+    active.value.trim().length > 0 &&
+    Boolean(active.closest("[data-composer-panel]"))
+  );
+}
+
 /** Wrap one menu level (the root menu, or a cascade panel's own rows). */
 export function ComposerMenuLevel({ children }: { children: ReactNode }) {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -347,6 +357,9 @@ export function ComposerMenuLevel({ children }: { children: ReactNode }) {
   };
   const request = (id: string | null) => {
     cancel();
+    // A panel holding text the person typed (a half-written search or link)
+    // never closes on a passing hover — only a click moves on from it.
+    if (typedInOpenPanel()) return;
     timer.current = setTimeout(() => {
       timer.current = null;
       setOpenId(id);
@@ -450,6 +463,7 @@ export function ComposerSubmenu({
         }}
         onPointerDownOutside={ignoreOwnWrapper}
         onPointerEnter={() => level?.cancel()}
+        data-composer-panel=""
         onOpenAutoFocus={(event) => {
           // A cascade that holds a text field (a picker's search, a URL box)
           // focuses THAT field on open, in the same tick Radix would focus the
