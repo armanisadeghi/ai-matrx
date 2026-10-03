@@ -17,7 +17,11 @@ export type RemountStatus =
   | { status: "failing"; owner: string; why: string };
 
 export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
-  "chat": { status: "passing" },
+  "chat": {
+    status: "failing",
+    owner: "chat lane",
+    why: "every wake/remount re-reads the transcript's assistant messages (ProposedDirectivesZone → fetchStoredDirectiveShells, chat.message)",
+  },
   "chat:quiet": { status: "passing" },
   "note": { status: "passing" },
   "note:quiet": {

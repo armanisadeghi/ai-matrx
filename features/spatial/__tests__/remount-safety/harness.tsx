@@ -238,12 +238,21 @@ export function describeCalls(calls: readonly BackendCall[]): string[] {
   return calls.map((c) => `${c.door} ${c.op} ${c.target}`);
 }
 
+/** The same, with each call's filters (debugging a case). */
+function describeCallsInDetail(calls: readonly BackendCall[]): string[] {
+  return calls.map((c) => `${c.door} ${c.op} ${c.target} ${JSON.stringify(c.filters).slice(0, 240)}`);
+}
+
 export { openChannelCount };
 
 /** Capture `console.error` for the whole case; the case asserts it stayed empty. */
 export function captureConsoleErrors(): { errors: string[]; restore: () => void } {
   const errors: string[] = [];
   const spy = jest.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+    // React's test-environment notice about an update landing between two
+    // act() scopes (a promise settling while the harness polls) — a property of
+    // the harness's clock, never something a person sees.
+    if (typeof args[0] === "string" && args[0].startsWith("An update to %s inside a test was not wrapped in act")) return;
     errors.push(args.map((a) => (a instanceof Error ? a.message : typeof a === "string" ? a : JSON.stringify(a))).join(" ").slice(0, 400));
   });
   return { errors, restore: () => spy.mockRestore() };
@@ -340,7 +349,7 @@ export async function runCycle(type: BoardItemType, source: NodeSource, steps: C
       // eslint-disable-next-line no-console
       console.log(
         `[remount-debug] ${type.key}\n` +
-          describeCalls(backendCalls())
+          describeCallsInDetail(backendCalls())
             .map((c, i) => `${i === wakeMark ? "--- wake\n" : i === remountMark ? "--- remount\n" : ""}${c}`)
             .join("\n"),
       );

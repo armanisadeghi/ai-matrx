@@ -15,9 +15,11 @@ import { CanvasHostProvider } from "@/features/canvas/host/CanvasHostProvider";
 import { ChatHostAdapter } from "@/providers/ChatHostAdapter";
 import { AssociationsHost } from "@/features/scopes/host/AssociationsHost";
 import { DetailHost } from "@/features/window-panels/detail/DetailHost";
+import { AgentCatalogHost } from "@/providers/AgentCatalogHost";
 import { MatrxDataTableHost } from "@/components/official/MatrxDataTableHost";
 import { ToastProvider } from "@/providers/toast-context";
 import { RefProvider } from "@/lib/refs";
+import { AlchemyHost } from "@/components/agent-copy/AlchemyHost";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ModuleHeaderProvider } from "@/providers/ModuleHeaderProvider";
 import { SelectedImagesProvider } from "@/components/image/context/SelectedImagesProvider";
@@ -31,8 +33,10 @@ export function AppProviders({ store, children }: { store: AppStore; children: R
           <ChatHostAdapter>
             <AssociationsHost>
               <DetailHost>
+                <AgentCatalogHost>
                 <MatrxDataTableHost>
                   <ToastProvider>
+                    <AlchemyHost>
                     <RefProvider>
                       <TooltipProvider delayDuration={200}>
                         <ModuleHeaderProvider>
@@ -42,8 +46,10 @@ export function AppProviders({ store, children }: { store: AppStore; children: R
                         </ModuleHeaderProvider>
                       </TooltipProvider>
                     </RefProvider>
+                    </AlchemyHost>
                   </ToastProvider>
                 </MatrxDataTableHost>
+                </AgentCatalogHost>
               </DetailHost>
             </AssociationsHost>
           </ChatHostAdapter>

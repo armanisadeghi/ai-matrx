@@ -18,7 +18,7 @@ import { act } from "react";
 import { BOARD_ITEM_TYPES } from "../items/catalog";
 import { expectRemountSafe, runCycle, typeInto } from "./remount-safety/harness";
 import { installBrowserGaps } from "./remount-safety/browser-gaps";
-import { NOTE_ID, NOTE_TEXT, seedNote } from "./remount-safety/fixtures-work";
+import { CHAT_REPLY, CONVERSATION_ID, FILE_ID, NOTE_ID, NOTE_TEXT, seedChat, seedFile, seedNote } from "./remount-safety/fixtures-work";
 import { remountType } from "./remount-safety/cases";
 
 installBrowserGaps();
@@ -88,6 +88,54 @@ remountType(
         remount: { afterUndo: NOTE_TEXT },
       }),
   },
+);
+
+// Break: the chat tile relaunches or re-resumes its conversation on wake,
+// re-reads the transcript into local state, or loses the unsent draft.
+const DRAFT = "Also add the Portland relocation-assistance paragraph";
+remountType(
+  "chat",
+  () =>
+    runCycle(type("chat"), { kind: "entity", entity: "chat", id: CONVERSATION_ID }, {
+      title: "Rent increase notice for Unit 4B",
+      prepare: seedChat,
+      loadMs: 1000,
+      act: async (tile) => {
+        await typeInto(tile.container.querySelector("textarea")!, DRAFT);
+      },
+      kept: (tile) => ({
+        draft: tile.container.querySelector("textarea")?.value,
+        reply: (tile.container.textContent ?? "").includes(CHAT_REPLY),
+        saved: tile.source(),
+      }),
+    }),
+  (r) =>
+    expectRemountSafe(
+      r,
+      { draft: DRAFT, reply: true, saved: { kind: "entity", entity: "chat", id: CONVERSATION_ID } },
+      [/^chat\.conversation$/, /^chat\.message$/, /^get_cx_conversation_bundle$/],
+    ),
+);
+
+// Break: the file tile re-reads the file's record or re-downloads its preview
+// bytes on wake/remount instead of keeping them by file id.
+remountType(
+  "file",
+  () =>
+    runCycle(type("file"), { kind: "entity", entity: "file", id: FILE_ID }, {
+      title: "unit-4b-pet-addendum.md",
+      prepare: seedFile,
+      loadMs: 800,
+      kept: (tile) => ({
+        preview: (tile.container.textContent ?? "").includes("Pet deposit $300, refundable at move-out."),
+        saved: tile.source(),
+      }),
+    }),
+  (r) =>
+    expectRemountSafe(r, { preview: true, saved: { kind: "entity", entity: "file", id: FILE_ID } }, [
+      /^files\.files$/,
+      new RegExp(`/files/${FILE_ID}(\\?|/download)`),
+    ]),
 );
 
 function pick(value: unknown, ...keys: string[]): Record<string, unknown> {

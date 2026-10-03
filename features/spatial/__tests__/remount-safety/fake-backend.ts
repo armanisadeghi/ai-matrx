@@ -130,10 +130,25 @@ function queryBuilder(schema: string, table: string) {
     } else if (call.op === "delete") {
       data = [];
     } else {
+      // Writes land, as they would in the database: a later read sees them.
       const payload = call.payload;
-      const list = Array.isArray(payload) ? payload : [payload];
-      const existing = rows.find((r) => matches(r, call.filters));
-      data = list.map((p) => ({ ...(existing ?? {}), ...(p as Row) }));
+      const list = (Array.isArray(payload) ? payload : [payload]) as Row[];
+      if (call.op === "update") {
+        const hit = rows.filter((r) => matches(r, call.filters));
+        for (const r of hit) Object.assign(r, list[0]);
+        data = hit.map((r) => ({ ...r }));
+      } else {
+        const now = new Date().toISOString();
+        const written = list.map((p, i) => ({
+          id: `00000000-0000-4000-8000-${String(state.calls.length).padStart(8, "0")}${String(i).padStart(4, "0")}`,
+          created_at: now,
+          updated_at: now,
+          ...p,
+        }));
+        // Newest first, as the feature reads order by created_at desc.
+        state.tables.set(call.target, [...written, ...rows]);
+        data = written;
+      }
     }
     const list = data as Row[];
     if (mode === "single") {
@@ -326,9 +341,41 @@ export function createFakeSupabase() {
   };
 }
 
+/** In-memory `blob:` URLs (URL.createObjectURL) — local, never network, never recorded. */
+const blobs = new Map<string, Blob>();
+let blobSeq = 0;
+export function createObjectURL(blob: Blob): string {
+  const url = `blob:http://localhost/${++blobSeq}`;
+  blobs.set(url, blob);
+  return url;
+}
+export function revokeObjectURL(url: string): void {
+  blobs.delete(url);
+}
+
 /** The recording `fetch` (the Python server, file bytes, anything over HTTP). */
 export async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  const local = blobs.get(url);
+  if (local) {
+    const text = await local.text();
+    return {
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      headers: new Headers({ "content-type": local.type || "text/plain" }),
+      url,
+      json: async () => JSON.parse(text),
+      text: async () => text,
+      blob: async () => local,
+      arrayBuffer: async () => new TextEncoder().encode(text).buffer,
+      clone() {
+        return this;
+      },
+      body: null,
+      bodyUsed: false,
+    } as unknown as Response;
+  }
   const method = (init?.method ?? "GET").toUpperCase();
   record({ door: "fetch", target: url, op: method, filters: [], payload: init?.body });
   const seeded = state.fetches.find((f) => f.match.test(url));
@@ -351,4 +398,70 @@ export async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): P
     body: null,
     bodyUsed: false,
   } as unknown as Response;
+}
+
+/**
+ * The recording XMLHttpRequest (file downloads use XHR for progress). Same
+ * ledger and seeds as `fakeFetch`; jsdom's own would reach the real network.
+ */
+export class FakeXMLHttpRequest {
+  static readonly UNSENT = 0;
+  static readonly OPENED = 1;
+  static readonly DONE = 4;
+  readyState = 0;
+  status = 0;
+  statusText = "";
+  response: unknown = null;
+  responseText = "";
+  responseType = "";
+  timeout = 0;
+  withCredentials = false;
+  upload = { addEventListener: () => undefined, removeEventListener: () => undefined };
+  onload: ((ev: unknown) => void) | null = null;
+  onerror: ((ev: unknown) => void) | null = null;
+  onreadystatechange: (() => void) | null = null;
+  private method = "GET";
+  private url = "";
+  private listeners = new Map<string, Array<(ev: unknown) => void>>();
+  private headers: Record<string, string> = {};
+  open(method: string, url: string) {
+    this.method = method.toUpperCase();
+    this.url = url;
+    this.readyState = 1;
+  }
+  setRequestHeader() {}
+  getResponseHeader(name: string) {
+    return this.headers[name.toLowerCase()] ?? null;
+  }
+  getAllResponseHeaders() {
+    return Object.entries(this.headers)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join("\r\n");
+  }
+  addEventListener(type: string, fn: (ev: unknown) => void) {
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), fn]);
+  }
+  removeEventListener(type: string, fn: (ev: unknown) => void) {
+    this.listeners.set(type, (this.listeners.get(type) ?? []).filter((f) => f !== fn));
+  }
+  abort() {}
+  send(body?: unknown) {
+    record({ door: "fetch", target: this.url, op: this.method, filters: [], payload: body });
+    const seeded = state.fetches.find((f) => f.match.test(this.url));
+    const answer = seeded ? seeded.answer(this.url) : { error: `xhr ${this.url} is not seeded for this case` };
+    const text = typeof answer === "string" ? answer : JSON.stringify(answer);
+    queueMicrotask(() => {
+      this.status = seeded ? 200 : 404;
+      this.statusText = seeded ? "OK" : "Not Found";
+      this.headers = { "content-type": typeof answer === "string" ? "text/plain" : "application/json" };
+      this.responseText = text;
+      this.response = this.responseType === "blob" ? new Blob([text]) : this.responseType === "json" ? answer : text;
+      this.readyState = 4;
+      this.onreadystatechange?.();
+      for (const fn of this.listeners.get("readystatechange") ?? []) fn({ target: this });
+      this.onload?.({ target: this });
+      for (const fn of this.listeners.get("load") ?? []) fn({ target: this });
+      for (const fn of this.listeners.get("loadend") ?? []) fn({ target: this });
+    });
+  }
 }

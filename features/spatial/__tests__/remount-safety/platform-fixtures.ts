@@ -17,6 +17,11 @@ const KNOBS: Record<string, unknown> = {
   "lists.landing_tab.project": "all",
   "lists.landing_tab.file": "all",
   "lists.landing_tab.default": "all",
+  // migrations/chat_composer_knobs_2026_09_27.sql
+  "agents.chat_composer.default_mode": "chat",
+  "agents.chat_composer.remember_last_mode": true,
+  "agents.chat_composer.compact_input_max_height_pct": 50,
+  "selection_toolbar.highlight_while_editing": false,
 };
 
 export function seedPlatform(): void {
@@ -48,4 +53,11 @@ export function seedPlatform(): void {
   ]);
   // @ai-matrx/associations `listForSources` — nothing attached yet.
   seedRpc("assoc_for_sources", []);
+  seedRpc("assoc_for_targets", []);
+  seedRpc("assoc_for_entity", []);
+  seedRpc("conversation_files", []);
+  // favorites/pins (`ues_get_bulk`): only rows that HAVE state come back — none yet.
+  seedRpc("ues_get_bulk", []);
+  // lib/knobs/unifiedDataCampaign.ts — the record store is on for this organization.
+  seedRpc("unified_data_store_on", true);
 }
