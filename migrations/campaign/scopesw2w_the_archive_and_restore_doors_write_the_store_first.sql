@@ -1,5 +1,5 @@
 -- draft: claude-w2w round 3 in clone proof
--- chair-step: it REPLACES the bodies of four lane-9 scope doors — custom.context_scope_archive, custom.context_scope_restore, custom.context_type_archive, custom.context_type_restore (signatures, SECURITY DEFINER, search_path and grants unchanged). None of them calls public.delete_scope / restore_scope / delete_scope_type / restore_scope_type any more or reads the old scope tables to decide: the organization, whether the row is live or removed, the removal's timestamp, the children and the counts the answer reports come from the record store; the access rules are the old functions' own, word for word (an organization owner or admin, a platform admin where the old function admitted one, or the server; no move to the store ladder, chair item CA1). The door's own row is archived or restored in the store FIRST, through the lane-9 store halves, named in custom.context_door_row so the follow and the store's side-effect twin leave it to the door; the old rows are then written as the IMAGE, UNMARKED, so the old tables' cascade (platform._cascade_soft_delete) takes each child scope and context field with this removal's timestamp and the follow carries every one of them into the store exactly as before; the store half is handed the image row once more, and the twin runs for the row after the old triggers. A scope or type copied before its words had a home in the store is written old row first, once. No new door, no grant, no change to the chair's record doors or the access ladder.
+-- chair-step: it REPLACES the bodies of four lane-9 scope doors — custom.context_scope_archive, custom.context_scope_restore, custom.context_type_archive, custom.context_type_restore (signatures, SECURITY DEFINER, search_path and grants unchanged). None of them calls public.delete_scope / restore_scope / delete_scope_type / restore_scope_type any more or reads the old scope tables to decide: the organization, whether the row is live or removed, the removal's timestamp, the children and the counts the answer reports come from the record store; the access rules are the old functions' own, word for word (an organization owner or admin, a platform admin where the old function admitted one, or the server; no move to the store ladder, chair item CA1). The door's own row is archived or restored in the store FIRST (a type's removal excepted: the store halves never write a removed Table's rows, so there the image goes first and the Table is archived from it in the same statement), through the lane-9 store halves, named in custom.context_door_row so the follow and the store's side-effect twin leave it to the door; the old rows are then written as the IMAGE, UNMARKED, so the old tables' cascade (platform._cascade_soft_delete) takes each child scope and context field with this removal's timestamp and the follow carries every one of them into the store exactly as before; the store half is handed the image row once more, and the twin runs for the row after the old triggers. A scope or type copied before its words had a home in the store is written old row first, once. No new door, no grant, no change to the chair's record doors or the access ladder.
 -- lane: SCOPES-ON-THE-STORE
 -- based-on: custom.context_scope_archive(uuid) 3fede8104d91c5daf1c45eeb88b90c0106c2bd3a84206a2d5703c689d84b4cf0
 -- based-on: custom.context_scope_restore(uuid) 0354c43465def4edd8ea0b3dd6c32e3d7d63d5e0472c04bcd28bc8e0de4e2530
@@ -221,7 +221,6 @@ AS $function$
 declare
   v_t      custom.record;
   v_org    uuid;
-  v_spec   jsonb;
   v_scopes integer;
   v_tags   integer;
   v_img    context.scope_types;
@@ -252,15 +251,14 @@ begin
    where a.target_type = 'scope' and s.table_id = p_type_id and s.data_class = 'record' and s.deleted_at is null;
   select count(*) into v_scopes from custom.record s
    where s.organization_id = v_org and s.table_id = p_type_id and s.data_class = 'record' and s.deleted_at is null;
-  v_spec := custom.scope_type_row_of(v_t) || jsonb_build_object('deleted_at', v_now);
-
+  -- A TYPE'S REMOVAL IS THE ONE WRITE WHOSE STORE HALF CANNOT GO FIRST: the store halves never write a row of a
+  -- removed Table (custom._ctx_table_live), so a Table archived first would leave every one of its scopes and
+  -- context fields live in the store while the old cascade removed them (proven on the clone: the suite's T1).
+  -- Everything is still decided from the store above; the image goes first, unmarked, the old cascade takes the
+  -- type's scopes and fields and the follow carries each into the store while the Table is live, and step 3
+  -- archives the Table itself from the image, in the same statement.
   v_actor := coalesce(current_setting('app.actor_system', true), '');
-  v_was := custom._ctx_mark('door');
-  if v_actor = '' then perform set_config('app.actor_system', 'custom.context_write_through', true); end if;
   perform set_config('custom.context_door_row', p_type_id::text, true);
-  perform custom._ctx_store_type(v_org, p_type_id, v_spec);
-  perform set_config('app.actor_system', v_actor, true);
-  perform custom._ctx_mark(v_was);
 
   -- THE IMAGE, UNMARKED: the old cascade takes the type's scopes and context fields with this timestamp, and
   -- the follow carries each into the store.
