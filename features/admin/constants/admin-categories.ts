@@ -755,7 +755,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Kind Registry",
         description:
-          "Browse/search every content-ir kind (system + flexible_data), inspect fields, facets, and the uses/used-by reference graph, and export provider-ready JSON Schemas with referenced kinds resolved into $defs.",
+          "Browse/search every content-ir kind, inspect fields, facets, and the uses/used-by reference graph, and export provider-ready JSON Schemas with referenced kinds resolved into $defs.",
         iconName: "Boxes",
         link: "/administration/utilities/kind-registry",
         isNew: true,

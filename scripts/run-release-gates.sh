@@ -899,7 +899,8 @@ if $STRICT; then
         "No-custom-store-code guard can still fail (self-test)|pnpm check:no-custom-store-code:self-test"
         # The old flexible data system (platform.flexible_data / custom_entity_definition /
         # custom_record) gets no new reader or writer here or in aidream; the shrink-only
-        # allowlist empties as lane ONE-HOME retires the tables (lane PLATFORM-APP-DATA).
+        # allowlist empties as lane ONE-HOME retires the tables (lane PLATFORM-APP-DATA). The same
+        # command fails a new migration creating a flexible-data table outside custom.* (ONE-HOME wave 5).
         "Nothing new reads the old flexible data tables (ratchet)|pnpm check:no-old-flexible-store"
         "No-old-flexible-store guard can still fail (self-test)|pnpm check:no-old-flexible-store:self-test"
         # DECLARED APP TABLES — advisory in BOTH lanes (exits 0 on findings; see the advisory list below).
@@ -1536,7 +1537,8 @@ else
         "No-custom-store-code guard can still fail (self-test)|pnpm check:no-custom-store-code:self-test"
         # The old flexible data system (platform.flexible_data / custom_entity_definition /
         # custom_record) gets no new reader or writer here or in aidream; the shrink-only
-        # allowlist empties as lane ONE-HOME retires the tables (lane PLATFORM-APP-DATA).
+        # allowlist empties as lane ONE-HOME retires the tables (lane PLATFORM-APP-DATA). The same
+        # command fails a new migration creating a flexible-data table outside custom.* (ONE-HOME wave 5).
         "Nothing new reads the old flexible data tables (ratchet)|pnpm check:no-old-flexible-store"
         "No-old-flexible-store guard can still fail (self-test)|pnpm check:no-old-flexible-store:self-test"
         # DECLARED APP TABLES (lane PLATFORM-APP-DATA, wave 3 slice 6). Every `*.app-table.ts`

@@ -26,9 +26,13 @@
  * ALLOWED is shrink-only: an entry whose file no longer reaches a table fails as STALE until it is
  * removed, so the list empties as lane ONE-HOME retires the tables.
  *
+ * THE NEW-TABLE HALF (lane ONE-HOME, wave 5): a migration added after MIGRATION_BASELINE that
+ * creates a flexible-data table (a jsonb bag + a generic name or only label columns) outside
+ * `custom.*` / `deprecated.*` fails too — see `flexibleCreates`.
+ *
  *   pnpm check:no-old-flexible-store                       the tree (both repos)
  *   pnpm check:no-old-flexible-store --frontend-ref <rev>  this repo as of <rev> (proves red on history)
- *   pnpm check:no-old-flexible-store:self-test             planted reaches fail, non-reaches pass
+ *   pnpm check:no-old-flexible-store:self-test             planted reaches and tables fail, non-reaches pass
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -82,20 +86,7 @@ export const OUT_OF_SCOPE: ReadonlyArray<RegExp> = [
 ];
 
 /** The readers and writers that exist today, each with why. Shrink-only. */
-export const ALLOWED: Readonly<Record<string, string>> = {
-  "aidream:packages/matrx-records/matrx_records/movers/flexible_data.py":
-    "the mover that copies flexible_data rows into the record store; retires with the table (lane ONE-HOME)",
-  "aidream:packages/matrx-records/matrx_records/movers/platform_custom.py":
-    "the mover that copies custom_entity_definition / custom_record into the record store; retires with the tables",
-  "aidream:packages/matrx-records/tests/test_movers_against_the_main_database.py":
-    "the two movers' own test; goes with them",
-  "scripts/campaign-tests/doorsonly3_the_three_not_proven_tables.sql":
-    "clone proof suite of the old tables' doors; deleted when the tables are dropped",
-  "scripts/campaign-tests/w1_org_red.sql": "clone proof suite seeding custom_entity_definition; deleted with the table",
-  "scripts/campaign-tests/w1_org_c7.sql": "clone proof suite seeding custom_entity_definition; deleted with the table",
-  "scripts/campaign-tests/trashcoverage2_green.sql":
-    "clone proof suite archiving through flexible_data_archive; deleted with the door",
-};
+export const ALLOWED: Readonly<Record<string, string>> = {};
 
 /**
  * Blank `#` / `--` comments and Python docstrings — a triple-quoted string that opens a line right
@@ -160,7 +151,11 @@ export function reaches(file: string, text: string): string[] {
 
 export type Finding = { kind: "new" | "stale"; file: string; says: string };
 
-export function judge(files: Map<string, string>, scannedPrefixes: string[]): Finding[] {
+export function judge(
+  files: Map<string, string>,
+  scannedPrefixes: string[],
+  allowed: Readonly<Record<string, string>> = ALLOWED,
+): Finding[] {
   const findings: Finding[] = [];
   const reaching = new Set<string>();
   for (const [file, text] of files) {
@@ -168,9 +163,9 @@ export function judge(files: Map<string, string>, scannedPrefixes: string[]): Fi
     const hits = reaches(file, text);
     if (!hits.length) continue;
     reaching.add(file);
-    if (!(file in ALLOWED)) for (const h of hits) findings.push({ kind: "new", file, says: h });
+    if (!(file in allowed)) for (const h of hits) findings.push({ kind: "new", file, says: h });
   }
-  for (const file of Object.keys(ALLOWED)) {
+  for (const file of Object.keys(allowed)) {
     const prefix = file.startsWith("aidream:") ? "aidream:" : "";
     if (!scannedPrefixes.includes(prefix)) continue; // that repo was not scanned this run
     if (!reaching.has(file)) {
@@ -204,6 +199,158 @@ function candidates(cwd: string, prefix: string, ref?: string): Map<string, stri
   }
   return out;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE NEW-TABLE HALF (lane ONE-HOME, wave 5): no NEW flexible-data table outside `custom.*`.
+//
+// The three old tables were generic holders whose rows carried their shape in a jsonb bag. The
+// record store (`custom.*`) is now the one home for that shape, so a migration that creates another
+// such holder anywhere else fails here. Static: every migration `.sql` file in this repo and in
+// aidream (tracked or not) that did not exist at the baseline commit below. A `create table
+// <schema>.<name> (…)` is red when ALL hold:
+//   - the schema is not `custom` or `deprecated` (unqualified = `public`);
+//   - a column is `jsonb` and named data / fields / values / record_data / attributes (the bag);
+//   - the name says it is a generic holder (FLEXIBLE_NAME), or every column besides the standard
+//     bookkeeping ones is a label or the bag (LABEL_BAG): a bag with a label and nothing else.
+// A feature's own payload column (`canvas.canvas_scores.data` beside score / canvas_id) is green.
+// Files that existed at the baseline are history and are not re-judged.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+/** Migration files that existed at these commits are history (2026-10-03, wave 5 step 1). */
+export const MIGRATION_BASELINE = { frontend: "471ff8fcbb", aidream: "4e0b6522ba" } as const;
+
+const MIGRATION_FILE = /(?:^|\/)migrations\/.*\.sql$/;
+const ALLOWED_SCHEMAS = new Set(["custom", "deprecated"]);
+const BAG_COLUMNS = new Set(["data", "fields", "values", "record_data", "attributes"]);
+const FLEXIBLE_NAME = /(flexible|custom_(?:entity|record|object)|dynamic_|generic_|eav|schema_template|_records?$|_entries$)/;
+/** Bookkeeping every table carries; never evidence either way. */
+const STANDARD_COLUMNS = new Set([
+  "id", "created_at", "updated_at", "created_by", "updated_by", "deleted_at", "deleted_by", "archived_at",
+  "archived_by", "organization_id", "user_id", "owner_id", "project_id", "version", "is_public", "is_archived",
+  "is_active", "metadata", "sort_order", "position",
+]);
+/** A table whose other columns are all in here is a labelled bag. */
+const LABEL_BAG = new Set(["label", "slug", "name", "title", "description", "category_id", "kind", "type", ...BAG_COLUMNS]);
+
+function blankSql(text: string): string {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    .split("\n")
+    .map((l) => l.replace(/--.*$/, ""))
+    .join("\n");
+}
+
+function unquote(id: string): string {
+  return id.startsWith('"') ? id.slice(1, -1) : id.toLowerCase();
+}
+
+/** Split a create-table body on top-level commas. */
+function topLevelParts(body: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (const c of body) {
+    if (c === "(") depth++;
+    if (c === ")") depth--;
+    if (c === "," && depth === 0) {
+      parts.push(cur);
+      cur = "";
+    } else cur += c;
+  }
+  if (cur.trim()) parts.push(cur);
+  return parts.map((p) => p.trim()).filter(Boolean);
+}
+
+const CONSTRAINT_START = /^(?:constraint|primary\s+key|unique|check|foreign\s+key|exclude|like)\b/i;
+const IDENT = String.raw`(?:"[^"]+"|[A-Za-z_][A-Za-z0-9_$]*)`;
+const CREATE_TABLE = new RegExp(
+  String.raw`\bcreate\s+(?:(?:global|local)\s+)?(?:(?:temp|temporary|unlogged)\s+)?table\s+(?:if\s+not\s+exists\s+)?(${IDENT})(?:\s*\.\s*(${IDENT}))?\s*\(`,
+  "gi",
+);
+
+/** Every flexible-data-shaped `create table` in one SQL text, as `schema.name: why`. */
+export function flexibleCreates(text: string): string[] {
+  const sql = blankSql(text);
+  const hits: string[] = [];
+  for (const m of sql.matchAll(CREATE_TABLE)) {
+    const schema = m[2] ? unquote(m[1]) : "public";
+    const name = unquote(m[2] ?? m[1]);
+    if (/^(?:temp|temporary|pg_temp)$/.test(schema) || /\b(?:temp|temporary)\b/i.test(m[0])) continue;
+    if (ALLOWED_SCHEMAS.has(schema)) continue;
+    // The column list: from the opening paren to its match.
+    let depth = 0;
+    let end = -1;
+    const open = (m.index ?? 0) + m[0].length - 1;
+    for (let i = open; i < sql.length; i++) {
+      if (sql[i] === "(") depth++;
+      else if (sql[i] === ")" && --depth === 0) {
+        end = i;
+        break;
+      }
+    }
+    if (end < 0) continue;
+    const columns: Array<{ name: string; type: string }> = [];
+    for (const part of topLevelParts(sql.slice(open + 1, end))) {
+      if (CONSTRAINT_START.test(part)) continue;
+      const col = part.match(new RegExp(String.raw`^(${IDENT})\s+([A-Za-z_][A-Za-z0-9_ ]*)`));
+      if (col) columns.push({ name: unquote(col[1]), type: col[2].trim().toLowerCase() });
+    }
+    const bag = columns.find((c) => BAG_COLUMNS.has(c.name) && /^jsonb\b/.test(c.type));
+    if (!bag) continue;
+    const others = columns.map((c) => c.name).filter((c) => !STANDARD_COLUMNS.has(c));
+    const byName = FLEXIBLE_NAME.test(name);
+    const labelled = others.every((c) => LABEL_BAG.has(c));
+    if (!byName && !labelled) continue;
+    hits.push(
+      `${schema}.${name}: jsonb bag \`${bag.name}\` + ${byName ? "a generic-holder name" : `only label columns (${others.join(", ")})`}`,
+    );
+  }
+  return hits;
+}
+
+/** Migration files present now (tracked and untracked) that were not at the baseline commit. */
+function newMigrationFiles(cwd: string, prefix: string, baseline: string): Map<string, string> {
+  const out = new Map<string, string>();
+  try {
+    git(cwd, ["cat-file", "-e", `${baseline}^{commit}`]);
+  } catch {
+    throw new Error(
+      `UNMEASURED: the migration baseline ${baseline} is not in ${cwd} (shallow clone?) — fetch it; the new-table half cannot judge without it`,
+    );
+  }
+  const before = new Set(git(cwd, ["ls-tree", "-r", "--name-only", baseline]).split("\n"));
+  const now = git(cwd, ["ls-files", "-co", "--exclude-standard"]).split("\n");
+  for (const file of now) {
+    if (!file || before.has(file) || !MIGRATION_FILE.test(file) || /(?:^|\/)node_modules\//.test(file)) continue;
+    const path = join(cwd, file);
+    if (!existsSync(path)) continue; // deleted in the working tree
+    out.set(prefix + file, readFileSync(path, "utf8"));
+  }
+  return out;
+}
+
+export function judgeNewTables(files: Map<string, string>): string[] {
+  const findings: string[] = [];
+  for (const [file, text] of files) for (const h of flexibleCreates(text)) findings.push(`${file} — ${h}`);
+  return findings;
+}
+
+const TABLE_RED_PLANTS: string[] = [
+  "create table platform.flexible_things (id uuid primary key, label text, data jsonb);",
+  "create table workbench.custom_object_rows (id uuid, record_data jsonb);",
+  "create table if not exists ops.generic_bag (id uuid, fields jsonb, category_id uuid);",
+  'CREATE TABLE "crm"."lead_bag" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid(), "name" text NOT NULL, "data" JSONB DEFAULT \'{}\'::jsonb, created_at timestamptz DEFAULT now(), CONSTRAINT lead_bag_name_check CHECK (length(name) > 0));',
+];
+
+const TABLE_GREEN_PLANTS: string[] = [
+  "create table custom.table_x (id uuid, label text, data jsonb);",
+  "create table deprecated.flexible_data (id uuid, label text, data jsonb);",
+  "create table canvas.canvas_scores (id uuid primary key, score int, data jsonb, canvas_id uuid, user_id uuid, created_at timestamptz);",
+  "-- create table platform.flexible_things (id uuid, label text, data jsonb);\nselect 1;",
+  "/* create table ops.generic_bag (id uuid, fields jsonb); */ select 1;",
+  "create table platform.flexible_notes (id uuid, label text, data text);",
+  "create temporary table generic_bag (id uuid, data jsonb);",
+];
 
 const RED_PLANTS: Array<[string, string]> = [
   ["features/x/a.ts", 'const { data } = await supabase.schema("platform").from("flexible_data").select("*");'],
@@ -240,14 +387,30 @@ function selfTest(): void {
     console.log(`  ${found.length ? "FALSE" : "GREEN"} ${file}${found.length ? ` — ${found[0].says}` : ""}`);
     if (found.length) failed = true;
   }
-  const stale = judge(new Map(), ["aidream:"]).filter((f) => f.kind === "stale");
+  for (const text of TABLE_RED_PLANTS) {
+    const ok = flexibleCreates(text).length > 0;
+    console.log(`  ${ok ? "RED  " : "MISS "} new table: ${text.slice(0, 70)}`);
+    if (!ok) failed = true;
+  }
+  for (const text of TABLE_GREEN_PLANTS) {
+    const found = flexibleCreates(text);
+    console.log(`  ${found.length ? "FALSE" : "GREEN"} new table: ${text.replace(/\n/g, " ").slice(0, 70)}${found.length ? ` — ${found[0]}` : ""}`);
+    if (found.length) failed = true;
+  }
+  // ALLOWED is empty now (wave 5 step 1), so the stale rule is proven on a planted allowance.
+  const stale = judge(new Map(), ["aidream:"], { "aidream:aidream/services/x/old_reader.py": "planted" }).filter(
+    (f) => f.kind === "stale",
+  );
   console.log(`  ${stale.length ? "RED  " : "MISS "} an allowed reader that no longer reaches fails as stale (${stale.length})`);
   if (!stale.length) failed = true;
   if (failed) {
     console.error("✗ self-test FAILED — the guard cannot be trusted");
     process.exit(1);
   }
-  console.log(`✓ self-test: ${RED_PLANTS.length} planted reaches fail, ${GREEN_PLANTS.length} non-reaches pass, a stale allowance fails`);
+  console.log(
+    `✓ self-test: ${RED_PLANTS.length} planted reaches fail, ${GREEN_PLANTS.length} non-reaches pass, a stale allowance fails; ` +
+      `${TABLE_RED_PLANTS.length} planted flexible tables fail, ${TABLE_GREEN_PLANTS.length} non-flexible creates pass`,
+  );
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -266,6 +429,21 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       console.log(`[WARN] UNMEASURED: ${AIDREAM} is not checked out beside this repo — aidream was NOT scanned.`);
     }
     const findings = judge(files, scanned);
+    // The new-table half.
+    const migrations = newMigrationFiles(FRONTEND, "", MIGRATION_BASELINE.frontend);
+    if (scanned.includes("aidream:")) {
+      for (const [k, v] of newMigrationFiles(AIDREAM, "aidream:", MIGRATION_BASELINE.aidream)) migrations.set(k, v);
+    }
+    const tables = judgeNewTables(migrations);
+    if (tables.length) {
+      console.log(`✗ ${tables.length} new flexible-data table(s) outside custom.* — one home for an organization's own shapes:`);
+      for (const t of tables) console.log(`    [new-table] ${t}`);
+      console.log(
+        "  Remedy: an organization's own data → the record store (custom.* via @ai-matrx/records); data the app " +
+          "relies on → a declared app table (defineAppTable); kinds → content_ir. Give a feature payload its own " +
+          "named columns beside the jsonb, or a non-generic name.",
+      );
+    }
     if (findings.length) {
       console.log(`✗ ${findings.length} finding(s) — the old flexible data system gets no new reader or writer:`);
       for (const f of findings) console.log(`    [${f.kind}] ${f.says}`);
@@ -275,9 +453,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       );
       process.exit(1);
     }
+    if (tables.length) process.exit(1);
     console.log(
       `✓ nothing new reaches platform.flexible_data / custom_entity_definition / custom_record ` +
-        `(${files.size} candidate files${ref ? ` at ${ref}` : ""}; ${Object.keys(ALLOWED).length} allowed, retiring)`,
+        `(${files.size} candidate files${ref ? ` at ${ref}` : ""}; ${Object.keys(ALLOWED).length} allowed, retiring); ` +
+        `no new flexible-data table outside custom.* (${migrations.size} migration files since the baseline)`,
     );
   }
 }
