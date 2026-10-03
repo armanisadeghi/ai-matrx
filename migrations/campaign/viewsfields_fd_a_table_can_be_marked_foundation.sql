@@ -2,11 +2,11 @@
 -- lane: VIEWS-AND-FIELDS
 -- lock: custom
 -- window-class: function bodies, one appended view column, one function re-made in place; no DDL on any table.
--- based-on: custom._table_shape_guard() a55ee77cdb5ee5e683732dc42675f7b4c3476c7b05c665249c29cd11283793f0
+-- based-on: custom._table_shape_guard() 213f692a33aa8b8772bb343c4fc0e311dd411c2037d962b982ba37c3b12377e6
 -- based-on: custom.table_placement(uuid, uuid, jsonb, boolean) 2eb597a4e56381e9e43ba6856587eb4126357924ee8132a54a6e0f00707f4601
--- based-on: custom.data_home(uuid, text, boolean) 95c9f68104f80a88d2f97b4060106f9fb5b2f35c96738b83a07efe73ebc0c4c7
--- based-on: custom.table_facts(uuid) 281e329d82b327b295d672fd8ad8c6a35246632b0855e536aaa85499d0223b66
--- based-on: custom.record_headers(uuid, uuid[]) dbdb83ceed7a4eab037be08b2b80392226fcc47939cef422f25e62aed404e9b4
+-- based-on: custom.data_home(uuid, text, boolean) af08a0d43f1c5441476a9a06666f1493136bcd857f0e444406aa50451f6fc3e2
+-- based-on: custom.table_facts(uuid) 79da6657ffd8e65ab9fc7f575474334ff1cae893393bbe5f15fddb582274aaa1
+-- based-on: custom.record_headers(uuid, uuid[]) 405c9720b4ccff2def0353737c0cdd69bdbf349fab4e50543cdc20090ccb1952
 -- based-on: custom.table_from_example(uuid, uuid, jsonb) 57aaeb8e5e203e05fb6b683e051f4826c9da51e6f24c4aa98828bff1d395f834
 --
 -- THE USE CASE (Arman, 2026-09-25): "it's sort of like the data that you set up on day one because you are
@@ -308,8 +308,28 @@ begin
       elsif v_reader ? 'level' and coalesce(v_reader ->> 'level', '') not in ('viewer', 'commenter', 'editor') then
         v_bad := array_append(v_bad, format('a reader reads, comments or edits, and %s says %s', v_reader ->> 'field', custom.said(v_reader ->> 'level', 'nothing')));
           v_bad_hints := array_append(v_bad_hints, ('readers[].level is viewer, commenter or editor; owner and admin are not given by a field.')::text);
+      -- CHAIR-ACCESS c: `when` is a condition in the saved-view where grammar - a flat {column: value}
+      -- map over this table's own columns, or a Rule expression ({"op": ...}). Anything else, or a flat
+      -- key that is not a column of this table, is refused here so a reveal rule never silently fails.
+      elsif v_reader ? 'when' and jsonb_typeof(v_reader -> 'when') is distinct from 'object' then
+        v_bad := array_append(v_bad, format('a reader''s when is a condition on the row, and %s''s is a %s', v_reader ->> 'field', jsonb_typeof(v_reader -> 'when')));
+          v_bad_hints := array_append(v_bad_hints, ('readers[].when is {column: value, ...} over this table''s columns, or a Rule expression {"op": ..., "args": [...]} - the same grammar a saved view''s where uses.')::text);
+      elsif v_reader ? 'when' and not custom.filter_is_rule(v_reader -> 'when')
+            and exists (select 1 from jsonb_object_keys(v_reader -> 'when') k where v_names is null or not (k = any (v_names))) then
+        v_bad := array_append(v_bad, format('a reader''s when names a column this table does not have: %s',
+                   (select string_agg(k, ', ') from jsonb_object_keys(v_reader -> 'when') k where v_names is null or not (k = any (v_names)))));
+          v_bad_hints := array_append(v_bad_hints, ('readers[].when: every key is one of this table''s column keys.')::text);
       end if;
     end loop;
+  end if;
+
+  -- CHAIR-DOORS-3A (2026-10-03): `maker_is_reader` says the Table belongs to the organization and the
+  -- person who made it reads only what any reader reads (custom.confidential_answer). It is a state of
+  -- a Confidential Table and nothing else: true, or left out.
+  if d ? 'maker_is_reader' and (d -> 'maker_is_reader' is distinct from 'true'::jsonb
+                                or d ->> 'level' is distinct from 'confidential') then
+    v_bad := array_append(v_bad, format('only a Confidential table keeps its maker as a reader, and it says so with true or leaves it out'));
+      v_bad_hints := array_append(v_bad_hints, ('Access ladder: maker_is_reader is true on a Confidential table, or absent.')::text);
   end if;
 
   -- ── THE ONE ANSWER. ───────────────────────────────────────────────────────────────────
@@ -348,6 +368,24 @@ begin
                     coalesce(nullif(d ->> 'name', ''), new.id::text),
                     case when tg_op = 'UPDATE' and old.data ->> 'level' = 'confidential' then ' with different readers' else '' end,
                     new.id
+      using errcode = '42501';
+  end if;
+
+  -- ── CHAIR-DOORS-3A: ONLY ARMAN TURNS "THE MAKER IS ONLY A READER" ON OR OFF, AND ONLY HE MOVES SUCH ──
+  -- ── A TABLE BACK TO ORGANIZATION. The maker still holds the Table's own row; without this she ──
+  -- ── could take the state off, or drop the level, and read every row again. The same approval, ──
+  -- ── recorded in this transaction by the same door. ──
+  if ((tg_op = 'INSERT' and d ? 'maker_is_reader')
+      or (tg_op = 'UPDATE'
+          and ((old.data -> 'maker_is_reader') is distinct from (d -> 'maker_is_reader')
+               or (old.data -> 'maker_is_reader' = 'true'::jsonb
+                   and d ->> 'level' is distinct from 'confidential'))))
+     and not exists (select 1 from platform.class_approval_by_arman a
+                      where a.token = 'custom.table:' || new.id::text
+                        and a.txid = pg_current_xact_id()
+                        and a.level = 'confidential'::platform.data_class) then
+    raise exception 'Refused: % keeps the person who made it as only a reader, and only Arman turns that on or off or moves such a table back to Organization. The law: common-docs/policies/access-ladder.md. If Arman approved it in his own words, record them and make the change with custom.set_table_confidential_arman_explicitly_approved(p_table_id => %L, p_readers => null, p_arman_words => ''<his exact words>'', p_approved_on => ''<the date he said them>'', p_maker_is_reader => true or false).',
+                    coalesce(nullif(d ->> 'name', ''), new.id::text), new.id
       using errcode = '42501';
   end if;
 
@@ -502,7 +540,7 @@ begin
   perform custom.assert_client_may_reach(p_organization_id, 'custom.table_facts');
   return query
     with t as (
-      select r.id, r.visibility, r.created_by, r.data,
+      select r.id, r.shown_to, r.published_to_web, r.created_by, r.data,
              custom.table_placement(r.organization_id, r.id, r.data, r.data_class = 'kernel') as p
         from custom.record r
        where r.organization_id = p_organization_id
@@ -527,7 +565,9 @@ begin
        order by nullif(f.data -> 'config' ->> 'options_table_id', '')::uuid, f.created_at
     )
     select t.id,
-           t.visibility::text,
+           -- CD-LADDER (2026-10-03): the lane word, worked out from Shown to and Published to the web;
+           -- the row column T-13 retires is not read.
+           case when t.published_to_web then 'public' when t.shown_to = 'only_me' then 'personal' else 'internal' end,
            (v_me is not null and t.created_by = v_me),
            (t.p ->> 'kept_by_the_app')::boolean,
            t.p ->> 'kept_for',
@@ -831,11 +871,20 @@ begin
     -- asked once per organization (materialized: never once per row)
     select mk.org, custom.history_people(mk.org, mk.ids) as m from mk
   )
-  select coalesce(jsonb_agg(t.e || jsonb_build_object('created_by_name', p.m #>> array[t.e ->> 'created_by', 'name'])
+  -- SYNCED FROM (lane VISION-REACH wave 3): every Table row also says where it syncs from — the
+  -- provider of its sync_source ('postgres' for an outside database, 'google_sheets' for a sheet
+  -- tab), null for a table of our own — read from the very Table record listed, so the home can
+  -- badge it Synced.
+  select coalesce(jsonb_agg(t.e || jsonb_build_object('created_by_name', p.m #>> array[t.e ->> 'created_by', 'name'],
+                                                      'synced_from', tr.data -> 'sync_source' ->> 'provider')
                   order by t.o), '[]'::jsonb)
     into v_tables
     from jsonb_array_elements(v_tables) with ordinality as t(e, o)
-    left join people p on p.org = (t.e ->> 'organization_id')::uuid;
+    left join people p on p.org = (t.e ->> 'organization_id')::uuid
+    left join custom.record tr
+      on tr.organization_id = (t.e ->> 'organization_id')::uuid
+     and tr.id = (t.e ->> 'table_id')::uuid
+     and tr.table_id = custom.table_kernel_id();
 
   with ids as (
     select x.organization_id as org, 'structure'::text as k, x.table_id as id
@@ -908,7 +957,10 @@ begin
        where r.organization_id = p_organization_id
          and r.table_id = v_t
          and r.id = any(p_ids)
-         and r.id in (select v from custom.query_visible_ids(p_organization_id, v_t, 'viewer') v);
+         -- CHAIR-ACCESS b: a row of a Confidential Table this person is not named on still answers
+         -- its header here (this door never carries a value): id, when it was made, nothing else.
+         and (r.id in (select v from custom.query_visible_ids(p_organization_id, v_t, 'viewer') v)
+              or custom.confidential_header(v_me, r.id) is not null);
   end loop;
 end
 $function$;
