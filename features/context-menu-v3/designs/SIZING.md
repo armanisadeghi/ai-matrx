@@ -29,7 +29,7 @@ Round 1 already matched Sheets on row height (32) and text (14). It lost on widt
 | Shortcut | 14px, muted, right-aligned, 16px clear of the label | Sheets 14px at 38% ink. |
 | Section heading | 12px semibold, muted | Notion and Linear use small muted group names. Only "Intelligence" uses one. |
 | Icon | 18px | Sheets 18. |
-| Strip icon button | 36×36, 18px glyph, 2px gap | The same height as a row. The tooltip gives the name, then the shortcut or the reason it is greyed. |
+| Strip icon button | 34×36, 18px glyph, 2px gap | The same height as a row. The tooltip gives the name, then the shortcut or the reason it is greyed. |
 | Split chevron | 16×36, 12px glyph | Sits beside the icon (Copy, Export, Read aloud). |
 | Separator | 1px, 8px above and below (`my-2`) | Sheets 8. |
 | Filter field | 36px tall, 15px text | Matches a row. |

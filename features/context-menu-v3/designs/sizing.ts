@@ -18,6 +18,7 @@ export const DESKTOP = {
   headingSize: 12,
   iconSize: 18,
   iconButton: 36,
+  iconButtonWidth: 34,
   separatorMargin: 8,
   searchHeight: 36,
 } as const;
@@ -47,7 +48,7 @@ export const D = {
   heading: "px-2.5 pb-1 pt-2 text-xs font-semibold text-muted-foreground",
   separator: "my-2",
   search: "h-9 w-full rounded-md border border-border bg-transparent px-2.5 text-[15px] outline-none focus:border-primary",
-  iconButton: "h-9 w-9 rounded-md",
+  iconButton: "h-9 w-[34px] rounded-md",
   splitChevron: "h-9 w-4 rounded-md",
   strip: "flex flex-wrap items-center gap-0.5 px-1 py-1",
   description: "truncate text-[13px] leading-4 text-muted-foreground",
