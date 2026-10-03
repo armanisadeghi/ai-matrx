@@ -25,6 +25,7 @@ import { KNOWLEDGE_ASSETS_CANVAS_KIND } from "@/features/rag/canvas/knowledgeAss
 import { SYSTEM_CONTEXT_PREVIEW_CANVAS_KIND } from "@/features/admin/system-context/canvas/systemContextPreviewKind";
 import { AGENT_EDIT_HISTORY_CANVAS_KIND } from "./agent/agentEditHistoryKind";
 import { NOTE_HISTORY_CANVAS_KIND } from "@/features/notes/canvas/noteHistoryKind";
+import { CLOUD_FILE_EDITOR_CANVAS_KIND } from "@/features/files/canvas/cloudFileEditorKind";
 import { PAGE_PANEL_CANVAS_KIND } from "./pagePanel";
 
 export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
@@ -46,6 +47,8 @@ export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   AGENT_EDIT_HISTORY_CANVAS_KIND,
   // A note's version history beside the note.
   NOTE_HISTORY_CANVAS_KIND,
+  // A cloud file's text editor beside its preview.
+  CLOUD_FILE_EDITOR_CANVAS_KIND,
   // A page's own live panel (a table's row detail, an admin form) — see pagePanel.tsx.
   PAGE_PANEL_CANVAS_KIND,
 ];

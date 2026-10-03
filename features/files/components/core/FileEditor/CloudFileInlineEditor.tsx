@@ -2,15 +2,14 @@
  * features/files/components/core/FileEditor/CloudFileInlineEditor.tsx
  *
  * Inline (in-pane) Monaco editor for cloud-files. Mounts directly inside
- * the preview pane's Edit tab — no Sheet/Dialog wrapper. Sister of
- * `CloudFileEditor` (which wraps the same logic in a Sheet for full-screen
- * editing); they share semantics but this one is sized to its parent.
+ * the preview pane's Edit tab and is the body of the `cloud-file-editor`
+ * canvas tab (a preview's Edit action) — no Sheet/Dialog wrapper; sized to
+ * its parent.
  *
  * Lifecycle:
  *   - Loads bytes via `useFileBlob` → `text()` → Monaco model.
  *   - Edits track `isDirty`. Save re-uploads under the same name + parent,
- *     producing a new version row server-side (same flow as
- *     `CloudFileEditor`). Cmd/Ctrl+S triggers save without leaving Monaco.
+ *     producing a new version row server-side. Cmd/Ctrl+S triggers save without leaving Monaco.
  *   - Flush on unmount, on switching to another file, and on `pagehide`
  *     (only when dirty + no in-flight error) so closing a tile, switching
  *     tabs or leaving the page never drops the last typed text. The flush

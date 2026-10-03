@@ -137,7 +137,6 @@ import { useFileShortcuts } from "./useFileShortcuts";
 import { useFilesSurfaceWriteHandlers } from "./useFilesSurfaceWriteHandlers";
 import { RenameHost } from "@/features/files/components/core/RenameDialog/RenameHost";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
-import { CloudFileEditorHost } from "@/features/files/components/core/FileEditor/CloudFileEditorHost";
 // Side-effect import: each adapter calls `registerVirtualSource` at module
 // load. Must come before virtual roots are mounted on mount.
 import "@/features/files/virtual-sources/registerBuiltinVirtualSources";
@@ -1126,7 +1125,6 @@ function PageShellDesktop({
             </AlertDialog>
 
             <RenameHost />
-            <CloudFileEditorHost />
             <UploadContextPrompt
               open={uploadPromptNames !== null}
               onOpenChange={(o) => {

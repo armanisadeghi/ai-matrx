@@ -30,7 +30,8 @@ import { useFileActions } from "@/features/files/components/core/FileActions/use
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 import { isBrowserRenderableImageMime } from "@/features/files/utils/file-types";
 import { requestRename } from "@/features/files/components/core/RenameDialog/RenameHost";
-import { requestEdit } from "@/features/files/components/core/FileEditor/CloudFileEditorHost";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { openCloudFileEditor } from "@/features/files/canvas/cloudFileEditorKind";
 import { getVirtualSource } from "@/features/files/virtual-sources/registry";
 import { PreviewerActionBar } from "./PreviewerActionBar/PreviewerActionBar";
 import { buildPreviewActions } from "./preview-actions";
@@ -82,6 +83,8 @@ export function FilePreview({
 }: FilePreviewProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  // Edit opens the file's editor as a canvas tab beside this preview.
+  const canvas = useOptionalCanvas();
   // Canonical file UUID only — hydrate when the row isn't already in the
   // Files tree (system/crawl artifacts, deep links, floating preview).
   const ensure = useEnsureCloudFile(fileId);
@@ -232,7 +235,7 @@ export function FilePreview({
       onEdit:
         capability.previewKind === "pdf"
           ? () => router.push(`/files/f/${encodeURIComponent(fileId)}/studio`)
-          : () => requestEdit(fileId),
+          : () => void openCloudFileEditor(canvas, fileId, file.fileName),
       openInRoute,
       onExtractText:
         capability.previewKind === "pdf" && file.source.kind !== "virtual"
