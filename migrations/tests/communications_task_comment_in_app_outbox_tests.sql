@@ -124,5 +124,16 @@ begin
   if v_count <> 1 then
     raise exception 'Saved note comment did not create one email intent';
   end if;
+
+  update users.user_email_preferences
+     set comment_notifications = false where user_id = v_admin;
+  insert into platform.comments (organization_id, entity_type, entity_id, body)
+  values (v_org, 'note', v_note, 'This owner disabled comment email.')
+  returning id into v_comment;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('comment.added:%s:email', v_comment);
+  if v_count <> 0 then
+    raise exception 'Disabled comment email created an intent';
+  end if;
 end;
 $test$;
