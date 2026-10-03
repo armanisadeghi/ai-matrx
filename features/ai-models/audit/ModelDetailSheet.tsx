@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { CanvasPagePanel, PAGE_PANEL_KIND, pagePanelItemId } from "@/features/canvas/host/pagePanel";
+
+/** The ONE canvas tab every audit table opens a model into. */
+export const MODEL_DETAIL_PANEL_KEY = "ai-model-detail";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowUpRight } from "lucide-react";
 import AiModelDetailPanel from "../components/AiModelDetailPanel";
@@ -49,16 +53,14 @@ export default function ModelDetailSheet({
 
   const model = allModels.find((m) => m.id === modelId) ?? null;
 
+  // The model's full editor is a canvas tab beside the audit table: ONE tab
+  // that follows the row picked (a new row brings it forward under its name).
+  if (!modelId) return null;
   return (
-    <MatrxDynamicPanelHost
-      open={!!modelId}
-      onOpenChange={(next) => {
-        if (!next) onClose();
-      }}
+    <CanvasPagePanel
+      panelKey={MODEL_DETAIL_PANEL_KEY}
       title={model?.common_name || model?.name || "Model"}
-      position="right"
-      defaultSize={42}
-      contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      onClose={onClose}
     >
       {loadingProviders ? (
         <div className="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -84,6 +86,7 @@ export default function ModelDetailSheet({
             onSaved(saved);
           }}
           onDeleted={onClose}
+          inCanvas
         />
         </>
       ) : modelId ? (
@@ -91,12 +94,13 @@ export default function ModelDetailSheet({
         // the gate resolves whether it was deleted, denied, or never existed.
         <AccessGate token="ai_model" id={modelId} />
       ) : null}
-    </MatrxDynamicPanelHost>
+    </CanvasPagePanel>
   );
 }
 
 /** Small icon button used in every audit table row to open the detail sheet */
 export function OpenDetailButton({ onClick }: { onClick: () => void }) {
+  const canvas = useOptionalCanvas();
   return (
     <Button
       variant="ghost"
@@ -105,6 +109,10 @@ export function OpenDetailButton({ onClick }: { onClick: () => void }) {
       onClick={(e) => {
         e.stopPropagation();
         onClick();
+        // The same row again while its tab sits behind another: bring it forward.
+        if (canvas?.getState().items[pagePanelItemId(MODEL_DETAIL_PANEL_KEY)]) {
+          canvas.open({ kind: PAGE_PANEL_KIND, key: MODEL_DETAIL_PANEL_KEY });
+        }
       }}
       title="Open full model editor"
     >

@@ -69,6 +69,8 @@ interface AiModelDetailPanelProps {
   onClose: () => void;
   onSaved: (model: AiModel) => void;
   onDeleted: (id: string) => void;
+  /** Hosted in a canvas tab: the pane header carries the close, so the header X is absent. */
+  inCanvas?: boolean;
 }
 
 function rowToFormData(row: AiModel): AiModelFormData {
@@ -876,6 +878,7 @@ export default function AiModelDetailPanel({
   onClose,
   onSaved,
   onDeleted,
+  inCanvas = false,
 }: AiModelDetailPanelProps) {
   const [formData, setFormData] = useState<AiModelFormData>(
     isNew ? EMPTY_FORM : model ? rowToFormData(model) : EMPTY_FORM,
@@ -1315,23 +1318,25 @@ export default function AiModelDetailPanel({
               </span>
             )}
           </div>
-          <TooltipProvider delayDuration={400}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 shrink-0"
-                  onClick={requestClose}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="text-xs">
-                Close panel
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {inCanvas ? null : (
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 shrink-0"
+                    onClick={requestClose}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="text-xs">
+                  Close panel
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
 
         {/* Tab content area */}
