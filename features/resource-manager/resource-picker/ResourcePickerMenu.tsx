@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { ChevronRight, FolderOpen, Settings2, Bug, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NotesResourcePicker } from "./NotesResourcePicker";
 import { TasksResourcePicker } from "./TasksResourcePicker";
@@ -34,9 +33,11 @@ import {
   selectGoogleFileIds,
 } from "@/features/google-workspace/attach/googleFileContext";
 import { useAppDispatch, useAppStore, useAppSelector } from "@/lib/redux/hooks";
+import { ResourcePickerTiles } from "./ResourcePickerTiles";
 import {
   flattenResourcePickerItems,
   getVisibleResourcePickerCategories,
+  resourcePickerItemsAsTiles,
   type ResourcePickerViewId,
 } from "./resource-picker-menu-items";
 import { useRunControlCounts } from "./useRunControlCounts";
@@ -577,114 +578,152 @@ export function ResourcePickerMenu({
     );
   }
 
-  // Main menu view
+  // Main menu view — the primary doors as a big-icon tile row (the same
+  // tiles as ResourcePickerTiles, same item list and tints), everything else
+  // as roomy rows with a tinted icon chip.
+  const openDoor = (id: Exclude<ResourcePickerViewId, null>) => {
+    // "Cloud browser" is a direct action (give the agent a browser → open
+    // the canvas), not a drill-in picker view.
+    if (id === "cloud_browser") {
+      openCloudBrowser({ conversationId });
+      onClose();
+      return;
+    }
+    setActiveView(id);
+  };
+  const [primary, ...rest] = visibleCategories;
+  const tileCategory = primary && !primary.category ? primary : null;
+  const rowCategories = tileCategory ? rest : visibleCategories;
+
   return (
-    <div className={cn("py-1", fillHost && "h-full overflow-y-auto")}>
-      <Button
-        variant="ghost"
-        size="sm"
+    <div
+      className={cn(
+        "flex w-full flex-col gap-1 p-1.5 sm:min-w-[22rem]",
+        fillHost && "h-full overflow-y-auto",
+      )}
+    >
+      <button
+        type="button"
         data-testid="picker-knowledge-search"
-        className="group h-11 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60 lg:h-6"
+        className="flex h-11 w-full shrink-0 items-center gap-2 rounded-lg border border-border bg-muted/40 px-2.5 text-left text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:bg-muted/70 lg:h-10"
         onClick={openKnowledgeSearch}
       >
-        <Search className="mr-1.5 h-3.5 w-3.5 shrink-0 text-primary" />
-        <span className="font-normal text-foreground">Search your knowledge…</span>
-        <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">⌘K</span>
-      </Button>
-      {visibleCategories.map((category) => (
+        <Search className="h-4 w-4 shrink-0 text-primary" />
+        <span className="min-w-0 flex-1 truncate">Search your knowledge</span>
+        <kbd className="shrink-0 rounded border border-border bg-background px-1 font-sans text-[10px] text-muted-foreground">
+          ⌘K
+        </kbd>
+      </button>
+
+      {tileCategory ? (
+        <ResourcePickerTiles
+          size="compact"
+          className="mt-0.5"
+          items={resourcePickerItemsAsTiles(tileCategory.items)}
+          badges={counts}
+          onSelect={(item) => openDoor(item.id as Exclude<ResourcePickerViewId, null>)}
+        />
+      ) : null}
+
+      {rowCategories.map((category) => (
         <div key={category.category || "primary"} className="flex flex-col">
           {category.category ? (
-            <div className="mt-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="truncate px-2 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {category.category}
             </div>
           ) : null}
-          {category.items.map((resource) => {
-            const Icon = resource.icon;
-            const count = counts[resource.id];
-            return (
-              <Button
-                key={resource.id}
-                variant="ghost"
-                size="sm"
-                className="group h-11 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60 lg:h-6"
-                onClick={() => {
-                  // "Cloud browser" is a direct action (give the agent a
-                  // browser → open the canvas), not a drill-in picker view.
-                  if (resource.id === "cloud_browser") {
-                    openCloudBrowser({ conversationId });
-                    onClose();
-                    return;
-                  }
-                  setActiveView(resource.id);
-                }}
-              >
-                <Icon
-                  className={cn(
-                    "mr-1.5 h-3.5 w-3.5 shrink-0",
-                    resource.iconClassName,
-                  )}
-                />
-                <span className="font-normal text-foreground">
-                  {resource.label}
-                </span>
-                {count !== undefined && (
-                  <span
-                    className="ml-1.5 shrink-0 rounded bg-muted px-1 text-[10px] leading-4 tabular-nums text-muted-foreground"
-                    title={`${count} active for this run`}
-                  >
-                    {/* read-gate-exempt: useRunControlCounts withholds the count (undefined) until the agent definition has loaded, so a failed load renders no number */}
-                    {count}
-                  </span>
-                )}
-                <ChevronRight className="ml-1.5 h-3 w-3 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-muted-foreground" />
-              </Button>
-            );
-          })}
+          {category.items.map((resource) => (
+            <PickerMenuRow
+              key={resource.id}
+              icon={resource.icon}
+              iconClassName={resource.iconClassName}
+              label={resource.label}
+              count={counts[resource.id]}
+              chevron
+              onClick={() => openDoor(resource.id)}
+            />
+          ))}
         </div>
       ))}
 
       {(onSettingsClick || onDebugClick) && (
-        <div className="mt-1 border-t border-border pt-0.5">
+        <div className="mt-1 flex flex-col border-t border-border pt-1">
           {onSettingsClick && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-11 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60 lg:h-6"
+            <PickerMenuRow
+              icon={Settings2}
+              iconClassName="text-muted-foreground"
+              label="Settings"
               onClick={() => {
                 onSettingsClick();
                 onClose();
               }}
-            >
-              <Settings2 className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-muted-foreground" />
-              <span className="text-foreground font-normal">Settings</span>
-            </Button>
+            />
           )}
           {onDebugClick && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-11 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60 lg:h-6"
+            <PickerMenuRow
+              icon={Bug}
+              iconClassName={showDebugActive ? "text-destructive" : "text-muted-foreground"}
+              label="Debug"
+              destructive={showDebugActive}
               onClick={() => {
                 onDebugClick();
                 onClose();
               }}
-            >
-              <Bug
-                className={`w-3.5 h-3.5 mr-1.5 flex-shrink-0 ${showDebugActive ? "text-destructive" : "text-muted-foreground"}`}
-              />
-              <span
-                className={
-                  showDebugActive
-                    ? "text-destructive font-normal"
-                    : "text-foreground font-normal"
-                }
-              >
-                Debug
-              </span>
-            </Button>
+            />
           )}
         </div>
       )}
     </div>
+  );
+}
+
+/** One menu row: tinted icon chip, one-line label, optional count + chevron. */
+function PickerMenuRow({
+  icon: Icon,
+  iconClassName,
+  label,
+  count,
+  chevron,
+  destructive,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  iconClassName: string;
+  label: string;
+  count?: number;
+  chevron?: boolean;
+  destructive?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex h-11 w-full min-w-0 shrink-0 items-center gap-2.5 rounded-lg px-1.5 text-left text-sm transition-colors hover:bg-accent lg:h-9"
+    >
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+        <Icon className={cn("h-4 w-4", iconClassName)} />
+      </span>
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate",
+          destructive ? "text-destructive" : "text-foreground",
+        )}
+      >
+        {label}
+      </span>
+      {count !== undefined && (
+        <span
+          className="shrink-0 rounded-md bg-muted px-1.5 text-[11px] leading-5 tabular-nums text-muted-foreground"
+          title={`${count} active for this run`}
+        >
+          {/* read-gate-exempt: useRunControlCounts withholds the count (undefined) until the agent definition has loaded, so a failed load renders no number */}
+          {count}
+        </span>
+      )}
+      {chevron ? (
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-muted-foreground" />
+      ) : null}
+    </button>
   );
 }
