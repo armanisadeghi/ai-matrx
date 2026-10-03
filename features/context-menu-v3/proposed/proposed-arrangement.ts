@@ -192,6 +192,17 @@ export function proposedArrangement(
     else if (COPY_SAVE_CATEGORIES.has(r.action.category)) copySave.push(r.action);
     else tools.push(r.action);
   }
+  // Most-used first: talk to it, run an action or an agent; then hand-offs and listening.
+  const rank = (a: Action) => {
+    const l = actionLabel(a, target);
+    if (a.id === "cm:chat") return 0;
+    if (a.id.startsWith("cm:placement:ai-action")) return 1;
+    if (a.id.startsWith("cm:placement:bound-agent") || a.id.startsWith("cm:agents")) return 2;
+    if (a.id.startsWith("cm:")) return 3;
+    if (/^summari[sz]e/i.test(l)) return 5;
+    return 4;
+  };
+  ai.sort((a, b) => rank(a) - rank(b));
   top.push(submenu("intelligence", "Intelligence", "ai", 0, icon(INTELLIGENCE_ICON), ai));
   if (copySave.length) top.push(submenu("copy-save", "Copy & save", "app", 0, icon(Copy), copySave));
   if (tools.length) top.push(submenu("tools", "Tools", "feedback", 0, icon(Wrench), tools));
