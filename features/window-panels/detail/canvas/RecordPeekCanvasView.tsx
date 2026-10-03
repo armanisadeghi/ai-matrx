@@ -5,7 +5,7 @@
  * (`DetailDockedPresentation`) with the canvas as its shell. The pane header is
  * the chrome — the tab carries the record's name and the record's own
  * controls (previous / next, other presentations, copy id) are portaled into
- * the header beside the pane's "…" menu.
+ * the header; in a narrow pane the optional ones join the pane's one menu.
  *
  * Inside a tab, "docked" means THIS tab: stepping to the next record in the
  * list re-keys the tab in place (Notion's peek arrows), and closing the docked
@@ -13,13 +13,14 @@
  */
 
 import { createContext, useContext, useEffect, type ReactNode } from "react";
-import type { CanvasKindProps } from "@ai-matrx/canvas/react";
+import { useCanvasMenuItems, type CanvasKindProps } from "@ai-matrx/canvas/react";
 import {
   DetailDockedPresentation,
   DetailHostProvider,
   useDetailHost,
   type DetailDockedShellProps,
   type DetailHostPorts,
+  type DetailMenuAction,
 } from "@ai-matrx/detail/react";
 import { DETAIL_URL_AS_ARG, DETAIL_URL_TYPE_KEY } from "@ai-matrx/detail";
 import { KindHeaderPortal, useKindPaneHeaderWidth } from "@/features/canvas/host/kindHeaderSlot";
@@ -33,32 +34,32 @@ const PeekTabContext = createContext<CanvasKindProps | null>(null);
 const COMPACT_PANE_BELOW_PX = 560;
 
 /**
- * The record's controls in the pane header. In a narrow pane they sit in a
- * `window-header` container sized to the controls that must stay (More, and
- * previous / next when the record came from a list), which is the container
- * the Detail primitive's own compact rule reads — so the optional actions
- * fold into its overflow menu and the tabs keep their room.
+ * The record's controls in the pane header. In a narrow pane only previous /
+ * next stay in the header (when the record came from a list); the optional
+ * actions (open as window / page, copy id) join the pane's ONE menu through
+ * `useCanvasMenuItems` — never a second overflow button beside the pane's.
  */
-function HeaderActions({ itemId, hasList, children }: { itemId: string; hasList: boolean; children: ReactNode }) {
+function HeaderActions({
+  itemId,
+  hasList,
+  actions,
+  navActions,
+  menuActions,
+}: {
+  itemId: string;
+  hasList: boolean;
+  actions: ReactNode;
+  navActions: ReactNode;
+  menuActions: readonly DetailMenuAction[];
+}) {
   const width = useKindPaneHeaderWidth(itemId);
   const compact = width !== null && width < COMPACT_PANE_BELOW_PX;
-  return (
-    <KindHeaderPortal itemId={itemId}>
-      {compact ? (
-        <span
-          className="@container/window-header inline-flex justify-end"
-          style={{ width: hasList ? "10.5rem" : "2.5rem" }}
-        >
-          {children}
-        </span>
-      ) : (
-        children
-      )}
-    </KindHeaderPortal>
-  );
+  useCanvasMenuItems(itemId, compact ? menuActions : []);
+  if (compact && !hasList) return null;
+  return <KindHeaderPortal itemId={itemId}>{compact ? navActions : actions}</KindHeaderPortal>;
 }
 
-function RecordPeekShell({ instanceKey, title, actions, children }: DetailDockedShellProps) {
+function RecordPeekShell({ instanceKey, title, actions, navActions, menuActions, children }: DetailDockedShellProps) {
   // The tab on screen keeps its `?panels=detail:<type>.<id>:as-docked` address,
   // so a copied link reopens this record as a tab.
   useUrlSync(DETAIL_URL_TYPE_KEY, instanceKey, { [DETAIL_URL_AS_ARG]: "docked" });
@@ -75,9 +76,13 @@ function RecordPeekShell({ instanceKey, title, actions, children }: DetailDocked
   return (
     <>
       {itemId ? (
-        <HeaderActions itemId={itemId} hasList={Boolean(tab && readRecordPeekData(tab.data)?.list)}>
-          {actions}
-        </HeaderActions>
+        <HeaderActions
+          itemId={itemId}
+          hasList={Boolean(tab && readRecordPeekData(tab.data)?.list)}
+          actions={actions}
+          navActions={navActions}
+          menuActions={menuActions}
+        />
       ) : null}
       <div className="flex h-full min-h-0 flex-col overflow-y-auto" data-record-peek>
         {children}

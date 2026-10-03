@@ -43,7 +43,7 @@ import {
   Database,
   type LucideIcon,
 } from "lucide-react";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import {
   defineCanvasKind,
   registerCanvasKinds,
@@ -131,14 +131,14 @@ function ArtifactHeaderAction({ item, canvas }: CanvasKindProps) {
   return (
     <>
       {hasSource ? (
-        <TapTargetButton
+        <TapTargetButtonTransparent
           ariaLabel={showingSource ? "Show preview" : "Show source"}
           icon={showingSource ? <Eye className="h-4 w-4" /> : <Code className="h-4 w-4" />}
           onClick={() => canvas.update(item.id, { data: { ...data, view: showingSource ? "preview" : "source" } })}
         />
       ) : null}
       {isAdmin ? (
-        <TapTargetButton
+        <TapTargetButtonTransparent
           ariaLabel={panel === "debug" ? "Hide artifact debug" : "Artifact debug"}
           icon={<Bug className={panel === "debug" ? "h-4 w-4 text-amber-600 dark:text-amber-400" : "h-4 w-4"} />}
           onClick={() => toggleArtifactPanel(item.id, "debug")}
