@@ -14,8 +14,8 @@ description: "The doctrine for turning a vision into a finished, verified, deplo
 **What this reproduces:** the HR-domain build — one vision message became a verified, deployed
 production module in five days with near-zero owner involvement, surviving compactions,
 disconnects, and usage-limit kills without losing a step. Worked example:
-[`projects/hr-domain/`](/projects/hr-domain/) (its `COORDINATOR.md`, `EXECUTION.md`, `REGISTER.md`
-are the templates). This doc is the recipe: **the owner's five launch moves** (Part 1), **the
+[`systems/human-resources/projects/hr-domain/PLAN.md`](/systems/human-resources/projects/hr-domain/PLAN.md) (its `COORDINATOR.md`, `EXECUTION.md`, `REGISTER.md`
+templates are in git history under `projects/hr-domain/`, removed 2026-10-03). This doc is the recipe: **the owner's five launch moves** (Part 1), **the
 coordinator's operating system** (Part 2), **the lifecycle with gates** (Part 3), and **the launch
 protocol** (Part 4). Method skills carry the mechanics — this doc never restates them.
 
