@@ -32,6 +32,8 @@ import { useRef, useState } from "react";
 
 import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { Button } from "@/components/ui/button";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { NewTableDialog } from "@/features/make/MakeMount";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -70,6 +72,13 @@ export function EntityCustomFields({
   title,
   className,
 }: EntityCustomFieldsProps) {
+  // T1.2 (Doctrine R8): a person who may not change this table makes her own, in the ONE New table
+  // dialog both data homes open (features/make/MakeMount.tsx), right here on the record page.
+  const [makingTable, setMakingTable] = useState(false);
+  // THE WORD THIS APP ALREADY USES FOR THE TOKEN ("People & Companies", "Deals"): the entity
+  // registry's plural label, read once here for every page — never a per-page prop. The store's
+  // own label is the registry row's (`Party`), a machine word on screen.
+  const entityLabel = tryGetEntityInfo(entityToken)?.labelPlural || undefined;
   const userId = useAppSelector(selectUserId);
   // A dormant copy (a board tile that is not live) keeps its door registered
   // but out of the page's agent offer.
@@ -139,8 +148,11 @@ export function EntityCustomFields({
         recordId={recordId}
         title={title}
         className={className}
+        entityLabel={entityLabel}
+        onMakeOwnTable={() => setMakingTable(true)}
         agentDoor={(door) => registerCustomFieldsDoor({ ...door, isLive: () => liveRef.current })}
       />
+      <NewTableDialog what={makingTable ? "create" : null} onClose={() => setMakingTable(false)} />
     </RecordsMount>
   );
 }
