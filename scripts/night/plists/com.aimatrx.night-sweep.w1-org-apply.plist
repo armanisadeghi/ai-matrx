@@ -11,7 +11,7 @@
   <!-- W1-ORG's four chair steps, applied to the MAIN database in the documented order,
        each as its own short transaction, with the documented seat probe after every one
        and a hard stop on any probe that does not answer PASS. The chair step is
-       common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/W1-ORG-CHAIR-STEP.md.
+       common-docs/systems/platform/custom-data/STATE.md.
 
        WHY 02:05 AND NOT ANY OTHER TIME. The fourth file creates twelve RLS policies, and
        every CREATE/ALTER/DROP POLICY run as `postgres` on this database takes ACCESS
