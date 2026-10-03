@@ -212,12 +212,12 @@ agent carries three or more executable tools it runs a LOOP: it reads a tool res
 decides which tool to reach for next, and recovers from its own mistakes, turn after
 turn. A lite/mini model looks fine on the first call and fails on the fourth — silently,
 as a wrong tool choice rather than an error. So: **cheapness is never a reason; a
-side-by-side run is.** Pin a **primary** model (`agent_catalog list_models` — the
-`is_primary` flag is the platform saying it stands behind that model), and when the job
-is genuinely hard, RUN IT TWICE — once on the current-gen Flash, once on Sonnet — and pin
-the winner. The server REFUSES a write that puts three or more tools on a non-primary
-model in the cheapest cost band (`agent_factory.guards.assert_tool_loop_model_fitness`),
-so a lite pin fails loudly instead of shipping. Origin (Arman, 2026-09-16, review row
+side-by-side run is.** Pick a capable current model (`agent_catalog list_models`;
+`is_primary` only marks a model family's CURRENT version for the UI — it says nothing about
+tools), and when the job is genuinely hard, RUN IT TWICE — once on the current-gen Flash,
+once on Sonnet — and pin the winner. The server no longer refuses any model/tool pairing
+(removed 2026-10-03); the only model fact that matters for tools is whether it accepts them.
+Tool rules: `common-docs/systems/agents/agent-tools/TOOL-SOURCES.md`. Origin (Arman, 2026-09-16, review row
 `ca931876`): the Sandbox Specialist was born correctly on the primary Flash and re-pinned
 to Flash-Lite with 11 tools **2 minutes and 22 seconds later**, and stayed there for
 eleven versions until he moved it back himself.
