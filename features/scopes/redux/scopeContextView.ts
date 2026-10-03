@@ -51,6 +51,7 @@ import type {
   ContextItem,
   ContextValueType,
 } from "@/features/scopes/redux/contextItemCatalog";
+import type { IncompleteValue } from "@/features/scopes/utils/incompleteValue";
 
 /** One field of one scope: its definition plus its current value (if any). */
 export interface ScopeContextRow {
@@ -82,6 +83,12 @@ export interface ScopeContextRow {
   allowed_scope_type_ids?: string[] | null;
   /** Dimensional reference binding (INTERIM jsonb) — features/scopes/utils/referenceSource.ts. */
   reference_source?: ReferenceSource | null;
+  /**
+   * Set when `value_text` holds only the start of a text kept as a file (the file could not be
+   * read whole). Screens show "Partial"; the write path refuses to save it back
+   * (`utils/incompleteValue.ts`).
+   */
+  value_incomplete?: IncompleteValue | null;
 }
 
 // ─── The scope → type index (from the tree, else the recorded one) ─────
@@ -232,6 +239,7 @@ function toRow(item: ContextItem, value: ContextItemValue | undefined): ScopeCon
     max_items: item.max_items,
     allowed_scope_type_ids: item.allowed_scope_type_ids ?? null,
     reference_source: item.reference_source ?? null,
+    value_incomplete: value?.value_incomplete ?? null,
   };
 }
 

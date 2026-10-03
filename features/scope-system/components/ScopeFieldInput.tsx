@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
 import type { ScopeContextRow } from "@/features/scopes/redux/scopeContextView";
+import { PartialValueBadge } from "@/features/scopes/components/PartialValueBadge";
 import {
   ContextValueInput,
   placeholderForType,
@@ -262,6 +263,7 @@ export function ScopeFieldInput({
           </div>
           <div className="flex items-center gap-1">
             {headerSlot}
+            <PartialValueBadge incomplete={row.value_incomplete} />
             <FieldStatus
               status={status}
               hasValue={row.has_value || canonical(value).length > 0}
