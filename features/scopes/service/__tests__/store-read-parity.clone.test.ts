@@ -314,7 +314,7 @@ function clearedOldCell(e: unknown): boolean {
  * Two reference fences that differ in meaning: does the difference fall under a ruled class?
  * `ruled-pending-restore` (ruling 1's known drop) or `ruled-label` (O7 #6/#7/#8), else null (real).
  */
-function ruledFenceKind(fa: string, fb: string): DiffKind | null {
+function ruledFenceKind(fa: string, fb: string, liveNames: Array<{ type: string; id: string; label: string }>): DiffKind | null {
   const a = JSON.parse(fa) as { type: string; items: Array<Record<string, unknown>> };
   const b = JSON.parse(fb) as { type: string; items: Array<Record<string, unknown>> };
   if (a.type !== b.type) return null;
@@ -338,7 +338,7 @@ function ruledFenceKind(fa: string, fb: string): DiffKind | null {
     if (la === lb) continue;
     const imported = /^Imported from (.+?)(\.[A-Za-z0-9]{1,5})?$/.exec(la);
     const ok =
-      (la === "" && lb !== "") || // #6: the old fence named the id only; the store names it live
+      (la === "" && lb !== "" && (liveNames.push({ type: a.type, id: idOf(y), label: lb }), true)) || // #6: id-only old fence; the store's live name (checked after the run)
       lb === REDACTED_LABEL || // #8: the store's mask redacts a record this seat may not open
       (imported !== null && imported[1] === lb); // #7: a workbook's import caption → its live name
     if (!ok) return null;
@@ -346,7 +346,11 @@ function ruledFenceKind(fa: string, fb: string): DiffKind | null {
   }
   return labelled ? "ruled-label" : null;
 }
-type Diff = { reader: string; arg: string; path: string; old: unknown; store: unknown; kind: DiffKind; clock: boolean };
+type Diff = {
+  reader: string; arg: string; path: string; old: unknown; store: unknown; kind: DiffKind; clock: boolean;
+  /** O7 #6: the live names a `ruled-label` claims; held to an oracle after the run (never trusted as-is). */
+  liveNames?: Array<{ type: string; id: string; label: string }>;
+};
 type Stats = { leaves: number; valueCells: number };
 
 function strip(v: unknown): unknown {
@@ -466,7 +470,9 @@ function diff(reader: string, arg: string, a: unknown, b: unknown, p: string, ou
     if (fa !== null && fb !== null) {
       if (fa === fb) kind = "fence-spelling";
       else {
-        push(out, { reader, arg, path: p, old: JSON.parse(fa), store: JSON.parse(fb), kind: ruledFenceKind(fa, fb) ?? "value" });
+        const liveNames: Array<{ type: string; id: string; label: string }> = [];
+        const ruled = ruledFenceKind(fa, fb, liveNames);
+        out.push({ reader, arg, path: p, old: JSON.parse(fa), store: JSON.parse(fb), kind: ruled ?? "value", clock: false, ...(ruled && liveNames.length ? { liveNames } : {}) });
         return;
       }
     }
@@ -593,6 +599,22 @@ describeClone("the store read path equals the old path on the clone", () => {
           .schema("custom")
           .rpc("read_records_archived", { p_organization_id: orgId, p_table_id: m[1], p_lane: "org", p_by_id: false, p_limit: 1000, p_offset: 0 });
         if (!e && Array.isArray(rows) && rows.length === d.store) d.kind = "ruled-archived-count";
+      }
+
+      // O7 #6: a live name the store added must BE the live name — the oracle is the OLD path's own tree
+      // for a scope (context.scopes, the seat's RLS) and files.files for a file, never the store.
+      const oldScopeName = new Map<string, string>();
+      for (const o of oldOrgs) for (const t of o.scope_types) for (const sc of t.scopes as Array<{ id: string; name?: string }>) if (sc.name) oldScopeName.set(sc.id.toLowerCase(), sc.name);
+      const fileIds = [...new Set(diffs.flatMap((d) => (d.liveNames ?? []).filter((n) => n.type === "file").map((n) => n.id)))];
+      const fileName = new Map<string, string>();
+      if (fileIds.length) {
+        const { data: files } = await client.schema("files").from("files").select("id, file_name").in("id", fileIds);
+        for (const f of (files ?? []) as Array<{ id: string; file_name: string | null }>) if (f.file_name) fileName.set(f.id.toLowerCase(), f.file_name);
+      }
+      for (const d of diffs) {
+        if (d.kind !== "ruled-label" || !d.liveNames) continue;
+        const truthful = d.liveNames.every((n) => (n.type === "file" ? fileName.get(n.id) : n.type === "scope" ? oldScopeName.get(n.id) : undefined) === n.label);
+        if (!truthful) d.kind = "value";
       }
 
       // Only a real difference counts as `value`; every other kind is counted apart, never failed.
