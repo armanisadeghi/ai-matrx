@@ -48,7 +48,8 @@ import {
   asFeedConfig,
 } from "./FeedConfigEditor";
 import { AddItemDialog, EditItemDialog } from "./ItemDialogs";
-import { PreviewDialog } from "./PreviewDialog";
+import { useToolToggle } from "@/features/canvas/host/toolCanvas";
+import { SYSTEM_CONTEXT_PREVIEW_TOGGLE } from "./canvas/systemContextPreviewKind";
 import {
   CLASS_META,
   CLASS_ORDER,
@@ -202,7 +203,8 @@ export function SystemContextConsole() {
   const [editing, setEditing] = useState<SystemContextItem | null>(null);
   const [clickedRow, setClickedRow] = useState<SystemContextItem | null>(null);
   const [addItemOpen, setAddItemOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  // "What agents receive" is a canvas tab beside the console.
+  const preview = useToolToggle(SYSTEM_CONTEXT_PREVIEW_TOGGLE);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -425,7 +427,9 @@ export function SystemContextConsole() {
               type="button"
               size="sm"
               variant="outline"
-              onClick={() => setPreviewOpen(true)}
+              onClick={preview.toggle}
+              aria-pressed={preview.isVisible}
+              className={preview.isVisible ? "bg-accent text-accent-foreground" : undefined}
             >
               <Eye className="mr-1.5 h-4 w-4" /> Preview agent context
             </Button>
@@ -665,7 +669,6 @@ export function SystemContextConsole() {
           }}
         />
       )}
-      {previewOpen && <PreviewDialog onClose={() => setPreviewOpen(false)} />}
     </div>
   );
 }

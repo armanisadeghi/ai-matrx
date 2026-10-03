@@ -2,22 +2,17 @@
 
 // Shows exactly what an agent receives for global system context (no scope),
 // straight from the live resolver — the end-to-end proof that feeds deliver.
+// What every agent gets with no scope selected: ambient values compute per
+// request; datasets arrive as pointers. It is the body of the
+// `system-context-preview` canvas tab (systemContextPreviewKind.ts); the pane
+// header is its chrome.
 
 import { useEffect, useState } from "react";
-import { Eye, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Loader2 } from "lucide-react";
 import type { ResolvedPreviewEntry } from "@/app/api/admin/system-context/route";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-export function PreviewDialog({ onClose }: { onClose: () => void }) {
+export function SystemContextPreview() {
   const [entries, setEntries] = useState<ResolvedPreviewEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,18 +38,7 @@ export function PreviewDialog({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-sky-500" /> What agents receive
-          </DialogTitle>
-          {/* Resolved by resolve_full_context. */}
-          <DialogDescription>
-            What every agent gets with no scope selected. Ambient values compute per request; datasets arrive as pointers.
-          </DialogDescription>
-        </DialogHeader>
-
+    <div className="h-full min-h-0 overflow-y-auto bg-background p-3">
         {error ? (
           <p className="py-6 text-center text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         ) : entries === null ? (
@@ -95,12 +79,6 @@ export function PreviewDialog({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }

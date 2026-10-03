@@ -22,6 +22,7 @@ import {
   WORKBOOK_HISTORY_CANVAS_KIND,
 } from "@/features/data-tables/canvas/historyKinds";
 import { KNOWLEDGE_ASSETS_CANVAS_KIND } from "@/features/rag/canvas/knowledgeAssetsKind";
+import { SYSTEM_CONTEXT_PREVIEW_CANVAS_KIND } from "@/features/admin/system-context/canvas/systemContextPreviewKind";
 import { PAGE_PANEL_CANVAS_KIND } from "./pagePanel";
 
 export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
@@ -37,6 +38,8 @@ export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   WORKBOOK_HISTORY_CANVAS_KIND,
   // A document's Knowledge Assets builder beside the source.
   KNOWLEDGE_ASSETS_CANVAS_KIND,
+  // What agents receive for global system context (admin console).
+  SYSTEM_CONTEXT_PREVIEW_CANVAS_KIND,
   // A page's own live panel (a table's row detail, an admin form) — see pagePanel.tsx.
   PAGE_PANEL_CANVAS_KIND,
 ];
