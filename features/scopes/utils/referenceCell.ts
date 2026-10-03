@@ -53,7 +53,7 @@ const REFERENCE_TYPE_LABELS: Record<string, string> = {
   workflow: "Workflow",
   conversation: "Conversation",
   folder: "Folder",
-  dataset: "Dataset",
+  dataset: "Table",
   data_store: "Data Store",
 };
 

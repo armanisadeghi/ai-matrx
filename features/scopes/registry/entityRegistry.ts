@@ -69,7 +69,6 @@ import {
   Sheet,
   SlidersHorizontal,
   Shapes,
-  Table,
   Tag,
   Tags,
   Target,
@@ -350,12 +349,6 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     // features/transcripts/browse/types.ts — one open target, not two.
     hrefFor: (id) => `/transcripts/processor?focus=${encodeURIComponent(id)}`,
   },
-  dataset: {
-    Icon: Table,
-    // Plain words (A5-P, 2026-09-29): a person calls these tables (vocabulary: Table; "dataset" is retired).
-    labelPlural: "Tables",
-    hrefFor: (id) => `/data/${id}`,
-  },
   workbook: {
     Icon: Sheet,
     labelPlural: "Workbooks",
@@ -439,9 +432,8 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // names one next.
   processed_document: {
     Icon: FileText,
-    // Plain words: what a person saved in Knowledge — pasted text, web pages, captions, recordings
-    // (the inventory lists only saved Sources, one per Source) — never "Processed document".
-    labelPlural: "Saved sources",
+    // Name comes from the registry label ("Source", vocabulary row Source); never set a
+    // plural here that renames a kind (canonicalize-without-destroying, 2026-10-03).
     hrefFor: (id) => `/knowledge/sources/${encodeURIComponent(id)}`,
   },
   conversation: {
@@ -679,8 +671,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   web_page: {
     Icon: Globe,
-    // Plain words (A5-P): a page of one of your marketing sites — never "Canonical Page".
-    labelPlural: "Site pages",
+    // Name comes from the registry label ("Site page", Arman 2026-10-03).
     // hrefFor resolves the nested brand/site route via a tiny server redirect.
     hrefFor: (id) => `/marketing/pages/${id}`,
   },
