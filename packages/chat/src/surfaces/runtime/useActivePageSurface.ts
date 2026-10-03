@@ -24,12 +24,16 @@
  * in the run's `surface_chain` (`surface-chain.ts`).
  *
  * Otherwise the page's registered runtime surface wins when it matches the
- * route (or when the route has no mapping yet).
+ * route, when the route has no mapping yet, or when the route's surface has
+ * no provider mounted on this page.
  */
 
+import { useSyncExternalStore } from "react";
 import { usePathname } from "../../host/navigation";
 import { getManifest } from "./registry";
 import {
+  getGlobalSurfaceRegistry,
+  getSurfaceRuntimeForName,
   useSurfaceRuntime,
   type SurfaceRuntimeValue,
 } from "./SurfaceRuntimeContext";
@@ -55,9 +59,22 @@ export function useActivePageSurface(): ActivePageSurface {
   const runtimeIsOverlay =
     !!runtime?.surfaceName &&
     (!!runtime.layer || !!getManifest(runtime.surfaceName)?.overlayId);
+  // A route-derived surface with NO provider on this page (the Knowledge
+  // route over an open transcript) never outranks the runtime that IS
+  // mounted: following it read nothing, so a reopened chat lost every value
+  // on screen (2026-10-03). The mounted runtime is what a fresh launch adopts.
+  const registry = getGlobalSurfaceRegistry();
+  const routeMounted = useSyncExternalStore(
+    registry.subscribe,
+    () => (routeSurface ? getSurfaceRuntimeForName(routeSurface) !== null : false),
+    () => true,
+  );
   const surfaceName =
     runtime?.surfaceName &&
-    (runtimeIsOverlay || !routeSurface || runtime.surfaceName === routeSurface)
+    (runtimeIsOverlay ||
+      !routeSurface ||
+      runtime.surfaceName === routeSurface ||
+      !routeMounted)
       ? runtime.surfaceName
       : (routeSurface ?? runtime?.surfaceName ?? null);
   return {

@@ -27,7 +27,11 @@ import {
   companionSurfaceScope,
   withLiveSurfaceContext,
 } from "../../../../surfaces/runtime/surface-chain";
-import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import {
+  getSurfaceRuntime,
+  isPageOwnConversation,
+} from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import { patchConversation } from "../conversations/conversations.slice";
 import { withSurfaceDocumentEvidence } from "../../../../surfaces/utils/document-evidence";
 import { alwaysOnSurfaceKeys } from "../../../../surfaces/utils/always-on-context";
 import { replaceSurfaceVariableValues } from "../instance-variable-values/instance-variable-values.slice";
@@ -162,11 +166,22 @@ export const refreshSurfaceScope = createAsyncThunk<
           contextCount: closedResult.contextEntries.length,
         };
       }
-      if (process.env.NODE_ENV !== "production") {
+      // A SURFACE THAT NEVER MOUNTED ON THIS PAGE (a route-derived name — the
+      // Knowledge page's `matrx-user/knowledge` over an open transcript): the
+      // conversation follows the runtime a fresh launch adopts — the deepest
+      // mounted one — and re-reads it now. Never a silent drop: a reopened
+      // chat used to keep nothing from the transcript on screen (2026-10-03).
+      const mounted = getSurfaceRuntime();
+      if (mounted?.surfaceName && mounted.surfaceName !== surfaceName) {
         console.warn(
-          `[surfaces] submit-time scope refresh skipped for conversation "${conversationId}" — no live provider is mounted for "${surfaceName}"`,
+          `[surfaces] "${surfaceName}" has no live provider on this page — conversation "${conversationId}" now follows the mounted "${mounted.surfaceName}"`,
         );
+        dispatch(patchConversation({ conversationId, surfaceName: mounted.surfaceName }));
+        return dispatch(refreshSurfaceScope({ conversationId, composerText })).unwrap();
       }
+      console.warn(
+        `[surfaces] submit-time scope refresh skipped for conversation "${conversationId}" — no live provider is mounted for "${surfaceName}" and none is mounted on this page`,
+      );
       return { refreshed: false, surfaceName, reason: "no_provider" };
     }
 
