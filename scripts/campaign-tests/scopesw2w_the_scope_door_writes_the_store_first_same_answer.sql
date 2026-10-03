@@ -133,8 +133,15 @@ begin
          and not exists (select 1 from w2s_seen x where x.id = r.id);
       for v_i in 1 .. coalesce(array_length(v_made, 1), 0) loop
         v_eff := replace(replace(v_eff, v_made[v_i], '<made-' || v_i || '>'), left(replace(v_made[v_i], '-', ''), 12), '<made12-' || v_i || '>');
-        v_ans := replace(coalesce(v_out::text, ''), v_made[v_i], '<made-' || v_i || '>');
+        v_ans := replace(coalesce(v_ans, v_out::text, ''), v_made[v_i], '<made-' || v_i || '>');
       end loop;
+      -- A provisioned value's row and a dataset Table's slug are made with random ids in either run.
+      select coalesce(array_agg(v.id::text order by v.context_item_id, v.id), '{}') into v_made
+        from context.context_item_values v where v.scope_id = v_id;
+      for v_i in 1 .. coalesce(array_length(v_made, 1), 0) loop
+        v_eff := replace(v_eff, v_made[v_i], '<value-' || v_i || '>');
+      end loop;
+      v_eff := regexp_replace(v_eff, '"scope_[0-9a-f]{12}"', '"scope_<made>"', 'g');
       raise exception using errcode = 'P0W2S', message = 'rolled back';
     exception
       when sqlstate 'P0W2S' then null;
@@ -183,12 +190,16 @@ begin
     elsif r.o_ok is distinct from r.n_ok or r.o_state is distinct from r.n_state or r.o_msg is distinct from r.n_msg then
       v_fails := v_fails || format('%s / %s RED (answer): old %s %s "%s" — new %s %s "%s"', r.seat, r.name,
                                    r.o_ok, coalesce(r.o_state, ''), coalesce(r.o_msg, ''), r.n_ok, coalesce(r.n_state, ''), coalesce(r.n_msg, ''));
-    elsif r.o_ans is distinct from r.n_ans or r.o_eff is distinct from r.n_eff then
+    elsif coalesce((r.n_eff::jsonb #>> '{side_effects,sweep_extra}')::int, 0) <> 0 then
+      v_fails := v_fails || format('%s / %s RED (H1 class): the new body queued the suggestion sweep %s time(s) more than once per thing',
+                                   r.seat, r.name, r.n_eff::jsonb #>> '{side_effects,sweep_extra}');
+    elsif r.o_ans is distinct from r.n_ans
+          or (r.o_eff::jsonb #- '{side_effects,sweep_extra}') is distinct from (r.n_eff::jsonb #- '{side_effects,sweep_extra}') then
       -- the answer and the effect are each reported, so one difference never hides the other
       if r.o_ans is distinct from r.n_ans then
         v_fails := v_fails || format(E'%s / %s RED (answer JSON):\n old %s\n new %s', r.seat, r.name, r.o_ans, r.n_ans);
       end if;
-      if r.o_eff is distinct from r.n_eff then
+      if (r.o_eff::jsonb #- '{side_effects,sweep_extra}') is distinct from (r.n_eff::jsonb #- '{side_effects,sweep_extra}') then
         v_fails := v_fails || format(E'%s / %s RED (effect):\n old %s\n new %s', r.seat, r.name, r.o_eff, r.n_eff);
       end if;
     else

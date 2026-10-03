@@ -2,8 +2,10 @@
 -- (included by the scopesw2w same-answer suites, inside their transaction). Added after the independent verify
 -- (scopes-verify-w2w.md H1/H3): a suite that compares only the image row and the store Record let a doubled
 -- suggestion-sweep enqueue and a provisioned value without its provenance pass as "SAME". It reads, for one row:
---   sweep        every rag.kg_sweep_queue row of the row and of its Table's Fields made in this transaction; a
---                queued row is the proxy for its pg_notify, which both writers send only with the insert
+--   sweep        the rag.kg_sweep_queue rows of the row and of its Table's Fields made in this transaction, one per
+--                thing woken; a queued row is the proxy for its pg_notify, which both writers send only with the insert
+--   sweep_extra  how many rows beyond one per thing were queued (the suites require 0 from the new body; the old
+--                body queues a provisioning create twice, which is the H1 class)
 --   search       the platform.search_item row of the scope or type
 --   history      every history.row_versions row of it (old table and store, per entity type and version)
 --   made         the store rows this transaction made for it: Fields of its Table (p_type), and Tables that name
@@ -23,13 +25,20 @@ create or replace function pg_temp.w2w_side_effects(p_org uuid, p_id uuid, p_typ
                                             or (r.data ->> 'entity_definition_id')::uuid in (select id from tbls))))
   )
   select jsonb_build_object(
-    'sweep', (select jsonb_agg(jsonb_build_object('change_type', q.change_type, 'entity_id', q.entity_id,
+    -- One row per thing woken (exactly once is the contract, H1); how many extra rows were queued is
+    -- reported apart, and the suites require 0 of them from the new body.
+    'sweep', (select jsonb_agg(x.j order by x.k)
+                from (select distinct jsonb_build_object('change_type', q.change_type, 'entity_id', q.entity_id,
                                                   'scope_type_id', q.scope_type_id, 'organization_id', q.organization_id,
-                                                  'created_by', q.created_by, 'status', q.status)
-                               order by (q.entity_id = p_id) desc, q.change_type,
-                                        (select f.data ->> 'key' from custom.record f where f.organization_id = p_org and f.id = q.entity_id), q.entity_id::text)
-                from rag.kg_sweep_queue q
-               where q.created_at >= now() and (q.entity_id = p_id or q.entity_id in (select id from made))),
+                                                  'created_by', q.created_by, 'status', q.status) as j,
+                             ((q.entity_id <> p_id)::int)::text || q.change_type
+                             || coalesce((select f.data ->> 'key' from custom.record f where f.organization_id = p_org and f.id = q.entity_id), '')
+                             || q.entity_id::text as k
+                        from rag.kg_sweep_queue q
+                       where q.created_at >= now() and (q.entity_id = p_id or q.entity_id in (select id from made))) x),
+    'sweep_extra', (select count(*) - count(distinct (q.change_type, q.entity_id))
+                      from rag.kg_sweep_queue q
+                     where q.created_at >= now() and (q.entity_id = p_id or q.entity_id in (select id from made))),
     'search', (select to_jsonb(si) - 'title_tsv' - 'projected_at' from platform.search_item si where si.entity_id = p_id),
     'history', (select jsonb_agg(jsonb_build_object('entity_type', h.entity_type, 'operation', h.operation, 'version', h.version,
                                                     'actor_tier', h.actor_tier, 'operation_name', h.operation_name,
